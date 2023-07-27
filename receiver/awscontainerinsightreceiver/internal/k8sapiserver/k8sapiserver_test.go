@@ -270,6 +270,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		case ci.TypeCluster:
 			assertMetricValueEqual(t, metric, "cluster_failed_node_count", int64(1))
 			assertMetricValueEqual(t, metric, "cluster_node_count", int64(1))
+			assertMetricValueEqual(t, metric, "cluster_number_of_running_pods", int64(2))
+
 		case ci.TypeClusterService:
 			assertMetricValueEqual(t, metric, "service_number_of_running_pods", int64(1))
 			assert.Contains(t, []string{"service1", "service2"}, getStringAttrVal(metric, ci.TypeService))

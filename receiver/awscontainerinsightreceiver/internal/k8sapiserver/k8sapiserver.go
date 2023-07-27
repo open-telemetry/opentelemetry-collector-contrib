@@ -103,6 +103,14 @@ func (k *K8sAPIServer) getClusterMetrics(clusterName, timestampNs string) pmetri
 		"cluster_failed_node_count": k.leaderElection.nodeClient.ClusterFailedNodeCount(),
 		"cluster_node_count":        k.leaderElection.nodeClient.ClusterNodeCount(),
 	}
+
+	namespaceMap := k.leaderElection.podClient.NamespaceToRunningPodNum()
+	clusterPodCount := 0
+	for _, value := range namespaceMap {
+		clusterPodCount += value
+	}
+	fields["cluster_number_of_running_pods"] = clusterPodCount
+
 	attributes := map[string]string{
 		ci.ClusterNameKey: clusterName,
 		ci.MetricType:     ci.TypeCluster,
