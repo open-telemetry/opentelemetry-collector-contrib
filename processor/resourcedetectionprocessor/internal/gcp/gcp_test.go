@@ -129,6 +129,28 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Cloud Run Job",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "2",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+				"gcp.cloud_run.job.execution":       "my-service-ajg89",
+				"gcp.cloud_run.job.task_index":      "2",
+			},
+		},
+		{
 			desc: "Cloud Functions",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
@@ -259,6 +281,8 @@ type fakeGCPDetector struct {
 	gceHostID                 string
 	gceHostName               string
 	gceHostNameErr            error
+	gcpCloudRunJobExecution   string
+	gcpCloudRunJobTaskIndex   string
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -392,4 +416,18 @@ func (f *fakeGCPDetector) GCEHostName() (string, error) {
 		return "", f.err
 	}
 	return f.gceHostName, f.gceHostNameErr
+}
+
+func (f *fakeGCPDetector) CloudRunJobTaskIndex() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobTaskIndex, nil
+}
+
+func (f *fakeGCPDetector) CloudRunJobExecution() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobExecution, nil
 }

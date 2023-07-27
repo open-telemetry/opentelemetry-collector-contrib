@@ -257,6 +257,9 @@ mdatagen-test:
 gengithub:
 	$(GOCMD) run cmd/githubgen/main.go .
 
+.PHONY: update-codeowners
+update-codeowners: gengithub generate
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
