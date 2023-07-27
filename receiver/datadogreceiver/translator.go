@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
@@ -84,6 +84,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
+			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
