@@ -172,8 +172,8 @@ When defining an OTTL function, if the function needs to take an Enum then the f
 
 Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Math Expressions currently support `int64` and`float64`. 
-Math Expressions also support `time.Time` and `time.Duration`, but only with `+` and `-` and only using the following rules: 
+Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`. 
+For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules: 
   - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
   - A `time.Duration` `+` a `time.Time` yields a `time.Time`. 
   - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
