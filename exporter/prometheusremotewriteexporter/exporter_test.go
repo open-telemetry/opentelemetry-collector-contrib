@@ -994,7 +994,7 @@ func TestRetryOn5xx(t *testing.T) {
 	defer mockServer.Close()
 
 	endpointURL, err := url.Parse(mockServer.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Create the prwExporter
 	exporter := &prwExporter{
