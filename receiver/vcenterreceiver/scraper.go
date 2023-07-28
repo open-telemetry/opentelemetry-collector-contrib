@@ -25,6 +25,7 @@ var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 type vcenterMetricScraper struct {
 	client *vcenterClient
 	config *Config
+	rb     *metadata.ResourceBuilder
 	mb     *metadata.MetricsBuilder
 	logger *zap.Logger
 }
@@ -39,6 +40,7 @@ func newVmwareVcenterScraper(
 		client: client,
 		config: config,
 		logger: logger,
+		rb:     metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
@@ -122,9 +124,8 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(c.Name()),
-	)
+	v.rb.SetVcenterClusterName(c.Name())
+	v.mb.EmitForResource(metadata.WithResource(v.rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -159,10 +160,9 @@ func (v *vcenterMetricScraper) collectDatastore(
 	}
 
 	v.recordDatastoreProperties(now, moDS)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(cluster.Name()),
-		metadata.WithVcenterDatastoreName(moDS.Name),
-	)
+	v.rb.SetVcenterClusterName(cluster.Name())
+	v.rb.SetVcenterDatastoreName(moDS.Name)
+	v.mb.EmitForResource(metadata.WithResource(v.rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -203,10 +203,9 @@ func (v *vcenterMetricScraper) collectHost(
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
-	v.mb.EmitForResource(
-		metadata.WithVcenterHostName(host.Name()),
-		metadata.WithVcenterClusterName(cluster.Name()),
-	)
+	v.rb.SetVcenterHostName(host.Name())
+	v.rb.SetVcenterClusterName(cluster.Name())
+	v.mb.EmitForResource(metadata.WithResource(v.rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
@@ -231,7 +230,8 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			continue
 		}
 		v.recordResourcePool(ts, moRP)
-		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
+		v.rb.SetVcenterResourcePoolName(rp.Name())
+		v.mb.EmitForResource(metadata.WithResource(v.rb.Emit()))
 	}
 }
 
@@ -294,12 +294,11 @@ func (v *vcenterMetricScraper) collectVMs(
 		vmUUID := moVM.Config.InstanceUuid
 
 		v.collectVM(ctx, colTime, moVM, hwSum, errs)
-		v.mb.EmitForResource(
-			metadata.WithVcenterVMName(vm.Name()),
-			metadata.WithVcenterVMID(vmUUID),
-			metadata.WithVcenterClusterName(cluster.Name()),
-			metadata.WithVcenterHostName(hostname),
-		)
+		v.rb.SetVcenterVMName(vm.Name())
+		v.rb.SetVcenterVMID(vmUUID)
+		v.rb.SetVcenterClusterName(cluster.Name())
+		v.rb.SetVcenterHostName(hostname)
+		v.mb.EmitForResource(metadata.WithResource(v.rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
 }

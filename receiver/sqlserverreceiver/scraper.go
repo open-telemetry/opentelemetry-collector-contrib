@@ -25,7 +25,8 @@ type sqlServerScraper struct {
 	logger           *zap.Logger
 	config           *Config
 	watcherRecorders []watcherRecorder
-	metricsBuilder   *metadata.MetricsBuilder
+	rb               *metadata.ResourceBuilder
+	mb               *metadata.MetricsBuilder
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -40,8 +41,12 @@ type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
 func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params)
-	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
+	return &sqlServerScraper{
+		logger: params.Logger,
+		config: cfg,
+		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+	}
 }
 
 // start creates and sets the watchers for the scraper.
@@ -76,7 +81,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		s.emitMetricGroup(recorders, dbName)
 	}
 
-	return s.metricsBuilder.Emit(), errs
+	return s.mb.Emit(), errs
 }
 
 // recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
@@ -115,18 +120,17 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, recorder := range recorders {
-		recorder(s.metricsBuilder, now)
+		recorder(s.mb, now)
 	}
 
-	attributes := []metadata.ResourceMetricsOption{}
 	if databaseName != "" {
-		attributes = append(attributes, metadata.WithSqlserverDatabaseName(databaseName))
+		s.rb.SetSqlserverDatabaseName(databaseName)
 	}
 	if s.config.InstanceName != "" {
-		attributes = append(attributes, metadata.WithSqlserverComputerName(s.config.ComputerName))
-		attributes = append(attributes, metadata.WithSqlserverInstanceName(s.config.InstanceName))
+		s.rb.SetSqlserverComputerName(s.config.ComputerName)
+		s.rb.SetSqlserverInstanceName(s.config.InstanceName)
 	}
-	s.metricsBuilder.EmitForResource(attributes...)
+	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 }
 
 // shutdown stops all of the watchers for the scraper.

@@ -6,4 +6,4 @@ status:
     development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling, kovrus]
+    active: [jpkrohling]
