@@ -72,6 +72,7 @@ func NewK8sAPIServer(cnp clusterNameProvider, logger *zap.Logger, leaderElection
 
 // GetMetrics returns an array of metrics
 func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
+	k.logger.Info("========================= hsookim: k8apiserver: GetMetrics")
 	var result []pmetric.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
