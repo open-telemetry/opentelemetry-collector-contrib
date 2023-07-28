@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
@@ -84,9 +85,10 @@ func TestValidate(t *testing.T) {
 			}
 
 			cfg := &Config{
-				Username: tc.username,
-				Password: configopaque.String(tc.password),
-				Hosts:    hosts,
+				Username:                  tc.username,
+				Password:                  configopaque.String(tc.password),
+				Hosts:                     hosts,
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			}
 			err := component.ValidateConfig(cfg)
 			if tc.expected == nil {

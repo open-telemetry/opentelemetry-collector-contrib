@@ -8,10 +8,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestValidateInvalidConfigs(t *testing.T) {
@@ -23,75 +25,85 @@ func TestValidateInvalidConfigs(t *testing.T) {
 		{
 			name: "Empty endpoint",
 			config: &Config{
-				Endpoint: "",
+				Endpoint:                  "",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyEndpoint,
 		},
 		{
 			name: "Missing port in endpoint",
 			config: &Config{
-				Endpoint: "localhost",
+				Endpoint:                  "localhost",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Invalid endpoint format",
 			config: &Config{
-				Endpoint: "x;;ef;s;d:::ss:23423423423423423",
+				Endpoint:                  "x;;ef;s;d:::ss:23423423423423423",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Missing host in endpoint",
 			config: &Config{
-				Endpoint: ":3001",
+				Endpoint:                  ":3001",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadEndpoint,
 		},
 		{
 			name: "Negative port",
 			config: &Config{
-				Endpoint: "localhost:-2",
+				Endpoint:                  "localhost:-2",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "Bad port",
 			config: &Config{
-				Endpoint: "localhost:9999999999999999999",
+				Endpoint:                  "localhost:9999999999999999999",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadPort,
 		},
 		{
 			name: "Empty username",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Username: "",
-				Password: "secret",
+				Endpoint:                  "localhost:3000",
+				Username:                  "",
+				Password:                  "secret",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyUsername,
 		},
 		{
 			name: "Empty password",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Username: "ro_user",
+				Endpoint:                  "localhost:3000",
+				Username:                  "ro_user",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyPassword,
 		},
 		{
 			name: "Empty service",
 			config: &Config{
-				Endpoint: "localhost:3000",
-				Password: "password",
-				Username: "ro_user",
+				Endpoint:                  "localhost:3000",
+				Password:                  "password",
+				Username:                  "ro_user",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errEmptyService,
 		},
 		{
 			name: "Invalid data source",
 			config: &Config{
-				DataSource: "%%%",
+				DataSource:                "%%%",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expected: errBadDataSource,
 		},
