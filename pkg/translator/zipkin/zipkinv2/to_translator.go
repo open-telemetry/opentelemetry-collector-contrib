@@ -465,7 +465,7 @@ var statusCodeValue = map[string]int32{
 	"STATUS_CODE_OK":    1,
 	"STATUS_CODE_ERROR": 2,
 	// As reported in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14965
-	// The Zipkin exporter used a different set of names when serialising span state.
+	// The Zipkin exporter used a different set of names when serializing span state.
 	"Unset": 0,
 	"Ok":    1,
 	"Error": 2,
