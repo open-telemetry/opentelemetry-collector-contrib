@@ -10,11 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
@@ -73,10 +72,13 @@ func testTime[K any](time string, format string) (ExprFunc[K], error) {
 }
 
 func testDuration[K any](duration string) (ExprFunc[K], error) {
-	return func(_ context.Context, tCtx K) (interface{}, error) {
-		dur, err := time.ParseDuration(duration)
-		return dur, err
-	}, nil
+	if duration != "" {
+		return func(_ context.Context, tCtx K) (interface{}, error) {
+			dur, err := time.ParseDuration(duration)
+			return dur, err
+		}, nil
+	}
+	return nil, fmt.Errorf("duration cannot be empty")
 }
 
 type sumArguments struct {
