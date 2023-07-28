@@ -11,14 +11,18 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, ns *corev1.Namespace) pmetric.Metrics {
 	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
-	return mb.Emit(imetadata.WithK8sNamespaceUID(string(ns.UID)), imetadata.WithK8sNamespaceName(ns.Name), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sNamespaceUID(string(ns.UID))
+	rb.SetK8sNamespaceName(ns.Name)
+	rb.SetOpencensusResourcetype("k8s")
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

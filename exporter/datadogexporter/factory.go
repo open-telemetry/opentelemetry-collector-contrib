@@ -170,7 +170,8 @@ func (f *factory) createDefaultConfig() component.Config {
 				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
 			},
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,

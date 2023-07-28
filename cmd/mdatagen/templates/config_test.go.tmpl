@@ -78,9 +78,9 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }
+{{- end }}
 
-{{- else }}
-
+{{ if .ResourceAttributes -}}
 func TestResourceAttributesConfig(t *testing.T) {
 	tests := []struct {
 		name string

@@ -9,10 +9,10 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	go.opentelemetry.io/build-tools/checkdoc v0.9.0
+	go.opentelemetry.io/build-tools/checkfile v0.10.0
 	go.opentelemetry.io/build-tools/chloggen v0.9.0
 	go.opentelemetry.io/build-tools/crosslink v0.9.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.8.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.9.0
 	go.opentelemetry.io/build-tools/multimod v0.9.0
 	go.opentelemetry.io/collector/cmd/builder v0.81.0
 	golang.org/x/tools v0.11.0
@@ -197,7 +197,7 @@ require (
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.2 // indirect
 	gitlab.com/bosi/decorder v0.2.3 // indirect
-	go.opentelemetry.io/build-tools v0.9.0 // indirect
+	go.opentelemetry.io/build-tools v0.10.0 // indirect
 	go.tmz.dev/musttag v0.7.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect

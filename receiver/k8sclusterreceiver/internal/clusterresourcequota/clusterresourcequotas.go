@@ -14,7 +14,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, crq *quotav1.ClusterResourceQuota) pmetric.Metrics {
@@ -43,7 +43,11 @@ func GetMetrics(set receiver.CreateSettings, crq *quotav1.ClusterResourceQuota) 
 		}
 	}
 
-	return mbphase.Emit(imetadataphase.WithOpenshiftClusterquotaName(crq.Name), imetadataphase.WithOpenshiftClusterquotaUID(string(crq.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
+	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb.SetOpenshiftClusterquotaName(crq.Name)
+	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
 func extractValue(k v1.ResourceName, v resource.Quantity) int64 {

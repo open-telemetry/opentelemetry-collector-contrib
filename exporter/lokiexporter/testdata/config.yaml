@@ -21,3 +21,6 @@ loki/allsettings:
     max_elapsed_time: 10m
   headers:
     "X-Custom-Header": "loki_rocks"
+  default_labels_enabled:
+    exporter: false
+    level: false

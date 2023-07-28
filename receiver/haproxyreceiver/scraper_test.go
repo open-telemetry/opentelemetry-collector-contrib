@@ -14,9 +14,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
 )
 
 func Test_scraper_readStats(t *testing.T) {
@@ -49,10 +46,7 @@ func Test_scraper_readStats(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	settings := receivertest.NewNopCreateSettings()
-	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsBuilderConfig, settings)
-
-	s := newScraper(metricsBuilder, haProxyCfg, zap.NewNop())
+	s := newScraper(haProxyCfg, receivertest.NewNopCreateSettings())
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)

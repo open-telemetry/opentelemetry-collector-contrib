@@ -13,8 +13,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, j *batchv1.Job) pmetric.Metrics {
@@ -32,9 +32,12 @@ func GetMetrics(set receiver.CreateSettings, j *batchv1.Job) pmetric.Metrics {
 		mbphase.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
 	}
 
-	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(j.Namespace), imetadataphase.WithK8sJobName(j.Name), imetadataphase.WithK8sJobUID(string(j.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
-
-	return metrics
+	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb.SetK8sNamespaceName(j.Namespace)
+	rb.SetK8sJobName(j.Name)
+	rb.SetK8sJobUID(string(j.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
 // Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.

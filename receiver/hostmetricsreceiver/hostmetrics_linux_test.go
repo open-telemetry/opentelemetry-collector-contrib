@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -20,16 +21,15 @@ import (
 )
 
 func TestConsistentRootPaths(t *testing.T) {
-	env := &testEnv{env: map[string]string{"HOST_PROC": "testdata"}}
 	// use testdata because it's a directory that exists - don't actually use any files in it
-	assert.Nil(t, testValidate("testdata", env))
-	assert.Nil(t, testValidate("", env))
-	assert.Nil(t, testValidate("/", env))
+	assert.Nil(t, testValidate("testdata"))
+	assert.Nil(t, testValidate(""))
+	assert.Nil(t, testValidate("/"))
 }
 
 func TestInconsistentRootPaths(t *testing.T) {
 	globalRootPath = "foo"
-	err := testValidate("testdata", &testEnv{})
+	err := testValidate("testdata")
 	assert.EqualError(t, err, "inconsistent root_path configuration detected between hostmetricsreceivers: `foo` != `testdata`")
 }
 
@@ -47,6 +47,13 @@ func TestLoadConfigRootPath(t *testing.T) {
 	expectedConfig.RootPath = "testdata"
 	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
 	cpuScraperCfg.SetRootPath("testdata")
+	cpuScraperCfg.SetEnvMap(common.EnvMap{
+		common.HostDevEnvKey: "testdata/dev",
+		common.HostEtcEnvKey: "testdata/etc",
+		common.HostRunEnvKey: "testdata/run",
+		common.HostSysEnvKey: "testdata/sys",
+		common.HostVarEnvKey: "testdata/var",
+	})
 	expectedConfig.Scrapers = map[string]internal.Config{cpuscraper.TypeStr: cpuScraperCfg}
 
 	assert.Equal(t, expectedConfig, r)
@@ -61,8 +68,8 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	globalRootPath = ""
 }
 
-func testValidate(rootPath string, env environment) error {
-	err := validateRootPath(rootPath, env)
+func testValidate(rootPath string) error {
+	err := validateRootPath(rootPath)
 	globalRootPath = ""
 	return err
 }

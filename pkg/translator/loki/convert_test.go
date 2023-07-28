@@ -15,10 +15,11 @@ import (
 
 func TestConvertAttributesAndMerge(t *testing.T) {
 	testCases := []struct {
-		desc     string
-		logAttrs map[string]interface{}
-		resAttrs map[string]interface{}
-		expected model.LabelSet
+		desc                 string
+		logAttrs             map[string]interface{}
+		resAttrs             map[string]interface{}
+		expected             model.LabelSet
+		defaultLabelsEnabled map[string]bool
 	}{
 		{
 			desc:     "empty attributes should have at least the default labels",
@@ -129,6 +130,36 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 				"instance": "my-service-instance-id",
 			},
 		},
+		{
+			desc: "it shouldn't add job, instance, exporter labels if they disabled in config",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+				"service.namespace":   "my-service-namespace",
+				"service.name":        "my-service-name",
+			},
+			defaultLabelsEnabled: map[string]bool{
+				exporterLabel:       false,
+				model.JobLabel:      false,
+				model.InstanceLabel: false,
+			},
+			expected: model.LabelSet{},
+		},
+		{
+			desc: "it should add job label because it is enabled in config, and exporter label because it is not mentioned in config and that's why enabled by default",
+			resAttrs: map[string]interface{}{
+				"service.instance.id": "my-service-instance-id",
+				"service.namespace":   "my-service-namespace",
+				"service.name":        "my-service-name",
+			},
+			defaultLabelsEnabled: map[string]bool{
+				model.JobLabel:      true,
+				model.InstanceLabel: false,
+			},
+			expected: model.LabelSet{
+				"job":      "my-service-namespace/my-service-name",
+				"exporter": "OTLP",
+			},
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
@@ -136,7 +167,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			assert.NoError(t, logAttrs.FromRaw(tC.logAttrs))
 			resAttrs := pcommon.NewMap()
 			assert.NoError(t, resAttrs.FromRaw(tC.resAttrs))
-			out := convertAttributesAndMerge(logAttrs, resAttrs)
+			out := convertAttributesAndMerge(logAttrs, resAttrs, tC.defaultLabelsEnabled)
 			assert.Equal(t, tC.expected, out)
 		})
 	}

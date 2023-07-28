@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, rc *corev1.ReplicationController) pmetric.Metrics {
@@ -26,12 +26,12 @@ func GetMetrics(set receiver.CreateSettings, rc *corev1.ReplicationController) p
 		mbphase.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
 	}
 
-	return mbphase.Emit(
-		imetadataphase.WithK8sNamespaceName(rc.Namespace),
-		imetadataphase.WithK8sReplicationcontrollerName(rc.Name),
-		imetadataphase.WithK8sReplicationcontrollerUID(string(rc.UID)),
-		imetadataphase.WithOpencensusResourcetype("k8s"),
-	)
+	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb.SetK8sNamespaceName(rc.Namespace)
+	rb.SetK8sReplicationcontrollerName(rc.Name)
+	rb.SetK8sReplicationcontrollerUID(string(rc.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
 func GetMetadata(rc *corev1.ReplicationController) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

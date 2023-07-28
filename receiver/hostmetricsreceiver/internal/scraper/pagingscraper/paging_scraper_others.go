@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.opentelemetry.io/collector/component"
@@ -34,9 +35,9 @@ type scraper struct {
 	mb       *metadata.MetricsBuilder
 
 	// for mocking
-	bootTime         func() (uint64, error)
+	bootTime         func(context.Context) (uint64, error)
 	getPageFileStats func() ([]*pageFileStats, error)
-	swapMemory       func() (*mem.SwapMemoryStat, error)
+	swapMemory       func(context.Context) (*mem.SwapMemoryStat, error)
 }
 
 // newPagingScraper creates a Paging Scraper
@@ -44,14 +45,15 @@ func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *
 	return &scraper{
 		settings:         settings,
 		config:           cfg,
-		bootTime:         host.BootTime,
+		bootTime:         host.BootTimeWithContext,
 		getPageFileStats: getPageFileStats,
-		swapMemory:       mem.SwapMemory,
+		swapMemory:       mem.SwapMemoryWithContext,
 	}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -109,8 +111,9 @@ func (s *scraper) recordPagingUtilizationDataPoints(now pcommon.Timestamp, pageF
 }
 
 func (s *scraper) scrapePagingMetrics() error {
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(time.Now())
-	swap, err := s.swapMemory()
+	swap, err := s.swapMemory(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to read swap info: %w", err)
 	}

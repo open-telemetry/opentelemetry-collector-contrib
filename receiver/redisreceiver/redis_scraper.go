@@ -26,6 +26,7 @@ type redisScraper struct {
 	client   client
 	redisSvc *redisSvc
 	settings component.TelemetrySettings
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 	uptime   time.Duration
 }
@@ -52,6 +53,7 @@ func newRedisScraperWithClient(client client, settings receiver.CreateSettings, 
 		client:   client,
 		redisSvc: newRedisSvc(client),
 		settings: settings.TelemetrySettings,
+		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 	return scraperhelper.NewScraper(
@@ -94,7 +96,8 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdStatsMetrics(now, inf)
-	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
+	rs.rb.SetRedisVersion(rs.getRedisVersion(inf))
+	return rs.mb.Emit(metadata.WithResource(rs.rb.Emit())), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.
