@@ -100,9 +100,9 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 						return nil, fmt.Errorf("%v must be int64 or float64", y)
 					}
 				case time.Time:
-					return performOpTimeDuration(x, y, op)
+					return performOpTime(newX, y, op)
 				case time.Duration:
-					return performOpTimeDuration(x, y, op)
+					return performOpDuration(newX, y, op)
 				default:
 					return nil, fmt.Errorf("%v must be int64, float64, time.Time or time.Duration", x)
 				}
@@ -111,38 +111,44 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 	}
 }
 
-func performOpTimeDuration(x any, y any, op mathOp) (any, error) {
+func performOpTime(x time.Time, y any, op mathOp) (any, error) {
 	switch op {
 	case ADD:
-		if xTime, ok := any(x).(time.Time); ok {
-			if yDur, ok := any(y).(time.Duration); ok {
-				result := xTime.Add(yDur)
-				return result, nil
-			}
-			return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
+		if yDur, ok := any(y).(time.Duration); ok {
+			result := x.Add(yDur)
+			return result, nil
 		}
-		if xDur, ok := any(x).(time.Duration); ok {
-			if yDur, ok := any(y).(time.Duration); ok {
-				result := xDur + yDur
-				return result, nil
-			}
-			return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
-		}
+		return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
 	case SUB:
-		if xTime, ok := any(x).(time.Time); ok {
-			if yTime, ok := any(y).(time.Time); ok {
-				result := xTime.Sub(yTime)
-				return result, nil
-			}
-			if yDur, ok := any(y).(time.Duration); ok {
-				result := xTime.Add(-1 * yDur)
-				return result, nil
-			}
-			return nil, fmt.Errorf("time.Time must be added to time.Time or time.Duration; found %v instead", y)
+		if yTime, ok := any(y).(time.Time); ok {
+			result := x.Sub(yTime)
+			return result, nil
 		}
+		if yDur, ok := any(y).(time.Duration); ok {
+			result := x.Add(-1 * yDur)
+			return result, nil
+		}
+		return nil, fmt.Errorf("time.Time must be added to time.Time or time.Duration; found %v instead", y)
+	}
+	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
+}
+
+func performOpDuration(x time.Duration, y any, op mathOp) (any, error) {
+	switch op {
+	case ADD:
+		if yDur, ok := any(y).(time.Duration); ok {
+			result := x + yDur
+			return result, nil
+		}
+		if yTime, ok := any(y).(time.Time); ok {
+			result := yTime.Add(x)
+			return result, nil
+		}
+		return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
+	case SUB:
 		if xDur, ok := any(x).(time.Duration); ok {
 			if yDur, ok := any(y).(time.Duration); ok {
-				result := xDur + yDur
+				result := xDur - yDur
 				return result, nil
 			}
 			return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)

@@ -323,7 +323,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	require.NoError(t, err)
 	threeTwentyEightMins, err := time.ParseDuration("328m")
 	require.NoError(t, err)
-	elevenTwelve, err := time.ParseDuration("11h12m12s11ns")
+	tenHoursetc, err := time.ParseDuration("10h47m48s11ns")
 	require.NoError(t, err)
 
 	var tests = []struct {
@@ -421,6 +421,48 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 				},
 			},
 			expected: -fourtyFiveHourseFourtyTwoMinutesTwetySevenSecs,
+		},
+		{
+			name: "dur ADD time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("10h"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: ADD,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []value{
+											{
+												String: ottltest.Strp("01-01-2000"),
+											},
+											{
+												String: ottltest.Strp("%m-%d-%Y"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: time.Date(2000, 1, 1, 10, 0, 0, 0, time.Local),
 		},
 		{
 			name: "time ADD dur",
@@ -705,7 +747,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 					},
 				},
 			},
-			expected: threeTwentyEightMins,
+			expected: -threeTwentyEightMins,
 		},
 		{
 			name: "dur SUB dur, complex durs",
@@ -744,7 +786,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 					},
 				},
 			},
-			expected: elevenTwelve,
+			expected: tenHoursetc,
 		},
 	}
 	for _, tt := range tests {
@@ -753,6 +795,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		assert.NoError(t, err)
 
 		result, err := getter.Get(context.Background(), nil)
+		assert.NoError(t, err)
 		assert.Equal(t, tt.expected, result)
 	}
 }

@@ -179,6 +179,7 @@ Math Expressions also support `time.Time` and `time.Duration`, but only with `+`
   - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
   - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
   - A `time.Duration` `-` a `time.Duration` yields a `time.Duration`.
+
 Math Expressions support `Paths` and `Editors` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
 Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`. 
