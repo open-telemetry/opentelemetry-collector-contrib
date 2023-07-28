@@ -259,12 +259,252 @@ func Test_evaluateMathExpression(t *testing.T) {
 
 func Test_evaluateMathExpression_error(t *testing.T) {
 	tests := []struct {
-		name  string
-		input string
+		name     string
+		input    string
+		mathExpr *mathExpression
+		errorMsg string
 	}{
 		{
 			name:  "divide by 0 is gracefully handled",
 			input: "1 / 0",
+		},
+		{
+			name: "time DIV time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("2023-04-12"),
+									},
+									{
+										String: ottltest.Strp("%Y-%m-%d"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: DIV,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []value{
+											{
+												String: ottltest.Strp("2023-04-12"),
+											},
+											{
+												String: ottltest.Strp("%Y-%m-%d"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "only addition and subtraction supported",
+		},
+		{
+			name: "dur MULT dur",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("100h100m100s100ns"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: MULT,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Duration",
+										Arguments: []value{
+											{
+												String: ottltest.Strp("1h1m1s1ns"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "only addition and subtraction supported",
+		},
+		{
+			name: "time ADD int",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("2023-04-12"),
+									},
+									{
+										String: ottltest.Strp("%Y-%m-%d"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: ADD,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(1),
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Time must be added to time.Duration",
+		},
+		{
+			name: "dur SUB int",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("1h1m1s1ns"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: SUB,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(5),
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Duration must be subtracted from time.Duration",
+		},
+		{
+			name: "time ADD time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Time",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("2023-04-12"),
+									},
+									{
+										String: ottltest.Strp("%Y-%m-%d"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: ADD,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []value{
+											{
+												String: ottltest.Strp("2022-05-11"),
+											},
+											{
+												String: ottltest.Strp("%Y-%m-%d"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Time must be added to time.Duration",
+		},
+		{
+			name: "dur SUB time",
+			mathExpr: &mathExpression{
+				Left: &addSubTerm{
+					Left: &mathValue{
+						Literal: &mathExprLiteral{
+							Converter: &converter{
+								Function: "Duration",
+								Arguments: []value{
+									{
+										String: ottltest.Strp("2h"),
+									},
+								},
+							},
+						},
+					},
+				},
+				Right: []*opAddSubTerm{
+					{
+						Operator: SUB,
+						Term: &addSubTerm{
+							Left: &mathValue{
+								Literal: &mathExprLiteral{
+									Converter: &converter{
+										Function: "Time",
+										Arguments: []value{
+											{
+												String: ottltest.Strp("2000-10-30"),
+											},
+											{
+												String: ottltest.Strp("%Y-%m-%d"),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			errorMsg: "time.Duration must be subtracted from time.Duration",
 		},
 	}
 
@@ -273,6 +513,13 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		createFactory("two", &struct{}{}, two[any]),
 		createFactory("threePointOne", &struct{}{}, threePointOne[any]),
 		createFactory("sum", &sumArguments{}, sum[any]),
+		createFactory("Time", &struct {
+			Time   string `ottlarg:"0"`
+			Format string `ottlarg:"1"`
+		}{}, testTime[any]),
+		createFactory("Duration", &struct {
+			Duration string `ottlarg:"0"`
+		}{}, testDuration[any]),
 	)
 
 	p, _ := NewParser[any](
@@ -286,15 +533,30 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parsed, err := mathParser.ParseString("", tt.input)
-			assert.NoError(t, err)
+			if tt.mathExpr != nil {
+				getter, err := p.evaluateMathExpression(tt.mathExpr)
+				if err != nil {
+					assert.Error(t, err)
+					assert.ErrorContains(t, err, tt.errorMsg)
+				} else {
+					result, err := getter.Get(context.Background(), nil)
+					assert.Nil(t, result)
+					assert.Error(t, err)
+					assert.ErrorContains(t, err, tt.errorMsg)
+				}
 
-			getter, err := p.evaluateMathExpression(parsed.MathExpression)
-			assert.NoError(t, err)
+			} else {
+				parsed, err := mathParser.ParseString("", tt.input)
+				assert.NoError(t, err)
 
-			result, err := getter.Get(context.Background(), nil)
-			assert.Nil(t, result)
-			assert.Error(t, err)
+				getter, err := p.evaluateMathExpression(parsed.MathExpression)
+				assert.NoError(t, err)
+
+				result, err := getter.Get(context.Background(), nil)
+				assert.Nil(t, result)
+				assert.Error(t, err)
+			}
+
 		})
 	}
 }
@@ -330,8 +592,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	require.NoError(t, err)
 
 	var tests = []struct {
-		name string
-
+		name     string
 		mathExpr *mathExpression
 		expected any
 	}{
@@ -793,7 +1054,6 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-
 		getter, err := p.evaluateMathExpression(tt.mathExpr)
 		assert.NoError(t, err)
 
