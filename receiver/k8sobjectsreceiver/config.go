@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"k8s.io/client-go/kubernetes"
 	"strings"
 	"time"
 
@@ -46,11 +47,13 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects []*K8sObjectsConfig `mapstructure:"objects"`
+	Objects        []*K8sObjectsConfig            `mapstructure:"objects"`
+	LeaderElection k8sconfig.LeaderElectionConfig `mapstructure:"leader_election"`
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
 	makeDynamicClient   func() (dynamic.Interface, error)
+	makeClient          func() (kubernetes.Interface, error)
 }
 
 func (c *Config) Validate() error {
@@ -94,6 +97,18 @@ func (c *Config) Validate() error {
 		object.gvr = gvr
 	}
 	return nil
+}
+
+func (c *Config) getClient() (kubernetes.Interface, error) {
+	if c.makeClient != nil {
+		return c.makeClient()
+	}
+	client, err := k8sconfig.MakeClient(c.APIConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
 
 func (c *Config) getDiscoveryClient() (discovery.ServerResourcesInterface, error) {

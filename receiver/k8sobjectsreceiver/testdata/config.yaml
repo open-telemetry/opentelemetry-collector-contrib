@@ -8,3 +8,6 @@ k8sobjects:
       mode: watch
       group: events.k8s.io
       namespaces: [default]
+  leader_election:
+    enabled: true
+    leader_election_id: "e3385b9a.leader-election.opentelemetry-collector"

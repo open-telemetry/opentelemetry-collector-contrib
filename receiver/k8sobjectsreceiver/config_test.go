@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"path/filepath"
 	"testing"
 	"time"
@@ -37,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 	err = component.ValidateConfig(cfg)
 	require.NoError(t, err)
 
-	expected := []*K8sObjectsConfig{
+	expectedObjects := []*K8sObjectsConfig{
 		{
 			Name:          "pods",
 			Mode:          PullMode,
@@ -63,7 +64,13 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	}
-	assert.EqualValues(t, expected, cfg.Objects)
+	expectedLleaerElection := k8sconfig.LeaderElectionConfig{
+		Enabled:          true,
+		LeaderElectionID: "e3385b9a.leader-election.opentelemetry-collector",
+	}
+
+	assert.EqualValues(t, expectedObjects, cfg.Objects)
+	assert.EqualValues(t, expectedLleaerElection, cfg.LeaderElection)
 
 }
 

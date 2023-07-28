@@ -5,6 +5,8 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"k8s.io/client-go/kubernetes"
 	"sync"
 	"time"
 
@@ -23,13 +25,16 @@ import (
 )
 
 type k8sobjectsreceiver struct {
-	setting         receiver.CreateSettings
-	objects         []*K8sObjectsConfig
-	stopperChanList []chan struct{}
-	client          dynamic.Interface
-	consumer        consumer.Logs
-	obsrecv         *obsreport.Receiver
-	mu              sync.Mutex
+	setting              receiver.CreateSettings
+	logger               *zap.Logger
+	objects              []*K8sObjectsConfig
+	stopperChanList      []chan struct{}
+	client               dynamic.Interface
+	consumer             consumer.Logs
+	obsrecv              *obsreport.Receiver
+	mu                   sync.Mutex
+	leaderElection       k8sconfig.LeaderElectionConfig
+	leaderElectionClient kubernetes.Interface
 }
 
 func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -48,22 +53,54 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
-	return &k8sobjectsreceiver{
-		client:   client,
-		setting:  params,
-		consumer: consumer,
-		objects:  config.Objects,
-		obsrecv:  obsrecv,
-		mu:       sync.Mutex{},
-	}, nil
+	objReceiver := &k8sobjectsreceiver{
+		client:         client,
+		setting:        params,
+		logger:         params.Logger,
+		consumer:       consumer,
+		objects:        config.Objects,
+		obsrecv:        obsrecv,
+		mu:             sync.Mutex{},
+		leaderElection: config.LeaderElection,
+	}
+
+	if config.LeaderElection.Enabled {
+		objReceiver.leaderElectionClient, err = config.getClient()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return objReceiver, nil
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+
 	kr.setting.Logger.Info("Object Receiver started")
 
-	for _, object := range kr.objects {
-		kr.start(ctx, object)
+	if kr.leaderElection.Enabled {
+		leaderLost := make(chan struct{})
+
+		kr.mu.Lock()
+		kr.stopperChanList = append(kr.stopperChanList, leaderLost)
+		kr.mu.Unlock()
+
+		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection.LeaderElectionID, kr.leaderElectionClient,
+			func(_ context.Context) {
+				kr.logger.Info("leader election got")
+				for _, object := range kr.objects {
+					kr.start(ctx, object)
+				}
+			}, func() {
+				kr.logger.Error("leader election lost")
+				leaderLost <- struct{}{}
+			})
+		if err != nil {
+			kr.logger.Error("create leader elector failed")
+		}
+		go lr.Run(ctx)
 	}
+
 	return nil
 }
 

@@ -25,6 +25,9 @@ The following is example configuration
 
 ```yaml
   k8sobjects:
+    leader_election:
+      enabled: true
+      leader_election_id: "opentelemetry-collector"
     auth_type: serviceAccount
     objects:
       - name: pods
@@ -39,6 +42,9 @@ The following is example configuration
 ```
 
 Brief description of configuration properties:
+- `leader_election`: running in Kubernetes with leader election mode, this means that multiple instances are running, but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
+  - `enabled` (default = `false`): whether run in leader election mode.
+  - `leader_election_id` (default = `opentelemetry-collector`): the identity name of holder. 
 - `auth_type` (default = `serviceAccount`): Determines how to authenticate to
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
