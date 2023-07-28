@@ -34,12 +34,12 @@ func TestNumericTagFilter(t *testing.T) {
 			Decision: NotSampled,
 		},
 		{
-			Desc:     "span attribute with lower limit",
+			Desc:     "span attribute at the lower limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
 			Decision: Sampled,
 		},
 		{
-			Desc:     "span attribute with upper limit",
+			Desc:     "span attribute at the upper limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
 			Decision: Sampled,
 		},
@@ -84,12 +84,12 @@ func TestNumericTagFilterInverted(t *testing.T) {
 			Decision: Sampled,
 		},
 		{
-			Desc:     "span attribute with lower limit",
+			Desc:     "span attribute at the lower limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MinInt32),
 			Decision: NotSampled,
 		},
 		{
-			Desc:     "span attribute with upper limit",
+			Desc:     "span attribute at the upper limit",
 			Trace:    newTraceIntAttrs(empty, "example", math.MaxInt32),
 			Decision: NotSampled,
 		},

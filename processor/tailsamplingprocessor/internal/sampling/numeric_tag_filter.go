@@ -47,9 +47,6 @@ func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 
 			}
 		}
-		if !naf.invertMatch {
-			return false
-		}
-		return true
+		return naf.invertMatch
 	}), nil
 }
