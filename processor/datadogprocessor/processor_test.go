@@ -12,6 +12,7 @@ import (
 
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/sketches-go/ddsketch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -252,7 +253,7 @@ type mockTracesExporter struct {
 	mockTracesConsumer
 }
 
-var _ ingester = (*mockIngester)(nil)
+var _ datadog.Ingester = (*mockIngester)(nil)
 
 // mockIngester implements ingester.
 type mockIngester struct {
