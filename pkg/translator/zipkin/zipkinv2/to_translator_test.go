@@ -45,6 +45,37 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 			td:   generateTraceSingleSpanErrorStatus(),
 			err:  nil,
 		},
+		{
+			name: "span status",
+			zs: []*zipkinmodel.SpanModel{
+				{
+					SpanContext: zipkinmodel.SpanContext{
+						TraceID: convertTraceID(
+							[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80}),
+						ID: convertSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8}),
+					},
+					Name: "min.data",
+					Tags: map[string]string{
+						"otel.status_code": "Ok",
+					},
+					Timestamp: time.Unix(1596911098, 294000000),
+					Duration:  1000000,
+					Shared:    false,
+				},
+			},
+			td: func() ptrace.Traces {
+				td := ptrace.NewTraces()
+				span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				span.SetTraceID(
+					[16]byte{0xF1, 0xF2, 0xF3, 0xF4, 0xF5, 0xF6, 0xF7, 0xF8, 0xF9, 0xFA, 0xFB, 0xFC, 0xFD, 0xFE, 0xFF, 0x80})
+				span.SetSpanID([8]byte{0xAF, 0xAE, 0xAD, 0xAC, 0xAB, 0xAA, 0xA9, 0xA8})
+				span.SetName("min.data")
+				span.Status().SetCode(ptrace.StatusCodeOk)
+				span.SetStartTimestamp(1596911098294000000)
+				span.SetEndTimestamp(1596911098295000000)
+				return td
+			}(),
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
