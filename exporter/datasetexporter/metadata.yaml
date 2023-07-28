@@ -6,4 +6,4 @@ status:
     alpha: [logs, traces]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, martin-majlis-s1, zdaratom]
+    active: [atoulme, martin-majlis-s1, zdaratom, tomaz-s1]

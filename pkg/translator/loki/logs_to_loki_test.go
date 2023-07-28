@@ -18,9 +18,10 @@ import (
 
 func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 	tests := []struct {
-		name     string
-		logs     plog.Logs
-		expected map[string]PushRequest
+		name                 string
+		logs                 plog.Logs
+		expected             map[string]PushRequest
+		defaultLabelsEnabled map[string]bool
 	}{
 		{
 			name: "tenant from logs attributes",
@@ -213,7 +214,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := LogsToLokiRequests(tt.logs)
+			requests := LogsToLokiRequests(tt.logs, tt.defaultLabelsEnabled)
 
 			for tenant, request := range requests {
 				want, ok := tt.expected[tenant]
@@ -236,14 +237,15 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 	testCases := []struct {
-		desc           string
-		hints          map[string]interface{}
-		attrs          map[string]interface{}
-		res            map[string]interface{}
-		severity       plog.SeverityNumber
-		levelAttribute string
-		expectedLabel  string
-		expectedLines  []string
+		desc                 string
+		hints                map[string]interface{}
+		attrs                map[string]interface{}
+		res                  map[string]interface{}
+		severity             plog.SeverityNumber
+		levelAttribute       string
+		expectedLabel        string
+		expectedLines        []string
+		defaultLebelsEnabled map[string]bool
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -305,6 +307,19 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			},
 		},
 		{
+			desc:     "with severity to label, but default_labels_enable disables level label",
+			severity: plog.SeverityNumberDebug4,
+			defaultLebelsEnabled: map[string]bool{
+				levelLabel: false,
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000"}`,
+				`{"traceid":"02000000000000000000000000000000"}`,
+				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
 			desc:           "with severity, already existing level",
 			severity:       plog.SeverityNumberDebug4,
 			levelAttribute: "dummy",
@@ -313,6 +328,20 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 				`{"traceid":"01000000000000000000000000000000"}`,
 				`{"traceid":"02000000000000000000000000000000"}`,
 				`{"traceid":"03000000000000000000000000000000"}`,
+			},
+		},
+		{
+			desc:           "with severity, already existing level, but default_labels_enable disables level label",
+			severity:       plog.SeverityNumberDebug4,
+			levelAttribute: "dummy",
+			defaultLebelsEnabled: map[string]bool{
+				levelLabel: false,
+			},
+			expectedLabel: `{exporter="OTLP"}`,
+			expectedLines: []string{
+				`{"traceid":"01000000000000000000000000000000","attributes":{"level":"dummy"}}`,
+				`{"traceid":"02000000000000000000000000000000","attributes":{"level":"dummy"}}`,
+				`{"traceid":"03000000000000000000000000000000","attributes":{"level":"dummy"}}`,
 			},
 		},
 		{
@@ -442,7 +471,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			// test
-			requests := LogsToLokiRequests(ld)
+			requests := LogsToLokiRequests(ld, tt.defaultLebelsEnabled)
 			assert.Len(t, requests, 1)
 			request := requests[""]
 
@@ -473,6 +502,7 @@ func TestLogToLokiEntry(t *testing.T) {
 		instrumentationScope *instrumentationScope
 		expected             *PushEntry
 		err                  error
+		defaultLabelsEnabled map[string]bool
 	}{
 		{
 			name:      "with attribute to label and regular attribute",
@@ -633,7 +663,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				lr.Attributes().PutStr(levelAttributeName, tt.levelAttribute)
 			}
 
-			log, err := LogToLokiEntry(lr, resource, scope)
+			log, err := LogToLokiEntry(lr, resource, scope, tt.defaultLabelsEnabled)
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, log)
 		})

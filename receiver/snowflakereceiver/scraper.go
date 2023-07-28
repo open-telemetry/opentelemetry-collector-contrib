@@ -20,6 +20,7 @@ type snowflakeMetricsScraper struct {
 	client   *snowflakeClient
 	settings component.TelemetrySettings
 	conf     *Config
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -27,6 +28,7 @@ func newSnowflakeMetricsScraper(settings receiver.CreateSettings, conf *Config) 
 	return &snowflakeMetricsScraper{
 		settings: settings.TelemetrySettings,
 		conf:     conf,
+		rb:       metadata.NewResourceBuilder(conf.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
 	}
 }
@@ -66,7 +68,8 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 	s.scrapeSnowpipeMetrics(ctx, now, *errs)
 	s.scrapeStorageMetrics(ctx, now, *errs)
 
-	return s.mb.Emit(metadata.WithSnowflakeAccountName(s.conf.Account)), errs.Combine()
+	s.rb.SetSnowflakeAccountName(s.conf.Account)
+	return s.mb.Emit(metadata.WithResource(s.rb.Emit())), errs.Combine()
 }
 
 func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs scrapererror.ScrapeErrors) {
