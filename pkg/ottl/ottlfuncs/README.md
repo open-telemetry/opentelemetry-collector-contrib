@@ -459,6 +459,20 @@ Examples:
 
 - `IsString(attributes["maybe a string"])`
 
+### Len
+
+`Len(target)`
+
+The `Len` Converter returns the int64 length of the target string or slice.
+
+`target` is either a `string`, `slice`, `map`, `pcommon.Slice`, `pcommon.Map`, or `pcommon.Value` with type `pcommon.ValueTypeStr`, `pcommon.ValueTypeSlice`, or `pcommon.ValueTypeMap`.
+
+If the `target` is not an acceptable type, the `Len` Converter will return an error.
+
+Examples:
+
+- `Len(body)`
+
 ### Log
 
 `Log(value)`

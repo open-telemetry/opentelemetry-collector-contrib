@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetrics(set receiver.CreateSettings, ns *corev1.Namespace) pmetric.Metrics {
