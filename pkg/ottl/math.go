@@ -114,21 +114,24 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 func performOpTime(x time.Time, y any, op mathOp) (any, error) {
 	switch op {
 	case ADD:
-		if yDur, ok := any(y).(time.Duration); ok {
-			result := x.Add(yDur)
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x.Add(newY)
 			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
 		}
-		return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
 	case SUB:
-		if yTime, ok := any(y).(time.Time); ok {
-			result := x.Sub(yTime)
+		switch newY := y.(type) {
+		case time.Time:
+			result := x.Sub(newY)
 			return result, nil
-		}
-		if yDur, ok := any(y).(time.Duration); ok {
-			result := x.Add(-1 * yDur)
+		case time.Duration:
+			result := x.Add(-1 * newY)
 			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Time must be subtracted from time.Time or time.Duration; found %v instead", y)
 		}
-		return nil, fmt.Errorf("time.Time must be added to time.Time or time.Duration; found %v instead", y)
 	}
 	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
 }
@@ -136,22 +139,23 @@ func performOpTime(x time.Time, y any, op mathOp) (any, error) {
 func performOpDuration(x time.Duration, y any, op mathOp) (any, error) {
 	switch op {
 	case ADD:
-		if yDur, ok := any(y).(time.Duration); ok {
-			result := x + yDur
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x + newY
 			return result, nil
-		}
-		if yTime, ok := any(y).(time.Time); ok {
-			result := yTime.Add(x)
+		case time.Time:
+			result := newY.Add(x)
 			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Duration must be added to time.Duration or time.Time; found %v instead", y)
 		}
-		return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
 	case SUB:
-		if xDur, ok := any(x).(time.Duration); ok {
-			if yDur, ok := any(y).(time.Duration); ok {
-				result := xDur - yDur
-				return result, nil
-			}
-			return nil, fmt.Errorf("time.Duration must be added to time.Duration; found %v instead", y)
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x - newY
+			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Duration must be subtracted from time.Duration; found %v instead", y)
 		}
 	}
 	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
