@@ -80,6 +80,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return true
 	})
 	metricFieldName := splunkMetricValue + ":" + m.Name()
+	//exhaustive:enforce
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		pts := m.Gauge().DataPoints()
@@ -204,6 +205,11 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 		}
 		return splunkMetrics
+	case pmetric.MetricTypeExponentialHistogram:
+		logger.Warn(
+			"Point with unsupported type ExponentialHistogram",
+			zap.Any("metric", m))
+		return nil
 	case pmetric.MetricTypeEmpty:
 		return nil
 	default:
