@@ -130,7 +130,7 @@ func performOpTime(x time.Time, y any, op mathOp) (any, error) {
 			result := x.Add(-1 * newY)
 			return result, nil
 		default:
-			return nil, fmt.Errorf("time.Time must be subtracted from time.Time or time.Duration; found %v instead", y)
+			return nil, fmt.Errorf("time.Time or time.Duration must be subtracted from time.Time; found %v instead", y)
 		}
 	}
 	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
