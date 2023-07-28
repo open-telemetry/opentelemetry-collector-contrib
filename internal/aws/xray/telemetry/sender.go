@@ -201,10 +201,7 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 			Retryer:                   override.IMDSRetryer,
 			EC2MetadataEnableFallback: aws.Bool(false),
 		})
-		metadataClientFallbackEnable := ec2metadata.New(sess, &aws.Config{
-			Retryer:                   override.IMDSRetryer,
-			EC2MetadataEnableFallback: aws.Bool(true),
-		})
+		metadataClientFallbackEnable := ec2metadata.New(sess, &aws.Config{})
 		hostnameProviders = append(hostnameProviders, ec2MetadataProvider{
 			client:               metadataClient,
 			clientFallbackEnable: metadataClientFallbackEnable,

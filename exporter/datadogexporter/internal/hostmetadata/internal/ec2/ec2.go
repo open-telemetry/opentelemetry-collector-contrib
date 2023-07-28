@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -64,41 +63,23 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*override.TimePerCall)
-	defer cancel()
+	meta := ec2metadata.New(sess)
 
-	meta := ec2metadata.New(sess, &aws.Config{
-		Retryer:                   override.IMDSRetryer,
-		EC2MetadataEnableFallback: aws.Bool(false),
-	})
-
-	metaFallbackEnable := ec2metadata.New(sess, &aws.Config{
-		Retryer:                   override.IMDSRetryer,
-		EC2MetadataEnableFallback: aws.Bool(false),
-	})
-
-	if idDoc, err := meta.GetInstanceIdentityDocumentWithContext(ctx); err == nil {
-		hostInfo.InstanceID = idDoc.InstanceID
-	} else {
-		childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(ctx, override.TimePerCall)
-		defer cancelRetryEnable()
-		if idDocInner, errInner := meta.GetInstanceIdentityDocumentWithContext(childCtxFallbackEnable); errInner == nil {
-			hostInfo.InstanceID = idDocInner.InstanceID
-		} else {
-			logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
-		}
+	if !meta.Available() {
+		logger.Debug("EC2 Metadata not available")
+		return
 	}
 
-	if ec2Hostname, err := meta.GetMetadataWithContext(ctx, "hostname"); err == nil {
+	if idDoc, err := meta.GetInstanceIdentityDocument(); err == nil {
+		hostInfo.InstanceID = idDoc.InstanceID
+	} else {
+		logger.Warn("Failed to get EC2 instance id document", zap.Error(err))
+	}
+
+	if ec2Hostname, err := meta.GetMetadata("hostname"); err == nil {
 		hostInfo.EC2Hostname = ec2Hostname
 	} else {
-		childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(ctx, override.TimePerCall)
-		defer cancelRetryEnable()
-		if ec2HostnameInner, errInner := metaFallbackEnable.GetMetadataWithContext(childCtxFallbackEnable, "hostname"); errInner == nil {
-			hostInfo.EC2Hostname = ec2HostnameInner
-		} else {
-			logger.Warn("Failed to get EC2 hostname", zap.Error(err))
-		}
+		logger.Warn("Failed to get EC2 hostname", zap.Error(err))
 	}
 
 	return

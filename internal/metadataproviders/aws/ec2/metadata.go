@@ -42,10 +42,7 @@ func NewProvider(sess *session.Session) Provider {
 			Retryer:                   override.IMDSRetryer,
 			EC2MetadataEnableFallback: aws.Bool(false),
 		}),
-		metadataRetryEnable: ec2metadata.New(sess, &aws.Config{
-			Retryer:                   override.IMDSRetryer,
-			EC2MetadataEnableFallback: aws.Bool(true),
-		}),
+		metadataRetryEnable: ec2metadata.New(sess, &aws.Config{}),
 	}
 }
 

@@ -59,15 +59,12 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 			Retryer:                   override.IMDSRetryer,
 			EC2MetadataEnableFallback: aws.Bool(false),
 		}),
-		clientFallbackEnable: awsec2metadata.New(session, &aws.Config{
-			Retryer:                   override.IMDSRetryer,
-			EC2MetadataEnableFallback: aws.Bool(true),
-		}),
-		refreshInterval:  refreshInterval,
-		instanceIDReadyC: instanceIDReadyC,
-		instanceIPReadyC: instanceIPReadyC,
-		localMode:        localMode,
-		logger:           logger,
+		clientFallbackEnable: awsec2metadata.New(session, &aws.Config{}),
+		refreshInterval:      refreshInterval,
+		instanceIDReadyC:     instanceIDReadyC,
+		instanceIPReadyC:     instanceIPReadyC,
+		localMode:            localMode,
+		logger:               logger,
 	}
 
 	for _, opt := range options {
