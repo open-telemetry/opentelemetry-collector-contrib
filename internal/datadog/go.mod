@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
 
-go 1.20
+go 1.19
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.46.0

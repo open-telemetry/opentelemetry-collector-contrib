@@ -24,8 +24,8 @@ import (
 // computed for the resource spans.
 const keyStatsComputed = "_dd.stats_computed"
 
-// traceagent specifies a minimal trace agent instance that is able to process traces and output stats.
-type traceagent struct {
+// Traceagent specifies a minimal trace agent instance that is able to process traces and output stats.
+type Traceagent struct {
 	*agent.Agent
 
 	// pchan specifies the channel that will be used to output Datadog Trace Agent API Payloads
@@ -41,12 +41,12 @@ type traceagent struct {
 
 // newAgent creates a new unstarted traceagent using the given context. Call Start to start the traceagent.
 // The out channel will receive outoing stats payloads resulting from spans ingested using the Ingest method.
-func NewAgent(ctx context.Context, out chan pb.StatsPayload) *traceagent {
-	return newAgentWithConfig(ctx, traceconfig.New(), out)
+func NewAgent(ctx context.Context, out chan pb.StatsPayload) *Traceagent {
+	return NewAgentWithConfig(ctx, traceconfig.New(), out)
 }
 
 // newAgentWithConfig creates a new traceagent with the given config cfg. Used in tests; use newAgent instead.
-func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan pb.StatsPayload) *traceagent {
+func NewAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out chan pb.StatsPayload) *Traceagent {
 	// disable the HTTP receiver
 	cfg.ReceiverPort = 0
 	// set the API key to succeed startup; it is never used nor needed
@@ -68,7 +68,7 @@ func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	// lastly, start the OTLP receiver, which will be used to introduce ResourceSpans into the traceagent,
 	// so that we can transform them to Datadog spans and receive stats.
 	a.OTLPReceiver = api.NewOTLPReceiver(pchan, cfg)
-	return &traceagent{
+	return &Traceagent{
 		Agent: a,
 		exit:  make(chan struct{}),
 		pchan: pchan,
@@ -76,7 +76,7 @@ func newAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 }
 
 // Start starts the traceagent, making it ready to ingest spans.
-func (p *traceagent) Start() {
+func (p *Traceagent) Start() {
 	// we don't need to start the full agent, so we only start a set of minimal
 	// components needed to compute stats:
 	for _, starter := range []interface{ Start() }{
@@ -98,7 +98,7 @@ func (p *traceagent) Start() {
 }
 
 // Stop stops the traceagent, making it unable to ingest spans. Do not call Ingest after Stop.
-func (p *traceagent) Stop() {
+func (p *Traceagent) Stop() {
 	for _, stopper := range []interface{ Stop() }{
 		p.Concentrator,
 		p.ClientStatsAggregator,
@@ -115,7 +115,7 @@ func (p *traceagent) Stop() {
 
 // goDrain drains the TraceWriter channel, ensuring it won't block. We don't need the traces,
 // nor do we have a running TraceWrite. We just want the outgoing stats.
-func (p *traceagent) goDrain() {
+func (p *Traceagent) goDrain() {
 	p.wg.Add(1)
 	go func() {
 		defer p.wg.Done()
@@ -132,7 +132,7 @@ func (p *traceagent) goDrain() {
 
 // Ingest processes the given spans within the traceagent and outputs stats through the output channel
 // provided to newAgent. Do not call Ingest on an unstarted or stopped traceagent.
-func (p *traceagent) Ingest(ctx context.Context, traces ptrace.Traces) {
+func (p *Traceagent) Ingest(ctx context.Context, traces ptrace.Traces) {
 	rspanss := traces.ResourceSpans()
 	for i := 0; i < rspanss.Len(); i++ {
 		rspans := rspanss.At(i)
@@ -148,7 +148,7 @@ func (p *traceagent) Ingest(ctx context.Context, traces ptrace.Traces) {
 
 // goProcesses runs the main loop which takes incoming payloads, processes them and generates stats.
 // It then picks up those stats and converts them to metrics.
-func (p *traceagent) goProcess() {
+func (p *Traceagent) goProcess() {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		p.wg.Add(1)
 		go func() {
@@ -167,7 +167,7 @@ func (p *traceagent) goProcess() {
 	}
 }
 
-var _ Ingester = (*traceagent)(nil)
+var _ Ingester = (*Traceagent)(nil)
 
 // An Ingester is able to ingest traces. Implemented by traceagent.
 type Ingester interface {

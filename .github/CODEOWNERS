@@ -120,6 +120,7 @@ internal/kubelet/                                        @open-telemetry/collect
 internal/metadataproviders/                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/sharedcomponent/                                @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/splunk/                                         @open-telemetry/collector-contrib-approvers @dmitryax
+internal/datadog/                                         @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
 internal/tools/                                          @open-telemetry/collector-contrib-approvers
 
 pkg/batchperresourceattr/                                @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
