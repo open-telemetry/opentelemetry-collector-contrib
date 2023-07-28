@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestSetupMetadataExporters(t *testing.T) {
@@ -197,7 +198,7 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 			rw := &resourceWatcher{
 				client:        newFakeClientWithAllResources(),
 				logger:        obsLogger,
-				dataCollector: collection.NewDataCollector(receivertest.NewNopCreateSettings(), []string{}, []string{}),
+				dataCollector: collection.NewDataCollector(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), []string{}, []string{}),
 				config:        &Config{},
 			}
 
