@@ -6,12 +6,13 @@ package k8sconfig
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/google/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
-	"os"
-	"time"
 )
 
 // LeaderElectionConfig is used to enable leader election
@@ -29,8 +30,7 @@ const (
 	defaultRetryPeriod      = 2 * time.Second
 )
 
-// NewResourceLock creates a new config map resource lock for use in a leader
-// election loop
+// NewResourceLock creates a new config map resource lock for use in a leader election loop
 func newResourceLock(client kubernetes.Interface, leaderElectionID string) (resourcelock.Interface, error) {
 	if leaderElectionID == "" {
 		leaderElectionID = defaultLeaderElectionID

@@ -89,7 +89,7 @@ exporter/zipkinexporter/                                 @open-telemetry/collect
 
 extension/asapauthextension/                             @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
-extension/basicauthextension/                            @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin
+extension/basicauthextension/                            @open-telemetry/collector-contrib-approvers @jpkrohling @svrakitin @frzifus
 extension/bearertokenauthextension/                      @open-telemetry/collector-contrib-approvers @jpkrohling @pavankrish123 @frzifus
 extension/encodingextension/                             @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/headerssetterextension/                        @open-telemetry/collector-contrib-approvers @jpkrohling
@@ -130,7 +130,7 @@ pkg/pdatatest/                                           @open-telemetry/collect
 pkg/pdatautil/                                           @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                 @open-telemetry/collector-contrib-approvers @mx-psi
 pkg/stanza/                                              @open-telemetry/collector-contrib-approvers @djaglowski
-pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
+pkg/translator/jaeger/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                     @open-telemetry/collector-contrib-approvers @gouthamve @jpkrohling @mar4uk
 pkg/translator/opencensus/                               @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 pkg/translator/prometheus/                               @open-telemetry/collector-contrib-approvers @dashpole @bertysentry

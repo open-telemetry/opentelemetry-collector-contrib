@@ -4,7 +4,6 @@
 package k8sobjectsreceiver
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"path/filepath"
 	"testing"
 	"time"
@@ -14,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 func TestLoadConfig(t *testing.T) {

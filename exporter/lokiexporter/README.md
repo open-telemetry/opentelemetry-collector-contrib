@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [observiq] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Floki%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Floki%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Floki%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Floki) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Floki%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Floki) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@gramidt](https://www.github.com/gramidt), [@gouthamve](https://www.github.com/gouthamve), [@jpkrohling](https://www.github.com/jpkrohling), [@mar4uk](https://www.github.com/mar4uk) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -19,12 +19,20 @@ Exports data via HTTP to [Loki](https://grafana.com/docs/loki/latest/).
 The following settings are required:
 
 - `endpoint` (no default): The target URL to send Loki log streams to (e.g.: `http://loki:3100/loki/api/v1/push`).
+- `default_labels_enabled` (optional): The map that allows to disable default labels: `exporter`, `job`, `instance`, `level`. 
+If `default_labels_enabled` is omitted then default labels will be added. If one of the labels is omitted in `default_labels_enabled` then this label will be added.
+**Important to remember**: 
+If all default labels are disabled and there are no other labels added then the log entry would be dropped because at least one label should be present to successfully put the log record into Loki.
+The metric `otelcol_lokiexporter_send_failed_due_to_missing_labels` shows how many log records were dropped because no labels were specified 
 
 Example:
 ```yaml
 exporters:
   loki:
     endpoint: https://loki.example.com:3100/loki/api/v1/push
+    default_labels_enabled:
+      exporter: false
+      job: true
 ```
 
 ## Configuration via attribute hints
@@ -70,12 +78,11 @@ processors:
         value: service.name, service.namespace
 ```
 
-Default labels:
+Default labels are always set unless they are disabled with `default_labels_enabled` setting:
 - `job=service.namespace/service.name`
 - `instance=service.instance.id`
 - `exporter=OTLP`
-
-`exporter=OTLP` is always set.
+- `level=severity`
 
 If `service.name` and `service.namespace` are present then `job=service.namespace/service.name` is set
 

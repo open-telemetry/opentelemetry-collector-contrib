@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib], [splunk], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8sobjects%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8sobjects%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8sobjects%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8sobjects) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8sobjects%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8sobjects) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
@@ -27,7 +27,7 @@ The following is example configuration
   k8sobjects:
     leader_election:
       enabled: true
-      leader_election_id: "opentelemetry-collector"
+      leader_election_id: "my-opentelemetry-collector"
     auth_type: serviceAccount
     objects:
       - name: pods
@@ -44,7 +44,7 @@ The following is example configuration
 Brief description of configuration properties:
 - `leader_election`: running in Kubernetes with leader election mode, this means that multiple instances are running, but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
   - `enabled` (default = `false`): whether run in leader election mode.
-  - `leader_election_id` (default = `opentelemetry-collector`): the identity name of holder. 
+  - `leader_election_id` (default = `e3385b9a.leader-election.opentelemetry-collector`): the identity name of holder. 
 - `auth_type` (default = `serviceAccount`): Determines how to authenticate to
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
