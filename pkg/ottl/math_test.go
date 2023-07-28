@@ -315,7 +315,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	)
 	zeroSecs, err := time.ParseDuration("0s")
 	require.NoError(t, err)
-	fourtyFiveHourseFourtyTwoMinutesTwetySevenSecs, err := time.ParseDuration("45h42m27s")
+	fourtySevenHourseFourtyTwoMinutesTwentySevenSecs, err := time.ParseDuration("47h42m27s")
 	require.NoError(t, err)
 	oneHundredOne, err := time.ParseDuration("101h101m101s101ns")
 	require.NoError(t, err)
@@ -387,10 +387,10 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 								Function: "Time",
 								Arguments: []value{
 									{
-										String: ottltest.Strp("1986-10-30T00:17:33 MST"),
+										String: ottltest.Strp("1986-10-30T00:17:33"),
 									},
 									{
-										String: ottltest.Strp("%Y-%m-%dT%H:%M:%S %Z"),
+										String: ottltest.Strp("%Y-%m-%dT%H:%M:%S"),
 									},
 								},
 							},
@@ -420,7 +420,7 @@ func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 					},
 				},
 			},
-			expected: -fourtyFiveHourseFourtyTwoMinutesTwetySevenSecs,
+			expected: -fourtySevenHourseFourtyTwoMinutesTwentySevenSecs,
 		},
 		{
 			name: "dur ADD time",
