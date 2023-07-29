@@ -210,6 +210,7 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 
 	out := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		experimentalmetricmetadata.ResourceID(podUIDLabel): {
+			EntityType:    "k8s.pod",
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{

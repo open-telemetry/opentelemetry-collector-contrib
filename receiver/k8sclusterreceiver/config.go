@@ -26,8 +26,15 @@ type Config struct {
 	// List of exporters to which metadata from this receiver should be forwarded to.
 	MetadataExporters []string `mapstructure:"metadata_exporters"`
 
-	// Whether OpenShift supprot should be enabled or not.
+	// Whether OpenShift support should be enabled or not.
 	Distribution string `mapstructure:"distribution"`
+
+	// Collection interval for metadata.
+	// Metadata of the particular entity in the cluster is collected when the entity changes.
+	// In addition metadata of all entities is collected periodically even if no changes happen.
+	// Setting the duration to 0 will disable periodic collection (however will not impact
+	// metadata collection on changes).
+	MetadataCollectionInterval time.Duration `mapstructure:"metadata_collection_interval"`
 }
 
 func (cfg *Config) Validate() error {

@@ -60,7 +60,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeState(1))
+			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -72,9 +72,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeState(1))
+			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -83,11 +85,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -129,7 +127,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "nginx.connections_handled":
 					assert.False(t, validatedMetrics["nginx.connections_handled"], "Found a duplicate in the metrics slice: nginx.connections_handled")
 					validatedMetrics["nginx.connections_handled"] = true
@@ -172,7 +170,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				}
 			}
 		})

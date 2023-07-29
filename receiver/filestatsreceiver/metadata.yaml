@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [atoulme]
 
 
 resource_attributes:

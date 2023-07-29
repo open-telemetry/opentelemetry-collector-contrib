@@ -56,6 +56,9 @@ type Provider interface {
 
 	// HostID returns Host Unique Identifier
 	HostID(ctx context.Context) (string, error)
+
+	// HostArch returns the host architecture
+	HostArch() (string, error)
 }
 
 type systemMetadataProvider struct {
@@ -143,4 +146,8 @@ func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
 	}
 
 	return "", fmt.Errorf("failed to obtain host id")
+}
+
+func (systemMetadataProvider) HostArch() (string, error) {
+	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
 }

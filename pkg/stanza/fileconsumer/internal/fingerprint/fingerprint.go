@@ -46,6 +46,24 @@ func (f Fingerprint) Copy() *Fingerprint {
 	}
 }
 
+// Equal returns true if the fingerprints have the same FirstBytes,
+// false otherwise. This does not compare other aspects of the fingerprints
+// because the primary purpose of a fingerprint is to convey a unique
+// identity, and only the FirstBytes field contributes to this goal.
+func (f Fingerprint) Equal(other *Fingerprint) bool {
+	l0 := len(other.FirstBytes)
+	l1 := len(f.FirstBytes)
+	if l0 != l1 {
+		return false
+	}
+	for i := 0; i < l0; i++ {
+		if other.FirstBytes[i] != f.FirstBytes[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // StartsWith returns true if the fingerprints are the same
 // or if the new fingerprint starts with the old one
 // This is important functionality for tracking new files,

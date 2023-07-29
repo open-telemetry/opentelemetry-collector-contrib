@@ -17,12 +17,14 @@ func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
+	rb *metadata.ResourceBuilder,
 	mbs *metadata.MetricsBuilders) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
 		time:                  time.Now(),
+		rb:                    rb,
 		mbs:                   mbs,
 	}
 	acc.nodeStats(summary.Node)

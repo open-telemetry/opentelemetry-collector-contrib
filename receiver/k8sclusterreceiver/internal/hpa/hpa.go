@@ -13,8 +13,8 @@ import (
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func GetMetricsBeta(set receiver.CreateSettings, hpa *autoscalingv2beta2.HorizontalPodAutoscaler) pmetric.Metrics {
@@ -24,7 +24,11 @@ func GetMetricsBeta(set receiver.CreateSettings, hpa *autoscalingv2beta2.Horizon
 	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
 	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
 	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
-	return mb.Emit(imetadata.WithK8sHpaUID(string(hpa.UID)), imetadata.WithK8sHpaName(hpa.Name), imetadata.WithK8sNamespaceName(hpa.Namespace))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sHpaUID(string(hpa.UID))
+	rb.SetK8sHpaName(hpa.Name)
+	rb.SetK8sNamespaceName(hpa.Namespace)
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetrics(set receiver.CreateSettings, hpa *autoscalingv2.HorizontalPodAutoscaler) pmetric.Metrics {
@@ -34,7 +38,11 @@ func GetMetrics(set receiver.CreateSettings, hpa *autoscalingv2.HorizontalPodAut
 	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
 	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
 	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
-	return mb.Emit(imetadata.WithK8sHpaUID(string(hpa.UID)), imetadata.WithK8sHpaName(hpa.Name), imetadata.WithK8sNamespaceName(hpa.Namespace))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sHpaUID(string(hpa.UID))
+	rb.SetK8sHpaName(hpa.Name)
+	rb.SetK8sNamespaceName(hpa.Namespace)
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(hpa *autoscalingv2.HorizontalPodAutoscaler) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

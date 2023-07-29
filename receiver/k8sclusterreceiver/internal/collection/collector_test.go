@@ -49,11 +49,13 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata:      commonPodMetadata,
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
+					EntityType:    "container",
 					ResourceIDKey: "container.id",
 					ResourceID:    "container-id",
 					Metadata: map[string]string{
@@ -74,6 +76,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
@@ -111,6 +114,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
@@ -126,6 +130,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewDaemonset("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-daemonset-1-uid"): {
+					EntityType:    "k8s.daemonset",
 					ResourceIDKey: "k8s.daemonset.uid",
 					ResourceID:    "test-daemonset-1-uid",
 					Metadata: map[string]string{
@@ -142,6 +147,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewDeployment("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-deployment-1-uid"): {
+					EntityType:    "k8s.deployment",
 					ResourceIDKey: "k8s.deployment.uid",
 					ResourceID:    "test-deployment-1-uid",
 					Metadata: map[string]string{
@@ -159,6 +165,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewHPA("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-hpa-1-uid"): {
+					EntityType:    "k8s.hpa",
 					ResourceIDKey: "k8s.hpa.uid",
 					ResourceID:    "test-hpa-1-uid",
 					Metadata: map[string]string{
@@ -175,6 +182,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewJob("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-job-1-uid"): {
+					EntityType:    "k8s.job",
 					ResourceIDKey: "k8s.job.uid",
 					ResourceID:    "test-job-1-uid",
 					Metadata: map[string]string{
@@ -193,6 +201,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewNode("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-node-1-uid"): {
+					EntityType:    "k8s.node",
 					ResourceIDKey: "k8s.node.uid",
 					ResourceID:    "test-node-1-uid",
 					Metadata: map[string]string{
@@ -210,6 +219,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewReplicaSet("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-replicaset-1-uid"): {
+					EntityType:    "k8s.replicaset",
 					ResourceIDKey: "k8s.replicaset.uid",
 					ResourceID:    "test-replicaset-1-uid",
 					Metadata: map[string]string{
@@ -234,6 +244,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			},
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-replicationcontroller-1-uid"): {
+					EntityType:    "k8s.replicationcontroller",
 					ResourceIDKey: "k8s.replicationcontroller.uid",
 					ResourceID:    "test-replicationcontroller-1-uid",
 					Metadata: map[string]string{

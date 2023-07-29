@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
@@ -30,6 +32,27 @@ const (
 )
 
 var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
+var testLatencyPolicy = []PolicyCfg{
+	{
+		sharedPolicyCfg: sharedPolicyCfg{
+			Name:       "test-policy",
+			Type:       Latency,
+			LatencyCfg: LatencyCfg{ThresholdMs: 1},
+		},
+	},
+}
+
+type TestPolicyEvaluator struct {
+	Started       chan struct{}
+	CouldContinue chan struct{}
+	pe            sampling.PolicyEvaluator
+}
+
+func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sampling.TraceData) (sampling.Decision, error) {
+	close(t.Started)
+	<-t.CouldContinue
+	return t.pe.Evaluate(ctx, traceID, trace)
+}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -99,6 +122,51 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
+}
+
+func TestConcurrentArrivalAndEvaluation(t *testing.T) {
+	traceIds, batches := generateIdsAndBatches(1)
+	evalStarted := make(chan struct{})
+	continueEvaluation := make(chan struct{})
+
+	var wg sync.WaitGroup
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testLatencyPolicy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 1 * time.Millisecond
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	tpe := &TestPolicyEvaluator{
+		Started:       evalStarted,
+		CouldContinue: continueEvaluation,
+		pe:            tsp.policies[0].evaluator,
+	}
+	tsp.policies[0].evaluator = tpe
+
+	for _, batch := range batches {
+		wg.Add(1)
+		go func(td ptrace.Traces) {
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			<-evalStarted
+			close(continueEvaluation)
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			wg.Done()
+		}(batch)
+	}
+
+	wg.Wait()
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {
@@ -623,6 +691,30 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		require.EqualValues(t, expected, got)
 	}
+}
+
+func TestPolicyLoggerAddsPolicyName(t *testing.T) {
+	// prepare
+	zc, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(zc)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+
+	cfg := &sharedPolicyCfg{
+		Type: AlwaysSample, // we test only one evaluator
+	}
+
+	evaluator, err := getSharedPolicyEvaluator(set, cfg)
+	require.NoError(t, err)
+
+	// test
+	_, err = evaluator.Evaluate(context.Background(), pcommon.TraceID{}, nil)
+	require.NoError(t, err)
+
+	// verify
+	assert.Len(t, logs.All(), 1)
+	assert.Equal(t, AlwaysSample, logs.All()[0].ContextMap()["policy"])
 }
 
 func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
