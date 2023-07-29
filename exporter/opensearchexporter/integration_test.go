@@ -155,7 +155,7 @@ func TestOpenSearchExporter(t *testing.T) {
 func validateBulkAction(t *testing.T, strMap map[string]any) {
 	val, exists := strMap["_index"]
 	require.True(t, exists)
-	require.Equal(t, val, "sso_traces-default-namespace")
+	require.Equal(t, val, "ss4o_traces-default-namespace")
 }
 
 // readTraces loads a yaml file at given filePath and converts the content to ptrace.Traces

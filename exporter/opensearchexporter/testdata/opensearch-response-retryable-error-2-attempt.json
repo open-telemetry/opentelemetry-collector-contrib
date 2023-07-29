@@ -4,7 +4,7 @@
     {
       "index": {
         "_id": "2brYj4kB8NX1kNtroB9F",
-        "_index": "sso_trace-default-namespace",
+        "_index": "ss4o_traces-default-namespace",
         "error": {
           "caused_by": {
             "reason": "Failed to execute global aggregators",

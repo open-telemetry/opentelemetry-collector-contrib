@@ -4,7 +4,7 @@
     {
       "index": {
         "_id": "1rrTj4kB8NX1kNtrCB8U",
-        "_index": "sso_trace-default-namespace",
+        "_index": "ss4o_traces-default-namespace",
         "_primary_term": 1,
         "_seq_no": 0,
         "_shards": {
@@ -20,7 +20,7 @@
     {
       "index": {
         "_id": "2arTj4kB8NX1kNtrCB8U",
-        "_index": "sso_trace-default-namespace",
+        "_index": "ss4o_traces-default-namespace",
         "_primary_term": 1,
         "_seq_no": 0,
         "_shards": {

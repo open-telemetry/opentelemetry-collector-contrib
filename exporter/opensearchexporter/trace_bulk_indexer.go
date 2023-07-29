@@ -215,7 +215,7 @@ func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.
 }
 
 func (tbi *traceBulkIndexer) getIndexName() string {
-	return strings.Join([]string{"sso_traces", tbi.dataset, tbi.namespace}, "-")
+	return strings.Join([]string{"ss4o_traces", tbi.dataset, tbi.namespace}, "-")
 }
 
 func newOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
