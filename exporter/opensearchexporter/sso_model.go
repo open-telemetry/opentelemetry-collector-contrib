@@ -54,6 +54,7 @@ type SSOSpan struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
 	} `json:"status"`
-	TraceID    string `json:"traceId"`
-	TraceState string `json:"traceState"`
+	Timestamp  time.Time `json:"@timestamp"`
+	TraceID    string    `json:"traceId"`
+	TraceState string    `json:"traceState"`
 }
