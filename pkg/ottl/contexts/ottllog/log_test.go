@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottllog
 
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"testing"
 	"time"
 
@@ -36,7 +26,7 @@ var (
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refLog, refIS, refResource := createTelemetry()
+	refLog, refIS, refResource := createTelemetry("string")
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
@@ -47,6 +37,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	newPMap := pcommon.NewMap()
 	pMap2 := newPMap.PutEmptyMap("k2")
 	pMap2.PutStr("k1", "string")
+
+	newBodyMap := pcommon.NewMap()
+	newBodyMap.PutStr("new", "value")
+
+	newBodySlice := pcommon.NewSlice()
+	newBodySlice.AppendEmpty().SetStr("data")
 
 	newMap := make(map[string]interface{})
 	newMap2 := make(map[string]interface{})
@@ -59,6 +55,7 @@ func Test_newPathGetSetter(t *testing.T) {
 		orig     interface{}
 		newVal   interface{}
 		modified func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
+		bodyType string
 	}{
 		{
 			name: "time_unix_nano",
@@ -124,6 +121,98 @@ func Test_newPathGetSetter(t *testing.T) {
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				log.Body().SetStr("head")
 			},
+		},
+		{
+			name: "map body",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+			},
+			orig: func() pcommon.Map {
+				log, _, _ := createTelemetry("map")
+				return log.Body().Map()
+			}(),
+			newVal: newBodyMap,
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				newBodyMap.CopyTo(log.Body().Map())
+			},
+			bodyType: "map",
+		},
+		{
+			name: "map body index",
+			path: []ottl.Field{
+				{
+					Name: "body",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("key"),
+						},
+					},
+				},
+			},
+			orig:   "val",
+			newVal: "val2",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().Map().PutStr("key", "val2")
+			},
+			bodyType: "map",
+		},
+		{
+			name: "slice body",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+			},
+			orig: func() pcommon.Slice {
+				log, _, _ := createTelemetry("slice")
+				return log.Body().Slice()
+			}(),
+			newVal: newBodySlice,
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				fmt.Println(log.Body().Slice().At(0).AsString())
+				newBodySlice.CopyTo(log.Body().Slice())
+				fmt.Println(log.Body().Slice().At(0).AsString())
+
+			},
+			bodyType: "slice",
+		},
+		{
+			name: "slice body index",
+			path: []ottl.Field{
+				{
+					Name: "body",
+					Keys: []ottl.Key{
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig:   "body",
+			newVal: "head",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().Slice().At(0).SetStr("head")
+			},
+			bodyType: "slice",
+		},
+		{
+			name: "body string",
+			path: []ottl.Field{
+				{
+					Name: "body",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   "1",
+			newVal: "2",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Body().SetStr("2")
+			},
+			bodyType: "int",
 		},
 		{
 			name: "flags",
@@ -213,8 +302,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: []ottl.Field{
 				{
-					Name:   "cache",
-					MapKey: ottltest.Strp("temp"),
+					Name: "cache",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("temp"),
+						},
+					},
 				},
 			},
 			orig:   nil,
@@ -240,8 +333,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -254,8 +351,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -268,8 +369,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -282,8 +387,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   float64(1.2),
@@ -296,8 +405,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -310,8 +423,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -327,8 +444,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -344,8 +465,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -361,8 +486,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -378,8 +507,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -395,8 +528,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -414,8 +551,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -427,6 +568,63 @@ func Test_newPathGetSetter(t *testing.T) {
 				m := log.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refLog.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				log.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				s := log.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 		{
@@ -474,7 +672,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			accessor, err := newPathGetSetter(tt.path)
 			assert.NoError(t, err)
 
-			log, il, resource := createTelemetry()
+			log, il, resource := createTelemetry(tt.bodyType)
 
 			tCtx := NewTransformContext(log, il, resource)
 			got, err := accessor.Get(context.Background(), tCtx)
@@ -485,11 +683,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.Nil(t, err)
 
-			exSpan, exIl, exRes := createTelemetry()
+			exLog, exIl, exRes := createTelemetry(tt.bodyType)
 			exCache := pcommon.NewMap()
-			tt.modified(exSpan, exIl, exRes, exCache)
+			tt.modified(exLog, exIl, exRes, exCache)
 
-			assert.Equal(t, exSpan, log)
+			assert.Equal(t, exLog, log)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
 			assert.Equal(t, exCache, tCtx.getCache())
@@ -497,13 +695,12 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 }
 
-func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
+func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {
 	log := plog.NewLogRecord()
 	log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(100)))
 	log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(500)))
 	log.SetSeverityNumber(plog.SeverityNumberFatal)
 	log.SetSeverityText("blue screen of death")
-	log.Body().SetStr("body")
 	log.Attributes().PutStr("str", "val")
 	log.Attributes().PutBool("bool", true)
 	log.Attributes().PutInt("int", 10)
@@ -536,6 +733,22 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	m := log.Attributes().PutEmptyMap("map")
 	m.PutStr("original", "map")
 
+	s := log.Attributes().PutEmptySlice("slice")
+	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
+
+	switch bodyType {
+	case "map":
+		log.Body().SetEmptyMap().PutStr("key", "val")
+	case "slice":
+		log.Body().SetEmptySlice().AppendEmpty().SetStr("body")
+	case "int":
+		log.Body().SetInt(1)
+	case "string":
+		fallthrough
+	default:
+		log.Body().SetStr("body")
+	}
+
 	log.SetDroppedAttributesCount(10)
 
 	log.SetFlags(plog.LogRecordFlags(4))
@@ -551,6 +764,32 @@ func createTelemetry() (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Re
 	log.Attributes().CopyTo(resource.Attributes())
 
 	return log, il, resource
+}
+
+func Test_InvalidBodyIndexing(t *testing.T) {
+	path := []ottl.Field{
+		{
+			Name: "body",
+			Keys: []ottl.Key{
+				{
+					String: ottltest.Strp("key"),
+				},
+			},
+		},
+	}
+
+	accessor, err := newPathGetSetter(path)
+	assert.NoError(t, err)
+
+	log, il, resource := createTelemetry("string")
+
+	tCtx := NewTransformContext(log, il, resource)
+	_, err = accessor.Get(context.Background(), tCtx)
+	assert.Error(t, err)
+
+	tCtx = NewTransformContext(log, il, resource)
+	err = accessor.Set(context.Background(), tCtx, nil)
+	assert.Error(t, err)
 }
 
 func Test_ParseEnum(t *testing.T) {

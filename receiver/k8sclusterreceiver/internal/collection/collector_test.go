@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package collection
 
@@ -18,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -59,32 +49,18 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata:      commonPodMetadata,
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
+					EntityType:    "container",
 					ResourceIDKey: "container.id",
 					ResourceID:    "container-id",
 					Metadata: map[string]string{
 						"container.status": "running",
 					},
-				},
-			},
-		},
-		{
-			name:          "Empty container id skips container resource",
-			metadataStore: &metadata.Store{},
-			resource: testutils.NewPodWithContainer(
-				"0",
-				testutils.NewPodSpecWithContainer("container-name"),
-				testutils.NewPodStatusWithContainer("container-name", ""),
-			),
-			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
-				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
-					ResourceIDKey: "k8s.pod.uid",
-					ResourceID:    "test-pod-0-uid",
-					Metadata:      commonPodMetadata,
 				},
 			},
 		},
@@ -100,6 +76,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			}, testutils.NewPodWithContainer("0", &corev1.PodSpec{}, &corev1.PodStatus{})),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
@@ -137,6 +114,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-pod-0-uid"): {
+					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
@@ -152,6 +130,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewDaemonset("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-daemonset-1-uid"): {
+					EntityType:    "k8s.daemonset",
 					ResourceIDKey: "k8s.daemonset.uid",
 					ResourceID:    "test-daemonset-1-uid",
 					Metadata: map[string]string{
@@ -168,6 +147,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewDeployment("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-deployment-1-uid"): {
+					EntityType:    "k8s.deployment",
 					ResourceIDKey: "k8s.deployment.uid",
 					ResourceID:    "test-deployment-1-uid",
 					Metadata: map[string]string{
@@ -185,6 +165,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewHPA("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-hpa-1-uid"): {
+					EntityType:    "k8s.hpa",
 					ResourceIDKey: "k8s.hpa.uid",
 					ResourceID:    "test-hpa-1-uid",
 					Metadata: map[string]string{
@@ -201,6 +182,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewJob("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-job-1-uid"): {
+					EntityType:    "k8s.job",
 					ResourceIDKey: "k8s.job.uid",
 					ResourceID:    "test-job-1-uid",
 					Metadata: map[string]string{
@@ -219,6 +201,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewNode("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-node-1-uid"): {
+					EntityType:    "k8s.node",
 					ResourceIDKey: "k8s.node.uid",
 					ResourceID:    "test-node-1-uid",
 					Metadata: map[string]string{
@@ -236,6 +219,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			resource:      testutils.NewReplicaSet("1"),
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-replicaset-1-uid"): {
+					EntityType:    "k8s.replicaset",
 					ResourceIDKey: "k8s.replicaset.uid",
 					ResourceID:    "test-replicaset-1-uid",
 					Metadata: map[string]string{
@@ -260,6 +244,7 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 			},
 			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 				experimentalmetricmetadata.ResourceID("test-replicationcontroller-1-uid"): {
+					EntityType:    "k8s.replicationcontroller",
 					ResourceIDKey: "k8s.replicationcontroller.uid",
 					ResourceID:    "test-replicationcontroller-1-uid",
 					Metadata: map[string]string{
@@ -274,10 +259,11 @@ func TestDataCollectorSyncMetadata(t *testing.T) {
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		logger := zap.New(observedLogger)
+		set := receivertest.NewNopCreateSettings()
+		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &DataCollector{
-				logger:                 logger,
+				settings:               set,
 				metadataStore:          tt.metadataStore,
 				nodeConditionsToReport: []string{},
 			}

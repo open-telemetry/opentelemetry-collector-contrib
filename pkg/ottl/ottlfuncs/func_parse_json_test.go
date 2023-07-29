@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
@@ -33,7 +22,7 @@ func Test_ParseJSON(t *testing.T) {
 	}{
 		{
 			name: "handle string",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":"string value"}`, nil
 				},
@@ -44,7 +33,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle bool",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":true}`, nil
 				},
@@ -55,7 +44,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle int",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":1}`, nil
 				},
@@ -66,7 +55,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle float",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":1.1}`, nil
 				},
@@ -77,7 +66,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle nil",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":null}`, nil
 				},
@@ -88,7 +77,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle array",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":["string","value"]}`, nil
 				},
@@ -101,7 +90,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "handle nested object",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test":{"nested":"true"}}`, nil
 				},
@@ -113,7 +102,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "updates existing",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"existing":"pass"}`, nil
 				},
@@ -124,7 +113,7 @@ func Test_ParseJSON(t *testing.T) {
 		},
 		{
 			name: "complex",
-			target: ottl.StandardTypeGetter[any, string]{
+			target: ottl.StandardStringGetter[any]{
 				Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 					return `{"test1":{"nested":"true"},"test2":"string","test3":1,"test4":1.1,"test5":[[1], [2, 3],[]],"test6":null}`, nil
 				},
@@ -148,9 +137,7 @@ func Test_ParseJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := ParseJSON(tt.target)
-			assert.NoError(t, err)
-
+			exprFunc := parseJSON(tt.target)
 			result, err := exprFunc(context.Background(), nil)
 			assert.NoError(t, err)
 
@@ -172,13 +159,12 @@ func Test_ParseJSON(t *testing.T) {
 }
 
 func Test_ParseJSON_Error(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, string]{
+	target := &ottl.StandardStringGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return 1, nil
 		},
 	}
-	exprFunc, err := ParseJSON[interface{}](target)
-	assert.NoError(t, err)
-	_, err = exprFunc(context.Background(), nil)
+	exprFunc := parseJSON[interface{}](target)
+	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

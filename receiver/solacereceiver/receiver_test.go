@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
@@ -57,10 +46,18 @@ func TestReceiveMessage(t *testing.T) {
 		expectedErr error
 		// validate constraints after the fact
 		validation func(t *testing.T, receiver *solaceTracesReceiver)
+		// traces provided by the trace function
+		traces ptrace.Traces
 	}{
 		{ // no errors, expect no error, validate metrics
 			name:       "Receive Message Success",
 			validation: validateMetrics(1, nil, nil, 1),
+			traces:     newTestTracesWithSpans(1),
+		},
+		{ // no errors, expect no error, validate metrics
+			name:       "Receive Message Multiple Traces Success",
+			validation: validateMetrics(1, nil, nil, 3),
+			traces:     newTestTracesWithSpans(3),
 		},
 		{ // fail at receiveMessage and expect the error
 			name:              "Receive Messages Error",
@@ -102,7 +99,6 @@ func TestReceiveMessage(t *testing.T) {
 			}
 
 			msg := &inboundMessage{}
-			trace := ptrace.NewTraces()
 
 			// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
 			var receiveMessagesCalled, ackCalled, nackCalled, unmarshalCalled bool
@@ -136,7 +132,7 @@ func TestReceiveMessage(t *testing.T) {
 				if testCase.unmarshalErr != nil {
 					return ptrace.Traces{}, testCase.unmarshalErr
 				}
-				return trace, nil
+				return testCase.traces, nil
 			}
 
 			err := receiver.receiveMessage(context.Background(), messagingService)
@@ -164,7 +160,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	receiveMessagesCalled := false
 	ctx, cancel := context.WithCancel(context.Background())
 	msg := &inboundMessage{}
-	trace := ptrace.NewTraces()
+	trace := newTestTracesWithSpans(1)
 	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
 		assert.False(t, receiveMessagesCalled)
 		receiveMessagesCalled = true
@@ -613,4 +609,13 @@ func (m *mockUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, er
 		return m.unmarshalFunc(message)
 	}
 	panic("did not expect unmarshal to be called")
+}
+
+func newTestTracesWithSpans(spanCount int) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	spans := traces.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+	for i := 0; i < spanCount; i++ {
+		spans.Spans().AppendEmpty()
+	}
+	return traces
 }

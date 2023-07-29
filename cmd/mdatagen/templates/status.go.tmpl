@@ -2,8 +2,17 @@
 
 package {{ .Package }}
 
+{{- if .Status.Stability }}
 import (
     "go.opentelemetry.io/collector/component"
 )
+{{- end }}
 
-const Stability = component.StabilityLevel{{ casesTitle .Status.Stability }}
+const (
+	Type = "{{ .Type }}"
+	{{- range $stability, $signals := .Status.Stability }}
+	{{- range $signal := $signals }}
+	{{ toCamelCase $signal }}Stability = component.StabilityLevel{{ casesTitle $stability }}
+	{{- end }}
+	{{- end }}
+)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
@@ -158,15 +147,15 @@ func TestMetricSettings(t *testing.T) {
 	mockClient := new(MockClient)
 	mockClient.On("GetStats", "_local").Return(getStats("response_2.31.json"))
 	mbc := metadata.DefaultMetricsBuilderConfig()
-	mbc.Metrics = metadata.MetricsSettings{
-		CouchdbAverageRequestTime: metadata.MetricSettings{Enabled: false},
-		CouchdbDatabaseOpen:       metadata.MetricSettings{Enabled: false},
-		CouchdbDatabaseOperations: metadata.MetricSettings{Enabled: true},
-		CouchdbFileDescriptorOpen: metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdBulkRequests:  metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdRequests:      metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdResponses:     metadata.MetricSettings{Enabled: false},
-		CouchdbHttpdViews:         metadata.MetricSettings{Enabled: false},
+	mbc.Metrics = metadata.MetricsConfig{
+		CouchdbAverageRequestTime: metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOpen:       metadata.MetricConfig{Enabled: false},
+		CouchdbDatabaseOperations: metadata.MetricConfig{Enabled: true},
+		CouchdbFileDescriptorOpen: metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdBulkRequests:  metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdRequests:      metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdResponses:     metadata.MetricConfig{Enabled: false},
+		CouchdbHttpdViews:         metadata.MetricConfig{Enabled: false},
 	}
 	cfg := &Config{
 		HTTPClientSettings:   confighttp.HTTPClientSettings{},

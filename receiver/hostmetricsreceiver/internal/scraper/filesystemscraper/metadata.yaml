@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/filesystem
+type: hostmetricsreceiver/filesystem
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 

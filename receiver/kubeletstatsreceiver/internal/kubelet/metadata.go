@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
@@ -60,16 +49,15 @@ func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
-	DetailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)
+	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
 }
 
-func NewMetadata(
-	labels []MetadataLabel, podsMetadata *v1.PodList,
-	detailedPVCResourceGetter func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error)) Metadata {
+func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
+	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
 	return Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
-		DetailedPVCResourceGetter: detailedPVCResourceGetter,
+		DetailedPVCResourceSetter: detailedPVCResourceSetter,
 	}
 }
 
@@ -82,45 +70,43 @@ func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
 }
 
 // getExtraResources gets extra resources based on provided metadata label.
-func (m *Metadata) getExtraResources(podRef stats.PodReference, extraMetadataLabel MetadataLabel,
-	extraMetadataFrom string) ([]metadata.ResourceMetricsOption, error) {
+func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.PodReference,
+	extraMetadataLabel MetadataLabel, extraMetadataFrom string) error {
 	// Ensure MetadataLabel exists before proceeding.
 	if !m.Labels[extraMetadataLabel] || len(m.Labels) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	// Cannot proceed, if metadata is unavailable.
 	if m.PodsMetadata == nil {
-		return nil, errors.New("pods metadata were not fetched")
+		return errors.New("pods metadata were not fetched")
 	}
 
 	switch extraMetadataLabel {
 	case MetadataLabelContainerID:
 		containerID, err := m.getContainerID(podRef.UID, extraMetadataFrom)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		return []metadata.ResourceMetricsOption{metadata.WithContainerID(containerID)}, nil
+		rb.SetContainerID(containerID)
 	case MetadataLabelVolumeType:
 		volume, err := m.getPodVolume(podRef.UID, extraMetadataFrom)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		ro := getResourcesFromVolume(volume)
+		setResourcesFromVolume(rb, volume)
 
 		// Get more labels from PersistentVolumeClaim volume type.
 		if volume.PersistentVolumeClaim != nil {
 			volCacheID := fmt.Sprintf("%s/%s", podRef.UID, extraMetadataFrom)
-			pvcResources, err := m.DetailedPVCResourceGetter(volCacheID, volume.PersistentVolumeClaim.ClaimName, podRef.Namespace)
+			err := m.DetailedPVCResourceSetter(rb, volCacheID, volume.PersistentVolumeClaim.ClaimName, podRef.Namespace)
 			if err != nil {
-				return nil, fmt.Errorf("failed to set labels from volume claim: %w", err)
+				return fmt.Errorf("failed to set labels from volume claim: %w", err)
 			}
-			ro = append(ro, pvcResources...)
 		}
-		return ro, nil
 	}
-	return nil, nil
+	return nil
 }
 
 // getContainerID retrieves container id from metadata for given pod UID and container name,

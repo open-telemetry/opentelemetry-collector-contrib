@@ -6,4 +6,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const Stability = component.StabilityLevelAlpha
+const (
+	Type               = "headers_setter"
+	ExtensionStability = component.StabilityLevelAlpha
+)

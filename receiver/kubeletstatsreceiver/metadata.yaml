@@ -1,4 +1,12 @@
-name: kubeletstatsreceiver
+type: kubeletstats
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, splunk, sumo]
+  codeowners:
+    active: [dmitryax]
 
 resource_attributes:
   k8s.node.name:

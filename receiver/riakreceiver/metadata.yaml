@@ -1,4 +1,12 @@
-name: riakreceiver
+type: riak
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, armstrmi]
 
 resource_attributes:
   riak.node.name:

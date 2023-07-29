@@ -1,16 +1,7 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -23,16 +14,18 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	exp "go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter/internal/metadata"
 )
 
 // NewFactory by Coralogix
 func NewFactory() exp.Factory {
 	return exp.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		exp.WithTraces(createTraceExporter, stability),
-		exp.WithMetrics(createMetricsExporter, stability),
-		exp.WithLogs(createLogsExporter, component.StabilityLevelAlpha),
+		exp.WithTraces(createTraceExporter, metadata.TracesStability),
+		exp.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exp.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -41,6 +34,12 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		DomainSettings: configgrpc.GRPCClientSettings{
+			Compression: configcompression.Gzip,
+		},
+		GRPCClientSettings: configgrpc.GRPCClientSettings{
+			Endpoint: "https://",
+		},
 		// Traces GRPC client
 		Traces: configgrpc.GRPCClientSettings{
 			Endpoint:    "https://",

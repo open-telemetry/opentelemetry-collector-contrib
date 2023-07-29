@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -755,7 +744,7 @@ func TestConsumeMetadata(t *testing.T) {
 		excludeProperties      []dpfilters.PropertyFilter
 		expectedDimensionKey   string
 		expectedDimensionValue string
-		sendDelay              int
+		sendDelay              time.Duration
 		shouldNotSendUpdate    bool
 	}{
 		{
@@ -928,7 +917,7 @@ func TestConsumeMetadata(t *testing.T) {
 			},
 			expectedDimensionKey:   "key",
 			expectedDimensionValue: "id",
-			sendDelay:              1,
+			sendDelay:              time.Second,
 		},
 		{
 			name: "Test updates on dimensions with nonalphanumeric characters (other than the default allow list)",
@@ -1044,14 +1033,14 @@ func TestConsumeMetadata(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				context.Background(),
 				dimensions.DimensionClientOptions{
-					Token:                 "foo",
-					APIURL:                serverURL,
-					LogUpdates:            true,
-					Logger:                logger,
-					SendDelay:             tt.sendDelay,
-					PropertiesMaxBuffered: 10,
-					MetricsConverter:      *converter,
-					ExcludeProperties:     tt.excludeProperties,
+					Token:             "foo",
+					APIURL:            serverURL,
+					LogUpdates:        true,
+					Logger:            logger,
+					SendDelay:         tt.sendDelay,
+					MaxBuffered:       10,
+					MetricsConverter:  *converter,
+					ExcludeProperties: tt.excludeProperties,
 				})
 			dimClient.Start()
 
@@ -1075,7 +1064,7 @@ func TestConsumeMetadata(t *testing.T) {
 			select {
 			case <-c:
 			// wait 500ms longer than send delay
-			case <-time.After(time.Duration(tt.sendDelay)*time.Second + 500*time.Millisecond):
+			case <-time.After(tt.sendDelay + 500*time.Millisecond):
 				require.True(t, tt.shouldNotSendUpdate, "timeout waiting for response")
 			}
 
@@ -1403,14 +1392,14 @@ func TestTLSAPIConnection(t *testing.T) {
 			dimClient := dimensions.NewDimensionClient(
 				cancellable,
 				dimensions.DimensionClientOptions{
-					Token:                 "",
-					APIURL:                serverURL,
-					LogUpdates:            true,
-					Logger:                logger,
-					SendDelay:             1,
-					PropertiesMaxBuffered: 10,
-					MetricsConverter:      *converter,
-					APITLSConfig:          apiTLSCfg,
+					Token:            "",
+					APIURL:           serverURL,
+					LogUpdates:       true,
+					Logger:           logger,
+					SendDelay:        1,
+					MaxBuffered:      10,
+					MetricsConverter: *converter,
+					APITLSConfig:     apiTLSCfg,
 				})
 			dimClient.Start()
 

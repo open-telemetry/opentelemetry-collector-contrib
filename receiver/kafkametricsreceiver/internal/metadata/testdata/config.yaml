@@ -23,7 +23,6 @@ all_set:
       enabled: true
     kafka.topic.partitions:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     kafka.brokers:
@@ -48,4 +47,3 @@ none_set:
       enabled: false
     kafka.topic.partitions:
       enabled: false
-  resource_attributes:

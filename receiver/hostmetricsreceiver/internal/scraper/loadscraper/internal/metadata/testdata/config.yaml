@@ -7,7 +7,6 @@ all_set:
       enabled: true
     system.cpu.load_average.5m:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.cpu.load_average.15m:
@@ -16,4 +15,3 @@ none_set:
       enabled: false
     system.cpu.load_average.5m:
       enabled: false
-  resource_attributes:

@@ -1,6 +1,13 @@
-name: oauth2clientauthextension
+type: oauth2client
 
 status:
-  type: extension
-  stability: beta
-  distributions: [contrib]
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - redhat
+  - sumo
+  codeowners:
+    active: [pavankrish123, jpkrohling]

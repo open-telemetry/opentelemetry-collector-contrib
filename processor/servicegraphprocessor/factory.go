@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package servicegraphprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor"
 
@@ -30,12 +19,12 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the processor.
-	stability                = component.StabilityLevelAlpha
-	connectorStability       = component.StabilityLevelDevelopment
-	virtualNodeFeatureGateID = "processor.servicegraph.virtualNode"
+	connectorStability                    = component.StabilityLevelDevelopment
+	virtualNodeFeatureGateID              = "processor.servicegraph.virtualNode"
+	legacyLatencyMetricNamesFeatureGateID = "processor.servicegraph.legacyLatencyMetricNames"
 )
 
-var virtualNodeFeatureGate *featuregate.Gate
+var virtualNodeFeatureGate, legacyMetricNamesFeatureGate *featuregate.Gate
 
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -43,6 +32,13 @@ func init() {
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
+	)
+	// TODO: Remove this feature gate when the legacy metric names are removed.
+	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		legacyLatencyMetricNamesFeatureGateID,
+		featuregate.StageAlpha, // Alpha because we want it disabled by default.
+		featuregate.WithRegisterDescription("When enabled, processor uses legacy latency metric names."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
 	)
 }
 
@@ -54,20 +50,21 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(
 		typeStr,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithTraces(createTracesProcessor, connectorStability),
 	)
 }
 
-// NewConnectorFactory creates a factory for the servicegraph connector.
-func NewConnectorFactory() connector.Factory {
-	// TODO: Handle this err
-	_ = view.Register(serviceGraphProcessorViews()...)
-
-	return connector.NewFactory(
-		typeStr,
-		createDefaultConfig,
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, connectorStability),
-	)
+// NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
+func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
+	return func() connector.Factory {
+		// TODO: Handle this err
+		_ = view.Register(serviceGraphProcessorViews()...)
+		return connector.NewFactory(
+			cfgType,
+			createDefaultConfig,
+			connector.WithTracesToMetrics(createTracesToMetricsConnector, tracesToMetricsStability),
+		)
+	}
 }
 
 func createDefaultConfig() component.Config {

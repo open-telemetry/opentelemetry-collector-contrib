@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -54,7 +43,7 @@ type scraper struct {
 	skipScrape         bool
 
 	// for mocking
-	bootTime      func() (uint64, error)
+	bootTime      func(context.Context) (uint64, error)
 	pageFileStats func() ([]*pageFileStats, error)
 }
 
@@ -64,13 +53,13 @@ func newPagingScraper(_ context.Context, settings receiver.CreateSettings, cfg *
 		settings:           settings,
 		config:             cfg,
 		perfCounterScraper: &perfcounters.PerfLibScraper{},
-		bootTime:           host.BootTime,
+		bootTime:           host.BootTimeWithContext,
 		pageFileStats:      getPageFileStats,
 	}
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
