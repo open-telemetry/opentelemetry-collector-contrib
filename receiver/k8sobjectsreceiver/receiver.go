@@ -78,20 +78,22 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 
 	kr.setting.Logger.Info("Object Receiver started")
 
-	if kr.leaderElection.Enabled {
+	runFunc := func(_ context.Context) {
+		kr.logger.Info("leader election got")
+		for _, object := range kr.objects {
+			kr.start(ctx, object)
+		}
+	}
+
+	if kr.leaderElection.Enabled && kr.leaderElectionClient != nil {
 		leaderLost := make(chan struct{})
 
 		kr.mu.Lock()
 		kr.stopperChanList = append(kr.stopperChanList, leaderLost)
 		kr.mu.Unlock()
 
-		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection.LeaderElectionID, kr.leaderElectionClient,
-			func(_ context.Context) {
-				kr.logger.Info("leader election got")
-				for _, object := range kr.objects {
-					kr.start(ctx, object)
-				}
-			}, func() {
+		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection.LeaderElectionID, kr.leaderElectionClient, runFunc,
+			func() {
 				kr.logger.Error("leader election lost")
 				leaderLost <- struct{}{}
 			})
@@ -99,6 +101,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 			kr.logger.Error("create leader elector failed")
 		}
 		go lr.Run(ctx)
+	} else {
+		runFunc(ctx)
 	}
 
 	return nil

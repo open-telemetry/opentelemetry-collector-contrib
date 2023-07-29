@@ -26,6 +26,10 @@ func TestDefaultConfig(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		LeaderElection: k8sconfig.LeaderElectionConfig{
+			Enabled:          false,
+			LeaderElectionID: "e3385b9a.leader-election.opentelemetry-collector",
+		},
 	}, rCfg)
 }
 
