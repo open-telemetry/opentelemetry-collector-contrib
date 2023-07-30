@@ -86,6 +86,8 @@ func (trie *Trie) Delete(key []byte) bool {
 
 func (trie *Trie) DeleteNode(node *Trie) bool {
 	if !node.isEnd {
+		// someonce called delete on the node which is not end of current path
+		// exit straightaway and return false
 		return false
 	}
 	node.isEnd = false
@@ -94,6 +96,8 @@ func (trie *Trie) DeleteNode(node *Trie) bool {
 		// iterate backwards over path, until we reach root
 		for node != trie {
 			parent := node.parent
+
+			// Find the node in parent's children with matching key
 			for key, child := range parent.children {
 				if node == child {
 					// delete the key from parent's map
