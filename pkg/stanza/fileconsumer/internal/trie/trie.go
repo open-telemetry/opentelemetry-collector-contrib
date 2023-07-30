@@ -15,6 +15,7 @@ package trie // import "github.com/open-telemetry/opentelemetry-collector-contri
 type Trie struct {
 	isEnd    bool
 	children map[byte]*Trie
+	parent   *Trie
 }
 
 // NewTrie allocates and returns a new *Trie.
@@ -47,19 +48,20 @@ func (trie *Trie) Put(key []byte) {
 	shouldPush := false
 	var last *Trie
 	for _, r := range key {
-		if node.isEnd {
-			last = node
-			shouldPush = true
-		}
 		child, ok := node.children[r]
 		if !ok {
 			if node.children == nil {
 				node.children = map[byte]*Trie{}
 			}
 			child = NewTrie()
+			child.parent = node
 			node.children[r] = child
 		}
 		node = child
+		if node.isEnd {
+			last = node
+			shouldPush = true
+		}
 	}
 	if shouldPush {
 		last.isEnd = false
@@ -71,24 +73,35 @@ func (trie *Trie) Put(key []byte) {
 // If the node or any of its ancestors
 // becomes childless as a result, it is removed from the trie.
 func (trie *Trie) Delete(key []byte) bool {
-	var path []*Trie // record ancestors to check later
 	node := trie
 	for _, b := range key {
-		path = append(path, node)
 		node = node.children[b]
 		if node == nil {
 			// node does not exist
 			return false
 		}
 	}
+	return trie.DeleteNode(node)
+}
+
+func (trie *Trie) DeleteNode(node *Trie) bool {
+	if !node.isEnd {
+		return false
+	}
 	node.isEnd = false
-	// if leaf, remove it from its parent's children map. Repeat for ancestor path.
+	// if leaf, remove it from its parent's children map.
 	if node.isLeaf() {
-		// iterate backwards over path
-		for i := len(path) - 1; i >= 0; i-- {
-			parent := path[i]
-			b := key[i]
-			delete(parent.children, b)
+		// iterate backwards over path, until we reach root
+		for node != trie {
+			parent := node.parent
+			for key, child := range parent.children {
+				if node == child {
+					// delete the key from parent's map
+					delete(parent.children, key)
+					break
+				}
+			}
+
 			if !parent.isLeaf() {
 				// parent has other children, stop
 				break
@@ -98,6 +111,7 @@ func (trie *Trie) Delete(key []byte) bool {
 				// Parent has a value, stop
 				break
 			}
+			node = node.parent
 		}
 	}
 	return true // node (internal or not) existed and its value was nil'd
