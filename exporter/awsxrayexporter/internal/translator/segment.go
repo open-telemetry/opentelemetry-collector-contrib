@@ -1,24 +1,13 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"net/url"
 	"regexp"
 	"strings"
@@ -42,6 +31,12 @@ const (
 	OriginEB         = "AWS::ElasticBeanstalk::Environment"
 	OriginEKS        = "AWS::EKS::Container"
 	OriginAppRunner  = "AWS::AppRunner::Service"
+)
+
+// x-ray only span attributes - https://github.com/open-telemetry/opentelemetry-java-contrib/pull/802
+const (
+	awsLocalService  = "aws.local.service"
+	awsRemoteService = "aws.remote.service"
 )
 
 var (
@@ -99,6 +94,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		return nil, err
 	}
 
+	attributes := span.Attributes()
+
 	var (
 		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
 		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
@@ -108,18 +105,37 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		awsfiltered, aws                                   = makeAws(causefiltered, resource, logGroupNames)
 		service                                            = makeService(resource)
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
-		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
+		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
+		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
 		name                                               string
 		namespace                                          string
 	)
 
+	if makeSpanLinkErr != nil {
+		return nil, makeSpanLinkErr
+	}
+
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
-	attributes := span.Attributes()
+	// support x-ray specific service name attributes as segment name if it exists
+	if span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer {
+		if localServiceName, ok := attributes.Get(awsLocalService); ok {
+			name = localServiceName.Str()
+		}
+	}
+	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
+			name = remoteServiceName.Str()
+		}
+	}
 
-	// peer.service should always be prioritized for segment names when set because it is what the user decided.
-	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.Str()
+	// peer.service should always be prioritized for segment names when it set by users and
+	// the new x-ray specific service name attributes are not found
+	if name == "" {
+		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+			name = peerService.Str()
+		}
 	}
 
 	if namespace == "" {
@@ -210,6 +226,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		Annotations: annotations,
 		Metadata:    metadata,
 		Type:        awsxray.String(segmentType),
+		Links:       spanLinks,
 	}, nil
 }
 
@@ -318,6 +335,19 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 
 func timestampToFloatSeconds(ts pcommon.Timestamp) float64 {
 	return float64(ts) / float64(time.Second)
+}
+
+func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []string, unfilteredAttributes pcommon.Map) map[string]pcommon.Value {
+	for _, name := range indexedAttrs {
+		// Allow attributes that have been filtered out before if explicitly added to be annotated/indexed
+		_, isAnnotatable := attributes[name]
+		unfilteredAttribute, attributeExists := unfilteredAttributes.Get(name)
+		if !isAnnotatable && attributeExists {
+			attributes[name] = unfilteredAttribute
+		}
+	}
+
+	return attributes
 }
 
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver
 
@@ -29,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -42,11 +32,14 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
+	set := receivertest.NewNopCreateSettings()
+	set.Logger = logger
+
 	conf := &Config{
 		ListenAddress: "127.0.0.1:0",
 	}
 
-	receiver, err := newFluentReceiver(logger, conf, next)
+	receiver, err := newFluentReceiver(set, conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 
@@ -342,7 +335,7 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := newFluentReceiver(zap.NewNop(), conf, next)
+	receiver, err := newFluentReceiver(receivertest.NewNopCreateSettings(), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 

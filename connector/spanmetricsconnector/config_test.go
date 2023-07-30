@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanmetricsconnector
 
@@ -22,60 +11,110 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
 	defaultMethod := "GET"
-	// Need to set this gate to load connector configs
-	require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set("service.connectors", false))
-	}()
-
-	// Prepare
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
-
-	factories.Receivers["nop"] = receivertest.NewNopFactory()
-	factories.Connectors[typeStr] = NewFactory()
-	factories.Exporters["nop"] = exportertest.NewNopFactory()
-
-	// Test
-	simpleCfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-simplest-connector.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, simpleCfg)
-	assert.Equal(t,
-		&Config{
-			AggregationTemporality: cumulative,
-			DimensionsCacheSize:    defaultDimensionsCacheSize,
-			MetricsFlushInterval:   15 * time.Second,
+	tests := []struct {
+		id           component.ID
+		expected     component.Config
+		errorMessage string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.Type, "default"),
+			expected: createDefaultConfig(),
 		},
-		simpleCfg.Connectors[component.NewID(typeStr)],
-	)
-
-	fullCfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-full-connector.yaml"), factories)
-	require.NoError(t, err)
-	require.NotNil(t, fullCfg)
-	assert.Equal(t,
-		&Config{
-			LatencyHistogramBuckets: []time.Duration{100000, 1000000, 2000000, 6000000, 10000000, 100000000, 250000000},
-			Dimensions: []Dimension{
-				{Name: "http.method", Default: &defaultMethod},
-				{Name: "http.status_code", Default: (*string)(nil)},
+		{
+			id:       component.NewIDWithName(metadata.Type, "default_explicit_histogram"),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "full"),
+			expected: &Config{
+				AggregationTemporality: delta,
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+					{Name: "http.status_code", Default: (*string)(nil)},
+				},
+				DimensionsCacheSize:  1500,
+				MetricsFlushInterval: 30 * time.Second,
+				Exemplars: ExemplarsConfig{
+					Enabled: true,
+				},
+				Histogram: HistogramConfig{
+					Unit: metrics.Seconds,
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{
+							10 * time.Millisecond,
+							100 * time.Millisecond,
+							250 * time.Millisecond,
+						},
+					},
+				},
+			}},
+		{
+			id: component.NewIDWithName(metadata.Type, "exponential_histogram"),
+			expected: &Config{
+				AggregationTemporality: cumulative,
+				DimensionsCacheSize:    1000,
+				MetricsFlushInterval:   15 * time.Second,
+				Histogram: HistogramConfig{
+					Unit: metrics.Milliseconds,
+					Exponential: &ExponentialHistogramConfig{
+						MaxSize: 10,
+					},
+				},
 			},
-			AggregationTemporality: delta,
-			DimensionsCacheSize:    1500,
-			MetricsFlushInterval:   30 * time.Second,
 		},
-		fullCfg.Connectors[component.NewID(typeStr)],
-	)
+		{
+			id:           component.NewIDWithName(metadata.Type, "exponential_and_explicit_histogram"),
+			errorMessage: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_histogram_unit"),
+			errorMessage: "unknown Unit \"h\"",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exemplars_enabled"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				DimensionsCacheSize:    defaultDimensionsCacheSize,
+				MetricsFlushInterval:   15 * time.Second,
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit},
+				Exemplars:              ExemplarsConfig{Enabled: true},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			err = component.UnmarshalConfig(sub, cfg)
+
+			if tt.expected == nil {
+				err = multierr.Append(err, component.ValidateConfig(cfg))
+				assert.ErrorContains(t, err, tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
+		})
+	}
 }
 
 func TestGetAggregationTemporality(t *testing.T) {

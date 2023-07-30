@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package openshift // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 
@@ -20,11 +9,12 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
-	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
 const (
@@ -48,67 +38,51 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	return &detector{
 		logger:   set.Logger,
 		provider: ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
+		rb:       metadata.NewResourceBuilder(userCfg.ResourceAttributes),
 	}, nil
 }
 
 type detector struct {
 	logger   *zap.Logger
 	provider ocp.Provider
+	rb       *metadata.ResourceBuilder
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
 	infra, err := d.provider.Infrastructure(ctx)
 	if err != nil {
 		d.logger.Error("OpenShift detector metadata retrieval failed", zap.Error(err))
 		// return an empty Resource and no error
-		return res, "", nil
-	}
-
-	var (
-		region   string
-		platform string
-		provider string
-	)
-
-	switch strings.ToLower(infra.Status.PlatformStatus.Type) {
-	case "aws":
-		provider = conventions.AttributeCloudProviderAWS
-		platform = conventions.AttributeCloudPlatformAWSOpenshift
-		region = strings.ToLower(infra.Status.PlatformStatus.Aws.Region)
-	case "azure":
-		provider = conventions.AttributeCloudProviderAzure
-		platform = conventions.AttributeCloudPlatformAzureOpenshift
-		region = strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName)
-	case "gcp":
-		provider = conventions.AttributeCloudProviderGCP
-		platform = conventions.AttributeCloudPlatformGoogleCloudOpenshift
-		region = strings.ToLower(infra.Status.PlatformStatus.GCP.Region)
-	case "ibmcloud":
-		provider = conventions.AttributeCloudProviderIbmCloud
-		platform = conventions.AttributeCloudPlatformIbmCloudOpenshift
-		region = strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location)
-	case "openstack":
-		region = strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName)
+		return pcommon.NewResource(), "", nil
 	}
 
 	if infra.Status.InfrastructureName != "" {
-		attrs.PutStr(conventions.AttributeK8SClusterName, infra.Status.InfrastructureName)
+		d.rb.SetK8sClusterName(infra.Status.InfrastructureName)
 	}
-	if provider != "" {
-		attrs.PutStr(conventions.AttributeCloudProvider, provider)
-	}
-	if platform != "" {
-		attrs.PutStr(conventions.AttributeCloudPlatform, platform)
-	}
-	if region != "" {
-		attrs.PutStr(conventions.AttributeCloudRegion, region)
+
+	switch strings.ToLower(infra.Status.PlatformStatus.Type) {
+	case "aws":
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Aws.Region))
+	case "azure":
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName))
+	case "gcp":
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.GCP.Region))
+	case "ibmcloud":
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderIbmCloud)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformIbmCloudOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location))
+	case "openstack":
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName))
 	}
 
 	// TODO(frzifus): support conventions openshift and kubernetes cluster version.
 	// SEE: https://github.com/open-telemetry/opentelemetry-specification/issues/2913
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

@@ -18,6 +18,8 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include_file_path`             | `false`          | Whether to add the file path as the attribute `log.file.path`. |
 | `include_file_name_resolved`    | `false`          | Whether to add the file name after symlinks resolution as the attribute `log.file.name_resolved`. |
 | `include_file_path_resolved`    | `false`          | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`. |
+| `preserve_leading_whitespaces`  | `false`          | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
+| `preserve_trailing_whitespaces` | `false`          | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `start_at`                      | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. This setting will be ignored if previously read file offsets are retrieved from a persistence mechanism. |
 | `fingerprint_size`              | `1kb`            | The number of bytes with which to identify a file. The first bytes in the file are used as the fingerprint. Decreasing this value at any point will cause existing fingerprints to forgotten, meaning that all files will be read from the beginning (one time). |
 | `max_log_size`                  | `1MiB`           | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory |.
@@ -26,6 +28,9 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `delete_after_read`             | `false`          | If `true`, each log file will be read and then immediately deleted. Requires that the `filelog.allowFileDeletion` feature gate is enabled. |
 | `attributes`                    | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`                      | {}               | A map of `key: value` pairs to add to the entry's resource. |
+| `header`                        | nil              | Specifies options for parsing header metadata. Requires that the `filelog.allowHeaderMetadataParsing` feature gate is enabled. See below for details. |
+| `header.pattern`      | required for header metadata parsing | A regex that matches every header line. |
+| `header.metadata_operators`     | required for header metadata parsing | A list of operators used to parse metadata from the header. |
 
 Note that by default, no logs will be read unless the monitored file is actively being written to because `start_at` defaults to `end`.
 
@@ -63,6 +68,13 @@ To avoid the data loss, choose move/create rotation method and set `max_concurre
 
 Other less common encodings are supported on a best-effort basis. See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml) for other encodings available.
 
+### Header Metadata Parsing
+
+To enable header metadata parsing, the `filelog.allowHeaderMetadataParsing` feature gate must be set, and `start_at` must be `beginning`.
+
+If set, the file input operator will attempt to read a header from the start of the file. Each header line must match the `header.pattern` pattern. Each line is emitted into a pipeline defined by `header.metadata_operators`. Any attributes on the resultant entry from the embedded pipeline will be merged with the attributes from previous lines (attribute collisions will be resolved with an upsert strategy). After all header lines are read, the final merged header attributes will be present on every log line that is emitted for the file.
+
+The header lines are not emitted to the output operator.
 
 ### Example Configurations
 

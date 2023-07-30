@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 
@@ -40,16 +29,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var testPayloads = []string{
-	"metric-threshold-closed.json",
-	"new-primary.json",
+	"metric-threshold-closed.yaml",
+	"new-primary.yaml",
 }
 
 const (
@@ -112,7 +101,7 @@ func TestAlertsReceiver(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
@@ -185,7 +174,7 @@ func TestAlertsReceiverTLS(t *testing.T) {
 
 			logs := sink.AllLogs()[0]
 
-			expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", payloadName))
 			require.NoError(t, err)
 
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
@@ -254,7 +243,7 @@ func TestAtlasPoll(t *testing.T) {
 	require.NoError(t, err)
 
 	logs := sink.AllLogs()[0]
-	expectedLogs, err := readLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
+	expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "alerts", "golden", "retrieved-logs.json"))
 	require.NoError(t, err)
 	require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreObservedTimestamp()))
 }
@@ -277,16 +266,6 @@ func calculateHMACb64(secret string, payload []byte) (string, error) {
 	}
 
 	return buf.String(), nil
-}
-
-func readLogs(path string) (plog.Logs, error) {
-	b, err := os.ReadFile(filepath.Clean(path))
-	if err != nil {
-		return plog.Logs{}, err
-	}
-
-	unmarshaler := plog.JSONUnmarshaler{}
-	return unmarshaler.UnmarshalLogs(b)
 }
 
 func clientWithCert(path string) (*http.Client, error) {

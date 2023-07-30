@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
@@ -28,8 +17,9 @@ type metricPacker struct {
 }
 
 type timedMetricDataPoint struct {
-	dataPoint *contracts.DataPoint
-	timestamp pcommon.Timestamp
+	dataPoint  *contracts.DataPoint
+	timestamp  pcommon.Timestamp
+	attributes pcommon.Map
 }
 
 type metricTimedData interface {
@@ -66,6 +56,8 @@ func (packer *metricPacker) MetricToEnvelopes(metric pmetric.Metric, resource pc
 			applyResourcesToDataProperties(metricData.Properties, resourceAttributes)
 			applyInstrumentationScopeValueToDataProperties(metricData.Properties, instrumentationScope)
 			applyCloudTagsToEnvelope(envelope, resourceAttributes)
+
+			setAttributesAsProperties(timedDataPoint.attributes, metricData.Properties)
 
 			packer.sanitize(func() []string { return metricData.Sanitize() })
 			packer.sanitize(func() []string { return envelope.Sanitize() })
@@ -130,12 +122,20 @@ func (m scalarMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		numberDataPoint := m.dataPointSlice.At(i)
 		dataPoint := contracts.NewDataPoint()
 		dataPoint.Name = m.name
-		dataPoint.Value = numberDataPoint.DoubleValue()
+		switch numberDataPoint.ValueType() {
+		case pmetric.NumberDataPointValueTypeDouble:
+			dataPoint.Value = numberDataPoint.DoubleValue()
+		case pmetric.NumberDataPointValueTypeInt:
+			dataPoint.Value = float64(numberDataPoint.IntValue())
+		case pmetric.NumberDataPointValueTypeEmpty:
+			dataPoint.Value = 0
+		}
 		dataPoint.Count = 1
 		dataPoint.Kind = contracts.Measurement
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: numberDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  numberDataPoint.Timestamp(),
+			attributes: numberDataPoint.Attributes(),
 		}
 	}
 	return timedDataPoints
@@ -166,8 +166,9 @@ func (m histogramMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		dataPoint.Count = int(histogramDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: histogramDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  histogramDataPoint.Timestamp(),
+			attributes: histogramDataPoint.Attributes(),
 		}
 
 	}
@@ -199,8 +200,9 @@ func (m exponentialHistogramMetric) getTimedDataPoints() []*timedMetricDataPoint
 		dataPoint.Count = int(exponentialHistogramDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: exponentialHistogramDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  exponentialHistogramDataPoint.Timestamp(),
+			attributes: exponentialHistogramDataPoint.Attributes(),
 		}
 	}
 	return timedDataPoints
@@ -229,8 +231,9 @@ func (m summaryMetric) getTimedDataPoints() []*timedMetricDataPoint {
 		dataPoint.Count = int(summaryDataPoint.Count())
 
 		timedDataPoints[i] = &timedMetricDataPoint{
-			dataPoint: dataPoint,
-			timestamp: summaryDataPoint.Timestamp(),
+			dataPoint:  dataPoint,
+			timestamp:  summaryDataPoint.Timestamp(),
+			attributes: summaryDataPoint.Attributes(),
 		}
 
 	}

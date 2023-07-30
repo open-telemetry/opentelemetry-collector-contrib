@@ -1,16 +1,5 @@
-// Copyright 2022 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
@@ -50,19 +39,25 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	commomLabel := model.LabelSet{
-		"env":           model.LabelValue(r.cfg.Env),
-		"fa_array_name": model.LabelValue(r.cfg.Endpoint),
-		"host":          model.LabelValue(r.cfg.Endpoint),
+		"deployment.environment": model.LabelValue(r.cfg.Env),
+		"host.name":              model.LabelValue(r.cfg.Endpoint),
 	}
 
-	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
+	// Extracting deployment.environment from commonLabel
+	deploymentEnv := commomLabel["deployment.environment"]
+
+	labelSet := model.LabelSet{
+		"deployment.environment": deploymentEnv,
+	}
+
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHost, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host, commomLabel)
+	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHosts, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Hosts, labelSet)
 	if scCfgs, err := hostScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
@@ -83,7 +78,7 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 		return err
 	}
 
-	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, model.LabelSet{})
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, labelSet)
 	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {

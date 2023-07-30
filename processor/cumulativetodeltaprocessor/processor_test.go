@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cumulativetodeltaprocessor
 
@@ -423,6 +412,28 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				metricValues: [][]float64{{100, 100, 300}, {4, 5}},
 				isCumulative: []bool{false, true},
 				isMonotonic:  []bool{true, true},
+			}),
+		},
+		{
+			name: "cumulative_to_delta_restart_detected",
+			include: MatchMetrics{
+				Metrics: []string{".*"},
+				Config: filterset.Config{
+					MatchType:    "regexp",
+					RegexpConfig: nil,
+				},
+			},
+			inMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1"},
+				metricValues: [][]float64{{100, 105, 120, 100, 110}},
+				isCumulative: []bool{true},
+				isMonotonic:  []bool{true},
+			}),
+			outMetrics: generateTestSumMetrics(testSumMetric{
+				metricNames:  []string{"metric_1"},
+				metricValues: [][]float64{{5, 15, 10}},
+				isCumulative: []bool{false},
+				isMonotonic:  []bool{true},
 			}),
 		},
 	}

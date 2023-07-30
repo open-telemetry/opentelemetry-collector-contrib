@@ -356,5 +356,9 @@ message SpanData {
     // message nack or commit failure response is the error_description of the
     // first enqueue event that has this flag set.
     bool rejects_all_enqueues = 5;
+
+    // If the message is enqueued to a partitioned queue, this field indicates
+    // the partition number the message is enqueued to.
+    optional uint32 partition_number = 6;
   }
 }

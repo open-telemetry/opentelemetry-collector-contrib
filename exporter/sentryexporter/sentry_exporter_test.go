@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sentryexporter
 
@@ -162,8 +151,9 @@ func SpanIDFromHex(s string) sentry.SpanID {
 
 func generateEmptyTransactionMap(spans ...*sentry.Span) map[sentry.SpanID]*sentry.Event {
 	transactionMap := make(map[sentry.SpanID]*sentry.Event)
+	environment := "development"
 	for _, span := range spans {
-		transactionMap[span.SpanID] = transactionFromSpan(span)
+		transactionMap[span.SpanID] = transactionFromSpan(span, environment)
 	}
 	return transactionMap
 }
@@ -654,8 +644,9 @@ func TestClassifyOrphanSpans(t *testing.T) {
 func TestGenerateTransactions(t *testing.T) {
 	transactionMap := generateEmptyTransactionMap(rootSpan1, rootSpan2)
 	orphanSpans := generateOrphanSpansFromSpans(orphanSpan1, childSpan1)
+	environment := "staging"
 
-	transactions := generateTransactions(transactionMap, orphanSpans)
+	transactions := generateTransactions(transactionMap, orphanSpans, environment)
 
 	assert.Len(t, transactions, 4)
 }
@@ -670,8 +661,8 @@ func (t *mockTransport) SendEvents(transactions []*sentry.Event) {
 	t.called = true
 }
 
-func (t *mockTransport) Configure(options sentry.ClientOptions) {}
-func (t *mockTransport) Flush(ctx context.Context) bool {
+func (t *mockTransport) Configure(_ sentry.ClientOptions) {}
+func (t *mockTransport) Flush(_ context.Context) bool {
 	return true
 }
 
@@ -770,9 +761,10 @@ func TestTransactionContextFromSpanMarshalEvent(t *testing.T) {
 		},
 	}
 
+	environment := "production"
 	for _, test := range testCases {
 		t.Run(test.testName, func(t *testing.T) {
-			event := transactionFromSpan(test.span)
+			event := transactionFromSpan(test.span, environment)
 			// mimic what sentry is doing internally
 			// see: https://github.com/getsentry/sentry-go/blob/v0.13.0/transport.go#L66-L70
 			d, err := json.Marshal(event.Contexts)

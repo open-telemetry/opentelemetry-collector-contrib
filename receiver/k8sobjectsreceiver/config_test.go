@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver
 
@@ -132,10 +121,10 @@ func TestValidateResourceConflict(t *testing.T) {
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }
 
-func TestInvalidPullConfig(t *testing.T) {
+func TestPullResourceVersion(t *testing.T) {
 	t.Parallel()
 
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_pull_config.yaml"))
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "pull_resource_version_config.yaml"))
 	require.NoError(t, err)
 
 	factory := NewFactory()
@@ -149,11 +138,8 @@ func TestInvalidPullConfig(t *testing.T) {
 	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
 
-	cfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = component.ValidateConfig(cfg)
-	require.Error(t, err)
-	require.Equal(t, err.Error(), "resource version is invalid for mode: pull")
+	require.Equal(t, "1", cfg.Objects[0].ResourceVersion)
+	require.Equal(t, "", cfg.Objects[1].ResourceVersion)
 }
 
 func TestWatchResourceVersion(t *testing.T) {

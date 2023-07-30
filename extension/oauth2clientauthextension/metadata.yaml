@@ -1,0 +1,13 @@
+type: oauth2client
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions:
+  - contrib
+  - grafana
+  - redhat
+  - sumo
+  codeowners:
+    active: [pavankrish123, jpkrohling]

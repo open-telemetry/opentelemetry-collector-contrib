@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver"
 
@@ -23,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -36,11 +27,11 @@ var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 type kubernetesReceiver struct {
 	resourceWatcher *resourceWatcher
 
-	config   *Config
-	settings receiver.CreateSettings
-	consumer consumer.Metrics
-	cancel   context.CancelFunc
-	obsrecv  *obsreport.Receiver
+	config          *Config
+	settings        receiver.CreateSettings
+	metricsConsumer consumer.Metrics
+	cancel          context.CancelFunc
+	obsrecv         *obsreport.Receiver
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -50,7 +41,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	exporters := host.GetExporters()
+	exporters := host.GetExporters() //nolint:staticcheck
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
@@ -106,33 +97,76 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 }
 
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
+	if kr.metricsConsumer == nil {
+		// Metric collection is not enabled.
+		return
+	}
+
 	now := time.Now()
 	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
 	numPoints := mds.DataPointCount()
-	err := kr.consumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsOp(c, typeStr, numPoints, err)
+	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
+	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
 }
 
-// newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	rCfg := cfg.(*Config)
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newMetricsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).metricsConsumer = consumer
+	return r, nil
+}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: set,
-	})
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newLogsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Logs,
+) (receiver.Logs, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entityLogConsumer = consumer
+	return r, nil
+}
+
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	rCfg := cfg.(*Config)
+	obsrecv, err := obsreport.NewReceiver(
+		obsreport.ReceiverSettings{
+			ReceiverID:             set.ID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
 	return &kubernetesReceiver{
-		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
+		resourceWatcher: newResourceWatcher(set, rCfg),
 		settings:        set,
 		config:          rCfg,
-		consumer:        consumer,
 		obsrecv:         obsrecv,
 	}, nil
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the License);
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an AS IS BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snowflakereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver"
 
@@ -27,7 +16,6 @@ import (
 )
 
 const (
-	typeStr         = "snowflake"
 	defaultInterval = 30 * time.Minute
 	defaultRole     = "ACCOUNTADMIN"
 	defaultDB       = "SNOWFLAKE"
@@ -35,22 +23,23 @@ const (
 )
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultInterval,
-		},
-		Metrics:  metadata.DefaultMetricsSettings(),
-		Schema:   defaultSchema,
-		Database: defaultDB,
-		Role:     defaultRole,
+		ScraperControllerSettings: cfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		Schema:                    defaultSchema,
+		Database:                  defaultDB,
+		Role:                      defaultRole,
 	}
 }
 
-func NewFactory() component.Factory {
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
@@ -62,7 +51,7 @@ func createMetricsReceiver(_ context.Context,
 	cfg := baseCfg.(*Config)
 	snowflakeScraper := newSnowflakeMetricsScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, snowflakeScraper.scrape, scraperhelper.WithStart(snowflakeScraper.start), scraperhelper.WithShutdown(snowflakeScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}

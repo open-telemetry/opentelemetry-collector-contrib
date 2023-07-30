@@ -7,6 +7,10 @@ delimiter:
   parse_from: body.message
   header: id,severity,message
   delimiter: "\t"
+header_delimiter:
+  type: csv_parser
+  header: "id\tseverity\tmessage"
+  header_delimiter: "\t"
 header_attribute:
   type: csv_parser
   parse_from: body.message

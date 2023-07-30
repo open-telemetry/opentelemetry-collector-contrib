@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package golden
 
@@ -35,13 +24,13 @@ func TestWriteMetrics(t *testing.T) {
 	metrics := pmetric.NewMetrics()
 	metricslice.CopyTo(metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
-	actualFile := filepath.Join(t.TempDir(), "metrics.json")
+	actualFile := filepath.Join(t.TempDir(), "metrics.yaml")
 	require.NoError(t, writeMetrics(actualFile, metrics))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.yaml")
 	expectedBytes, err := os.ReadFile(expectedFile)
 	require.NoError(t, err)
 
@@ -58,7 +47,7 @@ func TestReadMetrics(t *testing.T) {
 	expectedMetrics := pmetric.NewMetrics()
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
-	expectedFile := filepath.Join("testdata", "roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "roundtrip", "expected.yaml")
 	actualMetrics, err := ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.Equal(t, expectedMetrics, actualMetrics)
@@ -69,7 +58,7 @@ func TestRoundTrip(t *testing.T) {
 	expectedMetrics := pmetric.NewMetrics()
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
 
-	tempDir := filepath.Join(t.TempDir(), "metrics.json")
+	tempDir := filepath.Join(t.TempDir(), "metrics.yaml")
 	require.NoError(t, writeMetrics(tempDir, expectedMetrics))
 
 	actualMetrics, err := ReadMetrics(tempDir)
@@ -163,7 +152,7 @@ func initSum(metric pmetric.Metric, name, desc, unit string, aggr pmetric.Aggreg
 func TestReadLogs(t *testing.T) {
 	expectedLogs := CreateTestLogs()
 
-	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.yaml")
 	actualLogs, err := ReadLogs(expectedFile)
 	require.NoError(t, err)
 	require.Equal(t, expectedLogs, actualLogs)
@@ -172,13 +161,13 @@ func TestReadLogs(t *testing.T) {
 func TestWriteLogs(t *testing.T) {
 	logs := CreateTestLogs()
 
-	actualFile := filepath.Join(t.TempDir(), "logs.json")
+	actualFile := filepath.Join(t.TempDir(), "logs.yaml")
 	require.NoError(t, writeLogs(actualFile, logs))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "logs-roundtrip", "expected.yaml")
 	expectedBytes, err := os.ReadFile(expectedFile)
 	require.NoError(t, err)
 
@@ -193,7 +182,7 @@ func TestWriteLogs(t *testing.T) {
 func TestLogsRoundTrip(t *testing.T) {
 	expectedLogs := CreateTestLogs()
 
-	tempDir := filepath.Join(t.TempDir(), "logs.json")
+	tempDir := filepath.Join(t.TempDir(), "logs.yaml")
 	require.NoError(t, writeLogs(tempDir, expectedLogs))
 
 	actualLogs, err := ReadLogs(tempDir)
@@ -228,7 +217,7 @@ func CreateTestLogs() plog.Logs {
 func TestReadTraces(t *testing.T) {
 	expectedTraces := CreateTestTraces()
 
-	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.yaml")
 	actualTraces, err := ReadTraces(expectedFile)
 	require.NoError(t, err)
 	require.Equal(t, expectedTraces, actualTraces)
@@ -237,13 +226,13 @@ func TestReadTraces(t *testing.T) {
 func TestWriteTraces(t *testing.T) {
 	traces := CreateTestTraces()
 
-	actualFile := filepath.Join("./testdata/traces-roundtrip", "traces.json")
+	actualFile := filepath.Join("./testdata/traces-roundtrip", "traces.yaml")
 	require.NoError(t, writeTraces(actualFile, traces))
 
 	actualBytes, err := os.ReadFile(actualFile)
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.json")
+	expectedFile := filepath.Join("testdata", "traces-roundtrip", "expected.yaml")
 	expectedBytes, err := os.ReadFile(expectedFile)
 	require.NoError(t, err)
 

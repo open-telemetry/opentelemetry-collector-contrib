@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package expvarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver"
 
@@ -28,8 +17,6 @@ import (
 )
 
 const (
-	typeStr         = "expvar"
-	stability       = component.StabilityLevelBeta
 	defaultPath     = "/debug/vars"
 	defaultEndpoint = "http://localhost:8000" + defaultPath
 	defaultTimeout  = 3 * time.Second
@@ -37,9 +24,9 @@ const (
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultConfig,
-		receiver.WithMetrics(newMetricsReceiver, stability))
+		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability))
 }
 
 func newMetricsReceiver(
@@ -52,7 +39,7 @@ func newMetricsReceiver(
 
 	expVar := newExpVarScraper(cfg, set)
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
 	)
@@ -70,11 +57,11 @@ func newMetricsReceiver(
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,
 		},
-		MetricsConfig: metadata.DefaultMetricsSettings(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }

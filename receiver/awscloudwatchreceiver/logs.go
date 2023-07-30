@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchreceiver"
 
@@ -30,6 +19,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+)
+
+const (
+	noStreamName = "THIS IS INVALID STREAM"
 )
 
 type logsReceiver struct {
@@ -114,7 +107,9 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 		for _, prefix := range sc.Prefixes {
 			groups = append(groups, &streamPrefix{group: logGroupName, prefix: prefix})
 		}
-		groups = append(groups, &streamNames{group: logGroupName, names: sc.Names})
+		if len(sc.Names) > 0 {
+			groups = append(groups, &streamNames{group: logGroupName, names: sc.Names})
+		}
 	}
 
 	// safeguard from using both
@@ -139,14 +134,14 @@ func newLogsReceiver(cfg *Config, logger *zap.Logger, consumer consumer.Logs) *l
 	}
 }
 
-func (l *logsReceiver) Start(ctx context.Context, host component.Host) error {
+func (l *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 	l.logger.Debug("starting to poll for Cloudwatch logs")
 	l.wg.Add(1)
 	go l.startPolling(ctx)
 	return nil
 }
 
-func (l *logsReceiver) Shutdown(ctx context.Context) error {
+func (l *logsReceiver) Shutdown(_ context.Context) error {
 	l.logger.Debug("shutting down logs receiver")
 	close(l.doneChan)
 	l.wg.Wait()
@@ -231,6 +226,9 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
+
+	resourceMap := map[string](map[string]*plog.ResourceLogs){}
+
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -247,15 +245,35 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			continue
 		}
 
-		rl := logs.ResourceLogs().AppendEmpty()
-		resourceAttributes := rl.Resource().Attributes()
-		resourceAttributes.PutStr("aws.region", l.region)
-		resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-		if e.LogStreamName != nil {
-			resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
+		group, ok := resourceMap[logGroupName]
+		if !ok {
+			group = map[string]*plog.ResourceLogs{}
+			resourceMap[logGroupName] = group
 		}
 
-		logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logStreamName := noStreamName
+		if e.LogStreamName != nil {
+			logStreamName = *e.LogStreamName
+		}
+
+		resourceLogs, ok := group[logStreamName]
+		if !ok {
+			rl := logs.ResourceLogs().AppendEmpty()
+			resourceLogs = &rl
+			resourceAttributes := resourceLogs.Resource().Attributes()
+			resourceAttributes.PutStr("aws.region", l.region)
+			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+			resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
+			group[logStreamName] = resourceLogs
+
+			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
+			_ = resourceLogs.ScopeLogs().AppendEmpty()
+		}
+
+		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
+
+		logRecord := resourceLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
+
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))

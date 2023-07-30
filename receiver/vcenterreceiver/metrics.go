@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -34,28 +23,29 @@ func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 	h := s.Hardware
 	z := s.QuickStats
 
-	memUsage := z.OverallMemoryUsage
-	v.mb.RecordVcenterHostMemoryUsageDataPoint(now, int64(memUsage))
-
+	v.mb.RecordVcenterHostMemoryUsageDataPoint(now, int64(z.OverallMemoryUsage))
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(now, memUtilization)
 
-	ncpu := int32(h.NumCpuCores)
-	cpuUsage := z.OverallCpuUsage
-	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(ncpu*h.CpuMhz)
-
-	v.mb.RecordVcenterHostCPUUsageDataPoint(now, int64(cpuUsage))
+	v.mb.RecordVcenterHostCPUUsageDataPoint(now, int64(z.OverallCpuUsage))
+	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(now, cpuUtilization)
 }
 
 func (v *vcenterMetricScraper) recordVMUsages(
 	now pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 ) {
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+
+	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
+		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
+		v.mb.RecordVcenterVMMemoryUtilizationDataPoint(now, memoryUtilization)
+	}
 
 	v.mb.RecordVcenterVMMemoryUsageDataPoint(now, int64(memUsage))
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
@@ -71,6 +61,27 @@ func (v *vcenterMetricScraper) recordVMUsages(
 		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
+
+	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
+	if cpuUsage == 0 {
+		// Most likely the VM is unavailable or is unreachable.
+		return
+	}
+	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
+
+	// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
+	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
+	// This value is always equal to the limit value set for that virtual machine.
+	// If no limit, it has full host mhz * vm.Config.Hardware.NumCPU.
+	cpuLimit := vm.Config.Hardware.NumCPU * hs.Summary.Hardware.CpuMhz
+	if vm.Runtime.MaxCpuUsage != 0 {
+		cpuLimit = vm.Runtime.MaxCpuUsage
+	}
+	if cpuLimit == 0 {
+		// This shouldn't happen, but protect against division by zero.
+		return
+	}
+	v.mb.RecordVcenterVMCPUUtilizationDataPoint(now, 100*float64(cpuUsage)/float64(cpuLimit))
 }
 
 func (v *vcenterMetricScraper) recordDatastoreProperties(
@@ -81,7 +92,7 @@ func (v *vcenterMetricScraper) recordDatastoreProperties(
 	diskUsage := s.Capacity - s.FreeSpace
 	diskUtilization := float64(diskUsage) / float64(s.Capacity) * 100
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.FreeSpace, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization)
 }
 

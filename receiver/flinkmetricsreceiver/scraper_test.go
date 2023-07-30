@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
@@ -165,7 +154,7 @@ func TestScraperScrape(t *testing.T) {
 			setupMockClient: func(t *testing.T) client {
 				return nil
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.yaml"),
 			expectedErr:        errClientNotInit,
 		},
 		{
@@ -178,7 +167,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "no_metrics.yaml"),
 			expectedErr:        errors.New(jobmanagerFailedFetch + " some api error"),
 		},
 		{
@@ -191,7 +180,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_taskmanagers.yaml"),
 			expectedErr:        errors.New(taskmanagerFailedFetch + " some api error"),
 		},
 		{
@@ -204,7 +193,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, nil)
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_jobs.yaml"),
 			expectedErr:        errors.New(jobsFailedFetch + " some api error"),
 		},
 		{
@@ -217,7 +206,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(nil, errors.New("some api error"))
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "partial_metrics_no_subtasks.yaml"),
 			expectedErr:        errors.New(subtasksFailedFetch + " some api error"),
 		},
 		{
@@ -233,7 +222,7 @@ func TestScraperScrape(t *testing.T) {
 				mockClient.On("GetSubtasksMetrics", mock.Anything).Return(subtaskEmptyInstances, nil)
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_no_jobs_golden.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_no_jobs_golden.yaml"),
 			expectedErr:        nil,
 		},
 		{
@@ -249,7 +238,7 @@ func TestScraperScrape(t *testing.T) {
 
 				return &mockClient
 			},
-			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_golden.json"),
+			expectedMetricFile: filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml"),
 			expectedErr:        nil,
 		},
 	}
@@ -270,6 +259,8 @@ func TestScraperScrape(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
 
@@ -21,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
@@ -38,18 +28,25 @@ type fluentReceiver struct {
 	cancel    context.CancelFunc
 }
 
-func newFluentReceiver(logger *zap.Logger, conf *Config, next consumer.Logs) (receiver.Logs, error) {
+func newFluentReceiver(set receiver.CreateSettings, conf *Config, next consumer.Logs) (receiver.Logs, error) {
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             set.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: set,
+	})
+	if err != nil {
+		return nil, err
+	}
 	eventCh := make(chan Event, eventChannelLength)
+	collector := newCollector(eventCh, next, set.Logger, obsrecv)
 
-	collector := newCollector(eventCh, next, logger)
-
-	server := newServer(eventCh, logger)
+	server := newServer(eventCh, set.Logger)
 
 	return &fluentReceiver{
 		collector: collector,
 		server:    server,
 		conf:      conf,
-		logger:    logger,
+		logger:    set.Logger,
 	}, nil
 }
 

@@ -1,21 +1,11 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclusterreceiver
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -27,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
-	"go.uber.org/atomic"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -36,10 +25,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestReceiver(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -49,7 +39,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	// Setup k8s resources.
 	numPods := 2
@@ -89,7 +79,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -97,7 +87,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), 1*time.Millisecond, tt)
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt)
 
 	createPods(t, client, 1)
 
@@ -110,7 +100,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
@@ -120,7 +110,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, 10*time.Second, tt)
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt)
 
 	numPods := 1000
 	numQuotas := 2
@@ -143,22 +133,24 @@ func TestReceiverWithManyResources(t *testing.T) {
 var numCalls *atomic.Int32
 var consumeMetadataInvocation = func() {
 	if numCalls != nil {
-		numCalls.Inc()
+		numCalls.Add(1)
 	}
 }
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := obsreporttest.SetupTelemetry(component.NewID(typeStr))
+	tt, err := obsreporttest.SetupTelemetry(component.NewID(metadata.Type))
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
 	client := newFakeClientWithAllResources()
-	next := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
-	numCalls = atomic.NewInt32(0)
+	metricsConsumer := &mockExporterWithK8sMetadata{MetricsSink: new(consumertest.MetricsSink)}
+	numCalls = &atomic.Int32{}
 
-	r := setupReceiver(client, nil, next, 10*time.Second, tt)
+	logsConsumer := new(consumertest.LogsSink)
+
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt)
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -173,17 +165,28 @@ func TestReceiverWithMetadata(t *testing.T) {
 	updatedPod := getUpdatedPod(pods[0])
 	r.resourceWatcher.onUpdate(pods[0], updatedPod)
 
-	// Should not result in ConsumerKubernetesMetadata invocation.
-	r.resourceWatcher.onUpdate(pods[0], pods[0])
+	// Should not result in ConsumerKubernetesMetadata invocation since the pod
+	// is not changed. Should result in entity event because they are emitted even
+	// if the entity is not changed.
+	r.resourceWatcher.onUpdate(updatedPod, updatedPod)
 
 	deletePods(t, client, 1)
 
 	// Ensure ConsumeKubernetesMetadata is called twice, once for the add and
-	// then for the update.
+	// then for the update. Note the second update does not result in metatada call
+	// since the pod is not changed.
 	require.Eventually(t, func() bool {
 		return int(numCalls.Load()) == 2
 	}, 10*time.Second, 100*time.Millisecond,
 		"metadata not collected")
+
+	// Must have 3 entity events: once for the add, followed by an update and
+	// then another update, which unlike metadata calls actually happens since
+	// even unchanged entities trigger an event.
+	require.Eventually(t, func() bool {
+		return logsConsumer.LogRecordCount() == 3
+	}, 10*time.Second, 100*time.Millisecond,
+		"entity events not collected")
 
 	require.NoError(t, r.Shutdown(ctx))
 }
@@ -204,7 +207,8 @@ func getUpdatedPod(pod *corev1.Pod) interface{} {
 func setupReceiver(
 	client *fake.Clientset,
 	osQuotaClient quotaclientset.Interface,
-	consumer consumer.Metrics,
+	metricsConsumer consumer.Metrics,
+	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
 	tt obsreporttest.TestTelemetry) *kubernetesReceiver {
 
@@ -220,8 +224,9 @@ func setupReceiver(
 		Distribution:               distribution,
 	}
 
-	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config, consumer)
+	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config)
 	kr := r.(*kubernetesReceiver)
+	kr.metricsConsumer = metricsConsumer
 	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
 		return client, nil
 	}
@@ -229,6 +234,7 @@ func setupReceiver(
 		return osQuotaClient, nil
 	}
 	kr.resourceWatcher.initialTimeout = initialSyncTimeout
+	kr.resourceWatcher.entityLogConsumer = logsConsumer
 	return kr
 }
 
@@ -263,9 +269,15 @@ func newFakeClientWithAllResources() *fake.Clientset {
 			},
 		},
 		{
-			GroupVersion: "autoscaling/v2beta2",
+			GroupVersion: "autoscaling/v2",
 			APIResources: []v1.APIResource{
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
+			},
+		},
+		{
+			GroupVersion: "autoscaling/v2beta2",
+			APIResources: []v1.APIResource{
+				gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 			},
 		},
 	}

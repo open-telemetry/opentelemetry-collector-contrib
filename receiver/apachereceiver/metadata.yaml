@@ -1,4 +1,12 @@
-name: apachereceiver
+type: apache
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
     apache.server.name:

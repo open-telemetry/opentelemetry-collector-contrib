@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package nsxtreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nsxtreceiver"
 
@@ -59,7 +48,7 @@ func TestScrape(t *testing.T) {
 
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -68,10 +57,13 @@ func TestScrape(t *testing.T) {
 	metrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.json"))
+	expectedMetrics, err := golden.ReadMetrics(filepath.Join("testdata", "metrics", "expected_metrics.yaml"))
 	require.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
 	require.NoError(t, err)
 }
 
@@ -80,7 +72,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -98,7 +90,7 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -113,7 +105,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 	mockClient := mockServer(t)
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: mockClient.URL,
 			},
@@ -127,7 +119,7 @@ func TestStartClientAlreadySet(t *testing.T) {
 func TestStartBadUrl(t *testing.T) {
 	scraper := newScraper(
 		&Config{
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "\x00",
 			},
@@ -139,13 +131,13 @@ func TestStartBadUrl(t *testing.T) {
 	require.Nil(t, scraper.client)
 }
 
-func TestScraperRecordNoStat(t *testing.T) {
+func TestScraperRecordNoStat(_ *testing.T) {
 	scraper := newScraper(
 		&Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
 				Endpoint: "http://localhost",
 			},
-			Metrics: metadata.DefaultMetricsSettings(),
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		},
 		receivertest.NewNopCreateSettings(),
 	)
@@ -154,36 +146,29 @@ func TestScraperRecordNoStat(t *testing.T) {
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
 	require.NoError(t, err)
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		var stats dm.TransportNodeStatus
 		err = json.Unmarshal(testFile, &stats)
 		require.NoError(t, err)
 		return &stats.NodeStatus, err
-	default:
-		var stats dm.NodeStatus
-		err = json.Unmarshal(testFile, &stats)
-		require.NoError(t, err)
-		return &stats, err
 	}
+
+	var stats dm.NodeStatus
+	err = json.Unmarshal(testFile, &stats)
+	require.NoError(t, err)
+	return &stats, err
 }
 
 func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.NetworkInterface, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", "index.json"))
 	require.NoError(t, err)
@@ -194,12 +179,9 @@ func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.
 }
 
 func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClass) (*dm.NetworkInterfaceStats, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", interfaceID, "stats.json"))
 	require.NoError(t, err)

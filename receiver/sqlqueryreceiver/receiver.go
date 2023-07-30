@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver"
 
@@ -30,9 +19,21 @@ type sqlOpenerFunc func(driverName, dataSourceName string) (*sql.DB, error)
 
 type dbProviderFunc func() (*sql.DB, error)
 
-type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
+type clientProviderFunc func(db, string, *zap.Logger) dbClient
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
+func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
+	return func(
+		ctx context.Context,
+		settings receiver.CreateSettings,
+		config component.Config,
+		consumer consumer.Logs,
+	) (receiver.Logs, error) {
+		sqlQueryConfig := config.(*Config)
+		return newLogsReceiver(sqlQueryConfig, settings, sqlOpenerFunc, clientProviderFunc, consumer)
+	}
+}
+
+func createMetricsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,
@@ -42,6 +43,9 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		sqlCfg := cfg.(*Config)
 		var opts []scraperhelper.ScraperControllerOption
 		for i, query := range sqlCfg.Queries {
+			if len(query.Metrics) == 0 {
+				continue
+			}
 			id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			mp := &scraper{
 				id:        id,

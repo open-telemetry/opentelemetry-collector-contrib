@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -19,6 +8,7 @@ import (
 	"fmt"
 	"net/url"
 	"path"
+	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -33,9 +23,11 @@ const (
 	defaultContentLengthLogsLimit    = 2 * 1024 * 1024
 	defaultContentLengthMetricsLimit = 2 * 1024 * 1024
 	defaultContentLengthTracesLimit  = 2 * 1024 * 1024
+	defaultMaxEventSize              = 5 * 1024 * 1024
 	maxContentLengthLogsLimit        = 800 * 1024 * 1024
 	maxContentLengthMetricsLimit     = 800 * 1024 * 1024
 	maxContentLengthTracesLimit      = 800 * 1024 * 1024
+	maxMaxEventSize                  = 800 * 1024 * 1024
 )
 
 // OtelToHecFields defines the mapping of attributes to HEC fields
@@ -44,6 +36,26 @@ type OtelToHecFields struct {
 	SeverityText string `mapstructure:"severity_text"`
 	// SeverityNumber informs the exporter to map the severity number field to a specific HEC field.
 	SeverityNumber string `mapstructure:"severity_number"`
+}
+
+// HecHeartbeat defines the heartbeat information for the exporter
+type HecHeartbeat struct {
+	// Interval represents the time interval for the heartbeat interval. If nothing or 0 is set,
+	// heartbeat is not enabled.
+	// A heartbeat is an event sent to _internal index with metadata for the current collector/host.
+	Interval time.Duration `mapstructure:"interval"`
+}
+
+// HecTelemetry defines the telemetry configuration for the exporter
+type HecTelemetry struct {
+	// Enabled is the bool to enable telemetry inside splunk hec exporter
+	Enabled bool `mapstructure:"enabled"`
+
+	// OverrideMetricsNames is the map to override metrics for internal metrics in splunk hec exporter
+	OverrideMetricsNames map[string]string `mapstructure:"override_metrics_names"`
+
+	// ExtraAttributes is the extra attributes for metrics inside splunk hex exporter
+	ExtraAttributes map[string]string `mapstructure:"extra_attributes"`
 }
 
 // Config defines configuration for Splunk exporter.
@@ -90,6 +102,10 @@ type Config struct {
 	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxContentLengthTraces uint `mapstructure:"max_content_length_traces"`
 
+	// Maximum payload size, raw uncompressed. Default value is 5242880 bytes (5MiB).
+	// Maximum allowed value is 838860800 (~ 800 MB).
+	MaxEventSize uint `mapstructure:"max_event_size"`
+
 	// App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry Collector Contrib".
 	SplunkAppName string `mapstructure:"splunk_app_name"`
 
@@ -108,6 +124,15 @@ type Config struct {
 
 	// ExportRaw to send only the log's body, targeting a Splunk HEC raw endpoint.
 	ExportRaw bool `mapstructure:"export_raw"`
+
+	// UseMultiMetricFormat combines metric events to save space during ingestion.
+	UseMultiMetricFormat bool `mapstructure:"use_multi_metric_format"`
+
+	// Heartbeat is the configuration to enable heartbeat
+	Heartbeat HecHeartbeat `mapstructure:"heartbeat"`
+
+	// Telemetry is the configuration for splunk hec exporter telemetry
+	Telemetry HecTelemetry `mapstructure:"telemetry"`
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
@@ -150,6 +175,11 @@ func (cfg *Config) Validate() error {
 	if cfg.MaxContentLengthTraces > maxContentLengthTracesLimit {
 		return fmt.Errorf(`requires "max_content_length_traces" <= %d`, maxContentLengthTracesLimit)
 	}
+
+	if cfg.MaxEventSize > maxMaxEventSize {
+		return fmt.Errorf(`requires "max_event_size" <= %d`, maxMaxEventSize)
+	}
+
 	if err := cfg.QueueSettings.Validate(); err != nil {
 		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
 	}

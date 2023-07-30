@@ -1,0 +1,9 @@
+type: googlemanagedprometheus
+
+status:
+  class: exporter
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]

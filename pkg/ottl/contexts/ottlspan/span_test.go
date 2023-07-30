@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlspan
 
@@ -86,8 +75,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: []ottl.Field{
 				{
-					Name:   "cache",
-					MapKey: ottltest.Strp("temp"),
+					Name: "cache",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("temp"),
+						},
+					},
 				},
 			},
 			orig:   nil,
@@ -171,8 +164,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "trace_state key",
 			path: []ottl.Field{
 				{
-					Name:   "trace_state",
-					MapKey: ottltest.Strp("key1"),
+					Name: "trace_state",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("key1"),
+						},
+					},
 				},
 			},
 			orig:   "val1",
@@ -221,6 +218,38 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "string kind",
+			path: []ottl.Field{
+				{
+					Name: "kind",
+				},
+				{
+					Name: "string",
+				},
+			},
+			orig:   "Server",
+			newVal: "Client",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetKind(ptrace.SpanKindClient)
+			},
+		},
+		{
+			name: "deprecated string kind",
+			path: []ottl.Field{
+				{
+					Name: "kind",
+				},
+				{
+					Name: "deprecated_string",
+				},
+			},
+			orig:   "SPAN_KIND_SERVER",
+			newVal: "SPAN_KIND_CLIENT",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetKind(ptrace.SpanKindClient)
+			},
+		},
+		{
 			name: "start_time_unix_nano",
 			path: []ottl.Field{
 				{
@@ -263,8 +292,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -277,8 +310,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -291,8 +328,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -305,8 +346,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   float64(1.2),
@@ -319,8 +364,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -333,8 +382,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -350,8 +403,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -367,8 +424,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -384,8 +445,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -401,8 +466,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -418,8 +487,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -437,8 +510,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -450,6 +527,63 @@ func Test_newPathGetSetter(t *testing.T) {
 				m := span.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refSpan.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				s := span.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 		{
@@ -664,6 +798,9 @@ func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resou
 
 	m := span.Attributes().PutEmptyMap("map")
 	m.PutStr("original", "map")
+
+	s := span.Attributes().PutEmptySlice("slice")
+	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
 	span.SetDroppedAttributesCount(10)
 

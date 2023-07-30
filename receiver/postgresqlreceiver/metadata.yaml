@@ -1,4 +1,12 @@
-name: postgresqlreceiver
+type: postgresql
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   postgresql.database.name:
@@ -120,6 +128,7 @@ metrics:
       aggregation: cumulative
       monotonic: true
       value_type: int
+    unit: 1
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
@@ -229,6 +238,7 @@ metrics:
       aggregation: cumulative
       monotonic: false
       value_type: int
+    unit: "{table}"
   postgresql.table.size:
     attributes: []
     description: Disk space used by a table.

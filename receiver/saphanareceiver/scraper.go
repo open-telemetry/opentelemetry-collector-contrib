@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
@@ -34,6 +23,7 @@ import (
 type sapHanaScraper struct {
 	settings receiver.CreateSettings
 	cfg      *Config
+	rb       *metadata.ResourceBuilder
 	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
@@ -42,10 +32,11 @@ func newSapHanaScraper(settings receiver.CreateSettings, cfg *Config, factory sa
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mbs:      make(map[string]*metadata.MetricsBuilder),
 		factory:  factory,
 	}
-	return scraperhelper.NewScraper(typeStr, rs.scrape)
+	return scraperhelper.NewScraper(metadata.Type, rs.scrape)
 }
 
 func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string) (*metadata.MetricsBuilder, error) {
@@ -57,7 +48,7 @@ func (s *sapHanaScraper) getMetricsBuilder(resourceAttributes map[string]string)
 	key := string(bytes)
 	mb, ok := s.mbs[key]
 	if !ok {
-		mb = metadata.NewMetricsBuilder(s.cfg.Metrics, s.settings)
+		mb = metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings)
 		s.mbs[key] = mb
 	}
 
@@ -91,15 +82,15 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for saphana scraper: %w", err))
 			continue
 		}
-		resourceOptions := []metadata.ResourceMetricsOption{metadata.WithDbSystem("saphana")}
+		s.rb.SetDbSystem("saphana")
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
-				resourceOptions = append(resourceOptions, metadata.WithSaphanaHost(value))
+				s.rb.SetSaphanaHost(value)
 			} else {
 				errs.Add(fmt.Errorf("Unsupported resource attribute: %s", attribute))
 			}
 		}
-		resourceMetrics := mb.Emit(resourceOptions...)
+		resourceMetrics := mb.Emit(metadata.WithResource(s.rb.Emit()))
 		resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 

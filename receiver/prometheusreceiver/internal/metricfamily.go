@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -113,6 +103,9 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		if i != len(mg.complexValue)-1 {
 			// not need to add +inf as OTLP assumes it
 			bounds[i] = mg.complexValue[i].boundary
+		} else if mg.complexValue[i].boundary != math.Inf(1) {
+			// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
+			return
 		}
 		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
@@ -299,6 +292,8 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 		} else {
 			mg.value = v
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		mg.value = v
 	}
@@ -306,10 +301,14 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
-func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *prometheus.Normalizer) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
 	metric := pmetric.NewMetric()
-	// Trims type's and unit's suffixes from metric name
-	metric.SetName(normalizer.TrimPromSuffixes(mf.name, mf.mtype, mf.metadata.Unit))
+	// Trims type and unit suffixes from metric name
+	name := mf.name
+	if trimSuffixes {
+		name = prometheus.TrimPromSuffixes(name, mf.mtype, mf.metadata.Unit)
+	}
+	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(mf.metadata.Unit)
 
@@ -343,6 +342,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		}
 		pointCount = sdpL.Len()
 
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()

@@ -6,103 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledSetByUser bool
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledSetByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for couchdbreceiver metrics.
-type MetricsSettings struct {
-	CouchdbAverageRequestTime MetricSettings `mapstructure:"couchdb.average_request_time"`
-	CouchdbDatabaseOpen       MetricSettings `mapstructure:"couchdb.database.open"`
-	CouchdbDatabaseOperations MetricSettings `mapstructure:"couchdb.database.operations"`
-	CouchdbFileDescriptorOpen MetricSettings `mapstructure:"couchdb.file_descriptor.open"`
-	CouchdbHttpdBulkRequests  MetricSettings `mapstructure:"couchdb.httpd.bulk_requests"`
-	CouchdbHttpdRequests      MetricSettings `mapstructure:"couchdb.httpd.requests"`
-	CouchdbHttpdResponses     MetricSettings `mapstructure:"couchdb.httpd.responses"`
-	CouchdbHttpdViews         MetricSettings `mapstructure:"couchdb.httpd.views"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		CouchdbAverageRequestTime: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbDatabaseOpen: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbDatabaseOperations: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbFileDescriptorOpen: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdBulkRequests: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdRequests: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdResponses: MetricSettings{
-			Enabled: true,
-		},
-		CouchdbHttpdViews: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
-
-// ResourceAttributeSettings provides common settings for a particular metric.
-type ResourceAttributeSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-func (ras *ResourceAttributeSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ras, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ras.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// ResourceAttributesSettings provides settings for couchdbreceiver metrics.
-type ResourceAttributesSettings struct {
-	CouchdbNodeName ResourceAttributeSettings `mapstructure:"couchdb.node.name"`
-}
-
-func DefaultResourceAttributesSettings() ResourceAttributesSettings {
-	return ResourceAttributesSettings{
-		CouchdbNodeName: ResourceAttributeSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeHTTPMethod specifies the a value http.method attribute.
 type AttributeHTTPMethod int
@@ -204,7 +111,7 @@ var MapAttributeView = map[string]AttributeView{
 
 type metricCouchdbAverageRequestTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -217,7 +124,7 @@ func (m *metricCouchdbAverageRequestTime) init() {
 }
 
 func (m *metricCouchdbAverageRequestTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -235,16 +142,16 @@ func (m *metricCouchdbAverageRequestTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbAverageRequestTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbAverageRequestTime(settings MetricSettings) metricCouchdbAverageRequestTime {
-	m := metricCouchdbAverageRequestTime{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbAverageRequestTime(cfg MetricConfig) metricCouchdbAverageRequestTime {
+	m := metricCouchdbAverageRequestTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -253,7 +160,7 @@ func newMetricCouchdbAverageRequestTime(settings MetricSettings) metricCouchdbAv
 
 type metricCouchdbDatabaseOpen struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -268,7 +175,7 @@ func (m *metricCouchdbDatabaseOpen) init() {
 }
 
 func (m *metricCouchdbDatabaseOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -286,16 +193,16 @@ func (m *metricCouchdbDatabaseOpen) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbDatabaseOpen) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbDatabaseOpen(settings MetricSettings) metricCouchdbDatabaseOpen {
-	m := metricCouchdbDatabaseOpen{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbDatabaseOpen(cfg MetricConfig) metricCouchdbDatabaseOpen {
+	m := metricCouchdbDatabaseOpen{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -304,7 +211,7 @@ func newMetricCouchdbDatabaseOpen(settings MetricSettings) metricCouchdbDatabase
 
 type metricCouchdbDatabaseOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -320,7 +227,7 @@ func (m *metricCouchdbDatabaseOperations) init() {
 }
 
 func (m *metricCouchdbDatabaseOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -339,16 +246,16 @@ func (m *metricCouchdbDatabaseOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbDatabaseOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbDatabaseOperations(settings MetricSettings) metricCouchdbDatabaseOperations {
-	m := metricCouchdbDatabaseOperations{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbDatabaseOperations(cfg MetricConfig) metricCouchdbDatabaseOperations {
+	m := metricCouchdbDatabaseOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -357,7 +264,7 @@ func newMetricCouchdbDatabaseOperations(settings MetricSettings) metricCouchdbDa
 
 type metricCouchdbFileDescriptorOpen struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -372,7 +279,7 @@ func (m *metricCouchdbFileDescriptorOpen) init() {
 }
 
 func (m *metricCouchdbFileDescriptorOpen) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -390,16 +297,16 @@ func (m *metricCouchdbFileDescriptorOpen) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbFileDescriptorOpen) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbFileDescriptorOpen(settings MetricSettings) metricCouchdbFileDescriptorOpen {
-	m := metricCouchdbFileDescriptorOpen{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbFileDescriptorOpen(cfg MetricConfig) metricCouchdbFileDescriptorOpen {
+	m := metricCouchdbFileDescriptorOpen{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -408,7 +315,7 @@ func newMetricCouchdbFileDescriptorOpen(settings MetricSettings) metricCouchdbFi
 
 type metricCouchdbHttpdBulkRequests struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -423,7 +330,7 @@ func (m *metricCouchdbHttpdBulkRequests) init() {
 }
 
 func (m *metricCouchdbHttpdBulkRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -441,16 +348,16 @@ func (m *metricCouchdbHttpdBulkRequests) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdBulkRequests) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdBulkRequests(settings MetricSettings) metricCouchdbHttpdBulkRequests {
-	m := metricCouchdbHttpdBulkRequests{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbHttpdBulkRequests(cfg MetricConfig) metricCouchdbHttpdBulkRequests {
+	m := metricCouchdbHttpdBulkRequests{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -459,7 +366,7 @@ func newMetricCouchdbHttpdBulkRequests(settings MetricSettings) metricCouchdbHtt
 
 type metricCouchdbHttpdRequests struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -475,7 +382,7 @@ func (m *metricCouchdbHttpdRequests) init() {
 }
 
 func (m *metricCouchdbHttpdRequests) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpMethodAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -494,16 +401,16 @@ func (m *metricCouchdbHttpdRequests) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdRequests) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdRequests(settings MetricSettings) metricCouchdbHttpdRequests {
-	m := metricCouchdbHttpdRequests{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbHttpdRequests(cfg MetricConfig) metricCouchdbHttpdRequests {
+	m := metricCouchdbHttpdRequests{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -512,7 +419,7 @@ func newMetricCouchdbHttpdRequests(settings MetricSettings) metricCouchdbHttpdRe
 
 type metricCouchdbHttpdResponses struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -528,7 +435,7 @@ func (m *metricCouchdbHttpdResponses) init() {
 }
 
 func (m *metricCouchdbHttpdResponses) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -547,16 +454,16 @@ func (m *metricCouchdbHttpdResponses) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdResponses) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdResponses(settings MetricSettings) metricCouchdbHttpdResponses {
-	m := metricCouchdbHttpdResponses{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbHttpdResponses(cfg MetricConfig) metricCouchdbHttpdResponses {
+	m := metricCouchdbHttpdResponses{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -565,7 +472,7 @@ func newMetricCouchdbHttpdResponses(settings MetricSettings) metricCouchdbHttpdR
 
 type metricCouchdbHttpdViews struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -581,7 +488,7 @@ func (m *metricCouchdbHttpdViews) init() {
 }
 
 func (m *metricCouchdbHttpdViews) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, viewAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -600,16 +507,16 @@ func (m *metricCouchdbHttpdViews) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricCouchdbHttpdViews) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews {
-	m := metricCouchdbHttpdViews{settings: settings}
-	if settings.Enabled {
+func newMetricCouchdbHttpdViews(cfg MetricConfig) metricCouchdbHttpdViews {
+	m := metricCouchdbHttpdViews{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -617,14 +524,12 @@ func newMetricCouchdbHttpdViews(settings MetricSettings) metricCouchdbHttpdViews
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
 	startTime                       pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                 int                 // maximum observed number of metrics per resource.
-	resourceCapacity                int                 // maximum observed number of resource attributes.
 	metricsBuffer                   pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                       component.BuildInfo // contains version information
-	resourceAttributesSettings      ResourceAttributesSettings
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
@@ -645,27 +550,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-// WithResourceAttributesSettings sets ResourceAttributeSettings on the metrics builder.
-func WithResourceAttributesSettings(ras ResourceAttributesSettings) metricBuilderOption {
-	return func(mb *MetricsBuilder) {
-		mb.resourceAttributesSettings = ras
-	}
-}
-
-func NewMetricsBuilder(ms MetricsSettings, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                   pmetric.NewMetrics(),
 		buildInfo:                       settings.BuildInfo,
-		resourceAttributesSettings:      DefaultResourceAttributesSettings(),
-		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(ms.CouchdbAverageRequestTime),
-		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(ms.CouchdbDatabaseOpen),
-		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(ms.CouchdbDatabaseOperations),
-		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(ms.CouchdbFileDescriptorOpen),
-		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(ms.CouchdbHttpdBulkRequests),
-		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(ms.CouchdbHttpdRequests),
-		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(ms.CouchdbHttpdResponses),
-		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(ms.CouchdbHttpdViews),
+		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(mbc.Metrics.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(mbc.Metrics.CouchdbDatabaseOpen),
+		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(mbc.Metrics.CouchdbDatabaseOperations),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(mbc.Metrics.CouchdbFileDescriptorOpen),
+		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(mbc.Metrics.CouchdbHttpdBulkRequests),
+		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mbc.Metrics.CouchdbHttpdRequests),
+		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mbc.Metrics.CouchdbHttpdResponses),
+		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mbc.Metrics.CouchdbHttpdViews),
 	}
 	for _, op := range options {
 		op(mb)
@@ -678,27 +575,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesSettings, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithCouchdbNodeName sets provided value as "couchdb.node.name" attribute for current resource.
-func WithCouchdbNodeName(val string) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
-		if ras.CouchdbNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("couchdb.node.name", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(ras ResourceAttributesSettings, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -722,7 +615,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/couchdbreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -737,7 +629,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricCouchdbHttpdViews.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesSettings, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -747,7 +639,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
 	metrics := mb.metricsBuffer

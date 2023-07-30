@@ -1,0 +1,27 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.cronjob.name
+          value:
+            stringValue: test-cronjob-1
+        - key: k8s.cronjob.uid
+          value:
+            stringValue: test-cronjob-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of actively running jobs for a cronjob
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.cronjob.active_jobs
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

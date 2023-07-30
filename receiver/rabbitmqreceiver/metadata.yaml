@@ -1,4 +1,12 @@
-name: rabbitmqreceiver
+type: rabbitmq
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, cpheps]
 
 resource_attributes:
   rabbitmq.queue.name:

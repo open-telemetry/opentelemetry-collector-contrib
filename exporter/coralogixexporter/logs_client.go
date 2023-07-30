@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package coralogixexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 
@@ -32,8 +21,8 @@ import (
 func newLogsExporter(cfg component.Config, set exp.CreateSettings) (*logsExporter, error) {
 	oCfg := cfg.(*Config)
 
-	if oCfg.Logs.Endpoint == "" || oCfg.Logs.Endpoint == "https://" || oCfg.Logs.Endpoint == "http://" {
-		return nil, errors.New("coralogix exporter config requires `logs.endpoint` configuration")
+	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Logs.Endpoint) {
+		return nil, errors.New("coralogix exporter config requires `domain` or `logs.endpoint` configuration")
 	}
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
@@ -56,8 +45,16 @@ type logsExporter struct {
 }
 
 func (e *logsExporter) start(ctx context.Context, host component.Host) (err error) {
-	if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
-		return err
+	switch {
+	case !isEmpty(e.config.Logs.Endpoint):
+		if e.clientConn, err = e.config.Logs.ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
+	case !isEmpty(e.config.Domain):
+
+		if e.clientConn, err = e.config.getDomainGrpcSettings().ToClientConn(ctx, host, e.settings, grpc.WithUserAgent(e.userAgent)); err != nil {
+			return err
+		}
 	}
 
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
@@ -74,6 +71,9 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) (err erro
 }
 
 func (e *logsExporter) shutdown(context.Context) error {
+	if e.clientConn == nil {
+		return nil
+	}
 	return e.clientConn.Close()
 }
 

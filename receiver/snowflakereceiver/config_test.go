@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the License);
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an AS IS BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snowflakereceiver
 
@@ -48,50 +37,55 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Missing username all else present",
 			expect: errMissingUsername,
 			conf: Config{
-				Username:  "",
-				Password:  "password",
-				Account:   "account",
-				Warehouse: "warehouse",
+				Username:                  "",
+				Password:                  "password",
+				Account:                   "account",
+				Warehouse:                 "warehouse",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 		},
 		{
 			desc:   "Missing password all else present",
 			expect: errMissingPassword,
 			conf: Config{
-				Username:  "username",
-				Password:  "",
-				Account:   "account",
-				Warehouse: "warehouse",
+				Username:                  "username",
+				Password:                  "",
+				Account:                   "account",
+				Warehouse:                 "warehouse",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 		},
 		{
 			desc:   "Missing account all else present",
 			expect: errMissingAccount,
 			conf: Config{
-				Username:  "username",
-				Password:  "password",
-				Account:   "",
-				Warehouse: "warehouse",
+				Username:                  "username",
+				Password:                  "password",
+				Account:                   "",
+				Warehouse:                 "warehouse",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 		},
 		{
 			desc:   "Missing warehouse all else present",
 			expect: errMissingWarehouse,
 			conf: Config{
-				Username:  "username",
-				Password:  "password",
-				Account:   "account",
-				Warehouse: "",
+				Username:                  "username",
+				Password:                  "password",
+				Account:                   "account",
+				Warehouse:                 "",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 		},
 		{
 			desc:   "Missing multiple check multierror",
 			expect: multierror,
 			conf: Config{
-				Username:  "username",
-				Password:  "",
-				Account:   "account",
-				Warehouse: "",
+				Username:                  "username",
+				Password:                  "",
+				Account:                   "account",
+				Warehouse:                 "",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 		},
 	}
@@ -115,13 +109,13 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	// LoadConf includes the TypeStr which NewFactory does not set
-	id := component.NewIDWithName(typeStr, "")
+	id := component.NewIDWithName(metadata.Type, "")
 	cmNoStr, err := cm.Sub(id.String())
 	require.NoError(t, err)
 
-	testMetrics := metadata.DefaultMetricsSettings()
-	testMetrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
-	testMetrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
+	testMetrics := metadata.DefaultMetricsBuilderConfig()
+	testMetrics.Metrics.SnowflakeDatabaseBytesScannedAvg.Enabled = true
+	testMetrics.Metrics.SnowflakeQueryBytesDeletedAvg.Enabled = false
 
 	expected := &Config{
 		Username:  "snowflakeuser",
@@ -130,11 +124,12 @@ func TestLoadConfig(t *testing.T) {
 		Warehouse: "metricWarehouse",
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 18 * time.Minute,
+			InitialDelay:       time.Second,
 		},
-		Role:     "customMonitoringRole",
-		Database: "SNOWFLAKE",
-		Schema:   "ACCOUNT_USAGE",
-		Metrics:  testMetrics,
+		Role:                 "customMonitoringRole",
+		Database:             "SNOWFLAKE",
+		Schema:               "ACCOUNT_USAGE",
+		MetricsBuilderConfig: testMetrics,
 	}
 
 	factory := NewFactory()
@@ -143,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(cmNoStr, cfg))
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricSettings{}))
+	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}))
 	if diff != "" {
 		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}

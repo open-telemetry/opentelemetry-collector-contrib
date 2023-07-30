@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadscraper
 
@@ -47,8 +36,8 @@ func TestScrape(t *testing.T) {
 	skip(t, "Flaky test. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10030")
 	type testCase struct {
 		name         string
-		bootTimeFunc func() (uint64, error)
-		loadFunc     func() (*load.AvgStat, error)
+		bootTimeFunc func(context.Context) (uint64, error)
+		loadFunc     func(context.Context) (*load.AvgStat, error)
 		expectedErr  string
 		saveMetrics  bool
 		config       *Config
@@ -59,23 +48,23 @@ func TestScrape(t *testing.T) {
 			name:        testStandard,
 			saveMetrics: true,
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
 			name:        testAverage,
 			saveMetrics: true,
 			config: &Config{
-				Metrics:    metadata.DefaultMetricsSettings(),
-				CPUAverage: true,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				CPUAverage:           true,
 			},
-			bootTimeFunc: func() (uint64, error) { return bootTime, nil },
+			bootTimeFunc: func(context.Context) (uint64, error) { return bootTime, nil },
 		},
 		{
 			name:     "Load Error",
-			loadFunc: func() (*load.AvgStat, error) { return nil, errors.New("err1") },
+			loadFunc: func(context.Context) (*load.AvgStat, error) { return nil, errors.New("err1") },
 			config: &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 			expectedErr: "err1",
 		},
@@ -113,7 +102,7 @@ func TestScrape(t *testing.T) {
 			require.NoError(t, err, "Failed to scrape metrics: %v", err)
 
 			if test.bootTimeFunc != nil {
-				actualBootTime, err := scraper.bootTime()
+				actualBootTime, err := scraper.bootTime(context.Background())
 				assert.Nil(t, err)
 				assert.Equal(t, uint64(bootTime), actualBootTime)
 			}
