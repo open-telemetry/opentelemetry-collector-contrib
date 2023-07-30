@@ -116,7 +116,7 @@ func setAttributes(labels map[string]string) pcommon.Map {
 	return attributes
 }
 
-// Set new metric info with name, datapoint, time, attributes
+// Set new metric information with name, datapoint, time, attributes
 func (cdr *collectDRecord) setMetric(name string, dsType *string, val *json.Number, atr pcommon.Map) (pmetric.Metric, error) {
 
 	typ := ""
