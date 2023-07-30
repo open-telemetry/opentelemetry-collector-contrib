@@ -186,6 +186,7 @@
 - `filelogreceiver`: Fix issue where files were deduplicated unnecessarily (#24235)
 - `processor/tailsamplingprocessor`: Fix data race when accessing spans during policies evaluation (#24283)
 - `zipkintranslator`: Stop dropping error tags from Zipkin spans. The old code removes all errors from those spans, rendering them useless if an actual error happened. In addition, no longer delete error tags if they contain useful information. (#16530)
+- `sshcheckreceiver`: Add the SSH endpoint as a resource attribute (#24441)
 
 ## v0.81.0
 
