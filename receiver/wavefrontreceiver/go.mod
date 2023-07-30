@@ -54,8 +54,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/colle
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver => ../carbonreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus => ../../pkg/translator/opencensus
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
