@@ -39,7 +39,7 @@ func buildDSN(cfg Config) string {
 	conf := &sf.Config{
 		Account:   cfg.Account,
 		User:      cfg.Username,
-		Password:  cfg.Password,
+		Password:  string(cfg.Password),
 		Database:  cfg.Database,
 		Schema:    cfg.Schema,
 		Role:      cfg.Role,

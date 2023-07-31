@@ -52,6 +52,23 @@ transform/bad_syntax_trace:
         - set(name, "bear" where attributes["http.path"] == "/animal"
         - keep_keys(attributes, ["http.method", "http.path"])
 
+transform/bad_syntax_multi_signal:
+  trace_statements:
+    - context: span
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  metric_statements:
+    - context: datapoint
+      statements:
+        - set(name, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+  log_statements:
+    - context: log
+      statements:
+        - set(body, "bear" where attributes["http.path"] == "/animal"
+        - keep_keys(attributes, ["http.method", "http.path"])
+
 transform/unknown_function_log:
   log_statements:
     - context: log

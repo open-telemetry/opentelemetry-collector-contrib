@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics, logs]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   mongodb_atlas.org_name:

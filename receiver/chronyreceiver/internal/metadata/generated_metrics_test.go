@@ -55,7 +55,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -66,19 +66,21 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -87,11 +89,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -117,7 +115,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.skew":
 					assert.False(t, validatedMetrics["ntp.skew"], "Found a duplicate in the metrics slice: ntp.skew")
 					validatedMetrics["ntp.skew"] = true
@@ -156,7 +154,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.last_offset":
 					assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
 					validatedMetrics["ntp.time.last_offset"] = true
@@ -171,7 +169,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.rms_offset":
 					assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
 					validatedMetrics["ntp.time.rms_offset"] = true
@@ -186,7 +184,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.root_delay":
 					assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
 					validatedMetrics["ntp.time.root_delay"] = true
@@ -201,7 +199,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				}
 			}
 		})

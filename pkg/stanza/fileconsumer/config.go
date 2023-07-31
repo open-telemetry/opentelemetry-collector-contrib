@@ -13,7 +13,10 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -71,8 +74,13 @@ type Config struct {
 	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
 }
 
+type HeaderConfig struct {
+	Pattern           string            `mapstructure:"pattern"`
+	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
+}
+
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -87,7 +95,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -105,7 +113,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit EmitFunc, spl
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -119,14 +127,14 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	var hs *headerSettings
+	var hCfg *header.Config
 	if c.Header != nil {
 		enc, err := c.Splitter.EncodingConfig.Build()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -138,14 +146,18 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		readerFactory: readerFactory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
 			readerConfig: &readerConfig{
-				fingerprintSize: int(c.FingerprintSize),
-				maxLogSize:      int(c.MaxLogSize),
-				emit:            emit,
+				fingerprintSize:         int(c.FingerprintSize),
+				maxLogSize:              int(c.MaxLogSize),
+				emit:                    emit,
+				includeFileName:         c.IncludeFileName,
+				includeFilePath:         c.IncludeFilePath,
+				includeFileNameResolved: c.IncludeFileNameResolved,
+				includeFilePathResolved: c.IncludeFilePathResolved,
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
-			headerSettings:  hs,
+			headerConfig:    hCfg,
 		},
 		finder:          c.MatchingCriteria,
 		roller:          newRoller(),
@@ -221,13 +233,13 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	_, err := c.Splitter.EncodingConfig.Build()
+	enc, err := c.Splitter.EncodingConfig.Build()
 	if err != nil {
 		return err
 	}
 
 	if c.Header != nil {
-		if err := c.Header.validate(); err != nil {
+		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding); err != nil {
 			return fmt.Errorf("invalid config for `header`: %w", err)
 		}
 	}

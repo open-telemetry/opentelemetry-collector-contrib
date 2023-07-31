@@ -42,6 +42,7 @@ type rabbitmqScraper struct {
 	logger   *zap.Logger
 	cfg      *Config
 	settings component.TelemetrySettings
+	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -51,6 +52,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 		logger:   logger,
 		cfg:      cfg,
 		settings: settings.TelemetrySettings,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -119,11 +121,10 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
-	r.mb.EmitForResource(
-		metadata.WithRabbitmqQueueName(queue.Name),
-		metadata.WithRabbitmqNodeName(queue.Node),
-		metadata.WithRabbitmqVhostName(queue.VHost),
-	)
+	r.rb.SetRabbitmqQueueName(queue.Name)
+	r.rb.SetRabbitmqNodeName(queue.Node)
+	r.rb.SetRabbitmqVhostName(queue.VHost)
+	r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.

@@ -5,3 +5,5 @@ status:
   stability:
     beta: [metrics, logs]
   distributions: [contrib]
+  codeowners:
+    active: [liqiangz]

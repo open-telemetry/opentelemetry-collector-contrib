@@ -301,10 +301,14 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
-func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *prometheus.Normalizer) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
 	metric := pmetric.NewMetric()
-	// Trims type's and unit's suffixes from metric name
-	metric.SetName(normalizer.TrimPromSuffixes(mf.name, mf.mtype, mf.metadata.Unit))
+	// Trims type and unit suffixes from metric name
+	name := mf.name
+	if trimSuffixes {
+		name = prometheus.TrimPromSuffixes(name, mf.mtype, mf.metadata.Unit)
+	}
+	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(mf.metadata.Unit)
 

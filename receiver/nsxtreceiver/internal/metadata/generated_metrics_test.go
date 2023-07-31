@@ -56,11 +56,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClass(1))
+			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskState(1))
+			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,13 +76,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirection(1), AttributePacketType(1))
+			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
 
-			metrics := mb.Emit(WithDeviceID("attr-val"), WithNsxtNodeID("attr-val"), WithNsxtNodeName("attr-val"), WithNsxtNodeType("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -91,39 +93,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("device.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.DeviceID.Enabled, ok)
-			if mb.resourceAttributesConfig.DeviceID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeID.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("nsxt.node.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.NsxtNodeType.Enabled, ok)
-			if mb.resourceAttributesConfig.NsxtNodeType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 4)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -149,7 +119,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("class")
 					assert.True(t, ok)
-					assert.Equal(t, "datapath", attrVal.Str())
+					assert.EqualValues(t, "datapath", attrVal.Str())
 				case "nsxt.node.filesystem.usage":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.usage"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.usage")
 					validatedMetrics["nsxt.node.filesystem.usage"] = true
@@ -166,7 +136,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "nsxt.node.filesystem.utilization":
 					assert.False(t, validatedMetrics["nsxt.node.filesystem.utilization"], "Found a duplicate in the metrics slice: nsxt.node.filesystem.utilization")
 					validatedMetrics["nsxt.node.filesystem.utilization"] = true
@@ -223,7 +193,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.EqualValues(t, "received", attrVal.Str())
 				case "nsxt.node.network.packet.count":
 					assert.False(t, validatedMetrics["nsxt.node.network.packet.count"], "Found a duplicate in the metrics slice: nsxt.node.network.packet.count")
 					validatedMetrics["nsxt.node.network.packet.count"] = true
@@ -240,10 +210,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "received", attrVal.Str())
+					assert.EqualValues(t, "received", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "dropped", attrVal.Str())
+					assert.EqualValues(t, "dropped", attrVal.Str())
 				}
 			}
 		})
