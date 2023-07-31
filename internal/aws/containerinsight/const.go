@@ -132,25 +132,27 @@ const (
 	DiskIOTotal              = "Total"
 
 	// Define the metric types
-	TypeCluster           = "Cluster"
-	TypeClusterService    = "ClusterService"
-	TypeClusterDeployment = "ClusterDeployment"
-	TypeClusterDaemonSet  = "ClusterDaemonSet"
-	TypeClusterNamespace  = "ClusterNamespace"
-	TypeService           = "Service"
-	TypeInstance          = "Instance" // mean EC2 Instance in ECS
-	TypeNode              = "Node"     // mean EC2 Instance in EKS
-	TypeInstanceFS        = "InstanceFS"
-	TypeNodeFS            = "NodeFS"
-	TypeInstanceNet       = "InstanceNet"
-	TypeNodeNet           = "NodeNet"
-	TypeInstanceDiskIO    = "InstanceDiskIO"
-	TypeNodeDiskIO        = "NodeDiskIO"
-	TypePod               = "Pod"
-	TypePodNet            = "PodNet"
-	TypeContainer         = "Container"
-	TypeContainerFS       = "ContainerFS"
-	TypeContainerDiskIO   = "ContainerDiskIO"
+	TypeCluster            = "Cluster"
+	TypeClusterService     = "ClusterService"
+	TypeClusterDeployment  = "ClusterDeployment"
+	TypeClusterDaemonSet   = "ClusterDaemonSet"
+	TypeClusterStatefulSet = "ClusterStatefulSet"
+	TypeClusterReplicaSet  = "ClusterReplicaSet"
+	TypeClusterNamespace   = "ClusterNamespace"
+	TypeService            = "Service"
+	TypeInstance           = "Instance" // mean EC2 Instance in ECS
+	TypeNode               = "Node"     // mean EC2 Instance in EKS
+	TypeInstanceFS         = "InstanceFS"
+	TypeNodeFS             = "NodeFS"
+	TypeInstanceNet        = "InstanceNet"
+	TypeNodeNet            = "NodeNet"
+	TypeInstanceDiskIO     = "InstanceDiskIO"
+	TypeNodeDiskIO         = "NodeDiskIO"
+	TypePod                = "Pod"
+	TypePodNet             = "PodNet"
+	TypeContainer          = "Container"
+	TypeContainerFS        = "ContainerFS"
+	TypeContainerDiskIO    = "ContainerDiskIO"
 	// Special type for pause container
 	// because containerd does not set container name pause container name to POD like docker does.
 	TypeInfraContainer = "InfraContainer"

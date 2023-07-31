@@ -204,6 +204,11 @@ type daemonSetClientWithStopper interface {
 	stopper
 }
 
+type statefulSetClientWithStopper interface {
+	StatefulSetClient
+	stopper
+}
+
 type K8sClient struct {
 	kubeConfigPath       string
 	initSyncPollInterval time.Duration
@@ -236,6 +241,9 @@ type K8sClient struct {
 
 	dsMu      sync.Mutex
 	daemonSet daemonSetClientWithStopper
+
+	ssMu        sync.Mutex
+	statefulSet statefulSetClientWithStopper
 
 	logger *zap.Logger
 }
@@ -282,6 +290,7 @@ func (c *K8sClient) init(logger *zap.Logger, options ...Option) error {
 	c.replicaSet = nil
 	c.deployment = nil
 	c.daemonSet = nil
+	c.statefulSet = nil
 
 	return nil
 }
@@ -415,6 +424,26 @@ func (c *K8sClient) ShutdownDaemonSetClient() {
 	})
 }
 
+func (c *K8sClient) GetStatefulSetClient() StatefulSetClient {
+	var err error
+	c.ssMu.Lock()
+	if c.statefulSet == nil || reflect.ValueOf(c.statefulSet).IsNil() {
+		c.statefulSet, err = newStatefulSetClient(c.clientSet, c.logger, statefulSetSyncCheckerOption(c.syncChecker))
+		if err != nil {
+			c.logger.Error("use an no-op statefulSet client instead because of error", zap.Error(err))
+			c.statefulSet = &noOpStatefulSetClient{}
+		}
+	}
+	c.ssMu.Unlock()
+	return c.statefulSet
+}
+
+func (c *K8sClient) ShutdownStatefulSetClient() {
+	shutdownClient(c.statefulSet, &c.ssMu, func() {
+		c.statefulSet = nil
+	})
+}
+
 func (c *K8sClient) GetClientSet() kubernetes.Interface {
 	return c.clientSet
 }
@@ -431,6 +460,7 @@ func (c *K8sClient) Shutdown() {
 	c.ShutdownReplicaSetClient()
 	c.ShutdownDeploymentClient()
 	c.ShutdownDaemonSetClient()
+	c.ShutdownStatefulSetClient()
 
 	// remove the current instance of k8s client from map
 	for key, val := range optionsToK8sClient {

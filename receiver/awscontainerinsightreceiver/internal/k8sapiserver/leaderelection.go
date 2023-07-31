@@ -48,12 +48,14 @@ type LeaderElection struct {
 	leaderLockName               string
 	leaderLockUsingConfigMapOnly bool
 
-	k8sClient        K8sClient // *k8sclient.K8sClient
-	epClient         k8sclient.EpClient
-	nodeClient       k8sclient.NodeClient
-	podClient        k8sclient.PodClient
-	deploymentClient k8sclient.DeploymentClient
-	daemonSetClient  k8sclient.DaemonSetClient
+	k8sClient         K8sClient // *k8sclient.K8sClient
+	epClient          k8sclient.EpClient
+	nodeClient        k8sclient.NodeClient
+	podClient         k8sclient.PodClient
+	deploymentClient  k8sclient.DeploymentClient
+	daemonSetClient   k8sclient.DaemonSetClient
+	statefulSetClient k8sclient.StatefulSetClient
+	replicaSetClient  k8sclient.ReplicaSetClient
 
 	// the following can be set to mocks in testing
 	broadcaster eventBroadcaster
@@ -80,6 +82,8 @@ type K8sClient interface {
 	GetPodClient() k8sclient.PodClient
 	GetDeploymentClient() k8sclient.DeploymentClient
 	GetDaemonSetClient() k8sclient.DaemonSetClient
+	GetStatefulSetClient() k8sclient.StatefulSetClient
+	GetReplicaSetClient() k8sclient.ReplicaSetClient
 	ShutdownNodeClient()
 	ShutdownPodClient()
 }
@@ -211,6 +215,8 @@ func (le *LeaderElection) startLeaderElection(ctx context.Context, lock resource
 					le.epClient = le.k8sClient.GetEpClient()
 					le.deploymentClient = le.k8sClient.GetDeploymentClient()
 					le.daemonSetClient = le.k8sClient.GetDaemonSetClient()
+					le.statefulSetClient = le.k8sClient.GetStatefulSetClient()
+					le.replicaSetClient = le.k8sClient.GetReplicaSetClient()
 					le.mu.Unlock()
 
 					if le.isLeadingC != nil {

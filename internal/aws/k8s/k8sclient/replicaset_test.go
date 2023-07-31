@@ -14,6 +14,7 @@
 package k8sclient
 
 import (
+	"sort"
 	"testing"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
@@ -54,6 +56,36 @@ var replicaSetArray = []runtime.Object{
 			},
 		},
 	},
+	&appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-replicaset-1",
+			Namespace:       "amazon-cloudwatch",
+			OwnerReferences: []metav1.OwnerReference{},
+			UID:             types.UID("test-replicaset-1-uid"),
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &desired,
+		},
+		Status: appsv1.ReplicaSetStatus{
+			Replicas:          5,
+			AvailableReplicas: 5,
+		},
+	},
+	&appsv1.ReplicaSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            "test-replicaset-2",
+			Namespace:       "amazon-cloudwatch",
+			OwnerReferences: []metav1.OwnerReference{},
+			UID:             types.UID("test-replicaset-12uid"),
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &desired,
+		},
+		Status: appsv1.ReplicaSetStatus{
+			Replicas:          10,
+			AvailableReplicas: 10,
+		},
+	},
 }
 
 func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
@@ -78,6 +110,51 @@ func TestReplicaSetClient_ReplicaSetToDeployment(t *testing.T) {
 	}
 	resultMap := client.ReplicaSetToDeployment()
 	assert.Equal(t, expectedMap, resultMap)
+	client.shutdown()
+	assert.True(t, client.stopped)
+}
+
+func TestReplicaSetClient(t *testing.T) {
+	setOption := replicaSetSyncCheckerOption(&mockReflectorSyncChecker{})
+
+	fakeClientSet := fake.NewSimpleClientset(replicaSetArray...)
+	client, _ := newReplicaSetClient(fakeClientSet, zap.NewNop(), setOption)
+
+	replicaSets := make([]interface{}, len(replicaSetArray))
+	for i := range replicaSetArray {
+		replicaSets[i] = replicaSetArray[i]
+	}
+	assert.NoError(t, client.store.Replace(replicaSets, ""))
+
+	expected := []*ReplicaSetInfo{
+		{
+			Name:      "test-replicaset-1",
+			Namespace: "test-namespace",
+			Spec: &ReplicaSetSpec{
+				Replicas: 20,
+			},
+			Status: &ReplicaSetStatus{
+				Replicas:          5,
+				AvailableReplicas: 5,
+			},
+		},
+		{
+			Name:      "test-replicaset-2",
+			Namespace: "test-namespace",
+			Spec: &ReplicaSetSpec{
+				Replicas: 20,
+			},
+			Status: &ReplicaSetStatus{
+				Replicas:          15,
+				AvailableReplicas: 15,
+			},
+		},
+	}
+	actual := client.ReplicaSetInfos()
+	sort.Slice(actual, func(i, j int) bool {
+		return actual[i].Name < actual[j].Name
+	})
+	assert.Equal(t, expected, actual)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }
