@@ -409,6 +409,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryInitialInterval: time.Second,
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
+			RetryShutdownTimeout: time.Minute,
 		},
 		LogsSettings:   newDefaultLogsSettings(),
 		TracesSettings: newDefaultTracesSettings(),
