@@ -16,18 +16,20 @@ type numericAttributeFilter struct {
 	key                string
 	minValue, maxValue int64
 	logger             *zap.Logger
+	invertMatch        bool
 }
 
 var _ PolicyEvaluator = (*numericAttributeFilter)(nil)
 
 // NewNumericAttributeFilter creates a policy evaluator that samples all traces with
 // the given attribute in the given numeric range.
-func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue int64) PolicyEvaluator {
+func NewNumericAttributeFilter(settings component.TelemetrySettings, key string, minValue, maxValue int64, invertMatch bool) PolicyEvaluator {
 	return &numericAttributeFilter{
-		key:      key,
-		minValue: minValue,
-		maxValue: maxValue,
-		logger:   settings.Logger,
+		key:         key,
+		minValue:    minValue,
+		maxValue:    maxValue,
+		logger:      settings.Logger,
+		invertMatch: invertMatch,
 	}
 }
 
@@ -41,9 +43,10 @@ func (naf *numericAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID
 		if v, ok := span.Attributes().Get(naf.key); ok {
 			value := v.Int()
 			if value >= naf.minValue && value <= naf.maxValue {
-				return true
+				return !(naf.invertMatch)
+
 			}
 		}
-		return false
+		return naf.invertMatch
 	}), nil
 }
