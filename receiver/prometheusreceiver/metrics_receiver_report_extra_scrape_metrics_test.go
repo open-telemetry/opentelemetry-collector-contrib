@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -57,7 +56,7 @@ func testScraperMetrics(t *testing.T, targets []*testData, reportExtraScrapeMetr
 		UseStartTimeMetric:       false,
 		StartTimeMetricRegex:     "",
 		ReportExtraScrapeMetrics: reportExtraScrapeMetrics,
-	}, cms, featuregate.GlobalRegistry())
+	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
