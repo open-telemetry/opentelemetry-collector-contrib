@@ -97,7 +97,7 @@ service:
         - loadbalancing
 ```
 
-Kubernetes resolver example
+Kubernetes resolver example (For a more specific example: [example/k8s-resolver](./example/k8s-resolver/README.md))
 ```yaml
 receivers:
   otlp:
