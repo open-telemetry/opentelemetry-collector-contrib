@@ -34,7 +34,6 @@ func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunk
         settings: params.TelemetrySettings,
         conf:     cfg,
         mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
-        mfg:      metadata.DefaultMetricsConfig(),
     }
 }
 
@@ -59,7 +58,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
     var sr searchResponse
     // Because we have to utilize network resources for each KPI we should check that each metrics
     // is enabled before proceeding
-    if s.mfg.SplunkLicenseIndexUsage.Enabled {
+    if s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
         sr = searchResponse{
             search: searchDict[`SplunkLicenseIndexUsageSearch`],
         }
@@ -102,13 +101,34 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
     }
 }
 
-func (s *splunkScraper) scrapeAverageDiskIO(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-    var sr searchResponse
+// Helper function for unmarshaling search endpoint requests
+func unmarshallSearchReq(res *http.Response, sr *searchResponse) (error) {
+    sr.Return = res.StatusCode
 
-    if s.mfg.SplunkLicenseIndexUsage.Enabled {
-        sr = searchResponse{
-            search: searchDict[`SplunkLicenseIndexUsageSearch`],
-        }
+    if res.ContentLength == 0 {
+        return nil
+    }
+
+    body, err := ioutil.ReadAll(res.Body)
+    if err != nil {
+        return fmt.Errorf("Failed to read response: %v", err)
+    }
+
+    err = xml.Unmarshal(body, &sr)
+    if err != nil {
+        return fmt.Errorf("Failed to unmarshall response: %v", err)
+    }
+
+    return nil
+}
+
+// Scrape index throughput introspection endpoint
+func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+    var it indexThroughput
+    var ept string
+
+    if s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
+        ept = apiDict[`SplunkIndexerThroughput`]
     } else {
         return
     }

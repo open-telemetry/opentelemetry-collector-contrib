@@ -16,10 +16,10 @@ import (
 )
 
 var (
-    errMissingEndpoint = errors.New("Missing a valid endpoint")
-    errMissingUsername = errors.New("Missing valid username")
-    errMissingPassword = errors.New("Missing valid password")
-    errBadScheme       = errors.New("Endpoing scheme must be either http or https")
+    errBadOrMissingEndpoint = errors.New("Missing a valid endpoint")
+    errMissingUsername      = errors.New("Missing valid username")
+    errMissingPassword      = errors.New("Missing valid password")
+    errBadScheme            = errors.New("Endpoint scheme must be either http or https")
 )
 
 type Config struct {
@@ -36,28 +36,30 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
     var errors error
+    var targetUrl *url.URL
 
     if cfg.Endpoint == "" {
-        multierr.Append(errors, errMissingEndpoint)
+        errors = multierr.Append(errors, errBadOrMissingEndpoint)
+    } else {
+        // we want to validate that the endpoint url supplied by user is at least
+        // a little bit valid
+        var err error 
+        targetUrl, err = url.Parse(cfg.Endpoint)
+        if err != nil {
+            errors = multierr.Append(errors, errBadOrMissingEndpoint)
+        } 
+
+        if (targetUrl.Scheme != "http" && targetUrl.Scheme != "https") {
+            errors = multierr.Append(errors, errBadScheme)
+        }
     }
 
     if cfg.Username == "" {
-        multierr.Append(errors, errMissingUsername)
+        errors = multierr.Append(errors, errMissingUsername)
     }
 
     if cfg.Password == "" {
-        multierr.Append(errors, errMissingPassword)
-    }
-
-    // we want to validate that the endpoint url supplied by user is at least
-    // a little bit valid
-    targetUrl, err := url.Parse(cfg.Endpoint)
-    if err == nil {
-        multierr.Append(errors, err)
-    } 
-
-    if (targetUrl.Scheme != "http" || targetUrl.Scheme != "https") {
-        multierr.Append(errors, errBadScheme)
+        errors = multierr.Append(errors, errMissingPassword)
     }
 
     return errors

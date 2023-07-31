@@ -36,8 +36,7 @@ func NewFactory() receiver.Factory {
         metadata.Type,
         createDefaultConfig,
         receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-        )
-
+    )
 }
 
 func createMetricsReceiver(
