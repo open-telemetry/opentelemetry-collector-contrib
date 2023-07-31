@@ -170,7 +170,6 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
-
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:

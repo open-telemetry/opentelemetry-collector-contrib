@@ -103,34 +103,34 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
 			mb.RecordKafkaBrokersCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
-			mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 1)
+			mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 6)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -221,7 +221,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.count":
 					assert.False(t, validatedMetrics["kafka.brokers.count"], "Found a duplicate in the metrics slice: kafka.brokers.count")
 					validatedMetrics["kafka.brokers.count"] = true
@@ -250,7 +250,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.outgoing_byte_rate":
 					assert.False(t, validatedMetrics["kafka.brokers.outgoing_byte_rate"], "Found a duplicate in the metrics slice: kafka.brokers.outgoing_byte_rate")
 					validatedMetrics["kafka.brokers.outgoing_byte_rate"] = true
@@ -265,7 +265,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.request_latency":
 					assert.False(t, validatedMetrics["kafka.brokers.request_latency"], "Found a duplicate in the metrics slice: kafka.brokers.request_latency")
 					validatedMetrics["kafka.brokers.request_latency"] = true
@@ -280,7 +280,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.request_rate":
 					assert.False(t, validatedMetrics["kafka.brokers.request_rate"], "Found a duplicate in the metrics slice: kafka.brokers.request_rate")
 					validatedMetrics["kafka.brokers.request_rate"] = true
@@ -295,7 +295,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.request_size":
 					assert.False(t, validatedMetrics["kafka.brokers.request_size"], "Found a duplicate in the metrics slice: kafka.brokers.request_size")
 					validatedMetrics["kafka.brokers.request_size"] = true
@@ -310,7 +310,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.requests_in_flight":
 					assert.False(t, validatedMetrics["kafka.brokers.requests_in_flight"], "Found a duplicate in the metrics slice: kafka.brokers.requests_in_flight")
 					validatedMetrics["kafka.brokers.requests_in_flight"] = true
@@ -325,7 +325,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.response_rate":
 					assert.False(t, validatedMetrics["kafka.brokers.response_rate"], "Found a duplicate in the metrics slice: kafka.brokers.response_rate")
 					validatedMetrics["kafka.brokers.response_rate"] = true
@@ -340,7 +340,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.brokers.response_size":
 					assert.False(t, validatedMetrics["kafka.brokers.response_size"], "Found a duplicate in the metrics slice: kafka.brokers.response_size")
 					validatedMetrics["kafka.brokers.response_size"] = true
@@ -355,7 +355,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("broker")
 					assert.True(t, ok)
-					assert.EqualValues(t, 1, attrVal.Int())
+					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.consumer_group.lag":
 					assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
 					validatedMetrics["kafka.consumer_group.lag"] = true
