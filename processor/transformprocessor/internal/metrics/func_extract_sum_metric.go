@@ -53,11 +53,12 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
 		metric := tCtx.GetMetric()
+		invalidMetricTypeError := fmt.Errorf("extract_sum_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 
 		switch metric.Type() {
 		case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 		default:
-			return nil, nil
+			return nil, invalidMetricTypeError
 		}
 
 		sumMetric := createSumMetric(
@@ -86,7 +87,7 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
 			}
 		default:
-			return nil, nil
+			return nil, invalidMetricTypeError
 		}
 
 		return nil, nil

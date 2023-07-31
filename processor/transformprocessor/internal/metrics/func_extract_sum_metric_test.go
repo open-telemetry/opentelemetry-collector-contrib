@@ -4,6 +4,7 @@
 package metrics
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,6 +96,7 @@ type histogramTestCase struct {
 	temporality  pmetric.AggregationTemporality
 	monotonicity bool
 	want         func(pmetric.MetricSlice)
+	wantErr      error
 }
 
 func Test_extractSumMetric(t *testing.T) {
@@ -352,14 +354,11 @@ func Test_extractSumMetric(t *testing.T) {
 			},
 		},
 		{
-			name:         "gauge (no op)",
+			name:         "gauge (error)",
 			input:        getTestGaugeMetric(),
 			temporality:  pmetric.AggregationTemporalityDelta,
 			monotonicity: false,
-			want: func(metrics pmetric.MetricSlice) {
-				gaugeMetric := getTestGaugeMetric()
-				gaugeMetric.CopyTo(metrics.AppendEmpty())
-			},
+			wantErr:      fmt.Errorf("extract_sum_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
 		},
 	}
 	for _, tt := range tests {
@@ -371,11 +370,13 @@ func Test_extractSumMetric(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
-			assert.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err)
 
-			expected := pmetric.NewMetricSlice()
-			tt.want(expected)
-			assert.Equal(t, expected, actualMetrics)
+			if tt.want != nil {
+				expected := pmetric.NewMetricSlice()
+				tt.want(expected)
+				assert.Equal(t, expected, actualMetrics)
+			}
 		})
 	}
 }
