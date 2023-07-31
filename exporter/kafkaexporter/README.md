@@ -86,8 +86,8 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
-  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
-  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#CompressionCodec
+  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
+  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
 
 Example configuration:
