@@ -80,8 +80,7 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 
 	containers := []ecsutil.ContainerMetadata{c1, c2, c3, c4}
 
-	dest := pcommon.NewMap()
-	resourceAttributes := metadata.ResourceAttributesConfig{
+	rb := metadata.NewResourceBuilder(metadata.ResourceAttributesConfig{
 		AwsEcsClusterArn:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsLaunchtype:      metadata.ResourceAttributeConfig{Enabled: true},
 		AwsEcsTaskArn:         metadata.ResourceAttributeConfig{Enabled: true},
@@ -96,9 +95,9 @@ func Test_ecsFiltersInvalidContainers(t *testing.T) {
 		CloudPlatform:         metadata.ResourceAttributeConfig{Enabled: true},
 		CloudProvider:         metadata.ResourceAttributeConfig{Enabled: true},
 		CloudRegion:           metadata.ResourceAttributeConfig{Enabled: true},
-	}
-	addValidLogData(containers, &c4, "123", dest, resourceAttributes)
-	assert.Equal(t, 0, dest.Len())
+	})
+	addValidLogData(containers, &c4, "123", rb)
+	assert.Equal(t, 0, rb.Emit().Attributes().Len())
 }
 
 func Test_ecsDetectV4(t *testing.T) {
@@ -121,8 +120,7 @@ func Test_ecsDetectV4(t *testing.T) {
 	attr.PutEmptySlice("aws.log.stream.names").AppendEmpty().SetStr("stream")
 	attr.PutEmptySlice("aws.log.stream.arns").AppendEmpty().SetStr("arn:aws:logs:us-east-1:123456789123:log-group:group:log-stream:stream")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	d := Detector{provider: &mockMetaDataProvider{isV4: true}, resourceAttributes: resourceAttributes}
+	d := Detector{provider: &mockMetaDataProvider{isV4: true}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)
@@ -145,8 +143,7 @@ func Test_ecsDetectV3(t *testing.T) {
 	attr.PutStr("cloud.availability_zone", "us-west-2a")
 	attr.PutStr("cloud.account.id", "123456789123")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	d := Detector{provider: &mockMetaDataProvider{isV4: false}, resourceAttributes: resourceAttributes}
+	d := Detector{provider: &mockMetaDataProvider{isV4: false}, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	got, _, err := d.Detect(context.TODO())
 
 	assert.Nil(t, err)

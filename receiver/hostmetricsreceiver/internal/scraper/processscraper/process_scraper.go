@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -42,14 +43,16 @@ const (
 type scraper struct {
 	settings           receiver.CreateSettings
 	config             *Config
+	rb                 *metadata.ResourceBuilder
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
 	ucals              map[int32]*ucal.CPUUtilizationCalculator
+
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
-	getProcessHandles    func() (processHandles, error)
+	getProcessHandles    func(context.Context) (processHandles, error)
 
 	handleCountManager handlecount.Manager
 }
@@ -86,6 +89,7 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
+	s.rb = metadata.NewResourceBuilder(s.config.ResourceAttributes)
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
@@ -150,8 +154,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
-		s.mb.EmitForResource(options...)
+		s.mb.EmitForResource(metadata.WithResource(md.buildResource(s.rb)),
+			metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
 	}
 
 	// Cleanup any [ucal.CPUUtilizationCalculator]s for PIDs that are no longer present
@@ -169,7 +173,8 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
 func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
-	handles, err := s.getProcessHandles()
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	logsmapping "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,17 +23,25 @@ import (
 )
 
 type logsExporter struct {
-	params         exporter.CreateSettings
-	cfg            *Config
-	ctx            context.Context // ctx triggers shutdown upon cancellation
-	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
-	sender         *logs.Sender
-	onceMetadata   *sync.Once
-	sourceProvider source.Provider
+	params           exporter.CreateSettings
+	cfg              *Config
+	ctx              context.Context // ctx triggers shutdown upon cancellation
+	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
+	sender           *logs.Sender
+	onceMetadata     *sync.Once
+	sourceProvider   source.Provider
+	metadataReporter *inframetadata.Reporter
 }
 
 // newLogsExporter creates a new instance of logsExporter
-func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
+func newLogsExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	onceMetadata *sync.Once,
+	sourceProvider source.Provider,
+	metadataReporter *inframetadata.Reporter,
+) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
 	errchan := make(chan error)
@@ -57,13 +66,14 @@ func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *C
 	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		sender:         s,
-		onceMetadata:   onceMetadata,
-		scrubber:       scrub.NewScrubber(),
-		sourceProvider: sourceProvider,
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		sender:           s,
+		onceMetadata:     onceMetadata,
+		scrubber:         scrub.NewScrubber(),
+		sourceProvider:   sourceProvider,
+		metadataReporter: metadataReporter,
 	}, nil
 }
 
@@ -82,6 +92,12 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 			}
 			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+
+		// Consume resources for host metadata
+		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+			res := ld.ResourceLogs().At(i).Resource()
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
+		}
 	}
 
 	rsl := ld.ResourceLogs()

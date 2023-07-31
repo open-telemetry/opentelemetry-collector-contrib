@@ -5,7 +5,8 @@ status:
   stability:
     beta: [logs, metrics, traces]
   distributions: [contrib, splunk, observiq, sumo, redhat]
-
+  codeowners:
+    active: [dmitryax, rmfitzpatrick, fatsheep9146]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
   k8s.namespace.name:

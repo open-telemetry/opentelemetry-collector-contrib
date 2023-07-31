@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [traces_to_metrics]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [jpkrohling, mapno]

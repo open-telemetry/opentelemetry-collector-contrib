@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [rmfitzpatrick, jamesmoessis]
 
 sem_conv_version: 1.6.1
 
