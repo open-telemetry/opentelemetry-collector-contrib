@@ -69,7 +69,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
-		client: 		 retryablehttp.NewClient(),
+		client:          retryablehttp.NewClient(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,

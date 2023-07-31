@@ -5,7 +5,6 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"github.com/hashicorp/go-retryablehttp"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
