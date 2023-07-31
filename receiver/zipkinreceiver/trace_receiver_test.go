@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
@@ -350,6 +351,44 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 
 	// Expecting 1 non-nil spans
 	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+}
+
+func TestConvertSpansToTraceSpans_JSONWithSimpleError(t *testing.T) {
+	blob, err := os.ReadFile("./testdata/sample3.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := newTestZipkinReceiver()
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+
+	require.Equal(t, ptrace.StatusCodeError, reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+
+	_, exists := reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("error")
+	require.False(t, exists, "Error attribute should be removed when error is simply set to \"true\".")
+}
+
+func TestConvertSpansToTraceSpans_JSONWithErrorMessage(t *testing.T) {
+	blob, err := os.ReadFile("./testdata/sample4.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := newTestZipkinReceiver()
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+
+	require.Equal(t, ptrace.StatusCodeError, reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code(),
+		"Error code should be set to the proper error status since the trace had an error tag.")
+
+	errorMessage, exists := reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("error")
+	require.True(t, exists, "Given span should have an error attribute with the received span's error message.")
+	require.Equal(t, "Non-basic error message", errorMessage.AsString(), "Error message should be retained in the span.")
 }
 
 func TestReceiverConvertsStringsToTypes(t *testing.T) {
