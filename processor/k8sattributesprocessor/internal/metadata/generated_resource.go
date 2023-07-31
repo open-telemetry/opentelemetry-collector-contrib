@@ -42,6 +42,13 @@ func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	}
 }
 
+// SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
+	if rb.config.K8sClusterUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
+	}
+}
+
 // SetK8sContainerName sets provided value as "k8s.container.name" attribute.
 func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	if rb.config.K8sContainerName.Enabled {
