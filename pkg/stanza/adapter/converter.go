@@ -159,6 +159,9 @@ func (c *Converter) workerLoop() {
 					rl := pLogs.ResourceLogs().AppendEmpty()
 					upsertToMap(e.Resource, rl.Resource().Attributes())
 					sl = rl.ScopeLogs().AppendEmpty()
+					if e.ScopeName != "" {
+						sl.Scope().SetName(e.ScopeName)
+					}
 				} else {
 					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
 				}
