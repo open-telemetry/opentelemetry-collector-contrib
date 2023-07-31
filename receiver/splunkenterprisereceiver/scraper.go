@@ -25,10 +25,6 @@ var (
 	errMaxSearchWaitTimeExceeded = errors.New("Maximum search wait time exceeded for metric")
 )
 
-var (
-    errMaxSearchWaitTimeExceeded = errors.New("Maximum search wait time exceeded for metric")
-)
-
 type splunkScraper struct {
 	splunkClient *splunkEntClient
 	settings     component.TelemetrySettings
