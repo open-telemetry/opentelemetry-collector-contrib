@@ -66,7 +66,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.81.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.81.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.81.0
@@ -496,7 +495,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.81.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.81.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.81.0 // indirect

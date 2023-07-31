@@ -242,6 +242,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter => ../../exporter/cassandraexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../../receiver/udplogreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
+  - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ../../receiver/flinkmetricsreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ../../receiver/awsecscontainermetricsreceiver
