@@ -25,63 +25,33 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
-	KafkaBrokers                  MetricConfig `mapstructure:"kafka.brokers"`
-	KafkaBrokersConsumerFetchRate MetricConfig `mapstructure:"messaging.kafka.brokers.consumer_fetch_rate"`
-	KafkaBrokersCount             MetricConfig `mapstructure:"messaging.kafka.brokers.count"`
-	KafkaBrokersIncomingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.incoming_byte_rate"`
-	KafkaBrokersOutgoingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.outgoing_byte_rate"`
-	KafkaBrokersRequestLatency    MetricConfig `mapstructure:"messaging.kafka.brokers.request_latency"`
-	KafkaBrokersRequestRate       MetricConfig `mapstructure:"messaging.kafka.brokers.request_rate"`
-	KafkaBrokersRequestSize       MetricConfig `mapstructure:"messaging.kafka.brokers.request_size"`
-	KafkaBrokersRequestsInFlight  MetricConfig `mapstructure:"messaging.kafka.brokers.requests_in_flight"`
-	KafkaBrokersResponseRate      MetricConfig `mapstructure:"messaging.kafka.brokers.response_rate"`
-	KafkaBrokersResponseSize      MetricConfig `mapstructure:"messaging.kafka.brokers.response_size"`
-	KafkaConsumerGroupLag         MetricConfig `mapstructure:"kafka.consumer_group.lag"`
-	KafkaConsumerGroupLagSum      MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
-	KafkaConsumerGroupMembers     MetricConfig `mapstructure:"kafka.consumer_group.members"`
-	KafkaConsumerGroupOffset      MetricConfig `mapstructure:"kafka.consumer_group.offset"`
-	KafkaConsumerGroupOffsetSum   MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
-	KafkaPartitionCurrentOffset   MetricConfig `mapstructure:"kafka.partition.current_offset"`
-	KafkaPartitionOldestOffset    MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
-	KafkaPartitionReplicas        MetricConfig `mapstructure:"kafka.partition.replicas"`
-	KafkaPartitionReplicasInSync  MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
-	KafkaTopicPartitions          MetricConfig `mapstructure:"kafka.topic.partitions"`
+	KafkaBrokers                           MetricConfig `mapstructure:"kafka.brokers"`
+	KafkaConsumerGroupLag                  MetricConfig `mapstructure:"kafka.consumer_group.lag"`
+	KafkaConsumerGroupLagSum               MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
+	KafkaConsumerGroupMembers              MetricConfig `mapstructure:"kafka.consumer_group.members"`
+	KafkaConsumerGroupOffset               MetricConfig `mapstructure:"kafka.consumer_group.offset"`
+	KafkaConsumerGroupOffsetSum            MetricConfig `mapstructure:"kafka.consumer_group.offset_sum"`
+	KafkaPartitionCurrentOffset            MetricConfig `mapstructure:"kafka.partition.current_offset"`
+	KafkaPartitionOldestOffset             MetricConfig `mapstructure:"kafka.partition.oldest_offset"`
+	KafkaPartitionReplicas                 MetricConfig `mapstructure:"kafka.partition.replicas"`
+	KafkaPartitionReplicasInSync           MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
+	KafkaTopicPartitions                   MetricConfig `mapstructure:"kafka.topic.partitions"`
+	MessagingKafkaBrokersConsumerFetchRate MetricConfig `mapstructure:"messaging.kafka.brokers.consumer_fetch_rate"`
+	MessagingKafkaBrokersCount             MetricConfig `mapstructure:"messaging.kafka.brokers.count"`
+	MessagingKafkaBrokersIncomingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.incoming_byte_rate"`
+	MessagingKafkaBrokersOutgoingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.outgoing_byte_rate"`
+	MessagingKafkaBrokersRequestLatency    MetricConfig `mapstructure:"messaging.kafka.brokers.request_latency"`
+	MessagingKafkaBrokersRequestRate       MetricConfig `mapstructure:"messaging.kafka.brokers.request_rate"`
+	MessagingKafkaBrokersRequestSize       MetricConfig `mapstructure:"messaging.kafka.brokers.request_size"`
+	MessagingKafkaBrokersRequestsInFlight  MetricConfig `mapstructure:"messaging.kafka.brokers.requests_in_flight"`
+	MessagingKafkaBrokersResponseRate      MetricConfig `mapstructure:"messaging.kafka.brokers.response_rate"`
+	MessagingKafkaBrokersResponseSize      MetricConfig `mapstructure:"messaging.kafka.brokers.response_size"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		KafkaBrokers: MetricConfig{
 			Enabled: true,
-		},
-		KafkaBrokersConsumerFetchRate: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersCount: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersIncomingByteRate: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersOutgoingByteRate: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersRequestLatency: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersRequestRate: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersRequestSize: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersRequestsInFlight: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersResponseRate: MetricConfig{
-			Enabled: false,
-		},
-		KafkaBrokersResponseSize: MetricConfig{
-			Enabled: false,
 		},
 		KafkaConsumerGroupLag: MetricConfig{
 			Enabled: true,
@@ -112,6 +82,36 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		KafkaTopicPartitions: MetricConfig{
 			Enabled: true,
+		},
+		MessagingKafkaBrokersConsumerFetchRate: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersCount: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersIncomingByteRate: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersOutgoingByteRate: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersRequestLatency: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersRequestRate: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersRequestSize: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersRequestsInFlight: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersResponseRate: MetricConfig{
+			Enabled: false,
+		},
+		MessagingKafkaBrokersResponseSize: MetricConfig{
+			Enabled: false,
 		},
 	}
 }

@@ -102,36 +102,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersCountDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersIncomingByteRateDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersRequestLatencyDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersRequestRateDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersRequestSizeDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersRequestsInFlightDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersResponseRateDataPoint(ts, 1, 6)
-
-			allMetricsCount++
-			mb.RecordKafkaBrokersResponseSizeDataPoint(ts, 1, 6)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
@@ -172,6 +142,36 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersConsumerFetchRateDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersIncomingByteRateDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersOutgoingByteRateDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersRequestLatencyDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersRequestRateDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersRequestSizeDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersRequestsInFlightDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersResponseRateDataPoint(ts, 1, 6)
+
+			allMetricsCount++
+			mb.RecordMessagingKafkaBrokersResponseSizeDataPoint(ts, 1, 6)
+
 			res := pcommon.NewResource()
 			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
@@ -207,155 +207,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "messaging.kafka.brokers.consumer_fetch_rate":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.consumer_fetch_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.consumer_fetch_rate")
-					validatedMetrics["messaging.kafka.brokers.consumer_fetch_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average consumer fetch Rate", ms.At(i).Description())
-					assert.Equal(t, "{fetches}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.count":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.count"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.count")
-					validatedMetrics["messaging.kafka.brokers.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
-					assert.Equal(t, "{brokers}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "messaging.kafka.brokers.incoming_byte_rate":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.incoming_byte_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.incoming_byte_rate")
-					validatedMetrics["messaging.kafka.brokers.incoming_byte_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average tncoming Byte Rate in bytes/second", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.outgoing_byte_rate":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.outgoing_byte_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.outgoing_byte_rate")
-					validatedMetrics["messaging.kafka.brokers.outgoing_byte_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average outgoing Byte Rate in bytes/second.", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.request_latency":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_latency"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_latency")
-					validatedMetrics["messaging.kafka.brokers.request_latency"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average request latency in ms", ms.At(i).Description())
-					assert.Equal(t, "ms", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.request_rate":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_rate")
-					validatedMetrics["messaging.kafka.brokers.request_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average request rate per second.", ms.At(i).Description())
-					assert.Equal(t, "{requests}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.request_size":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_size"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_size")
-					validatedMetrics["messaging.kafka.brokers.request_size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average request size in bytes", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.requests_in_flight":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.requests_in_flight"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.requests_in_flight")
-					validatedMetrics["messaging.kafka.brokers.requests_in_flight"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Requests in flight", ms.At(i).Description())
-					assert.Equal(t, "{requests}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.response_rate":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.response_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.response_rate")
-					validatedMetrics["messaging.kafka.brokers.response_rate"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average response rate per second", ms.At(i).Description())
-					assert.Equal(t, "{response}/s", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
-				case "messaging.kafka.brokers.response_size":
-					assert.False(t, validatedMetrics["messaging.kafka.brokers.response_size"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.response_size")
-					validatedMetrics["messaging.kafka.brokers.response_size"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Average response size in bytes", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("broker")
-					assert.True(t, ok)
-					assert.EqualValues(t, 6, attrVal.Int())
 				case "kafka.consumer_group.lag":
 					assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
 					validatedMetrics["kafka.consumer_group.lag"] = true
@@ -544,6 +395,155 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
+				case "messaging.kafka.brokers.consumer_fetch_rate":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.consumer_fetch_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.consumer_fetch_rate")
+					validatedMetrics["messaging.kafka.brokers.consumer_fetch_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average consumer fetch Rate", ms.At(i).Description())
+					assert.Equal(t, "{fetches}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.count":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.count"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.count")
+					validatedMetrics["messaging.kafka.brokers.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{brokers}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "messaging.kafka.brokers.incoming_byte_rate":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.incoming_byte_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.incoming_byte_rate")
+					validatedMetrics["messaging.kafka.brokers.incoming_byte_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average tncoming Byte Rate in bytes/second", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.outgoing_byte_rate":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.outgoing_byte_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.outgoing_byte_rate")
+					validatedMetrics["messaging.kafka.brokers.outgoing_byte_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average outgoing Byte Rate in bytes/second.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.request_latency":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_latency"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_latency")
+					validatedMetrics["messaging.kafka.brokers.request_latency"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average request latency in ms", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.request_rate":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_rate")
+					validatedMetrics["messaging.kafka.brokers.request_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average request rate per second.", ms.At(i).Description())
+					assert.Equal(t, "{requests}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.request_size":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.request_size"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.request_size")
+					validatedMetrics["messaging.kafka.brokers.request_size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average request size in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.requests_in_flight":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.requests_in_flight"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.requests_in_flight")
+					validatedMetrics["messaging.kafka.brokers.requests_in_flight"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Requests in flight", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.response_rate":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.response_rate"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.response_rate")
+					validatedMetrics["messaging.kafka.brokers.response_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average response rate per second", ms.At(i).Description())
+					assert.Equal(t, "{response}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
+				case "messaging.kafka.brokers.response_size":
+					assert.False(t, validatedMetrics["messaging.kafka.brokers.response_size"], "Found a duplicate in the metrics slice: messaging.kafka.brokers.response_size")
+					validatedMetrics["messaging.kafka.brokers.response_size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average response size in bytes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("broker")
+					assert.True(t, ok)
+					assert.EqualValues(t, 6, attrVal.Int())
 				}
 			}
 		})

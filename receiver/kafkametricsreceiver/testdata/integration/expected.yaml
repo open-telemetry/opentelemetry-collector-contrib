@@ -3,7 +3,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: Number of brokers in the cluster.
-            Gauge:
+            gauge:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
