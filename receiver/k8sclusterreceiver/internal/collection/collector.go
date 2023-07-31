@@ -7,7 +7,6 @@ import (
 	"reflect"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -24,7 +23,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
@@ -175,12 +173,4 @@ func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmet
 	}
 
 	return km
-}
-
-func ocsToMetrics(ocs []*agentmetricspb.ExportMetricsServiceRequest) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	for _, ocm := range ocs {
-		internaldata.OCToMetrics(ocm.Node, ocm.Resource, ocm.Metrics).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-	}
-	return md
 }

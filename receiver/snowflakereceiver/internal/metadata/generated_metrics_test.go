@@ -175,7 +175,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
-			metrics := mb.Emit(WithSnowflakeAccountName("snowflake.account.name-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -184,18 +186,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("snowflake.account.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SnowflakeAccountName.Enabled, ok)
-			if mb.resourceAttributesConfig.SnowflakeAccountName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "snowflake.account.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

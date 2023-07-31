@@ -1751,10 +1751,8 @@ func newMetricRedisUptime(cfg MetricConfig) metricRedisUptime {
 type MetricsBuilder struct {
 	startTime                                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                              int                 // maximum observed number of metrics per resource.
-	resourceCapacity                             int                 // maximum observed number of resource attributes.
 	metricsBuffer                                pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo // contains version information
-	resourceAttributesConfig                     ResourceAttributesConfig
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1805,7 +1803,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
-		resourceAttributesConfig:                     mbc.ResourceAttributes,
 		metricRedisClientsBlocked:                    newMetricRedisClientsBlocked(mbc.Metrics.RedisClientsBlocked),
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
@@ -1851,27 +1848,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithRedisVersion sets provided value as "redis.version" attribute for current resource.
-func WithRedisVersion(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.RedisVersion.Enabled {
-			rm.Resource().Attributes().PutStr("redis.version", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1895,7 +1888,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/redisreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -1935,7 +1927,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisUptime.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

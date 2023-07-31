@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -104,7 +104,11 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 			dp.SetTimestamp(ts)
 		}
 	}
-	m := mb.Emit(imetadata.WithK8sNodeUID(string(node.UID)), imetadata.WithK8sNodeName(node.Name), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sNodeUID(string(node.UID))
+	rb.SetK8sNodeName(node.Name)
+	rb.SetOpencensusResourcetype("k8s")
+	m := mb.Emit(imetadata.WithResource(rb.Emit()))
 	customMetrics.MoveAndAppendTo(m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics())
 	return m
 

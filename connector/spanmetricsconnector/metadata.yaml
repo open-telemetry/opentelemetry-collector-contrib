@@ -6,4 +6,4 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib, sumo]
   codeowners:
-    active: [albertteoh, kovrus]
+    active: [albertteoh]
