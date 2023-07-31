@@ -241,9 +241,9 @@ func (k *K8sAPIServer) getStatefulSetMetrics(clusterName, timestampNs string) []
 	statefulSets := k.leaderElection.statefulSetClient.StatefulSetInfos()
 	for _, statefulSet := range statefulSets {
 		fields := map[string]interface{}{
-			ci.MetricName(ci.TypeClusterDeployment, ci.SpecReplicas):   statefulSet.Spec.Replicas,            // statefulset_spec_replicas
-			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicas): statefulSet.Status.Replicas,          // statefulset_status_replicas
-			ci.StatusReplicasAvailable:                                 statefulSet.Status.AvailableReplicas, // status_replicas_available
+			ci.MetricName(ci.TypeClusterStatefulSet, ci.SpecReplicas):   statefulSet.Spec.Replicas,            // statefulset_spec_replicas
+			ci.MetricName(ci.TypeClusterStatefulSet, ci.StatusReplicas): statefulSet.Status.Replicas,          // statefulset_status_replicas
+			ci.StatusReplicasAvailable:                                  statefulSet.Status.AvailableReplicas, // status_replicas_available
 		}
 		attributes := map[string]string{
 			ci.ClusterNameKey: clusterName,
@@ -268,8 +268,8 @@ func (k *K8sAPIServer) getReplicaSetMetrics(clusterName, timestampNs string) []p
 	replicaSets := k.leaderElection.replicaSetClient.ReplicaSetInfos()
 	for _, replicaSet := range replicaSets {
 		fields := map[string]interface{}{
-			ci.MetricName(ci.TypeClusterDeployment, ci.SpecReplicas):   replicaSet.Spec.Replicas,            // replicaset_spec_replicas
-			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicas): replicaSet.Status.Replicas,          // replicaset_status_replicas
+			ci.MetricName(ci.TypeClusterReplicaSet, ci.SpecReplicas):   replicaSet.Spec.Replicas,            // replicaset_spec_replicas
+			ci.MetricName(ci.TypeClusterReplicaSet, ci.StatusReplicas): replicaSet.Status.Replicas,          // replicaset_status_replicas
 			ci.StatusReplicasAvailable:                                 replicaSet.Status.AvailableReplicas, // status_replicas_available
 		}
 		attributes := map[string]string{
