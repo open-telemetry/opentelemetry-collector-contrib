@@ -105,7 +105,7 @@ func (rw *resourceWatcher) initialize() error {
 }
 
 func (rw *resourceWatcher) prepareSharedInformerFactory() error {
-	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, 0)
+	factory := informers.NewSharedInformerFactoryWithOptions(rw.client, rw.config.MetadataCollectionInterval)
 
 	// Map of supported group version kinds by name of a kind.
 	// If none of the group versions are supported by k8s server for a specific kind,

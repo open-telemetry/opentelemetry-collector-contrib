@@ -6,6 +6,8 @@ status:
     development: [metrics]
   distributions: [contrib, sumo]
   warnings: []
+  codeowners:
+    active: [codeboten]
 
 resource_attributes:
 

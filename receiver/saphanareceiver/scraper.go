@@ -23,6 +23,7 @@ import (
 type sapHanaScraper struct {
 	settings receiver.CreateSettings
 	cfg      *Config
+	rb       *metadata.ResourceBuilder
 	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
@@ -31,6 +32,7 @@ func newSapHanaScraper(settings receiver.CreateSettings, cfg *Config, factory sa
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mbs:      make(map[string]*metadata.MetricsBuilder),
 		factory:  factory,
 	}
@@ -80,15 +82,15 @@ func (s *sapHanaScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			errs.Add(fmt.Errorf("Error unmarshaling resource attributes for saphana scraper: %w", err))
 			continue
 		}
-		resourceOptions := []metadata.ResourceMetricsOption{metadata.WithDbSystem("saphana")}
+		s.rb.SetDbSystem("saphana")
 		for attribute, value := range resourceAttributes {
 			if attribute == "host" {
-				resourceOptions = append(resourceOptions, metadata.WithSaphanaHost(value))
+				s.rb.SetSaphanaHost(value)
 			} else {
 				errs.Add(fmt.Errorf("Unsupported resource attribute: %s", attribute))
 			}
 		}
-		resourceMetrics := mb.Emit(resourceOptions...)
+		resourceMetrics := mb.Emit(metadata.WithResource(s.rb.Emit()))
 		resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 

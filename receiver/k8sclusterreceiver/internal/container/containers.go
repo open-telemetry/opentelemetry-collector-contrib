@@ -15,8 +15,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -78,26 +78,22 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		}
 	}
 
-	resourceOptions := []imetadata.ResourceMetricsOption{
-		imetadata.WithK8sPodUID(string(pod.UID)),
-		imetadata.WithK8sPodName(pod.Name),
-		imetadata.WithK8sNodeName(pod.Spec.NodeName),
-		imetadata.WithK8sNamespaceName(pod.Namespace),
-		imetadata.WithOpencensusResourcetype("container"),
-		imetadata.WithContainerID(utils.StripContainerID(containerID)),
-		imetadata.WithK8sContainerName(c.Name),
-	}
+	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb.SetK8sPodUID(string(pod.UID))
+	rb.SetK8sPodName(pod.Name)
+	rb.SetK8sNodeName(pod.Spec.NodeName)
+	rb.SetK8sNamespaceName(pod.Namespace)
+	rb.SetOpencensusResourcetype("container")
+	rb.SetContainerID(utils.StripContainerID(containerID))
+	rb.SetK8sContainerName(c.Name)
 	image, err := docker.ParseImageName(imageStr)
 	if err != nil {
 		docker.LogParseError(err, imageStr, set.Logger)
 	} else {
-		resourceOptions = append(resourceOptions,
-			imetadata.WithContainerImageName(image.Repository),
-			imetadata.WithContainerImageTag(image.Tag))
+		rb.SetContainerImageName(image.Repository)
+		rb.SetContainerImageTag(image.Tag)
 	}
-	return mb.Emit(
-		resourceOptions...,
-	)
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {

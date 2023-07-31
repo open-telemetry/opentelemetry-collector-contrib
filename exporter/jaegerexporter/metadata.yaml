@@ -9,3 +9,5 @@ status:
   - contrib
   - grafana
   - redhat
+  codeowners:
+    active: [jpkrohling, frzifus]

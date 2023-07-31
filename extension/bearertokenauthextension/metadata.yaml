@@ -10,3 +10,5 @@ status:
   - observiq
   - redhat
   - sumo
+  codeowners:
+    active: [jpkrohling, pavankrish123, frzifus]

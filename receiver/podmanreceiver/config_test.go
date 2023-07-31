@@ -34,6 +34,7 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
 					InitialDelay:       time.Second,
+					Timeout:            5 * time.Second,
 				},
 				APIVersion: defaultAPIVersion,
 				Endpoint:   "unix:///run/podman/podman.sock",
@@ -46,6 +47,7 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Second,
 					InitialDelay:       time.Second,
+					Timeout:            20 * time.Second,
 				},
 				APIVersion: defaultAPIVersion,
 				Endpoint:   "http://example.com/",

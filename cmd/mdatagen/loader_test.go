@@ -18,7 +18,7 @@ func Test_loadMetadata(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "metadata.yaml",
+			name: "metadata-sample.yaml",
 			want: metadata{
 				Type:           "file",
 				SemConvVersion: "1.9.0",

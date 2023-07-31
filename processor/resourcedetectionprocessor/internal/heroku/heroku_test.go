@@ -16,13 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
-func TestNewDetector(t *testing.T) {
-	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
-	assert.NotNil(t, d)
-	assert.NoError(t, err)
-}
-
 func TestDetectTrue(t *testing.T) {
 	t.Setenv("HEROKU_DYNO_ID", "foo")
 	t.Setenv("HEROKU_APP_ID", "appid")
@@ -31,8 +24,8 @@ func TestDetectTrue(t *testing.T) {
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 	t.Setenv("HEROKU_SLUG_COMMIT", "23456")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	detector := &detector{resourceAttributes: resourceAttributes}
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)
@@ -54,8 +47,8 @@ func TestDetectTruePartial(t *testing.T) {
 	t.Setenv("HEROKU_APP_NAME", "appname")
 	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
 
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	detector := &detector{resourceAttributes: resourceAttributes}
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	require.NoError(t, err)

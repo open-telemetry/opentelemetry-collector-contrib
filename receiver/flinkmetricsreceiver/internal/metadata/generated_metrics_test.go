@@ -170,7 +170,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
 
-			metrics := mb.Emit(WithFlinkJobName("flink.job.name-val"), WithFlinkResourceTypeJobmanager, WithFlinkSubtaskIndex("flink.subtask.index-val"), WithFlinkTaskName("flink.task.name-val"), WithFlinkTaskmanagerID("flink.taskmanager.id-val"), WithHostName("host.name-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -179,53 +181,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("flink.job.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkJobName.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkJobName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "flink.job.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.resource.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkResourceType.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkResourceType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "jobmanager", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.subtask.index")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkSubtaskIndex.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkSubtaskIndex.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "flink.subtask.index-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.task.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkTaskName.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkTaskName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "flink.task.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.taskmanager.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkTaskmanagerID.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkTaskmanagerID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "flink.taskmanager.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("host.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HostName.Enabled, ok)
-			if mb.resourceAttributesConfig.HostName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "host.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 6)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

@@ -2126,10 +2126,8 @@ func newMetricK8sVolumeInodesUsed(cfg MetricConfig) metricK8sVolumeInodesUsed {
 type MetricsBuilder struct {
 	startTime                            pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                      int                 // maximum observed number of metrics per resource.
-	resourceCapacity                     int                 // maximum observed number of resource attributes.
 	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                            component.BuildInfo // contains version information
-	resourceAttributesConfig             ResourceAttributesConfig
 	metricContainerCPUTime               metricContainerCPUTime
 	metricContainerCPUUtilization        metricContainerCPUUtilization
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
@@ -2189,7 +2187,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
-		resourceAttributesConfig:             mbc.ResourceAttributes,
 		metricContainerCPUTime:               newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
 		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
 		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
@@ -2244,153 +2241,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithAwsVolumeID sets provided value as "aws.volume.id" attribute for current resource.
-func WithAwsVolumeID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.AwsVolumeID.Enabled {
-			rm.Resource().Attributes().PutStr("aws.volume.id", val)
-		}
-	}
-}
-
-// WithContainerID sets provided value as "container.id" attribute for current resource.
-func WithContainerID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ContainerID.Enabled {
-			rm.Resource().Attributes().PutStr("container.id", val)
-		}
-	}
-}
-
-// WithFsType sets provided value as "fs.type" attribute for current resource.
-func WithFsType(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.FsType.Enabled {
-			rm.Resource().Attributes().PutStr("fs.type", val)
-		}
-	}
-}
-
-// WithGcePdName sets provided value as "gce.pd.name" attribute for current resource.
-func WithGcePdName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.GcePdName.Enabled {
-			rm.Resource().Attributes().PutStr("gce.pd.name", val)
-		}
-	}
-}
-
-// WithGlusterfsEndpointsName sets provided value as "glusterfs.endpoints.name" attribute for current resource.
-func WithGlusterfsEndpointsName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.GlusterfsEndpointsName.Enabled {
-			rm.Resource().Attributes().PutStr("glusterfs.endpoints.name", val)
-		}
-	}
-}
-
-// WithGlusterfsPath sets provided value as "glusterfs.path" attribute for current resource.
-func WithGlusterfsPath(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.GlusterfsPath.Enabled {
-			rm.Resource().Attributes().PutStr("glusterfs.path", val)
-		}
-	}
-}
-
-// WithK8sContainerName sets provided value as "k8s.container.name" attribute for current resource.
-func WithK8sContainerName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sContainerName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.container.name", val)
-		}
-	}
-}
-
-// WithK8sNamespaceName sets provided value as "k8s.namespace.name" attribute for current resource.
-func WithK8sNamespaceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNamespaceName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.namespace.name", val)
-		}
-	}
-}
-
-// WithK8sNodeName sets provided value as "k8s.node.name" attribute for current resource.
-func WithK8sNodeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.node.name", val)
-		}
-	}
-}
-
-// WithK8sPersistentvolumeclaimName sets provided value as "k8s.persistentvolumeclaim.name" attribute for current resource.
-func WithK8sPersistentvolumeclaimName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sPersistentvolumeclaimName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.persistentvolumeclaim.name", val)
-		}
-	}
-}
-
-// WithK8sPodName sets provided value as "k8s.pod.name" attribute for current resource.
-func WithK8sPodName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sPodName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.pod.name", val)
-		}
-	}
-}
-
-// WithK8sPodUID sets provided value as "k8s.pod.uid" attribute for current resource.
-func WithK8sPodUID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sPodUID.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.pod.uid", val)
-		}
-	}
-}
-
-// WithK8sVolumeName sets provided value as "k8s.volume.name" attribute for current resource.
-func WithK8sVolumeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sVolumeName.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.volume.name", val)
-		}
-	}
-}
-
-// WithK8sVolumeType sets provided value as "k8s.volume.type" attribute for current resource.
-func WithK8sVolumeType(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.K8sVolumeType.Enabled {
-			rm.Resource().Attributes().PutStr("k8s.volume.type", val)
-		}
-	}
-}
-
-// WithPartition sets provided value as "partition" attribute for current resource.
-func WithPartition(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.Partition.Enabled {
-			rm.Resource().Attributes().PutStr("partition", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2414,7 +2281,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/kubeletstatsreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -2463,7 +2329,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

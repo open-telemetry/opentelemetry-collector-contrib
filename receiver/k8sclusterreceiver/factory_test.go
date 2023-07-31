@@ -38,6 +38,7 @@ func TestFactory(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: 5 * time.Minute,
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(

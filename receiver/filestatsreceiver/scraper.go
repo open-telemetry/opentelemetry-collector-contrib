@@ -12,6 +12,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -20,9 +21,10 @@ import (
 )
 
 type scraper struct {
-	include        string
-	logger         *zap.Logger
-	metricsBuilder *metadata.MetricsBuilder
+	include string
+	logger  *zap.Logger
+	rb      *metadata.ResourceBuilder
+	mb      *metadata.MetricsBuilder
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
@@ -46,22 +48,26 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 			continue
 		}
-		s.metricsBuilder.RecordFileSizeDataPoint(now, fileinfo.Size())
-		s.metricsBuilder.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
-		collectStats(now, fileinfo, s.metricsBuilder, s.logger)
-		s.metricsBuilder.EmitForResource(metadata.WithFileName(fileinfo.Name()), metadata.WithFilePath(path))
+		s.mb.RecordFileSizeDataPoint(now, fileinfo.Size())
+		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
+		collectStats(now, fileinfo, s.mb, s.logger)
+
+		s.rb.SetFileName(fileinfo.Name())
+		s.rb.SetFilePath(path)
+		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
 	}
 
 	if len(scrapeErrors) > 0 {
-		return s.metricsBuilder.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
+		return s.mb.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
-	return s.metricsBuilder.Emit(), nil
+	return s.mb.Emit(), nil
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, cfg *Config, logger *zap.Logger) *scraper {
+func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
-		include:        cfg.Include,
-		logger:         logger,
-		metricsBuilder: metricsBuilder,
+		include: cfg.Include,
+		logger:  settings.TelemetrySettings.Logger,
+		rb:      metadata.NewResourceBuilder(cfg.ResourceAttributes),
+		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

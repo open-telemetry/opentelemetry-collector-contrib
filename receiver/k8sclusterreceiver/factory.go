@@ -20,8 +20,9 @@ const (
 	distributionOpenShift  = "openshift"
 
 	// Default config values.
-	defaultCollectionInterval = 10 * time.Second
-	defaultDistribution       = distributionKubernetes
+	defaultCollectionInterval         = 10 * time.Second
+	defaultDistribution               = distributionKubernetes
+	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
@@ -34,6 +35,7 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: defaultMetadataCollectionInterval,
 	}
 }
 

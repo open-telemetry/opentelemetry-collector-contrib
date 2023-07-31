@@ -13,3 +13,5 @@ status:
   - redhat
   - splunk
   - sumo
+  codeowners:
+    active: [jpkrohling]

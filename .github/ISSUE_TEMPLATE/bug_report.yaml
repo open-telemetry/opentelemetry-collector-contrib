@@ -19,6 +19,7 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/configschema
+      - cmd/githubgen
       - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol

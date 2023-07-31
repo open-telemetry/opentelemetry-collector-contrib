@@ -209,7 +209,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithVcenterClusterName("vcenter.cluster.name-val"), WithVcenterDatastoreName("vcenter.datastore.name-val"), WithVcenterHostName("vcenter.host.name-val"), WithVcenterResourcePoolName("vcenter.resource_pool.name-val"), WithVcenterVMID("vcenter.vm.id-val"), WithVcenterVMName("vcenter.vm.name-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -218,53 +220,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("vcenter.cluster.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterClusterName.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterClusterName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.cluster.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.datastore.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterDatastoreName.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterDatastoreName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.datastore.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.host.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterHostName.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterHostName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.host.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.resource_pool.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterResourcePoolName.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterResourcePoolName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.resource_pool.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterVMID.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterVMID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.vm.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterVMName.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterVMName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "vcenter.vm.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 6)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

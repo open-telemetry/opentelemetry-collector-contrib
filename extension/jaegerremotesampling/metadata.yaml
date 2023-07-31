@@ -9,3 +9,5 @@ status:
   - grafana
   - redhat
   - sumo
+  codeowners:
+    active: [jpkrohling, frzifus]

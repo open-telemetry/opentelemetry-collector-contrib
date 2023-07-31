@@ -64,21 +64,30 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
-	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270008"))
+	rb.SetAerospikeNodeName("BB990C28F270008")
+	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("BB990C28F270008"))
+	rb.SetAerospikeNamespace("test")
+	rb.SetAerospikeNodeName("BB990C28F270008")
+	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "30"))
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270008"))
+	rb.SetAerospikeNamespace("bar")
+	rb.SetAerospikeNodeName("BB990C28F270008")
+	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
-	expectedMB.EmitForResource(metadata.WithAerospikeNodeName("BB990C28F270009"))
+	rb.SetAerospikeNodeName("BB990C28F270009")
+	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
-	expectedMB.EmitForResource(metadata.WithAerospikeNamespace("test"), metadata.WithAerospikeNodeName("BB990C28F270009"))
+	rb.SetAerospikeNamespace("test")
+	rb.SetAerospikeNodeName("BB990C28F270009")
+	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	// require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "badval", metadata.AttributeNamespaceComponentData))
 	// expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270009"))
@@ -129,6 +138,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
+		rb:            metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{

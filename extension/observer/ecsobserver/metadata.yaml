@@ -5,3 +5,5 @@ status:
   stability:
     beta: [extension]
   distributions: [contrib, aws, splunk, sumo]
+  codeowners:
+    active: [dmitryax @rmfitzpatrick]
