@@ -180,7 +180,7 @@ metrics:
     enabled: true
 ```
 
-### kafka.brokers.consumer_fetch_rate
+### messaging.kafka.brokers.consumer_fetch_rate
 
 Average consumer fetch Rate
 
@@ -194,7 +194,7 @@ Average consumer fetch Rate
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.count
+### messaging.kafka.brokers.count
 
 Number of brokers in the cluster.
 
@@ -202,7 +202,7 @@ Number of brokers in the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {brokers} | Sum | Int | Cumulative | false |
 
-### kafka.brokers.incoming_byte_rate
+### messaging.kafka.brokers.incoming_byte_rate
 
 Average tncoming Byte Rate in bytes/second
 
@@ -216,7 +216,7 @@ Average tncoming Byte Rate in bytes/second
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.outgoing_byte_rate
+### messaging.kafka.brokers.outgoing_byte_rate
 
 Average outgoing Byte Rate in bytes/second.
 
@@ -230,7 +230,7 @@ Average outgoing Byte Rate in bytes/second.
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.request_latency
+### messaging.kafka.brokers.request_latency
 
 Average request latency in ms
 
@@ -244,7 +244,7 @@ Average request latency in ms
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.request_rate
+### messaging.kafka.brokers.request_rate
 
 Average request rate per second.
 
@@ -258,7 +258,7 @@ Average request rate per second.
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.request_size
+### messaging.kafka.brokers.request_size
 
 Average request size in bytes
 
@@ -272,7 +272,7 @@ Average request size in bytes
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.requests_in_flight
+### messaging.kafka.brokers.requests_in_flight
 
 Requests in flight
 
@@ -286,7 +286,7 @@ Requests in flight
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.response_rate
+### messaging.kafka.brokers.response_rate
 
 Average response rate per second
 
@@ -300,7 +300,7 @@ Average response rate per second
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### kafka.brokers.response_size
+### messaging.kafka.brokers.response_size
 
 Average response size in bytes
 

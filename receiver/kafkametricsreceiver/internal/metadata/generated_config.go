@@ -26,16 +26,16 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for kafkametrics metrics.
 type MetricsConfig struct {
 	KafkaBrokers                  MetricConfig `mapstructure:"kafka.brokers"`
-	KafkaBrokersConsumerFetchRate MetricConfig `mapstructure:"kafka.brokers.consumer_fetch_rate"`
-	KafkaBrokersCount             MetricConfig `mapstructure:"kafka.brokers.count"`
-	KafkaBrokersIncomingByteRate  MetricConfig `mapstructure:"kafka.brokers.incoming_byte_rate"`
-	KafkaBrokersOutgoingByteRate  MetricConfig `mapstructure:"kafka.brokers.outgoing_byte_rate"`
-	KafkaBrokersRequestLatency    MetricConfig `mapstructure:"kafka.brokers.request_latency"`
-	KafkaBrokersRequestRate       MetricConfig `mapstructure:"kafka.brokers.request_rate"`
-	KafkaBrokersRequestSize       MetricConfig `mapstructure:"kafka.brokers.request_size"`
-	KafkaBrokersRequestsInFlight  MetricConfig `mapstructure:"kafka.brokers.requests_in_flight"`
-	KafkaBrokersResponseRate      MetricConfig `mapstructure:"kafka.brokers.response_rate"`
-	KafkaBrokersResponseSize      MetricConfig `mapstructure:"kafka.brokers.response_size"`
+	KafkaBrokersConsumerFetchRate MetricConfig `mapstructure:"messaging.kafka.brokers.consumer_fetch_rate"`
+	KafkaBrokersCount             MetricConfig `mapstructure:"messaging.kafka.brokers.count"`
+	KafkaBrokersIncomingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.incoming_byte_rate"`
+	KafkaBrokersOutgoingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.outgoing_byte_rate"`
+	KafkaBrokersRequestLatency    MetricConfig `mapstructure:"messaging.kafka.brokers.request_latency"`
+	KafkaBrokersRequestRate       MetricConfig `mapstructure:"messaging.kafka.brokers.request_rate"`
+	KafkaBrokersRequestSize       MetricConfig `mapstructure:"messaging.kafka.brokers.request_size"`
+	KafkaBrokersRequestsInFlight  MetricConfig `mapstructure:"messaging.kafka.brokers.requests_in_flight"`
+	KafkaBrokersResponseRate      MetricConfig `mapstructure:"messaging.kafka.brokers.response_rate"`
+	KafkaBrokersResponseSize      MetricConfig `mapstructure:"messaging.kafka.brokers.response_size"`
 	KafkaConsumerGroupLag         MetricConfig `mapstructure:"kafka.consumer_group.lag"`
 	KafkaConsumerGroupLagSum      MetricConfig `mapstructure:"kafka.consumer_group.lag_sum"`
 	KafkaConsumerGroupMembers     MetricConfig `mapstructure:"kafka.consumer_group.members"`

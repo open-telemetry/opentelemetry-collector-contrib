@@ -132,7 +132,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// kafka.brokers is deprecated. This should be removed in a future release.
 	s.mb.RecordKafkaBrokersDataPoint(now, brokerCount)
 
-	// kafka.brokers.count should replace kafka.brokers.
+	// messaging.kafka.brokers.count should replace kafka.brokers.
 	s.mb.RecordKafkaBrokersCountDataPoint(now, brokerCount)
 
 	return s.mb.Emit(), nil

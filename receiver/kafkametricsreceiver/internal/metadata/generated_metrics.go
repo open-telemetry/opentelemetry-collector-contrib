@@ -66,9 +66,9 @@ type metricKafkaBrokersConsumerFetchRate struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.consumer_fetch_rate metric with initial data.
+// init fills messaging.kafka.brokers.consumer_fetch_rate metric with initial data.
 func (m *metricKafkaBrokersConsumerFetchRate) init() {
-	m.data.SetName("kafka.brokers.consumer_fetch_rate")
+	m.data.SetName("messaging.kafka.brokers.consumer_fetch_rate")
 	m.data.SetDescription("Average consumer fetch Rate")
 	m.data.SetUnit("{fetches}/s")
 	m.data.SetEmptyGauge()
@@ -117,9 +117,9 @@ type metricKafkaBrokersCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.count metric with initial data.
+// init fills messaging.kafka.brokers.count metric with initial data.
 func (m *metricKafkaBrokersCount) init() {
-	m.data.SetName("kafka.brokers.count")
+	m.data.SetName("messaging.kafka.brokers.count")
 	m.data.SetDescription("Number of brokers in the cluster.")
 	m.data.SetUnit("{brokers}")
 	m.data.SetEmptySum()
@@ -168,9 +168,9 @@ type metricKafkaBrokersIncomingByteRate struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.incoming_byte_rate metric with initial data.
+// init fills messaging.kafka.brokers.incoming_byte_rate metric with initial data.
 func (m *metricKafkaBrokersIncomingByteRate) init() {
-	m.data.SetName("kafka.brokers.incoming_byte_rate")
+	m.data.SetName("messaging.kafka.brokers.incoming_byte_rate")
 	m.data.SetDescription("Average tncoming Byte Rate in bytes/second")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
@@ -219,9 +219,9 @@ type metricKafkaBrokersOutgoingByteRate struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.outgoing_byte_rate metric with initial data.
+// init fills messaging.kafka.brokers.outgoing_byte_rate metric with initial data.
 func (m *metricKafkaBrokersOutgoingByteRate) init() {
-	m.data.SetName("kafka.brokers.outgoing_byte_rate")
+	m.data.SetName("messaging.kafka.brokers.outgoing_byte_rate")
 	m.data.SetDescription("Average outgoing Byte Rate in bytes/second.")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
@@ -270,9 +270,9 @@ type metricKafkaBrokersRequestLatency struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.request_latency metric with initial data.
+// init fills messaging.kafka.brokers.request_latency metric with initial data.
 func (m *metricKafkaBrokersRequestLatency) init() {
-	m.data.SetName("kafka.brokers.request_latency")
+	m.data.SetName("messaging.kafka.brokers.request_latency")
 	m.data.SetDescription("Average request latency in ms")
 	m.data.SetUnit("ms")
 	m.data.SetEmptyGauge()
@@ -321,9 +321,9 @@ type metricKafkaBrokersRequestRate struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.request_rate metric with initial data.
+// init fills messaging.kafka.brokers.request_rate metric with initial data.
 func (m *metricKafkaBrokersRequestRate) init() {
-	m.data.SetName("kafka.brokers.request_rate")
+	m.data.SetName("messaging.kafka.brokers.request_rate")
 	m.data.SetDescription("Average request rate per second.")
 	m.data.SetUnit("{requests}/s")
 	m.data.SetEmptyGauge()
@@ -372,9 +372,9 @@ type metricKafkaBrokersRequestSize struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.request_size metric with initial data.
+// init fills messaging.kafka.brokers.request_size metric with initial data.
 func (m *metricKafkaBrokersRequestSize) init() {
-	m.data.SetName("kafka.brokers.request_size")
+	m.data.SetName("messaging.kafka.brokers.request_size")
 	m.data.SetDescription("Average request size in bytes")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -423,9 +423,9 @@ type metricKafkaBrokersRequestsInFlight struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.requests_in_flight metric with initial data.
+// init fills messaging.kafka.brokers.requests_in_flight metric with initial data.
 func (m *metricKafkaBrokersRequestsInFlight) init() {
-	m.data.SetName("kafka.brokers.requests_in_flight")
+	m.data.SetName("messaging.kafka.brokers.requests_in_flight")
 	m.data.SetDescription("Requests in flight")
 	m.data.SetUnit("{requests}")
 	m.data.SetEmptyGauge()
@@ -474,9 +474,9 @@ type metricKafkaBrokersResponseRate struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.response_rate metric with initial data.
+// init fills messaging.kafka.brokers.response_rate metric with initial data.
 func (m *metricKafkaBrokersResponseRate) init() {
-	m.data.SetName("kafka.brokers.response_rate")
+	m.data.SetName("messaging.kafka.brokers.response_rate")
 	m.data.SetDescription("Average response rate per second")
 	m.data.SetUnit("{response}/s")
 	m.data.SetEmptyGauge()
@@ -525,9 +525,9 @@ type metricKafkaBrokersResponseSize struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills kafka.brokers.response_size metric with initial data.
+// init fills messaging.kafka.brokers.response_size metric with initial data.
 func (m *metricKafkaBrokersResponseSize) init() {
-	m.data.SetName("kafka.brokers.response_size")
+	m.data.SetName("messaging.kafka.brokers.response_size")
 	m.data.SetDescription("Average response size in bytes")
 	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
@@ -1140,37 +1140,37 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	if mbc.Metrics.KafkaBrokers.Enabled {
-		settings.Logger.Warn("[WARNING] `kafka.brokers` should not be enabled: The metric is deprecated and will be removed. Use `kafka.brokers.count`")
+		settings.Logger.Warn("[WARNING] `kafka.brokers` should not be enabled: The metric is deprecated and will be removed. Use `messaging.kafka.brokers.count`")
 	}
 	if !mbc.Metrics.KafkaBrokersConsumerFetchRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.consumer_fetch_rate`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.consumer_fetch_rate`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.count`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.count`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersIncomingByteRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.incoming_byte_rate`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.incoming_byte_rate`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersOutgoingByteRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.outgoing_byte_rate`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.outgoing_byte_rate`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersRequestLatency.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.request_latency`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.request_latency`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersRequestRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.request_rate`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.request_rate`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersRequestSize.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.request_size`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.request_size`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersRequestsInFlight.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.requests_in_flight`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.requests_in_flight`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersResponseRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.response_rate`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.response_rate`: This metric will be enabled by default in the next versions.")
 	}
 	if !mbc.Metrics.KafkaBrokersResponseSize.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `kafka.brokers.response_size`: This metric will be enabled by default in the next versions.")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.response_size`: This metric will be enabled by default in the next versions.")
 	}
 	mb := &MetricsBuilder{
 		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
@@ -1299,52 +1299,52 @@ func (mb *MetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val 
 	mb.metricKafkaBrokers.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordKafkaBrokersConsumerFetchRateDataPoint adds a data point to kafka.brokers.consumer_fetch_rate metric.
+// RecordKafkaBrokersConsumerFetchRateDataPoint adds a data point to messaging.kafka.brokers.consumer_fetch_rate metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersConsumerFetchRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersConsumerFetchRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersCountDataPoint adds a data point to kafka.brokers.count metric.
+// RecordKafkaBrokersCountDataPoint adds a data point to messaging.kafka.brokers.count metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricKafkaBrokersCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordKafkaBrokersIncomingByteRateDataPoint adds a data point to kafka.brokers.incoming_byte_rate metric.
+// RecordKafkaBrokersIncomingByteRateDataPoint adds a data point to messaging.kafka.brokers.incoming_byte_rate metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersIncomingByteRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersIncomingByteRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersOutgoingByteRateDataPoint adds a data point to kafka.brokers.outgoing_byte_rate metric.
+// RecordKafkaBrokersOutgoingByteRateDataPoint adds a data point to messaging.kafka.brokers.outgoing_byte_rate metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersOutgoingByteRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersOutgoingByteRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersRequestLatencyDataPoint adds a data point to kafka.brokers.request_latency metric.
+// RecordKafkaBrokersRequestLatencyDataPoint adds a data point to messaging.kafka.brokers.request_latency metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersRequestLatencyDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersRequestLatency.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersRequestRateDataPoint adds a data point to kafka.brokers.request_rate metric.
+// RecordKafkaBrokersRequestRateDataPoint adds a data point to messaging.kafka.brokers.request_rate metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersRequestRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersRequestRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersRequestSizeDataPoint adds a data point to kafka.brokers.request_size metric.
+// RecordKafkaBrokersRequestSizeDataPoint adds a data point to messaging.kafka.brokers.request_size metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersRequestSizeDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersRequestSize.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersRequestsInFlightDataPoint adds a data point to kafka.brokers.requests_in_flight metric.
+// RecordKafkaBrokersRequestsInFlightDataPoint adds a data point to messaging.kafka.brokers.requests_in_flight metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersRequestsInFlightDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersRequestsInFlight.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersResponseRateDataPoint adds a data point to kafka.brokers.response_rate metric.
+// RecordKafkaBrokersResponseRateDataPoint adds a data point to messaging.kafka.brokers.response_rate metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersResponseRateDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersResponseRate.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 
-// RecordKafkaBrokersResponseSizeDataPoint adds a data point to kafka.brokers.response_size metric.
+// RecordKafkaBrokersResponseSizeDataPoint adds a data point to messaging.kafka.brokers.response_size metric.
 func (mb *MetricsBuilder) RecordKafkaBrokersResponseSizeDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
 	mb.metricKafkaBrokersResponseSize.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
