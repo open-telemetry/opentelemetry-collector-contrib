@@ -27,17 +27,13 @@ const (
 	formatRaw    string = "raw"
 )
 
-func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := model.LabelSet{"exporter": "OTLP"}
+const (
+	exporterLabel string = "exporter"
+	levelLabel    string = "level"
+)
 
-	// Map service.namespace + service.name to job
-	if job, ok := extractJob(resAttrs); ok {
-		out[model.JobLabel] = model.LabelValue(job)
-	}
-	// Map service.instance.id to instance
-	if instance, ok := extractInstance(resAttrs); ok {
-		out[model.InstanceLabel] = model.LabelValue(instance)
-	}
+func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
@@ -69,6 +65,28 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 		out = out.Merge(labels)
 	}
 
+	return out
+}
+
+func getDefaultLabels(resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := model.LabelSet{}
+	if enabled, ok := defaultLabelsEnabled[exporterLabel]; enabled || !ok {
+		out[model.LabelName(exporterLabel)] = "OTLP"
+	}
+
+	if enabled, ok := defaultLabelsEnabled[model.JobLabel]; enabled || !ok {
+		// Map service.namespace + service.name to job
+		if job, ok := extractJob(resAttrs); ok {
+			out[model.JobLabel] = model.LabelValue(job)
+		}
+	}
+
+	if enabled, ok := defaultLabelsEnabled[model.InstanceLabel]; enabled || !ok {
+		// Map service.instance.id to instance
+		if instance, ok := extractInstance(resAttrs); ok {
+			out[model.InstanceLabel] = model.LabelValue(instance)
+		}
+	}
 	return out
 }
 
