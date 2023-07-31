@@ -61,14 +61,12 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 			return nil, invalidMetricTypeError
 		}
 
-		sumMetric := createSumMetric(
-			tCtx.GetMetrics(),
-			metric.Name()+"_sum",
-			metric.Description(),
-			metric.Unit(),
-			aggTemp,
-			monotonic,
-		)
+		sumMetric := tCtx.GetMetrics().AppendEmpty()
+		sumMetric.SetDescription(metric.Description())
+		sumMetric.SetName(metric.Name() + "_sum")
+		sumMetric.SetUnit(metric.Unit())
+		sumMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
+		sumMetric.Sum().SetIsMonotonic(monotonic)
 
 		switch metric.Type() {
 		case pmetric.MetricTypeHistogram:
@@ -92,23 +90,6 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 
 		return nil, nil
 	}, nil
-}
-
-func createSumMetric(
-	metrics pmetric.MetricSlice,
-	name string,
-	description string,
-	unit string,
-	aggregationTemporality pmetric.AggregationTemporality,
-	isMonotonic bool,
-) pmetric.Metric {
-	sumMetric := metrics.AppendEmpty()
-	sumMetric.SetDescription(description)
-	sumMetric.SetName(name)
-	sumMetric.SetUnit(unit)
-	sumMetric.SetEmptySum().SetAggregationTemporality(aggregationTemporality)
-	sumMetric.Sum().SetIsMonotonic(isMonotonic)
-	return sumMetric
 }
 
 func addSumDataPoint(dataPoint SumCountDataPoint, destination pmetric.NumberDataPointSlice) {
