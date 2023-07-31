@@ -82,6 +82,39 @@ processors:
         - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
 
+#### Dropping non-HTTP spans
+```yaml
+processors:
+  filter/httponly:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["http.request.method"] == nil
+```
+
+#### Dropping HTTP spans
+```yaml
+processors:
+  filter/drophttp:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["http.request.method"] != nil
+```
+
+#### Dropping metrics with invalid type
+```yaml
+processors:
+  filter/dropempty:
+    error_mode: ignore
+    metrics:
+      metric:
+        - type == METRIC_DATA_TYPE_NONE
+      datapoint:
+        - metric.type == METRIC_DATA_TYPE_NONE
+```
+
+
 ### OTTL Functions
 
 The filter processor has access to all [OTTL Converter functions](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#converters)
