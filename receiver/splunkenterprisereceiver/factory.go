@@ -16,51 +16,49 @@ import (
 )
 
 const (
-    defaultInterval          = 10 * time.Minute
-    defaultMaxSearchWaitTime = 60 * time.Second
+	defaultInterval          = 10 * time.Minute
+	defaultMaxSearchWaitTime = 60 * time.Second
 )
 
 func createDefaultConfig() component.Config {
-    scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
-    scfg.CollectionInterval = defaultInterval
+	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scfg.CollectionInterval = defaultInterval
 
-    return &Config{
-        ScraperControllerSettings: scfg,
-        MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-        MaxSearchWaitTime: defaultMaxSearchWaitTime,
-    }
+	return &Config{
+		ScraperControllerSettings: scfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		MaxSearchWaitTime:         defaultMaxSearchWaitTime,
+	}
 }
 
 func NewFactory() receiver.Factory {
-    return receiver.NewFactory(
-        metadata.Type,
-        createDefaultConfig,
-        receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-    )
+	return receiver.NewFactory(
+		metadata.Type,
+		createDefaultConfig,
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+	)
 }
 
 func createMetricsReceiver(
-    _ context.Context,
-    params receiver.CreateSettings,
-    baseCfg component.Config,
-    consumer consumer.Metrics,
+	_ context.Context,
+	params receiver.CreateSettings,
+	baseCfg component.Config,
+	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-    cfg := baseCfg.(*Config)
-    splunkScraper := newSplunkMetricsScraper(params, cfg)
+	cfg := baseCfg.(*Config)
+	splunkScraper := newSplunkMetricsScraper(params, cfg)
 
-    scraper, err := scraperhelper.NewScraper(metadata.Type,
-        splunkScraper.scrape,
-        scraperhelper.WithStart(splunkScraper.start))
-    if err != nil {
-        return nil, err
-    }
+	scraper, err := scraperhelper.NewScraper(metadata.Type,
+		splunkScraper.scrape,
+		scraperhelper.WithStart(splunkScraper.start))
+	if err != nil {
+		return nil, err
+	}
 
-    return scraperhelper.NewScraperControllerReceiver(
-        &cfg.ScraperControllerSettings,
-        params,
-        consumer,
-        scraperhelper.AddScraper(scraper),
-        )
+	return scraperhelper.NewScraperControllerReceiver(
+		&cfg.ScraperControllerSettings,
+		params,
+		consumer,
+		scraperhelper.AddScraper(scraper),
+	)
 }
-
-

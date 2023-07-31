@@ -26,56 +26,56 @@ import (
 
 // handler function for mock server
 func mockIndexerThroughput(w http.ResponseWriter, r *http.Request) {
-    status := http.StatusOK
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
-    json.NewEncoder(w).Encode(`"{"links":{},"origin":"https://34.213.134.166:8089/services/server/introspection/indexer","updated":"2023-07-31T21:41:07+00:00","generator":{"build":"82c987350fde","version":"9.0.1"},"entry":[{"name":"indexer","id":"https://34.213.134.166:8089/services/server/introspection/indexer/indexer","updated":"1970-01-01T00:00:00+00:00","links":{"alternate":"/services/server/introspection/indexer/indexer","list":"/services/server/introspection/indexer/indexer","edit":"/services/server/introspection/indexer/indexer"},"author":"system","acl":{"app":"","can_list":true,"can_write":true,"modifiable":false,"owner":"system","perms":{"read":["admin","splunk-system-role"],"write":["admin","splunk-system-role"]},"removable":false,"sharing":"system"},"content":{"average_KBps":25.579690815904478,"eai:acl":null,"reason":"","status":"normal"}}],"paging":{"total":1,"perPage":30,"offset":0},"messages":[]}"`)
+	status := http.StatusOK
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(`"{"links":{},"origin":"https://34.213.134.166:8089/services/server/introspection/indexer","updated":"2023-07-31T21:41:07+00:00","generator":{"build":"82c987350fde","version":"9.0.1"},"entry":[{"name":"indexer","id":"https://34.213.134.166:8089/services/server/introspection/indexer/indexer","updated":"1970-01-01T00:00:00+00:00","links":{"alternate":"/services/server/introspection/indexer/indexer","list":"/services/server/introspection/indexer/indexer","edit":"/services/server/introspection/indexer/indexer"},"author":"system","acl":{"app":"","can_list":true,"can_write":true,"modifiable":false,"owner":"system","perms":{"read":["admin","splunk-system-role"],"write":["admin","splunk-system-role"]},"removable":false,"sharing":"system"},"content":{"average_KBps":25.579690815904478,"eai:acl":null,"reason":"","status":"normal"}}],"paging":{"total":1,"perPage":30,"offset":0},"messages":[]}"`)
 }
 
 // mock server create
 func createMockServer() *httptest.Server {
-    ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-        switch strings.TrimSpace(r.URL.Path) {
-        case "/services/server/introspection/indexer?output_mode=json":
-            mockIndexerThroughput(w, r)
-        default:
-            http.NotFoundHandler().ServeHTTP(w, r)
-        }
-    }))
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch strings.TrimSpace(r.URL.Path) {
+		case "/services/server/introspection/indexer?output_mode=json":
+			mockIndexerThroughput(w, r)
+		default:
+			http.NotFoundHandler().ServeHTTP(w, r)
+		}
+	}))
 
-    return ts
+	return ts
 }
 
 func TestScraper(t *testing.T) {
-    ts := createMockServer()
-    defer ts.Close()
+	ts := createMockServer()
+	defer ts.Close()
 
-    // in the future add more metrics
-    metricsettings := metadata.MetricsBuilderConfig{}
-    metricsettings.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled = true
+	// in the future add more metrics
+	metricsettings := metadata.MetricsBuilderConfig{}
+	metricsettings.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled = true
 
-    cfg := &Config{
-        Username: "admin",
-        Password: "securityFirst",
-        MaxSearchWaitTime: 11 * time.Second,
-        HTTPClientSettings: confighttp.HTTPClientSettings{
-            Endpoint: ts.URL,
-        },
-        ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-            CollectionInterval: 10 * time.Second,
-            InitialDelay: 1 * time.Second,
-        },
-        MetricsBuilderConfig: metricsettings,
-    }
+	cfg := &Config{
+		Username:          "admin",
+		Password:          "securityFirst",
+		MaxSearchWaitTime: 11 * time.Second,
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ts.URL,
+		},
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Second,
+			InitialDelay:       1 * time.Second,
+		},
+		MetricsBuilderConfig: metricsettings,
+	}
 
-    require.NoError(t, cfg.Validate())
+	require.NoError(t, cfg.Validate())
 
-    scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
 
-    err := scraper.start(context.Background(), componenttest.NewNopHost())
-    require.NoError(t, err)
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 
-    actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
@@ -85,4 +85,3 @@ func TestScraper(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
-

@@ -8,35 +8,36 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 func TestFactoryCreate(t *testing.T) {
-    factory := NewFactory()
-    require.EqualValues(t, "splunkenterprise", factory.Type())
+	factory := NewFactory()
+	require.EqualValues(t, "splunkenterprise", factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
-    expectedConf := &Config{
-        MaxSearchWaitTime: 60 * time.Second,
-        ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-            CollectionInterval: 10 * time.Minute,
-            InitialDelay: 1 * time.Second,
-        },
-        MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-    }
+	expectedConf := &Config{
+		MaxSearchWaitTime: 60 * time.Second,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			CollectionInterval: 10 * time.Minute,
+			InitialDelay:       1 * time.Second,
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
 
-    testConf := createDefaultConfig().(*Config)
+	testConf := createDefaultConfig().(*Config)
 
-    require.Equal(t, expectedConf, testConf)
+	require.Equal(t, expectedConf, testConf)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-    tests := []struct {
+	tests := []struct {
 		desc string
 		run  func(t *testing.T)
 	}{
