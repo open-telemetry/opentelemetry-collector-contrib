@@ -167,9 +167,9 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 			continue
 		}
 
-		addrs, err := iface.Addrs()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, err)
+		addrs, errAddr := iface.Addrs()
+		if errAddr != nil {
+			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, errAddr)
 		}
 		for _, addr := range addrs {
 			ip, _, err := net.ParseCIDR(addr.String())
