@@ -61,10 +61,7 @@ type Provider interface {
 	HostArch() (string, error)
 
 	// HostIPv4Addresses returns the host's IPv4 interfaces
-	HostIPv4Addresses() ([]net.IP, error)
-
-	// HostIPv6Addresses returns the host's IPv6 interfaces
-	HostIPv6Addresses() ([]net.IP, error)
+	HostIPs() ([]net.IP, error)
 }
 
 type systemMetadataProvider struct {
@@ -158,7 +155,7 @@ func (systemMetadataProvider) HostArch() (string, error) {
 	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
 }
 
-func (p systemMetadataProvider) hostAddresses(ipv4 bool) (ips []net.IP, err error) {
+func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -185,21 +182,9 @@ func (p systemMetadataProvider) hostAddresses(ipv4 bool) (ips []net.IP, err erro
 				continue
 			}
 
-			// If ip is not an IPv4 address, To4 returns nil.
-			isAddrIPv4 := ip.To4() != nil
-			if ipv4 == isAddrIPv4 {
-				ips = append(ips, ip)
-			}
+			ips = append(ips, ip)
 		}
 
 	}
 	return ips, err
-}
-
-func (p systemMetadataProvider) HostIPv4Addresses() ([]net.IP, error) {
-	return p.hostAddresses(true)
-}
-
-func (p systemMetadataProvider) HostIPv6Addresses() ([]net.IP, error) {
-	return p.hostAddresses(false)
 }

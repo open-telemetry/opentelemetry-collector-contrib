@@ -62,21 +62,14 @@ func (m *mockMetadata) ReverseLookupHost() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) HostIPv4Addresses() ([]net.IP, error) {
-	args := m.MethodCalled("HostIPv4Addresses")
-	return args.Get(0).([]net.IP), args.Error(1)
-}
-
-func (m *mockMetadata) HostIPv6Addresses() ([]net.IP, error) {
-	args := m.MethodCalled("HostIPv6Addresses")
+func (m *mockMetadata) HostIPs() ([]net.IP, error) {
+	args := m.MethodCalled("HostIPs")
 	return args.Get(0).([]net.IP), args.Error(1)
 }
 
 var (
-	testIPv4Attribute = []any{"192.168.1.140"}
-	testIPv4Addresses = []net.IP{net.ParseIP(testIPv4Attribute[0].(string))}
-	testIPv6Attribute = []any{"fe80::abc2:4a28:737a:609e", "fe80::849e:eaff:fe31:3c90"}
-	testIPv6Addresses = []net.IP{net.ParseIP(testIPv6Attribute[0].(string)), net.ParseIP(testIPv6Attribute[1].(string))}
+	testIPsAttribute = []any{"192.168.1.140", "fe80::abc2:4a28:737a:609e"}
+	testIPsAddresses = []net.IP{net.ParseIP(testIPsAttribute[0].(string)), net.ParseIP(testIPsAttribute[1].(string))}
 )
 
 func TestNewDetector(t *testing.T) {
@@ -110,8 +103,7 @@ func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostArch.Enabled = true
 	cfg.HostID.Enabled = true
-	cfg.HostIpv4Addresses.Enabled = true
-	cfg.HostIpv6Addresses.Enabled = true
+	cfg.HostIP.Enabled = true
 	return cfg
 }
 
@@ -121,8 +113,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("OSType").Return("darwin", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
-	md.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	md.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	md.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
@@ -136,8 +127,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "2",
 		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ipv4.addresses":         testIPv4Attribute,
-		"host.ipv6.addresses":         testIPv6Attribute,
+		"host.ip":                     testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -151,8 +141,7 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdHostname.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"},
 		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
@@ -176,8 +165,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdHostname.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
@@ -191,8 +179,7 @@ func TestEnableHostID(t *testing.T) {
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "3",
 		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ipv4.addresses":         testIPv4Attribute,
-		"host.ipv6.addresses":         testIPv6Attribute,
+		"host.ip":                     testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -204,8 +191,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("OSType").Return("darwin", nil)
 	mdHostname.On("HostID").Return("1", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdHostname.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
@@ -219,8 +205,7 @@ func TestUseHostname(t *testing.T) {
 		conventions.AttributeOSType:   "darwin",
 		conventions.AttributeHostID:   "1",
 		conventions.AttributeHostArch: conventions.AttributeHostArchAMD64,
-		"host.ipv4.addresses":         testIPv4Attribute,
-		"host.ipv6.addresses":         testIPv6Attribute,
+		"host.ip":                     testIPsAttribute,
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
@@ -234,8 +219,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
 	mdFQDN.On("HostArch").Return("amd64", nil)
-	mdFQDN.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdFQDN.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdFQDN.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
@@ -250,8 +234,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdHostname.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
@@ -266,8 +249,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("OSType").Return("", errors.New("err"))
 	mdOSType.On("HostID").Return("", errors.New("err"))
 	mdOSType.On("HostArch").Return("amd64", nil)
-	mdOSType.On("HostIPv4Addresses").Return(testIPv4Addresses, nil)
-	mdOSType.On("HostIPv6Addresses").Return(testIPv6Addresses, nil)
+	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
 
 	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"},
 		rb: metadata.NewResourceBuilder(allEnabledConfig())}
