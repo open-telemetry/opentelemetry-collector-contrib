@@ -6,4 +6,4 @@ status:
     beta: [traces]
   distributions: [contrib, sumo]
   codeowners:
-    active: [leonsp-ai, dmitryax, mx-psi]
+    active: [leonsp-ai, dmitryax, mx-psi, TylerHelmuth]

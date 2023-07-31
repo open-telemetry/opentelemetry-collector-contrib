@@ -163,6 +163,7 @@ func extractMetricWithMatchingAttrs(metric pmetric.Metric, f internalFilter) pme
 	newMetric.SetUnit(metric.Unit())
 
 	switch metric.Type() {
+	//exhaustive:enforce
 	case pmetric.MetricTypeGauge:
 		newMetric.SetEmptyGauge().DataPoints().EnsureCapacity(matchedDpsCount)
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
@@ -443,6 +444,7 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	to.SetName(from.Name())
 	to.SetUnit(from.Unit())
 	to.SetDescription(from.Description())
+	//exhaustive:enforce
 	switch from.Type() {
 	case pmetric.MetricTypeGauge:
 		to.SetEmptyGauge()
@@ -461,6 +463,7 @@ func copyMetricDetails(from, to pmetric.Metric) {
 // rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
 // The iteration terminates if f returns false.
 func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		for i := 0; i < metric.Gauge().DataPoints().Len(); i++ {
@@ -501,6 +504,7 @@ func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 }
 
 func countDataPoints(metric pmetric.Metric) int {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return metric.Gauge().DataPoints().Len()

@@ -68,7 +68,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordFileSizeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithFileName("file.name-val"), WithFilePath("file.path-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -77,25 +79,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("file.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FileName.Enabled, ok)
-			if mb.resourceAttributesConfig.FileName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "file.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("file.path")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FilePath.Enabled, ok)
-			if mb.resourceAttributesConfig.FilePath.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "file.path-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

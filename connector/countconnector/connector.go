@@ -101,7 +101,7 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Scope(), resourceMetric.Resource())
+				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
 				errors = multierr.Append(errors, metricsCounter.update(ctx, pcommon.NewMap(), mCtx))
 
 				switch metric.Type() {

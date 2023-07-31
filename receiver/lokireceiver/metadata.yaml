@@ -8,4 +8,4 @@ status:
   - contrib
   - sumo
   codeowners:
-    active: [mar4uk, kovrus, jpkrohling]
+    active: [mar4uk, jpkrohling]

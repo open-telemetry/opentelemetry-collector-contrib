@@ -12,17 +12,13 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
 func Test_Scrape(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopCreateSettings())
-	s := newScraper(metricsBuilder, cfg, zap.NewNop())
+	s := newScraper(cfg, receivertest.NewNopCreateSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -57,8 +53,7 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Metrics.FileAtime.Enabled = true
 	cfg.Metrics.FileCtime.Enabled = true
 
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopCreateSettings())
-	s := newScraper(metricsBuilder, cfg, zap.NewNop())
+	s := newScraper(cfg, receivertest.NewNopCreateSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())

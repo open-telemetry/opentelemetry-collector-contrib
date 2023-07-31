@@ -115,8 +115,7 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("HostArch").Return("amd64", nil)
 	md.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop(), hostnameSources: []string{"dns"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -139,16 +138,15 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.On("Hostname").Return("hostname", nil)
 	mdHostname.On("FQDN").Return("", errors.New("err"))
 	mdHostname.On("OSType").Return("darwin", nil)
-	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
 	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"},
-		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
+	detector := newTestDetector(mdHostname, []string{"dns", "os"}, metadata.DefaultResourceAttributesConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdHostname.AssertExpectations(t)
+	mdHostname.AssertNotCalled(t, "HostID")
 
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
@@ -167,8 +165,7 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("HostArch").Return("amd64", nil)
 	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"dns", "os"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -193,8 +190,7 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("HostArch").Return("amd64", nil)
 	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector := &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
@@ -221,8 +217,7 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("HostArch").Return("amd64", nil)
 	mdFQDN.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector := &Detector{provider: mdFQDN, logger: zap.NewNop(), hostnameSources: []string{"dns"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
@@ -236,8 +231,7 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("HostArch").Return("amd64", nil)
 	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector = &Detector{provider: mdHostname, logger: zap.NewNop(), hostnameSources: []string{"os"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
@@ -247,14 +241,41 @@ func TestDetectError(t *testing.T) {
 	mdOSType := &mockMetadata{}
 	mdOSType.On("FQDN").Return("fqdn", nil)
 	mdOSType.On("OSType").Return("", errors.New("err"))
-	mdOSType.On("HostID").Return("", errors.New("err"))
+	mdOSType.On("HostID").Return("1", nil)
 	mdOSType.On("HostArch").Return("amd64", nil)
 	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
 
-	detector = &Detector{provider: mdOSType, logger: zap.NewNop(), hostnameSources: []string{"dns"},
-		rb: metadata.NewResourceBuilder(allEnabledConfig())}
+	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
 	assert.Equal(t, "", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
+
+	// Host ID fails. All other attributes should be set.
+	mdHostID := &mockMetadata{}
+	mdHostID.On("Hostname").Return("hostname", nil)
+	mdHostID.On("OSType").Return("linux", nil)
+	mdHostID.On("HostID").Return("", errors.New("err"))
+	mdHostID.On("HostArch").Return("arm64", nil)
+	mdHostID.On("HostIPs").Return(testIPsAddresses, nil)
+
+	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
+	res, schemaURL, err = detector.Detect(context.Background())
+	assert.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	assert.Equal(t, map[string]any{
+		conventions.AttributeHostName: "hostname",
+		conventions.AttributeOSType:   "linux",
+		conventions.AttributeHostArch: conventions.AttributeHostArchARM64,
+		"host.ip":                     testIPsAttribute,
+	}, res.Attributes().AsRaw())
+}
+
+func newTestDetector(mock *mockMetadata, hostnameSources []string, resCfg metadata.ResourceAttributesConfig) *Detector {
+	return &Detector{
+		provider: mock,
+		logger:   zap.NewNop(),
+		cfg:      Config{HostnameSources: hostnameSources, ResourceAttributes: resCfg},
+		rb:       metadata.NewResourceBuilder(resCfg),
+	}
 }

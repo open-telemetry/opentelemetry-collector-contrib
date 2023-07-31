@@ -24,7 +24,7 @@ const (
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
+		name      string
 		configSet testConfigCollection
 	}{
 		{
@@ -84,14 +84,9 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end }})
 			{{- end }}
 
-			metrics := mb.Emit(
-			{{- $sep := "" }}
-			{{- range $name, $info := .ResourceAttributes -}}
-				{{- $sep }}With{{ $name.Render }}
-				{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.TestValue }}){{ end }}
-				{{- $sep = ", " }}
-			{{- end -}}
-			)
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -100,24 +95,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			{{- $assignSign := ":=" }}
-			attrCount := 0
-			enabledAttrCount := 0
-			{{- range $name, $info := .ResourceAttributes }}
-				attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
-				attrCount++
-				assert.Equal(t, mb.resourceAttributesConfig.{{ $name.Render }}.Enabled, ok)
-				if mb.resourceAttributesConfig.{{ $name.Render }}.Enabled {
-					enabledAttrCount++
-					assert.EqualValues(t, {{ $info.TestValue }}, attrVal.{{ $info.Type }}()
-					{{- if or (eq $info.Type.String "Slice") (eq $info.Type.String "Map") }}.AsRaw(){{ end }})
-				}
-
-				{{- $assignSign = "=" }}
-			{{- end }}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, {{ len .ResourceAttributes }})
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
