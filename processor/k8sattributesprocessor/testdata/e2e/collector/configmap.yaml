@@ -10,6 +10,10 @@ data:
         endpoint: {{ .HostEndpoint }}:4317
         tls:
           insecure: true
+      logging:
+        verbosity: detailed
+        sampling_initial: 5
+        sampling_thereafter: 200
     extensions:
       health_check: {}
     processors:
@@ -40,6 +44,7 @@ data:
           - k8s.job.name
           - k8s.job.uid
           - k8s.node.name
+          - k8s.cluster.uid
           - container.id
           - container.image.name
           - container.image.tag
