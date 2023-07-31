@@ -11,7 +11,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.5.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.2
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.4
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.18.0
 	github.com/aws/aws-sdk-go v1.44.309
