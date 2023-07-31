@@ -427,6 +427,7 @@ func (c *K8sClient) ShutdownDaemonSetClient() {
 func (c *K8sClient) GetStatefulSetClient() StatefulSetClient {
 	var err error
 	c.ssMu.Lock()
+	defer c.ssMu.Unlock()
 	if c.statefulSet == nil || reflect.ValueOf(c.statefulSet).IsNil() {
 		c.statefulSet, err = newStatefulSetClient(c.clientSet, c.logger, statefulSetSyncCheckerOption(c.syncChecker))
 		if err != nil {
@@ -434,7 +435,6 @@ func (c *K8sClient) GetStatefulSetClient() StatefulSetClient {
 			c.statefulSet = &noOpStatefulSetClient{}
 		}
 	}
-	c.ssMu.Unlock()
 	return c.statefulSet
 }
 

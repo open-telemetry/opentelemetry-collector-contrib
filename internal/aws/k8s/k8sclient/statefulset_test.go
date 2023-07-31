@@ -88,8 +88,8 @@ func TestStatefulSetClient(t *testing.T) {
 				Replicas: 20,
 			},
 			Status: &StatefulSetStatus{
-				Replicas:          15,
-				AvailableReplicas: 15,
+				Replicas:          10,
+				AvailableReplicas: 10,
 			},
 		},
 	}

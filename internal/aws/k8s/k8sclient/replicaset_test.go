@@ -145,8 +145,8 @@ func TestReplicaSetClient(t *testing.T) {
 				Replicas: 20,
 			},
 			Status: &ReplicaSetStatus{
-				Replicas:          15,
-				AvailableReplicas: 15,
+				Replicas:          10,
+				AvailableReplicas: 10,
 			},
 		},
 	}
