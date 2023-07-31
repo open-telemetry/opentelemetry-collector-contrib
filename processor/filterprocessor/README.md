@@ -110,8 +110,6 @@ processors:
     metrics:
       metric:
         - type == METRIC_DATA_TYPE_NONE
-      datapoint:
-        - metric.type == METRIC_DATA_TYPE_NONE
 ```
 
 
