@@ -442,7 +442,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/julienschmidt/httprouter v1.3.0 // indirect
 	github.com/karrick/godirwalk v1.17.0 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
@@ -512,7 +511,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.82.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.82.0 // indirect
@@ -1025,8 +1023,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../../receiver/prometheusexecreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
 
