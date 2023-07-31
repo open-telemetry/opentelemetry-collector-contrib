@@ -3,7 +3,7 @@ receivers:
     endpoint: notdefault:1313
     username: notdefault_password
     password: notdefault_password
-    key_file: notdefault/path/keyfile
+    keyfile: notdefault/path/keyfile
     collection_interval: 13m
     known_hosts: path/to/collector_known_hosts
     ignore_host_key: false
