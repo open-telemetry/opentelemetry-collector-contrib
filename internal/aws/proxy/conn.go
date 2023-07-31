@@ -92,10 +92,7 @@ var getEC2Region = func(s *session.Session) (string, error) {
 	}
 	ctxFallbackEnable, cancelFallbackEnable := context.WithTimeout(context.Background(), override.TimePerCall)
 	defer cancelFallbackEnable()
-	return ec2metadata.New(s, &aws.Config{
-		Retryer:                   override.IMDSRetryer,
-		EC2MetadataEnableFallback: aws.Bool(true),
-	}).RegionWithContext(ctxFallbackEnable)
+	return ec2metadata.New(s, &aws.Config{}).RegionWithContext(ctxFallbackEnable)
 }
 
 func getAWSConfigSession(c *Config, logger *zap.Logger) (*aws.Config, *session.Session, error) {
