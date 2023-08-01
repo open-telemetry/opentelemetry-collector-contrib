@@ -37,4 +37,3 @@ type IdxTContent struct {
 	Status string  `json:"status"`
 	AvgKb  float64 `json:"average_KBps"`
 }
-
