@@ -17,28 +17,28 @@ import (
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetricsBeta(set receiver.CreateSettings, hpa *autoscalingv2beta2.HorizontalPodAutoscaler) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetricsBeta(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, hpa *autoscalingv2beta2.HorizontalPodAutoscaler) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
 	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
 	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
 	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sHpaUID(string(hpa.UID))
 	rb.SetK8sHpaName(hpa.Name)
 	rb.SetK8sNamespaceName(hpa.Namespace)
 	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
-func GetMetrics(set receiver.CreateSettings, hpa *autoscalingv2.HorizontalPodAutoscaler) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, hpa *autoscalingv2.HorizontalPodAutoscaler) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sHpaMaxReplicasDataPoint(ts, int64(hpa.Spec.MaxReplicas))
 	mb.RecordK8sHpaMinReplicasDataPoint(ts, int64(*hpa.Spec.MinReplicas))
 	mb.RecordK8sHpaCurrentReplicasDataPoint(ts, int64(hpa.Status.CurrentReplicas))
 	mb.RecordK8sHpaDesiredReplicasDataPoint(ts, int64(hpa.Status.DesiredReplicas))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sHpaUID(string(hpa.UID))
 	rb.SetK8sHpaName(hpa.Name)
 	rb.SetK8sNamespaceName(hpa.Namespace)

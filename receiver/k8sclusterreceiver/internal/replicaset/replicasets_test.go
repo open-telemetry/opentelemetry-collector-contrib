@@ -16,13 +16,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestReplicasetMetrics(t *testing.T) {
 	rs := testutils.NewReplicaSet("1")
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), rs)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), rs)
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
