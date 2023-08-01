@@ -2577,10 +2577,11 @@ func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftCluster
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                 pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                 // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo // contains version information
+	config                                    MetricsBuilderConfig // config of the metrics builder.
+	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                           int                  // maximum observed number of metrics per resource.
+	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                 component.BuildInfo  // contains version information.
 	metricK8sContainerCPULimit                metricK8sContainerCPULimit
 	metricK8sContainerCPURequest              metricK8sContainerCPURequest
 	metricK8sContainerEphemeralstorageLimit   metricK8sContainerEphemeralstorageLimit
@@ -2647,12 +2648,13 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                             pmetric.NewMetrics(),
-		buildInfo:                                 settings.BuildInfo,
-		metricK8sContainerCPULimit:                newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
-		metricK8sContainerCPURequest:              newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
-		metricK8sContainerEphemeralstorageLimit:   newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
+		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
+		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
 		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
 		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
 		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
@@ -2707,6 +2709,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.

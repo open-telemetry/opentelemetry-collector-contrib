@@ -306,8 +306,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetSparkApplicationID("spark.application.id-val")
+			rb.SetSparkApplicationName("spark.application.name-val")
+			rb.SetSparkExecutorID("spark.executor.id-val")
+			rb.SetSparkJobID(12)
+			rb.SetSparkStageAttemptID(22)
+			rb.SetSparkStageID(14)
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
