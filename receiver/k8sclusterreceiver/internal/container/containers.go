@@ -33,8 +33,8 @@ const (
 
 // GetSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
-func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetSpecMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, c corev1.Container, pod *corev1.Pod) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	for k, r := range c.Resources.Requests {
 		//exhaustive:ignore
@@ -78,7 +78,7 @@ func GetSpecMetrics(set receiver.CreateSettings, c corev1.Container, pod *corev1
 		}
 	}
 
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
