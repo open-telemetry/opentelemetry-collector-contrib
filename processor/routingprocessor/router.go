@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
@@ -47,6 +36,7 @@ func newRouter[E component.Component, K any](
 	defaultExporterIDs []string,
 	settings component.TelemetrySettings,
 	parser ottl.Parser[K],
+
 ) router[E, K] {
 	return router[E, K]{
 		logger: settings.Logger,
@@ -132,14 +122,11 @@ func (r *router[E, K]) registerRouteExporters(available map[component.ID]compone
 func (r *router[E, K]) getStatementFrom(item RoutingTableItem) (*ottl.Statement[K], error) {
 	var statement *ottl.Statement[K]
 	if item.Statement != "" {
-		statements, err := r.parser.ParseStatements([]string{item.Statement})
+		var err error
+		statement, err = r.parser.ParseStatement(item.Statement)
 		if err != nil {
 			return statement, err
 		}
-		if len(statements) != 1 {
-			return statement, errors.New("more than one statement specified")
-		}
-		statement = statements[0]
 	}
 	return statement, nil
 }

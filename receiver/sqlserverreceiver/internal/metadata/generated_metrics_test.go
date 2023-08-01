@@ -3,14 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -18,416 +13,402 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+type testConfigCollection int
 
-	assert.Equal(t, 0, observedLogs.Len())
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["sqlserver.batch.request.rate"] = true
-	mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.batch.sql_compilation.rate"] = true
-	mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.batch.sql_recompilation.rate"] = true
-	mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.lock.wait.rate"] = true
-	mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.lock.wait_time.avg"] = true
-	mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.page.buffer_cache.hit_ratio"] = true
-	mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.page.checkpoint.flush.rate"] = true
-	mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.page.lazy_write.rate"] = true
-	mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.page.life_expectancy"] = true
-	mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.page.operation.rate"] = true
-	mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperations(1))
-
-	enabledMetrics["sqlserver.page.split.rate"] = true
-	mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction.rate"] = true
-	mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction.write.rate"] = true
-	mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.flush.data.rate"] = true
-	mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.flush.rate"] = true
-	mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.flush.wait.rate"] = true
-	mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.growth.count"] = true
-	mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.shrink.count"] = true
-	mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.transaction_log.usage"] = true
-	mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
-
-	enabledMetrics["sqlserver.user.connection.count"] = true
-	mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
-	assert.Equal(t, 0, observedLogs.Len())
+			defaultMetricsCount := 0
+			allMetricsCount := 0
 
-	mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
-	mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
-	mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
-	mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
-	mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
-	mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
-	mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
-	mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
-	mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
-	mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperations(1))
-	mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
-	mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
 
-	metrics := mb.Emit(WithSqlserverDatabaseName("attr-val"))
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("sqlserver.database.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "sqlserver.batch.request.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of batch requests received by SQL Server.", ms.At(i).Description())
-			assert.Equal(t, "{requests}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.batch.request.rate"] = struct{}{}
-		case "sqlserver.batch.sql_compilation.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of SQL compilations needed.", ms.At(i).Description())
-			assert.Equal(t, "{compilations}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.batch.sql_compilation.rate"] = struct{}{}
-		case "sqlserver.batch.sql_recompilation.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of SQL recompilations needed.", ms.At(i).Description())
-			assert.Equal(t, "{compilations}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.batch.sql_recompilation.rate"] = struct{}{}
-		case "sqlserver.lock.wait.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of lock requests resulting in a wait.", ms.At(i).Description())
-			assert.Equal(t, "{requests}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.lock.wait.rate"] = struct{}{}
-		case "sqlserver.lock.wait_time.avg":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Average wait time for all lock requests that had to wait.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.lock.wait_time.avg"] = struct{}{}
-		case "sqlserver.page.buffer_cache.hit_ratio":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pages found in the buffer pool without having to read from disk.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.page.buffer_cache.hit_ratio"] = struct{}{}
-		case "sqlserver.page.checkpoint.flush.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of pages flushed by operations requiring dirty pages to be flushed.", ms.At(i).Description())
-			assert.Equal(t, "{pages}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.page.checkpoint.flush.rate"] = struct{}{}
-		case "sqlserver.page.lazy_write.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of lazy writes moving dirty pages to disk.", ms.At(i).Description())
-			assert.Equal(t, "{writes}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.page.lazy_write.rate"] = struct{}{}
-		case "sqlserver.page.life_expectancy":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Time a page will stay in the buffer pool.", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["sqlserver.page.life_expectancy"] = struct{}{}
-		case "sqlserver.page.operation.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of physical database page operations issued.", ms.At(i).Description())
-			assert.Equal(t, "{operations}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["sqlserver.page.operation.rate"] = struct{}{}
-		case "sqlserver.page.split.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of pages split as a result of overflowing index pages.", ms.At(i).Description())
-			assert.Equal(t, "{pages}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.page.split.rate"] = struct{}{}
-		case "sqlserver.transaction.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of transactions started for the database (not including XTP-only transactions).", ms.At(i).Description())
-			assert.Equal(t, "{transactions}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.transaction.rate"] = struct{}{}
-		case "sqlserver.transaction.write.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of transactions that wrote to the database and committed.", ms.At(i).Description())
-			assert.Equal(t, "{transactions}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.transaction.write.rate"] = struct{}{}
-		case "sqlserver.transaction_log.flush.data.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Total number of log bytes flushed.", ms.At(i).Description())
-			assert.Equal(t, "By/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.transaction_log.flush.data.rate"] = struct{}{}
-		case "sqlserver.transaction_log.flush.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of log flushes.", ms.At(i).Description())
-			assert.Equal(t, "{flushes}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.transaction_log.flush.rate"] = struct{}{}
-		case "sqlserver.transaction_log.flush.wait.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of commits waiting for a transaction log flush.", ms.At(i).Description())
-			assert.Equal(t, "{commits}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["sqlserver.transaction_log.flush.wait.rate"] = struct{}{}
-		case "sqlserver.transaction_log.growth.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of transaction log expansions for a database.", ms.At(i).Description())
-			assert.Equal(t, "{growths}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["sqlserver.transaction_log.growth.count"] = struct{}{}
-		case "sqlserver.transaction_log.shrink.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of transaction log shrinks for a database.", ms.At(i).Description())
-			assert.Equal(t, "{shrinks}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["sqlserver.transaction_log.shrink.count"] = struct{}{}
-		case "sqlserver.transaction_log.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Percent of transaction log space used.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["sqlserver.transaction_log.usage"] = struct{}{}
-		case "sqlserver.user.connection.count":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of users connected to the SQL Server.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["sqlserver.user.connection.count"] = struct{}{}
-		}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperationsRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
+			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "sqlserver.batch.request.rate":
+					assert.False(t, validatedMetrics["sqlserver.batch.request.rate"], "Found a duplicate in the metrics slice: sqlserver.batch.request.rate")
+					validatedMetrics["sqlserver.batch.request.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of batch requests received by SQL Server.", ms.At(i).Description())
+					assert.Equal(t, "{requests}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.batch.sql_compilation.rate":
+					assert.False(t, validatedMetrics["sqlserver.batch.sql_compilation.rate"], "Found a duplicate in the metrics slice: sqlserver.batch.sql_compilation.rate")
+					validatedMetrics["sqlserver.batch.sql_compilation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of SQL compilations needed.", ms.At(i).Description())
+					assert.Equal(t, "{compilations}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.batch.sql_recompilation.rate":
+					assert.False(t, validatedMetrics["sqlserver.batch.sql_recompilation.rate"], "Found a duplicate in the metrics slice: sqlserver.batch.sql_recompilation.rate")
+					validatedMetrics["sqlserver.batch.sql_recompilation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of SQL recompilations needed.", ms.At(i).Description())
+					assert.Equal(t, "{compilations}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.lock.wait.rate":
+					assert.False(t, validatedMetrics["sqlserver.lock.wait.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.rate")
+					validatedMetrics["sqlserver.lock.wait.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lock requests resulting in a wait.", ms.At(i).Description())
+					assert.Equal(t, "{requests}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.lock.wait_time.avg":
+					assert.False(t, validatedMetrics["sqlserver.lock.wait_time.avg"], "Found a duplicate in the metrics slice: sqlserver.lock.wait_time.avg")
+					validatedMetrics["sqlserver.lock.wait_time.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average wait time for all lock requests that had to wait.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.page.buffer_cache.hit_ratio":
+					assert.False(t, validatedMetrics["sqlserver.page.buffer_cache.hit_ratio"], "Found a duplicate in the metrics slice: sqlserver.page.buffer_cache.hit_ratio")
+					validatedMetrics["sqlserver.page.buffer_cache.hit_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pages found in the buffer pool without having to read from disk.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.page.checkpoint.flush.rate":
+					assert.False(t, validatedMetrics["sqlserver.page.checkpoint.flush.rate"], "Found a duplicate in the metrics slice: sqlserver.page.checkpoint.flush.rate")
+					validatedMetrics["sqlserver.page.checkpoint.flush.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of pages flushed by operations requiring dirty pages to be flushed.", ms.At(i).Description())
+					assert.Equal(t, "{pages}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.page.lazy_write.rate":
+					assert.False(t, validatedMetrics["sqlserver.page.lazy_write.rate"], "Found a duplicate in the metrics slice: sqlserver.page.lazy_write.rate")
+					validatedMetrics["sqlserver.page.lazy_write.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of lazy writes moving dirty pages to disk.", ms.At(i).Description())
+					assert.Equal(t, "{writes}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.page.life_expectancy":
+					assert.False(t, validatedMetrics["sqlserver.page.life_expectancy"], "Found a duplicate in the metrics slice: sqlserver.page.life_expectancy")
+					validatedMetrics["sqlserver.page.life_expectancy"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Time a page will stay in the buffer pool.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.page.operation.rate":
+					assert.False(t, validatedMetrics["sqlserver.page.operation.rate"], "Found a duplicate in the metrics slice: sqlserver.page.operation.rate")
+					validatedMetrics["sqlserver.page.operation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of physical database page operations issued.", ms.At(i).Description())
+					assert.Equal(t, "{operations}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "sqlserver.page.split.rate":
+					assert.False(t, validatedMetrics["sqlserver.page.split.rate"], "Found a duplicate in the metrics slice: sqlserver.page.split.rate")
+					validatedMetrics["sqlserver.page.split.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of pages split as a result of overflowing index pages.", ms.At(i).Description())
+					assert.Equal(t, "{pages}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.rate")
+					validatedMetrics["sqlserver.transaction.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of transactions started for the database (not including XTP-only transactions).", ms.At(i).Description())
+					assert.Equal(t, "{transactions}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction.write.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction.write.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction.write.rate")
+					validatedMetrics["sqlserver.transaction.write.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of transactions that wrote to the database and committed.", ms.At(i).Description())
+					assert.Equal(t, "{transactions}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction_log.flush.data.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.flush.data.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.flush.data.rate")
+					validatedMetrics["sqlserver.transaction_log.flush.data.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total number of log bytes flushed.", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction_log.flush.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.flush.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.flush.rate")
+					validatedMetrics["sqlserver.transaction_log.flush.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of log flushes.", ms.At(i).Description())
+					assert.Equal(t, "{flushes}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction_log.flush.wait.rate":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.flush.wait.rate"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.flush.wait.rate")
+					validatedMetrics["sqlserver.transaction_log.flush.wait.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of commits waiting for a transaction log flush.", ms.At(i).Description())
+					assert.Equal(t, "{commits}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.transaction_log.growth.count":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.growth.count"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.growth.count")
+					validatedMetrics["sqlserver.transaction_log.growth.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of transaction log expansions for a database.", ms.At(i).Description())
+					assert.Equal(t, "{growths}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.transaction_log.shrink.count":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.shrink.count"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.shrink.count")
+					validatedMetrics["sqlserver.transaction_log.shrink.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of transaction log shrinks for a database.", ms.At(i).Description())
+					assert.Equal(t, "{shrinks}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.transaction_log.usage":
+					assert.False(t, validatedMetrics["sqlserver.transaction_log.usage"], "Found a duplicate in the metrics slice: sqlserver.transaction_log.usage")
+					validatedMetrics["sqlserver.transaction_log.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percent of transaction log space used.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.user.connection.count":
+					assert.False(t, validatedMetrics["sqlserver.user.connection.count"], "Found a duplicate in the metrics slice: sqlserver.user.connection.count")
+					validatedMetrics["sqlserver.user.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of users connected to the SQL Server.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
-
-	assert.Equal(t, 0, observedLogs.Len())
-
-	mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
-	mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
-	mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
-	mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
-	mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
-	mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
-	mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
-	mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
-	mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
-	mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperations(1))
-	mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
-	mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
-	mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourceprocessor
 
@@ -28,6 +17,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 var (
@@ -110,8 +102,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			traces := ttn.AllTraces()
 			require.Len(t, traces, 1)
-			traces[0].ResourceSpans().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantTraceData, traces[0])
+			assert.NoError(t, ptracetest.CompareTraces(wantTraceData, traces[0]))
 
 			// Test metrics consumer
 			tmn := new(consumertest.MetricsSink)
@@ -125,8 +116,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			metrics := tmn.AllMetrics()
 			require.Len(t, metrics, 1)
-			metrics[0].ResourceMetrics().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantMetricData, metrics[0])
+			assert.NoError(t, pmetrictest.CompareMetrics(wantMetricData, metrics[0]))
 
 			// Test logs consumer
 			tln := new(consumertest.LogsSink)
@@ -140,8 +130,7 @@ func TestResourceProcessorAttributesUpsert(t *testing.T) {
 			require.NoError(t, err)
 			logs := tln.AllLogs()
 			require.Len(t, logs, 1)
-			logs[0].ResourceLogs().At(0).Resource().Attributes().Sort()
-			assert.EqualValues(t, wantLogData, logs[0])
+			assert.NoError(t, plogtest.CompareLogs(wantLogData, logs[0]))
 		})
 	}
 }
@@ -155,7 +144,6 @@ func generateTraceData(attributes map[string]string) ptrace.Traces {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return td
 }
 
@@ -168,7 +156,6 @@ func generateMetricData(attributes map[string]string) pmetric.Metrics {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return md
 }
 
@@ -181,6 +168,5 @@ func generateLogData(attributes map[string]string) plog.Logs {
 	for k, v := range attributes {
 		resource.Attributes().PutStr(k, v)
 	}
-	resource.Attributes().Sort()
 	return ld
 }

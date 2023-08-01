@@ -1,16 +1,5 @@
-// Copyright 2022, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter/internal/converter/model"
 
@@ -62,6 +51,7 @@ type OTelSpanData struct {
 	Operation      string            `json:"operation"`
 	TraceState     string            `json:"trace_state,omitempty"`
 	Tags           map[string]string `json:"tags,omitempty"`
+	Resource       map[string]string `json:"resource,omitempty"`
 }
 
 type Span struct {
@@ -92,7 +82,8 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 		Timestamp:      uint64(otelSpan.StartTimestamp()) / uint64(time.Millisecond),
 		Duration:       (uint64(otelSpan.EndTimestamp()) - uint64(otelSpan.StartTimestamp())) / uint64(time.Millisecond),
 		Data: OTelSpanData{
-			Tags: make(map[string]string),
+			Tags:     make(map[string]string),
+			Resource: make(map[string]string),
 		},
 		From: &fromS,
 	}
@@ -125,6 +116,12 @@ func ConvertPDataSpanToInstanaSpan(fromS FromS, otelSpan ptrace.Span, serviceNam
 
 	otelSpan.Attributes().Range(func(k string, v pcommon.Value) bool {
 		instanaSpan.Data.Tags[k] = v.AsString()
+
+		return true
+	})
+
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		instanaSpan.Data.Resource[k] = v.AsString()
 
 		return true
 	})

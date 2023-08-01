@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 # Adds code owners without write access as reviewers on a PR. Note that
 # the code owners must still be a member of the `open-telemetry`
@@ -50,8 +39,18 @@ main () {
     declare -A REVIEWED
 
     for REVIEWER in ${REVIEW_LOGINS}; do
-        REVIEWED["@${REVIEWER}"]=true
+        # GitHub adds "app/" in front of user logins. The API docs don't make
+        # it clear what this means or whether it will always be present. The
+        # '/' character isn't a valid character for usernames, so this won't
+        # replace characters within a username.
+        REVIEWED["@${REVIEWER//app\//}"]=true
     done
+
+    if [[ -v REVIEWED[@] ]]; then
+        echo "Users that have already reviewed this PR and will not have another review requested:" "${!REVIEWED[@]}"
+    else
+        echo "This PR has not yet been reviewed, all code owners are eligible for a review request"
+    fi
 
     for COMPONENT in ${COMPONENTS}; do
         # Files will be in alphabetical order and there are many files to
@@ -107,7 +106,8 @@ main () {
     done
 
     if [[ -n "${LABELS}" ]]; then
-        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels to #${PR}"
+        echo "Adding labels: ${LABELS}"
+        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels"
     else
         echo "No labels found"
     fi
@@ -123,6 +123,7 @@ main () {
     # The GitHub API validates that authors are not requested to review, but
     # accepts duplicate logins and logins that are already reviewers.
     if [[ -n "${REVIEWERS}" ]]; then
+        echo "Requesting review from ${REVIEWERS}"
         curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
@@ -130,10 +131,12 @@ main () {
             "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
             -d "{\"reviewers\":[${REVIEWERS}]}" \
             | jq ".message" \
-            || echo "Failed to add reviewers to #${PR}"
+            || echo "jq was unable to parse GitHub's response"
     else
         echo "No code owners found"
     fi
 }
 
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
 main || echo "Failed to run $0"

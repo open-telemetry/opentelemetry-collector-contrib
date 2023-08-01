@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -20,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -37,9 +27,7 @@ func TestClientSpanWithURLAttribute(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
@@ -60,9 +48,7 @@ func TestClientSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
@@ -87,9 +73,7 @@ func TestClientSpanWithPeerAttributes(t *testing.T) {
 	assert.Equal(t, "10.8.17.36", *httpData.Request.ClientIP)
 
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))
@@ -122,9 +106,7 @@ func TestClientSpanWithPeerIp4Attributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://10.8.17.36:8080/users/junit"))
@@ -143,9 +125,7 @@ func TestClientSpanWithPeerIp6Attributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://2001:db8:85a3::8a2e:370:7334/users/junit"))
@@ -165,9 +145,7 @@ func TestServerSpanWithURLAttribute(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
@@ -188,9 +166,7 @@ func TestServerSpanWithSchemeHostTargetAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
@@ -212,9 +188,7 @@ func TestServerSpanWithSchemeServernamePortTargetAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "https://api.example.com/users/junit"))
@@ -238,9 +212,7 @@ func TestServerSpanWithSchemeNamePortTargetAttributes(t *testing.T) {
 	assert.NotNil(t, httpData)
 	assert.NotNil(t, filtered)
 	w := testWriters.borrow()
-	if err := w.Encode(httpData); err != nil {
-		assert.Fail(t, "invalid json")
-	}
+	require.NoError(t, w.Encode(httpData))
 	jsonStr := w.String()
 	testWriters.release(w)
 	assert.True(t, strings.Contains(jsonStr, "http://kb234.example.com:8080/users/junit"))

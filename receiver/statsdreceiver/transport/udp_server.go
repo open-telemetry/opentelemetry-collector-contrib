@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 
@@ -50,7 +39,7 @@ func (u *udpServer) ListenAndServe(
 	parser protocol.Parser,
 	nextConsumer consumer.Metrics,
 	reporter Reporter,
-	transferChan chan<- string,
+	transferChan chan<- Metric,
 ) error {
 	if parser == nil || nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
@@ -60,11 +49,11 @@ func (u *udpServer) ListenAndServe(
 
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
-		n, _, err := u.packetConn.ReadFrom(buf)
+		n, addr, err := u.packetConn.ReadFrom(buf)
 		if n > 0 {
 			bufCopy := make([]byte, n)
 			copy(bufCopy, buf)
-			u.handlePacket(bufCopy, transferChan)
+			u.handlePacket(bufCopy, addr, transferChan)
 		}
 		if err != nil {
 			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
@@ -87,7 +76,8 @@ func (u *udpServer) Close() error {
 
 func (u *udpServer) handlePacket(
 	data []byte,
-	transferChan chan<- string,
+	addr net.Addr,
+	transferChan chan<- Metric,
 ) {
 	buf := bytes.NewBuffer(data)
 	for {
@@ -100,7 +90,7 @@ func (u *udpServer) handlePacket(
 		}
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
-			transferChan <- line
+			transferChan <- Metric{line, addr}
 		}
 	}
 }

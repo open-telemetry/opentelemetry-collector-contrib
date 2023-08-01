@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver
 
@@ -22,8 +11,10 @@ import (
 	"net"
 	"reflect"
 	"runtime"
+	"sync/atomic"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
@@ -81,7 +72,7 @@ const (
 func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 	broker := "some-broker:1234"
 	queue := "someQueue"
-	maxUnacked := uint32(100)
+	maxUnacked := int32(100)
 	logger := zap.NewNop()
 	tests := []struct {
 		name    string
@@ -113,7 +104,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		// // yes tls success secure
+		// yes tls success secure
 		{
 			name: "expecting success with TLS expecting an amqps connection",
 			cfg: &Config{ // invalid to only provide a key file
@@ -137,7 +128,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 				logger: logger,
 			},
 		},
-		// // no tls success plaintext
+		// no tls success plaintext
 		{
 			name: "expecting success without TLS expecting an amqp connection",
 			cfg: &Config{ // invalid to only provide a key file
@@ -192,7 +183,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 func TestAMQPDialFailure(t *testing.T) {
 	const expectedAddr = "some-host:1234"
 	var expectedErr = fmt.Errorf("some error")
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		return nil, expectedErr
@@ -218,7 +209,7 @@ func TestAMQPDialConfigOptionsWithoutTLS(t *testing.T) {
 	const expectedAddr = "some-host:1234"
 	var expectedErr = fmt.Errorf("some error")
 	expectedAuthConnOption := amqp.SASLTypeAnonymous()
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		testFunctionEquality(t, expectedAuthConnOption, opts.SASLType)
@@ -249,7 +240,7 @@ func TestAMQPDialConfigOptionsWithTLS(t *testing.T) {
 	expectedTLSConnOption := &tls.Config{
 		InsecureSkipVerify: false,
 	}
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
 		assert.Equal(t, expectedAddr, addr)
 		testFunctionEquality(t, expectedAuthConnOption, opts.SASLType)
@@ -283,10 +274,10 @@ func TestAMQPNewClientDialAndCloseCtxTimeoutFailure(t *testing.T) {
 	service, conn := startMockedService(t)
 
 	closed := false
-	conn.closeHandle = func() error {
+	conn.setCloseHandler(func() error {
 		closed = true
 		return nil
-	}
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 	go func() {
@@ -309,10 +300,10 @@ func TestAMQPNewClientDialAndCloseConnFailure(t *testing.T) {
 	mockWriteData(conn, writeData)
 
 	closed := false
-	conn.closeHandle = func() error {
+	conn.setCloseHandler(func() error {
 		closed = true
 		return fmt.Errorf("some error")
-	}
+	})
 	service.close(context.Background())
 	// expect conn.Close to have been called
 	assert.True(t, closed)
@@ -345,13 +336,13 @@ func TestAMQPAcknowledgeMessage(t *testing.T) {
 	writeCalled := make(chan struct{})
 	// Expected accept from AMQP frame for first received message
 	// "\x00\x00\x00\x1c\x02\x00\x00\x00\x00\x53\x15\xd0\x00\x00\x00\x0c\x00\x00\x00\x05\x41\x43\x40\x41\x00\x53\x24\x45"
-	conn.writeHandle = func(b []byte) (n int, err error) {
+	conn.setWriteHandler(func(b []byte) (n int, err error) {
 		// assert that a disposition is written
 		assert.Equal(t, byte(0x15), b[10])
 		assert.Equal(t, byte(0x24), b[26]) // 0x24 at the 27th byte in this case means accept
 		close(writeCalled)
 		return len(b), nil
-	}
+	})
 	err = service.accept(context.Background(), msg)
 	assert.NoError(t, err)
 	assertChannelClosed(t, writeCalled)
@@ -366,13 +357,13 @@ func TestAMQPModifyMessage(t *testing.T) {
 	writeCalled := make(chan struct{})
 	// Expected modify from AMQP frame for first received message
 	// "\x00\x00\x00\x1c\x02\x00\x00\x00\x00\x53\x15\xd0\x00\x00\x00\x0c\x00\x00\x00\x05\x41\x43\x40\x41\x00\x53\x25\x45"
-	conn.writeHandle = func(b []byte) (n int, err error) {
+	conn.setWriteHandler(func(b []byte) (n int, err error) {
 		// assert that a disposition is written
 		assert.Equal(t, byte(0x15), b[10])
 		assert.Equal(t, byte(0x27), b[26]) // 0x27 at the 27th byte in this case means modify
 		close(writeCalled)
 		return len(b), nil
-	}
+	})
 	err = service.failed(context.Background(), msg)
 	assert.NoError(t, err)
 	select {
@@ -420,10 +411,10 @@ func closeMockedAMQPService(t *testing.T, service *amqpMessagingService, conn *c
 	mockWriteData(conn, writeData)
 
 	closed := false
-	conn.closeHandle = func() error {
+	conn.setCloseHandler(func() error {
 		closed = true
 		return nil
-	}
+	})
 	service.close(context.Background())
 	// expect conn.Close to have been called
 	assert.True(t, closed)
@@ -480,7 +471,7 @@ func TestAMQPNewClientDialWithBadAttachResponseExpectingError(t *testing.T) {
 }
 
 func mockWriteData(conn *connMock, data [][]byte, callbacks ...func(sentData, receivedData []byte)) {
-	conn.writeHandle = func(b []byte) (n int, err error) {
+	conn.setWriteHandler(func(b []byte) (n int, err error) {
 		var next []byte
 		if len(data) != 0 {
 			next = data[0]
@@ -493,13 +484,13 @@ func mockWriteData(conn *connMock, data [][]byte, callbacks ...func(sentData, re
 			conn.nextData <- next
 		}
 		return len(b), nil
-	}
+	})
 }
 
 func mockDialFunc(conn *connMock) {
-	dialFunc = func(addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
+	dialFunc = func(ctx context.Context, addr string, opts *amqp.ConnOptions) (*amqp.Conn, error) {
 		defer func() { dialFunc = amqp.Dial }() // reset dialFunc
-		return amqp.NewConn(conn, opts)
+		return amqp.NewConn(ctx, conn, opts)
 	}
 }
 
@@ -640,9 +631,20 @@ func TestConfigAMQPAuthenticationNoDetails(t *testing.T) {
 // Write will call writeHandle
 type connMock struct {
 	nextData    chan []byte
-	writeHandle func([]byte) (n int, err error)
-	closeHandle func() error
+	writeHandle unsafe.Pointer // expected type: func([]byte) (n int, err error)
+	closeHandle unsafe.Pointer // expected type: func() error
 	remaining   *bytes.Reader
+}
+
+type writeHandler func([]byte) (n int, err error)
+type closeHandler func() error
+
+func (c *connMock) setWriteHandler(handler writeHandler) {
+	atomic.StorePointer(&c.writeHandle, unsafe.Pointer(&handler))
+}
+
+func (c *connMock) setCloseHandler(handler closeHandler) {
+	atomic.StorePointer(&c.closeHandle, unsafe.Pointer(&handler))
 }
 
 func (c *connMock) Read(b []byte) (n int, err error) {
@@ -663,15 +665,17 @@ func (c *connMock) Read(b []byte) (n int, err error) {
 }
 
 func (c *connMock) Write(b []byte) (n int, err error) {
-	if c.writeHandle != nil {
-		return c.writeHandle(b)
+	handlerPointer := atomic.LoadPointer(&c.writeHandle)
+	if handlerPointer != nil {
+		return (*(*writeHandler)(handlerPointer))(b)
 	}
 	return len(b), nil
 }
 
 func (c *connMock) Close() error {
-	if c.closeHandle != nil {
-		return c.closeHandle()
+	handlerPointer := atomic.LoadPointer(&c.closeHandle)
+	if handlerPointer != nil {
+		return (*(*closeHandler)(handlerPointer))()
 	}
 	return nil
 }
@@ -681,13 +685,13 @@ func (c *connMock) LocalAddr() net.Addr {
 func (c *connMock) RemoteAddr() net.Addr {
 	return nil
 }
-func (c *connMock) SetDeadline(t time.Time) error {
+func (c *connMock) SetDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetReadDeadline(t time.Time) error {
+func (c *connMock) SetReadDeadline(_ time.Time) error {
 	return nil
 }
-func (c *connMock) SetWriteDeadline(t time.Time) error {
+func (c *connMock) SetWriteDeadline(_ time.Time) error {
 	return nil
 }
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver"
 
@@ -29,8 +18,6 @@ import (
 )
 
 const (
-	typeStr                   = "elasticsearch"
-	stability                 = component.StabilityLevelBeta
 	defaultCollectionInterval = 10 * time.Second
 	defaultHTTPClientTimeout  = 10 * time.Second
 )
@@ -38,24 +25,25 @@ const (
 // NewFactory creates a factory for elasticsearch receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
+		ScraperControllerSettings: cfg,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
 		},
-		Metrics: metadata.DefaultMetricsSettings(),
-		Nodes:   []string{"_all"},
-		Indices: []string{"_all"},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Nodes:                []string{"_all"},
+		Indices:              []string{"_all"},
 	}
 }
 
@@ -74,7 +62,7 @@ func createMetricsReceiver(
 	}
 	es := newElasticSearchScraper(params, c)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, es.scrape, scraperhelper.WithStart(es.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, es.scrape, scraperhelper.WithStart(es.start))
 	if err != nil {
 		return nil, err
 	}

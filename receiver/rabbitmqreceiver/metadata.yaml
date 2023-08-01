@@ -1,14 +1,25 @@
-name: rabbitmqreceiver
+type: rabbitmq
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, cpheps]
 
 resource_attributes:
   rabbitmq.queue.name:
     description: The name of the RabbitMQ queue.
+    enabled: true
     type: string
   rabbitmq.node.name:
     description: The name of the RabbitMQ node.
+    enabled: true
     type: string
   rabbitmq.vhost.name:
     description: The name of the RabbitMQ vHost.
+    enabled: true
     type: string
 
 attributes:

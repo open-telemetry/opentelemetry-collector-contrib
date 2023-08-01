@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewrite
 
@@ -19,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/timestamp"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
@@ -29,44 +19,84 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-// Test_validateMetrics checks validateMetrics return true if a type and temporality combination is valid, false
-// otherwise.
-func Test_validateMetrics(t *testing.T) {
+func Test_isValidAggregationTemporality(t *testing.T) {
+	l := pcommon.NewMap()
 
-	// define a single test
-	type combTest struct {
+	tests := []struct {
 		name   string
 		metric pmetric.Metric
 		want   bool
+	}{
+		{
+			name: "summary",
+			metric: func() pmetric.Metric {
+				quantiles := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+				quantiles.AppendEmpty().SetValue(1)
+				return getSummaryMetric("", l, 0, 0, 0, quantiles)
+			}(),
+			want: true,
+		},
+		{
+			name:   "gauge",
+			metric: getIntGaugeMetric("", l, 0, 0),
+			want:   true,
+		},
+		{
+			name:   "cumulative sum",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityCumulative, 0, 0),
+			want:   true,
+		},
+		{
+			name: "cumulative histogram",
+			metric: getHistogramMetric(
+				"", l, pmetric.AggregationTemporalityCumulative, 0, 0, 0, []float64{}, []uint64{}),
+			want: true,
+		},
+		{
+			name: "cumulative exponential histogram",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				h := metric.SetEmptyExponentialHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				return metric
+			}(),
+			want: true,
+		},
+		{
+			name:   "missing type",
+			metric: pmetric.NewMetric(),
+			want:   false,
+		},
+		{
+			name:   "unspecified sum temporality",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityUnspecified, 0, 0),
+			want:   false,
+		},
+		{
+			name:   "delta sum",
+			metric: getIntSumMetric("", l, pmetric.AggregationTemporalityDelta, 0, 0),
+			want:   false,
+		},
+		{
+			name: "delta histogram",
+			metric: getHistogramMetric(
+				"", l, pmetric.AggregationTemporalityDelta, 0, 0, 0, []float64{}, []uint64{}),
+			want: false,
+		},
+		{
+			name: "delta exponential histogram",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				h := metric.SetEmptyExponentialHistogram()
+				h.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				return metric
+			}(),
+			want: false,
+		},
 	}
-
-	var tests []combTest
-
-	// append true cases
-	for k, validMetric := range validMetrics1 {
-		name := "valid_" + k
-
-		tests = append(tests, combTest{
-			name,
-			validMetric,
-			true,
-		})
-	}
-
-	for k, invalidMetric := range invalidMetrics {
-		name := "invalid_" + k
-
-		tests = append(tests, combTest{
-			name,
-			invalidMetric,
-			false,
-		})
-	}
-
-	// run tests
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := validateMetrics(tt.metric)
+			got := isValidAggregationTemporality(tt.metric)
 			assert.Equal(t, tt.want, got)
 		})
 	}
@@ -163,7 +193,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 			validMetrics1[validHistogram],
 			validMetrics1[validHistogram].Type().String() + lb2Sig,
 		},
-		// descriptor type cannot be nil, as checked by validateMetrics
+		// descriptor type cannot be nil, as checked by validateAggregationTemporality
 		{
 			"nil_case",
 			nil,
@@ -303,6 +333,23 @@ func Test_createLabelSet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.ElementsMatch(t, tt.want, createAttributes(tt.resource, tt.orig, tt.externalLabels, tt.extras...))
 		})
+	}
+}
+
+func BenchmarkCreateAttributes(b *testing.B) {
+	r := pcommon.NewResource()
+	ext := map[string]string{}
+
+	m := pcommon.NewMap()
+	m.PutStr("test-string-key2", "test-value-2")
+	m.PutStr("test-string-key1", "test-value-1")
+	m.PutInt("test-int-key", 123)
+	m.PutBool("test-bool-key", true)
+
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		createAttributes(r, m, ext)
 	}
 }
 
@@ -608,6 +655,226 @@ func TestMostRecentTimestampInMetric(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			got := mostRecentTimestampInMetric(tc.input)
 			assert.Exactly(t, tc.expected, got)
+		})
+	}
+}
+
+func TestAddSingleSummaryDataPoint(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[string]*prompb.TimeSeries
+	}{
+		{
+			name: "summary with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+				dp.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				createdLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + createdSuffix},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &sumLabels): {
+						Labels: sumLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &createdLabels): {
+						Labels: createdLabels,
+						Samples: []prompb.Sample{
+							{Value: float64(convertTimeStamp(ts))},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "summary without start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_summary")
+				metric.SetEmptySummary()
+
+				dp := metric.Summary().DataPoints().AppendEmpty()
+				dp.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + countStr},
+				}
+				sumLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_summary" + sumStr},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeSummary.String(), &sumLabels): {
+						Labels: sumLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+
+			got := make(map[string]*prompb.TimeSeries)
+			for x := 0; x < metric.Summary().DataPoints().Len(); x++ {
+				addSingleSummaryDataPoint(
+					metric.Summary().DataPoints().At(x),
+					pcommon.NewResource(),
+					metric,
+					Settings{
+						ExportCreatedMetric: true,
+					},
+					got,
+				)
+			}
+			assert.Equal(t, tt.want(), got)
+		})
+	}
+}
+
+func TestAddSingleHistogramDataPoint(t *testing.T) {
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	tests := []struct {
+		name   string
+		metric func() pmetric.Metric
+		want   func() map[string]*prompb.TimeSeries
+	}{
+		{
+			name: "histogram with start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(ts)
+				pt.SetStartTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
+				}
+				createdLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + createdSuffix},
+				}
+				infLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
+					{Name: model.BucketLabel, Value: "+Inf"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &infLabels): {
+						Labels: infLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &createdLabels): {
+						Labels: createdLabels,
+						Samples: []prompb.Sample{
+							{Value: float64(convertTimeStamp(ts))},
+						},
+					},
+				}
+			},
+		},
+		{
+			name: "histogram without start time",
+			metric: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				metric.SetName("test_hist")
+				metric.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+				pt := metric.Histogram().DataPoints().AppendEmpty()
+				pt.SetTimestamp(ts)
+
+				return metric
+			},
+			want: func() map[string]*prompb.TimeSeries {
+				labels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist" + countStr},
+				}
+				infLabels := []prompb.Label{
+					{Name: model.MetricNameLabel, Value: "test_hist_bucket"},
+					{Name: model.BucketLabel, Value: "+Inf"},
+				}
+				return map[string]*prompb.TimeSeries{
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &infLabels): {
+						Labels: infLabels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+					timeSeriesSignature(pmetric.MetricTypeHistogram.String(), &labels): {
+						Labels: labels,
+						Samples: []prompb.Sample{
+							{Value: 0, Timestamp: convertTimeStamp(ts)},
+						},
+					},
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			metric := tt.metric()
+
+			got := make(map[string]*prompb.TimeSeries)
+			for x := 0; x < metric.Histogram().DataPoints().Len(); x++ {
+				addSingleHistogramDataPoint(
+					metric.Histogram().DataPoints().At(x),
+					pcommon.NewResource(),
+					metric,
+					Settings{
+						ExportCreatedMetric: true,
+					},
+					got,
+				)
+			}
+			assert.Equal(t, tt.want(), got)
 		})
 	}
 }

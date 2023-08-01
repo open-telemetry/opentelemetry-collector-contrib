@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal
 
@@ -36,14 +25,14 @@ type MockDetector struct {
 	mock.Mock
 }
 
-func (p *MockDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
 }
 
 type mockDetectorConfig struct{}
 
-func (d *mockDetectorConfig) GetConfigFromType(detectorType DetectorType) DetectorConfig {
+func (d *mockDetectorConfig) GetConfigFromType(_ DetectorType) DetectorConfig {
 	return nil
 }
 
@@ -197,7 +186,7 @@ func NewMockParallelDetector() *MockParallelDetector {
 	return &MockParallelDetector{ch: make(chan struct{})}
 }
 
-func (p *MockParallelDetector) Detect(ctx context.Context) (pcommon.Resource, string, error) {
+func (p *MockParallelDetector) Detect(_ context.Context) (pcommon.Resource, string, error) {
 	<-p.ch
 	args := p.Called()
 	return args.Get(0).(pcommon.Resource), "", args.Error(1)
@@ -221,25 +210,19 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3 := NewMockParallelDetector()
 	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
-	expectedResource := pcommon.NewResource()
-	require.NoError(t, expectedResource.Attributes().FromRaw(map[string]interface{}{"a": "1", "b": "2", "c": "3"}))
-	expectedResource.Attributes().Sort()
+	expectedResourceAttrs := map[string]interface{}{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
-	var m sync.Mutex
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
 			detected, _, err := p.Get(context.Background(), http.DefaultClient)
 			require.NoError(t, err)
-			m.Lock()
-			detected.Attributes().Sort()
-			m.Unlock()
-			assert.Equal(t, expectedResource, detected)
+			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
 	}
 

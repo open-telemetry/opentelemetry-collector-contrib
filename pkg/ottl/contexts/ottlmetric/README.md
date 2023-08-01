@@ -5,18 +5,27 @@ The Metric Context is a Context implementation for [pdata Metric](https://github
 ## Paths
 In general, the Metric Context supports accessing pdata using the field names from the [metrics proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/metrics/v1/metrics.proto).  All integers are returned and set via `int64`.  All doubles are returned and set via `float64`.
 
-The following fields are the exception.
+The following paths are supported.
 
-| path                                   | field accessed                                                                 | type                                                                    |
-|----------------------------------------|--------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| resource                               | resource of the metric being processed                                         | pcommon.Resource                                                        |
-| resource.attributes                    | resource attributes of the metric being processed                              | pcommon.Map                                                             |
-| resource.attributes\[""\]              | the value of the resource attribute of the metric being processed              | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
-| instrumentation_scope                  | instrumentation scope of the metric being processed                            | pcommon.InstrumentationScope                                            |
-| instrumentation_scope.name             | name of the instrumentation scope of the metric being processed                | string                                                                  |
-| instrumentation_scope.version          | version of the instrumentation scope of the metric being processed             | string                                                                  |
-| instrumentation_scope.attributes       | instrumentation scope attributes of the metric being processed                 | pcommon.Map                                                             |
-| instrumentation_scope.attributes\[""\] | the value of the instrumentation scope attribute of the metric being processed | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil |
+| path                                   | field accessed                                                                                                                                     | type                                                                                                                                        |
+|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|
+| cache                                  | the value of the current transform context's temporary cache. cache can be used as a temporary placeholder for data during complex transformations | pcommon.Map                                                                                                                                 |
+| cache\[""\]                            | the value of an item in cache. Supports multiple indexes to access nested fields.                                                                  | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil                                                                     |
+| resource                               | resource of the metric being processed                                                                                                             | pcommon.Resource                                                                                                                            |
+| resource.attributes                    | resource attributes of the metric being processed                                                                                                  | pcommon.Map                                                                                                                                 |
+| resource.attributes\[""\]              | the value of the resource attribute of the metric being processed. Supports multiple indexes to access nested fields.                              | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil                                                                     |
+| instrumentation_scope                  | instrumentation scope of the metric being processed                                                                                                | pcommon.InstrumentationScope                                                                                                                |
+| instrumentation_scope.name             | name of the instrumentation scope of the metric being processed                                                                                    | string                                                                                                                                      |
+| instrumentation_scope.version          | version of the instrumentation scope of the metric being processed                                                                                 | string                                                                                                                                      |
+| instrumentation_scope.attributes       | instrumentation scope attributes of the metric being processed                                                                                     | pcommon.Map                                                                                                                                 |
+| instrumentation_scope.attributes\[""\] | the value of the instrumentation scope attribute of the metric being processed. Supports multiple indexes to access nested fields.                 | string, bool, int64, float64, pcommon.Map, pcommon.Slice, []byte or nil                                                                     |
+| name                                   | the name of the metric                                                                                                                             | string                                                                                                                                      |
+| description                            | the description of the metric                                                                                                                      | string                                                                                                                                      |
+| unit                                   | the unit of the metric                                                                                                                             | string                                                                                                                                      |
+| type                                   | the data type of the metric                                                                                                                        | int64                                                                                                                                       |
+| aggregation_temporality                | the aggregation temporality of the metric                                                                                                          | int64                                                                                                                                       |
+| is_monotonic                           | the monotonicity of the metric                                                                                                                     | bool                                                                                                                                        |
+| data_points                            | the data points of the metric                                                                                                                      | pmetric.NumberDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.ExponentialHistogramDataPointSlice, or pmetric.SummaryDataPointSlice | 
 
 ## Enums
 
@@ -26,6 +35,9 @@ In addition, it also supports an enum for metrics data type, with the numeric va
 
 | Enum Symbol                            | Value |
 |----------------------------------------|-------|
+| AGGREGATION_TEMPORALITY_UNSPECIFIED    | 0     |
+| AGGREGATION_TEMPORALITY_DELTA          | 1     |
+| AGGREGATION_TEMPORALITY_CUMULATIVE     | 2     |
 | METRIC_DATA_TYPE_NONE                  | 0     |
 | METRIC_DATA_TYPE_GAUGE                 | 1     |
 | METRIC_DATA_TYPE_SUM                   | 2     |

@@ -107,6 +107,29 @@ func (_m *MockElasticsearchClient) IndexStats(ctx context.Context, indices []str
 	return r0, r1
 }
 
+// Nodes provides a mock function with given fields: ctx, nodes
+func (_m *MockElasticsearchClient) Nodes(ctx context.Context, nodes []string) (*model.Nodes, error) {
+	ret := _m.Called(ctx, nodes)
+
+	var r0 *model.Nodes
+	if rf, ok := ret.Get(0).(func(context.Context, []string) *model.Nodes); ok {
+		r0 = rf(ctx, nodes)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Nodes)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, []string) error); ok {
+		r1 = rf(ctx, nodes)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // NodeStats provides a mock function with given fields: ctx, nodes
 func (_m *MockElasticsearchClient) NodeStats(ctx context.Context, nodes []string) (*model.NodeStats, error) {
 	ret := _m.Called(ctx, nodes)

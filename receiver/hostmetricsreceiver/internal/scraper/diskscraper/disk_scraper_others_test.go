@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -33,15 +22,17 @@ import (
 func TestScrape_Others(t *testing.T) {
 	type testCase struct {
 		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
+		ioCountersFunc func(ctx context.Context, names ...string) (map[string]disk.IOCountersStat, error)
 		expectedErr    string
 	}
 
 	testCases := []testCase{
 		{
-			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			name: "Error",
+			ioCountersFunc: func(_ context.Context, names ...string) (map[string]disk.IOCountersStat, error) {
+				return nil, errors.New("err1")
+			},
+			expectedErr: "err1",
 		},
 	}
 

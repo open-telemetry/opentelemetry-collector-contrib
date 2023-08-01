@@ -1,9 +1,18 @@
-name: snowflakereceiver
+type: snowflake
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, shalper2]
 
 # every meter will have these attributes
 resource_attributes:
   snowflake.account.name:
     description: Snowflake account being used by receiver.
+    enabled: true
     type: string
 
 attributes:
@@ -151,28 +160,28 @@ metrics:
     description: Average bytes deleted in database over the last 24 hour window.
     unit: By
     gauge:
-      value_type: int 
+      value_type: double 
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.local.avg:
     description: Avergae bytes spilled (intermediate results do not fit in memory) by local storage over the last 24 hour window.
     unit: By 
     gauge:
-      value_type: int
+      value_type: double
     enabled: false 
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_spilled.remote.avg:
     description: Avergae bytes spilled (intermediate results do not fit in memory) by remote storage over the last 24 hour window.
     unit: By
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.bytes_written.avg:
     description: Average bytes written by database over the last 24 hour window.
     unit: By 
     gauge: 
-      value_type: int
+      value_type: double
     enabled: true
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.query.compilation_time.avg:
@@ -200,7 +209,7 @@ metrics:
     description: Number of partitions scanned during query so far over the last 24 hour window. 
     unit: 1
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.queued_overload_time.avg:
@@ -228,35 +237,35 @@ metrics:
     description: Number of rows inserted into a table (or tables) over the last 24 hour window.
     unit: "{rows}"
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_deleted.avg:
     description: Number of rows deleted from a table (or tables) over the last 24 hour window.
     unit: "{rows}" 
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_produced.avg:
     description: Average number of rows produced by statement over the last 24 hour window.
     unit: "{rows}" 
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_unloaded.avg:
     description: Average number of rows unloaded during data export over the last 24 hour window.
     unit: "{rows}"
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.rows_updated.avg:
     description: Average number of rows updated in a table over the last 24 hour window.
     unit: "{rows}" 
     gauge:
-      value_type: int
+      value_type: double
     enabled: false
     attributes: [schema_name, execution_status, error_message, query_type, warehouse_name, database_name, warehouse_size]
   snowflake.total_elapsed_time.avg:

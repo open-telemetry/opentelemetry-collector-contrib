@@ -18,6 +18,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `force_flush_period` | `5s`             | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
 | `source_identifier`  | `$attributes["file.path"]` | The [field](../types/field.md) to separate one source of logs from others when combining them. |
 | `max_sources`        | 1000             | The maximum number of unique sources allowed concurrently to be tracked for combining separately. |
+| `max_log_size`       | 0                | The maximum bytes size of the combined field. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit. |
 
 Exactly one of `is_first_entry` and `is_last_entry` must be specified.
 

@@ -1,11 +1,21 @@
-name: iisreceiver
+type: iis
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [mrod1598, djaglowski]
 
 resource_attributes:
   iis.site:
     description: The site of the web server.
+    enabled: true
     type: string
   iis.application_pool:
     description: The application pool, which is associated with worker processes of one or more applications.
+    enabled: true
     type: string
 
 attributes:

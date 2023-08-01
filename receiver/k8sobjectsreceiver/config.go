@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
@@ -32,8 +21,9 @@ const (
 	PullMode  mode = "pull"
 	WatchMode mode = "watch"
 
-	defaultPullInterval time.Duration = time.Hour
-	defaultMode         mode          = PullMode
+	defaultPullInterval    time.Duration = time.Hour
+	defaultMode            mode          = PullMode
+	defaultResourceVersion               = "1"
 )
 
 var modeMap = map[mode]bool{
@@ -42,14 +32,15 @@ var modeMap = map[mode]bool{
 }
 
 type K8sObjectsConfig struct {
-	Name          string        `mapstructure:"name"`
-	Group         string        `mapstructure:"group"`
-	Namespaces    []string      `mapstructure:"namespaces"`
-	Mode          mode          `mapstructure:"mode"`
-	LabelSelector string        `mapstructure:"label_selector"`
-	FieldSelector string        `mapstructure:"field_selector"`
-	Interval      time.Duration `mapstructure:"interval"`
-	gvr           *schema.GroupVersionResource
+	Name            string        `mapstructure:"name"`
+	Group           string        `mapstructure:"group"`
+	Namespaces      []string      `mapstructure:"namespaces"`
+	Mode            mode          `mapstructure:"mode"`
+	LabelSelector   string        `mapstructure:"label_selector"`
+	FieldSelector   string        `mapstructure:"field_selector"`
+	Interval        time.Duration `mapstructure:"interval"`
+	ResourceVersion string        `mapstructure:"resource_version"`
+	gvr             *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -94,6 +85,10 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
+		}
+
+		if object.Mode == WatchMode && object.ResourceVersion == "" {
+			object.ResourceVersion = defaultResourceVersion
 		}
 
 		object.gvr = gvr

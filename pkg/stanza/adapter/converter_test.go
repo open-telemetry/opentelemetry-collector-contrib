@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter
 
@@ -149,87 +138,6 @@ func complexEntry() *entry.Entry {
 		},
 	}
 	return e
-}
-
-func TestConvert(t *testing.T) {
-	ent := func() *entry.Entry {
-		e := entry.New()
-		e.Severity = entry.Error
-		e.SeverityText = "E"
-		e.Resource = map[string]interface{}{
-			"bool":   true,
-			"int":    123,
-			"double": 12.34,
-			"string": "hello",
-			"object": map[string]interface{}{},
-		}
-		e.Attributes = map[string]interface{}{
-			"bool":   true,
-			"int":    123,
-			"double": 12.34,
-			"string": "hello",
-			"object": map[string]interface{}{},
-		}
-		e.Body = map[string]interface{}{
-			"bool":   true,
-			"int":    123,
-			"double": 12.34,
-			"string": "hello",
-			"bytes":  []byte("asdf"),
-		}
-		return e
-	}()
-
-	pLogs := Convert(ent)
-	require.Equal(t, 1, pLogs.ResourceLogs().Len())
-	rls := pLogs.ResourceLogs().At(0)
-	resAttrs := rls.Resource().Attributes()
-	resAttrs.Sort()
-
-	if assert.Equal(t, 5, resAttrs.Len()) {
-		m := pcommon.NewMap()
-		m.PutBool("bool", true)
-		m.PutDouble("double", 12.34)
-		m.PutInt("int", 123)
-		m.PutEmptyMap("object")
-		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, resAttrs)
-	}
-
-	ills := rls.ScopeLogs()
-	require.Equal(t, 1, ills.Len())
-
-	logs := ills.At(0).LogRecords()
-	require.Equal(t, 1, logs.Len())
-
-	lr := logs.At(0)
-	lrAttrs := lr.Attributes()
-	lrAttrs.Sort()
-
-	assert.Equal(t, plog.SeverityNumberError, lr.SeverityNumber())
-	assert.Equal(t, "E", lr.SeverityText())
-
-	if assert.Equal(t, 5, lrAttrs.Len()) {
-		lrAttrs.Sort()
-		m := pcommon.NewMap()
-		m.PutBool("bool", true)
-		m.PutDouble("double", 12.34)
-		m.PutInt("int", 123)
-		m.PutEmptyMap("object")
-		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, lrAttrs)
-	}
-
-	if assert.Equal(t, pcommon.ValueTypeMap, lr.Body().Type()) {
-		lr.Body().Map().Sort()
-		m := pcommon.NewMap()
-		m.PutBool("bool", true)
-		m.PutEmptyBytes("bytes").FromRaw([]byte("asdf"))
-		m.PutDouble("double", 12.34)
-		m.PutInt("int", 123)
-		m.PutStr("string", "hello")
-		assert.EqualValues(t, m, lr.Body().Map())
-	}
 }
 
 func TestHashResource(t *testing.T) {
@@ -714,6 +622,10 @@ func TestConvertArrayBody(t *testing.T) {
 	require.True(t, v.Bool())
 }
 
+func TestConvertNilBody(t *testing.T) {
+	require.Equal(t, plog.NewLogRecord().Body(), anyToBody(nil))
+}
+
 func TestConvertUnknownBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
 	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).Str())
@@ -749,11 +661,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 func anyToBody(body interface{}) pcommon.Value {
 	entry := entry.New()
 	entry.Body = body
-	return convertAndDrill(entry).Body()
-}
-
-func convertAndDrill(entry *entry.Entry) plog.LogRecord {
-	return convert(entry)
+	return convert(entry).Body()
 }
 
 func TestConvertSeverity(t *testing.T) {
@@ -847,7 +755,7 @@ func TestConvertSeverity(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
 			entry.SeverityText = tc.severityText
-			log := convertAndDrill(entry)
+			log := convert(entry)
 			require.Equal(t, tc.expectedNumber, log.SeverityNumber())
 			require.Equal(t, tc.expectedText, log.SeverityText())
 		})
@@ -855,7 +763,7 @@ func TestConvertSeverity(t *testing.T) {
 }
 
 func TestConvertTrace(t *testing.T) {
-	record := convertAndDrill(&entry.Entry{
+	record := convert(&entry.Entry{
 		TraceID: []byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
@@ -877,6 +785,27 @@ func TestConvertTrace(t *testing.T) {
 	require.Equal(t, uint32(0x01), uint32(record.Flags()))
 }
 
+func TestConvertTraceEmptyFlags(t *testing.T) {
+	record := convert(&entry.Entry{
+		TraceID: []byte{
+			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		},
+		SpanID: []byte{
+			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		},
+		TraceFlags: []byte{}})
+
+	require.Equal(t, pcommon.TraceID(
+		[16]byte{
+			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		}), record.TraceID())
+	require.Equal(t, pcommon.SpanID(
+		[8]byte{
+			0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
+		}), record.SpanID())
+	require.Equal(t, uint32(0x00), uint32(record.Flags()))
+}
+
 func BenchmarkConverter(b *testing.B) {
 	const (
 		entryCount = 1_000_000
@@ -893,10 +822,11 @@ func BenchmarkConverter(b *testing.B) {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				converter := NewConverter(zap.NewNop())
+				converter := NewConverter(zap.NewNop(), withWorkerCount(wc))
 				converter.Start()
 				defer converter.Stop()
-				b.ResetTimer()
+
+				b.ReportAllocs()
 
 				go func() {
 					for from := 0; from < entryCount; from += int(batchSize) {
@@ -928,15 +858,8 @@ func BenchmarkConverter(b *testing.B) {
 						}
 
 						rLogs := pLogs.ResourceLogs()
-						require.Equal(b, 1, rLogs.Len())
-
-						rLog := rLogs.At(0)
-						ills := rLog.ScopeLogs()
-						require.Equal(b, 1, ills.Len())
-
-						sl := ills.At(0)
-
-						n += sl.LogRecords().Len()
+						require.Equal(b, hostsCount, rLogs.Len())
+						n += pLogs.LogRecordCount()
 
 					case <-timeoutTimer.C:
 						break forLoop
@@ -954,6 +877,7 @@ func BenchmarkConverter(b *testing.B) {
 func BenchmarkGetResourceID(b *testing.B) {
 	b.StopTimer()
 	res := getResource()
+	b.ReportAllocs()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -962,6 +886,7 @@ func BenchmarkGetResourceID(b *testing.B) {
 
 func BenchmarkGetResourceIDEmptyResource(b *testing.B) {
 	res := map[string]interface{}{}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -972,6 +897,7 @@ func BenchmarkGetResourceIDSingleResource(b *testing.B) {
 	res := map[string]interface{}{
 		"resource": "value",
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)
@@ -986,6 +912,7 @@ func BenchmarkGetResourceIDComplexResource(b *testing.B) {
 			"three": 4,
 		},
 	}
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		HashResource(res)

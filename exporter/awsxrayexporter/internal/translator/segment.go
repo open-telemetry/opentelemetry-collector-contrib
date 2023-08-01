@@ -1,24 +1,13 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
 	"net/url"
 	"regexp"
 	"strings"
@@ -44,6 +33,12 @@ const (
 	OriginAppRunner  = "AWS::AppRunner::Service"
 )
 
+// x-ray only span attributes - https://github.com/open-telemetry/opentelemetry-java-contrib/pull/802
+const (
+	awsLocalService  = "aws.local.service"
+	awsRemoteService = "aws.remote.service"
+)
+
 var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
@@ -67,8 +62,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
 	if err != nil {
 		return "", err
 	}
@@ -82,7 +77,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -99,27 +94,48 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		return nil, err
 	}
 
+	attributes := span.Attributes()
+
 	var (
 		startTime                                          = timestampToFloatSeconds(span.StartTimestamp())
 		endTime                                            = timestampToFloatSeconds(span.EndTimestamp())
 		httpfiltered, http                                 = makeHTTP(span)
 		isError, isFault, isThrottle, causefiltered, cause = makeCause(span, httpfiltered, resource)
 		origin                                             = determineAwsOrigin(resource)
-		awsfiltered, aws                                   = makeAws(causefiltered, resource)
+		awsfiltered, aws                                   = makeAws(causefiltered, resource, logGroupNames)
 		service                                            = makeService(resource)
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
-		user, annotations, metadata                        = makeXRayAttributes(sqlfiltered, resource, storeResource, indexedAttrs, indexAllAttrs)
+		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
+		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
 		name                                               string
 		namespace                                          string
 	)
 
+	if makeSpanLinkErr != nil {
+		return nil, makeSpanLinkErr
+	}
+
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
-	attributes := span.Attributes()
+	// support x-ray specific service name attributes as segment name if it exists
+	if span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer {
+		if localServiceName, ok := attributes.Get(awsLocalService); ok {
+			name = localServiceName.Str()
+		}
+	}
+	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
+			name = remoteServiceName.Str()
+		}
+	}
 
-	// peer.service should always be prioritized for segment names when set because it is what the user decided.
-	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.Str()
+	// peer.service should always be prioritized for segment names when it set by users and
+	// the new x-ray specific service name attributes are not found
+	if name == "" {
+		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+			name = peerService.Str()
+		}
 	}
 
 	if namespace == "" {
@@ -210,6 +226,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		Annotations: annotations,
 		Metadata:    metadata,
 		Type:        awsxray.String(segmentType),
+		Links:       spanLinks,
 	}, nil
 }
 
@@ -320,6 +337,19 @@ func timestampToFloatSeconds(ts pcommon.Timestamp) float64 {
 	return float64(ts) / float64(time.Second)
 }
 
+func addSpecialAttributes(attributes map[string]pcommon.Value, indexedAttrs []string, unfilteredAttributes pcommon.Map) map[string]pcommon.Value {
+	for _, name := range indexedAttrs {
+		// Allow attributes that have been filtered out before if explicitly added to be annotated/indexed
+		_, isAnnotatable := attributes[name]
+		unfilteredAttribute, attributeExists := unfilteredAttributes.Get(name)
+		if !isAnnotatable && attributeExists {
+			attributes[name] = unfilteredAttribute
+		}
+	}
+
+	return attributes
+}
+
 func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Resource, storeResource bool, indexedAttrs []string, indexAllAttrs bool) (
 	string, map[string]interface{}, map[string]map[string]interface{}) {
 	var (
@@ -346,6 +376,20 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 		}
 	}
 
+	annotationKeys, ok := attributes[awsxray.AWSXraySegmentAnnotationsAttribute]
+	if ok && annotationKeys.Type() == pcommon.ValueTypeSlice {
+		slice := annotationKeys.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			value := slice.At(i)
+			if value.Type() != pcommon.ValueTypeStr {
+				continue
+			}
+			key := value.AsString()
+			indexedKeys[key] = true
+		}
+		delete(attributes, awsxray.AWSXraySegmentAnnotationsAttribute)
+	}
+
 	if storeResource {
 		resource.Attributes().Range(func(key string, value pcommon.Value) bool {
 			key = "otel.resource." + key
@@ -355,7 +399,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 				key = fixAnnotationKey(key)
 				annotations[key] = annoVal
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -381,7 +425,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					annotations[key] = annoVal
 				}
 			} else {
-				metaVal := metadataValue(value)
+				metaVal := value.AsRaw()
 				if metaVal != nil {
 					defaultMetadata[key] = metaVal
 				}
@@ -406,34 +450,6 @@ func annotationValue(value pcommon.Value) interface{} {
 		return value.Double()
 	case pcommon.ValueTypeBool:
 		return value.Bool()
-	}
-	return nil
-}
-
-func metadataValue(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeMap:
-		converted := map[string]interface{}{}
-		value.Map().Range(func(key string, value pcommon.Value) bool {
-			converted[key] = metadataValue(value)
-			return true
-		})
-		return converted
-	case pcommon.ValueTypeSlice:
-		arrVal := value.Slice()
-		converted := make([]interface{}, arrVal.Len())
-		for i := 0; i < arrVal.Len(); i++ {
-			converted[i] = metadataValue(arrVal.At(i))
-		}
-		return converted
 	}
 	return nil
 }

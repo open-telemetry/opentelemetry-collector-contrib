@@ -1,22 +1,10 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sclient
 
 import (
 	"log"
-	"reflect"
 	"testing"
 	"time"
 
@@ -389,7 +377,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	}
 	resultMap := client.PodKeyToServiceNames()
 	log.Printf("PodKeyToServiceNames (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 }
 
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
@@ -405,7 +393,7 @@ func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	}
 	resultMap := client.ServiceToPodNum()
 	log.Printf("ServiceNameToPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
-	assert.True(t, reflect.DeepEqual(resultMap, expectedMap))
+	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	time.Sleep(2 * time.Millisecond)
 	select {

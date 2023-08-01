@@ -1,25 +1,39 @@
-name: flinkmetricsreceiver
+type: flinkmetrics
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib,observiq, sumo]
+  codeowners:
+    active: [jonathanwamsley, djaglowski]
 
 resource_attributes:
   # These resource attributes are Flinks system scope variables, which contains context information about metrics. These are required to uniquely identify incoming metrics as the same job can run multiple times concurrently. See https://nightlies.apache.org/flink/flink-docs-release-1.14/docs/ops/metrics/#system-scope for more information.
   host.name:
     description: The host name.
     type: string
+    enabled: true
   flink.taskmanager.id:
     description: The taskmanager ID.
     type: string
+    enabled: true
   flink.job.name:
     description: The job name.
     type: string
+    enabled: true
   flink.task.name:
     description: The task name.
     type: string
+    enabled: true
   flink.subtask.index:
     description: The subtask index.
     type: string
+    enabled: true
   flink.resource.type:
     description: The flink scope type in which a metric belongs to.
     type: string
+    enabled: true
     enum: [ jobmanager, taskmanager ]
 
 attributes:
@@ -33,7 +47,7 @@ attributes:
     type: string
     enum: [ PS_MarkSweep, PS_Scavenge, G1_Young_Generation, G1_Old_Generation ]
   checkpoint:
-    description: The number of checkpoints completed or that failed. 
+    description: The number of checkpoints completed or that failed.
     type: string
     enum: [ completed, failed ]
   record:

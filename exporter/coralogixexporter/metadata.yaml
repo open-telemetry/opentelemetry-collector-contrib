@@ -1,0 +1,10 @@
+type: coralogix
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, metrics]
+    alpha: [logs]
+  distributions: [contrib, observiq]
+  codeowners:
+    active: [oded-dd, povilasv, matej-g]

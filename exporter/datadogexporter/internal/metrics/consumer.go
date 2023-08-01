@@ -1,38 +1,27 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 
 import (
 	"context"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/translator"
-	"github.com/DataDog/datadog-agent/pkg/quantile"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 )
 
-var _ translator.Consumer = (*Consumer)(nil)
-var _ translator.HostConsumer = (*Consumer)(nil)
-var _ translator.TagsConsumer = (*Consumer)(nil)
-var _ translator.APMStatsConsumer = (*Consumer)(nil)
+var _ metrics.Consumer = (*Consumer)(nil)
+var _ metrics.HostConsumer = (*Consumer)(nil)
+var _ metrics.TagsConsumer = (*Consumer)(nil)
+var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 
-// Consumer implements translator.Consumer. It records consumed metrics, sketches and
+// Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
 	ms        []datadogV2.MetricSeries
@@ -42,7 +31,7 @@ type Consumer struct {
 	seenTags  map[string]struct{}
 }
 
-// NewConsumer creates a new Datadog consumer. It implements translator.Consumer.
+// NewConsumer creates a new Datadog consumer. It implements metrics.Consumer.
 func NewConsumer() *Consumer {
 	return &Consumer{
 		seenHosts: make(map[string]struct{}),
@@ -51,13 +40,13 @@ func NewConsumer() *Consumer {
 }
 
 // toDataType maps translator datatypes to DatadogV2's datatypes.
-func (c *Consumer) toDataType(dt translator.MetricDataType) (out datadogV2.MetricIntakeType) {
+func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeType) {
 	out = datadogV2.METRICINTAKETYPE_UNSPECIFIED
 
 	switch dt {
-	case translator.Count:
+	case metrics.Count:
 		out = datadogV2.METRICINTAKETYPE_COUNT
-	case translator.Gauge:
+	case metrics.Gauge:
 		out = datadogV2.METRICINTAKETYPE_GAUGE
 	}
 
@@ -65,28 +54,35 @@ func (c *Consumer) toDataType(dt translator.MetricDataType) (out datadogV2.Metri
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadogV2.MetricSeries) {
+func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo, metadata metrics.Metadata) (series []datadogV2.MetricSeries) {
+	buildTags := TagsFromBuildInfo(buildInfo)
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildTags)
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
 		series = append(series, runningMetrics...)
 	}
 
+	for _, lang := range metadata.Languages {
+		tags := append(buildTags, "language:"+lang) // nolint
+		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
+		series = append(series, runningMetric...)
+	}
+
 	return
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
 	series := c.ms
-	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
+	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
 	if len(tags) == 0 {
 		return series, c.sl, c.as
 	}
@@ -102,16 +98,16 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 	return series, c.sl, c.as
 }
 
-// ConsumeAPMStats implements translator.APMStatsConsumer.
+// ConsumeAPMStats implements metrics.APMStatsConsumer.
 func (c *Consumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
 	c.as = append(c.as, s)
 }
 
-// ConsumeTimeSeries implements the translator.Consumer interface.
+// ConsumeTimeSeries implements the metrics.Consumer interface.
 func (c *Consumer) ConsumeTimeSeries(
 	_ context.Context,
-	dims *translator.Dimensions,
-	typ translator.MetricDataType,
+	dims *metrics.Dimensions,
+	typ metrics.DataType,
 	timestamp uint64,
 	value float64,
 ) {
@@ -126,10 +122,10 @@ func (c *Consumer) ConsumeTimeSeries(
 	c.ms = append(c.ms, met)
 }
 
-// ConsumeSketch implements the translator.Consumer interface.
+// ConsumeSketch implements the metrics.Consumer interface.
 func (c *Consumer) ConsumeSketch(
 	_ context.Context,
-	dims *translator.Dimensions,
+	dims *metrics.Dimensions,
 	timestamp uint64,
 	sketch *quantile.Sketch,
 ) {
@@ -145,12 +141,12 @@ func (c *Consumer) ConsumeSketch(
 	})
 }
 
-// ConsumeHost implements the translator.HostConsumer interface.
+// ConsumeHost implements the metrics.HostConsumer interface.
 func (c *Consumer) ConsumeHost(host string) {
 	c.seenHosts[host] = struct{}{}
 }
 
-// ConsumeTag implements the translator.TagsConsumer interface.
+// ConsumeTag implements the metrics.TagsConsumer interface.
 func (c *Consumer) ConsumeTag(tag string) {
 	c.seenTags[tag] = struct{}{}
 }

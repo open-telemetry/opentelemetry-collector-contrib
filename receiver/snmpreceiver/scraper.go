@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
@@ -20,8 +9,10 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -43,10 +34,11 @@ var (
 
 // snmpScraper handles scraping of SNMP metrics
 type snmpScraper struct {
-	client   client
-	logger   *zap.Logger
-	cfg      *Config
-	settings receiver.CreateSettings
+	client    client
+	logger    *zap.Logger
+	cfg       *Config
+	settings  receiver.CreateSettings
+	startTime pcommon.Timestamp
 }
 
 type indexedAttributeValues map[string]string
@@ -61,9 +53,9 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 }
 
 // start gets the client ready
-func (s *snmpScraper) start(_ context.Context, host component.Host) (err error) {
+func (s *snmpScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.client, err = newClient(s.cfg, s.logger)
-
+	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	return err
 }
 
@@ -75,7 +67,7 @@ func (s *snmpScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	defer s.client.Close()
 
 	// Create the metrics helper which will help manage a lot of the otel metric and resource functionality
-	metricHelper := newOTELMetricHelper(s.settings)
+	metricHelper := newOTELMetricHelper(s.settings, s.startTime)
 
 	configHelper := newConfigHelper(s.cfg)
 

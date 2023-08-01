@@ -1,21 +1,9 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
 import (
-	"sort"
 	"testing"
 	"time"
 
@@ -25,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
@@ -36,7 +25,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	buildDefaultSplunkDataPt := func() *splunk.Event {
 		return &splunk.Event{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "localhost",
 			Source:     "source",
 			SourceType: "sourcetype",
@@ -243,7 +232,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			name: "zero_timestamp",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
-				pt.Time = new(float64)
+				pt.Time = 0
 				return pt
 			}(),
 			wantMetricsData: func() pmetric.Metrics {
@@ -306,9 +295,153 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), []*splunk.Event{tt.splunkDataPoint}, func(resource pcommon.Resource) {}, tt.hecConfig)
 			assert.Equal(t, tt.wantDroppedTimeseries, numDroppedTimeseries)
-			assert.EqualValues(t, tt.wantMetricsData, sortMetricsAndLabels(md))
+			assert.NoError(t, pmetrictest.CompareMetrics(tt.wantMetricsData, md, pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
+}
+
+func TestGroupMetricsByResource(t *testing.T) {
+	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
+	now := time.Now()
+	msecInt64 := now.UnixNano() / 1e6
+	sec := float64(msecInt64) / 1e3
+	nanoseconds := int64(sec * 1e9)
+	events := []*splunk.Event{
+		{
+			Time:       sec,
+			Host:       "1",
+			Source:     "1",
+			SourceType: "1",
+			Index:      "1",
+			Fields: map[string]interface{}{
+				"field":          "value1",
+				"metric_name:m1": int64(1),
+			},
+		},
+		{
+			Time:       sec,
+			Host:       "2",
+			Source:     "2",
+			SourceType: "2",
+			Index:      "2",
+			Fields: map[string]interface{}{
+				"field":          "value2",
+				"metric_name:m2": int64(2),
+			},
+		},
+		{
+			Time:       sec,
+			Host:       "1",
+			Source:     "1",
+			SourceType: "1",
+			Index:      "1",
+			Fields: map[string]interface{}{
+				"field":          "value1",
+				"metric_name:m1": int64(3),
+			},
+		},
+		{
+			Time:       sec,
+			Host:       "2",
+			Source:     "2",
+			SourceType: "2",
+			Index:      "2",
+			Event:      "Event-4",
+			Fields: map[string]interface{}{
+				"field":          "value2",
+				"metric_name:m2": int64(4),
+			},
+		},
+		{
+			Time:       sec,
+			Host:       "1",
+			Source:     "2",
+			SourceType: "1",
+			Index:      "2",
+			Fields: map[string]interface{}{
+				"field":           "value1-2",
+				"metric_name:m12": int64(5),
+			},
+		},
+		{
+			Time:       sec,
+			Host:       "2",
+			Source:     "1",
+			SourceType: "2",
+			Index:      "1",
+			Event:      "Event-6",
+			Fields: map[string]interface{}{
+				"field":           "value2-1",
+				"metric_name:m21": int64(6),
+			},
+		},
+	}
+	metrics := pmetric.NewMetrics()
+	{
+		mr := metrics.ResourceMetrics().AppendEmpty()
+		updateResourceMap(mr.Resource().Attributes(), "1", "1", "1", "1")
+		sm := mr.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("m1")
+		dataPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(1)
+
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value1")
+
+		metric = sm.Metrics().AppendEmpty()
+		metric.SetName("m1")
+		dataPt = metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(3)
+
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value1")
+	}
+	{
+		mr := metrics.ResourceMetrics().AppendEmpty()
+		updateResourceMap(mr.Resource().Attributes(), "2", "2", "2", "2")
+		sm := mr.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("m2")
+		dataPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(2)
+
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value2")
+
+		metric = sm.Metrics().AppendEmpty()
+		metric.SetName("m2")
+		dataPt = metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(4)
+
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value2")
+	}
+	{
+		mr := metrics.ResourceMetrics().AppendEmpty()
+		updateResourceMap(mr.Resource().Attributes(), "1", "2", "1", "2")
+		sm := mr.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("m12")
+		dataPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(5)
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value1-2")
+	}
+	{
+		mr := metrics.ResourceMetrics().AppendEmpty()
+		updateResourceMap(mr.Resource().Attributes(), "2", "1", "2", "1")
+		sm := mr.ScopeMetrics().AppendEmpty()
+		metric := sm.Metrics().AppendEmpty()
+		metric.SetName("m21")
+		dataPt := metric.SetEmptyGauge().DataPoints().AppendEmpty()
+		dataPt.SetIntValue(6)
+		dataPt.SetTimestamp(pcommon.Timestamp(nanoseconds))
+		dataPt.Attributes().PutStr("field", "value2-1")
+	}
+	md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), events, func(resource pcommon.Resource) {}, defaultTestingHecConfig)
+	assert.Equal(t, 0, numDroppedTimeseries)
+	assert.EqualValues(t, metrics, md)
 }
 
 func buildDefaultMetricsData(time int64) pmetric.Metrics {
@@ -344,40 +477,4 @@ func int64Ptr(i int64) *int64 {
 func float64Ptr(f float64) *float64 {
 	l := f
 	return &l
-}
-
-func sortMetricsAndLabels(md pmetric.Metrics) pmetric.Metrics {
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		rm := md.ResourceMetrics().At(i)
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			ilm := rm.ScopeMetrics().At(j)
-			internalSortMetricsAndLabels(ilm.Metrics())
-		}
-	}
-	return md
-}
-
-func internalSortMetricsAndLabels(metrics pmetric.MetricSlice) {
-	dest := pmetric.NewMetricSlice()
-	metricsMap := make(map[string]pmetric.Metric)
-	for k := 0; k < metrics.Len(); k++ {
-		m := metrics.At(k)
-		metricsMap[m.Name()] = m
-		if m.Type() == pmetric.MetricTypeGauge {
-			dps := m.Gauge().DataPoints()
-			for l := 0; l < dps.Len(); l++ {
-				dps.At(l).Attributes().Sort()
-			}
-		}
-	}
-
-	metricNames := make([]string, 0, len(metricsMap))
-	for name := range metricsMap {
-		metricNames = append(metricNames, name)
-	}
-	sort.Strings(metricNames)
-	for _, name := range metricNames {
-		metricsMap[name].CopyTo(dest.AppendEmpty())
-	}
-	dest.CopyTo(metrics)
 }

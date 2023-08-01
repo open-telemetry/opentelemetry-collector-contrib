@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package attraction
 
 import (
 	"context"
 	"crypto/sha1" // #nosec
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -630,7 +620,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": "foo",
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte("foo")),
+				"updateme": hash([]byte("foo")),
 			},
 		},
 		// Ensure int data types are hashed correctly
@@ -640,7 +630,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": intVal,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash(intBytes),
+				"updateme": hash(intBytes),
 			},
 		},
 		// Ensure double data types are hashed correctly
@@ -650,7 +640,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": doubleVal,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash(doubleBytes),
+				"updateme": hash(doubleBytes),
 			},
 		},
 		// Ensure bool data types are hashed correctly
@@ -660,7 +650,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": true,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte{1}),
+				"updateme": hash([]byte{1}),
 			},
 		},
 		// Ensure bool data types are hashed correctly
@@ -670,7 +660,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"updateme": false,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updateme": sha1Hash([]byte{0}),
+				"updateme": hash([]byte{0}),
 			},
 		},
 		// Ensure regex pattern is being used
@@ -681,7 +671,7 @@ func TestAttributes_HashValue(t *testing.T) {
 				"donotupdatemebyregexp": false,
 			},
 			expectedAttributes: map[string]interface{}{
-				"updatemebyregexp":      sha1Hash([]byte{0}),
+				"updatemebyregexp":      hash([]byte{0}),
 				"donotupdatemebyregexp": false,
 			},
 		},
@@ -939,9 +929,22 @@ func TestValidConfiguration(t *testing.T) {
 
 }
 
+func hash(b []byte) string {
+	if enableSha256Gate.IsEnabled() {
+		return sha2Hash(b)
+	}
+	return sha1Hash(b)
+}
+
 func sha1Hash(b []byte) string {
 	// #nosec
 	h := sha1.New()
+	h.Write(b)
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func sha2Hash(b []byte) string {
+	h := sha256.New()
 	h.Write(b)
 	return fmt.Sprintf("%x", h.Sum(nil))
 }

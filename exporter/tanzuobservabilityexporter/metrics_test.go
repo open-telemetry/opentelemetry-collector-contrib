@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tanzuobservabilityexporter
 
@@ -1596,7 +1585,7 @@ type mockHistogramDataPointConsumer struct {
 }
 
 func (m *mockHistogramDataPointConsumer) Consume(
-	mi metricInfo, point bucketHistogramDataPoint, errs *[]error, reporting *histogramReporting) {
+	mi metricInfo, point bucketHistogramDataPoint, _ *[]error, _ *histogramReporting) {
 	m.names = append(m.names, mi.Name())
 	m.counts = append(m.counts, len(point.AsCumulative()))
 }
@@ -1671,16 +1660,10 @@ func copyGranularity(
 }
 
 func assertBuckets(t *testing.T, expected, actual []cumulativeBucket) {
-	msgString := "Expected: %+v; Actual: %+v"
-	if len(expected) != len(actual) {
-		assert.Fail(t, "", msgString, expected, actual)
-		return
-	}
+	assert.Equal(t, len(expected), len(actual), "len")
 	for i := range expected {
-		if expected[i].Count != actual[i].Count || !tagsEqual(expected[i].Tag, actual[i].Tag) {
-			assert.Fail(t, "", msgString, expected, actual)
-			return
-		}
+		assert.Equal(t, expected[i].Count, actual[i].Count, "count")
+		assert.True(t, tagsEqual(expected[i].Tag, actual[i].Tag), "tag")
 	}
 }
 
@@ -1697,15 +1680,9 @@ func tagsEqual(expected, actual string) bool {
 }
 
 func assertCentroids(t *testing.T, expected, actual []histogram.Centroid) {
-	msgString := "Expected: %+v; Actual: %+v"
-	if len(expected) != len(actual) {
-		assert.Fail(t, "", msgString, expected, actual)
-		return
-	}
+	assert.Equal(t, len(expected), len(actual), "len")
 	for i := range expected {
-		if expected[i].Count != actual[i].Count || math.Abs(expected[i].Value-actual[i].Value) > 0.0001 {
-			assert.Fail(t, "", msgString, expected, actual)
-			return
-		}
+		assert.Equal(t, expected[i].Count, actual[i].Count, "count")
+		assert.InDelta(t, expected[i].Value, actual[i].Value, 0.0001, "value")
 	}
 }

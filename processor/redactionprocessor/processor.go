@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
@@ -21,34 +10,30 @@ import (
 	"sort"
 	"strings"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap"
 )
 
 const attrValuesSeparator = ","
 
-var _ processor.Traces = (*redaction)(nil)
-
 type redaction struct {
 	// Attribute keys allowed in a span
 	allowList map[string]string
+	// Attribute keys ignored in a span
+	ignoreList map[string]string
 	// Attribute values blocked in a span
 	blockRegexList map[string]*regexp.Regexp
 	// Redaction processor configuration
 	config *Config
 	// Logger
 	logger *zap.Logger
-	// Next trace consumer in line
-	next consumer.Traces
 }
 
 // newRedaction creates a new instance of the redaction processor
-func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next consumer.Traces) (*redaction, error) {
+func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*redaction, error) {
 	allowList := makeAllowList(config)
+	ignoreList := makeIgnoreList(config)
 	blockRegexList, err := makeBlockRegexList(ctx, config)
 	if err != nil {
 		// TODO: Placeholder for an error metric in the next PR
@@ -57,10 +42,10 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger, next 
 
 	return &redaction{
 		allowList:      allowList,
+		ignoreList:     ignoreList,
 		blockRegexList: blockRegexList,
 		config:         config,
 		logger:         logger,
-		next:           next,
 	}, nil
 }
 
@@ -99,6 +84,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// TODO: Use the context for recording metrics
 	var toDelete []string
 	var toBlock []string
+	var ignoring []string
 
 	// Identify attributes to redact and mask in the following sequence
 	// 1. Make a list of attribute keys to redact
@@ -109,6 +95,13 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
 	attributes.Range(func(k string, value pcommon.Value) bool {
+		// don't delete or redact the attribute if it should be ignored
+		if _, ignored := s.ignoreList[k]; ignored {
+			ignoring = append(ignoring, k)
+			// Skip to the next attribute
+			return true
+		}
+
 		// Make a list of attribute keys to redact
 		if !s.config.AllowAllKeys {
 			if _, allowed := s.allowList[k]; !allowed {
@@ -139,17 +132,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// Add diagnostic information to the span
 	s.addMetaAttrs(toDelete, attributes, redactedKeys, redactedKeyCount)
 	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
-}
-
-// ConsumeTraces implements the SpanProcessor interface
-func (s *redaction) ConsumeTraces(ctx context.Context, batch ptrace.Traces) error {
-	batch, err := s.processTraces(ctx, batch)
-	if err != nil {
-		return err
-	}
-
-	err = s.next.ConsumeTraces(ctx, batch)
-	return err
+	s.addMetaAttrs(ignoring, attributes, "", ignoredKeyCount)
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys
@@ -159,8 +142,8 @@ func (s *redaction) addMetaAttrs(redactedAttrs []string, attributes pcommon.Map,
 		return
 	}
 
-	// Record summary as span attributes
-	if s.config.Summary == debug {
+	// Record summary as span attributes, empty string for ignored items
+	if s.config.Summary == debug && len(valuesAttr) > 0 {
 		if existingVal, found := attributes.Get(valuesAttr); found && existingVal.Str() != "" {
 			redactedAttrs = append(redactedAttrs, strings.Split(existingVal.Str(), attrValuesSeparator)...)
 		}
@@ -182,6 +165,7 @@ const (
 	redactedKeyCount = "redaction.redacted.count"
 	maskedValues     = "redaction.masked.keys"
 	maskedValueCount = "redaction.masked.count"
+	ignoredKeyCount  = "redaction.ignored.count"
 )
 
 // makeAllowList sets up a lookup table of allowed span attribute keys
@@ -196,7 +180,7 @@ func makeAllowList(c *Config) map[string]string {
 	// span attributes (e.g. `notes`, `description`), then it will those
 	// attribute keys in `redaction.masked.keys` and set the
 	// `redaction.masked.count` to 2
-	redactionKeys := []string{redactedKeys, redactedKeyCount, maskedValues, maskedValueCount}
+	redactionKeys := []string{redactedKeys, redactedKeyCount, maskedValues, maskedValueCount, ignoredKeyCount}
 	// allowList consists of the keys explicitly allowed by the configuration
 	// as well as of the new span attributes that the processor creates to
 	// summarize its changes
@@ -208,6 +192,14 @@ func makeAllowList(c *Config) map[string]string {
 		allowList[key] = key
 	}
 	return allowList
+}
+
+func makeIgnoreList(c *Config) map[string]string {
+	ignoreList := make(map[string]string, len(c.IgnoredKeys))
+	for _, key := range c.IgnoredKeys {
+		ignoreList[key] = key
+	}
+	return ignoreList
 }
 
 // makeBlockRegexList precompiles all the blocked regex patterns
@@ -222,19 +214,4 @@ func makeBlockRegexList(_ context.Context, config *Config) (map[string]*regexp.R
 		blockRegexList[pattern] = re
 	}
 	return blockRegexList, nil
-}
-
-// Capabilities specifies what this processor does, such as whether it mutates data
-func (s *redaction) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true}
-}
-
-// Start the redaction processor
-func (s *redaction) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-// Shutdown the redaction processor
-func (s *redaction) Shutdown(context.Context) error {
-	return nil
 }

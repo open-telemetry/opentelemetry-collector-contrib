@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
 
@@ -38,14 +27,13 @@ func (m *MockReporter) OnDataReceived(ctx context.Context) context.Context {
 	return ctx
 }
 
-func (m *MockReporter) OnTranslationError(ctx context.Context, err error) {
-}
+func (m *MockReporter) OnTranslationError(_ context.Context, _ error) {}
 
-func (m *MockReporter) OnMetricsProcessed(ctx context.Context, numReceivedMessages int, err error) {
+func (m *MockReporter) OnMetricsProcessed(_ context.Context, _ int, _ error) {
 	m.wgMetricsProcessed.Done()
 }
 
-func (m *MockReporter) OnDebugf(template string, args ...interface{}) {
+func (m *MockReporter) OnDebugf(_ string, _ ...interface{}) {
 }
 
 // WaitAllOnMetricsProcessedCalls blocks until the number of expected calls

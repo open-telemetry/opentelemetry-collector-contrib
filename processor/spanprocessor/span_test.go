@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package spanprocessor
 
@@ -30,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 func TestNewTracesProcessor(t *testing.T) {
@@ -59,22 +49,9 @@ type testCase struct {
 func runIndividualTestCase(t *testing.T, tt testCase, tp processor.Traces) {
 	t.Run(tt.inputName, func(t *testing.T) {
 		td := generateTraceData(tt.serviceName, tt.inputName, tt.inputAttributes)
-
 		assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
-		// Ensure that the modified `td` has the attributes sorted:
-		rss := td.ResourceSpans()
-		for i := 0; i < rss.Len(); i++ {
-			rs := rss.At(i)
-			rs.Resource().Attributes().Sort()
-			ilss := rs.ScopeSpans()
-			for j := 0; j < ilss.Len(); j++ {
-				spans := ilss.At(j).Spans()
-				for k := 0; k < spans.Len(); k++ {
-					spans.At(k).Attributes().Sort()
-				}
-			}
-		}
-		assert.EqualValues(t, generateTraceData(tt.serviceName, tt.outputName, tt.outputAttributes), td)
+		assert.NoError(t, ptracetest.CompareTraces(generateTraceData(tt.serviceName, tt.outputName,
+			tt.outputAttributes), td))
 	})
 }
 
@@ -88,7 +65,6 @@ func generateTraceData(serviceName, inputName string, attrs map[string]interface
 	span.SetName(inputName)
 	//nolint:errcheck
 	span.Attributes().FromRaw(attrs)
-	span.Attributes().Sort()
 	return td
 }
 
@@ -138,7 +114,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 		tt := testCases[i]
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
-			assert.EqualValues(t, tt.output, tt.input)
+			assert.NoError(t, ptracetest.CompareTraces(tt.output, tt.input))
 		})
 	}
 }
@@ -341,12 +317,12 @@ func TestSpanProcessor_Separator(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.Equal(t, generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
 		map[string]interface{}{
 			"key1": "bob",
-		}), traceData)
+		}), traceData))
 }
 
 // TestSpanProcessor_NoSeparatorMultipleKeys tests naming a span using multiple keys and no separator.
@@ -370,13 +346,13 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.Equal(t, generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob123",
 		map[string]interface{}{
 			"key1": "bob",
 			"key2": 123,
-		}), traceData)
+		}), traceData))
 }
 
 // TestSpanProcessor_SeparatorMultipleKeys tests naming a span with multiple keys and a separator.
@@ -403,7 +379,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.Equal(t, generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob::123::234.129312::true",
 		map[string]interface{}{
@@ -411,7 +387,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 			"key2": 123,
 			"key3": 234.129312,
 			"key4": true,
-		}), traceData)
+		}), traceData))
 }
 
 // TestSpanProcessor_NilName tests naming a span when the input span had no name.
@@ -435,12 +411,12 @@ func TestSpanProcessor_NilName(t *testing.T) {
 		})
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), traceData))
 
-	assert.Equal(t, generateTraceData(
+	assert.NoError(t, ptracetest.CompareTraces(generateTraceData(
 		"",
 		"bob",
 		map[string]interface{}{
 			"key1": "bob",
-		}), traceData)
+		}), traceData))
 }
 
 // TestSpanProcessor_ToAttributes
@@ -604,7 +580,6 @@ func generateTraceDataSetStatus(code ptrace.StatusCode, description string, attr
 	span.Status().SetMessage(description)
 	//nolint:errcheck
 	span.Attributes().FromRaw(attrs)
-	span.Attributes().Sort()
 	return td
 }
 
@@ -675,7 +650,8 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-			assert.EqualValues(t, generateTraceDataSetStatus(tc.outputStatusCode, tc.outputStatusDescription, tc.inputAttributes), td)
+			assert.NoError(t, ptracetest.CompareTraces(generateTraceDataSetStatus(tc.outputStatusCode,
+				tc.outputStatusDescription, tc.inputAttributes), td))
 		})
 	}
 }

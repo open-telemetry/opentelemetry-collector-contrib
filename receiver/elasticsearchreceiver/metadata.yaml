@@ -1,15 +1,30 @@
-name: elasticsearchreceiver
+type: elasticsearch
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, binaryfissiongames]
 
 resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.
     type: string
+    enabled: true
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+    enabled: true
+  elasticsearch.node.version:
+    description: The version of the elasticsearch node.
+    type: string
+    enabled: true
   elasticsearch.index.name:
     description: The name of the elasticsearch index.
     type: string
+    enabled: true
 
 attributes:
   cache_name:

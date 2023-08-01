@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor"
 
@@ -22,16 +11,24 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
 	Metrics MetricFilters `mapstructure:"metrics"`
 
 	Logs LogFilters `mapstructure:"logs"`
@@ -46,12 +43,12 @@ type MetricFilters struct {
 	// Include match properties describe metrics that should be included in the Collector Service pipeline,
 	// all other metrics should be dropped from further processing.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Include *filtermetric.MatchProperties `mapstructure:"include"`
+	Include *filterconfig.MetricMatchProperties `mapstructure:"include"`
 
 	// Exclude match properties describe metrics that should be excluded from the Collector Service pipeline,
 	// all other metrics should be included.
 	// If both Include and Exclude are specified, Include filtering occurs first.
-	Exclude *filtermetric.MatchProperties `mapstructure:"exclude"`
+	Exclude *filterconfig.MetricMatchProperties `mapstructure:"exclude"`
 
 	// RegexpConfig specifies options for the Regexp match type
 	RegexpConfig *regexp.Config `mapstructure:"regexp"`
@@ -282,27 +279,27 @@ func (cfg *Config) Validate() error {
 	var errors error
 
 	if cfg.Traces.SpanConditions != nil {
-		_, err := common.ParseSpan(cfg.Traces.SpanConditions, component.TelemetrySettings{})
+		_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Traces.SpanEventConditions != nil {
-		_, err := common.ParseSpanEvent(cfg.Traces.SpanEventConditions, component.TelemetrySettings{})
+		_, err := filterottl.NewBoolExprForSpanEvent(cfg.Traces.SpanEventConditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.MetricConditions != nil {
-		_, err := common.ParseMetric(cfg.Metrics.MetricConditions, component.TelemetrySettings{})
+		_, err := filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Metrics.DataPointConditions != nil {
-		_, err := common.ParseDataPoint(cfg.Metrics.DataPointConditions, component.TelemetrySettings{})
+		_, err := filterottl.NewBoolExprForDataPoint(cfg.Metrics.DataPointConditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 
 	if cfg.Logs.LogConditions != nil {
-		_, err := common.ParseLog(cfg.Logs.LogConditions, component.TelemetrySettings{})
+		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
 		errors = multierr.Append(errors, err)
 	}
 

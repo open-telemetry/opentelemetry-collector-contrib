@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dynatraceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter"
 
@@ -219,6 +208,8 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	defer resp.Body.Close()
 
+	responseBody, rbUnmarshalErr := e.unmarshalResponseBody(resp)
+
 	if resp.StatusCode == http.StatusRequestEntityTooLarge {
 		// If a payload is too large, resending it will not help
 		return consumererror.NewPermanent(fmt.Errorf("payload too large"))
@@ -226,19 +217,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 
 	if resp.StatusCode == http.StatusBadRequest {
 		// At least some metrics were not accepted
-		bodyBytes, err := io.ReadAll(resp.Body)
-		if err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
-			return nil
-		}
-
-		responseBody := metricsResponse{}
-		if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
-			// if the response cannot be read, do not retry the batch as it may have been successful
-			bodyStr := string(bodyBytes)
-			bodyStr = truncateString(bodyStr, 1000)
-			e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		if rbUnmarshalErr != nil {
 			return nil
 		}
 
@@ -276,6 +255,24 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 		return consumererror.NewPermanent(fmt.Errorf("metrics ingest v2 module not found - ensure module is enabled and endpoint is correct"))
 	}
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return consumererror.NewPermanent(
+			fmt.Errorf("The server responded that too many requests have been sent. Please check your export interval and batch sizes and see https://www.dynatrace.com/support/help/dynatrace-api/basics/access-limit for more information"),
+		)
+	}
+
+	if resp.StatusCode > http.StatusBadRequest { // '400 Bad Request' itself is handled above
+		return consumererror.NewPermanent(fmt.Errorf(`Received error response status: "%v"`, resp.Status))
+	}
+
+	if rbUnmarshalErr == nil {
+		e.settings.Logger.Debug(
+			"Export successful. Response from Dynatrace:",
+			zap.Int("accepted-lines", responseBody.Ok),
+			zap.String("status", resp.Status),
+		)
+	}
+
 	// No known errors
 	return nil
 }
@@ -291,6 +288,26 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	e.client = client
 
 	return nil
+}
+
+func (e *exporter) unmarshalResponseBody(resp *http.Response) (metricsResponse, error) {
+	bodyBytes, err := io.ReadAll(resp.Body)
+	responseBody := metricsResponse{}
+	if err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		e.settings.Logger.Error("Failed to read response from Dynatrace", zap.Error(err))
+		return responseBody, fmt.Errorf("Failed to read response")
+	}
+
+	if err := json.Unmarshal(bodyBytes, &responseBody); err != nil {
+		// if the response cannot be read, do not retry the batch as it may have been successful
+		bodyStr := string(bodyBytes)
+		bodyStr = truncateString(bodyStr, 1000)
+		e.settings.Logger.Error("Failed to unmarshal response from Dynatrace", zap.Error(err), zap.String("body", bodyStr))
+		return responseBody, fmt.Errorf("Failed to unmarshal response")
+	}
+
+	return responseBody, nil
 }
 
 func truncateString(str string, num int) string {

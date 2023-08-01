@@ -1,31 +1,38 @@
-name: hostmetricsreceiver/process
+type: hostmetricsreceiver/process
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
 resource_attributes:
   process.pid:
     description: Process identifier (PID).
+    enabled: true
     type: int
   process.parent_pid:
     description: Parent Process identifier (PPID).
+    enabled: true
     type: int
   process.executable.name:
     description: >-
       The name of the process executable. On Linux based systems, can be set to the
       Name in proc/[pid]/status. On Windows, can be set to the base name of
       GetProcessImageFileNameW.
+    enabled: true
     type: string
   process.executable.path:
     description: >-
       The full path to the process executable. On Linux based systems, can be set to
       the target of proc/[pid]/exe. On Windows, can be set to the result of
       GetProcessImageFileNameW.
+    enabled: true
     type: string
   process.command:
     description: >-
       The command used to launch the process (i.e. the command name). On Linux based
       systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can
       be set to the first parameter extracted from GetCommandLineW.
+    enabled: true
     type: string
   process.command_line:
     description: >-
@@ -33,9 +40,11 @@ resource_attributes:
       full command. On Windows, can be set to the result of GetCommandLineW. Do not
       set this if you have to assemble it just for monitoring; use
       process.command_args instead.
+    enabled: true
     type: string
   process.owner:
     description: The username of the user that owns the process.
+    enabled: true
     type: string
 
 attributes:
@@ -83,22 +92,8 @@ metrics:
       value_type: double
     attributes: [state]
 
-  process.memory.physical_usage:
-    enabled: true
-    description: "Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use."
-    warnings:
-      if_enabled: >-
-        The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.usage` instead. See
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
   process.memory.usage:
-    enabled: false
+    enabled: true
     description: The amount of physical memory in use.
     unit: By
     sum:
@@ -106,22 +101,8 @@ metrics:
       aggregation: cumulative
       monotonic: false
 
-  process.memory.virtual_usage:
-    enabled: true
-    description: "Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size."
-    warnings:
-      if_enabled: >-
-        The metric is deprecated and will be removed in v0.70.0. Please use `process.memory.virtual` metric instead. See 
-        https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/hostmetricsreceiver#transition-to-process-memory-metric-names-aligned-with-opentelemetry-specification
-        for more details.
-    unit: By
-    sum:
-      value_type: int
-      aggregation: cumulative
-      monotonic: false
-
   process.memory.virtual:
-    enabled: false
+    enabled: true
     description: Virtual memory size.
     unit: By
     sum:
@@ -148,7 +129,8 @@ metrics:
 
   process.paging.faults:
     enabled: false
-    description: Number of page faults the process has made. This metric is only available on Linux.
+    description: Number of page faults the process has made.
+    extended_documentation: This metric is only available on Linux.
     unit: "{faults}"
     sum:
       value_type: int
@@ -158,7 +140,8 @@ metrics:
 
   process.signals_pending:
     enabled: false
-    description: Number of pending signals for the process. This metric is only available on Linux.
+    description: Number of pending signals for the process.
+    extended_documentation: This metric is only available on Linux.
     unit: "{signals}"
     sum:
       value_type: int
@@ -177,6 +160,17 @@ metrics:
   process.open_file_descriptors:
     enabled: false
     description: Number of file descriptors in use by the process.
+    extended_documentation: This metric is only available on Linux.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.handles:
+    enabled: false
+    description: Number of handles held by the process.
+    extended_documentation: This metric is only available on Windows.
     unit: '{count}'
     sum:
       value_type: int
@@ -186,6 +180,7 @@ metrics:
   process.context_switches:
     enabled: false
     description: Number of times the process has been context switched.
+    extended_documentation: This metric is only available on Linux.
     unit: '{count}'
     sum:
       value_type: int

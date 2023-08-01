@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package sumologicexporter
 
@@ -52,20 +41,6 @@ func TestInitExporter(t *testing.T) {
 		},
 	}, componenttest.NewNopTelemetrySettings())
 	assert.NoError(t, err)
-}
-
-func TestInitExporterInvalidConfig(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:    "json",
-		MetricFormat: "test_format",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-		CompressEncoding: "gzip",
-	}, componenttest.NewNopTelemetrySettings())
-
-	assert.EqualError(t, err, "unexpected metric format: test_format")
 }
 
 func TestAllSuccess(t *testing.T) {
@@ -126,7 +101,7 @@ func TestAllFailed(t *testing.T) {
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, logs, partial.GetLogs())
+	assert.Equal(t, logs, partial.Data())
 }
 
 func TestPartiallyFailed(t *testing.T) {
@@ -159,7 +134,7 @@ func TestPartiallyFailed(t *testing.T) {
 
 	var partial consumererror.Logs
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetLogs())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestInvalidSourceFormats(t *testing.T) {
@@ -300,7 +275,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, metrics, partial.GetMetrics())
+	assert.Equal(t, metrics, partial.Data())
 }
 
 func TestMetricsPartiallyFailed(t *testing.T) {
@@ -337,7 +312,7 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetMetrics())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestPushMetricsInvalidCompressor(t *testing.T) {
@@ -403,7 +378,7 @@ gauge_metric_name{foo="bar",key2="value2",remote_name="156955",url="http://anoth
 
 	var partial consumererror.Metrics
 	require.True(t, errors.As(err, &partial))
-	assert.Equal(t, expected, partial.GetMetrics())
+	assert.Equal(t, expected, partial.Data())
 }
 
 func TestPushMetricsFailedBatch(t *testing.T) {

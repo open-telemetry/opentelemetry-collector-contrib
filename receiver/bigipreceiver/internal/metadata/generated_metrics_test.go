@@ -3,14 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -18,634 +13,600 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+type testConfigCollection int
 
-	assert.Equal(t, 0, observedLogs.Len())
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["bigip.node.availability"] = true
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-
-	enabledMetrics["bigip.node.connection.count"] = true
-	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.node.data.transmitted"] = true
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.node.enabled"] = true
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-
-	enabledMetrics["bigip.node.packet.count"] = true
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.node.request.count"] = true
-	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.node.session.count"] = true
-	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.pool.availability"] = true
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-
-	enabledMetrics["bigip.pool.connection.count"] = true
-	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.pool.data.transmitted"] = true
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.pool.enabled"] = true
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-
-	enabledMetrics["bigip.pool.member.count"] = true
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
-
-	enabledMetrics["bigip.pool.packet.count"] = true
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.pool.request.count"] = true
-	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.pool_member.availability"] = true
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-
-	enabledMetrics["bigip.pool_member.connection.count"] = true
-	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.pool_member.data.transmitted"] = true
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.pool_member.enabled"] = true
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-
-	enabledMetrics["bigip.pool_member.packet.count"] = true
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.pool_member.request.count"] = true
-	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.pool_member.session.count"] = true
-	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.virtual_server.availability"] = true
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-
-	enabledMetrics["bigip.virtual_server.connection.count"] = true
-	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-
-	enabledMetrics["bigip.virtual_server.data.transmitted"] = true
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.virtual_server.enabled"] = true
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-
-	enabledMetrics["bigip.virtual_server.packet.count"] = true
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["bigip.virtual_server.request.count"] = true
-	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
-	assert.Equal(t, 0, observedLogs.Len())
+			defaultMetricsCount := 0
+			allMetricsCount := 0
 
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
-	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
 
-	metrics := mb.Emit(WithBigipNodeIPAddress("attr-val"), WithBigipNodeName("attr-val"), WithBigipPoolName("attr-val"), WithBigipPoolMemberIPAddress("attr-val"), WithBigipPoolMemberName("attr-val"), WithBigipVirtualServerDestination("attr-val"), WithBigipVirtualServerName("attr-val"))
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("bigip.node.ip_address")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.node.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.pool.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.ip_address")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.destination")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
 
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "bigip.node.availability":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Availability of the node.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "offline", attrVal.Str())
-			validatedMetrics["bigip.node.availability"] = struct{}{}
-		case "bigip.node.connection.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of connections to the node.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.node.connection.count"] = struct{}{}
-		case "bigip.node.data.transmitted":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Amount of data transmitted to and from the node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.node.data.transmitted"] = struct{}{}
-		case "bigip.node.enabled":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Enabled state of of the node.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "disabled", attrVal.Str())
-			validatedMetrics["bigip.node.enabled"] = struct{}{}
-		case "bigip.node.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of packets transmitted to and from the node.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.node.packet.count"] = struct{}{}
-		case "bigip.node.request.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of requests to the node.", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.node.request.count"] = struct{}{}
-		case "bigip.node.session.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of sessions for the node.", ms.At(i).Description())
-			assert.Equal(t, "{sessions}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.node.session.count"] = struct{}{}
-		case "bigip.pool.availability":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Availability of the pool.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "offline", attrVal.Str())
-			validatedMetrics["bigip.pool.availability"] = struct{}{}
-		case "bigip.pool.connection.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of connections to the pool.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.pool.connection.count"] = struct{}{}
-		case "bigip.pool.data.transmitted":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Amount of data transmitted to and from the pool.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.pool.data.transmitted"] = struct{}{}
-		case "bigip.pool.enabled":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Enabled state of of the pool.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "disabled", attrVal.Str())
-			validatedMetrics["bigip.pool.enabled"] = struct{}{}
-		case "bigip.pool.member.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of pool members.", ms.At(i).Description())
-			assert.Equal(t, "{members}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "active", attrVal.Str())
-			validatedMetrics["bigip.pool.member.count"] = struct{}{}
-		case "bigip.pool.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of packets transmitted to and from the pool.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.pool.packet.count"] = struct{}{}
-		case "bigip.pool.request.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of requests to the pool.", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.pool.request.count"] = struct{}{}
-		case "bigip.pool_member.availability":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Availability of the pool member.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "offline", attrVal.Str())
-			validatedMetrics["bigip.pool_member.availability"] = struct{}{}
-		case "bigip.pool_member.connection.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of connections to the pool member.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.pool_member.connection.count"] = struct{}{}
-		case "bigip.pool_member.data.transmitted":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Amount of data transmitted to and from the pool member.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.pool_member.data.transmitted"] = struct{}{}
-		case "bigip.pool_member.enabled":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Enabled state of of the pool member.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "disabled", attrVal.Str())
-			validatedMetrics["bigip.pool_member.enabled"] = struct{}{}
-		case "bigip.pool_member.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of packets transmitted to and from the pool member.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.pool_member.packet.count"] = struct{}{}
-		case "bigip.pool_member.request.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of requests to the pool member.", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.pool_member.request.count"] = struct{}{}
-		case "bigip.pool_member.session.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of sessions for the pool member.", ms.At(i).Description())
-			assert.Equal(t, "{sessions}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.pool_member.session.count"] = struct{}{}
-		case "bigip.virtual_server.availability":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Availability of the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "offline", attrVal.Str())
-			validatedMetrics["bigip.virtual_server.availability"] = struct{}{}
-		case "bigip.virtual_server.connection.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Current number of connections to the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.virtual_server.connection.count"] = struct{}{}
-		case "bigip.virtual_server.data.transmitted":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Amount of data transmitted to and from the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.virtual_server.data.transmitted"] = struct{}{}
-		case "bigip.virtual_server.enabled":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Enabled state of of the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "disabled", attrVal.Str())
-			validatedMetrics["bigip.virtual_server.enabled"] = struct{}{}
-		case "bigip.virtual_server.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of packets transmitted to and from the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["bigip.virtual_server.packet.count"] = struct{}{}
-		case "bigip.virtual_server.request.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of requests to the virtual server.", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["bigip.virtual_server.request.count"] = struct{}{}
-		}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatusActive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetBigipNodeIPAddress("bigip.node.ip_address-val")
+			rb.SetBigipNodeName("bigip.node.name-val")
+			rb.SetBigipPoolName("bigip.pool.name-val")
+			rb.SetBigipPoolMemberIPAddress("bigip.pool_member.ip_address-val")
+			rb.SetBigipPoolMemberName("bigip.pool_member.name-val")
+			rb.SetBigipVirtualServerDestination("bigip.virtual_server.destination-val")
+			rb.SetBigipVirtualServerName("bigip.virtual_server.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "bigip.node.availability":
+					assert.False(t, validatedMetrics["bigip.node.availability"], "Found a duplicate in the metrics slice: bigip.node.availability")
+					validatedMetrics["bigip.node.availability"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Availability of the node.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "offline", attrVal.Str())
+				case "bigip.node.connection.count":
+					assert.False(t, validatedMetrics["bigip.node.connection.count"], "Found a duplicate in the metrics slice: bigip.node.connection.count")
+					validatedMetrics["bigip.node.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of connections to the node.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.node.data.transmitted":
+					assert.False(t, validatedMetrics["bigip.node.data.transmitted"], "Found a duplicate in the metrics slice: bigip.node.data.transmitted")
+					validatedMetrics["bigip.node.data.transmitted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of data transmitted to and from the node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.node.enabled":
+					assert.False(t, validatedMetrics["bigip.node.enabled"], "Found a duplicate in the metrics slice: bigip.node.enabled")
+					validatedMetrics["bigip.node.enabled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Enabled state of of the node.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "disabled", attrVal.Str())
+				case "bigip.node.packet.count":
+					assert.False(t, validatedMetrics["bigip.node.packet.count"], "Found a duplicate in the metrics slice: bigip.node.packet.count")
+					validatedMetrics["bigip.node.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of packets transmitted to and from the node.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.node.request.count":
+					assert.False(t, validatedMetrics["bigip.node.request.count"], "Found a duplicate in the metrics slice: bigip.node.request.count")
+					validatedMetrics["bigip.node.request.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests to the node.", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.node.session.count":
+					assert.False(t, validatedMetrics["bigip.node.session.count"], "Found a duplicate in the metrics slice: bigip.node.session.count")
+					validatedMetrics["bigip.node.session.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of sessions for the node.", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.pool.availability":
+					assert.False(t, validatedMetrics["bigip.pool.availability"], "Found a duplicate in the metrics slice: bigip.pool.availability")
+					validatedMetrics["bigip.pool.availability"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Availability of the pool.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "offline", attrVal.Str())
+				case "bigip.pool.connection.count":
+					assert.False(t, validatedMetrics["bigip.pool.connection.count"], "Found a duplicate in the metrics slice: bigip.pool.connection.count")
+					validatedMetrics["bigip.pool.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of connections to the pool.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.pool.data.transmitted":
+					assert.False(t, validatedMetrics["bigip.pool.data.transmitted"], "Found a duplicate in the metrics slice: bigip.pool.data.transmitted")
+					validatedMetrics["bigip.pool.data.transmitted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of data transmitted to and from the pool.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.pool.enabled":
+					assert.False(t, validatedMetrics["bigip.pool.enabled"], "Found a duplicate in the metrics slice: bigip.pool.enabled")
+					validatedMetrics["bigip.pool.enabled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Enabled state of of the pool.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "disabled", attrVal.Str())
+				case "bigip.pool.member.count":
+					assert.False(t, validatedMetrics["bigip.pool.member.count"], "Found a duplicate in the metrics slice: bigip.pool.member.count")
+					validatedMetrics["bigip.pool.member.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of pool members.", ms.At(i).Description())
+					assert.Equal(t, "{members}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "active", attrVal.Str())
+				case "bigip.pool.packet.count":
+					assert.False(t, validatedMetrics["bigip.pool.packet.count"], "Found a duplicate in the metrics slice: bigip.pool.packet.count")
+					validatedMetrics["bigip.pool.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of packets transmitted to and from the pool.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.pool.request.count":
+					assert.False(t, validatedMetrics["bigip.pool.request.count"], "Found a duplicate in the metrics slice: bigip.pool.request.count")
+					validatedMetrics["bigip.pool.request.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests to the pool.", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.pool_member.availability":
+					assert.False(t, validatedMetrics["bigip.pool_member.availability"], "Found a duplicate in the metrics slice: bigip.pool_member.availability")
+					validatedMetrics["bigip.pool_member.availability"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Availability of the pool member.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "offline", attrVal.Str())
+				case "bigip.pool_member.connection.count":
+					assert.False(t, validatedMetrics["bigip.pool_member.connection.count"], "Found a duplicate in the metrics slice: bigip.pool_member.connection.count")
+					validatedMetrics["bigip.pool_member.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of connections to the pool member.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.pool_member.data.transmitted":
+					assert.False(t, validatedMetrics["bigip.pool_member.data.transmitted"], "Found a duplicate in the metrics slice: bigip.pool_member.data.transmitted")
+					validatedMetrics["bigip.pool_member.data.transmitted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of data transmitted to and from the pool member.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.pool_member.enabled":
+					assert.False(t, validatedMetrics["bigip.pool_member.enabled"], "Found a duplicate in the metrics slice: bigip.pool_member.enabled")
+					validatedMetrics["bigip.pool_member.enabled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Enabled state of of the pool member.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "disabled", attrVal.Str())
+				case "bigip.pool_member.packet.count":
+					assert.False(t, validatedMetrics["bigip.pool_member.packet.count"], "Found a duplicate in the metrics slice: bigip.pool_member.packet.count")
+					validatedMetrics["bigip.pool_member.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of packets transmitted to and from the pool member.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.pool_member.request.count":
+					assert.False(t, validatedMetrics["bigip.pool_member.request.count"], "Found a duplicate in the metrics slice: bigip.pool_member.request.count")
+					validatedMetrics["bigip.pool_member.request.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests to the pool member.", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.pool_member.session.count":
+					assert.False(t, validatedMetrics["bigip.pool_member.session.count"], "Found a duplicate in the metrics slice: bigip.pool_member.session.count")
+					validatedMetrics["bigip.pool_member.session.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of sessions for the pool member.", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.virtual_server.availability":
+					assert.False(t, validatedMetrics["bigip.virtual_server.availability"], "Found a duplicate in the metrics slice: bigip.virtual_server.availability")
+					validatedMetrics["bigip.virtual_server.availability"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Availability of the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "offline", attrVal.Str())
+				case "bigip.virtual_server.connection.count":
+					assert.False(t, validatedMetrics["bigip.virtual_server.connection.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.connection.count")
+					validatedMetrics["bigip.virtual_server.connection.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Current number of connections to the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "bigip.virtual_server.data.transmitted":
+					assert.False(t, validatedMetrics["bigip.virtual_server.data.transmitted"], "Found a duplicate in the metrics slice: bigip.virtual_server.data.transmitted")
+					validatedMetrics["bigip.virtual_server.data.transmitted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of data transmitted to and from the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.virtual_server.enabled":
+					assert.False(t, validatedMetrics["bigip.virtual_server.enabled"], "Found a duplicate in the metrics slice: bigip.virtual_server.enabled")
+					validatedMetrics["bigip.virtual_server.enabled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Enabled state of of the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "disabled", attrVal.Str())
+				case "bigip.virtual_server.packet.count":
+					assert.False(t, validatedMetrics["bigip.virtual_server.packet.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.packet.count")
+					validatedMetrics["bigip.virtual_server.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of packets transmitted to and from the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "bigip.virtual_server.request.count":
+					assert.False(t, validatedMetrics["bigip.virtual_server.request.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.request.count")
+					validatedMetrics["bigip.virtual_server.request.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests to the virtual server.", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
-
-	assert.Equal(t, 0, observedLogs.Len())
-
-	mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
-	mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
-	mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
-	mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
-	mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-	mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
-	mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
@@ -99,32 +88,57 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (i
 	return output.String(), nil
 }
 
-// expandMap recursively expands any expressions in backticks inside values of cfg using
-// env as variables available within the expression, returning a copy of the map.
-func expandMap(cfg map[string]interface{}, env observer.EndpointEnv) (map[string]interface{}, error) {
-	resolved := map[string]interface{}{}
-	for k, v := range cfg {
-		if v == nil {
-			continue
-		}
-
-		switch val := v.(type) {
-		case map[string]interface{}:
-			res, err := expandMap(val, env)
-			if err != nil {
-				return nil, err
-			}
-			resolved[k] = res
-		case string:
-			res, err := evalBackticksInConfigValue(val, env)
-			if err != nil {
-				return nil, fmt.Errorf("failed evaluating config expression for key %q: %w", k, err)
-			}
-			resolved[k] = res
-		default:
-			resolved[k] = v
-		}
+// expandConfig will walk the provided user config and expand any `backticked` content
+// with associated observer.EndpointEnv values.
+func expandConfig(cfg userConfigMap, env observer.EndpointEnv) (userConfigMap, error) {
+	expanded, err := expandAny(map[string]interface{}(cfg), env)
+	if err != nil {
+		return nil, err
 	}
+	return expanded.(map[string]interface{}), nil
+}
 
-	return resolved, nil
+// expandAny recursively expands any expressions in backticks inside values of input using
+// env as variables available within the expression, returning a copy of input
+func expandAny(input interface{}, env observer.EndpointEnv) (interface{}, error) {
+	switch v := input.(type) {
+	case string:
+		res, err := evalBackticksInConfigValue(v, env)
+		if err != nil {
+			return nil, fmt.Errorf("failed evaluating config expression for %v: %w", v, err)
+		}
+		return res, nil
+	case []string, []interface{}:
+		var vSlice []interface{}
+		if vss, ok := v.([]string); ok {
+			// expanded strings aren't guaranteed to remain them, so we
+			// coerce to interface{} for shared []interface{} expansion path
+			for _, vs := range vss {
+				vSlice = append(vSlice, vs)
+			}
+		} else {
+			vSlice = v.([]interface{})
+		}
+		expandedSlice := make([]interface{}, 0, len(vSlice))
+		for _, val := range vSlice {
+			expanded, err := expandAny(val, env)
+			if err != nil {
+				return nil, fmt.Errorf("failed evaluating config expression for %v: %w", val, err)
+			}
+			expandedSlice = append(expandedSlice, expanded)
+		}
+		return expandedSlice, nil
+	case map[string]interface{}:
+		expandedMap := map[string]interface{}{}
+		for key, val := range v {
+			expandedVal, err := expandAny(val, env)
+			if err != nil {
+				return nil, fmt.Errorf("failed evaluating config expression for {%q: %v}: %w", key, val, err)
+			}
+			expandedMap[key] = expandedVal
+		}
+		return expandedMap, nil
+	default:
+		return v, nil
+	}
 }

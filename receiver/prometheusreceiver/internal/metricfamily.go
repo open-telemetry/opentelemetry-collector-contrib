@@ -1,22 +1,12 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 
@@ -57,6 +47,7 @@ type metricGroup struct {
 	hasCount     bool
 	sum          float64
 	hasSum       bool
+	created      float64
 	value        float64
 	complexValue []*dataPoint
 	exemplars    pmetric.ExemplarSlice
@@ -96,24 +87,28 @@ func (mg *metricGroup) sortPoints() {
 }
 
 func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
-	if !mg.hasCount || len(mg.complexValue) == 0 {
+	if !mg.hasCount {
 		return
 	}
 
 	mg.sortPoints()
 
+	bucketCount := len(mg.complexValue) + 1
+	// if the final bucket is +Inf, we ignore it
+	if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
+		bucketCount--
+	}
+
 	// for OTLP the bounds won't include +inf
-	bounds := make([]float64, len(mg.complexValue)-1)
-	bucketCounts := make([]uint64, len(mg.complexValue))
+	bounds := make([]float64, bucketCount-1)
+	bucketCounts := make([]uint64, bucketCount)
+	var adjustedCount float64
 
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
+	for i := 0; i < bucketCount-1; i++ {
+		bounds[i] = mg.complexValue[i].boundary
+		adjustedCount = mg.complexValue[i].value
 
-	for i := 0; i < len(mg.complexValue); i++ {
-		if i != len(mg.complexValue)-1 {
-			// not need to add +inf as OTLP assumes it
-			bounds[i] = mg.complexValue[i].boundary
-		}
-		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
 		// but a staleness NaN converted to uint64 would be an extremely large number.
 		// Setting to 0 instead.
@@ -124,6 +119,15 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		}
 		bucketCounts[i] = uint64(adjustedCount)
 	}
+
+	// Add the final bucket based on the total count
+	adjustedCount = mg.count
+	if pointIsStale {
+		adjustedCount = 0
+	} else if bucketCount > 1 {
+		adjustedCount -= mg.complexValue[bucketCount-2].value
+	}
+	bucketCounts[bucketCount-1] = uint64(adjustedCount)
 
 	point := dest.AppendEmpty()
 
@@ -141,7 +145,12 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
-	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+	if mg.created != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.created))
+	} else {
+		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		point.SetStartTimestamp(tsNanos)
+	}
 	point.SetTimestamp(tsNanos)
 	populateAttributes(pmetric.MetricTypeHistogram, mg.ls, point.Attributes())
 	mg.setExemplars(point.Exemplars())
@@ -196,7 +205,12 @@ func (mg *metricGroup) toSummaryPoint(dest pmetric.SummaryDataPointSlice) {
 	// The timestamp MUST be in retrieved from milliseconds and converted to nanoseconds.
 	tsNanos := timestampFromMs(mg.ts)
 	point.SetTimestamp(tsNanos)
-	point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+	if mg.created != 0 {
+		point.SetStartTimestamp(timestampFromFloat64(mg.created))
+	} else {
+		// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		point.SetStartTimestamp(tsNanos)
+	}
 	populateAttributes(pmetric.MetricTypeSummary, mg.ls, point.Attributes())
 }
 
@@ -205,7 +219,12 @@ func (mg *metricGroup) toNumberDataPoint(dest pmetric.NumberDataPointSlice) {
 	point := dest.AppendEmpty()
 	// gauge/undefined types have no start time.
 	if mg.mtype == pmetric.MetricTypeSum {
-		point.SetStartTimestamp(tsNanos) // metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+		if mg.created != 0 {
+			point.SetStartTimestamp(timestampFromFloat64(mg.created))
+		} else {
+			// metrics_adjuster adjusts the startTimestamp to the initial scrape timestamp
+			point.SetStartTimestamp(tsNanos)
+		}
 	}
 	point.SetTimestamp(tsNanos)
 	if value.IsStaleNaN(mg.value) {
@@ -268,6 +287,8 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			mg.ts = t
 			mg.count = v
 			mg.hasCount = true
+		case strings.HasSuffix(metricName, metricSuffixCreated):
+			mg.created = v
 		default:
 			boundary, err := getBoundary(mf.mtype, ls)
 			if err != nil {
@@ -275,6 +296,14 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 			}
 			mg.complexValue = append(mg.complexValue, &dataPoint{value: v, boundary: boundary})
 		}
+	case pmetric.MetricTypeSum:
+		if strings.HasSuffix(metricName, metricSuffixCreated) {
+			mg.created = v
+		} else {
+			mg.value = v
+		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		mg.value = v
 	}
@@ -282,10 +311,14 @@ func (mf *metricFamily) addSeries(seriesRef uint64, metricName string, ls labels
 	return nil
 }
 
-func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *prometheus.Normalizer) {
+func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes bool) {
 	metric := pmetric.NewMetric()
-	// Trims type's and unit's suffixes from metric name
-	metric.SetName(normalizer.TrimPromSuffixes(mf.name, mf.mtype, mf.metadata.Unit))
+	// Trims type and unit suffixes from metric name
+	name := mf.name
+	if trimSuffixes {
+		name = prometheus.TrimPromSuffixes(name, mf.mtype, mf.metadata.Unit)
+	}
+	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(mf.metadata.Unit)
 
@@ -319,6 +352,8 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, normalizer *pr
 		}
 		pointCount = sdpL.Len()
 
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default: // Everything else should be set to a Gauge.
 		gauge := metric.SetEmptyGauge()
 		gdpL := gauge.DataPoints()

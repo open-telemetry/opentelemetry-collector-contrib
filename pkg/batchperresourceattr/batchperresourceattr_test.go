@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package batchperresourceattr
 
@@ -33,6 +22,19 @@ import (
 
 func TestSplitTracesOneResourceSpans(t *testing.T) {
 	inBatch := ptrace.NewTraces()
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.TracesSink)
+	bpr := NewBatchPerResourceTraces("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeTraces(context.Background(), inBatch))
+	outBatches := sink.AllTraces()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
+}
+
+func TestOriginalResourceSpansUnchanged(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
 	fillResourceSpans(inBatch.ResourceSpans().AppendEmpty(), "attr_key", "1")
 
 	sink := new(consumertest.TracesSink)
@@ -111,6 +113,19 @@ func TestSplitMetricsOneResourceMetrics(t *testing.T) {
 	assert.Equal(t, expected, outBatches[0])
 }
 
+func TestOriginalResourceMetricsUnchanged(t *testing.T) {
+	inBatch := pmetric.NewMetrics()
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.MetricsSink)
+	bpr := NewBatchPerResourceMetrics("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeMetrics(context.Background(), inBatch))
+	outBatches := sink.AllMetrics()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
+}
+
 func TestSplitMetricsReturnError(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
 	fillResourceMetrics(inBatch.ResourceMetrics().AppendEmpty(), "attr_key", "1")
@@ -177,6 +192,19 @@ func TestSplitLogsOneResourceLogs(t *testing.T) {
 	outBatches := sink.AllLogs()
 	require.Len(t, outBatches, 1)
 	assert.Equal(t, expected, outBatches[0])
+}
+
+func TestOriginalResourceLogsUnchanged(t *testing.T) {
+	inBatch := plog.NewLogs()
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+	fillResourceLogs(inBatch.ResourceLogs().AppendEmpty(), "attr_key", "1")
+
+	sink := new(consumertest.LogsSink)
+	bpr := NewBatchPerResourceLogs("attr_key", sink)
+	assert.NoError(t, bpr.ConsumeLogs(context.Background(), inBatch))
+	outBatches := sink.AllLogs()
+	require.Len(t, outBatches, 1)
+	assert.Equal(t, inBatch, outBatches[0])
 }
 
 func TestSplitLogsReturnError(t *testing.T) {

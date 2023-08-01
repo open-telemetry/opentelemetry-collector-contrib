@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -21,6 +10,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
+)
+
+const (
+	// defaultObjectName is the default object name to query for metrics.
+	defaultObjectName = "SQLServer"
 )
 
 type recordFunc = func(*metadata.MetricsBuilder, pcommon.Timestamp, float64)
@@ -34,7 +28,7 @@ type perfCounterRecorderConf struct {
 // perfCounterRecorders is map of perf counter object -> perf counter name -> value recorder.
 var perfCounterRecorders = []perfCounterRecorderConf{
 	{
-		object: "SQLServer:General Statistics",
+		object: "General Statistics",
 		recorders: map[string]recordFunc{
 			"User Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverUserConnectionCountDataPoint(ts, int64(val))
@@ -42,7 +36,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		},
 	},
 	{
-		object: "SQLServer:SQL Statistics",
+		object: "SQL Statistics",
 		recorders: map[string]recordFunc{
 			"Batch Requests/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverBatchRequestRateDataPoint(ts, val)
@@ -56,7 +50,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		},
 	},
 	{
-		object:   "SQLServer:Locks",
+		object:   "Locks",
 		instance: "_Total",
 		recorders: map[string]recordFunc{
 			"Lock Waits/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
@@ -68,7 +62,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		},
 	},
 	{
-		object: "SQLServer:Buffer Manager",
+		object: "Buffer Manager",
 		recorders: map[string]recordFunc{
 			"Buffer cache hit ratio": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, val)
@@ -91,7 +85,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		},
 	},
 	{
-		object:   "SQLServer:Access Methods",
+		object:   "Access Methods",
 		instance: "_Total",
 		recorders: map[string]recordFunc{
 			"Page Splits/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
@@ -100,7 +94,7 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		},
 	},
 	{
-		object:   "SQLServer:Databases",
+		object:   "Databases",
 		instance: "*",
 		recorders: map[string]recordFunc{
 			"Log Bytes Flushed/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {

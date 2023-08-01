@@ -34,8 +34,24 @@ file/rotation_with_custom_settings:
 
 file/format_error:
   path: ./filename.log
-  Format: text
+  format: text
 
 file/compression_error:
   path: ./filename.log
   compression: gzip
+
+file/flush_interval_5:
+  path: ./flushed
+  flush_interval: 5
+
+file/flush_interval_5s:
+  path: ./flushed
+  flush_interval: 5s
+
+file/flush_interval_500ms:
+  path: ./flushed
+  flush_interval: 500ms
+
+file/flush_interval_negative_value:
+  path: ./flushed
+  flush_interval: "-1s"

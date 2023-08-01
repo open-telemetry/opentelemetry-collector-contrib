@@ -1,0 +1,17 @@
+type: azuremonitor
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [altuner, codeboten]
+
+resource_attributes:
+  azuremonitor.tenant_id:
+    description: Azure tenant ID
+    type: string
+  azuremonitor.subscription_id:
+    description: Azure subscription ID
+    type: string

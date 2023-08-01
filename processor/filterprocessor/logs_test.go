@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
@@ -29,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type logNameTest struct {
@@ -713,6 +703,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 		conditions       []string
 		filterEverything bool
 		want             func(ld plog.Logs)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop logs",
@@ -727,21 +718,32 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 					return log.Body().AsString() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all logs",
 			conditions: []string{
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
 			conditions: []string{
-				`IsMatch(body, "wrong name") == true`,
-				`IsMatch(body, "operation.*") == true`,
+				`IsMatch(body, "wrong name")`,
+				`IsMatch(body, "operation.*")`,
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: []string{
+				`Substring("", 0, 100) == "test"`,
+			},
+			want:      func(ld plog.Logs) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {

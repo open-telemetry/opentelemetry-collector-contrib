@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter
 
@@ -27,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -83,7 +73,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logRecord := tt.logRecord
 			logPacker := getLogPacker()
-			envelope := logPacker.LogRecordToEnvelope(logRecord)
+			envelope := logPacker.LogRecordToEnvelope(logRecord, getResource(), getScope())
 
 			require.NotNil(t, envelope)
 			assert.Equal(t, defaultEnvelopeName, envelope.Name)
@@ -126,6 +116,67 @@ func TestExporterLogDataCallback(t *testing.T) {
 	assert.NoError(t, exporter.onLogData(context.Background(), logs))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+}
+
+func TestLogDataAttributesMapping(t *testing.T) {
+	logPacker := getLogPacker()
+	logRecord := getTestLogRecord(t, 2)
+	logRecord.Attributes().PutInt("attribute_1", 10)
+	logRecord.Attributes().PutStr("attribute_2", "value_2")
+	logRecord.Attributes().PutBool("attribute_3", true)
+	logRecord.Attributes().PutDouble("attribute_4", 1.2)
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, getResource(), getScope())
+
+	actualProperties := envelope.Data.(*contracts.Data).BaseData.(*contracts.MessageData).Properties
+	assert.Contains(t, actualProperties["attribute_1"], "10")
+	assert.Contains(t, actualProperties["attribute_2"], "value_2")
+	assert.Contains(t, actualProperties["attribute_3"], "true")
+	assert.Contains(t, actualProperties["attribute_4"], "1.2")
+}
+
+func TestLogRecordToEnvelopeResourceAttributes(t *testing.T) {
+	logRecord := getTestLogRecord(t, 1)
+	logPacker := getLogPacker()
+	resource := getResource()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, getScope())
+
+	require.NotEmpty(t, resource.Attributes())
+	envelopeData := envelope.Data.(*contracts.Data).BaseData.(*contracts.MessageData)
+	require.Subset(t, envelopeData.Properties, resource.Attributes().AsRaw())
+}
+
+func TestLogRecordToEnvelopeInstrumentationScope(t *testing.T) {
+	const aiInstrumentationLibraryNameConvention = "instrumentationlibrary.name"
+	const aiInstrumentationLibraryVersionConvention = "instrumentationlibrary.version"
+
+	logRecord := getTestLogRecord(t, 1)
+	logPacker := getLogPacker()
+	scope := getScope()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, getResource(), scope)
+
+	envelopeData := envelope.Data.(*contracts.Data).BaseData.(*contracts.MessageData)
+	require.Equal(t, scope.Name(), envelopeData.Properties[aiInstrumentationLibraryNameConvention])
+	require.Equal(t, scope.Version(), envelopeData.Properties[aiInstrumentationLibraryVersionConvention])
+}
+
+func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
+	const aiCloudRoleConvention = "ai.cloud.role"
+	const aiCloudRoleInstanceConvention = "ai.cloud.roleInstance"
+
+	logRecord := getTestLogRecord(t, 1)
+	logPacker := getLogPacker()
+	resource := getResource()
+
+	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, getScope())
+
+	resourceAttributes := resource.Attributes().AsRaw()
+	expectedCloudRole := resourceAttributes[conventions.AttributeServiceNamespace].(string) + "." + resourceAttributes[conventions.AttributeServiceName].(string)
+	require.Equal(t, expectedCloudRole, envelope.Tags[aiCloudRoleConvention])
+	expectedCloudRoleInstance := resourceAttributes[conventions.AttributeServiceInstanceID]
+	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
 func getLogsExporter(config *Config, transportChannel transportChannel) *logExporter {

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package testutil contains the test util functions
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -23,8 +12,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/DataDog/datadog-agent/pkg/otlp/model/source"
 	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -45,16 +34,26 @@ type DatadogServer struct {
 	MetadataChan chan []byte
 }
 
+/* #nosec G101 -- This is a false positive, these are API endpoints rather than credentials */
+const (
+	ValidateAPIKeyEndpoint = "/api/v1/validate"
+	MetricV1Endpoint       = "/api/v1/series"
+	MetricV2Endpoint       = "/api/v2/series"
+	SketchesMetricEndpoint = "/api/beta/sketches"
+	MetadataEndpoint       = "/intake"
+)
+
 // DatadogServerMock mocks a Datadog backend server
 func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogServer {
 	metadataChan := make(chan []byte)
 	mux := http.NewServeMux()
 
 	handlers := map[string]http.HandlerFunc{
-		"/api/v1/validate": validateAPIKeyEndpoint,
-		"/api/v1/series":   metricsEndpoint,
-		"/intake":          newMetadataEndpoint(metadataChan),
-		"/":                func(w http.ResponseWriter, r *http.Request) {},
+		ValidateAPIKeyEndpoint: validateAPIKeyEndpoint,
+		MetricV1Endpoint:       metricsEndpoint,
+		MetricV2Endpoint:       metricsV2Endpoint,
+		MetadataEndpoint:       newMetadataEndpoint(metadataChan),
+		"/":                    func(w http.ResponseWriter, r *http.Request) {},
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -98,7 +97,7 @@ type validateAPIKeyResponse struct {
 	Valid bool `json:"valid"`
 }
 
-func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: true}
 	resJSON, _ := json.Marshal(res)
 
@@ -109,7 +108,7 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateAPIKeyEndpointInvalid(w http.ResponseWriter, r *http.Request) {
+func validateAPIKeyEndpointInvalid(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: false}
 	resJSON, _ := json.Marshal(res)
 
@@ -124,7 +123,19 @@ type metricsResponse struct {
 	Status string `json:"status"`
 }
 
-func metricsEndpoint(w http.ResponseWriter, r *http.Request) {
+func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
+	res := metricsResponse{Status: "ok"}
+	resJSON, _ := json.Marshal(res)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_, err := w.Write(resJSON)
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
 	resJSON, _ := json.Marshal(res)
 
@@ -207,7 +218,7 @@ type MockSourceProvider struct {
 	Src source.Source
 }
 
-func (s *MockSourceProvider) Source(ctx context.Context) (source.Source, error) {
+func (s *MockSourceProvider) Source(_ context.Context) (source.Source, error) {
 	return s.Src, nil
 }
 
@@ -215,7 +226,7 @@ type MockStatsProcessor struct {
 	In []pb.ClientStatsPayload
 }
 
-func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, lang, tracerVersion string) {
+func (s *MockStatsProcessor) ProcessStats(in pb.ClientStatsPayload, _, _ string) {
 	s.In = append(s.In, in)
 }
 

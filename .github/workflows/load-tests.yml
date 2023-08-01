@@ -6,8 +6,9 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
 
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 env:
@@ -23,19 +24,14 @@ jobs:
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -66,32 +62,14 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
-      - run: sudo chmod 0777 -R /opt
-      - name: Fluentbit Cache
-        id: fluentbit-cache
-        uses: actions/cache@v3
-        with:
-          path: /opt/td-agent-bit
-          key: fluentbit-cache-1.5.3
-      - run: sudo ln -s /opt/td-agent-bit/bin/td-agent-bit /usr/local/bin/fluent-bit
-      - name: Install fluentbit
-        if: steps.fluentbit-cache.outputs.cache-hit != 'true'
-        run: |
-          wget https://packages.fluentbit.io/ubuntu/bionic/pool/main/t/td-agent-bit/td-agent-bit_1.5.3_amd64.deb
-          sudo dpkg -i ./td-agent-bit*.deb
-      - name: Setup Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: 1.19
+          go-version: ~1.19.11
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -129,15 +107,33 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: ./*.tar
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
+      - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
+      - name: Upload benchmarks.json
+        uses: actions/upload-artifact@v3
         with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: JUNIT
-          test_format: JUNIT
-          test_path: |
-            ./testbed/tests/results/junit/*.xml
+          name: benchmark-results
+          path: testbed/tests/results/${{steps.filename.outputs.name}}.json
+
       - name: GitHub Issue Generator
         if: ${{ failure() && github.ref == 'refs/heads/main' }}
         run: issuegenerator $TEST_RESULTS
+
+  update-benchmarks:
+    runs-on: ubuntu-latest
+    needs: [loadtest]
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark-results
+          path: results
+      - run: jq -s 'map(.[])' results/*.json > output.json
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: output.json
+          gh-pages-branch: benchmarks
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          benchmark-data-dir-path: "docs/benchmarks/loadtests"
+          auto-push: true

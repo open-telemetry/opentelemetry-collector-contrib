@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 // Taken from https://github.com/signalfx/golib/blob/master/metadata/hostmetadata/host_test.go
 // with minor modifications.
@@ -20,12 +9,13 @@ package hostmetadata
 import (
 	"context"
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/host"
 	"github.com/shirou/gopsutil/v3/mem"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetCPU(t *testing.T) {
@@ -113,17 +103,12 @@ func TestGetCPU(t *testing.T) {
 			cpuInfo = tt.fixtures.cpuInfo
 			cpuCounts = tt.fixtures.cpuCounts
 			gotInfo, err := getCPU()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getCPU() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
-
-			gotMap := gotInfo.toStringMap()
-			for k, v := range tt.wantInfo {
-				if gv, ok := gotMap[k]; !ok || v != gv {
-					t.Errorf("getCPU() expected key '%s' was found %v.  Expected value '%s' and got '%s'.", k, ok, v, gv)
-				}
-			}
+			assert.Subset(t, gotInfo.toStringMap(), tt.wantInfo)
 		})
 	}
 }
@@ -180,16 +165,12 @@ func TestGetOS(t *testing.T) {
 			hostInfo = tt.testfixtures.hostInfo
 			t.Setenv("HOST_ETC", tt.testfixtures.hostEtc)
 			gotInfo, err := getOS()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getOS() error = %v, wantErr %v", err, tt.wantErr)
-				return
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
-			gotMap := gotInfo.toStringMap()
-			for k, v := range tt.wantInfo {
-				if gv, ok := gotMap[k]; !ok || v != gv {
-					t.Errorf("getOS() expected key '%s' was found %v.  Expected value '%s' and got '%s'.", k, ok, v, gv)
-				}
-			}
+			assert.Subset(t, gotInfo.toStringMap(), tt.wantInfo)
 		})
 	}
 }
@@ -236,13 +217,12 @@ func Test_GetLinuxVersion(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("HOST_ETC", tt.etc)
 			got, err := getLinuxVersion()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getLinuxVersion() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("getLinuxVersion() = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -252,7 +232,6 @@ func TestGetMemory(t *testing.T) {
 		name             string
 		memVirtualMemory func() (*mem.VirtualMemoryStat, error)
 		want             map[string]string
-		wantErr          bool
 	}{
 		{
 			name: "host_mem_total",
@@ -268,14 +247,8 @@ func TestGetMemory(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			memVirtualMemory = tt.memVirtualMemory
 			mem, err := getMemory()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getMemory() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			got := mem.toStringMap()
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getMemory() = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, mem.toStringMap())
 		})
 	}
 }
@@ -298,9 +271,7 @@ func TestEtcPath(t *testing.T) {
 			if tt.etc != "" {
 				t.Setenv("HOST_ETC", tt.etc)
 			}
-			if got := etcPath(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("etcPath = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, etcPath())
 		})
 	}
 

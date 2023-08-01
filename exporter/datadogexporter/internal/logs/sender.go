@@ -1,22 +1,10 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/logs"
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
@@ -63,20 +51,33 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 	if s.verbose {
 		s.logger.Debug("Submitting logs", zap.Any("payload", payload))
 	}
-
-	// enable sending gzip
-	// Get a fresh opts for each request to avoid duplicating ddtags
-	opts := *datadogV2.NewSubmitLogOptionalParameters().WithContentEncoding(datadogV2.CONTENTENCODING_GZIP)
-
+	var (
+		tags, prevtags string                  // keeps track of the ddtags of log items for grouping purposes
+		batch          []datadogV2.HTTPLogItem // stores consecutive log items to be submitted together
+	)
 	// Correctly sets apiSubmitLogRequest ddtags field based on tags from translator Transform method
-	if payload[0].HasDdtags() {
-		tags := datadog.PtrString(payload[0].GetDdtags())
-		if opts.Ddtags != nil {
-			tags = datadog.PtrString(fmt.Sprint(*opts.Ddtags, ",", payload[0].GetDdtags()))
+	for i, p := range payload {
+		tags = p.GetDdtags()
+		if prevtags == tags || i == 0 {
+			// Batches consecutive log items with the same tags to be submitted together
+			batch = append(batch, p)
+			prevtags = tags
+			continue
 		}
-		opts.Ddtags = tags
+		if err := s.handleSubmitLog(ctx, batch, prevtags); err != nil {
+			return err
+		}
+		batch = []datadogV2.HTTPLogItem{p}
+		prevtags = tags
 	}
-	_, r, err := s.api.SubmitLog(ctx, payload, opts)
+	return s.handleSubmitLog(ctx, batch, tags)
+}
+
+func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogItem, tags string) error {
+	opts := *datadogV2.NewSubmitLogOptionalParameters().
+		WithContentEncoding(datadogV2.CONTENTENCODING_GZIP).
+		WithDdtags(tags)
+	_, r, err := s.api.SubmitLog(ctx, batch, opts)
 	if err != nil {
 		if r != nil {
 			b := make([]byte, 1024) // 1KB message max
@@ -84,7 +85,6 @@ func (s *Sender) SubmitLogs(ctx context.Context, payload []datadogV2.HTTPLogItem
 			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
 			return err
 		}
-
 		// If response is nil assume permanent error.
 		// The error will be logged by the exporter helper.
 		return consumererror.NewPermanent(err)

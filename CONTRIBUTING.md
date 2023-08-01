@@ -59,6 +59,36 @@ During the collector release process, all `./.chloggen/*.yaml` files are transcr
 
 Alternately, copy `./.chloggen/TEMPLATE.yaml`, or just create your file from scratch.
 
+## Portable Code
+
+In order to ensure compatibility with different operating systems, code should be portable. Below are some guidelines to follow when writing portable code:
+
+* Avoid using platform-specific libraries, features etc. Please opt for portable multi-platform solutions. 
+
+* Avoid hard-coding platform-specific values. Use environment variables or configuration files for storing platform-specific values.
+
+    For example, avoid using hard-coded file path
+    ```
+    filePath := "C:\Users\Bob\Documents\sampleData.csv"
+    ```
+
+    Instead environment variable or configuration file can be used.
+    ```
+    filePath := os.Getenv("DATA_FILE_PATH")
+    ```
+    or
+    ```
+    filePath := Configuration.Get("data_file_path")
+    ```
+
+* Be mindful of 
+  - Standard file systems and file paths such as forward slashes (/) instead of backward slashes (\\) in Windows. Use the [`path/filepath` package](https://pkg.go.dev/path/filepath) when working with filepaths. 
+  - Consistent line ending formats such as Unix (LF) or Windows (CRLF).
+
+* Test your implementation thoroughly on different platforms if possible and fix any issues. 
+
+With above guidelines, you can write code that is more portable and easier to maintain across different platforms. 
+
 ## Adding New Components
 
 **Before** any code is written, [open an
@@ -75,11 +105,12 @@ providing the following information:
 * The configuration options your component will accept. This will help us understand what it does and have an idea of
   how the implementation might look like.
 
-Components comprise of exporters, extensions, receivers, and processors. The key criteria to implementing a component is to:
+Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -106,16 +137,59 @@ and the rest of contributors.
 - Add a README.md on the root of your component describing its configuration and usage, likely referencing some of the
   yaml files used in the component tests. We also suggest that the yaml files used in tests have comments for all
   available configuration settings so users can copy and modify them as needed.
-- Add a `replace` directive at the root `go.mod` file so your component is included in the build of the contrib
-  executable.
+- Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components must be included in [`internal/components/`](./internal/components) and in the respective testing
-  harnesses. To align with the test goal of the project, components must be testable within the framework defined within
+- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
+  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
-- Add the sponsor for your component and yourself to a new line for your component in the
-  [`.github/CODEOWNERS`](./.github/CODEOWNERS) file.
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
+Here is a minimal representation:
+```
+type: <name of your component, such as apache, http, haproxy, postgresql>
+
+status:
+  class: <class of component, one of cmd, connector, exporter, extension, processor or receiver>
+  stability:
+    development: [<pick the signals supported: logs, metrics, traces. For extension, use "extension">]
+  codeowners:
+    active: [<github account of the sponsor, such as alice>, <your GitHub account if you are already an OpenTelemetry member>]
+```
 - Run `make generate-gh-issue-templates` to add your component to the dropdown list in the issue templates.
+- For README.md, you can start with the following:
+```
+# <Title of your component>
+<!-- status autogenerated section -->
+<!-- end autogenerated section -->
+```
+- Create a `doc.go` file with a generate pragma. For a `fooreceiver`, the file will look like:
+```
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
+
+// Package fooreceiver bars.
+package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
+```
+- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+
+When submitting a component to the community, consider breaking it down into separate PRs as follows:
+
+* **First PR** should include the overall structure of the new component:
+  * Readme, configuration, and factory implementation usually using the helper
+    factory structs.
+  * This PR is usually trivial to review, so the size limit does not apply to
+    it.
+  * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+* **Second PR** should include the concrete implementation of the component. If the
+  size of this PR is larger than the recommended size consider splitting it in
+  multiple PRs.
+* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
+  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
+  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once a new component has been added to the executable, please add the component
+  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
@@ -126,17 +200,17 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
-* [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
-* [@jpkrohling](https://github.com/jpkrohling)
 * [@dmitryax](https://github.com/dmitryax)
 * [@evan-bradley](https://github.com/evan-bradley)
 * [@MovieStoreGuy](https://github.com/MovieStoreGuy)
 * [@bogdandrutu](https://github.com/bogdandrutu)
+* [@jpkrohling](https://github.com/jpkrohling)
+* [@dashpole](https://github.com/dashpole)
 
 Whenever a sponsor is picked from the top of this list, please move them to the bottom.
 
@@ -163,7 +237,80 @@ in general try to follow them.
 - `replace` statements in `go.mod` files can be automatically inserted by running `make crosslink`. For more information
   on the `crosslink` tool see the README [here](https://github.com/open-telemetry/opentelemetry-go-build-tools/tree/main/crosslink).
 
-## Adding Labels via Comments
+## Issue Triaging
+
+To help provide a consistent process for seeing issues through to completion, this section details some guidelines and
+definitions to keep in mind when triaging issues.
+
+### Roles
+
+Determining the root cause of issues is a shared responsibility between those with triager permissions, code owners,
+OpenTelemetry community members, issue authors, and anyone else who would like to contribute.
+
+#### Triagers
+
+Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move
+issues along by adding missing component labels, which help organize issues and trigger automations to notify code owners. They can
+also use their familiarity with the Collector and its components to investigate issues themselves. Alternatively, they may point issue
+authors to another resource or someone else who may know more.
+
+#### Code Owners
+
+In many cases, the code owners for an issue are the best resource to help determine the root cause of a bug or whether an enhancement
+is fit to be added to a component. Code owners will be notified by repository automations when:
+
+- a component label is added to an issue
+- an issue is opened
+- the issue becomes stale
+
+Code owners may not have triager permissions on the repository,
+so they can help triage through investigation and by participating in discussions. They can also help organize issues by
+[adding labels via comments](#adding-labels-via-comments).
+
+#### Community Members
+
+Community members or interested parties are welcome to help triage issues by investigating the root cause of bugs, adding input for
+features they would like to see, or participating in design discussions.
+
+### Triage process
+
+Triaging an issue requires getting the issue into a state where there is enough information available on the issue or understanding
+between the involved parties to allow work to begin or for the issue to be closed. Facilitating this may involve, but is not limited to:
+
+- Determining whether the issue is related to the code or documentation, or whether the issue can be resolved without any changes.
+- Ensuring that a bug can be reproduced, and if possible, the behavior can be traced back to the offending code or documentation.
+- Determining whether a feature request belongs in a component, should be accomplished through other means, or isn't appropriate for a component at this time.
+- Guiding any interested parties to another person or resource that may be more knowledgeable about an issue.
+- Suggesting an issue for discussion at a SIG meeting if a synchronous discussion would be more productive.
+
+#### Issue assignment
+
+Issues are assigned for someone to work on by a triager when someone volunteers to work on an issue. Assignment is intended to prevent duplicate work by making it visible who is
+working on a particular task. A person who is assigned to the issue may be assigned to help triage the issue and implement it, or can be assigned after the issue has already been
+triaged and is ready for work. If someone who is assigned to an issue is no longer able to work on it, they may request to be unassigned from the issue.
+
+### Label Definitions
+
+| Label                | When to apply                                                                                                                                                                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bug`                | Something that is advertised or intended to work isn't working as expected.                                                                                                                             |
+| `enhancement`        | Something that isn't an advertised feature that would be useful to users or maintainers.                                                                                                                |
+| `flaky test`         | A test unexpectedly failed during CI, showing that there is a problem with the tests or test setup that is causing the tests to intermittently fail.                                                    |
+| `good first issue`   | Implementing this issue would not require specialized or in-depth knowledge about the component and is ideal for a new or first-time contributor to take.                                               |
+| `help wanted`        | The code owners for this component do not expect to have time to work on it soon, and would welcome help from contributors.                                                                             |
+| `discussion needed`  | This issue needs more input from the maintainers or community before work can be started.                                                                                                               |
+| `needs triage`       | This label is added automatically, and can be removed when a triager or code owner deems that an issue is either ready for work or should not need any work.                                            |
+| `waiting for author` | Can be applied when input is required from the author before the issue can move any further.                                                                                                            |
+| `priority:p0`        | A critical security vulnerability or Collector panic using a default or common configuration unrelated to a specific component.                                                                         |
+| `priority:p1`        | An urgent issue that should be worked on quickly, before most other issues.                                                                                                                             |
+| `priority:p2`        | A standard bug or enhancement.                                                                                                                                                                          |
+| `priority:p3`        | A technical improvement, lower priority bug, or other minor issue. Generally something that is considered a "nice to have."                                                                               |
+| `release:blocker`    | This issue must be resolved before the next Collector version can be released.                                                                                                                          |
+| `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided. |
+| `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                      |
+| `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor. |
+
+### Adding Labels via Comments
 
 In order to facilitate proper label usage and to empower Code Owners, you are able to add labels to issues via comments. To add a label through a comment, post a new comment on an issue starting with `/label`, followed by a space-separated list of your desired labels. Supported labels come from the table below, or correspond to a component defined in the [CODEOWNERS file](.github/CODEOWNERS).
 
@@ -173,7 +320,7 @@ The following general labels are supported:
 |----------------------|----------------------|
 | `good first issue`   | `good-first-issue`   |
 | `help wanted`        | `help-wanted`        |
-| `needs discussion`   | `needs-discussion`   |
+| `discussion needed`  | `discussion-needed`  |
 | `needs triage`       | `needs-triage`       |
 | `waiting for author` | `waiting-for-author` |
 

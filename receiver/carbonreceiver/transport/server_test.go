@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package transport
 
@@ -25,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
@@ -103,9 +91,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			mdd := mc.AllMetrics()
 			require.Len(t, mdd, 1)
-			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
-			require.Len(t, metrics, 1)
-			assert.Equal(t, "test.metric", metrics[0].GetMetricDescriptor().GetName())
+			require.Equal(t, 1, mdd[0].MetricCount())
+			assert.Equal(t, "test.metric", mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 		})
 	}
 }

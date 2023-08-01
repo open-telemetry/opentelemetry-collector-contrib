@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transformprocessor
 
@@ -21,32 +10,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id       component.ID
+		expected component.Config
+		errorLen int
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
-						Statements: []string{},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{},
-					},
-					Logs: SignalConfig{
-						Statements: []string{},
-					},
-				},
+				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
 					{
 						Context: "span",
@@ -95,60 +77,42 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "deprecated_format"),
+			id: component.NewIDWithName(metadata.Type, "ignore_errors"),
 			expected: &Config{
-				OTTLConfig: OTTLConfig{
-					Traces: SignalConfig{
+				ErrorMode: ottl.IgnoreError,
+				TraceStatements: []common.ContextStatements{
+					{
+						Context: "resource",
 						Statements: []string{
-							`set(name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Metrics: SignalConfig{
-						Statements: []string{
-							`set(metric.name, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					Logs: SignalConfig{
-						Statements: []string{
-							`set(body, "bear") where attributes["http.path"] == "/animal"`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
+							`set(attributes["name"], "bear")`,
 						},
 					},
 				},
-				TraceStatements:  []common.ContextStatements{},
 				MetricStatements: []common.ContextStatements{},
 				LogStatements:    []common.ContextStatements{},
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "using_both_formats"),
-			errorMessage: "cannot use Traces, Metrics and/or Logs with TraceStatements, MetricStatements and/or LogStatements",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_trace"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_trace"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_trace"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_trace"),
-			errorMessage: "undefined function not_a_function",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_metric"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_metric"),
-			errorMessage: "undefined function not_a_function",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:18: unexpected token \"where\" (expected \")\")",
+			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "unknown_function_log"),
-			errorMessage: "undefined function not_a_function",
+			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errorLen: 3,
 		},
 	}
 	for _, tt := range tests {
@@ -164,7 +128,13 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+
+				if tt.errorLen > 0 {
+					assert.Equal(t, tt.errorLen, len(multierr.Errors(err)))
+				}
+
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
@@ -174,7 +144,21 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func Test_UnknownContextID(t *testing.T) {
-	id := component.NewIDWithName(typeStr, "unknown_context")
+	id := component.NewIDWithName(metadata.Type, "unknown_context")
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(id.String())
+	assert.NoError(t, err)
+	assert.Error(t, component.UnmarshalConfig(sub, cfg))
+}
+
+func Test_UnknownErrorMode(t *testing.T) {
+	id := component.NewIDWithName(metadata.Type, "unknown_error_mode")
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	assert.NoError(t, err)

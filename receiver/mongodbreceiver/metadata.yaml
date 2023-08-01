@@ -1,8 +1,17 @@
-name: mongodbreceiver
+type: mongodb
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   database:
     description: The name of a database.
+    enabled: true
     type: string
 
 attributes:
@@ -101,7 +110,7 @@ metrics:
       monotonic: false
     attributes: [database]
   mongodb.connection.count:
-    description: The number of connections. 
+    description: The number of connections.
     unit: "{connections}"
     enabled: true
     sum:
@@ -190,7 +199,7 @@ metrics:
     attributes: [ operation ]
   mongodb.storage.size:
     description: The total amount of storage allocated to this collection.
-    extended_documentation: If collection data is compressed it reflects the compressed size. 
+    extended_documentation: If collection data is compressed it reflects the compressed size.
     unit: By
     enabled: true
     sum:
@@ -208,7 +217,7 @@ metrics:
       monotonic: false
     attributes: []
   mongodb.index.access.count:
-    description: The number of times an index has been accessed. 
+    description: The number of times an index has been accessed.
     unit: "{accesses}"
     enabled: true
     sum:
@@ -324,3 +333,22 @@ metrics:
       aggregation: cumulative
       monotonic: true
     attributes: [database, lock_type, lock_mode]
+  mongodb.health:
+    enabled: false
+    description: The health status of the server.
+    extended_documentation:
+      A value of '1' indicates healthy.
+      A value of '0' indicates unhealthy.
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [ ]
+  mongodb.uptime:
+    enabled: false
+    description: The amount of time that the server has been running.
+    unit: ms
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [ ]

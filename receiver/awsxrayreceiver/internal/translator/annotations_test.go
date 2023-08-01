@@ -1,24 +1,17 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
 func TestAddAnnotations(t *testing.T) {
@@ -33,7 +26,6 @@ func TestAddAnnotations(t *testing.T) {
 	attrMap := pcommon.NewMap()
 	attrMap.EnsureCapacity(initAttrCapacity)
 	addAnnotations(input, attrMap)
-	attrMap.Sort()
 
 	expectedAttrMap := pcommon.NewMap()
 	expectedAttrMap.PutBool("bool", false)
@@ -42,7 +34,15 @@ func TestAddAnnotations(t *testing.T) {
 	expectedAttrMap.PutInt("int", 0)
 	expectedAttrMap.PutInt("int32", 1)
 	expectedAttrMap.PutInt("int64", 2)
-	expectedAttrMap.Sort()
+	expectedKeys := expectedAttrMap.PutEmptySlice(awsxray.AWSXraySegmentAnnotationsAttribute)
+	expectedKeys.AppendEmpty().SetStr("int")
+	expectedKeys.AppendEmpty().SetStr("int32")
+	expectedKeys.AppendEmpty().SetStr("int64")
+	expectedKeys.AppendEmpty().SetStr("bool")
+	expectedKeys.AppendEmpty().SetStr("float32")
+	expectedKeys.AppendEmpty().SetStr("float64")
 
-	assert.Equal(t, expectedAttrMap, attrMap, "attribute maps differ")
+	assert.True(t, cmp.Equal(expectedAttrMap.AsRaw(), attrMap.AsRaw(), cmpopts.SortSlices(func(x, y interface{}) bool {
+		return x.(string) < y.(string)
+	})), "attribute maps differ")
 }

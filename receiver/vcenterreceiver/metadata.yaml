@@ -1,23 +1,37 @@
-name: vcenterreceiver
+type: vcenter
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
+    enabled: true
     type: string
   vcenter.host.name:
     description: The hostname of the vCenter ESXi host.
+    enabled: true
     type: string
   vcenter.resource_pool.name:
     description: The name of the resource pool.
+    enabled: true
     type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
+    enabled: true
     type: string
   vcenter.vm.name:
     description: The name of the virtual machine.
+    enabled: true
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
+    enabled: true
     type: string
 
 attributes:
@@ -148,7 +162,7 @@ metrics:
     attributes: []
   vcenter.host.cpu.usage:
     enabled: true
-    description: The amount of CPU in Hz used by the host.
+    description: The amount of CPU used by the host.
     unit: "MHz"
     sum:
       monotonic: false
@@ -376,3 +390,26 @@ metrics:
       aggregation: cumulative
     attributes: []
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.cpu.utilization:
+    enabled: true
+    description: The CPU utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+  vcenter.vm.cpu.usage:
+    enabled: true
+    description: The amount of CPU used by the VM.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation: cumulative
+    attributes: []
+  vcenter.vm.memory.utilization:
+    enabled: false
+    description: The memory utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []

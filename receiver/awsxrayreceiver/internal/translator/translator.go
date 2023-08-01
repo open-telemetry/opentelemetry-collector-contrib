@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/translator"
 
@@ -24,6 +13,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
 
 const (
@@ -35,7 +25,7 @@ const (
 // `toPdata` in this receiver to a common package later
 
 // ToTraces converts X-Ray segment (and its subsegments) to an OT ResourceSpans.
-func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
+func ToTraces(rawSeg []byte, recorder telemetry.Recorder) (ptrace.Traces, int, error) {
 	var seg awsxray.Segment
 	err := json.Unmarshal(rawSeg, &seg)
 	if err != nil {
@@ -44,9 +34,11 @@ func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
 		return ptrace.Traces{}, 1, err
 	}
 	count := totalSegmentsCount(seg)
+	recorder.RecordSegmentsReceived(count)
 
 	err = seg.Validate()
 	if err != nil {
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 
@@ -75,6 +67,7 @@ func ToTraces(rawSeg []byte) (ptrace.Traces, int, error) {
 	// the embedded subsegment to generate independent child spans.
 	_, err = segToSpans(seg, seg.TraceID, nil, spans)
 	if err != nil {
+		recorder.RecordSegmentsRejected(count)
 		return ptrace.Traces{}, count, err
 	}
 
@@ -198,6 +191,8 @@ func populateResource(seg *awsxray.Segment, rs pcommon.Resource) {
 	attrs := rs.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(initAttrCapacity)
+
+	addString(seg.Name, conventions.AttributeServiceName, attrs)
 
 	addAWSToResource(seg.AWS, attrs)
 	addSdkToResource(seg, attrs)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -166,24 +155,9 @@ func convertFromLogs(workerItem fromConverterWorkerItem) []*entry.Entry {
 		entry := entry.Entry{}
 
 		entry.ScopeName = workerItem.Scope.Scope().Name()
-		entry.Resource = valueToMap(workerItem.Resource.Attributes())
+		entry.Resource = workerItem.Resource.Attributes().AsRaw()
 		convertFrom(record, &entry)
 		result = append(result, &entry)
-	}
-	return result
-}
-
-// ConvertFrom converts plog.Logs into a slice of entry.Entry
-// To be used in a stateless setting like tests where ease of use is more
-// important than performance or throughput.
-func ConvertFrom(pLogs plog.Logs) []*entry.Entry {
-	result := make([]*entry.Entry, 0, pLogs.LogRecordCount())
-	for i := 0; i < pLogs.ResourceLogs().Len(); i++ {
-		rls := pLogs.ResourceLogs().At(i)
-		for j := 0; j < rls.ScopeLogs().Len(); j++ {
-			scope := rls.ScopeLogs().At(j)
-			result = append(result, convertFromLogs(fromConverterWorkerItem{Resource: rls.Resource(), Scope: scope, LogRecordSlice: scope.LogRecords()})...)
-		}
 	}
 	return result
 }
@@ -204,8 +178,8 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 	ent.Severity = fromPdataSevMap[src.SeverityNumber()]
 	ent.SeverityText = src.SeverityText()
 
-	ent.Attributes = valueToMap(src.Attributes())
-	ent.Body = valueToInterface(src.Body())
+	ent.Attributes = src.Attributes().AsRaw()
+	ent.Body = src.Body().AsRaw()
 
 	if !src.TraceID().IsEmpty() {
 		buffer := src.TraceID()
@@ -219,42 +193,6 @@ func convertFrom(src plog.LogRecord, ent *entry.Entry) {
 		a := make([]byte, 4)
 		binary.LittleEndian.PutUint32(a, uint32(src.Flags()))
 		ent.TraceFlags = []byte{a[0]}
-	}
-}
-
-func valueToMap(value pcommon.Map) map[string]interface{} {
-	rawMap := map[string]interface{}{}
-	value.Range(func(k string, v pcommon.Value) bool {
-		rawMap[k] = valueToInterface(v)
-		return true
-	})
-	return rawMap
-}
-
-func valueToInterface(value pcommon.Value) interface{} {
-	switch value.Type() {
-	case pcommon.ValueTypeEmpty:
-		return nil
-	case pcommon.ValueTypeStr:
-		return value.Str()
-	case pcommon.ValueTypeBool:
-		return value.Bool()
-	case pcommon.ValueTypeDouble:
-		return value.Double()
-	case pcommon.ValueTypeInt:
-		return value.Int()
-	case pcommon.ValueTypeBytes:
-		return value.Bytes().AsRaw()
-	case pcommon.ValueTypeMap:
-		return value.Map().AsRaw()
-	case pcommon.ValueTypeSlice:
-		arr := make([]interface{}, 0, value.Slice().Len())
-		for i := 0; i < value.Slice().Len(); i++ {
-			arr = append(arr, valueToInterface(value.Slice().At(i)))
-		}
-		return arr
-	default:
-		return value.AsString()
 	}
 }
 

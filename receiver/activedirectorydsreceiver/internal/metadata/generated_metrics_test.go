@@ -3,14 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -18,435 +13,421 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "default"), settings, WithStartTime(start))
+type testConfigCollection int
 
-	assert.Equal(t, 0, observedLogs.Len())
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["active_directory.ds.bind.rate"] = true
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
-
-	enabledMetrics["active_directory.ds.ldap.bind.last_successful.time"] = true
-	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.ldap.bind.rate"] = true
-	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.ldap.client.session.count"] = true
-	mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.ldap.search.rate"] = true
-	mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.name_cache.hit_rate"] = true
-	mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.notification.queued"] = true
-	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.operation.rate"] = true
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
-
-	enabledMetrics["active_directory.ds.replication.network.io"] = true
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
-
-	enabledMetrics["active_directory.ds.replication.object.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["active_directory.ds.replication.operation.pending"] = true
-	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.replication.property.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["active_directory.ds.replication.sync.object.pending"] = true
-	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.replication.sync.request.count"] = true
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
-
-	enabledMetrics["active_directory.ds.replication.value.rate"] = true
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
-
-	enabledMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = true
-	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-
-	enabledMetrics["active_directory.ds.suboperation.rate"] = true
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
-
-	enabledMetrics["active_directory.ds.thread.count"] = true
-	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "all_metrics"), settings, WithStartTime(start))
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
-	assert.Equal(t, 0, observedLogs.Len())
+			defaultMetricsCount := 0
+			allMetricsCount := 0
 
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
-	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
-	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
-	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
 
-	metrics := mb.Emit()
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
 
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "active_directory.ds.bind.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of binds per second serviced by this domain controller.", ms.At(i).Description())
-			assert.Equal(t, "{binds}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "server", attrVal.Str())
-			validatedMetrics["active_directory.ds.bind.rate"] = struct{}{}
-		case "active_directory.ds.ldap.bind.last_successful.time":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The amount of time taken for the last successful LDAP bind.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.ldap.bind.last_successful.time"] = struct{}{}
-		case "active_directory.ds.ldap.bind.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of successful LDAP binds per second.", ms.At(i).Description())
-			assert.Equal(t, "{binds}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["active_directory.ds.ldap.bind.rate"] = struct{}{}
-		case "active_directory.ds.ldap.client.session.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of connected LDAP client sessions.", ms.At(i).Description())
-			assert.Equal(t, "{sessions}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.ldap.client.session.count"] = struct{}{}
-		case "active_directory.ds.ldap.search.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of LDAP searches per second.", ms.At(i).Description())
-			assert.Equal(t, "{searches}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["active_directory.ds.ldap.search.rate"] = struct{}{}
-		case "active_directory.ds.name_cache.hit_rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["active_directory.ds.name_cache.hit_rate"] = struct{}{}
-		case "active_directory.ds.notification.queued":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of pending update notifications that have been queued to push to clients.", ms.At(i).Description())
-			assert.Equal(t, "{notifications}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.notification.queued"] = struct{}{}
-		case "active_directory.ds.operation.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of operations performed per second.", ms.At(i).Description())
-			assert.Equal(t, "{operations}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["active_directory.ds.operation.rate"] = struct{}{}
-		case "active_directory.ds.replication.network.io":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of network data transmitted by the Directory Replication Agent.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "compressed", attrVal.Str())
-			validatedMetrics["active_directory.ds.replication.network.io"] = struct{}{}
-		case "active_directory.ds.replication.object.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of objects transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
-			assert.Equal(t, "{objects}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["active_directory.ds.replication.object.rate"] = struct{}{}
-		case "active_directory.ds.replication.operation.pending":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of pending replication operations for the Directory Replication Agent.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.replication.operation.pending"] = struct{}{}
-		case "active_directory.ds.replication.property.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of properties transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
-			assert.Equal(t, "{properties}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			validatedMetrics["active_directory.ds.replication.property.rate"] = struct{}{}
-		case "active_directory.ds.replication.sync.object.pending":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of objects remaining until the full sync completes for the Directory Replication Agent.", ms.At(i).Description())
-			assert.Equal(t, "{objects}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.replication.sync.object.pending"] = struct{}{}
-		case "active_directory.ds.replication.sync.request.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of sync requests made by the Directory Replication Agent.", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("result")
-			assert.True(t, ok)
-			assert.Equal(t, "success", attrVal.Str())
-			validatedMetrics["active_directory.ds.replication.sync.request.count"] = struct{}{}
-		case "active_directory.ds.replication.value.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of values transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
-			assert.Equal(t, "{values}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "sent", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "distingushed_names", attrVal.Str())
-			validatedMetrics["active_directory.ds.replication.value.rate"] = struct{}{}
-		case "active_directory.ds.security_descriptor_propagations_event.queued":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of security descriptor propagation events that are queued for processing.", ms.At(i).Description())
-			assert.Equal(t, "{events}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = struct{}{}
-		case "active_directory.ds.suboperation.rate":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The rate of sub-operations performed.", ms.At(i).Description())
-			assert.Equal(t, "{suboperations}/s", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "security_descriptor_propagations_event", attrVal.Str())
-			validatedMetrics["active_directory.ds.suboperation.rate"] = struct{}{}
-		case "active_directory.ds.thread.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of threads in use by the directory service.", ms.At(i).Description())
-			assert.Equal(t, "{threads}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["active_directory.ds.thread.count"] = struct{}{}
-		}
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistingushedNames)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
+
+			res := pcommon.NewResource()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "active_directory.ds.bind.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.bind.rate"], "Found a duplicate in the metrics slice: active_directory.ds.bind.rate")
+					validatedMetrics["active_directory.ds.bind.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of binds per second serviced by this domain controller.", ms.At(i).Description())
+					assert.Equal(t, "{binds}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "server", attrVal.Str())
+				case "active_directory.ds.ldap.bind.last_successful.time":
+					assert.False(t, validatedMetrics["active_directory.ds.ldap.bind.last_successful.time"], "Found a duplicate in the metrics slice: active_directory.ds.ldap.bind.last_successful.time")
+					validatedMetrics["active_directory.ds.ldap.bind.last_successful.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of time taken for the last successful LDAP bind.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.ldap.bind.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.ldap.bind.rate"], "Found a duplicate in the metrics slice: active_directory.ds.ldap.bind.rate")
+					validatedMetrics["active_directory.ds.ldap.bind.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of successful LDAP binds per second.", ms.At(i).Description())
+					assert.Equal(t, "{binds}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "active_directory.ds.ldap.client.session.count":
+					assert.False(t, validatedMetrics["active_directory.ds.ldap.client.session.count"], "Found a duplicate in the metrics slice: active_directory.ds.ldap.client.session.count")
+					validatedMetrics["active_directory.ds.ldap.client.session.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of connected LDAP client sessions.", ms.At(i).Description())
+					assert.Equal(t, "{sessions}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.ldap.search.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.ldap.search.rate"], "Found a duplicate in the metrics slice: active_directory.ds.ldap.search.rate")
+					validatedMetrics["active_directory.ds.ldap.search.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of LDAP searches per second.", ms.At(i).Description())
+					assert.Equal(t, "{searches}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "active_directory.ds.name_cache.hit_rate":
+					assert.False(t, validatedMetrics["active_directory.ds.name_cache.hit_rate"], "Found a duplicate in the metrics slice: active_directory.ds.name_cache.hit_rate")
+					validatedMetrics["active_directory.ds.name_cache.hit_rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of directory object name component lookups that are satisfied by the Directory System Agent's name cache.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "active_directory.ds.notification.queued":
+					assert.False(t, validatedMetrics["active_directory.ds.notification.queued"], "Found a duplicate in the metrics slice: active_directory.ds.notification.queued")
+					validatedMetrics["active_directory.ds.notification.queued"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of pending update notifications that have been queued to push to clients.", ms.At(i).Description())
+					assert.Equal(t, "{notifications}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.operation.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.operation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.operation.rate")
+					validatedMetrics["active_directory.ds.operation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of operations performed per second.", ms.At(i).Description())
+					assert.Equal(t, "{operations}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "active_directory.ds.replication.network.io":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.network.io"], "Found a duplicate in the metrics slice: active_directory.ds.replication.network.io")
+					validatedMetrics["active_directory.ds.replication.network.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of network data transmitted by the Directory Replication Agent.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "compressed", attrVal.Str())
+				case "active_directory.ds.replication.object.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.object.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.object.rate")
+					validatedMetrics["active_directory.ds.replication.object.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of objects transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
+					assert.Equal(t, "{objects}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "active_directory.ds.replication.operation.pending":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.operation.pending"], "Found a duplicate in the metrics slice: active_directory.ds.replication.operation.pending")
+					validatedMetrics["active_directory.ds.replication.operation.pending"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of pending replication operations for the Directory Replication Agent.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.replication.property.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.property.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.property.rate")
+					validatedMetrics["active_directory.ds.replication.property.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of properties transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
+					assert.Equal(t, "{properties}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+				case "active_directory.ds.replication.sync.object.pending":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.sync.object.pending"], "Found a duplicate in the metrics slice: active_directory.ds.replication.sync.object.pending")
+					validatedMetrics["active_directory.ds.replication.sync.object.pending"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of objects remaining until the full sync completes for the Directory Replication Agent.", ms.At(i).Description())
+					assert.Equal(t, "{objects}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.replication.sync.request.count":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.sync.request.count"], "Found a duplicate in the metrics slice: active_directory.ds.replication.sync.request.count")
+					validatedMetrics["active_directory.ds.replication.sync.request.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of sync requests made by the Directory Replication Agent.", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("result")
+					assert.True(t, ok)
+					assert.EqualValues(t, "success", attrVal.Str())
+				case "active_directory.ds.replication.value.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.replication.value.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.value.rate")
+					validatedMetrics["active_directory.ds.replication.value.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of values transmitted by the Directory Replication Agent per second.", ms.At(i).Description())
+					assert.Equal(t, "{values}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "sent", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "distingushed_names", attrVal.Str())
+				case "active_directory.ds.security_descriptor_propagations_event.queued":
+					assert.False(t, validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"], "Found a duplicate in the metrics slice: active_directory.ds.security_descriptor_propagations_event.queued")
+					validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of security descriptor propagation events that are queued for processing.", ms.At(i).Description())
+					assert.Equal(t, "{events}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "active_directory.ds.suboperation.rate":
+					assert.False(t, validatedMetrics["active_directory.ds.suboperation.rate"], "Found a duplicate in the metrics slice: active_directory.ds.suboperation.rate")
+					validatedMetrics["active_directory.ds.suboperation.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The rate of sub-operations performed.", ms.At(i).Description())
+					assert.Equal(t, "{suboperations}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "security_descriptor_propagations_event", attrVal.Str())
+				case "active_directory.ds.thread.count":
+					assert.False(t, validatedMetrics["active_directory.ds.thread.count"], "Found a duplicate in the metrics slice: active_directory.ds.thread.count")
+					validatedMetrics["active_directory.ds.thread.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads in use by the directory service.", ms.At(i).Description())
+					assert.Equal(t, "{threads}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
-	settings.Logger = zap.New(observedZapCore)
-	mb := NewMetricsBuilder(loadConfig(t, "no_metrics"), settings, WithStartTime(start))
-
-	assert.Equal(t, 0, observedLogs.Len())
-
-	mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
-	mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
-	mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
-	mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
-	mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
-	mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
-	mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
-	mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
-}
-
-func loadConfig(t *testing.T, name string) MetricsSettings {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsSettings()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

@@ -1,12 +1,22 @@
-name: apachereceiver
+type: apache
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
     apache.server.name:
       description: The name of the Apache HTTP server.
       type: string
+      enabled: true
     apache.server.port:
       description: The port of the Apache HTTP server.
       type: string
+      enabled: true
 
 attributes:
   workers_state:

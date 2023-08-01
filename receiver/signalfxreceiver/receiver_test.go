@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxreceiver
 
@@ -46,6 +35,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_signalfxeceiver_New(t *testing.T) {
@@ -579,7 +569,6 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	dp.Attributes().PutStr("k0", "v0")
 	dp.Attributes().PutStr("k1", "v1")
 	dp.Attributes().PutStr("k2", "v2")
-	dp.Attributes().Sort()
 
 	t.Log("Sending SignalFx metric data Request")
 
@@ -618,7 +607,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	require.Len(t, mds, 1)
 	got := mds[0]
 	require.Equal(t, 1, got.ResourceMetrics().Len())
-	assert.Equal(t, want, got)
+	require.NoError(t, pmetrictest.CompareMetrics(want, got))
 }
 
 func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
@@ -818,7 +807,7 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(p []byte) (n int, err error) {
+func (b badReqBody) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dynatraceexporter
 
@@ -536,6 +525,53 @@ func Test_exporter_send_NotFound(t *testing.T) {
 		t.Error("Expected exporter to not be disabled")
 		return
 	}
+}
+
+func Test_exporter_send_TooManyRequests(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
+}
+
+func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusExpectationFailed)
+		_, _ = w.Write([]byte{})
+	}))
+	defer ts.Close()
+
+	e := &exporter{
+		settings: componenttest.NewNopTelemetrySettings(),
+		cfg: &config.Config{
+			APIToken:           "token",
+			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			Prefix:             "prefix",
+			DefaultDimensions:  map[string]string{},
+		},
+		client: ts.Client(),
+	}
+	err := e.send(context.Background(), []string{""})
+
+	assert.ErrorContains(t, err, "417 Expectation Failed")
+	assert.True(t, consumererror.IsPermanent(err), "Expected error to be permanent %v", err)
+	assert.False(t, e.isDisabled, "Expected exporter to not be disabled")
 }
 
 func Test_exporter_send_chunking(t *testing.T) {

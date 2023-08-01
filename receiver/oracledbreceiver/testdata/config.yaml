@@ -1,10 +1,9 @@
 oracledb:
   # driver name: oracle
-  # username: otel
-  # password: password
-  # host: localhost
-  # container exposed port: 51521
-  # Oracle DB service name: XE
+  endpoint: localhost:51521
+  password: password
+  service: XE
+  username: otel
   # Refer to Oracle Go Driver go_ora documentation for full connection string options
   datasource: "oracle://otel:password@localhost:51521/XE"
   metrics:

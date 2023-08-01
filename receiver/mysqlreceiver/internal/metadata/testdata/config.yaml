@@ -1,175 +1,183 @@
 default:
-all_metrics:
-  mysql.buffer_pool.data_pages:
-    enabled: true
-  mysql.buffer_pool.limit:
-    enabled: true
-  mysql.buffer_pool.operations:
-    enabled: true
-  mysql.buffer_pool.page_flushes:
-    enabled: true
-  mysql.buffer_pool.pages:
-    enabled: true
-  mysql.buffer_pool.usage:
-    enabled: true
-  mysql.client.network.io:
-    enabled: true
-  mysql.commands:
-    enabled: true
-  mysql.connection.count:
-    enabled: true
-  mysql.connection.errors:
-    enabled: true
-  mysql.double_writes:
-    enabled: true
-  mysql.handlers:
-    enabled: true
-  mysql.index.io.wait.count:
-    enabled: true
-  mysql.index.io.wait.time:
-    enabled: true
-  mysql.joins:
-    enabled: true
-  mysql.locked_connects:
-    enabled: true
-  mysql.locks:
-    enabled: true
-  mysql.log_operations:
-    enabled: true
-  mysql.mysqlx_connections:
-    enabled: true
-  mysql.mysqlx_worker_threads:
-    enabled: true
-  mysql.opened_resources:
-    enabled: true
-  mysql.operations:
-    enabled: true
-  mysql.page_operations:
-    enabled: true
-  mysql.prepared_statements:
-    enabled: true
-  mysql.query.client.count:
-    enabled: true
-  mysql.query.count:
-    enabled: true
-  mysql.query.slow.count:
-    enabled: true
-  mysql.replica.sql_delay:
-    enabled: true
-  mysql.replica.time_behind_source:
-    enabled: true
-  mysql.row_locks:
-    enabled: true
-  mysql.row_operations:
-    enabled: true
-  mysql.sorts:
-    enabled: true
-  mysql.statement_event.count:
-    enabled: true
-  mysql.statement_event.wait.time:
-    enabled: true
-  mysql.table.io.wait.count:
-    enabled: true
-  mysql.table.io.wait.time:
-    enabled: true
-  mysql.table.lock_wait.read.count:
-    enabled: true
-  mysql.table.lock_wait.read.time:
-    enabled: true
-  mysql.table.lock_wait.write.count:
-    enabled: true
-  mysql.table.lock_wait.write.time:
-    enabled: true
-  mysql.table_open_cache:
-    enabled: true
-  mysql.threads:
-    enabled: true
-  mysql.tmp_resources:
-    enabled: true
-no_metrics:
-  mysql.buffer_pool.data_pages:
-    enabled: false
-  mysql.buffer_pool.limit:
-    enabled: false
-  mysql.buffer_pool.operations:
-    enabled: false
-  mysql.buffer_pool.page_flushes:
-    enabled: false
-  mysql.buffer_pool.pages:
-    enabled: false
-  mysql.buffer_pool.usage:
-    enabled: false
-  mysql.client.network.io:
-    enabled: false
-  mysql.commands:
-    enabled: false
-  mysql.connection.count:
-    enabled: false
-  mysql.connection.errors:
-    enabled: false
-  mysql.double_writes:
-    enabled: false
-  mysql.handlers:
-    enabled: false
-  mysql.index.io.wait.count:
-    enabled: false
-  mysql.index.io.wait.time:
-    enabled: false
-  mysql.joins:
-    enabled: false
-  mysql.locked_connects:
-    enabled: false
-  mysql.locks:
-    enabled: false
-  mysql.log_operations:
-    enabled: false
-  mysql.mysqlx_connections:
-    enabled: false
-  mysql.mysqlx_worker_threads:
-    enabled: false
-  mysql.opened_resources:
-    enabled: false
-  mysql.operations:
-    enabled: false
-  mysql.page_operations:
-    enabled: false
-  mysql.prepared_statements:
-    enabled: false
-  mysql.query.client.count:
-    enabled: false
-  mysql.query.count:
-    enabled: false
-  mysql.query.slow.count:
-    enabled: false
-  mysql.replica.sql_delay:
-    enabled: false
-  mysql.replica.time_behind_source:
-    enabled: false
-  mysql.row_locks:
-    enabled: false
-  mysql.row_operations:
-    enabled: false
-  mysql.sorts:
-    enabled: false
-  mysql.statement_event.count:
-    enabled: false
-  mysql.statement_event.wait.time:
-    enabled: false
-  mysql.table.io.wait.count:
-    enabled: false
-  mysql.table.io.wait.time:
-    enabled: false
-  mysql.table.lock_wait.read.count:
-    enabled: false
-  mysql.table.lock_wait.read.time:
-    enabled: false
-  mysql.table.lock_wait.write.count:
-    enabled: false
-  mysql.table.lock_wait.write.time:
-    enabled: false
-  mysql.table_open_cache:
-    enabled: false
-  mysql.threads:
-    enabled: false
-  mysql.tmp_resources:
-    enabled: false
+all_set:
+  metrics:
+    mysql.buffer_pool.data_pages:
+      enabled: true
+    mysql.buffer_pool.limit:
+      enabled: true
+    mysql.buffer_pool.operations:
+      enabled: true
+    mysql.buffer_pool.page_flushes:
+      enabled: true
+    mysql.buffer_pool.pages:
+      enabled: true
+    mysql.buffer_pool.usage:
+      enabled: true
+    mysql.client.network.io:
+      enabled: true
+    mysql.commands:
+      enabled: true
+    mysql.connection.count:
+      enabled: true
+    mysql.connection.errors:
+      enabled: true
+    mysql.double_writes:
+      enabled: true
+    mysql.handlers:
+      enabled: true
+    mysql.index.io.wait.count:
+      enabled: true
+    mysql.index.io.wait.time:
+      enabled: true
+    mysql.joins:
+      enabled: true
+    mysql.locks:
+      enabled: true
+    mysql.log_operations:
+      enabled: true
+    mysql.mysqlx_connections:
+      enabled: true
+    mysql.mysqlx_worker_threads:
+      enabled: true
+    mysql.opened_resources:
+      enabled: true
+    mysql.operations:
+      enabled: true
+    mysql.page_operations:
+      enabled: true
+    mysql.prepared_statements:
+      enabled: true
+    mysql.query.client.count:
+      enabled: true
+    mysql.query.count:
+      enabled: true
+    mysql.query.slow.count:
+      enabled: true
+    mysql.replica.sql_delay:
+      enabled: true
+    mysql.replica.time_behind_source:
+      enabled: true
+    mysql.row_locks:
+      enabled: true
+    mysql.row_operations:
+      enabled: true
+    mysql.sorts:
+      enabled: true
+    mysql.statement_event.count:
+      enabled: true
+    mysql.statement_event.wait.time:
+      enabled: true
+    mysql.table.io.wait.count:
+      enabled: true
+    mysql.table.io.wait.time:
+      enabled: true
+    mysql.table.lock_wait.read.count:
+      enabled: true
+    mysql.table.lock_wait.read.time:
+      enabled: true
+    mysql.table.lock_wait.write.count:
+      enabled: true
+    mysql.table.lock_wait.write.time:
+      enabled: true
+    mysql.table_open_cache:
+      enabled: true
+    mysql.threads:
+      enabled: true
+    mysql.tmp_resources:
+      enabled: true
+    mysql.uptime:
+      enabled: true
+  resource_attributes:
+    mysql.instance.endpoint:
+      enabled: true
+none_set:
+  metrics:
+    mysql.buffer_pool.data_pages:
+      enabled: false
+    mysql.buffer_pool.limit:
+      enabled: false
+    mysql.buffer_pool.operations:
+      enabled: false
+    mysql.buffer_pool.page_flushes:
+      enabled: false
+    mysql.buffer_pool.pages:
+      enabled: false
+    mysql.buffer_pool.usage:
+      enabled: false
+    mysql.client.network.io:
+      enabled: false
+    mysql.commands:
+      enabled: false
+    mysql.connection.count:
+      enabled: false
+    mysql.connection.errors:
+      enabled: false
+    mysql.double_writes:
+      enabled: false
+    mysql.handlers:
+      enabled: false
+    mysql.index.io.wait.count:
+      enabled: false
+    mysql.index.io.wait.time:
+      enabled: false
+    mysql.joins:
+      enabled: false
+    mysql.locks:
+      enabled: false
+    mysql.log_operations:
+      enabled: false
+    mysql.mysqlx_connections:
+      enabled: false
+    mysql.mysqlx_worker_threads:
+      enabled: false
+    mysql.opened_resources:
+      enabled: false
+    mysql.operations:
+      enabled: false
+    mysql.page_operations:
+      enabled: false
+    mysql.prepared_statements:
+      enabled: false
+    mysql.query.client.count:
+      enabled: false
+    mysql.query.count:
+      enabled: false
+    mysql.query.slow.count:
+      enabled: false
+    mysql.replica.sql_delay:
+      enabled: false
+    mysql.replica.time_behind_source:
+      enabled: false
+    mysql.row_locks:
+      enabled: false
+    mysql.row_operations:
+      enabled: false
+    mysql.sorts:
+      enabled: false
+    mysql.statement_event.count:
+      enabled: false
+    mysql.statement_event.wait.time:
+      enabled: false
+    mysql.table.io.wait.count:
+      enabled: false
+    mysql.table.io.wait.time:
+      enabled: false
+    mysql.table.lock_wait.read.count:
+      enabled: false
+    mysql.table.lock_wait.read.time:
+      enabled: false
+    mysql.table.lock_wait.write.count:
+      enabled: false
+    mysql.table.lock_wait.write.time:
+      enabled: false
+    mysql.table_open_cache:
+      enabled: false
+    mysql.threads:
+      enabled: false
+    mysql.tmp_resources:
+      enabled: false
+    mysql.uptime:
+      enabled: false
+  resource_attributes:
+    mysql.instance.endpoint:
+      enabled: false

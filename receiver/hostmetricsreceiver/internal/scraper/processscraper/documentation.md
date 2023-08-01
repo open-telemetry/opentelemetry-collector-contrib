@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/process
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -40,17 +42,17 @@ Disk bytes transferred.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.physical_usage
+### process.memory.usage
 
-Deprecated: use `process.memory.usage` metric instead. The amount of physical memory in use.
+The amount of physical memory in use.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### process.memory.virtual_usage
+### process.memory.virtual
 
-Deprecated: Use `process.memory.virtual` metric instead. Virtual memory size.
+Virtual memory size.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -69,6 +71,8 @@ metrics:
 ### process.context_switches
 
 Number of times the process has been context switched.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -108,13 +112,15 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
-### process.memory.usage
+### process.handles
 
-The amount of physical memory in use.
+Number of handles held by the process.
+
+This metric is only available on Windows.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| {count} | Sum | Int | Cumulative | false |
 
 ### process.memory.utilization
 
@@ -124,17 +130,11 @@ Percentage of total physical memory that is used by the process.
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### process.memory.virtual
-
-Virtual memory size.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### process.open_file_descriptors
 
 Number of file descriptors in use by the process.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -142,7 +142,9 @@ Number of file descriptors in use by the process.
 
 ### process.paging.faults
 
-Number of page faults the process has made. This metric is only available on Linux.
+Number of page faults the process has made.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -156,7 +158,9 @@ Number of page faults the process has made. This metric is only available on Lin
 
 ### process.signals_pending
 
-Number of pending signals for the process. This metric is only available on Linux.
+Number of pending signals for the process.
+
+This metric is only available on Linux.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -172,12 +176,12 @@ Process threads count.
 
 ## Resource Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | Any Str |
-| process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Any Str |
-| process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str |
-| process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | Any Str |
-| process.owner | The username of the user that owns the process. | Any Str |
-| process.parent_pid | Parent Process identifier (PPID). | Any Int |
-| process.pid | Process identifier (PID). | Any Int |
+| Name | Description | Values | Enabled |
+| ---- | ----------- | ------ | ------- |
+| process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | Any Str | true |
+| process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Any Str | true |
+| process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str | true |
+| process.executable.path | The full path to the process executable. On Linux based systems, can be set to the target of proc/[pid]/exe. On Windows, can be set to the result of GetProcessImageFileNameW. | Any Str | true |
+| process.owner | The username of the user that owns the process. | Any Str | true |
+| process.parent_pid | Parent Process identifier (PPID). | Any Int | true |
+| process.pid | Process identifier (PID). | Any Int | true |

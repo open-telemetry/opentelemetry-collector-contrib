@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package saphanareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver"
 
@@ -87,7 +76,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaServiceCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaServiceCount.Enabled
 		},
 	},
 	{
@@ -110,7 +99,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaServiceThreadCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaServiceThreadCount.Enabled
 		},
 	},
 	{
@@ -175,7 +164,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaColumnMemoryUsed.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaColumnMemoryUsed.Enabled
 		},
 	},
 	{
@@ -198,7 +187,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaRowStoreMemoryUsed.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaRowStoreMemoryUsed.Enabled
 		},
 	},
 	{
@@ -215,7 +204,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaComponentMemoryUsed.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaComponentMemoryUsed.Enabled
 		},
 	},
 	{
@@ -233,7 +222,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaConnectionCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaConnectionCount.Enabled
 		},
 	},
 	{
@@ -249,7 +238,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaBackupLatest.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaBackupLatest.Enabled
 		},
 	},
 	{
@@ -266,7 +255,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaUptime.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaUptime.Enabled
 		},
 	},
 	{
@@ -282,7 +271,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaAlertCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaAlertCount.Enabled
 		},
 	},
 	{
@@ -312,7 +301,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaTransactionCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaTransactionCount.Enabled
 		},
 	},
 	{
@@ -328,7 +317,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaTransactionBlocked.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaTransactionBlocked.Enabled
 		},
 	},
 	{
@@ -352,7 +341,7 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaDiskSizeCurrent.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaDiskSizeCurrent.Enabled
 		},
 	},
 	{
@@ -382,9 +371,9 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaLicenseExpirationTime.Enabled ||
-				c.Metrics.SaphanaLicenseLimit.Enabled ||
-				c.Metrics.SaphanaLicensePeak.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaLicenseExpirationTime.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaLicenseLimit.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaLicensePeak.Enabled
 		},
 	},
 	{
@@ -414,9 +403,9 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaReplicationAverageTime.Enabled ||
-				c.Metrics.SaphanaReplicationBacklogSize.Enabled ||
-				c.Metrics.SaphanaReplicationBacklogTime.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaReplicationAverageTime.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaReplicationBacklogSize.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaReplicationBacklogTime.Enabled
 		},
 	},
 	{
@@ -460,9 +449,9 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaNetworkRequestFinishedCount.Enabled ||
-				c.Metrics.SaphanaNetworkRequestCount.Enabled ||
-				c.Metrics.SaphanaNetworkRequestAverageTime.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestFinishedCount.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestCount.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaNetworkRequestAverageTime.Enabled
 		},
 	},
 	{
@@ -514,9 +503,9 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaVolumeOperationCount.Enabled ||
-				c.Metrics.SaphanaVolumeOperationSize.Enabled ||
-				c.Metrics.SaphanaVolumeOperationTime.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationCount.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationSize.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaVolumeOperationTime.Enabled
 		},
 	},
 	{
@@ -610,15 +599,15 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaServiceMemoryUsed.Enabled ||
-				c.Metrics.SaphanaServiceCodeSize.Enabled ||
-				c.Metrics.SaphanaServiceStackSize.Enabled ||
-				c.Metrics.SaphanaServiceMemoryHeapCurrent.Enabled ||
-				c.Metrics.SaphanaServiceMemorySharedCurrent.Enabled ||
-				c.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled ||
-				c.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled ||
-				c.Metrics.SaphanaServiceMemoryLimit.Enabled ||
-				c.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryUsed.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceCodeSize.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceStackSize.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryHeapCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemorySharedCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryCompactorsAllocated.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryCompactorsFreeable.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryLimit.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaServiceMemoryEffectiveLimit.Enabled
 		},
 	},
 	{
@@ -719,11 +708,11 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaSchemaMemoryUsedMax.Enabled ||
-				c.Metrics.SaphanaSchemaRecordCompressedCount.Enabled ||
-				c.Metrics.SaphanaSchemaOperationCount.Enabled ||
-				c.Metrics.SaphanaSchemaMemoryUsedCurrent.Enabled ||
-				c.Metrics.SaphanaSchemaRecordCount.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaSchemaMemoryUsedMax.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaSchemaRecordCompressedCount.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaSchemaOperationCount.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaSchemaMemoryUsedCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaSchemaRecordCount.Enabled
 		},
 	},
 	{
@@ -823,13 +812,13 @@ var queries = []monitoringQuery{
 			},
 		},
 		Enabled: func(c *Config) bool {
-			return c.Metrics.SaphanaHostMemoryCurrent.Enabled ||
-				c.Metrics.SaphanaHostSwapCurrent.Enabled ||
-				c.Metrics.SaphanaInstanceMemoryCurrent.Enabled ||
-				c.Metrics.SaphanaInstanceMemoryUsedPeak.Enabled ||
-				c.Metrics.SaphanaInstanceCodeSize.Enabled ||
-				c.Metrics.SaphanaInstanceMemorySharedAllocated.Enabled ||
-				c.Metrics.SaphanaCPUUsed.Enabled
+			return c.MetricsBuilderConfig.Metrics.SaphanaHostMemoryCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaHostSwapCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaInstanceMemoryCurrent.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaInstanceMemoryUsedPeak.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaInstanceCodeSize.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaInstanceMemorySharedAllocated.Enabled ||
+				c.MetricsBuilderConfig.Metrics.SaphanaCPUUsed.Enabled
 		},
 	},
 }

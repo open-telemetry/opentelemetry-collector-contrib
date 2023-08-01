@@ -1,22 +1,10 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translation
 
 import (
 	"fmt"
-	"reflect"
 	"sort"
 	"strings"
 	"testing"
@@ -770,7 +758,7 @@ func TestInvalidNumberOfDimensions(t *testing.T) {
 	assert.Equal(t, "dropping datapoint", observedLogs.All()[0].Message)
 	assert.ElementsMatch(t, []zap.Field{
 		{Type: zapcore.StringType, Key: "reason", String: invalidNumberOfDimensions},
-		{Type: zapcore.StringType, Key: "datapoint", String: DatapointToString(dpSFX)},
+		{Type: zapcore.StringerType, Key: "datapoint", Interface: dpSFX},
 		{Type: zapcore.Int64Type, Key: "number_of_dimensions", Integer: 37},
 	}, observedLogs.All()[0].Context)
 }
@@ -842,13 +830,12 @@ func TestNewMetricsConverter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := NewMetricsConverter(zap.NewNop(), nil, tt.excludes, nil, "")
-			if (err != nil) != tt.wantErr {
-				t.Errorf("NewMetricsConverter() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewMetricsConverter() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

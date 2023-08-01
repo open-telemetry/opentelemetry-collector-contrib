@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pagingscraper
 
@@ -40,31 +29,31 @@ func TestScrape(t *testing.T) {
 		mutateScraper     func(*scraper)
 	}
 
-	config := metadata.DefaultMetricsSettings()
-	config.SystemPagingUtilization.Enabled = true
+	config := metadata.DefaultMetricsBuilderConfig()
+	config.Metrics.SystemPagingUtilization.Enabled = true
 
 	testCases := []testCase{
 		{
 			name:   "Standard",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Standard with direction removed",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 		},
 		{
 			name:   "Validate Start Time",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 100, nil }
+				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:   "Boot Time Error",
-			config: Config{Metrics: config},
+			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 0, errors.New("err1") }
+				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
 		},

@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 
-#   Copyright The OpenTelemetry Authors
-
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-
-#       http://www.apache.org/licenses/LICENSE-2.0
-
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # verifies if the collector components are using the main core collector version
@@ -48,7 +37,7 @@ check_collector_versions_correct() {
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
       if grep -q "$collector_module" "$mod_file"; then
-         mod_line=$(grep "$collector_module" "$mod_file")
+         mod_line=$(grep -m1 "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
 
          # To account for a module on its own 'require' line,

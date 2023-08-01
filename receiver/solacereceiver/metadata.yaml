@@ -1,0 +1,9 @@
+type: solace
+
+status:
+  class: receiver
+  stability:
+    beta: [traces]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [djaglowski, mcardy]

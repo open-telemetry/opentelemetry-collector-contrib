@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package protocol // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 
@@ -28,7 +17,7 @@ var (
 	statsDDefaultPercentiles = []float64{0, 10, 50, 90, 95, 100}
 )
 
-func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, timeNow, lastIntervalTime time.Time) pmetric.ScopeMetrics {
+func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmetric.ScopeMetrics {
 	ilm := pmetric.NewScopeMetrics()
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(parsedMetric.description.name)
@@ -41,13 +30,17 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool, time
 
 	dp := nm.Sum().DataPoints().AppendEmpty()
 	dp.SetIntValue(parsedMetric.counterValue())
-	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(lastIntervalTime))
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 	for i := parsedMetric.description.attrs.Iter(); i.Next(); {
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
 	return ilm
+}
+
+func setTimestampsForCounterMetric(ilm pmetric.ScopeMetrics, startTime, timeNow time.Time) {
+	dp := ilm.Metrics().At(0).Sum().DataPoints().At(0)
+	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
 }
 
 func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.ScopeMetrics {

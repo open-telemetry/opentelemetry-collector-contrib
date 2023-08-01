@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
@@ -25,15 +14,13 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 // This file implements factory for SignalFx receiver.
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "signalfx"
-	// The stability level of the receiver.
-	stability = component.StabilityLevelStable
 
 	// Default endpoints to bind to.
 	defaultEndpoint = ":9943"
@@ -42,10 +29,10 @@ const (
 // NewFactory creates a factory for SignalFx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability),
-		receiver.WithLogs(createLogsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -73,19 +60,6 @@ func extractPortFromEndpoint(endpoint string) (int, error) {
 	return int(port), nil
 }
 
-// verify that the configured port is not 0
-func (rCfg *Config) validate() error {
-	if rCfg.Endpoint == "" {
-		return errEmptyEndpoint
-	}
-
-	_, err := extractPortFromEndpoint(rCfg.Endpoint)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
@@ -95,14 +69,10 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
+		var err error
 		r, err = newReceiver(params, *rCfg)
 		if err != nil {
 			return nil, err
@@ -125,14 +95,10 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
 
-	err := rCfg.validate()
-	if err != nil {
-		return nil, err
-	}
-
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
+		var err error
 		r, err = newReceiver(params, *rCfg)
 		if err != nil {
 			return nil, err

@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
+
 files=(
     bin/otelcontribcol_darwin_arm64
     bin/otelcontribcol_darwin_amd64
@@ -9,9 +14,10 @@ files=(
     dist/otel-contrib-collector_*_amd64.deb
     dist/otel-contrib-collector-*.x86_64.rpm
     dist/otel-contrib-collector_*_arm64.deb
+    dist/otel-contrib-collector-*.ppc64le.rpm
     dist/otel-contrib-collector_*_ppc64le.deb
-    dist/otel-contrib-collector_*_ppc64le.rpm
-    dist/otel-contrib-collector-*amd64.msi
+    # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
+    # dist/otel-contrib-collector-*amd64.msi
 
 );
 for f in "${files[@]}"
@@ -20,7 +26,7 @@ do
     then
         echo "$f does not exist."
         echo "passed=false" >> $GITHUB_OUTPUT
-        exit 0
+        exit 1
     fi
 done
 echo "passed=true" >> $GITHUB_OUTPUT

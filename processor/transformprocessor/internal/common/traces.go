@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
@@ -30,7 +19,9 @@ import (
 
 var _ consumer.Traces = &traceStatements{}
 
-type traceStatements []*ottl.Statement[ottlspan.TransformContext]
+type traceStatements struct {
+	ottl.Statements[ottlspan.TransformContext]
+}
 
 func (t traceStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -46,11 +37,9 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			spans := sspans.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				tCtx := ottlspan.NewTransformContext(spans.At(k), sspans.Scope(), rspans.Resource())
-				for _, statement := range t {
-					_, _, err := statement.Execute(ctx, tCtx)
-					if err != nil {
-						return err
-					}
+				err := t.Execute(ctx, tCtx)
+				if err != nil {
+					return err
 				}
 			}
 		}
@@ -60,7 +49,9 @@ func (t traceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 
 var _ consumer.Traces = &spanEventStatements{}
 
-type spanEventStatements []*ottl.Statement[ottlspanevent.TransformContext]
+type spanEventStatements struct {
+	ottl.Statements[ottlspanevent.TransformContext]
+}
 
 func (s spanEventStatements) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{
@@ -79,11 +70,9 @@ func (s spanEventStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces
 				spanEvents := span.Events()
 				for n := 0; n < spanEvents.Len(); n++ {
 					tCtx := ottlspanevent.NewTransformContext(spanEvents.At(n), span, sspans.Scope(), rspans.Resource())
-					for _, statement := range s {
-						_, _, err := statement.Execute(ctx, tCtx)
-						if err != nil {
-							return err
-						}
+					err := s.Execute(ctx, tCtx)
+					if err != nil {
+						return err
 					}
 				}
 			}
@@ -100,26 +89,49 @@ type TraceParserCollection struct {
 
 type TraceParserCollectionOption func(*TraceParserCollection) error
 
-func WithSpanParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanParser(functions map[string]ottl.Factory[ottlspan.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
-		tp.spanParser = ottlspan.NewParser(functions, tp.settings)
+		spanParser, err := ottlspan.NewParser(functions, tp.settings)
+		if err != nil {
+			return err
+		}
+		tp.spanParser = spanParser
 		return nil
 	}
 }
 
-func WithSpanEventParser(functions map[string]interface{}) TraceParserCollectionOption {
+func WithSpanEventParser(functions map[string]ottl.Factory[ottlspanevent.TransformContext]) TraceParserCollectionOption {
 	return func(tp *TraceParserCollection) error {
-		tp.spanEventParser = ottlspanevent.NewParser(functions, tp.settings)
+		spanEventParser, err := ottlspanevent.NewParser(functions, tp.settings)
+		if err != nil {
+			return err
+		}
+		tp.spanEventParser = spanEventParser
+		return nil
+	}
+}
+
+func WithTraceErrorMode(errorMode ottl.ErrorMode) TraceParserCollectionOption {
+	return func(tp *TraceParserCollection) error {
+		tp.errorMode = errorMode
 		return nil
 	}
 }
 
 func NewTraceParserCollection(settings component.TelemetrySettings, options ...TraceParserCollectionOption) (*TraceParserCollection, error) {
+	rp, err := ottlresource.NewParser(ResourceFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := ottlscope.NewParser(ScopeFunctions(), settings)
+	if err != nil {
+		return nil, err
+	}
 	tpc := &TraceParserCollection{
 		parserCollection: parserCollection{
 			settings:       settings,
-			resourceParser: ottlresource.NewParser(ResourceFunctions(), settings),
-			scopeParser:    ottlscope.NewParser(ScopeFunctions(), settings),
+			resourceParser: rp,
+			scopeParser:    sp,
 		},
 	}
 
@@ -136,17 +148,19 @@ func NewTraceParserCollection(settings component.TelemetrySettings, options ...T
 func (pc TraceParserCollection) ParseContextStatements(contextStatements ContextStatements) (consumer.Traces, error) {
 	switch contextStatements.Context {
 	case Span:
-		tStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return traceStatements(tStatements), nil
+		sStatements := ottlspan.NewStatements(parsedStatements, pc.settings, ottlspan.WithErrorMode(pc.errorMode))
+		return traceStatements{sStatements}, nil
 	case SpanEvent:
-		seStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
+		parsedStatements, err := pc.spanEventParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
-		return spanEventStatements(seStatements), nil
+		seStatements := ottlspanevent.NewStatements(parsedStatements, pc.settings, ottlspanevent.WithErrorMode(pc.errorMode))
+		return spanEventStatements{seStatements}, nil
 	default:
 		return pc.parseCommonContextStatements(contextStatements)
 	}

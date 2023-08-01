@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
@@ -25,7 +14,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (map[string]pcommon.Value, *awsxray.AWSData) {
+func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, logGroupNames []string) (map[string]pcommon.Value, *awsxray.AWSData) {
 	var (
 		cloud        string
 		service      string
@@ -43,6 +32,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		requestID    string
 		queueURL     string
 		tableName    string
+		tableNames   []string
 		sdk          string
 		sdkName      string
 		sdkLanguage  string
@@ -117,9 +107,9 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		case conventions.AttributeAWSECSLaunchtype:
 			launchType = value.Str()
 		case conventions.AttributeAWSLogGroupNames:
-			logGroups = value.Slice()
+			logGroups = normalizeToSlice(value)
 		case conventions.AttributeAWSLogGroupARNs:
-			logGroupArns = value.Slice()
+			logGroupArns = normalizeToSlice(value)
 		}
 		return true
 	})
@@ -167,7 +157,20 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		tableName = value.Str()
+		switch value.Type() {
+		case pcommon.ValueTypeSlice:
+			if value.Slice().Len() == 1 {
+				tableName = value.Slice().At(0).Str()
+			} else if value.Slice().Len() > 1 {
+				tableName = ""
+				tableNames = []string{}
+				for i := 0; i < value.Slice().Len(); i++ {
+					tableNames = append(tableNames, value.Slice().At(i).Str())
+				}
+			}
+		case pcommon.ValueTypeStr:
+			tableName = value.Str()
+		}
 	}
 
 	// EC2 - add ec2 metadata to xray request if
@@ -219,11 +222,22 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 	}
 
 	// Since we must couple log group ARNs and Log Group Names in the same CWLogs object, we first try to derive the
-	// names from the ARN, then fall back to just recording the names
-	if logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0 {
+	// names from the ARN, then fall back to recording the names, if they do not exist in the resource
+	// then pull from them from config.
+	switch {
+	case logGroupArns != (pcommon.Slice{}) && logGroupArns.Len() > 0:
 		cwl = getLogGroupMetadata(logGroupArns, true)
-	} else if logGroups != (pcommon.Slice{}) && logGroups.Len() > 0 {
+	case logGroups != (pcommon.Slice{}) && logGroups.Len() > 0:
 		cwl = getLogGroupMetadata(logGroups, false)
+	case logGroupNames != nil:
+		var configSlice = pcommon.NewSlice()
+		configSlice.EnsureCapacity(len(logGroupNames))
+
+		for _, s := range logGroupNames {
+			configSlice.AppendEmpty().SetStr(s)
+		}
+
+		cwl = getLogGroupMetadata(configSlice, false)
 	}
 
 	if sdkName != "" && sdkLanguage != "" {
@@ -253,8 +267,27 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource) (ma
 		RequestID:    awsxray.String(requestID),
 		QueueURL:     awsxray.String(queueURL),
 		TableName:    awsxray.String(tableName),
+		TableNames:   tableNames,
 	}
 	return filtered, awsData
+}
+
+// Normalize value to slice.
+// 1. String values are converted to a slice of size 1 so that we can also handle resource
+// attributes that are set using the OTEL_RESOURCE_ATTRIBUTES
+// 2. Slices are kept as they are
+// 3. Other types will result in a empty slice so that we avoid panic.
+func normalizeToSlice(v pcommon.Value) pcommon.Slice {
+	switch v.Type() {
+	case pcommon.ValueTypeStr:
+		s := pcommon.NewSlice()
+		s.AppendEmpty().SetStr(v.Str())
+		return s
+	case pcommon.ValueTypeSlice:
+		return v.Slice()
+	default:
+		return pcommon.NewSlice()
+	}
 }
 
 // Given an array of log group ARNs, create a corresponding amount of LogGroupMetadata objects with log_group and arn

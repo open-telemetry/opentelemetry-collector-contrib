@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sapiserver
 
@@ -102,15 +91,15 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 type mockEventBroadcaster struct {
 }
 
-func (m *mockEventBroadcaster) StartRecordingToSink(sink record.EventSink) watch.Interface {
+func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(logf func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder {
+func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorder {
 	return record.NewFakeRecorder(100)
 }
 
@@ -138,6 +127,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+					case pmetric.NumberDataPointValueTypeEmpty:
 					}
 
 					return
@@ -222,12 +212,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "cluster_node_count", int64(1))
 		case ci.TypeClusterService:
 			assertMetricValueEqual(t, metric, "service_number_of_running_pods", int64(1))
-			if serviceTag := getStringAttrVal(metric, ci.TypeService); serviceTag != "service1" && serviceTag != "service2" {
-				assert.Fail(t, "Expect to see a tag named as Service")
-			}
-			if namespaceTag := getStringAttrVal(metric, ci.K8sNamespace); namespaceTag != "kube-system" {
-				assert.Fail(t, "Expect to see a tag named as Namespace")
-			}
+			assert.Contains(t, []string{"service1", "service2"}, getStringAttrVal(metric, ci.TypeService))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 		case ci.TypeClusterNamespace:
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))

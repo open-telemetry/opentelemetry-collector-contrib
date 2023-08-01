@@ -1,17 +1,29 @@
-name: nsxtreceiver
+type: nsxt
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [dashpole, schmikei]
 
 resource_attributes:
   nsxt.node.name:
     description: The name of the NSX Node.
+    enabled: true
     type: string
   nsxt.node.id:
     description: The ID of the NSX Node.
+    enabled: true
     type: string
   nsxt.node.type:
     description: The type of NSX Node.
+    enabled: true
     type: string
   device.id:
     description: The name of the network interface.
+    enabled: true
     type: string
 
 attributes:

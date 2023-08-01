@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
 
@@ -20,9 +9,13 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
@@ -34,16 +27,34 @@ const (
 	translationRulesConfigKey = "translation_rules"
 )
 
+var defaultTranslationRules = func() []translation.Rule {
+	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
+	if err != nil {
+		panic(err)
+	}
+	return cfg.TranslationRules
+}()
+
+var defaultExcludeMetrics = func() []dpfilters.MetricFilter {
+	cfg, err := loadConfig([]byte(translation.DefaultExcludeMetricsYaml))
+	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
+	if err != nil {
+		panic(err)
+	}
+	return cfg.ExcludeMetrics
+}()
+
 var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
+	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
+	confighttp.HTTPClientSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
 	// AccessToken is the authentication token provided by SignalFx.
-	AccessToken string `mapstructure:"access_token"`
+	AccessToken configopaque.String `mapstructure:"access_token"`
 
 	// Realm is the SignalFx realm where data is going to be sent to.
 	Realm string `mapstructure:"realm"`
@@ -66,23 +77,23 @@ type Config struct {
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
 	APITLSSettings configtls.TLSClientSetting `mapstructure:"api_tls,omitempty"`
 
-	// Headers are a set of headers to be added to the HTTP request sending
-	// trace data. These can override pre-defined header values used by the
-	// exporter, eg: "User-Agent" can be set to a custom value if specified
-	// here.
-	Headers map[string]string `mapstructure:"headers"`
-
 	// Whether to log datapoints dispatched to Splunk Observability Cloud
 	LogDataPoints bool `mapstructure:"log_data_points"`
 
 	// Whether to log dimension updates being sent to SignalFx.
 	LogDimensionUpdates bool `mapstructure:"log_dimension_updates"`
 
+	// Dimension update client configuration used for metadata updates.
+	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
+
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
 
 	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
 	// Rules defined in translation/constants.go are used by default.
+	// Deprecated: Use metricstransform processor to do metrics transformations.
 	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
+
+	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 
 	// DeltaTranslationTTL specifies in seconds the max duration to keep the most recent datapoint for any
 	// `delta_metric` specified in TranslationRules. Default is 3600s.
@@ -108,6 +119,10 @@ type Config struct {
 	// See ./translation/default_metrics.go for a list of metrics that are dropped by default.
 	IncludeMetrics []dpfilters.MetricFilter `mapstructure:"include_metrics"`
 
+	// ExcludeProperties defines dpfilter.PropertyFilters to prevent inclusion of
+	// properties to include with dimension updates to the SignalFx backend.
+	ExcludeProperties []dpfilters.PropertyFilter `mapstructure:"exclude_properties"`
+
 	// Correlation configuration for syncing traces service and environment to metrics.
 	Correlation *correlation.Config `mapstructure:"correlation"`
 
@@ -116,47 +131,84 @@ type Config struct {
 	NonAlphanumericDimensionChars string `mapstructure:"nonalphanumeric_dimension_chars"`
 
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
+	// Deprecated: use HTTPClientSettings.MaxIdleConns or HTTPClientSettings.MaxIdleConnsPerHost instead.
 	MaxConnections int `mapstructure:"max_connections"`
 }
 
-func (cfg *Config) getOptionsFromConfig() (*exporterOptions, error) {
-	if err := cfg.validateConfig(); err != nil {
-		return nil, err
-	}
+type DimensionClientConfig struct {
+	MaxBuffered         int           `mapstructure:"max_buffered"`
+	SendDelay           time.Duration `mapstructure:"send_delay"`
+	MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
+	MaxConnsPerHost     int           `mapstructure:"max_conns_per_host"`
+	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
+}
 
-	ingestURL, err := cfg.getIngestURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
+func (cfg *Config) getMetricTranslator(logger *zap.Logger) (*translation.MetricTranslator, error) {
+	rules := defaultTranslationRules
+	if cfg.TranslationRules != nil {
+		// Previous way to disable default translation rules.
+		if len(cfg.TranslationRules) == 0 {
+			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use `disable_default_translation_rules` to disable the default rules in a gateway mode.")
+			rules = []translation.Rule{}
+		} else {
+			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use metricstransform processor instead.")
+			rules = cfg.TranslationRules
+		}
 	}
-
-	apiURL, err := cfg.getAPIURL()
-	if err != nil {
-		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
+	// The new way to disable default translation rules. This override any setting of the default TranslationRules.
+	if cfg.DisableDefaultTranslationRules {
+		rules = []translation.Rule{}
 	}
-
-	if cfg.Timeout == 0 {
-		cfg.Timeout = 5 * time.Second
-	}
-
-	metricTranslator, err := translation.NewMetricTranslator(cfg.TranslationRules, cfg.DeltaTranslationTTL)
+	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL)
 	if err != nil {
 		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
 	}
 
-	return &exporterOptions{
-		ingestURL:         ingestURL,
-		ingestTLSSettings: cfg.IngestTLSSettings,
-		apiURL:            apiURL,
-		apiTLSSettings:    cfg.APITLSSettings,
-		httpTimeout:       cfg.Timeout,
-		token:             cfg.AccessToken,
-		logDataPoints:     cfg.LogDataPoints,
-		logDimUpdate:      cfg.LogDimensionUpdates,
-		metricTranslator:  metricTranslator,
-	}, nil
+	return metricTranslator, nil
 }
 
-func (cfg *Config) validateConfig() error {
+func (cfg *Config) getIngestURL() (*url.URL, error) {
+	strURL := cfg.IngestURL
+	if cfg.IngestURL == "" {
+		strURL = fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm)
+	}
+
+	ingestURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"ingest_url\": %w", err)
+	}
+	return ingestURL, nil
+}
+
+func (cfg *Config) getAPIURL() (*url.URL, error) {
+	strURL := cfg.APIURL
+	if cfg.APIURL == "" {
+		strURL = fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm)
+	}
+
+	apiURL, err := url.Parse(strURL)
+	if err != nil {
+		return nil, fmt.Errorf("invalid \"api_url\": %w", err)
+	}
+	return apiURL, nil
+}
+
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		// Nothing to do if there is no config given.
+		return nil
+	}
+
+	if err := componentParser.Unmarshal(cfg); err != nil {
+		return err
+	}
+
+	return setDefaultExcludes(cfg)
+}
+
+// Validate checks if the exporter configuration is valid.
+func (cfg *Config) Validate() error {
 	if cfg.AccessToken == "" {
 		return errors.New(`requires a non-empty "access_token"`)
 	}
@@ -166,7 +218,7 @@ func (cfg *Config) validateConfig() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.Timeout < 0 {
+	if cfg.HTTPClientSettings.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 
@@ -177,48 +229,24 @@ func (cfg *Config) validateConfig() error {
 	return nil
 }
 
-func (cfg *Config) getIngestURL() (*url.URL, error) {
-	if cfg.IngestURL != "" {
-		// Ignore realm and use the IngestURL. Typically used for debugging.
-		return url.Parse(cfg.IngestURL)
-	}
-
-	return url.Parse(fmt.Sprintf("https://ingest.%s.signalfx.com", cfg.Realm))
-}
-
-func (cfg *Config) getAPIURL() (*url.URL, error) {
-	if cfg.APIURL != "" {
-		// Ignore realm and use the APIURL. Typically used for debugging.
-		return url.Parse(cfg.APIURL)
-	}
-
-	return url.Parse(fmt.Sprintf("https://api.%s.signalfx.com", cfg.Realm))
-}
-
-func (cfg *Config) Unmarshal(componentParser *confmap.Conf) (err error) {
-	if componentParser == nil {
-		// Nothing to do if there is no config given.
-		return nil
-	}
-
-	if err = componentParser.Unmarshal(cfg); err != nil {
-		return err
-	}
-
-	// If translations_config is not set in the config, set it to the defaults and return.
-	if !componentParser.IsSet(translationRulesConfigKey) {
-		cfg.TranslationRules, err = loadDefaultTranslationRules()
-		return err
-	}
-
-	return nil
-}
-
-// Validate checks if the exporter configuration is valid.
-// TODO: Move other validations here.
-func (cfg *Config) Validate() error {
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("sending_queue settings has invalid configuration: %w", err)
+func setDefaultExcludes(cfg *Config) error {
+	// If ExcludeMetrics is not set to empty, append defaults.
+	if cfg.ExcludeMetrics == nil || len(cfg.ExcludeMetrics) > 0 {
+		cfg.ExcludeMetrics = append(cfg.ExcludeMetrics, defaultExcludeMetrics...)
 	}
 	return nil
+}
+
+func loadConfig(bytes []byte) (Config, error) {
+	var cfg Config
+	var data map[string]interface{}
+	if err := yaml.Unmarshal(bytes, &data); err != nil {
+		return cfg, err
+	}
+
+	if err := confmap.NewFromStringMap(data).Unmarshal(&cfg, confmap.WithErrorUnused()); err != nil {
+		return cfg, fmt.Errorf("failed to load default exclude metrics: %w", err)
+	}
+
+	return cfg, nil
 }

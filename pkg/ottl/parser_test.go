@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl
 
@@ -20,8 +9,11 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -38,10 +30,10 @@ func Test_parse(t *testing.T) {
 		expected  *parsedStatement
 	}{
 		{
-			name:      "invocation with string",
+			name:      "editor with string",
 			statement: `set("foo")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -53,10 +45,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with float",
+			name:      "editor with float",
 			statement: `met(1.2)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "met",
 					Arguments: []value{
 						{
@@ -70,10 +62,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with int",
+			name:      "editor with int",
 			statement: `fff(12)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "fff",
 					Arguments: []value{
 						{
@@ -87,10 +79,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "complex invocation",
+			name:      "complex editor",
 			statement: `set("foo", GetSomething(bear.honey))`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -128,7 +120,7 @@ func Test_parse(t *testing.T) {
 			name:      "complex path",
 			statement: `set(foo.attributes["bar"].cat, "dog")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -139,8 +131,12 @@ func Test_parse(t *testing.T) {
 											Name: "foo",
 										},
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("bar"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 										{
 											Name: "cat",
@@ -158,10 +154,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "where == clause",
-			statement: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
+			name:      "complex path",
+			statement: `set(foo.bar["x"]["y"].z, Test()[0]["pass"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -172,8 +168,64 @@ func Test_parse(t *testing.T) {
 											Name: "foo",
 										},
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("bar"),
+											Name: "bar",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("x"),
+												},
+												{
+													String: ottltest.Strp("y"),
+												},
+											},
+										},
+										{
+											Name: "z",
+										},
+									},
+								},
+							},
+						},
+						{
+							Literal: &mathExprLiteral{
+								Converter: &converter{
+									Function: "Test",
+									Keys: []Key{
+										{
+											Int: ottltest.Intp(0),
+										},
+										{
+											String: ottltest.Strp("pass"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "where == clause",
+			statement: `set(foo.attributes["bar"].cat, "dog") where name == "fido"`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "set",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "foo",
+										},
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 										{
 											Name: "cat",
@@ -216,7 +268,7 @@ func Test_parse(t *testing.T) {
 			name:      "where != clause",
 			statement: `set(foo.attributes["bar"].cat, "dog") where name != "fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -227,8 +279,12 @@ func Test_parse(t *testing.T) {
 											Name: "foo",
 										},
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("bar"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 										{
 											Name: "cat",
@@ -271,7 +327,7 @@ func Test_parse(t *testing.T) {
 			name:      "ignore extra spaces",
 			statement: `set  ( foo.attributes[ "bar"].cat,   "dog")   where name=="fido"`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -282,8 +338,12 @@ func Test_parse(t *testing.T) {
 											Name: "foo",
 										},
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("bar"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 										{
 											Name: "cat",
@@ -326,7 +386,7 @@ func Test_parse(t *testing.T) {
 			name:      "handle quotes",
 			statement: `set("fo\"o")`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -338,10 +398,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with boolean false",
+			name:      "editor with boolean false",
 			statement: `convert_gauge_to_sum("cumulative", false)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "convert_gauge_to_sum",
 					Arguments: []value{
 						{
@@ -356,10 +416,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with boolean true",
+			name:      "editor with boolean true",
 			statement: `convert_gauge_to_sum("cumulative", true)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "convert_gauge_to_sum",
 					Arguments: []value{
 						{
@@ -374,10 +434,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with bytes",
+			name:      "editor with bytes",
 			statement: `set(attributes["bytes"], 0x0102030405060708)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -385,8 +445,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("bytes"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("bytes"),
+												},
+											},
 										},
 									},
 								},
@@ -401,10 +465,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with nil",
+			name:      "editor with nil",
 			statement: `set(attributes["test"], nil)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -412,8 +476,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -428,10 +496,10 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
-			name:      "invocation with Enum",
+			name:      "editor with Enum",
 			statement: `set(attributes["test"], TEST_ENUM)`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -439,8 +507,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -458,7 +530,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with empty list",
 			statement: `set(attributes["test"], [])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -466,8 +538,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -487,7 +563,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with single-value list",
 			statement: `set(attributes["test"], ["value0"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -495,8 +571,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -520,7 +600,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with multi-value list",
 			statement: `set(attributes["test"], ["value1", "value2"])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -528,8 +608,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -556,7 +640,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter with nested heterogeneous types",
 			statement: `set(attributes["test"], [Concat(["a", "b"], "+"), ["1", 2, 3.0], nil, attributes["test"]])`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -564,8 +648,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -625,8 +713,12 @@ func Test_parse(t *testing.T) {
 											Path: &Path{
 												Fields: []Field{
 													{
-														Name:   "attributes",
-														MapKey: ottltest.Strp("test"),
+														Name: "attributes",
+														Keys: []Key{
+															{
+																String: ottltest.Strp("test"),
+															},
+														},
 													},
 												},
 											},
@@ -644,7 +736,7 @@ func Test_parse(t *testing.T) {
 			name:      "Converter math mathExpression",
 			statement: `set(attributes["test"], 1000 - 600) where 1 + 1 * 2 == three / One()`,
 			expected: &parsedStatement{
-				Invocation: invocation{
+				Editor: editor{
 					Function: "set",
 					Arguments: []value{
 						{
@@ -652,8 +744,12 @@ func Test_parse(t *testing.T) {
 								Path: &Path{
 									Fields: []Field{
 										{
-											Name:   "attributes",
-											MapKey: ottltest.Strp("test"),
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("test"),
+												},
+											},
 										},
 									},
 								},
@@ -769,10 +865,40 @@ func Test_parse(t *testing.T) {
 }
 
 func testParsePath(val *Path) (GetSetter[interface{}], error) {
-	if val != nil && len(val.Fields) > 0 && val.Fields[0].Name == "name" {
+	if val != nil && len(val.Fields) > 0 && (val.Fields[0].Name == "name" || val.Fields[0].Name == "attributes") {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return tCtx, nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Duration)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Time)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
 			},
 			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 				reflect.DeepEqual(tCtx, val)
@@ -787,7 +913,7 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 // Parse string should start with `set(name, "test") where`...
 func setNameTest(b *booleanExpression) *parsedStatement {
 	return &parsedStatement{
-		Invocation: invocation{
+		Editor: editor{
 			Function: "set",
 			Arguments: []value{
 				{
@@ -820,7 +946,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 				},
 			}),
@@ -830,13 +958,17 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -848,19 +980,25 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(true),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(true),
+								},
 							},
 						},
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -872,7 +1010,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 				},
 				Right: []*opOrTerm{
@@ -880,7 +1020,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -892,13 +1034,17 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(false),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(false),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								ConstExpr: booleanp(true),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(true),
+								},
 							},
 						},
 					},
@@ -908,7 +1054,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -923,13 +1071,17 @@ func Test_parseWhere(t *testing.T) {
 						SubExpr: &booleanExpression{
 							Left: &term{
 								Left: &booleanValue{
-									ConstExpr: booleanp(false),
+									ConstExpr: &constExpr{
+										Boolean: booleanp(false),
+									},
 								},
 								Right: []*opAndBooleanValue{
 									{
 										Operator: "and",
 										Value: &booleanValue{
-											ConstExpr: booleanp(true),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(true),
+											},
 										},
 									},
 								},
@@ -942,7 +1094,9 @@ func Test_parseWhere(t *testing.T) {
 						Operator: "or",
 						Term: &term{
 							Left: &booleanValue{
-								ConstExpr: booleanp(false),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -954,7 +1108,9 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(false),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(false),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
@@ -963,7 +1119,9 @@ func Test_parseWhere(t *testing.T) {
 								SubExpr: &booleanExpression{
 									Left: &term{
 										Left: &booleanValue{
-											ConstExpr: booleanp(true),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(true),
+											},
 										},
 									},
 									Right: []*opOrTerm{
@@ -971,7 +1129,9 @@ func Test_parseWhere(t *testing.T) {
 											Operator: "or",
 											Term: &term{
 												Left: &booleanValue{
-													ConstExpr: booleanp(false),
+													ConstExpr: &constExpr{
+														Boolean: booleanp(false),
+													},
 												},
 											},
 										},
@@ -1090,14 +1250,18 @@ func Test_parseWhere(t *testing.T) {
 			expected: setNameTest(&booleanExpression{
 				Left: &term{
 					Left: &booleanValue{
-						ConstExpr: booleanp(true),
+						ConstExpr: &constExpr{
+							Boolean: booleanp(true),
+						},
 					},
 					Right: []*opAndBooleanValue{
 						{
 							Operator: "and",
 							Value: &booleanValue{
-								Negation:  ottltest.Strp("not"),
-								ConstExpr: booleanp(false),
+								Negation: ottltest.Strp("not"),
+								ConstExpr: &constExpr{
+									Boolean: booleanp(false),
+								},
 							},
 						},
 					},
@@ -1140,7 +1304,9 @@ func Test_parseWhere(t *testing.T) {
 						SubExpr: &booleanExpression{
 							Left: &term{
 								Left: &booleanValue{
-									ConstExpr: booleanp(true),
+									ConstExpr: &constExpr{
+										Boolean: booleanp(true),
+									},
 								},
 							},
 							Right: []*opOrTerm{
@@ -1148,8 +1314,50 @@ func Test_parseWhere(t *testing.T) {
 									Operator: "or",
 									Term: &term{
 										Left: &booleanValue{
-											ConstExpr: booleanp(false),
+											ConstExpr: &constExpr{
+												Boolean: booleanp(false),
+											},
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `True()`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+				},
+			}),
+		},
+		{
+			statement: `True() and False()`,
+			expected: setNameTest(&booleanExpression{
+				Left: &term{
+					Left: &booleanValue{
+						ConstExpr: &constExpr{
+							Converter: &converter{
+								Function: "True",
+							},
+						},
+					},
+					Right: []*opAndBooleanValue{
+						{
+							Operator: "and",
+							Value: &booleanValue{
+								ConstExpr: &constExpr{
+									Converter: &converter{
+										Function: "False",
 									},
 								},
 							},
@@ -1187,6 +1395,33 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 		return nil, fmt.Errorf("enum symbol not found")
 	}
 	return nil, fmt.Errorf("enum symbol not provided")
+}
+
+func Test_ParseStatements_Error(t *testing.T) {
+	statements := []string{
+		`set(`,
+		`set("foo)`,
+		`set(name.)`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath,
+		componenttest.NewNopTelemetrySettings(),
+		WithEnumParser[any](testParseEnum),
+	)
+
+	_, err := p.ParseStatements(statements)
+
+	assert.Error(t, err)
+
+	multiErrs := multierr.Errors(err)
+
+	assert.Len(t, multiErrs, len(statements), "ParseStatements didn't return an error per statement")
+
+	for i, statementErr := range multiErrs {
+		assert.ErrorContains(t, statementErr, fmt.Sprintf("unable to parse OTTL statement %q", statements[i]))
+	}
 }
 
 // This test doesn't validate parser results, simply checks whether the parse succeeds or not.
@@ -1307,6 +1542,196 @@ func Test_Execute(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedCondition, condition)
 			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Execute_Error(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition boolExpressionEvaluator[interface{}]
+		function  ExprFunc[interface{}]
+		errorMode ErrorMode
+	}{
+		{
+			name: "IgnoreError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from condition",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, fmt.Errorf("test")
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, nil
+			},
+			errorMode: PropagateError,
+		},
+		{
+			name: "IgnoreError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: IgnoreError,
+		},
+		{
+			name: "PropagateError error from function",
+			condition: func(context.Context, interface{}) (bool, error) {
+				return true, nil
+			},
+			function: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				return 1, fmt.Errorf("test")
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			statements := Statements[interface{}]{
+				statements: []*Statement[interface{}]{
+					{
+						condition: BoolExpr[any]{tt.condition},
+						function:  Expr[any]{exprFunc: tt.function},
+					},
+				},
+				errorMode:         tt.errorMode,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+			}
+
+			err := statements.Execute(context.Background(), nil)
+			if tt.errorMode == PropagateError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func Test_Statements_Eval(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []boolExpressionEvaluator[interface{}]
+		function       ExprFunc[interface{}]
+		errorMode      ErrorMode
+		expectedResult bool
+	}{
+		{
+			name: "True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "At least one True",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+		{
+			name: "False",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				alwaysFalse[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: false,
+		},
+		{
+			name: "Error is false when using Ignore",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				alwaysFalse[interface{}],
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+				alwaysTrue[interface{}],
+			},
+			errorMode:      IgnoreError,
+			expectedResult: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_Statements_Eval_Error(t *testing.T) {
+	tests := []struct {
+		name       string
+		conditions []boolExpressionEvaluator[interface{}]
+		function   ExprFunc[interface{}]
+		errorMode  ErrorMode
+	}{
+		{
+			name: "Propagate Error from function",
+			conditions: []boolExpressionEvaluator[interface{}]{
+				func(context.Context, interface{}) (bool, error) {
+					return true, fmt.Errorf("test")
+				},
+			},
+			errorMode: PropagateError,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var rawStatements []*Statement[interface{}]
+			for _, condition := range tt.conditions {
+				rawStatements = append(rawStatements, &Statement[interface{}]{
+					condition: BoolExpr[any]{condition},
+					function: Expr[any]{
+						exprFunc: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+							return nil, fmt.Errorf("function should not be called")
+						},
+					},
+				})
+			}
+
+			statements := Statements[interface{}]{
+				statements:        rawStatements,
+				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				errorMode:         tt.errorMode,
+			}
+
+			result, err := statements.Eval(context.Background(), nil)
+			assert.Error(t, err)
+			assert.False(t, result)
 		})
 	}
 }

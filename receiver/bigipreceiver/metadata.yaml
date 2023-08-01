@@ -1,27 +1,42 @@
-name: bigipreceiver
+type: bigip
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, StefanKurek]
 
 resource_attributes:
   bigip.virtual_server.name:
     description: The name of the Big-IP Virtual Server.
     type: string
+    enabled: true
   bigip.virtual_server.destination:
     description: The destination for the Big-IP Virtual Server.
     type: string
+    enabled: true
   bigip.pool.name:
     description: The name of the Big-IP Pool.
     type: string
+    enabled: true
   bigip.pool_member.name:
     description: The name of the Big-IP Pool Member.
     type: string
+    enabled: true
   bigip.pool_member.ip_address:
     description: The IP Address of the Big-IP Pool Member.
     type: string
+    enabled: true
   bigip.node.name:
     description: The name of the Big-IP Node.
     type: string
+    enabled: true
   bigip.node.ip_address:
     description: The IP Address of the Big-IP Node.
     type: string
+    enabled: true
 
 attributes:
   direction:
