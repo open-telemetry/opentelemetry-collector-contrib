@@ -435,7 +435,7 @@ metadata:
   name: otel-collector
 rules:
 - apiGroups: ["config.openshift.io"]
-  resources: ["infrastructures"]
+  resources: ["infrastructures", "infrastructures/status"]
   verbs: ["get", "watch", "list"]
 ```
 
