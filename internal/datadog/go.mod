@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/datado
 go 1.19
 
 require (
-	github.com/DataDog/datadog-agent/pkg/trace v0.46.0
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0013
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.46.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.46.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.46.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.46.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.46.0 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.46.0 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2 // indirect
@@ -59,14 +59,14 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.10.0 // indirect
-	golang.org/x/net v0.11.0 // indirect
-	golang.org/x/sys v0.9.0 // indirect
-	golang.org/x/text v0.10.0 // indirect
+	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/sys v0.10.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1 // indirect
-	google.golang.org/grpc v1.56.0 // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
+	google.golang.org/grpc v1.56.2 // indirect
+	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

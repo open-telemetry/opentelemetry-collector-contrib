@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2
 	github.com/DataDog/sketches-go v1.4.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.81.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.82.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/consumer v0.82.0

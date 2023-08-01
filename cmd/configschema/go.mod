@@ -506,7 +506,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.82.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.81.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.82.0 // indirect
