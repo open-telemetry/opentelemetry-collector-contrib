@@ -114,7 +114,6 @@ const (
 	StatusUnknown                     = "status_unknown"
 	StatusReady                       = "status_ready"
 	StatusScheduled                   = "status_scheduled"
-	StatusInitialized                 = "status_initialized"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
@@ -258,6 +257,9 @@ func init() {
 		StatusTerminated:           UnitCount,
 		StatusWaiting:              UnitCount,
 		StatusWaitingReasonCrashed: UnitCount,
+		StatusUnknown:              UnitCount,
+		StatusReady:                UnitCount,
+		StatusScheduled:            UnitCount,
 
 		// cluster metrics
 		NodeCount:       UnitCount,

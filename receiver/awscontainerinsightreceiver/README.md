@@ -633,45 +633,48 @@ kubectl apply -f config.yaml
 <br/><br/> 
 
 ### Pod
-| Metric                                | Unit          |
-|---------------------------------------|---------------|
-| pod_cpu_limit                         | Millicore     |
-| pod_cpu_request                       | Millicore     |
-| pod_cpu_reserved_capacity             | Percent       |
-| pod_cpu_usage_system                  | Millicore     |
-| pod_cpu_usage_total                   | Millicore     |
-| pod_cpu_usage_user                    | Millicore     |
-| pod_cpu_utilization                   | Percent       |
-| pod_cpu_utilization_over_pod_limit    | Percent       |
-| pod_memory_cache                      | Bytes         |
-| pod_memory_failcnt                    | Count         |
-| pod_memory_hierarchical_pgfault       | Count/Second  |
-| pod_memory_hierarchical_pgmajfault    | Count/Second  |
-| pod_memory_limit                      | Bytes         |
-| pod_memory_mapped_file                | Bytes         |
-| pod_memory_max_usage                  | Bytes         |
-| pod_memory_pgfault                    | Count/Second  |
-| pod_memory_pgmajfault                 | Count/Second  |
-| pod_memory_request                    | Bytes         |
-| pod_memory_reserved_capacity          | Percent       |
-| pod_memory_rss                        | Bytes         |
-| pod_memory_swap                       | Bytes         |
-| pod_memory_usage                      | Bytes         |
-| pod_memory_utilization                | Percent       |
-| pod_memory_utilization_over_pod_limit | Percent       |
-| pod_memory_working_set                | Bytes         |
-| pod_network_rx_bytes                  | Bytes/Second  |
-| pod_network_rx_dropped                | Count/Second  |
-| pod_network_rx_errors                 | Count/Second  |
-| pod_network_rx_packets                | Count/Second  |
-| pod_network_total_bytes               | Bytes/Second  |
-| pod_network_tx_bytes                  | Bytes/Second  |
-| pod_network_tx_dropped                | Count/Second  |
-| pod_network_tx_errors                 | Count/Second  |
-| pod_network_tx_packets                | Count/Second  |
-| pod_number_of_container_restarts      | Count         | 
-| pod_number_of_containers              | Count         |   
-| pod_number_of_running_containers      | Count         |  
+| Metric                                | Unit         |
+|---------------------------------------|--------------|
+| pod_cpu_limit                         | Millicore    |
+| pod_cpu_request                       | Millicore    |
+| pod_cpu_reserved_capacity             | Percent      |
+| pod_cpu_usage_system                  | Millicore    |
+| pod_cpu_usage_total                   | Millicore    |
+| pod_cpu_usage_user                    | Millicore    |
+| pod_cpu_utilization                   | Percent      |
+| pod_cpu_utilization_over_pod_limit    | Percent      |
+| pod_memory_cache                      | Bytes        |
+| pod_memory_failcnt                    | Count        |
+| pod_memory_hierarchical_pgfault       | Count/Second |
+| pod_memory_hierarchical_pgmajfault    | Count/Second |
+| pod_memory_limit                      | Bytes        |
+| pod_memory_mapped_file                | Bytes        |
+| pod_memory_max_usage                  | Bytes        |
+| pod_memory_pgfault                    | Count/Second |
+| pod_memory_pgmajfault                 | Count/Second |
+| pod_memory_request                    | Bytes        |
+| pod_memory_reserved_capacity          | Percent      |
+| pod_memory_rss                        | Bytes        |
+| pod_memory_swap                       | Bytes        |
+| pod_memory_usage                      | Bytes        |
+| pod_memory_utilization                | Percent      |
+| pod_memory_utilization_over_pod_limit | Percent      |
+| pod_memory_working_set                | Bytes        |
+| pod_network_rx_bytes                  | Bytes/Second |
+| pod_network_rx_dropped                | Count/Second |
+| pod_network_rx_errors                 | Count/Second |
+| pod_network_rx_packets                | Count/Second |
+| pod_network_total_bytes               | Bytes/Second |
+| pod_network_tx_bytes                  | Bytes/Second |
+| pod_network_tx_dropped                | Count/Second |
+| pod_network_tx_errors                 | Count/Second |
+| pod_network_tx_packets                | Count/Second |
+| pod_number_of_container_restarts      | Count        | 
+| pod_number_of_containers              | Count        |   
+| pod_number_of_running_containers      | Count        |  
+| pod_status_ready                      | Count        |
+| pod_status_scheduled                  | Count        |
+| pod_status_unknown                    | Count        |
 
 | Resource Attribute   |
 |----------------------|
