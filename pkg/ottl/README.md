@@ -176,6 +176,7 @@ Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Dur
 For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules: 
   - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
   - A `time.Duration` `+` a `time.Time` yields a `time.Time`. 
+  - A `time.Time` `+`  a `time.Duration` yields a `time.Time`.
   - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
   - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
   - A `time.Duration` `-` a `time.Duration` yields a `time.Duration`.
