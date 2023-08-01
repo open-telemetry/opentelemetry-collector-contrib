@@ -172,9 +172,9 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, errAddr)
 		}
 		for _, addr := range addrs {
-			ip, _, err := net.ParseCIDR(addr.String())
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse address %q from interface %v: %w", addr, iface, err)
+			ip, _, parseErr := net.ParseCIDR(addr.String())
+			if parseErr != nil {
+				return nil, fmt.Errorf("failed to parse address %q from interface %v: %w", addr, iface, parseErr)
 			}
 
 			if ip.IsLoopback() {
