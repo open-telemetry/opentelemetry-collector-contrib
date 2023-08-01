@@ -66,7 +66,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

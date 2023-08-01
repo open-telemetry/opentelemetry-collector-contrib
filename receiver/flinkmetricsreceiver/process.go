@@ -66,9 +66,10 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 			_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
 		}
 	}
-	s.rb.SetHostName(jobmanagerMetrics.Host)
-	s.rb.SetFlinkResourceTypeJobmanager()
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetHostName(jobmanagerMetrics.Host)
+	rb.SetFlinkResourceTypeJobmanager()
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
@@ -123,10 +124,11 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 				_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
 			}
 		}
-		s.rb.SetHostName(taskmanagerMetrics.Host)
-		s.rb.SetFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID)
-		s.rb.SetFlinkResourceTypeTaskmanager()
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(taskmanagerMetrics.Host)
+		rb.SetFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID)
+		rb.SetFlinkResourceTypeTaskmanager()
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -148,9 +150,10 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointFailed)
 			}
 		}
-		s.rb.SetHostName(jobsMetrics.Host)
-		s.rb.SetFlinkJobName(jobsMetrics.JobName)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(jobsMetrics.Host)
+		rb.SetFlinkJobName(jobsMetrics.JobName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -180,11 +183,12 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 				_ = s.mb.RecordFlinkOperatorWatermarkOutputDataPoint(now, metric.Value, operatorName[0])
 			}
 		}
-		s.rb.SetHostName(subtaskMetrics.Host)
-		s.rb.SetFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID)
-		s.rb.SetFlinkJobName(subtaskMetrics.JobName)
-		s.rb.SetFlinkTaskName(subtaskMetrics.TaskName)
-		s.rb.SetFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(subtaskMetrics.Host)
+		rb.SetFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID)
+		rb.SetFlinkJobName(subtaskMetrics.JobName)
+		rb.SetFlinkTaskName(subtaskMetrics.TaskName)
+		rb.SetFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
