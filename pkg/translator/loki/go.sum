@@ -1,5 +1,5 @@
 github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 h1:s6gZFSlWYmbqAuRjVTiNNhvNRfY2Wxp9nhfyel4rklc=
-github.com/aws/aws-sdk-go v1.44.217 h1:FcWC56MRl+k756aH3qeMQTylSdeJ58WN0iFz3fkyRz0=
+github.com/aws/aws-sdk-go v1.44.245 h1:KtY2s4q31/kn33AdV63R5t77mdxsI7rq3YT7Mgo805M=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
@@ -58,8 +58,8 @@ github.com/prometheus/common v0.44.0/go.mod h1:ofAIvZbQ1e/nugmZGz4/qCb9Ap1VoSTIO
 github.com/prometheus/common/sigv4 v0.1.0 h1:qoVebwtwwEhS85Czm2dSROY5fTo2PAPEVdDeppTwGX4=
 github.com/prometheus/procfs v0.10.1 h1:kYK1Va/YMlutzCGazswoHKo//tZVlFpKYh+PymziUAg=
 github.com/prometheus/procfs v0.10.1/go.mod h1:nwNm2aOCAYw8uTR/9bWRREkZFxAUcWzPHWJq+XBB/FM=
-github.com/prometheus/prometheus v0.43.1 h1:Z/Z0S0CoPUVtUnHGokFksWMssSw2Y1Ir9NnWS1pPWU0=
-github.com/prometheus/prometheus v0.43.1/go.mod h1:2BA14LgBeqlPuzObSEbh+Y+JwLH2GcqDlJKbF2sA6FM=
+github.com/prometheus/prometheus v0.44.0 h1:sgn8Fdx+uE5tHQn0/622swlk2XnIj6udoZCnbVjHIgc=
+github.com/prometheus/prometheus v0.44.0/go.mod h1:aPsmIK3py5XammeTguyqTmuqzX/jeCdyOWWobLHNKQg=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=

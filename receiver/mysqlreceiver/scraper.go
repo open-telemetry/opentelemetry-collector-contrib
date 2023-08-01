@@ -27,7 +27,6 @@ type mySQLScraper struct {
 	sqlclient client
 	logger    *zap.Logger
 	config    *Config
-	rb        *metadata.ResourceBuilder
 	mb        *metadata.MetricsBuilder
 
 	// Feature gates regarding resource attributes
@@ -38,14 +37,11 @@ func newMySQLScraper(
 	settings receiver.CreateSettings,
 	config *Config,
 ) *mySQLScraper {
-	ms := &mySQLScraper{
+	return &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
-		rb:     metadata.NewResourceBuilder(config.MetricsBuilderConfig.ResourceAttributes),
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
-
-	return ms
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -106,8 +102,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
-	m.rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
-	m.mb.EmitForResource(metadata.WithResource(m.rb.Emit()))
+	rb := m.mb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }

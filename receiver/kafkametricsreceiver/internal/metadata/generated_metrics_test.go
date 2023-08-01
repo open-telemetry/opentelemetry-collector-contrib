@@ -173,7 +173,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordMessagingKafkaBrokersResponseSizeDataPoint(ts, 1, 6)
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

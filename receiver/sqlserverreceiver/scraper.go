@@ -25,7 +25,6 @@ type sqlServerScraper struct {
 	logger           *zap.Logger
 	config           *Config
 	watcherRecorders []watcherRecorder
-	rb               *metadata.ResourceBuilder
 	mb               *metadata.MetricsBuilder
 }
 
@@ -44,7 +43,6 @@ func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServer
 	return &sqlServerScraper{
 		logger: params.Logger,
 		config: cfg,
-		rb:     metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
 	}
 }
@@ -123,14 +121,15 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 		recorder(s.mb, now)
 	}
 
+	rb := s.mb.NewResourceBuilder()
 	if databaseName != "" {
-		s.rb.SetSqlserverDatabaseName(databaseName)
+		rb.SetSqlserverDatabaseName(databaseName)
 	}
 	if s.config.InstanceName != "" {
-		s.rb.SetSqlserverComputerName(s.config.ComputerName)
-		s.rb.SetSqlserverInstanceName(s.config.InstanceName)
+		rb.SetSqlserverComputerName(s.config.ComputerName)
+		rb.SetSqlserverInstanceName(s.config.InstanceName)
 	}
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // shutdown stops all of the watchers for the scraper.
