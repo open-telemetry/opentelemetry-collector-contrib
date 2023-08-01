@@ -1,0 +1,339 @@
+default:
+all_set:
+  metrics:
+    k8s.container.cpu_limit:
+      enabled: true
+    k8s.container.cpu_request:
+      enabled: true
+    k8s.container.ephemeralstorage_limit:
+      enabled: true
+    k8s.container.ephemeralstorage_request:
+      enabled: true
+    k8s.container.memory_limit:
+      enabled: true
+    k8s.container.memory_request:
+      enabled: true
+    k8s.container.ready:
+      enabled: true
+    k8s.container.restarts:
+      enabled: true
+    k8s.container.storage_limit:
+      enabled: true
+    k8s.container.storage_request:
+      enabled: true
+    k8s.cronjob.active_jobs:
+      enabled: true
+    k8s.daemonset.current_scheduled_nodes:
+      enabled: true
+    k8s.daemonset.desired_scheduled_nodes:
+      enabled: true
+    k8s.daemonset.misscheduled_nodes:
+      enabled: true
+    k8s.daemonset.ready_nodes:
+      enabled: true
+    k8s.deployment.available:
+      enabled: true
+    k8s.deployment.desired:
+      enabled: true
+    k8s.hpa.current_replicas:
+      enabled: true
+    k8s.hpa.desired_replicas:
+      enabled: true
+    k8s.hpa.max_replicas:
+      enabled: true
+    k8s.hpa.min_replicas:
+      enabled: true
+    k8s.job.active_pods:
+      enabled: true
+    k8s.job.desired_successful_pods:
+      enabled: true
+    k8s.job.failed_pods:
+      enabled: true
+    k8s.job.max_parallel_pods:
+      enabled: true
+    k8s.job.successful_pods:
+      enabled: true
+    k8s.namespace.phase:
+      enabled: true
+    k8s.node.allocatable_cpu:
+      enabled: true
+    k8s.node.allocatable_ephemeral_storage:
+      enabled: true
+    k8s.node.allocatable_memory:
+      enabled: true
+    k8s.node.allocatable_pods:
+      enabled: true
+    k8s.node.allocatable_storage:
+      enabled: true
+    k8s.node.condition_disk_pressure:
+      enabled: true
+    k8s.node.condition_memory_pressure:
+      enabled: true
+    k8s.node.condition_network_unavailable:
+      enabled: true
+    k8s.node.condition_pid_pressure:
+      enabled: true
+    k8s.node.condition_ready:
+      enabled: true
+    k8s.pod.phase:
+      enabled: true
+    k8s.replicaset.available:
+      enabled: true
+    k8s.replicaset.desired:
+      enabled: true
+    k8s.replication_controller.available:
+      enabled: true
+    k8s.replication_controller.desired:
+      enabled: true
+    k8s.resource_quota.hard_limit:
+      enabled: true
+    k8s.resource_quota.used:
+      enabled: true
+    k8s.statefulset.current_pods:
+      enabled: true
+    k8s.statefulset.desired_pods:
+      enabled: true
+    k8s.statefulset.ready_pods:
+      enabled: true
+    k8s.statefulset.updated_pods:
+      enabled: true
+    openshift.appliedclusterquota.limit:
+      enabled: true
+    openshift.appliedclusterquota.used:
+      enabled: true
+    openshift.clusterquota.limit:
+      enabled: true
+    openshift.clusterquota.used:
+      enabled: true
+  resource_attributes:
+    container.id:
+      enabled: true
+    container.image.name:
+      enabled: true
+    container.image.tag:
+      enabled: true
+    k8s.container.name:
+      enabled: true
+    k8s.cronjob.name:
+      enabled: true
+    k8s.cronjob.uid:
+      enabled: true
+    k8s.daemonset.name:
+      enabled: true
+    k8s.daemonset.uid:
+      enabled: true
+    k8s.deployment.name:
+      enabled: true
+    k8s.deployment.uid:
+      enabled: true
+    k8s.hpa.name:
+      enabled: true
+    k8s.hpa.uid:
+      enabled: true
+    k8s.job.name:
+      enabled: true
+    k8s.job.uid:
+      enabled: true
+    k8s.namespace.name:
+      enabled: true
+    k8s.namespace.uid:
+      enabled: true
+    k8s.node.name:
+      enabled: true
+    k8s.node.uid:
+      enabled: true
+    k8s.pod.name:
+      enabled: true
+    k8s.pod.uid:
+      enabled: true
+    k8s.replicaset.name:
+      enabled: true
+    k8s.replicaset.uid:
+      enabled: true
+    k8s.replicationcontroller.name:
+      enabled: true
+    k8s.replicationcontroller.uid:
+      enabled: true
+    k8s.resourcequota.name:
+      enabled: true
+    k8s.resourcequota.uid:
+      enabled: true
+    k8s.statefulset.name:
+      enabled: true
+    k8s.statefulset.uid:
+      enabled: true
+    opencensus.resourcetype:
+      enabled: true
+    openshift.clusterquota.name:
+      enabled: true
+    openshift.clusterquota.uid:
+      enabled: true
+none_set:
+  metrics:
+    k8s.container.cpu_limit:
+      enabled: false
+    k8s.container.cpu_request:
+      enabled: false
+    k8s.container.ephemeralstorage_limit:
+      enabled: false
+    k8s.container.ephemeralstorage_request:
+      enabled: false
+    k8s.container.memory_limit:
+      enabled: false
+    k8s.container.memory_request:
+      enabled: false
+    k8s.container.ready:
+      enabled: false
+    k8s.container.restarts:
+      enabled: false
+    k8s.container.storage_limit:
+      enabled: false
+    k8s.container.storage_request:
+      enabled: false
+    k8s.cronjob.active_jobs:
+      enabled: false
+    k8s.daemonset.current_scheduled_nodes:
+      enabled: false
+    k8s.daemonset.desired_scheduled_nodes:
+      enabled: false
+    k8s.daemonset.misscheduled_nodes:
+      enabled: false
+    k8s.daemonset.ready_nodes:
+      enabled: false
+    k8s.deployment.available:
+      enabled: false
+    k8s.deployment.desired:
+      enabled: false
+    k8s.hpa.current_replicas:
+      enabled: false
+    k8s.hpa.desired_replicas:
+      enabled: false
+    k8s.hpa.max_replicas:
+      enabled: false
+    k8s.hpa.min_replicas:
+      enabled: false
+    k8s.job.active_pods:
+      enabled: false
+    k8s.job.desired_successful_pods:
+      enabled: false
+    k8s.job.failed_pods:
+      enabled: false
+    k8s.job.max_parallel_pods:
+      enabled: false
+    k8s.job.successful_pods:
+      enabled: false
+    k8s.namespace.phase:
+      enabled: false
+    k8s.node.allocatable_cpu:
+      enabled: false
+    k8s.node.allocatable_ephemeral_storage:
+      enabled: false
+    k8s.node.allocatable_memory:
+      enabled: false
+    k8s.node.allocatable_pods:
+      enabled: false
+    k8s.node.allocatable_storage:
+      enabled: false
+    k8s.node.condition_disk_pressure:
+      enabled: false
+    k8s.node.condition_memory_pressure:
+      enabled: false
+    k8s.node.condition_network_unavailable:
+      enabled: false
+    k8s.node.condition_pid_pressure:
+      enabled: false
+    k8s.node.condition_ready:
+      enabled: false
+    k8s.pod.phase:
+      enabled: false
+    k8s.replicaset.available:
+      enabled: false
+    k8s.replicaset.desired:
+      enabled: false
+    k8s.replication_controller.available:
+      enabled: false
+    k8s.replication_controller.desired:
+      enabled: false
+    k8s.resource_quota.hard_limit:
+      enabled: false
+    k8s.resource_quota.used:
+      enabled: false
+    k8s.statefulset.current_pods:
+      enabled: false
+    k8s.statefulset.desired_pods:
+      enabled: false
+    k8s.statefulset.ready_pods:
+      enabled: false
+    k8s.statefulset.updated_pods:
+      enabled: false
+    openshift.appliedclusterquota.limit:
+      enabled: false
+    openshift.appliedclusterquota.used:
+      enabled: false
+    openshift.clusterquota.limit:
+      enabled: false
+    openshift.clusterquota.used:
+      enabled: false
+  resource_attributes:
+    container.id:
+      enabled: false
+    container.image.name:
+      enabled: false
+    container.image.tag:
+      enabled: false
+    k8s.container.name:
+      enabled: false
+    k8s.cronjob.name:
+      enabled: false
+    k8s.cronjob.uid:
+      enabled: false
+    k8s.daemonset.name:
+      enabled: false
+    k8s.daemonset.uid:
+      enabled: false
+    k8s.deployment.name:
+      enabled: false
+    k8s.deployment.uid:
+      enabled: false
+    k8s.hpa.name:
+      enabled: false
+    k8s.hpa.uid:
+      enabled: false
+    k8s.job.name:
+      enabled: false
+    k8s.job.uid:
+      enabled: false
+    k8s.namespace.name:
+      enabled: false
+    k8s.namespace.uid:
+      enabled: false
+    k8s.node.name:
+      enabled: false
+    k8s.node.uid:
+      enabled: false
+    k8s.pod.name:
+      enabled: false
+    k8s.pod.uid:
+      enabled: false
+    k8s.replicaset.name:
+      enabled: false
+    k8s.replicaset.uid:
+      enabled: false
+    k8s.replicationcontroller.name:
+      enabled: false
+    k8s.replicationcontroller.uid:
+      enabled: false
+    k8s.resourcequota.name:
+      enabled: false
+    k8s.resourcequota.uid:
+      enabled: false
+    k8s.statefulset.name:
+      enabled: false
+    k8s.statefulset.uid:
+      enabled: false
+    opencensus.resourcetype:
+      enabled: false
+    openshift.clusterquota.name:
+      enabled: false
+    openshift.clusterquota.uid:
+      enabled: false
