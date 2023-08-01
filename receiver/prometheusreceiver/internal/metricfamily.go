@@ -87,28 +87,27 @@ func (mg *metricGroup) sortPoints() {
 }
 
 func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice) {
-	if !mg.hasCount {
+	if !mg.hasCount || len(mg.complexValue) == 0 {
 		return
 	}
 
 	mg.sortPoints()
 
-	bucketCount := len(mg.complexValue) + 1
-	// if the final bucket is +Inf, we ignore it
-	if bucketCount > 1 && mg.complexValue[bucketCount-2].boundary == math.Inf(1) {
-		bucketCount--
-	}
-
 	// for OTLP the bounds won't include +inf
-	bounds := make([]float64, bucketCount-1)
-	bucketCounts := make([]uint64, bucketCount)
-	var adjustedCount float64
+	bounds := make([]float64, len(mg.complexValue)-1)
+	bucketCounts := make([]uint64, len(mg.complexValue))
 
 	pointIsStale := value.IsStaleNaN(mg.sum) || value.IsStaleNaN(mg.count)
-	for i := 0; i < bucketCount-1; i++ {
-		bounds[i] = mg.complexValue[i].boundary
-		adjustedCount = mg.complexValue[i].value
 
+	for i := 0; i < len(mg.complexValue); i++ {
+		if i != len(mg.complexValue)-1 {
+			// not need to add +inf as OTLP assumes it
+			bounds[i] = mg.complexValue[i].boundary
+		} else if mg.complexValue[i].boundary != math.Inf(1) {
+			// This histogram is missing the +Inf bucket, and isn't a complete prometheus histogram.
+			return
+		}
+		adjustedCount := mg.complexValue[i].value
 		// Buckets still need to be sent to know to set them as stale,
 		// but a staleness NaN converted to uint64 would be an extremely large number.
 		// Setting to 0 instead.
@@ -119,15 +118,6 @@ func (mg *metricGroup) toDistributionPoint(dest pmetric.HistogramDataPointSlice)
 		}
 		bucketCounts[i] = uint64(adjustedCount)
 	}
-
-	// Add the final bucket based on the total count
-	adjustedCount = mg.count
-	if pointIsStale {
-		adjustedCount = 0
-	} else if bucketCount > 1 {
-		adjustedCount -= mg.complexValue[bucketCount-2].value
-	}
-	bucketCounts[bucketCount-1] = uint64(adjustedCount)
 
 	point := dest.AppendEmpty()
 
