@@ -40,8 +40,8 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 
 	commomLabel := model.LabelSet{
 		"environment":   model.LabelValue(r.cfg.Env),
-		"host":          model.LabelValue(r.cfg.Fa_array_name),
-		"fa_array_name": model.LabelValue(r.cfg.Fa_array_name),
+		"host":          model.LabelValue(r.cfg.ArrayName),
+		"fa_array_name": model.LabelValue(r.cfg.ArrayName),
 	}
 
 	// Extracting environment & fa_array_name from commonLabel
