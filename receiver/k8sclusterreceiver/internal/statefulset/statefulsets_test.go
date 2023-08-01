@@ -20,7 +20,7 @@ import (
 func TestStatefulsetMetrics(t *testing.T) {
 	ss := newStatefulset("1")
 
-	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), ss)
+	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), ss)
 
 	require.Equal(t, 1, actualResourceMetrics.ResourceMetrics().Len())
 	require.Equal(t, 4, actualResourceMetrics.MetricCount())

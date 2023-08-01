@@ -11,13 +11,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestHPAMetrics(t *testing.T) {
 	hpa := testutils.NewHPA("1")
 
-	md := GetMetrics(receivertest.NewNopCreateSettings(), hpa)
+	md := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), hpa)
 
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	rm := md.ResourceMetrics().At(0)
