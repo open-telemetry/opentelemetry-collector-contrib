@@ -109,7 +109,7 @@ func TestCollectDServer(t *testing.T) {
         "interval": 10.0,
         "plugin": "memory",
         "plugin_instance": "",
-        "time": 1415062577.494999900,
+        "time": 1415062577.4949999,
         "type": "memory",
         "type_instance": "free",
         "values": [
