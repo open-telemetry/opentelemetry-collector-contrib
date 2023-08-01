@@ -9,4 +9,4 @@ status:
   - grafana
   - sumo
   codeowners:
-    active: [jpkrohling, kovrus]
+    active: [jpkrohling]
