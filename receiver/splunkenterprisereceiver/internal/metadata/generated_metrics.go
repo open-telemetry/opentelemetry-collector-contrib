@@ -529,10 +529,11 @@ func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndex
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                  int                 // maximum observed number of metrics per resource.
-	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                        component.BuildInfo // contains version information
+	config                                           MetricsBuilderConfig // config of the metrics builder.
+	startTime                                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                  int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                    pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                        component.BuildInfo  // contains version information.
 	metricSplunkDataIndexesExtendedBucketCount       metricSplunkDataIndexesExtendedBucketCount
 	metricSplunkDataIndexesExtendedBucketDirsCount   metricSplunkDataIndexesExtendedBucketDirsCount
 	metricSplunkDataIndexesExtendedBucketDirsSize    metricSplunkDataIndexesExtendedBucketDirsSize
@@ -558,10 +559,21 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                 pmetric.NewMetrics(),
-		buildInfo:                     settings.BuildInfo,
-		metricSplunkLicenseIndexUsage: newMetricSplunkLicenseIndexUsage(mbc.Metrics.SplunkLicenseIndexUsage),
+		config:        mbc,
+		startTime:     pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer: pmetric.NewMetrics(),
+		buildInfo:     settings.BuildInfo,
+		metricSplunkDataIndexesExtendedBucketCount:       newMetricSplunkDataIndexesExtendedBucketCount(mbc.Metrics.SplunkDataIndexesExtendedBucketCount),
+		metricSplunkDataIndexesExtendedBucketDirsCount:   newMetricSplunkDataIndexesExtendedBucketDirsCount(mbc.Metrics.SplunkDataIndexesExtendedBucketDirsCount),
+		metricSplunkDataIndexesExtendedBucketDirsSize:    newMetricSplunkDataIndexesExtendedBucketDirsSize(mbc.Metrics.SplunkDataIndexesExtendedBucketDirsSize),
+		metricSplunkDataIndexesExtendedBucketEventCount:  newMetricSplunkDataIndexesExtendedBucketEventCount(mbc.Metrics.SplunkDataIndexesExtendedBucketEventCount),
+		metricSplunkDataIndexesExtendedBucketHotCount:    newMetricSplunkDataIndexesExtendedBucketHotCount(mbc.Metrics.SplunkDataIndexesExtendedBucketHotCount),
+		metricSplunkDataIndexesExtendedBucketWarmCount:   newMetricSplunkDataIndexesExtendedBucketWarmCount(mbc.Metrics.SplunkDataIndexesExtendedBucketWarmCount),
+		metricSplunkDataIndexesExtendedEventCount:        newMetricSplunkDataIndexesExtendedEventCount(mbc.Metrics.SplunkDataIndexesExtendedEventCount),
+		metricSplunkDataIndexesExtendedRawSize:           newMetricSplunkDataIndexesExtendedRawSize(mbc.Metrics.SplunkDataIndexesExtendedRawSize),
+		metricSplunkDataIndexesExtendedTotalSize:         newMetricSplunkDataIndexesExtendedTotalSize(mbc.Metrics.SplunkDataIndexesExtendedTotalSize),
+		metricSplunkLicenseIndexUsage:                    newMetricSplunkLicenseIndexUsage(mbc.Metrics.SplunkLicenseIndexUsage),
+		metricSplunkServerIntrospectionIndexerThroughput: newMetricSplunkServerIntrospectionIndexerThroughput(mbc.Metrics.SplunkServerIntrospectionIndexerThroughput),
 	}
 	for _, op := range options {
 		op(mb)

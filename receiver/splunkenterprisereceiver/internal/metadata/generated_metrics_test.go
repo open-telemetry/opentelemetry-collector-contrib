@@ -94,7 +94,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(ts, 1, "status-val")
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
