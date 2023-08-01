@@ -86,7 +86,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			case argVal.FunctionName != nil:
 				name = *argVal.FunctionName
 			default:
-				return errors.New("invalid function name given")
+				return fmt.Errorf("invalid function name given")
 			}
 			f, ok := p.functions[name]
 			if !ok {

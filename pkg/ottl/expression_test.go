@@ -683,6 +683,23 @@ func Test_FunctionGetter(t *testing.T) {
 			&stringGetterArguments{},
 			functionWithStringGetter,
 		),
+		createFactory[any](
+			"test_arg_mismatch",
+			&multipleArgsArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"no_struct_tag",
+			&noStructTagFunctionArguments{},
+			functionWithStringGetter,
+		),
+		NewFactory(
+			"cannot_create_function",
+			&stringGetterArguments{},
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return functionWithErr()
+			},
+		),
 	)
 	type EditorArguments struct {
 		Replacement StringGetter[any]
@@ -721,6 +738,42 @@ func Test_FunctionGetter(t *testing.T) {
 			want:             "anything",
 			valid:            false,
 			expectedErrorMsg: "undefined function",
+		},
+		{
+			name: "function arg mismatch",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["test_arg_mismatch"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "incorrect number of arguments. Expected: 4 Received: 1",
+		},
+		{
+			name: "Invalid Arguments struct tag",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["no_struct_tag"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "no `ottlarg` struct tag on Arguments field \"StringArg\"",
+		},
+		{
+			name: "Cannot create function",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["cannot_create_function"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "couldn't create function: error",
 		},
 	}
 

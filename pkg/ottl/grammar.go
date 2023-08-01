@@ -225,7 +225,7 @@ type value struct {
 	Bytes          *byteSlice       `parser:"| @Bytes"`
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
-	Enum           *EnumSymbol      `parser:"| @Uppercase"`
+	Enum           *EnumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
 	FunctionName   *string          `parser:"| @(Uppercase(Uppercase | Lowercase)*)"`
 	List           *list            `parser:"| @@)"`
 }

@@ -93,6 +93,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			&functionGetterArguments{},
 			functionWithFunctionGetter,
 		),
+		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
 	)
 
 	p, _ := NewParser(
@@ -111,6 +116,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			inv: editor{
 				Function:  "unknownfunc",
 				Arguments: []value{},
+			},
+		},
+		{
+			name: "Invalid Function Name",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						String: (ottltest.Strp("SHA256")),
+					},
+				},
 			},
 		},
 		{
@@ -956,12 +972,24 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
-			name: "functiongetter arg",
+			name: "functiongetter arg (Uppercase)",
 			inv: editor{
 				Function: "testing_functiongetter",
 				Arguments: []value{
 					{
 						FunctionName: (ottltest.Strp("SHA256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
+			name: "functiongetter arg",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("Sha256")),
 					},
 				},
 			},
@@ -1178,6 +1206,12 @@ func functionWithNoArguments() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
 	}, nil
+}
+
+func functionWithErr() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return nil, nil
+	}, fmt.Errorf("error")
 }
 
 type stringSliceArguments struct {
@@ -1631,6 +1665,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 		),
 		createFactory[any](
 			"SHA256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"Sha256",
 			&stringGetterArguments{},
 			functionWithStringGetter,
 		),
