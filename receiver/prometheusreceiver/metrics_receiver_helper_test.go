@@ -98,7 +98,8 @@ func (mp *mockPrometheus) Close() {
 // -------------------------
 
 var (
-	expectedScrapeMetricCount = 5
+	expectedScrapeMetricCount      = 5
+	expectedExtraScrapeMetricCount = 8
 )
 
 type testData struct {
@@ -227,7 +228,8 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedName
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount ||
+			expectedExtraScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedExtraScrapeMetricCount {
 			if isFirstFailedScrape(allMetrics, normalizedNames) {
 				continue
 			}
@@ -250,7 +252,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			continue
 		}
 
@@ -312,7 +314,7 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int
 func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			n++
 		}
 	}
@@ -332,6 +334,14 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	default:
 	}
 	return false
+}
+func isExtraScrapeMetrics(m pmetric.Metric) bool {
+	switch m.Name() {
+	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
+		return true
+	default:
+		return false
+	}
 }
 
 type metricTypeComparator func(*testing.T, pmetric.Metric)
