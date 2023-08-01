@@ -16,11 +16,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestRequestQuotaMetrics(t *testing.T) {
 	rq := newResourceQuota("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), rq)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), rq)
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
