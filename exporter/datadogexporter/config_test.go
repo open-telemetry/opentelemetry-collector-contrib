@@ -227,6 +227,29 @@ func TestUnmarshal(t *testing.T) {
 			}),
 			err: errEmptyEndpoint.Error(),
 		},
+		{
+			name: "invalid initial cumulative monotonic value mode",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"initial_cumulative_monotonic_value": "invalid_mode",
+					},
+				},
+			}),
+			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.initial_cumulative_monotonic_value': invalid initial value mode \"invalid_mode\"",
+		},
+		{
+			name: "initial cumulative monotonic value mode set with raw_value",
+			configMap: confmap.NewFromStringMap(map[string]interface{}{
+				"metrics": map[string]interface{}{
+					"sums": map[string]interface{}{
+						"cumulative_monotonic_mode":          "raw_value",
+						"initial_cumulative_monotonic_value": "drop",
+					},
+				},
+			}),
+			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
+		},
 	}
 
 	f := NewFactory()

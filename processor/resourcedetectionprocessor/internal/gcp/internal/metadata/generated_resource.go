@@ -7,11 +7,13 @@ import (
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
+// The ResourceBuilder is not thread-safe and must not to be used in multiple goroutines.
 type ResourceBuilder struct {
 	config ResourceAttributesConfig
 	res    pcommon.Resource
 }
 
+// NewResourceBuilder creates a new ResourceBuilder. This method should be called on the start of the application.
 func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	return &ResourceBuilder{
 		config: rac,
@@ -72,6 +74,20 @@ func (rb *ResourceBuilder) SetFaasName(val string) {
 func (rb *ResourceBuilder) SetFaasVersion(val string) {
 	if rb.config.FaasVersion.Enabled {
 		rb.res.Attributes().PutStr("faas.version", val)
+	}
+}
+
+// SetGcpCloudRunJobExecution sets provided value as "gcp.cloud_run.job.execution" attribute.
+func (rb *ResourceBuilder) SetGcpCloudRunJobExecution(val string) {
+	if rb.config.GcpCloudRunJobExecution.Enabled {
+		rb.res.Attributes().PutStr("gcp.cloud_run.job.execution", val)
+	}
+}
+
+// SetGcpCloudRunJobTaskIndex sets provided value as "gcp.cloud_run.job.task_index" attribute.
+func (rb *ResourceBuilder) SetGcpCloudRunJobTaskIndex(val string) {
+	if rb.config.GcpCloudRunJobTaskIndex.Enabled {
+		rb.res.Attributes().PutStr("gcp.cloud_run.job.task_index", val)
 	}
 }
 

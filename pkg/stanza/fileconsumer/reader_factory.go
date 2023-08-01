@@ -5,18 +5,16 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerFactory struct {
@@ -25,7 +23,7 @@ type readerFactory struct {
 	fromBeginning   bool
 	splitterFactory splitterFactory
 	encodingConfig  helper.EncodingConfig
-	headerSettings  *headerSettings
+	headerConfig    *header.Config
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
@@ -103,7 +101,6 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 	r = &Reader{
 		readerConfig:    b.readerConfig,
 		Offset:          b.offset,
-		headerSettings:  b.headerSettings,
 		HeaderFinalized: b.headerFinalized,
 		FileAttributes:  b.fileAttributes,
 	}
@@ -122,26 +119,16 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		return nil, err
 	}
 
-	if b.headerSettings == nil || b.headerFinalized {
+	if b.headerConfig == nil || b.headerFinalized {
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = b.readerConfig.emit
 	} else {
-		// We are reading the header. Use the header split func
-		r.splitFunc = b.headerSettings.splitFunc
-		r.processFunc = r.consumeHeaderLine
-
-		// Create the header pipeline
-		r.headerPipelineOutput = newHeaderPipelineOutput(b.SugaredLogger)
-		r.headerPipeline, err = pipeline.Config{
-			Operators:     b.headerSettings.config.MetadataOperators,
-			DefaultOutput: r.headerPipelineOutput,
-		}.Build(b.SugaredLogger)
+		r.splitFunc = b.headerConfig.SplitFunc
+		r.headerReader, err = header.NewReader(b.SugaredLogger, *b.headerConfig)
 		if err != nil {
-			return nil, fmt.Errorf("failed to build pipeline: %w", err)
+			return nil, err
 		}
-		if err = r.headerPipeline.Start(storage.NewNopClient()); err != nil {
-			return nil, fmt.Errorf("failed to start header pipeline: %w", err)
-		}
+		r.processFunc = r.headerReader.Process
 	}
 
 	if b.file == nil {
