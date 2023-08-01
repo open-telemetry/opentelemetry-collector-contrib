@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -89,8 +89,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 
 	ddTraces, err = handlePayload(req)
 	if err != nil {
-		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
+		return
 	}
 
 	otelTraces := toTraces(ddTraces, req)

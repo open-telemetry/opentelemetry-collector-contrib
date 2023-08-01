@@ -75,6 +75,15 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
+	case gcp.CloudRunJob:
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudRun)
+		errs = multierr.Combine(errs,
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
+			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
+		)
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudFunctions)
 		errs = multierr.Combine(errs,

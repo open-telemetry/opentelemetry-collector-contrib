@@ -77,8 +77,13 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
+			rb.SetOptionalResourceAttr("optional.resource.attr-val")
+			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
+			rb.SetStringEnumResourceAttrOne()
+			rb.SetStringResourceAttr("string.resource.attr-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/sketches-go/ddsketch"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -99,7 +99,7 @@ func TestProcessorIngest(t *testing.T) {
 	ctx := context.Background()
 	p, err := newProcessor(ctx, zap.NewNop(), createDefaultConfig(), &mockConsumer)
 	require.NoError(t, err)
-	out := make(chan *pb.StatsPayload, 1)
+	out := make(chan pb.StatsPayload, 1)
 	ing := &mockIngester{Out: out}
 	p.agent = ing
 	p.in = out
@@ -256,7 +256,7 @@ var _ ingester = (*mockIngester)(nil)
 
 // mockIngester implements ingester.
 type mockIngester struct {
-	Out         chan *pb.StatsPayload
+	Out         chan pb.StatsPayload
 	start, stop bool
 	ingested    ptrace.Traces
 }
@@ -269,7 +269,7 @@ func (m *mockIngester) Start() {
 // Ingest ingests the set of traces.
 func (m *mockIngester) Ingest(_ context.Context, traces ptrace.Traces) {
 	m.ingested = traces
-	m.Out <- &testStatsPayload
+	m.Out <- testStatsPayload
 }
 
 // Stop stops the ingester.
@@ -281,7 +281,7 @@ func (m *mockIngester) Stop() {
 // We should find a way to have a shared set of test utilities in either the processor
 // or the exporter.
 var testStatsPayload = pb.StatsPayload{
-	Stats: []*pb.ClientStatsPayload{
+	Stats: []pb.ClientStatsPayload{
 		{
 			Hostname:         "host",
 			Env:              "prod",
@@ -294,11 +294,11 @@ var testStatsPayload = pb.StatsPayload{
 			Service:          "mysql",
 			ContainerID:      "abcdef123456",
 			Tags:             []string{"a:b", "c:d"},
-			Stats: []*pb.ClientStatsBucket{
+			Stats: []pb.ClientStatsBucket{
 				{
 					Start:    10,
 					Duration: 1,
-					Stats: []*pb.ClientGroupedStats{
+					Stats: []pb.ClientGroupedStats{
 						{
 							Service:        "kafka",
 							Name:           "queue.add",
@@ -328,11 +328,11 @@ var testStatsPayload = pb.StatsPayload{
 			Service:          "mysql2",
 			ContainerID:      "abcdef1234562",
 			Tags:             []string{"a:b2", "c:d2"},
-			Stats: []*pb.ClientStatsBucket{
+			Stats: []pb.ClientStatsBucket{
 				{
 					Start:    102,
 					Duration: 12,
-					Stats: []*pb.ClientGroupedStats{
+					Stats: []pb.ClientGroupedStats{
 						{
 							Service:        "kafka2",
 							Name:           "queue.add2",
