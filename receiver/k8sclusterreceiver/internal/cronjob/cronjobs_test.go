@@ -22,7 +22,7 @@ import (
 func TestCronJobMetrics(t *testing.T) {
 	cj := newCronJob("1")
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), cj)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), cj)
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,

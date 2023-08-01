@@ -17,8 +17,8 @@ import (
 	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, crq *quotav1.ClusterResourceQuota) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, crq *quotav1.ClusterResourceQuota) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	for k, v := range crq.Status.Total.Hard {
@@ -43,7 +43,7 @@ func GetMetrics(set receiver.CreateSettings, crq *quotav1.ClusterResourceQuota) 
 		}
 	}
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetOpenshiftClusterquotaName(crq.Name)
 	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
 	rb.SetOpencensusResourcetype("k8s")

@@ -1221,7 +1221,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 			resp := w.Result()
 			assert.NoError(t, err)
 
-			assertResponse(t, resp.StatusCode, "OK")
+			assertResponse(t, resp.StatusCode, responseOK)
 			tt.assertResource(t, sink.AllLogs())
 		})
 	}
