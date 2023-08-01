@@ -43,8 +43,8 @@ func Transform(node *corev1.Node) *corev1.Node {
 	return newNode
 }
 
-func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	customMetrics := pmetric.NewMetricSlice()
 
@@ -104,7 +104,7 @@ func GetMetrics(set receiver.CreateSettings, node *corev1.Node, nodeConditionTyp
 			dp.SetTimestamp(ts)
 		}
 	}
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetOpencensusResourcetype("k8s")

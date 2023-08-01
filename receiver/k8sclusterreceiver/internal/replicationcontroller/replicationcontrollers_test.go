@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestReplicationController(t *testing.T) {
@@ -34,7 +35,7 @@ func TestReplicationController(t *testing.T) {
 		Status: corev1.ReplicationControllerStatus{AvailableReplicas: 2},
 	}
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), rc)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), rc)
 
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)

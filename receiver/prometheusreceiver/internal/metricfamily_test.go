@@ -227,7 +227,7 @@ func TestMetricGroupData_toDistributionUnitTest(t *testing.T) {
 			for i, tv := range tt.scrapes {
 				var lbls labels.Labels
 				if tv.extraLabel.Name != "" {
-					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels(nil)
+					lbls = labels.NewBuilder(tt.labels).Set(tv.extraLabel.Name, tv.extraLabel.Value).Labels()
 				} else {
 					lbls = tt.labels.Copy()
 				}
