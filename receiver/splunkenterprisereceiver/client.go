@@ -67,23 +67,22 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
 		return req, nil
-	} else {
-		method := "GET"
-		path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
-		url, _ := url.JoinPath(c.endpoint.String(), path)
-
-		req, err := http.NewRequest(method, url, nil)
-		if err != nil {
-			fmt.Println("error building request")
-			return nil, err
-		}
-
-		// Required headers
-		req.Header.Add("Authorization", c.basicAuth)
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		return req, nil
 	}
+	method := "GET"
+	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
+	url, _ := url.JoinPath(c.endpoint.String(), path)
+
+	req, err := http.NewRequest(method, url, nil)
+	if err != nil {
+		fmt.Println("error building request")
+		return nil, err
+	}
+
+	// Required headers
+	req.Header.Add("Authorization", c.basicAuth)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	return req, nil
 }
 
 func (c *splunkEntClient) createAPIRequest(apiEndpoint string) (*http.Request, error) {

@@ -26,7 +26,7 @@ import (
 )
 
 // handler function for mock server
-func mockIndexerThroughput(w http.ResponseWriter, r *http.Request) {
+func mockIndexerThroughput(w http.ResponseWriter, _ *http.Request) {
 	status := http.StatusOK
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)

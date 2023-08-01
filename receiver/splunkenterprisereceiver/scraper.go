@@ -183,6 +183,9 @@ func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Tim
 	}
 
 	err = json.Unmarshal(body, &it)
+    if err != nil {
+        errs.Add(err)
+    }
 
 	s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, it.Entries[0].Content.AvgKb, it.Entries[0].Content.Status)
 }
