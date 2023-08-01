@@ -36,7 +36,7 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	var errors error
-	var targetUrl *url.URL
+	var targetURL *url.URL
 
 	if cfg.Endpoint == "" {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
@@ -44,12 +44,12 @@ func (cfg *Config) Validate() error {
 		// we want to validate that the endpoint url supplied by user is at least
 		// a little bit valid
 		var err error
-		targetUrl, err = url.Parse(cfg.Endpoint)
+		targetURL, err = url.Parse(cfg.Endpoint)
 		if err != nil {
 			errors = multierr.Append(errors, errBadOrMissingEndpoint)
 		}
 
-		if targetUrl.Scheme != "http" && targetUrl.Scheme != "https" {
+		if targetURL.Scheme != "http" && targetURL.Scheme != "https" {
 			errors = multierr.Append(errors, errBadScheme)
 		}
 	}

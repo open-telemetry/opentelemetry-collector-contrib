@@ -136,8 +136,8 @@ func TestAPIRequestCreate(t *testing.T) {
 	req, err := client.createAPIRequest("/test/endpoint")
 	require.NoError(t, err)
 
-	expectedUrl := client.endpoint.String() + "/test/endpoint"
-	expected, _ := http.NewRequest(http.MethodGet, expectedUrl, nil)
+	expectedURL := client.endpoint.String() + "/test/endpoint"
+	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
 	expected.Header.Add("Authorization", client.basicAuth)
 	expected.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 

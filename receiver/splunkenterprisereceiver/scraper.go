@@ -6,6 +6,9 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -27,7 +30,6 @@ type splunkScraper struct {
 	settings     component.TelemetrySettings
 	conf         *Config
 	mb           *metadata.MetricsBuilder
-	mfg          metadata.MetricsConfig
 }
 
 func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunkScraper {
@@ -56,7 +58,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 // Each metric has its own scrape function associated with it
-func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
@@ -140,21 +142,21 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 		return nil
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		return fmt.Errorf("Failed to read response: %v", err)
+		return fmt.Errorf("Failed to read response: %w", err)
 	}
 
 	err = xml.Unmarshal(body, &sr)
 	if err != nil {
-		return fmt.Errorf("Failed to unmarshall response: %v", err)
+		return fmt.Errorf("Failed to unmarshall response: %w", err)
 	}
 
 	return nil
 }
 
 // Scrape index throughput introspection endpoint
-func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	var it indexThroughput
 	var ept string
 
@@ -174,13 +176,13 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 		errs.Add(err)
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println("Failed to read response")
 		errs.Add(err)
 	}
 
-	err = json.Unmarshal([]byte(body), &it)
+	err = json.Unmarshal(body, &it)
 
 	s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, it.Entries[0].Content.AvgKb, it.Entries[0].Content.Status)
 }
