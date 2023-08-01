@@ -119,8 +119,8 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				sumDp.SetDoubleValue(histogramDp.Sum())
 				sumDp.SetStartTimestamp(StartTimestamp)
 
-				// we have two histogram datapoints, and therefore also two sum datapoints
-				sumDp.CopyTo(sumMetric.Sum().DataPoints().AppendEmpty())
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Sum datapoint
 			},
 		},
 	}
@@ -792,6 +792,7 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint0.Attributes().PutStr("flags", "C|D")
 	dataPoint0.Attributes().PutStr("total.string", "345678")
 	dataPoint0.SetCount(1)
+	dataPoint0.SetSum(5)
 
 	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)

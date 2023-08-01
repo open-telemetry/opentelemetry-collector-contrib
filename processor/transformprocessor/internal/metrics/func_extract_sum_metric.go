@@ -72,15 +72,22 @@ func extractSumMetric(aggTempEnum ottl.Enum, monotonic bool) (ottl.ExprFunc[ottl
 		case pmetric.MetricTypeHistogram:
 			dataPoints := metric.Histogram().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
-				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
+				dataPoint := dataPoints.At(i)
+				if dataPoint.HasSum() {
+					addSumDataPoint(dataPoint, sumMetric.Sum().DataPoints())
+				}
 			}
 		case pmetric.MetricTypeExponentialHistogram:
 			dataPoints := metric.ExponentialHistogram().DataPoints()
 			for i := 0; i < dataPoints.Len(); i++ {
-				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
+				dataPoint := dataPoints.At(i)
+				if dataPoint.HasSum() {
+					addSumDataPoint(dataPoint, sumMetric.Sum().DataPoints())
+				}
 			}
 		case pmetric.MetricTypeSummary:
 			dataPoints := metric.Summary().DataPoints()
+			// note that unlike Histograms, the Sum field is required for Summaries
 			for i := 0; i < dataPoints.Len(); i++ {
 				addSumDataPoint(dataPoints.At(i), sumMetric.Sum().DataPoints())
 			}

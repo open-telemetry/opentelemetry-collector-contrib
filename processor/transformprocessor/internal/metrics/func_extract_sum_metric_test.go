@@ -186,6 +186,27 @@ func Test_extractSumMetric(t *testing.T) {
 			},
 		},
 		{
+			name: "histogram (no sum)",
+			input: func() pmetric.Metric {
+				metric := getTestHistogramMetric()
+				metric.Histogram().DataPoints().At(0).RemoveSum()
+				return metric
+			}(),
+			temporality:  pmetric.AggregationTemporalityCumulative,
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				histogramMetric := getTestHistogramMetric()
+				histogramMetric.Histogram().DataPoints().At(0).RemoveSum()
+				histogramMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sumMetric.Sum().SetIsMonotonic(true)
+
+				sumMetric.SetName(histogramMetric.Name() + "_sum")
+			},
+		},
+		{
 			name:         "exponential histogram (delta, non-monotonic)",
 			input:        getTestExponentialHistogramMetric(),
 			temporality:  pmetric.AggregationTemporalityDelta,
@@ -267,6 +288,27 @@ func Test_extractSumMetric(t *testing.T) {
 
 				attrs := getTestAttributes()
 				attrs.CopyTo(dp.Attributes())
+			},
+		},
+		{
+			name: "exponential histogram (no sum)",
+			input: func() pmetric.Metric {
+				metric := getTestExponentialHistogramMetric()
+				metric.ExponentialHistogram().DataPoints().At(0).RemoveSum()
+				return metric
+			}(),
+			temporality:  pmetric.AggregationTemporalityCumulative,
+			monotonicity: true,
+			want: func(metrics pmetric.MetricSlice) {
+				expHistogramMetric := getTestExponentialHistogramMetric()
+				expHistogramMetric.ExponentialHistogram().DataPoints().At(0).RemoveSum()
+				expHistogramMetric.CopyTo(metrics.AppendEmpty())
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				sumMetric.Sum().SetIsMonotonic(true)
+
+				sumMetric.SetName(expHistogramMetric.Name() + "_sum")
 			},
 		},
 		{
