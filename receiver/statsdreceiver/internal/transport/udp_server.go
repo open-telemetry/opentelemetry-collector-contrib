@@ -6,46 +6,49 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
 
 	"go.opentelemetry.io/collector/consumer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 type udpServer struct {
 	packetConn net.PacketConn
-	reporter   Reporter
+	transport  Transport
 }
 
+// Ensure that Server is implemented on UDP Server.
 var _ (Server) = (*udpServer)(nil)
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
-func NewUDPServer(addr string) (Server, error) {
-	packetConn, err := net.ListenPacket("udp", addr)
-	if err != nil {
-		return nil, err
+func NewUDPServer(transport Transport, address string) (Server, error) {
+	var usrv udpServer
+	var err error
+
+	if !transport.IsPacketTransport() {
+		return nil, ErrUnsupportedPacketTransport
 	}
 
-	u := udpServer{
-		packetConn: packetConn,
+	usrv.transport = transport
+	usrv.packetConn, err = net.ListenPacket(transport.String(), address)
+	if err != nil {
+		return nil, fmt.Errorf("starting to listen %s socket: %w", transport.String(), err)
 	}
-	return &u, nil
+
+	return &usrv, nil
 }
 
+// Start the server ready to recevie metrics.
 func (u *udpServer) ListenAndServe(
-	parser protocol.Parser,
 	nextConsumer consumer.Metrics,
 	reporter Reporter,
 	transferChan chan<- Metric,
 ) error {
-	if parser == nil || nextConsumer == nil || reporter == nil {
+	if nextConsumer == nil || reporter == nil {
 		return errNilListenAndServeParameters
 	}
-
-	u.reporter = reporter
 
 	buf := make([]byte, 65527) // max size for udp packet body (assuming ipv6)
 	for {
@@ -56,10 +59,8 @@ func (u *udpServer) ListenAndServe(
 			u.handlePacket(bufCopy, addr, transferChan)
 		}
 		if err != nil {
-			u.reporter.OnDebugf("UDP Transport (%s) - ReadFrom error: %v",
-				u.packetConn.LocalAddr(),
-				err)
 			var netErr net.Error
+			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v", u.transport, u.packetConn.LocalAddr(), err)
 			if errors.As(err, &netErr) {
 				if netErr.Timeout() {
 					continue
@@ -70,10 +71,12 @@ func (u *udpServer) ListenAndServe(
 	}
 }
 
+// Closes the server
 func (u *udpServer) Close() error {
 	return u.packetConn.Close()
 }
 
+// This helper parses the buffer and split it line bye line to be parsed upstream.
 func (u *udpServer) handlePacket(
 	data []byte,
 	addr net.Addr,

@@ -69,12 +69,13 @@ func newReceiver(
 
 func buildTransportServer(config Config) (transport.Server, error) {
 	// TODO: Add TCP/unix socket transport implementations
-	switch strings.ToLower(config.NetAddr.Transport) {
-	case "", "udp":
-		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	trans, err := transport.NewTransport(strings.ToLower(config.NetAddr.Transport))
+	switch trans {
+	case transport.UDP, transport.UDP4, transport.UDP6:
+		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
+	return nil, fmt.Errorf("error building server with transport %q: %w", config.NetAddr.Transport, err)
 }
 
 // Start starts a UDP server that can process StatsD messages.
@@ -96,7 +97,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
+		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
 				host.ReportFatalError(err)
 			}
