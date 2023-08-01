@@ -84,7 +84,7 @@ func TestCollectDServer(t *testing.T) {
 
 	wantedRequestBody := wantedBody{
 		Name: "memory.free",
-		Time: 1415062577.494999900,
+		Time: 1415062577.4949999,
 		Attributes: map[string]string{
 			"plugin": "memory",
 			"host":   "i-b13d1e5f",
