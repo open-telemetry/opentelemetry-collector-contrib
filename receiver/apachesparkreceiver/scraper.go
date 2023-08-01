@@ -30,7 +30,6 @@ type sparkScraper struct {
 	logger   *zap.Logger
 	config   *Config
 	settings component.TelemetrySettings
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -39,7 +38,6 @@ func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSe
 		logger:   logger,
 		config:   cfg,
 		settings: settings.TelemetrySettings,
-		rb:       metadata.NewResourceBuilder(cfg.MetricsBuilderConfig.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -247,9 +245,10 @@ func (s *sparkScraper) recordCluster(clusterStats *models.ClusterProperties, now
 		s.mb.RecordSparkDriverExecutorGcTimeDataPoint(now, int64(stat.Value), metadata.AttributeGcTypeMajor)
 	}
 
-	s.rb.SetSparkApplicationID(appID)
-	s.rb.SetSparkApplicationName(appName)
-	s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSparkApplicationID(appID)
+	rb.SetSparkApplicationName(appName)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Timestamp, appID string, appName string) {
@@ -294,11 +293,12 @@ func (s *sparkScraper) recordStages(stageStats []models.Stage, now pcommon.Times
 		s.mb.RecordSparkStageShuffleIoRecordsDataPoint(now, stage.ShuffleWriteRecords, metadata.AttributeDirectionOut)
 		s.mb.RecordSparkStageShuffleWriteTimeDataPoint(now, stage.ShuffleWriteTime)
 
-		s.rb.SetSparkApplicationID(appID)
-		s.rb.SetSparkApplicationName(appName)
-		s.rb.SetSparkStageID(stage.StageID)
-		s.rb.SetSparkStageAttemptID(stage.AttemptID)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSparkApplicationID(appID)
+		rb.SetSparkApplicationName(appName)
+		rb.SetSparkStageID(stage.StageID)
+		rb.SetSparkStageAttemptID(stage.AttemptID)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -322,10 +322,11 @@ func (s *sparkScraper) recordExecutors(executorStats []models.Executor, now pcom
 		s.mb.RecordSparkExecutorStorageMemoryUsageDataPoint(now, used, metadata.AttributeLocationOffHeap, metadata.AttributeStateUsed)
 		s.mb.RecordSparkExecutorStorageMemoryUsageDataPoint(now, executor.TotalOffHeapStorageMemory-used, metadata.AttributeLocationOffHeap, metadata.AttributeStateFree)
 
-		s.rb.SetSparkApplicationID(appID)
-		s.rb.SetSparkApplicationName(appName)
-		s.rb.SetSparkExecutorID(executor.ExecutorID)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSparkApplicationID(appID)
+		rb.SetSparkApplicationName(appName)
+		rb.SetSparkExecutorID(executor.ExecutorID)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -340,9 +341,10 @@ func (s *sparkScraper) recordJobs(jobStats []models.Job, now pcommon.Timestamp, 
 		s.mb.RecordSparkJobStageResultDataPoint(now, job.NumSkippedStages, metadata.AttributeJobResultSkipped)
 		s.mb.RecordSparkJobStageResultDataPoint(now, job.NumFailedStages, metadata.AttributeJobResultFailed)
 
-		s.rb.SetSparkApplicationID(appID)
-		s.rb.SetSparkApplicationName(appName)
-		s.rb.SetSparkJobID(job.JobID)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetSparkApplicationID(appID)
+		rb.SetSparkApplicationName(appName)
+		rb.SetSparkJobID(job.JobID)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

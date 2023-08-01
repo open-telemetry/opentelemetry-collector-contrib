@@ -84,8 +84,19 @@ func TestMetricsBuilder(t *testing.T) {
 				{{- end }})
 			{{- end }}
 
+			{{ if .ResourceAttributes }}
+			rb := mb.NewResourceBuilder()
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if $attr.Enum }}
+			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+			{{- else }}
+			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
+			{{- end }}
+			{{- end }}
+			res := rb.Emit()
+			{{- else }}
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			{{- end }}
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
