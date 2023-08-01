@@ -6,8 +6,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"regexp"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/finder"
 )
 
 type MatchingCriteria struct {
@@ -47,26 +48,7 @@ type sortRuleImpl struct {
 
 // findFiles gets a list of paths given an array of glob patterns to include and exclude
 func (f MatchingCriteria) findFiles() ([]string, error) {
-	all := make([]string, 0, len(f.Include))
-	for _, include := range f.Include {
-		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
-	INCLUDE:
-		for _, match := range matches {
-			for _, exclude := range f.Exclude {
-				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
-					continue INCLUDE
-				}
-			}
-
-			for _, existing := range all {
-				if existing == match {
-					continue INCLUDE
-				}
-			}
-
-			all = append(all, match)
-		}
-	}
+	all := finder.FindFiles(f.Include, f.Exclude)
 
 	if len(all) == 0 || len(f.OrderingCriteria.SortBy) == 0 {
 		return all, nil
