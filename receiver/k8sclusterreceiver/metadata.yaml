@@ -245,6 +245,12 @@ metrics:
     unit: 1
     gauge:
       value_type: int
+  k8s.pod.status_reason:
+    enabled: false
+    description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
+    unit: 1
+    gauge:
+      value_type: int
 
   k8s.deployment.desired:
     enabled: true
