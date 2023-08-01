@@ -11,6 +11,470 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+type metricSplunkDataIndexesExtendedBucketCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.count")
+	m.data.SetDescription("Count of buckets per index")
+	m.data.SetUnit("{Buckets}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketCount {
+	m := metricSplunkDataIndexesExtendedBucketCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedBucketDirsCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.dirs.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketDirsCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.dirs.count")
+	m.data.SetDescription("Count of buckets")
+	m.data.SetUnit("{Buckets}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketDirsCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+	dp.Attributes().PutStr("bucket.dir", bucketDirAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketDirsCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketDirsCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketDirsCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketDirsCount {
+	m := metricSplunkDataIndexesExtendedBucketDirsCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedBucketDirsSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.dirs.size metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketDirsSize) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.dirs.size")
+	m.data.SetDescription("Size (fractional MB) on disk of this bucket super-directory")
+	m.data.SetUnit("MBy")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketDirsSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+	dp.Attributes().PutStr("bucket.dir", bucketDirAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketDirsSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketDirsSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketDirsSize(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketDirsSize {
+	m := metricSplunkDataIndexesExtendedBucketDirsSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedBucketEventCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.event.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketEventCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.event.count")
+	m.data.SetDescription("Count of events in this bucket super-directory")
+	m.data.SetUnit("{Events}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+	dp.Attributes().PutStr("bucket.dir", bucketDirAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketEventCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketEventCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketEventCount {
+	m := metricSplunkDataIndexesExtendedBucketEventCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedBucketHotCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.hot.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketHotCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.hot.count")
+	m.data.SetDescription("(If size > 0) Number of hot buckets")
+	m.data.SetUnit("{Buckets}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+	dp.Attributes().PutStr("bucket.dir", bucketDirAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketHotCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketHotCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketHotCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketHotCount {
+	m := metricSplunkDataIndexesExtendedBucketHotCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedBucketWarmCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.bucket.warm.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedBucketWarmCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.bucket.warm.count")
+	m.data.SetDescription("(If size > 0) Number of warm buckets")
+	m.data.SetUnit("{Buckets}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+	dp.Attributes().PutStr("bucket.dir", bucketDirAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedBucketWarmCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedBucketWarmCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedBucketWarmCount(cfg MetricConfig) metricSplunkDataIndexesExtendedBucketWarmCount {
+	m := metricSplunkDataIndexesExtendedBucketWarmCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedEventCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.event.count metric with initial data.
+func (m *metricSplunkDataIndexesExtendedEventCount) init() {
+	m.data.SetName("splunk.data.indexes.extended.event.count")
+	m.data.SetDescription("Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.")
+	m.data.SetUnit("{Events}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, indexNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedEventCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedEventCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedEventCount(cfg MetricConfig) metricSplunkDataIndexesExtendedEventCount {
+	m := metricSplunkDataIndexesExtendedEventCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedRawSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.raw.size metric with initial data.
+func (m *metricSplunkDataIndexesExtendedRawSize) init() {
+	m.data.SetName("splunk.data.indexes.extended.raw.size")
+	m.data.SetDescription("Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen")
+	m.data.SetUnit("MBy")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, indexNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedRawSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedRawSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedRawSize(cfg MetricConfig) metricSplunkDataIndexesExtendedRawSize {
+	m := metricSplunkDataIndexesExtendedRawSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSplunkDataIndexesExtendedTotalSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.data.indexes.extended.total.size metric with initial data.
+func (m *metricSplunkDataIndexesExtendedTotalSize) init() {
+	m.data.SetName("splunk.data.indexes.extended.total.size")
+	m.data.SetDescription("Size (fractional MB) on disk of this index")
+	m.data.SetUnit("MBy")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, indexNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("index.name", indexNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkDataIndexesExtendedTotalSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkDataIndexesExtendedTotalSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkDataIndexesExtendedTotalSize(cfg MetricConfig) metricSplunkDataIndexesExtendedTotalSize {
+	m := metricSplunkDataIndexesExtendedTotalSize{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkLicenseIndexUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -65,12 +529,21 @@ func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndex
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                     pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity               int                 // maximum observed number of metrics per resource.
-	resourceCapacity              int                 // maximum observed number of resource attributes.
-	metricsBuffer                 pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                     component.BuildInfo // contains version information
-	metricSplunkLicenseIndexUsage metricSplunkLicenseIndexUsage
+	startTime                                        pcommon.Timestamp   // start time that will be applied to all recorded data points.
+	metricsCapacity                                  int                 // maximum observed number of metrics per resource.
+	metricsBuffer                                    pmetric.Metrics     // accumulates metrics data before emitting.
+	buildInfo                                        component.BuildInfo // contains version information
+	metricSplunkDataIndexesExtendedBucketCount       metricSplunkDataIndexesExtendedBucketCount
+	metricSplunkDataIndexesExtendedBucketDirsCount   metricSplunkDataIndexesExtendedBucketDirsCount
+	metricSplunkDataIndexesExtendedBucketDirsSize    metricSplunkDataIndexesExtendedBucketDirsSize
+	metricSplunkDataIndexesExtendedBucketEventCount  metricSplunkDataIndexesExtendedBucketEventCount
+	metricSplunkDataIndexesExtendedBucketHotCount    metricSplunkDataIndexesExtendedBucketHotCount
+	metricSplunkDataIndexesExtendedBucketWarmCount   metricSplunkDataIndexesExtendedBucketWarmCount
+	metricSplunkDataIndexesExtendedEventCount        metricSplunkDataIndexesExtendedEventCount
+	metricSplunkDataIndexesExtendedRawSize           metricSplunkDataIndexesExtendedRawSize
+	metricSplunkDataIndexesExtendedTotalSize         metricSplunkDataIndexesExtendedTotalSize
+	metricSplunkLicenseIndexUsage                    metricSplunkLicenseIndexUsage
+	metricSplunkServerIntrospectionIndexerThroughput metricSplunkServerIntrospectionIndexerThroughput
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -101,13 +574,18 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	}
+}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
@@ -136,7 +614,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/splunkenterprisereceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)

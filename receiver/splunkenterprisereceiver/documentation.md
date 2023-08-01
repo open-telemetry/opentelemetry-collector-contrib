@@ -12,6 +12,63 @@ metrics:
     enabled: false
 ```
 
+### splunk.data.indexes.extended.bucket.count
+
+Count of buckets per index
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Buckets} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.data.indexes.extended.event.count
+
+Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Events} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.data.indexes.extended.raw.size
+
+Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| MBy | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.data.indexes.extended.total.size
+
+Size (fractional MB) on disk of this index
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| MBy | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+
+>>>>>>> make generate
 ### splunk.license.index.usage
 
 Gauge tracking the indexed license usage per index
@@ -25,3 +82,104 @@ Gauge tracking the indexed license usage per index
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | index.name | The name of the index reporting a specific KPI | Any Str |
+<<<<<<< HEAD
+=======
+
+### splunk.server.introspection.indexer.throughput
+
+Gauge tracking average KBps throughput of indexer
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| KBy | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The status message reported for a specific object | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### splunk.data.indexes.extended.bucket.dirs.count
+
+Count of buckets
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Buckets} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+| bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+
+### splunk.data.indexes.extended.bucket.dirs.size
+
+Size (fractional MB) on disk of this bucket super-directory
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| MBy | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+| bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+
+### splunk.data.indexes.extended.bucket.event.count
+
+Count of events in this bucket super-directory
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Events} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+| bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+
+### splunk.data.indexes.extended.bucket.hot.count
+
+(If size > 0) Number of hot buckets
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Buckets} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+| bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+
+### splunk.data.indexes.extended.bucket.warm.count
+
+(If size > 0) Number of warm buckets
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {Buckets} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| index.name | The name of the index reporting a specific KPI | Any Str |
+| bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
