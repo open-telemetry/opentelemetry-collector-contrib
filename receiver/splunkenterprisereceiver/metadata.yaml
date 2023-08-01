@@ -43,7 +43,7 @@ metrics:
   splunk.data.indexes.extended.event.count:
     enabled: true
     description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
-    unit: 
+    unit: "{Events}" 
     gauge:
       value_type: int
     attributes: [index.name]
