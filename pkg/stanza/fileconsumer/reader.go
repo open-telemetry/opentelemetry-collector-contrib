@@ -29,10 +29,8 @@ type readerConfig struct {
 	includeFilePathResolved bool
 }
 
-// Reader manages a single file
-//
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-type Reader struct {
+// reader manages a single file
+type reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
 	lineSplitFunc bufio.SplitFunc
@@ -52,7 +50,7 @@ type Reader struct {
 }
 
 // offsetToEnd sets the starting offset
-func (r *Reader) offsetToEnd() error {
+func (r *reader) offsetToEnd() error {
 	info, err := r.file.Stat()
 	if err != nil {
 		return fmt.Errorf("stat: %w", err)
@@ -62,7 +60,7 @@ func (r *Reader) offsetToEnd() error {
 }
 
 // ReadToEnd will read until the end of the file
-func (r *Reader) ReadToEnd(ctx context.Context) {
+func (r *reader) ReadToEnd(ctx context.Context) {
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return
@@ -116,7 +114,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 }
 
-func (r *Reader) finalizeHeader() {
+func (r *reader) finalizeHeader() {
 	if err := r.headerReader.Stop(); err != nil {
 		r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 	}
@@ -125,7 +123,7 @@ func (r *Reader) finalizeHeader() {
 }
 
 // Close will close the file
-func (r *Reader) Close() {
+func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
@@ -140,7 +138,7 @@ func (r *Reader) Close() {
 }
 
 // Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (int, error) {
+func (r *reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
 	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
