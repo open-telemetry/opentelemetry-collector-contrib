@@ -14,11 +14,11 @@ import (
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, ns *corev1.Namespace) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, ns *corev1.Namespace) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceUID(string(ns.UID))
 	rb.SetK8sNamespaceName(ns.Name)
 	rb.SetOpencensusResourcetype("k8s")

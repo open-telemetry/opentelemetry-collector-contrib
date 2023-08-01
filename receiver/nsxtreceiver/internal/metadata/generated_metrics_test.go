@@ -82,8 +82,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetDeviceID("device.id-val")
+			rb.SetNsxtNodeID("nsxt.node.id-val")
+			rb.SetNsxtNodeName("nsxt.node.name-val")
+			rb.SetNsxtNodeType("nsxt.node.type-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

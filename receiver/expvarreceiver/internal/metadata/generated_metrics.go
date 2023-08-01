@@ -1336,10 +1336,11 @@ func newMetricProcessRuntimeMemstatsTotalAlloc(cfg MetricConfig) metricProcessRu
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                 pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                 // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo // contains version information
+	config                                    MetricsBuilderConfig // config of the metrics builder.
+	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                           int                  // maximum observed number of metrics per resource.
+	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                 component.BuildInfo  // contains version information.
 	metricProcessRuntimeMemstatsBuckHashSys   metricProcessRuntimeMemstatsBuckHashSys
 	metricProcessRuntimeMemstatsFrees         metricProcessRuntimeMemstatsFrees
 	metricProcessRuntimeMemstatsGcCPUFraction metricProcessRuntimeMemstatsGcCPUFraction
@@ -1380,11 +1381,12 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                                 pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                             pmetric.NewMetrics(),
-		buildInfo:                                 settings.BuildInfo,
-		metricProcessRuntimeMemstatsBuckHashSys:   newMetricProcessRuntimeMemstatsBuckHashSys(mbc.Metrics.ProcessRuntimeMemstatsBuckHashSys),
-		metricProcessRuntimeMemstatsFrees:         newMetricProcessRuntimeMemstatsFrees(mbc.Metrics.ProcessRuntimeMemstatsFrees),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricProcessRuntimeMemstatsBuckHashSys: newMetricProcessRuntimeMemstatsBuckHashSys(mbc.Metrics.ProcessRuntimeMemstatsBuckHashSys),
+		metricProcessRuntimeMemstatsFrees:       newMetricProcessRuntimeMemstatsFrees(mbc.Metrics.ProcessRuntimeMemstatsFrees),
 		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(mbc.Metrics.ProcessRuntimeMemstatsGcCPUFraction),
 		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(mbc.Metrics.ProcessRuntimeMemstatsGcSys),
 		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(mbc.Metrics.ProcessRuntimeMemstatsHeapAlloc),

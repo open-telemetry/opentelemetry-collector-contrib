@@ -127,7 +127,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewLatency(settings, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
@@ -225,7 +225,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		stats.Record(
 			p.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
-
 		if err != nil {
 			samplingDecision[sampling.Error] = true
 			trace.Decisions[i] = sampling.NotSampled
