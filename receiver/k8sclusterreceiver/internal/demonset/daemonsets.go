@@ -31,15 +31,15 @@ func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, ds *appsv1.DaemonSet) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, ds *appsv1.DaemonSet) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mbphase.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled))
 	mbphase.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled))
 	mbphase.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))
 	mbphase.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceName(ds.Namespace)
 	rb.SetK8sDaemonsetName(ds.Name)
 	rb.SetK8sDaemonsetUID(string(ds.UID))
