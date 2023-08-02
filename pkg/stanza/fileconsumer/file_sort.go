@@ -27,7 +27,7 @@ type sortRule interface {
 	sort(re *regexp.Regexp, files []string) ([]string, error)
 }
 
-func (sr *sortRuleImpl) Unmarshal(component *confmap.Conf) error {
+func (sr *SortRuleImpl) Unmarshal(component *confmap.Conf) error {
 	if !component.IsSet("sort_type") {
 		return fmt.Errorf("missing required field 'sort_type'")
 	}

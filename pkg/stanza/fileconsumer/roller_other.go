@@ -12,20 +12,20 @@ import (
 )
 
 type detectLostFiles struct {
-	oldReaders []*reader
+	oldReaders []*Reader
 }
 
 func newRoller() roller {
-	return &detectLostFiles{[]*reader{}}
+	return &detectLostFiles{[]*Reader{}}
 }
 
-func (r *detectLostFiles) readLostFiles(ctx context.Context, newReaders []*reader) {
+func (r *detectLostFiles) readLostFiles(ctx context.Context, readers []*Reader) {
 	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*reader, 0, len(r.oldReaders))
+	lostReaders := make([]*Reader, 0, len(r.oldReaders))
 OUTER:
 	for _, oldReader := range r.oldReaders {
-		for _, newReader := range newReaders {
-			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+		for _, reader := range readers {
+			if reader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
 			}
 		}
@@ -33,26 +33,26 @@ OUTER:
 	}
 
 	var lostWG sync.WaitGroup
-	for _, lostReader := range lostReaders {
+	for _, reader := range lostReaders {
 		lostWG.Add(1)
-		go func(r *reader) {
+		go func(r *Reader) {
 			defer lostWG.Done()
 			r.ReadToEnd(ctx)
-		}(lostReader)
+		}(reader)
 	}
 	lostWG.Wait()
 }
 
-func (r *detectLostFiles) roll(_ context.Context, newReaders []*reader) {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
+func (r *detectLostFiles) roll(_ context.Context, readers []*Reader) {
+	for _, reader := range r.oldReaders {
+		reader.Close()
 	}
 
-	r.oldReaders = newReaders
+	r.oldReaders = readers
 }
 
 func (r *detectLostFiles) cleanup() {
-	for _, oldReader := range r.oldReaders {
-		oldReader.Close()
+	for _, reader := range r.oldReaders {
+		reader.Close()
 	}
 }

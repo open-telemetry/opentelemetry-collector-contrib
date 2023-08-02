@@ -164,10 +164,10 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
 					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
-					cfg.OrderingCriteria.SortBy = []sortRuleImpl{
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
 							&TimestampSortRule{
-								baseSortRule: baseSortRule{
+								BaseSortRule: BaseSortRule{
 									SortType:  sortTypeTimestamp,
 									RegexKey:  "rotation_time",
 									Ascending: true,
@@ -185,10 +185,10 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
 					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
-					cfg.OrderingCriteria.SortBy = []sortRuleImpl{
+					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
 						{
 							&NumericSortRule{
-								baseSortRule: baseSortRule{
+								BaseSortRule: BaseSortRule{
 									SortType: sortTypeNumeric,
 									RegexKey: "file_num",
 								},
@@ -575,10 +575,10 @@ func TestBuild(t *testing.T) {
 		{
 			"BadOrderingCriteriaRegex",
 			func(f *Config) {
-				f.OrderingCriteria.SortBy = []sortRuleImpl{
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
 						&NumericSortRule{
-							baseSortRule: baseSortRule{
+							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeNumeric,
 							},
@@ -593,10 +593,10 @@ func TestBuild(t *testing.T) {
 			"BasicOrderingCriteriaTimetsamp",
 			func(f *Config) {
 				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []sortRuleImpl{
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
 						&TimestampSortRule{
-							baseSortRule: baseSortRule{
+							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,
 							},
@@ -611,10 +611,10 @@ func TestBuild(t *testing.T) {
 			"GoodOrderingCriteriaTimestamp",
 			func(f *Config) {
 				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []sortRuleImpl{
+				f.OrderingCriteria.SortBy = []SortRuleImpl{
 					{
 						&TimestampSortRule{
-							baseSortRule: baseSortRule{
+							BaseSortRule: BaseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,
 							},

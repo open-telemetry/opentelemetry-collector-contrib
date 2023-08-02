@@ -14,13 +14,13 @@ func newRoller() roller {
 	return &closeImmediately{}
 }
 
-func (r *closeImmediately) readLostFiles(ctx context.Context, newReaders []*reader) {
+func (r *closeImmediately) readLostFiles(ctx context.Context, readers []*Reader) {
 	return
 }
 
-func (r *closeImmediately) roll(_ context.Context, newReaders []*reader) {
-	for _, newReader := range newReaders {
-		newReader.Close()
+func (r *closeImmediately) roll(_ context.Context, readers []*Reader) {
+	for _, reader := range readers {
+		reader.Close()
 	}
 }
 

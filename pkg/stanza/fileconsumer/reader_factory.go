@@ -26,15 +26,15 @@ type readerFactory struct {
 	headerConfig    *header.Config
 }
 
-func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
+func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
 	return f.newReaderBuilder().
 		withFile(file).
 		withFingerprint(fp).
 		build()
 }
 
-// copy creates a deep copy of a reader
-func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
+// copy creates a deep copy of a Reader
+func (f *readerFactory) copy(old *Reader, newFile *os.File) (*Reader, error) {
 	return f.newReaderBuilder().
 		withFile(newFile).
 		withFingerprint(old.Fingerprint.Copy()).
@@ -45,7 +45,7 @@ func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
 		build()
 }
 
-func (f *readerFactory) unsafeReader() (*reader, error) {
+func (f *readerFactory) unsafeReader() (*Reader, error) {
 	return f.newReaderBuilder().build()
 }
 
@@ -97,8 +97,8 @@ func (b *readerBuilder) withFileAttributes(attrs map[string]any) *readerBuilder 
 	return b
 }
 
-func (b *readerBuilder) build() (r *reader, err error) {
-	r = &reader{
+func (b *readerBuilder) build() (r *Reader, err error) {
+	r = &Reader{
 		readerConfig:    b.readerConfig,
 		Offset:          b.offset,
 		HeaderFinalized: b.headerFinalized,
