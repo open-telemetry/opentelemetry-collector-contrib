@@ -5,6 +5,8 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 import (
 	"context"
+	"encoding/json"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"

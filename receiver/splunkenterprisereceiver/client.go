@@ -6,9 +6,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 import (
 	"crypto/tls"
 	"encoding/base64"
-	"encoding/xml"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"

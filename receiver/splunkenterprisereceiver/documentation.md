@@ -12,7 +12,6 @@ metrics:
     enabled: false
 ```
 
-<<<<<<< HEAD
 ### splunk.data.indexes.extended.bucket.count
 
 Count of buckets per index

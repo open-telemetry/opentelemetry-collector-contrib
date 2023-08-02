@@ -526,6 +526,57 @@ func newMetricSplunkLicenseIndexUsage(cfg MetricConfig) metricSplunkLicenseIndex
 	return m
 }
 
+type metricSplunkServerIntrospectionIndexerThroughput struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.server.introspection.indexer.throughput metric with initial data.
+func (m *metricSplunkServerIntrospectionIndexerThroughput) init() {
+	m.data.SetName("splunk.server.introspection.indexer.throughput")
+	m.data.SetDescription("Gauge tracking average KBps throughput of indexer")
+	m.data.SetUnit("KBy")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkServerIntrospectionIndexerThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, statusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("status", statusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkServerIntrospectionIndexerThroughput) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkServerIntrospectionIndexerThroughput) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkServerIntrospectionIndexerThroughput(cfg MetricConfig) metricSplunkServerIntrospectionIndexerThroughput {
+	m := metricSplunkServerIntrospectionIndexerThroughput{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -630,7 +681,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/splunkenterprisereceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSplunkDataIndexesExtendedBucketCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedBucketDirsCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedBucketDirsSize.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedBucketEventCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedBucketHotCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedBucketWarmCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedEventCount.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedRawSize.emit(ils.Metrics())
+	mb.metricSplunkDataIndexesExtendedTotalSize.emit(ils.Metrics())
 	mb.metricSplunkLicenseIndexUsage.emit(ils.Metrics())
+	mb.metricSplunkServerIntrospectionIndexerThroughput.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -651,9 +712,59 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
+// RecordSplunkDataIndexesExtendedBucketCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedBucketDirsCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.dirs.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketDirsCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketDirsCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue, bucketDirAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedBucketDirsSizeDataPoint adds a data point to splunk.data.indexes.extended.bucket.dirs.size metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketDirsSizeDataPoint(ts pcommon.Timestamp, val float64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketDirsSize.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue, bucketDirAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedBucketEventCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.event.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketEventCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue, bucketDirAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedBucketHotCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.hot.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketHotCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue, bucketDirAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.warm.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string, bucketDirAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketWarmCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue, bucketDirAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedEventCountDataPoint adds a data point to splunk.data.indexes.extended.event.count metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedEventCountDataPoint(ts pcommon.Timestamp, val int64, indexNameAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedEventCount.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedRawSizeDataPoint adds a data point to splunk.data.indexes.extended.raw.size metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts pcommon.Timestamp, val float64, indexNameAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedRawSize.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue)
+}
+
+// RecordSplunkDataIndexesExtendedTotalSizeDataPoint adds a data point to splunk.data.indexes.extended.total.size metric.
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts pcommon.Timestamp, val float64, indexNameAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedTotalSize.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue)
+}
+
 // RecordSplunkLicenseIndexUsageDataPoint adds a data point to splunk.license.index.usage metric.
 func (mb *MetricsBuilder) RecordSplunkLicenseIndexUsageDataPoint(ts pcommon.Timestamp, val float64, indexNameAttributeValue string) {
 	mb.metricSplunkLicenseIndexUsage.recordDataPoint(mb.startTime, ts, val, indexNameAttributeValue)
+}
+
+// RecordSplunkServerIntrospectionIndexerThroughputDataPoint adds a data point to splunk.server.introspection.indexer.throughput metric.
+func (mb *MetricsBuilder) RecordSplunkServerIntrospectionIndexerThroughputDataPoint(ts pcommon.Timestamp, val float64, statusAttributeValue string) {
+	mb.metricSplunkServerIntrospectionIndexerThroughput.recordDataPoint(mb.startTime, ts, val, statusAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
