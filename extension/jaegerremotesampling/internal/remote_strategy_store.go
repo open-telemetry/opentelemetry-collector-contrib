@@ -16,7 +16,6 @@ import (
 )
 
 type grpcRemoteStrategyStore struct {
-	conn            *grpc.ClientConn
 	headerAdditions map[string]configopaque.String
 	delegate        *grpcstore.SamplingManager
 }
@@ -30,7 +29,6 @@ func NewRemoteStrategyStore(
 	grpcClientSettings *configgrpc.GRPCClientSettings,
 ) strategystore.StrategyStore {
 	return &grpcRemoteStrategyStore{
-		conn:            conn,
 		headerAdditions: grpcClientSettings.Headers,
 		delegate:        grpcstore.NewConfigManager(conn),
 	}
