@@ -456,9 +456,11 @@ kubectl apply -f config.yaml
 <br/><br/>
 
 ### Cluster ReplicaSet
-| Metric                       | Unit  |
-|------------------------------|-------|
-| status_replicas_available    | Count |
+| Metric                     | Unit  |
+|----------------------------|-------|
+| replicaset_spec_replicas   | Count |
+| replicaset_status_replicas | Count |
+| status_replicas_available  | Count |
 
 <br/><br/>
 | Resource Attribute |
@@ -475,9 +477,11 @@ kubectl apply -f config.yaml
 
 <br/><br/>
 ### Cluster StatefulSet
-| Metric                        | Unit  |
-|-------------------------------|-------|
-| status_replicas_available     | Count |
+| Metric                      | Unit  |
+|-----------------------------|-------|
+| statefulset_spec_replicas   | Count |
+| statefulset_status_replicas | Count |
+| status_replicas_available   | Count |
 
 
 <br/><br/>

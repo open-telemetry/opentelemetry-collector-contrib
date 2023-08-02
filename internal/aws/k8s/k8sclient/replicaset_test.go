@@ -41,6 +41,13 @@ var replicaSetArray = []runtime.Object{
 				},
 			},
 		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &desired,
+		},
+		Status: appsv1.ReplicaSetStatus{
+			Replicas:          5,
+			AvailableReplicas: 5,
+		},
 	},
 	&appsv1.ReplicaSet{
 		ObjectMeta: metav1.ObjectMeta{
@@ -54,6 +61,13 @@ var replicaSetArray = []runtime.Object{
 					UID:  "219887d3-8d2e-11e9-9cbd-064a0c5a2714",
 				},
 			},
+		},
+		Spec: appsv1.ReplicaSetSpec{
+			Replicas: &desired,
+		},
+		Status: appsv1.ReplicaSetStatus{
+			Replicas:          5,
+			AvailableReplicas: 5,
 		},
 	},
 	&appsv1.ReplicaSet{
@@ -129,7 +143,8 @@ func TestReplicaSetClient(t *testing.T) {
 	expected := []*ReplicaSetInfo{
 		{
 			Name:      "test-replicaset-1",
-			Namespace: "test-namespace",
+			Namespace: "amazon-cloudwatch",
+			Owners:    []*ReplicaSetOwner{},
 			Spec: &ReplicaSetSpec{
 				Replicas: 20,
 			},
@@ -140,7 +155,8 @@ func TestReplicaSetClient(t *testing.T) {
 		},
 		{
 			Name:      "test-replicaset-2",
-			Namespace: "test-namespace",
+			Namespace: "amazon-cloudwatch",
+			Owners:    []*ReplicaSetOwner{},
 			Spec: &ReplicaSetSpec{
 				Replicas: 20,
 			},
