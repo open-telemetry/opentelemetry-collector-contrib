@@ -225,7 +225,7 @@ This function supports Histograms, ExponentialHistograms and Summaries.
 
 `extract_sum_metric(is_monotonic, aggregation_temporality)`
 
-The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
+The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value. If the sum value of a Histogram or ExponentialHistogram data point is missing, no data point is added to the output metric. A metric will only be created if there is at least one data point.
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric. `aggregation_temporality` is an enum(`AGGREGATION_TEMPORALITY_DELTA` or `AGGREGATION_TEMPORALITY_CUMULATIVE`) representing the desired aggregation temporality of the new metric.
 
