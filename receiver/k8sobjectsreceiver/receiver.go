@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -146,20 +147,36 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
-		return resource.Watch(ctx, metav1.ListOptions{
-			FieldSelector: config.FieldSelector,
-			LabelSelector: config.LabelSelector,
-		})
+	resourceVersion := config.ResourceVersion
+	var err error
+	if resourceVersion == "" {
+		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
+		// to get the initial state and a useable resourceVersion.
+		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
+		resourceVersion, err = kr.doInitialList(ctx, config, resource)
+		kr.setting.Logger.Info("starting resourceVersion", zap.String("resourceVersion", resourceVersion))
+		if err != nil {
+			kr.setting.Logger.Error("could not perform initial list for watch", zap.String("resource", config.gvr.String()), zap.Error(err))
+			return
+		}
+		if resourceVersion == "" {
+			resourceVersion = defaultResourceVersion
+		}
 	}
 
-	watch, err := watch.NewRetryWatcher(config.ResourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
+	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
+		options.FieldSelector = config.FieldSelector
+		options.LabelSelector = config.LabelSelector
+		return resource.Watch(ctx, options)
+	}
+
+	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
 		return
 	}
 
-	res := watch.ResultChan()
+	res := watcher.ResultChan()
 	for {
 		select {
 		case data, ok := <-res:
@@ -167,16 +184,43 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
-			logs := watchObjectsToLogData(&data, time.Now(), config)
-
-			obsCtx := kr.obsrecv.StartLogsOp(ctx)
-			err := kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
+			logs, err := watchObjectsToLogData(&data, time.Now(), config)
+			if err != nil {
+				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+			} else {
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				err := kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
+			}
 		case <-stopperChan:
-			watch.Stop()
+			watcher.Stop()
 			return
 		}
 	}
+
+}
+
+func (kr *k8sobjectsreceiver) doInitialList(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
+	objects, err := resource.List(ctx, metav1.ListOptions{
+		FieldSelector: config.FieldSelector,
+		LabelSelector: config.LabelSelector,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	if objects == nil {
+		return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+	}
+
+	if len(objects.Items) > 0 {
+		logs := pullObjectsToLogData(objects, time.Now(), config)
+		obsCtx := kr.obsrecv.StartLogsOp(ctx)
+		err = kr.consumer.ConsumeLogs(obsCtx, logs)
+		kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
+	}
+
+	return objects.GetResourceVersion(), nil
 
 }
 
