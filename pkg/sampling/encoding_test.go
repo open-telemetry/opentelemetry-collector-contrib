@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"math"
 	"math/rand"
 	"testing"
 
@@ -40,74 +39,32 @@ func mustNot[T any](t T, err error) error {
 	return err
 }
 
-func TestValidAdjustedCountToTvalue(t *testing.T) {
-	require.Equal(t, "0", must(AdjustedCountToEncoded(0)))
-	require.Equal(t, "1", must(AdjustedCountToEncoded(1)))
-	require.Equal(t, "2", must(AdjustedCountToEncoded(2)))
-
-	const largest uint64 = 0x1p+56
-	require.Equal(t, "72057594037927936", must(AdjustedCountToEncoded(largest)))
-	require.Equal(t, fmt.Sprint(largest-1), must(AdjustedCountToEncoded(largest-1)))
+func TestValidProbabilityToTValue(t *testing.T) {
+	require.Equal(t, "8", must(ProbabilityToTValue(0.5)))
+	require.Equal(t, "00000000000001", must(ProbabilityToTValue(0x1p-56)))
+	require.Equal(t, "55555555555554", must(ProbabilityToTValue(1/3.)))
+	require.Equal(t, "54", must(ProbabilityToTValue(0x54p-8))) // 0x54p-8 is approximately 1/3
+	require.Equal(t, "01", must(ProbabilityToTValue(0x1p-8)))
+	require.Equal(t, "0", must(ProbabilityToTValue(0)))
 }
 
-func TestInvalidAdjustedCountToEncoded(t *testing.T) {
-	// Because unsigned, no too-small value.
-	require.Error(t, mustNot(AdjustedCountToEncoded(0x1p56+1)))
-	require.Error(t, mustNot(AdjustedCountToEncoded(math.MaxInt64)))
-}
-
-func TestValidProbabilityToEncoded(t *testing.T) {
-	require.Equal(t, "0x1p-01", must(ProbabilityToEncoded(0.5, 'x', -1)))
-	require.Equal(t, "0x1p-56", must(ProbabilityToEncoded(0x1p-56, 'x', -1)))
-	require.Equal(t, "0x1.555p-02", must(ProbabilityToEncoded(1/3., 'x', 3)))
-	require.Equal(t, "0", must(ProbabilityToEncoded(0, 'x', 3)))
-	require.Equal(t, "0", must(ProbabilityToEncoded(0, 'f', 4)))
-}
-
-func TestInvalidProbabilityToEncoded(t *testing.T) {
+func TestInvalidProbabilityToTValue(t *testing.T) {
 	// Too small
-	require.Error(t, mustNot(ProbabilityToEncoded(0x1p-57, 'x', -1)))
-	require.Error(t, mustNot(ProbabilityToEncoded(0x1p-57, 'x', 0)))
+	require.Error(t, mustNot(ProbabilityToTValue(0x1p-57)))
+	require.Error(t, mustNot(ProbabilityToTValue(0x1p-57)))
 
 	// Too big
-	require.Error(t, mustNot(ProbabilityToEncoded(1.1, 'x', -1)))
-	require.Error(t, mustNot(ProbabilityToEncoded(1.1, 'x', 0)))
-
-	// Bad precision
-	require.Error(t, mustNot(ProbabilityToEncoded(0.5, 'x', -3)))
-	require.Error(t, mustNot(ProbabilityToEncoded(0.5, 'x', 15)))
+	require.Error(t, mustNot(ProbabilityToTValue(1.1)))
+	require.Error(t, mustNot(ProbabilityToTValue(1.1)))
 }
 
-func testTValueToProb(tv string) (float64, error) {
-	p, _, err := EncodedToProbabilityAndAdjustedCount(tv)
-	return p, err
-}
+func TestTValueToProbability(t *testing.T) {
+	require.Equal(t, 0.5, must(TValueToProbability("8")))
+	require.Equal(t, 0x444p-12, must(TValueToProbability("444")))
+	require.Equal(t, 0.0, must(TValueToProbability("0")))
 
-func testTValueToAdjCount(tv string) (float64, error) {
-	_, ac, err := EncodedToProbabilityAndAdjustedCount(tv)
-	return ac, err
-}
-
-func TestEncodedToProbability(t *testing.T) {
-	require.Equal(t, 0.5, must(testTValueToProb("0.5")))
-	require.Equal(t, 0.444, must(testTValueToProb("0.444")))
-	require.Equal(t, 1.0, must(testTValueToProb("1")))
-	require.Equal(t, 0.0, must(testTValueToProb("0")))
-
-	require.InEpsilon(t, 1/3., must(testTValueToProb("3")), 1e-9)
-}
-
-func TestEncodedToAdjCount(t *testing.T) {
-	require.Equal(t, 2.0, must(testTValueToAdjCount("0.5")))
-	require.Equal(t, 2.0, must(testTValueToAdjCount("2")))
-	require.Equal(t, 3., must(testTValueToAdjCount("3")))
-	require.Equal(t, 5., must(testTValueToAdjCount("5")))
-
-	require.InEpsilon(t, 1/0.444, must(testTValueToAdjCount("0.444")), 1e-9)
-	require.InEpsilon(t, 1/0.111111, must(testTValueToAdjCount("0.111111")), 1e-9)
-
-	require.Equal(t, 1.0, must(testTValueToAdjCount("1")))
-	require.Equal(t, 0.0, must(testTValueToAdjCount("0")))
+	// 0x55555554p-32 is very close to 1/3
+	require.InEpsilon(t, 1/3., must(TValueToProbability("55555554")), 1e-9)
 }
 
 func TestProbabilityToThreshold(t *testing.T) {
@@ -124,12 +81,48 @@ func TestProbabilityToThreshold(t *testing.T) {
 		Threshold{2},
 		must(ProbabilityToThreshold(0x1p-55)))
 	require.Equal(t,
-		Threshold{MaxAdjustedCount},
+		Threshold{1 / MinSamplingProb},
 		must(ProbabilityToThreshold(1.0)))
 
 	require.Equal(t,
-		Threshold{0x1.555p-2 * MaxAdjustedCount},
-		must(ProbabilityToThreshold(0x1.555p-2)))
+		Threshold{0x555p-12 / MinSamplingProb},
+		must(TValueToThreshold("555")))
+	require.Equal(t,
+		Threshold{0x123p-20 / MinSamplingProb},
+		must(TValueToThreshold("00123")))
+}
+
+func TestShouldSample(t *testing.T) {
+	// Test four boundary conditions for 50% sampling,
+	thresh := must(ProbabilityToThreshold(0.5))
+	// Smallest TraceID that should sample.
+	require.True(t, thresh.ShouldSample(RandomnessFromTraceID(pcommon.TraceID{
+		// 9 meaningless bytes
+		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
+		0, // randomness starts here
+		0, 0, 0, 0, 0, 0,
+	})))
+	// Largest TraceID that should sample.
+	require.True(t, thresh.ShouldSample(RandomnessFromTraceID(pcommon.TraceID{
+		// 9 meaningless bytes
+		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
+		0x7f, // randomness starts here
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	})))
+	// Smallest TraceID that should NOT sample.
+	require.False(t, thresh.ShouldSample(RandomnessFromTraceID(pcommon.TraceID{
+		// 9 meaningless bytes
+		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
+		0x80, // randomness starts here
+		0, 0, 0, 0, 0, 0,
+	})))
+	// Largest TraceID that should NOT sample.
+	require.False(t, thresh.ShouldSample(RandomnessFromTraceID(pcommon.TraceID{
+		// 9 meaningless bytes
+		0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee,
+		0xff, // randomness starts here
+		0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+	})))
 }
 
 // The two benchmarks below were used to choose the implementation for

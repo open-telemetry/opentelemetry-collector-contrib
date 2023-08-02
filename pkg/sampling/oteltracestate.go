@@ -1,7 +1,6 @@
 package sampling
 
 import (
-	"fmt"
 	"io"
 	"regexp"
 	"strconv"
@@ -10,13 +9,11 @@ import (
 type OTelTraceState struct {
 	commonTraceState
 
-	// sampling r, s, and t-values
-	ru Randomness // r value parsed, as unsigned
-	r  string     // 14 ASCII hex digits
-	sp float64    // s value parsed, as a probability
-	s  string     // original float syntax preserved
-	tt Threshold  // t value parsed, as a threshold
-	t  string     // original float syntax preserved
+	// sampling r and t-values
+	rnd Randomness // r value parsed, as unsigned
+	r   string     // 14 ASCII hex digits
+	tt  Threshold  // t value parsed, as a threshold
+	t   string     // 1-14 ASCII hex digits
 }
 
 const (
@@ -41,8 +38,6 @@ const (
 var (
 	otelTracestateRe = regexp.MustCompile(otelTracestateRegexp)
 
-	ErrRandomValueRange = fmt.Errorf("r-value out of range")
-
 	otelSyntax = keyValueScanner{
 		maxItems:  -1,
 		trim:      false,
@@ -64,31 +59,16 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 		var err error
 		switch key {
 		case "r":
-			var unsigned uint64
-			unsigned, err = strconv.ParseUint(value, 16, 64)
-			if err == nil {
-				if unsigned >= 0x1p56 {
-					err = ErrRandomValueRange
-				} else {
-					otts.r = value
-					otts.ru = Randomness{
-						unsigned: unsigned,
-					}
-				}
-			}
-		case "s":
-			var prob float64
-			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
-			if err == nil {
-				otts.s = value
-				otts.sp = prob
+			if otts.rnd, err = RValueToRandomness(value); err == nil {
+				otts.r = value
+			} else {
+				otts.rnd = Randomness{}
 			}
 		case "t":
-			var prob float64
-			prob, _, err = EncodedToProbabilityAndAdjustedCount(value)
-			if err == nil {
+			if otts.tt, err = TValueToThreshold(value); err == nil {
 				otts.t = value
-				otts.tt, _ = ProbabilityToThreshold(prob)
+			} else {
+				otts.tt = Threshold{}
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
@@ -111,24 +91,7 @@ func (otts *OTelTraceState) RValue() string {
 }
 
 func (otts *OTelTraceState) RValueRandomness() Randomness {
-	return otts.ru
-}
-
-func (otts *OTelTraceState) HasSValue() bool {
-	return otts.s != ""
-}
-
-func (otts *OTelTraceState) SValue() string {
-	return otts.s
-}
-
-func (otts *OTelTraceState) SValueProbability() float64 {
-	return otts.sp
-}
-
-func (otts *OTelTraceState) SetSValue(value string, probability float64) {
-	otts.s = value
-	otts.sp = probability
+	return otts.rnd
 }
 
 func (otts *OTelTraceState) HasTValue() bool {
@@ -154,7 +117,7 @@ func (otts *OTelTraceState) UnsetTValue() {
 }
 
 func (otts *OTelTraceState) HasAnyValue() bool {
-	return otts.HasRValue() || otts.HasSValue() || otts.HasTValue() || otts.HasExtraValues()
+	return otts.HasRValue() || otts.HasTValue() || otts.HasExtraValues()
 }
 
 func (otts *OTelTraceState) Serialize(w io.StringWriter) {
@@ -169,11 +132,6 @@ func (otts *OTelTraceState) Serialize(w io.StringWriter) {
 		sep()
 		w.WriteString("r:")
 		w.WriteString(otts.RValue())
-	}
-	if otts.HasSValue() {
-		sep()
-		w.WriteString("s:")
-		w.WriteString(otts.SValue())
 	}
 	if otts.HasTValue() {
 		sep()

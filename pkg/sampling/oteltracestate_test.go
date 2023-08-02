@@ -38,17 +38,14 @@ func TestEmptyOTelTraceState(t *testing.T) {
 }
 
 func TestOTelTraceStateTValueSerialize(t *testing.T) {
-	const orig = "r:1;s:2;t:3;a:b;c:d"
+	const orig = "r:10000000000000;t:3;a:b;c:d"
 	otts, err := NewOTelTraceState(orig)
 	require.NoError(t, err)
 	require.True(t, otts.HasTValue())
 	require.Equal(t, "3", otts.TValue())
 
-	require.True(t, otts.HasSValue())
-	require.Equal(t, "2", otts.SValue())
-
 	require.True(t, otts.HasRValue())
-	require.Equal(t, "1", otts.RValue())
+	require.Equal(t, "10000000000000", otts.RValue())
 
 	require.True(t, otts.HasAnyValue())
 	var w strings.Builder
@@ -60,7 +57,6 @@ func TestParseOTelTraceState(t *testing.T) {
 	type testCase struct {
 		in        string
 		rval      string
-		sval      string
 		tval      string
 		extra     []string
 		expectErr error
@@ -68,86 +64,78 @@ func TestParseOTelTraceState(t *testing.T) {
 	const ns = ""
 	for _, test := range []testCase{
 		// t-value correct cases
-		{"t:2", ns, ns, "2", nil, nil},
-		{"t:1", ns, ns, "1", nil, nil},
-		{"t:1", ns, ns, "1", nil, nil},
-		{"t:10", ns, ns, "10", nil, nil},
-		{"t:33", ns, ns, "33", nil, nil},
-		{"t:61", ns, ns, "61", nil, nil},
-		{"t:72057594037927936", ns, ns, "72057594037927936", nil, nil}, // max t-value = 0x1p+56
-		{"t:0x1p-56", ns, ns, "0x1p-56", nil, nil},                     // min t-value
+		{"t:2", ns, "2", nil, nil},
+		{"t:1", ns, "1", nil, nil},
+		{"t:1", ns, "1", nil, nil},
+		{"t:10", ns, "10", nil, nil},
+		{"t:33", ns, "33", nil, nil},
+		{"t:ab", ns, "ab", nil, nil},
+		{"t:61", ns, "61", nil, nil},
 
 		// syntax errors
-		{"", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"t:1;", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"t:1=p:2", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"t:1;p:2=s:3", ns, ns, ns, nil, strconv.ErrSyntax},
-		{":1;p:2=s:3", ns, ns, ns, nil, strconv.ErrSyntax},
-		{":;p:2=s:3", ns, ns, ns, nil, strconv.ErrSyntax},
-		{":;:", ns, ns, ns, nil, strconv.ErrSyntax},
-		{":", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"t:;p=1", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"t:$", ns, ns, ns, nil, strconv.ErrSyntax},      // not-hexadecimal
-		{"t:0x1p+3", ns, ns, ns, nil, strconv.ErrSyntax}, // + is invalid
+		{"", ns, ns, nil, strconv.ErrSyntax},
+		{"t:1;", ns, ns, nil, strconv.ErrSyntax},
+		{"t:1=p:2", ns, ns, nil, strconv.ErrSyntax},
+		{"t:1;p:2=s:3", ns, ns, nil, strconv.ErrSyntax},
+		{":1;p:2=s:3", ns, ns, nil, strconv.ErrSyntax},
+		{":;p:2=s:3", ns, ns, nil, strconv.ErrSyntax},
+		{":;:", ns, ns, nil, strconv.ErrSyntax},
+		{":", ns, ns, nil, strconv.ErrSyntax},
+		{"t:;p=1", ns, ns, nil, strconv.ErrSyntax},
+		{"t:$", ns, ns, nil, strconv.ErrSyntax},      // not-hexadecimal
+		{"t:0x1p+3", ns, ns, nil, strconv.ErrSyntax}, // + is invalid
+		{"t:14.5", ns, ns, nil, strconv.ErrSyntax},   // integer syntax
+		{"t:-1", ns, ns, nil, strconv.ErrSyntax},     // non-negative
 
-		// range errors
-		{"t:14.5", ns, ns, ns, nil, ErrAdjustedCountOnlyInteger},        // integer syntax
-		{"t:72057594037927937", ns, ns, ns, nil, ErrAdjustedCountRange}, // out-of-range
-		{"t:-1", ns, ns, ns, nil, ErrProbabilityRange},                  // non-negative
+		// too many digits
+		{"t:ffffffffffffffff", ns, ns, nil, ErrTValueSize},
+		{"t:100000000000000", ns, ns, nil, ErrTValueSize},
 
 		// one field
-		{"e100:1", ns, ns, ns, []string{"e100:1"}, nil},
+		{"e100:1", ns, ns, []string{"e100:1"}, nil},
 
 		// two fields
-		{"e1:1;e2:2", ns, ns, ns, []string{"e1:1", "e2:2"}, nil},
-		{"e1:1;e2:2", ns, ns, ns, []string{"e1:1", "e2:2"}, nil},
+		{"e1:1;e2:2", ns, ns, []string{"e1:1", "e2:2"}, nil},
+		{"e1:1;e2:2", ns, ns, []string{"e1:1", "e2:2"}, nil},
 
 		// one extra key, two ways
-		{"t:2;extra:stuff", ns, ns, "2", []string{"extra:stuff"}, nil},
-		{"extra:stuff;t:2", ns, ns, "2", []string{"extra:stuff"}, nil},
+		{"t:2;extra:stuff", ns, "2", []string{"extra:stuff"}, nil},
+		{"extra:stuff;t:2", ns, "2", []string{"extra:stuff"}, nil},
 
 		// two extra fields
-		{"e100:100;t:1;e101:101", ns, ns, "1", []string{"e100:100", "e101:101"}, nil},
-		{"t:1;e100:100;e101:101", ns, ns, "1", []string{"e100:100", "e101:101"}, nil},
-		{"e100:100;e101:101;t:1", ns, ns, "1", []string{"e100:100", "e101:101"}, nil},
+		{"e100:100;t:1;e101:101", ns, "1", []string{"e100:100", "e101:101"}, nil},
+		{"t:1;e100:100;e101:101", ns, "1", []string{"e100:100", "e101:101"}, nil},
+		{"e100:100;e101:101;t:1", ns, "1", []string{"e100:100", "e101:101"}, nil},
 
 		// parse error prevents capturing unrecognized keys
-		{"1:1;u:V", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"X:1;u:V", ns, ns, ns, nil, strconv.ErrSyntax},
-		{"x:1;u:V", ns, ns, ns, []string{"x:1", "u:V"}, nil},
-
-		// s-value
-		{"s:2;extra:stuff", ns, "2", ns, []string{"extra:stuff"}, nil},
-		{"extra:stuff;s:2", ns, "2", ns, []string{"extra:stuff"}, nil},
-
-		// s-value range error
-		{"s:0x1p-58", ns, ns, ns, nil, ErrProbabilityRange},
-		{"s:-1", ns, ns, ns, nil, ErrProbabilityRange},
+		{"1:1;u:V", ns, ns, nil, strconv.ErrSyntax},
+		{"X:1;u:V", ns, ns, nil, strconv.ErrSyntax},
+		{"x:1;u:V", ns, ns, []string{"x:1", "u:V"}, nil},
 
 		// r-value
-		{"r:2;extra:stuff", "2", ns, ns, []string{"extra:stuff"}, nil},
-		{"extra:stuff;r:2", "2", ns, ns, []string{"extra:stuff"}, nil},
-		{"r:ffffffffffffff", "ffffffffffffff", ns, ns, nil, nil},
-		{"r:8888", "8888", ns, ns, nil, nil},
-		{"r:0", "0", ns, ns, nil, nil},
+		{"r:22222222222222;extra:stuff", "22222222222222", ns, []string{"extra:stuff"}, nil},
+		{"extra:stuff;r:22222222222222", "22222222222222", ns, []string{"extra:stuff"}, nil},
+		{"r:ffffffffffffff", "ffffffffffffff", ns, nil, nil},
+		{"r:88888888888888", "88888888888888", ns, nil, nil},
+		{"r:00000000000000", "00000000000000", ns, nil, nil},
 
 		// r-value range error (15 bytes of hex or more)
-		{"r:100000000000000", ns, ns, ns, nil, ErrRandomValueRange},
-		{"r:fffffffffffffffff", ns, ns, ns, nil, strconv.ErrRange},
+		{"r:100000000000000", ns, ns, nil, ErrRValueSize},
+		{"r:fffffffffffffffff", ns, ns, nil, ErrRValueSize},
 
 		// no trailing ;
-		{"x:1;", ns, ns, ns, nil, strconv.ErrSyntax},
+		{"x:1;", ns, ns, nil, strconv.ErrSyntax},
 
 		// empty key
-		{"x:", ns, ns, ns, []string{"x:"}, nil},
+		{"x:", ns, ns, []string{"x:"}, nil},
 
 		// charset test
-		{"x:0X1FFF;y:.-_-.;z:", ns, ns, ns, []string{"x:0X1FFF", "y:.-_-.", "z:"}, nil},
-		{"x1y2z3:1-2-3;y1:y_1;xy:-;t:50", ns, ns, "50", []string{"x1y2z3:1-2-3", "y1:y_1", "xy:-"}, nil},
+		{"x:0X1FFF;y:.-_-.;z:", ns, ns, []string{"x:0X1FFF", "y:.-_-.", "z:"}, nil},
+		{"x1y2z3:1-2-3;y1:y_1;xy:-;t:50", ns, "50", []string{"x1y2z3:1-2-3", "y1:y_1", "xy:-"}, nil},
 
 		// size exceeded
-		{"x:" + strings.Repeat("_", 255), ns, ns, ns, nil, ErrTraceStateSize},
-		{"x:" + strings.Repeat("_", 254), ns, ns, ns, []string{"x:" + strings.Repeat("_", 254)}, nil},
+		{"x:" + strings.Repeat("_", 255), ns, ns, nil, ErrTraceStateSize},
+		{"x:" + strings.Repeat("_", 254), ns, ns, []string{"x:" + strings.Repeat("_", 254)}, nil},
 	} {
 		t.Run(testName(test.in), func(t *testing.T) {
 			otts, err := NewOTelTraceState(test.in)
@@ -162,12 +150,6 @@ func TestParseOTelTraceState(t *testing.T) {
 				require.Equal(t, test.rval, otts.RValue())
 			} else {
 				require.False(t, otts.HasRValue(), "should have no r-value: %s", otts.RValue())
-			}
-			if test.sval != ns {
-				require.True(t, otts.HasSValue())
-				require.Equal(t, test.sval, otts.SValue())
-			} else {
-				require.False(t, otts.HasSValue(), "should have no s-value: %s", otts.SValue())
 			}
 			if test.tval != ns {
 				require.True(t, otts.HasTValue())
