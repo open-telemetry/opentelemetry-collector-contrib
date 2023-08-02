@@ -302,8 +302,19 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetMongodbAtlasClusterName("mongodb_atlas.cluster.name-val")
+			rb.SetMongodbAtlasDbName("mongodb_atlas.db.name-val")
+			rb.SetMongodbAtlasDiskPartition("mongodb_atlas.disk.partition-val")
+			rb.SetMongodbAtlasHostName("mongodb_atlas.host.name-val")
+			rb.SetMongodbAtlasOrgName("mongodb_atlas.org_name-val")
+			rb.SetMongodbAtlasProcessID("mongodb_atlas.process.id-val")
+			rb.SetMongodbAtlasProcessPort("mongodb_atlas.process.port-val")
+			rb.SetMongodbAtlasProcessTypeName("mongodb_atlas.process.type_name-val")
+			rb.SetMongodbAtlasProjectID("mongodb_atlas.project.id-val")
+			rb.SetMongodbAtlasProjectName("mongodb_atlas.project.name-val")
+			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
