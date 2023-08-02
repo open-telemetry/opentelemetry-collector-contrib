@@ -99,7 +99,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

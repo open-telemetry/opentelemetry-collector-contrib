@@ -164,46 +164,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordK8sNodeAllocatableCPUDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeAllocatableEphemeralStorageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeAllocatableMemoryDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeAllocatablePodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeAllocatableStorageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeConditionDiskPressureDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeConditionMemoryPressureDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeConditionNetworkUnavailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeConditionPidPressureDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeConditionReadyDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordK8sPodPhaseDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -262,8 +222,39 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sCronjobName("k8s.cronjob.name-val")
+			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
+			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
+			rb.SetK8sDaemonsetUID("k8s.daemonset.uid-val")
+			rb.SetK8sDeploymentName("k8s.deployment.name-val")
+			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
+			rb.SetK8sHpaName("k8s.hpa.name-val")
+			rb.SetK8sHpaUID("k8s.hpa.uid-val")
+			rb.SetK8sJobName("k8s.job.name-val")
+			rb.SetK8sJobUID("k8s.job.uid-val")
+			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
+			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeUID("k8s.node.uid-val")
+			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodUID("k8s.pod.uid-val")
+			rb.SetK8sReplicasetName("k8s.replicaset.name-val")
+			rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
+			rb.SetK8sReplicationcontrollerName("k8s.replicationcontroller.name-val")
+			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
+			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
+			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
+			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
+			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
+			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
+			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
@@ -603,126 +594,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The current phase of namespaces (1 for active and 0 for terminating)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.allocatable_cpu":
-					assert.False(t, validatedMetrics["k8s.node.allocatable_cpu"], "Found a duplicate in the metrics slice: k8s.node.allocatable_cpu")
-					validatedMetrics["k8s.node.allocatable_cpu"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many CPU cores remaining that the node can allocate to pods", ms.At(i).Description())
-					assert.Equal(t, "{cores}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "k8s.node.allocatable_ephemeral_storage":
-					assert.False(t, validatedMetrics["k8s.node.allocatable_ephemeral_storage"], "Found a duplicate in the metrics slice: k8s.node.allocatable_ephemeral_storage")
-					validatedMetrics["k8s.node.allocatable_ephemeral_storage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many bytes of ephemeral storage remaining that the node can allocate to pods", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.allocatable_memory":
-					assert.False(t, validatedMetrics["k8s.node.allocatable_memory"], "Found a duplicate in the metrics slice: k8s.node.allocatable_memory")
-					validatedMetrics["k8s.node.allocatable_memory"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many bytes of RAM memory remaining that the node can allocate to pods", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.allocatable_pods":
-					assert.False(t, validatedMetrics["k8s.node.allocatable_pods"], "Found a duplicate in the metrics slice: k8s.node.allocatable_pods")
-					validatedMetrics["k8s.node.allocatable_pods"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many pods remaining the node can allocate", ms.At(i).Description())
-					assert.Equal(t, "{pods}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.allocatable_storage":
-					assert.False(t, validatedMetrics["k8s.node.allocatable_storage"], "Found a duplicate in the metrics slice: k8s.node.allocatable_storage")
-					validatedMetrics["k8s.node.allocatable_storage"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many bytes of storage remaining that the node can allocate to pods", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.condition_disk_pressure":
-					assert.False(t, validatedMetrics["k8s.node.condition_disk_pressure"], "Found a duplicate in the metrics slice: k8s.node.condition_disk_pressure")
-					validatedMetrics["k8s.node.condition_disk_pressure"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether this node is DiskPressure (1), not DiskPressure (0) or in an unknown state (-1)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.condition_memory_pressure":
-					assert.False(t, validatedMetrics["k8s.node.condition_memory_pressure"], "Found a duplicate in the metrics slice: k8s.node.condition_memory_pressure")
-					validatedMetrics["k8s.node.condition_memory_pressure"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether this node is MemoryPressure (1), not MemoryPressure (0) or in an unknown state (-1)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.condition_network_unavailable":
-					assert.False(t, validatedMetrics["k8s.node.condition_network_unavailable"], "Found a duplicate in the metrics slice: k8s.node.condition_network_unavailable")
-					validatedMetrics["k8s.node.condition_network_unavailable"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether this node is NetworkUnavailable (1), not NetworkUnavailable (0) or in an unknown state (-1)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.condition_pid_pressure":
-					assert.False(t, validatedMetrics["k8s.node.condition_pid_pressure"], "Found a duplicate in the metrics slice: k8s.node.condition_pid_pressure")
-					validatedMetrics["k8s.node.condition_pid_pressure"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether this node is PidPressure (1), not PidPressure (0) or in an unknown state (-1)", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "k8s.node.condition_ready":
-					assert.False(t, validatedMetrics["k8s.node.condition_ready"], "Found a duplicate in the metrics slice: k8s.node.condition_ready")
-					validatedMetrics["k8s.node.condition_ready"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Whether this node is Ready (1), not Ready (0) or in an unknown state (-1)", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
