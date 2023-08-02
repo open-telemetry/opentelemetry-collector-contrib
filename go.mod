@@ -66,7 +66,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.82.0
@@ -101,7 +101,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.82.0
