@@ -227,18 +227,20 @@ Examples:
 
 The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value. If the sum value of a Histogram or ExponentialHistogram data point is missing, no data point is added to the output metric. A metric will only be created if there is at least one data point.
 
-`is_monotonic` is a boolean representing the monotonicity of the new metric. `aggregation_temporality` is an enum(`AGGREGATION_TEMPORALITY_DELTA` or `AGGREGATION_TEMPORALITY_CUMULATIVE`) representing the desired aggregation temporality of the new metric.
+`is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description` `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` attribute, this attribute will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+
+The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
 > [!WARNING]  
-> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity and aggregation temporality should be.
+> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
 
 Examples:
 
-- `extract_sum_metric(true, AGGREGATION_TEMPORALITY_DELTA)`
+- `extract_sum_metric(true)`
 
-- `extract_sum_metric(false, AGGREGATION_TEMPORALITY_CUMULATIVE)`
+- `extract_sum_metric(false)`
 
 ### convert_summary_count_val_to_sum
 

@@ -100,7 +100,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 		want       func(pmetric.Metrics)
 	}{
 		{
-			statements: []string{`extract_sum_metric(true, AGGREGATION_TEMPORALITY_DELTA) where name == "operationB"`},
+			statements: []string{`extract_sum_metric(true) where name == "operationB"`},
 			want: func(td pmetric.Metrics) {
 				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
 				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
@@ -783,8 +783,10 @@ func fillMetricTwo(m pmetric.Metric) {
 	m.SetName("operationB")
 	m.SetDescription("operationB description")
 	m.SetUnit("operationB unit")
+	m.SetEmptyHistogram()
+	m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
-	dataPoint0 := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dataPoint0 := m.Histogram().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.Attributes().PutStr("attr1", "test1")
 	dataPoint0.Attributes().PutStr("attr2", "test2")

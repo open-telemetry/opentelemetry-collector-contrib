@@ -15,8 +15,7 @@ import (
 )
 
 type extractSumMetricArguments struct {
-	Monotonic bool      `ottlarg:"0"`
-	AggTemp   ottl.Enum `ottlarg:"1"`
+	Monotonic bool `ottlarg:"0"`
 }
 
 func newExtractSumMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -30,7 +29,7 @@ func createExtractSumMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, fmt.Errorf("extractSumMetricFactory args must be of type *extractSumMetricArguments")
 	}
 
-	return extractSumMetric(args.Monotonic, args.AggTemp)
+	return extractSumMetric(args.Monotonic)
 }
 
 // this interface helps unify the logic for extracting data from different histogram types
@@ -43,20 +42,21 @@ type SumCountDataPoint interface {
 	Timestamp() pcommon.Timestamp
 }
 
-func extractSumMetric(monotonic bool, aggTempEnum ottl.Enum) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	aggTemp := pmetric.AggregationTemporality(aggTempEnum)
-	switch aggTemp {
-	case pmetric.AggregationTemporalityDelta, pmetric.AggregationTemporalityCumulative:
-	default:
-		return nil, fmt.Errorf("unknown aggregation temporality: %s", aggTemp.String())
-	}
-
+func extractSumMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
+		var aggTemp pmetric.AggregationTemporality
 		metric := tCtx.GetMetric()
 		invalidMetricTypeError := fmt.Errorf("extract_sum_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 
 		switch metric.Type() {
-		case pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		case pmetric.MetricTypeHistogram:
+			aggTemp = metric.Histogram().AggregationTemporality()
+		case pmetric.MetricTypeExponentialHistogram:
+			aggTemp = metric.ExponentialHistogram().AggregationTemporality()
+		case pmetric.MetricTypeSummary:
+			// Summaries don't have an aggregation temporality, but they *should* be cumulative based on the Openmetrics spec.
+			// This should become an optional argument once those are available in OTTL.
+			aggTemp = pmetric.AggregationTemporalityCumulative
 		default:
 			return nil, invalidMetricTypeError
 		}
