@@ -13,8 +13,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -31,21 +31,20 @@ func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, ds *appsv1.DaemonSet) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, ds *appsv1.DaemonSet) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mbphase.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled))
 	mbphase.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled))
 	mbphase.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))
 	mbphase.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))
 
-	return mbphase.Emit(
-		imetadataphase.WithK8sNamespaceName(ds.Namespace),
-		imetadataphase.WithK8sDaemonsetName(ds.Name),
-		imetadataphase.WithK8sDaemonsetUID(string(ds.UID)),
-		imetadataphase.WithOpencensusResourcetype("k8s"),
-	)
-
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb.SetK8sNamespaceName(ds.Namespace)
+	rb.SetK8sDaemonsetName(ds.Name)
+	rb.SetK8sDaemonsetUID(string(ds.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
 func GetMetadata(ds *appsv1.DaemonSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

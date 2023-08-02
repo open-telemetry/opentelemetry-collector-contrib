@@ -40,6 +40,7 @@ func Start(cfg *Config) error {
 
 	httpExpOpt := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 
 	if cfg.Insecure {

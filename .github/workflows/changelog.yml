@@ -78,10 +78,13 @@ jobs:
 
       # In order to validate any links in the yaml file, render the config to markdown
       - name: Render .chloggen changelog entries
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: make chlog-preview > changelog_preview.md
       - name: Install markdown-link-check
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: npm install -g markdown-link-check
       - name: Run markdown-link-check
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: |
           markdown-link-check \
             --verbose \
