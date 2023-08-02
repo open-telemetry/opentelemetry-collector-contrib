@@ -33,6 +33,9 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
+			option: func(conf *Config) {
+				// intentionally left blank so we use default config
+			},
 			expected: &Config{
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
@@ -135,12 +138,7 @@ func TestLoadConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
-			option := tt.option
-			if option == nil {
-				option = func(conf *Config) {}
-			}
-
-			cfg := applyConfigOption(option)
+			cfg := applyConfigOption(tt.option)
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
