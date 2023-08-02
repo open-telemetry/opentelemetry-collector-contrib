@@ -154,7 +154,6 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 		// to get the initial state and a useable resourceVersion.
 		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
 		resourceVersion, err = kr.doInitialList(ctx, config, resource)
-		kr.setting.Logger.Info("starting resourceVersion", zap.String("resourceVersion", resourceVersion))
 		if err != nil {
 			kr.setting.Logger.Error("could not perform initial list for watch", zap.String("resource", config.gvr.String()), zap.Error(err))
 			return
