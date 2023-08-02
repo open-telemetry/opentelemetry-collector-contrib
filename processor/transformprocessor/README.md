@@ -220,24 +220,23 @@ Examples:
 
 ### extract_sum_metric
 
-> **Note** This function supports Histograms, ExponentialHistograms and Summaries
+> **Note** This function supports Histograms, ExponentialHistograms and Summaries.
 
-`extract_sum_metric(aggregation_temporality, is_monotonic)`
+`extract_sum_metric(is_monotonic, aggregation_temporality)`
 
 The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value.
 
-`aggregation_temporality` is an enum(`AGGREGATION_TEMPORALITY_DELTA` or `AGGREGATION_TEMPORALITY_CUMULATIVE`) representing the desired aggregation temporality of the new metric. `is_monotonic` is a boolean representing the monotonicity of the new metric.
+`is_monotonic` is a boolean representing the monotonicity of the new metric. `aggregation_temporality` is an enum(`AGGREGATION_TEMPORALITY_DELTA` or `AGGREGATION_TEMPORALITY_CUMULATIVE`) representing the desired aggregation temporality of the new metric.
 
 The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
-> **Note** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use at your own risk.
+> **Warning** This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity and aggregation temporality should be.
 
 Examples:
 
-- `extract_sum_metric("delta", true)`
+- `extract_sum_metric(true, AGGREGATION_TEMPORALITY_DELTA)`
 
-
-- `extract_sum_metric("cumulative", false)`
+- `extract_sum_metric(false, AGGREGATION_TEMPORALITY_CUMULATIVE)`
 
 ### convert_summary_count_val_to_sum
 

@@ -408,7 +408,7 @@ func Test_extractSumMetric(t *testing.T) {
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
 
-			evaluate, err := extractSumMetric(ottl.Enum(tt.temporality), tt.monotonicity)
+			evaluate, err := extractSumMetric(tt.monotonicity, ottl.Enum(tt.temporality))
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetrics, pcommon.NewInstrumentationScope(), pcommon.NewResource()))
@@ -435,7 +435,7 @@ func Test_extractSumMetric_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := extractSumMetric(tt.aggTemp, true)
+			_, err := extractSumMetric(true, tt.aggTemp)
 			assert.Error(t, err, "unknown aggregation temporality: not a real aggregation temporality")
 		})
 	}
