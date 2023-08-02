@@ -23,7 +23,6 @@ type postgreSQLScraper struct {
 	logger        *zap.Logger
 	config        *Config
 	clientFactory postgreSQLClientFactory
-	rb            *metadata.ResourceBuilder
 	mb            *metadata.MetricsBuilder
 }
 type errsMux struct {
@@ -74,7 +73,6 @@ func newPostgreSQLScraper(
 		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
-		rb:            metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
@@ -168,8 +166,9 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
 		p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
 	}
-	p.rb.SetPostgresqlDatabaseName(db)
-	p.mb.EmitForResource(metadata.WithResource(p.rb.Emit()))
+	rb := p.mb.NewResourceBuilder()
+	rb.SetPostgresqlDatabaseName(db)
+	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
@@ -204,9 +203,10 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}
-		p.rb.SetPostgresqlDatabaseName(db)
-		p.rb.SetPostgresqlTableName(tm.table)
-		p.mb.EmitForResource(metadata.WithResource(p.rb.Emit()))
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(db)
+		rb.SetPostgresqlTableName(tm.table)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return int64(len(tableMetrics))
 }
@@ -227,10 +227,11 @@ func (p *postgreSQLScraper) collectIndexes(
 	for _, stat := range idxStats {
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
-		p.rb.SetPostgresqlDatabaseName(database)
-		p.rb.SetPostgresqlTableName(stat.table)
-		p.rb.SetPostgresqlIndexName(stat.index)
-		p.mb.EmitForResource(metadata.WithResource(p.rb.Emit()))
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		rb.SetPostgresqlTableName(stat.table)
+		rb.SetPostgresqlIndexName(stat.index)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 

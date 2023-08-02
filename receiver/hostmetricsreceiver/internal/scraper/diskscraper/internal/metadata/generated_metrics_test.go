@@ -83,7 +83,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

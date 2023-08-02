@@ -75,7 +75,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
