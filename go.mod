@@ -14,7 +14,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.82.0
