@@ -85,14 +85,14 @@ func TestLoadConfig(t *testing.T) {
 			cfg := applyConfigOption(func(conf *Config) {
 				// config.Validate() reads the Authentication.SASL struct, but it's not present
 				// in the default config. This sets it to avoid a segfault during testing.
-				conf.Authentication = Authentication{
-					SASL: &SASLConfig{
-						Username:  "jdoe",
-						Password:  "pass",
-						Mechanism: "PLAIN",
-						Version:   0,
-					},
-				}
+				// conf.Authentication = Authentication{
+				// 	SASL: &SASLConfig{
+				// 		Username:  "jdoe",
+				// 		Password:  "pass",
+				// 		Mechanism: "PLAIN",
+				// 		Version:   0,
+				// 	},
+				// }
 			})
 
 			sub, err := cm.Sub(tt.id.String())
