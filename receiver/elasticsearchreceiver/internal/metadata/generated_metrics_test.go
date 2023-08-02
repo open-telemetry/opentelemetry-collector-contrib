@@ -397,8 +397,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordJvmThreadsCountDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
+			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
+			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
+			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

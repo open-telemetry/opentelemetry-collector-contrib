@@ -222,6 +222,7 @@ func setupReceiver(
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
 
 	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config)
