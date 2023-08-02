@@ -141,17 +141,7 @@ func (s *azureScraper) GetMetricsValuesClient() MetricsValuesClient {
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	switch s.cfg.Authentication {
-	case ServicePrincipal:
-		s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil)
-		if err != nil {
-			return err
-		}
-	case WorkloadIdentity:
-		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
-			return err
-		}
-	default:
+	if err = s.loadCredentials(); err != nil {
 		return err
 	}
 
@@ -162,6 +152,22 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.resources = map[string]*azureResource{}
 
 	return
+}
+
+func (s *azureScraper) loadCredentials() (err error) {
+	switch s.cfg.Authentication {
+	case ServicePrincipal:
+		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
+			return err
+		}
+	case WorkloadIdentity:
+		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
+	}
+	return nil
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {

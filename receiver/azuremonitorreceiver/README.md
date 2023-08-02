@@ -28,15 +28,15 @@ The following settings are optional:
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
-Authenticating using service principal requires following settings:
+Authenticating using service principal requires following additional settings:
 - `tenant_id`
 - `client_id`
 - `client_secret`
 
-Authenticating using workload identities requires following environment variables being set (automatically by workload identity webhook):
-- `AZURE_TENANT_ID`
-- `AZURE_CLIENT_ID`
-- `AZURE_FEDERATED_TOKEN_FILE`
+Authenticating using workload identities requires following additional settings:
+- `tenant_id`
+- `client_id`
+- `federate_token_file`
 
 ### Example Configurations
 
@@ -64,6 +64,9 @@ receivers:
   azuremonitor:
     subscription_id: "${subscription_id}"
     auth: "workload_identity"
+    tenant_id: "${env:AZURE_TENANT_ID}"
+    client_id: "${env:AZURE_CLIENT_ID}"
+    federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
 ```
 
 ## Metrics

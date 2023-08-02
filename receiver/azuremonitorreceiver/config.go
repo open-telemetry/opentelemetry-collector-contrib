@@ -6,8 +6,6 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
-	"os"
-
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -20,9 +18,7 @@ var (
 	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
 	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
 	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
-	errMissingFedTokenFile   = errors.New(`environment Variable "AZURE_FEDERATED_TOKEN_FILE" is not set`)
-	errMissingClientIDEnv    = errors.New(`environment Variable "AZURE_CLIENT_ID" is not set`)
-	errMissingTenantIDEnv    = errors.New(`environment Variable "AZURE_TENANT_ID" is not set`)
+	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -233,6 +229,7 @@ type Config struct {
 	TenantID                                string                        `mapstructure:"tenant_id"`
 	ClientID                                string                        `mapstructure:"client_id"`
 	ClientSecret                            string                        `mapstructure:"client_secret"`
+	FederatedTokenFile                      string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                          []string                      `mapstructure:"resource_groups"`
 	Services                                []string                      `mapstructure:"services"`
 	CacheResources                          float64                       `mapstructure:"cache_resources"`
@@ -266,17 +263,19 @@ func (c Config) Validate() (err error) {
 			err = multierr.Append(err, errMissingClientSecret)
 		}
 	case WorkloadIdentity:
-		if _, exist := os.LookupEnv("AZURE_CLIENT_ID"); !exist {
-			err = multierr.Append(err, errMissingClientIDEnv)
+		if c.TenantID == "" {
+			err = multierr.Append(err, errMissingTenantID)
 		}
-		if _, exist := os.LookupEnv("AZURE_TENANT_ID"); !exist {
-			err = multierr.Append(err, errMissingTenantIDEnv)
+
+		if c.ClientID == "" {
+			err = multierr.Append(err, errMissingClientID)
 		}
-		if _, exist := os.LookupEnv("AZURE_FEDERATED_TOKEN_FILE"); !exist {
+
+		if c.FederatedTokenFile == "" {
 			err = multierr.Append(err, errMissingFedTokenFile)
 		}
 	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [service_principal,workload_identity]", c.Authentication)
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, ServicePrincipal, WorkloadIdentity)
 	}
 
 	return
