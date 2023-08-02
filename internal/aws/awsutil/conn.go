@@ -18,6 +18,7 @@ package awsutil // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"net/http"
 	"net/url"
@@ -70,11 +71,16 @@ const (
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
-	proxyAddress string) (*http.Client, error) {
+	proxyAddress string, certificateFilePath string) (*http.Client, error) {
 	logger.Debug("Using proxy address: ",
 		zap.String("proxyAddr", proxyAddress),
 	)
-	tls := &tls.Config{
+	rootCA, certPoolError := loadCertPool(certificateFilePath)
+	if certificateFilePath != "" && certPoolError != nil {
+		logger.Warn("could not create root ca from", zap.String("file", certificateFilePath), zap.Error(certPoolError))
+	}
+	tlsConfig := &tls.Config{
+		RootCAs:            rootCA,
 		InsecureSkipVerify: noVerify,
 	}
 
@@ -86,7 +92,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 	}
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
-		TLSClientConfig:     tls,
+		TLSClientConfig:     tlsConfig,
 		Proxy:               http.ProxyURL(proxyURL),
 	}
 
@@ -102,6 +108,20 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 		Timeout:   time.Second * time.Duration(requestTimeout),
 	}
 	return http, err
+}
+
+func loadCertPool(bundleFile string) (*x509.CertPool, error) {
+	bundleBytes, err := os.ReadFile(bundleFile)
+	if err != nil {
+		return nil, err
+	}
+
+	p := x509.NewCertPool()
+	if !p.AppendCertsFromPEM(bundleBytes) {
+		return nil, errors.New("unable to append certs")
+	}
+
+	return p, nil
 }
 
 func getProxyAddress(proxyAddress string) string {
@@ -135,7 +155,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 	var s *session.Session
 	var err error
 	var awsRegion string
-	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
+	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress, cfg.CertificateFilePath)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, nil, err
