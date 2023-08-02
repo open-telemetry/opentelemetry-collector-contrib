@@ -63,7 +63,7 @@ func TestStartTimestamp(t *testing.T) {
 	tests := []struct {
 		name                 string
 		record               collectDRecord
-		metricDescriptorType TargetMetricType
+		metricDescriptorType string
 		wantStartTimestamp   pcommon.Timestamp
 	}{
 		{
@@ -72,7 +72,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(10),
 				Interval: createPtrFloat64(5),
 			},
-			metricDescriptorType: CumulativeMetricType,
+			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
 		},
 		{
@@ -81,7 +81,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(10),
 				Interval: createPtrFloat64(5),
 			},
-			metricDescriptorType: CumulativeMetricType,
+			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
 		},
 		{
@@ -90,7 +90,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(10),
 				Interval: createPtrFloat64(5),
 			},
-			metricDescriptorType: CumulativeMetricType,
+			metricDescriptorType: "cumulative",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(5, 0)),
 		},
 		{
@@ -99,7 +99,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
 			},
-			metricDescriptorType: GaugeMetricType,
+			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),
 		},
 		{
@@ -108,7 +108,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
 			},
-			metricDescriptorType: GaugeMetricType,
+			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),
 		},
 		{
@@ -117,7 +117,7 @@ func TestStartTimestamp(t *testing.T) {
 				Time:     createPtrFloat64(0),
 				Interval: createPtrFloat64(0),
 			},
-			metricDescriptorType: GaugeMetricType,
+			metricDescriptorType: "gauge",
 			wantStartTimestamp:   pcommon.NewTimestampFromTime(time.Unix(0, 0)),
 		},
 	}
