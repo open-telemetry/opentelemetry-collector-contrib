@@ -42,11 +42,43 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "2"),
-			errorMessage: `mandatory configurations "cluster_uri" ,"application_id" , "application_key" and "tenant_id" are missing or empty `,
+			errorMessage: `either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] are needed for auth`,
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "3"),
 			errorMessage: `unsupported configuration for ingestion_type. Accepted types [managed, queued] Provided [streaming]`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "4"),
+			expected: &Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				ManagedIdentityID: "bf61f0ec-1f01-11ee-be56-0242ac120002",
+				Database:          "oteldb",
+				MetricTable:       "OTELMetrics",
+				LogTable:          "OTELLogs",
+				TraceTable:        "OTELTraces",
+				IngestionType:     managedIngestType,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "5"),
+			errorMessage: `managed_identity_id should be a UUID string (for User Managed Identity) or system (for System Managed Identity)`,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "6"),
+			expected: &Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				ManagedIdentityID: "system",
+				Database:          "oteldb",
+				MetricTable:       "OTELMetrics",
+				LogTable:          "OTELLogs",
+				TraceTable:        "OTELTraces",
+				IngestionType:     managedIngestType,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "7"),
+			errorMessage: `clusterURI config is mandatory`,
 		},
 	}
 

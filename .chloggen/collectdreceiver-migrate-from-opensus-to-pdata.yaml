@@ -6,7 +6,7 @@
 change_type: enhancement
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: recevier/collectdreceiver
+component: receiver/collectdreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Migrate from opencensus to pdata, change collectd, test to match pdata format.

@@ -263,19 +263,19 @@ update-codeowners: gengithub generate
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
-	$(CHLOGGEN) new --filename $(FILENAME)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: $(CHLOGGEN)
-	$(CHLOGGEN) validate
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
 chlog-preview: $(CHLOGGEN)
-	$(CHLOGGEN) update --dry
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
 chlog-update: $(CHLOGGEN)
-	$(CHLOGGEN) update --version $(VERSION)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
