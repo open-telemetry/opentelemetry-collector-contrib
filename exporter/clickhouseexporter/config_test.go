@@ -4,6 +4,7 @@
 package clickhouseexporter
 
 import (
+	"go.opentelemetry.io/collector/config/configopaque"
 	"path/filepath"
 	"testing"
 	"time"
@@ -243,7 +244,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			cfg := &Config{
 				Endpoint:         tt.fields.Endpoint,
 				Username:         tt.fields.Username,
-				Password:         tt.fields.Password,
+				Password:         configopaque.String(tt.fields.Password),
 				Database:         tt.fields.Database,
 				ConnectionParams: tt.fields.ConnectionParams,
 			}
