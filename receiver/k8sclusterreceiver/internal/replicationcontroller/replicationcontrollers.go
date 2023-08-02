@@ -17,8 +17,8 @@ import (
 	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, rc *corev1.ReplicationController) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, rc *corev1.ReplicationController) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	if rc.Spec.Replicas != nil {
@@ -26,7 +26,7 @@ func GetMetrics(set receiver.CreateSettings, rc *corev1.ReplicationController) p
 		mbphase.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
 	}
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceName(rc.Namespace)
 	rb.SetK8sReplicationcontrollerName(rc.Name)
 	rb.SetK8sReplicationcontrollerUID(string(rc.UID))

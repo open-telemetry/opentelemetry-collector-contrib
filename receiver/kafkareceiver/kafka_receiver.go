@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
@@ -498,7 +498,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
-		// https://github.com/Shopify/sarama/issues/1192
+		// https://github.com/IBM/sarama/issues/1192
 		case <-session.Context().Done():
 			return nil
 		}
@@ -573,7 +573,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
-		// https://github.com/Shopify/sarama/issues/1192
+		// https://github.com/IBM/sarama/issues/1192
 		case <-session.Context().Done():
 			return nil
 		}
@@ -653,7 +653,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 
 		// Should return when `session.Context()` is done.
 		// If not, will raise `ErrRebalanceInProgress` or `read tcp <ip>:<port>: i/o timeout` when kafka rebalance. see:
-		// https://github.com/Shopify/sarama/issues/1192
+		// https://github.com/IBM/sarama/issues/1192
 		case <-session.Context().Done():
 			return nil
 		}

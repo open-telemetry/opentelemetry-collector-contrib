@@ -31,7 +31,6 @@ type flinkmetricsScraper struct {
 	client   client
 	cfg      *Config
 	settings component.TelemetrySettings
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -39,7 +38,6 @@ func newflinkScraper(config *Config, settings receiver.CreateSettings) *flinkmet
 	return &flinkmetricsScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      config,
-		rb:       metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }

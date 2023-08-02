@@ -142,8 +142,11 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

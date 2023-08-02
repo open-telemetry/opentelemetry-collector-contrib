@@ -52,10 +52,11 @@ type DataCollector struct {
 	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
+	metricsBuilderConfig     metadata.MetricsBuilderConfig
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(set receiver.CreateSettings, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+func NewDataCollector(set receiver.CreateSettings, metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
 		settings: set,
 		metricsStore: &metricsStore{
@@ -64,6 +65,7 @@ func NewDataCollector(set receiver.CreateSettings, nodeConditionsToReport, alloc
 		metadataStore:            &metadata.Store{},
 		nodeConditionsToReport:   nodeConditionsToReport,
 		allocatableTypesToReport: allocatableTypesToReport,
+		metricsBuilderConfig:     metricsBuilderConfig,
 	}
 }
 
@@ -102,35 +104,35 @@ func (dc *DataCollector) SyncMetrics(obj interface{}) {
 
 	switch o := obj.(type) {
 	case *corev1.Pod:
-		md = pod.GetMetrics(dc.settings, o)
+		md = pod.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *corev1.Node:
-		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
+		md = node.GetMetrics(dc.settings, dc.metricsBuilderConfig, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
 	case *corev1.Namespace:
-		md = namespace.GetMetrics(dc.settings, o)
+		md = namespace.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *corev1.ReplicationController:
-		md = replicationcontroller.GetMetrics(dc.settings, o)
+		md = replicationcontroller.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *corev1.ResourceQuota:
-		md = resourcequota.GetMetrics(dc.settings, o)
+		md = resourcequota.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *appsv1.Deployment:
-		md = deployment.GetMetrics(dc.settings, o)
+		md = deployment.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *appsv1.ReplicaSet:
-		md = replicaset.GetMetrics(dc.settings, o)
+		md = replicaset.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *appsv1.DaemonSet:
-		md = demonset.GetMetrics(dc.settings, o)
+		md = demonset.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *appsv1.StatefulSet:
-		md = statefulset.GetMetrics(dc.settings, o)
+		md = statefulset.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *batchv1.Job:
-		md = jobs.GetMetrics(dc.settings, o)
+		md = jobs.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *batchv1.CronJob:
-		md = cronjob.GetMetrics(dc.settings, o)
+		md = cronjob.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *batchv1beta1.CronJob:
-		md = cronjob.GetMetricsBeta(dc.settings, o)
+		md = cronjob.GetMetricsBeta(dc.settings, dc.metricsBuilderConfig, o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
-		md = hpa.GetMetrics(dc.settings, o)
+		md = hpa.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		md = hpa.GetMetricsBeta(dc.settings, o)
+		md = hpa.GetMetricsBeta(dc.settings, dc.metricsBuilderConfig, o)
 	case *quotav1.ClusterResourceQuota:
-		md = clusterresourcequota.GetMetrics(dc.settings, o)
+		md = clusterresourcequota.GetMetrics(dc.settings, dc.metricsBuilderConfig, o)
 	default:
 		return
 	}

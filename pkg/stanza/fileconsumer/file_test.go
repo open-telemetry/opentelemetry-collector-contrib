@@ -731,10 +731,10 @@ func TestMultiFileSort(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d)`
-	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
+	cfg.MatchingCriteria.OrderingCriteria.SortBy = []sortRuleImpl{
 		{
 			&NumericSortRule{
-				BaseSortRule: BaseSortRule{
+				baseSortRule: baseSortRule{
 					RegexKey: `value`,
 				},
 			},
@@ -765,10 +765,10 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.MatchingCriteria.OrderingCriteria.Regex = `.(?P<value>\d{10})\.log`
-	cfg.MatchingCriteria.OrderingCriteria.SortBy = []SortRuleImpl{
+	cfg.MatchingCriteria.OrderingCriteria.SortBy = []sortRuleImpl{
 		{
 			&TimestampSortRule{
-				BaseSortRule: BaseSortRule{
+				baseSortRule: baseSortRule{
 					RegexKey: `value`,
 					SortType: "timestamp",
 				},

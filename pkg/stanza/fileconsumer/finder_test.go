@@ -131,10 +131,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: false,
 							},
@@ -153,10 +153,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: true,
 							},
@@ -175,10 +175,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>\d+).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: false,
 							},
@@ -195,10 +195,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>\d+).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: true,
 							},
@@ -215,10 +215,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: false,
 							},
@@ -235,10 +235,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "value",
 								Ascending: true,
 							},
@@ -264,10 +264,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: false,
 							},
@@ -275,7 +275,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: false,
 							},
@@ -283,7 +283,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: false,
 							},
@@ -311,10 +311,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: false,
 							},
@@ -322,7 +322,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: true,
 							},
@@ -330,7 +330,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: false,
 							},
@@ -358,10 +358,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: false,
 							},
@@ -369,7 +369,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: false,
 							},
@@ -379,7 +379,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: false,
 							},
@@ -405,10 +405,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: false,
 							},
@@ -416,7 +416,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: false,
 							},
@@ -426,7 +426,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: true,
 							},
@@ -452,10 +452,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: false,
 							},
@@ -463,7 +463,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: true,
 							},
@@ -473,7 +473,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: false,
 							},
@@ -499,10 +499,10 @@ func TestFinder(t *testing.T) {
 			exclude: []string{},
 			filterSortRule: OrderingCriteria{
 				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
-				SortBy: []SortRuleImpl{
+				SortBy: []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "number",
 								Ascending: true,
 							},
@@ -510,7 +510,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "time",
 								Ascending: false,
 							},
@@ -520,7 +520,7 @@ func TestFinder(t *testing.T) {
 					},
 					{
 						&AlphabeticalSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey:  "alpha",
 								Ascending: false,
 							},
@@ -545,12 +545,12 @@ func TestFinder(t *testing.T) {
 				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
 			}
 
-			finder := Finder{
+			finder := MatchingCriteria{
 				Include:          include,
 				Exclude:          exclude,
 				OrderingCriteria: tc.filterSortRule,
 			}
-			files, err := finder.FindFiles()
+			files, err := finder.findFiles()
 			require.NoError(t, err)
 			require.Equal(t, expected, files)
 		})

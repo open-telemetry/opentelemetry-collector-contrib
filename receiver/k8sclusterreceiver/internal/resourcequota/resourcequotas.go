@@ -15,8 +15,8 @@ import (
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, rq *corev1.ResourceQuota) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, rq *corev1.ResourceQuota) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	for k, v := range rq.Status.Hard {
@@ -35,7 +35,7 @@ func GetMetrics(set receiver.CreateSettings, rq *corev1.ResourceQuota) pmetric.M
 		mb.RecordK8sResourceQuotaUsedDataPoint(ts, val, string(k))
 	}
 
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sResourcequotaUID(string(rq.UID))
 	rb.SetK8sResourcequotaName(rq.Name)
 	rb.SetK8sNamespaceName(rq.Namespace)

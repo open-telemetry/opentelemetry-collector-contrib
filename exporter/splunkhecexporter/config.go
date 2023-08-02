@@ -44,6 +44,9 @@ type HecHeartbeat struct {
 	// heartbeat is not enabled.
 	// A heartbeat is an event sent to _internal index with metadata for the current collector/host.
 	Interval time.Duration `mapstructure:"interval"`
+
+	// Startup is used to send heartbeat events on exporter's startup.
+	Startup bool `mapstructure:"startup"`
 }
 
 // HecTelemetry defines the telemetry configuration for the exporter
