@@ -1101,10 +1101,11 @@ func newMetricMessagingKafkaBrokersResponseSize(cfg MetricConfig) metricMessagin
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                    pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                              int                 // maximum observed number of metrics per resource.
-	metricsBuffer                                pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                    component.BuildInfo // contains version information
+	config                                       MetricsBuilderConfig // config of the metrics builder.
+	startTime                                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                              int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                    component.BuildInfo  // contains version information.
 	metricKafkaBrokers                           metricKafkaBrokers
 	metricKafkaConsumerGroupLag                  metricKafkaConsumerGroupLag
 	metricKafkaConsumerGroupLagSum               metricKafkaConsumerGroupLagSum
@@ -1173,6 +1174,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `messaging.kafka.brokers.response_size`: This metric will be enabled by default in the next versions.")
 	}
 	mb := &MetricsBuilder{
+		config:                                       mbc,
 		startTime:                                    pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                                pmetric.NewMetrics(),
 		buildInfo:                                    settings.BuildInfo,
