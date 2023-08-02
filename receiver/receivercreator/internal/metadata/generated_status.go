@@ -8,5 +8,7 @@ import (
 
 const (
 	Type             = "receiver_creator"
+	LogsStability    = component.StabilityLevelAlpha
+	TracesStability  = component.StabilityLevelAlpha
 	MetricsStability = component.StabilityLevelBeta
 )

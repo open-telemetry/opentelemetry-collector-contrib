@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusexporter
 
@@ -459,6 +448,7 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
+					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
 					require.Regexp(t, `variableLabels: \[.*label_1.+label_2.+job.+instance.*\]`, m.Desc().String())
 
 					pbMetric := io_prometheus_client.Metric{}
@@ -477,13 +467,11 @@ func TestCollectMetrics(t *testing.T) {
 
 					switch tt.metricType {
 					case prometheus.CounterValue:
-						require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric_total\"")
 						require.Equal(t, tt.value, *pbMetric.Counter.Value)
 						require.Nil(t, pbMetric.Gauge)
 						require.Nil(t, pbMetric.Histogram)
 						require.Nil(t, pbMetric.Summary)
 					case prometheus.GaugeValue:
-						require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
 						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
 						require.Nil(t, pbMetric.Counter)
 						require.Nil(t, pbMetric.Histogram)

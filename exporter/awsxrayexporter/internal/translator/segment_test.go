@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -902,6 +891,117 @@ func TestSegmentWith2LogGroupsFromConfig(t *testing.T) {
 	assert.Equal(t, cwl, segment.AWS.CWLogs)
 }
 
+func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+	attributes[awsRemoteService] = "PaymentService"
+
+	resource := constructDefaultResource()
+	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, "PaymentService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "PaymentService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+	attributes[awsRemoteService] = "ProducerService"
+
+	resource := constructDefaultResource()
+	span := constructProducerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, "ProducerService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+	attributes[awsLocalService] = "ConsumerService"
+
+	resource := constructDefaultResource()
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, "ConsumerService", *segment.Name)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "ConsumerService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+	attributes[awsLocalService] = "PaymentLocalService"
+	attributes[awsRemoteService] = "PaymentService"
+
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, "PaymentLocalService", *segment.Name)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "PaymentLocalService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
 func constructClientSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
 	var (
 		traceID        = newTraceID()
@@ -944,6 +1044,60 @@ func constructServerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.S
 	span.SetParentSpanID(parentSpanID)
 	span.SetName(name)
 	span.SetKind(ptrace.SpanKindServer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+
+	status := ptrace.NewStatus()
+	status.SetCode(code)
+	status.SetMessage(message)
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
+}
+
+func constructConsumerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+	var (
+		traceID        = newTraceID()
+		spanID         = newSegmentID()
+		endTime        = time.Now()
+		startTime      = endTime.Add(-215 * time.Millisecond)
+		spanAttributes = constructSpanAttributes(attributes)
+	)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName(name)
+	span.SetKind(ptrace.SpanKindConsumer)
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
+
+	status := ptrace.NewStatus()
+	status.SetCode(code)
+	status.SetMessage(message)
+	status.CopyTo(span.Status())
+
+	spanAttributes.CopyTo(span.Attributes())
+	return span
+}
+
+func constructProducerSpan(parentSpanID pcommon.SpanID, name string, code ptrace.StatusCode, message string, attributes map[string]interface{}) ptrace.Span {
+	var (
+		traceID        = newTraceID()
+		spanID         = newSegmentID()
+		endTime        = time.Now()
+		startTime      = endTime.Add(-215 * time.Millisecond)
+		spanAttributes = constructSpanAttributes(attributes)
+	)
+
+	span := ptrace.NewSpan()
+	span.SetTraceID(traceID)
+	span.SetSpanID(spanID)
+	span.SetParentSpanID(parentSpanID)
+	span.SetName(name)
+	span.SetKind(ptrace.SpanKindProducer)
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(endTime))
 

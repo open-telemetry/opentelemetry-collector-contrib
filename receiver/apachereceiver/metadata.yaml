@@ -4,7 +4,9 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
     apache.server.name:

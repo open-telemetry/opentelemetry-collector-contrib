@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for iisreceiver metrics.
+// MetricsConfig provides config for iis metrics.
 type MetricsConfig struct {
 	IisConnectionActive       MetricConfig `mapstructure:"iis.connection.active"`
 	IisConnectionAnonymous    MetricConfig `mapstructure:"iis.connection.anonymous"`
@@ -85,7 +85,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for iisreceiver resource attributes.
+// ResourceAttributesConfig provides config for iis resource attributes.
 type ResourceAttributesConfig struct {
 	IisApplicationPool ResourceAttributeConfig `mapstructure:"iis.application_pool"`
 	IisSite            ResourceAttributeConfig `mapstructure:"iis.site"`
@@ -102,7 +102,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for iisreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for iis metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

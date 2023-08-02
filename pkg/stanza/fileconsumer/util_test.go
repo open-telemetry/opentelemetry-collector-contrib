@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -28,17 +17,23 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func testEmitFunc(emitChan chan *emitParams) EmitFunc {
-	return func(_ context.Context, attrs *FileAttributes, token []byte) {
+func nopEmitFunc(_ context.Context, _ []byte, _ map[string]any) error {
+	return nil
+}
+
+func testEmitFunc(emitChan chan *emitParams) emit.Callback {
+	return func(_ context.Context, token []byte, attrs map[string]any) error {
 		copied := make([]byte, len(token))
 		copy(copied, token)
 		emitChan <- &emitParams{attrs, copied}
+		return nil
 	}
 }
 
@@ -65,14 +60,15 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 	return c
 }
 
-func emitOnChan(received chan []byte) EmitFunc {
-	return func(_ context.Context, _ *FileAttributes, token []byte) {
+func emitOnChan(received chan []byte) emit.Callback {
+	return func(_ context.Context, token []byte, _ map[string]any) error {
 		received <- token
+		return nil
 	}
 }
 
 type emitParams struct {
-	attrs *FileAttributes
+	attrs map[string]any
 	token []byte
 }
 
@@ -88,7 +84,7 @@ func withEmitChan(emitChan chan *emitParams) testManagerOption {
 	}
 }
 
-func buildTestManagerWithOptions(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
+func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Manager, chan *emitParams) {
 	tmc := &testManagerConfig{emitChan: make(chan *emitParams, 100)}
 	for _, opt := range opts {
 		opt(tmc)
@@ -185,11 +181,11 @@ func waitForToken(t *testing.T, c chan *emitParams, expected []byte) {
 	}
 }
 
-func waitForTokenHeaderAttributes(t *testing.T, c chan *emitParams, expected []byte, headerAttributes map[string]any) {
+func waitForTokenWithAttributes(t *testing.T, c chan *emitParams, expected []byte, attrs map[string]any) {
 	select {
 	case call := <-c:
 		require.Equal(t, expected, call.token)
-		require.Equal(t, headerAttributes, call.attrs.HeaderAttributes)
+		require.Equal(t, attrs, call.attrs)
 	case <-time.After(3 * time.Second):
 		require.FailNow(t, fmt.Sprintf("Timed out waiting for token: %s", expected))
 	}

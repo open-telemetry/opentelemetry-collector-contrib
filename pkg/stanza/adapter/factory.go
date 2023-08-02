@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
@@ -56,7 +45,14 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitter := NewLogEmitter(params.Logger.Sugar())
+		emitterOpts := []emitterOption{}
+		if baseCfg.maxBatchSize > 0 {
+			emitterOpts = append(emitterOpts, withMaxBatchSize(baseCfg.maxBatchSize))
+		}
+		if baseCfg.flushInterval > 0 {
+			emitterOpts = append(emitterOpts, withFlushInterval(baseCfg.flushInterval))
+		}
+		emitter := NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
@@ -65,7 +61,11 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			return nil, err
 		}
 
-		converter := NewConverter(params.Logger)
+		converterOpts := []converterOption{}
+		if baseCfg.numWorkers > 0 {
+			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
+		}
+		converter := NewConverter(params.Logger, converterOpts...)
 		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,

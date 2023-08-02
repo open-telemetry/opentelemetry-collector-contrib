@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 
@@ -23,6 +12,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -31,12 +21,12 @@ import (
 )
 
 type scraper struct {
-	include        string
-	logger         *zap.Logger
-	metricsBuilder *metadata.MetricsBuilder
+	include string
+	logger  *zap.Logger
+	mb      *metadata.MetricsBuilder
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	matches, err := doublestar.FilepathGlob(s.include)
 	if err != nil {
 		return pmetric.NewMetrics(), err
@@ -57,22 +47,26 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 			continue
 		}
-		s.metricsBuilder.RecordFileSizeDataPoint(now, fileinfo.Size())
-		s.metricsBuilder.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
-		collectStats(now, fileinfo, s.metricsBuilder, s.logger)
-		s.metricsBuilder.EmitForResource(metadata.WithFileName(fileinfo.Name()), metadata.WithFilePath(path))
+		s.mb.RecordFileSizeDataPoint(now, fileinfo.Size())
+		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
+		collectStats(now, fileinfo, s.mb, s.logger)
+
+		rb := s.mb.NewResourceBuilder()
+		rb.SetFileName(fileinfo.Name())
+		rb.SetFilePath(path)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(scrapeErrors) > 0 {
-		return s.metricsBuilder.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
+		return s.mb.Emit(), scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
-	return s.metricsBuilder.Emit(), nil
+	return s.mb.Emit(), nil
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, cfg *Config, logger *zap.Logger) *scraper {
+func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
-		include:        cfg.Include,
-		logger:         logger,
-		metricsBuilder: metricsBuilder,
+		include: cfg.Include,
+		logger:  settings.TelemetrySettings.Logger,
+		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

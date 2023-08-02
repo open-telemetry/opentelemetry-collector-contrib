@@ -1,11 +1,13 @@
-type: zookeeperreceiver
+type: zookeeper
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
+
 resource_attributes:
   server.state:
     description: State of the Zookeeper server (leader, standalone or follower).
@@ -145,3 +147,9 @@ metrics:
       value_type: int
       monotonic: true
       aggregation: cumulative
+  zookeeper.ruok:
+    enabled: true
+    description: Response from zookeeper ruok command
+    unit: 1
+    gauge:
+      value_type: int

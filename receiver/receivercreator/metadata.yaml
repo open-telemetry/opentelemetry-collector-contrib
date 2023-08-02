@@ -4,5 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+    alpha: [logs, traces]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [rmfitzpatrick]

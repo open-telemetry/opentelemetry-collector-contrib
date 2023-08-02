@@ -1,0 +1,10 @@
+type: wavefront
+
+status:
+  class: receiver
+  stability:
+    unmaintained: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [ ]
+

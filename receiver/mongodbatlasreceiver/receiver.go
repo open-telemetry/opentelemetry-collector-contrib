@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -47,7 +36,7 @@ type timeconstraints struct {
 }
 
 func newMongoDBAtlasReceiver(settings rcvr.CreateSettings, cfg *Config) *receiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
 	return &receiver{
 		log:         settings.Logger,
 		cfg:         cfg,
@@ -58,7 +47,7 @@ func newMongoDBAtlasReceiver(settings rcvr.CreateSettings, cfg *Config) *receive
 }
 
 func newMongoDBAtlasScraper(recv *receiver) (scraperhelper.Scraper, error) {
-	return scraperhelper.NewScraper(typeStr, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
+	return scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
 func (s *receiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -172,17 +161,17 @@ func (s *receiver) extractProcessMetrics(
 		return fmt.Errorf("error when polling process metrics from MongoDB Atlas: %w", err)
 	}
 
-	s.mb.EmitForResource(
-		metadata.WithMongodbAtlasOrgName(orgName),
-		metadata.WithMongodbAtlasProjectName(project.Name),
-		metadata.WithMongodbAtlasProjectID(project.ID),
-		metadata.WithMongodbAtlasHostName(process.Hostname),
-		metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-		metadata.WithMongodbAtlasClusterName(clusterName),
-		metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-		metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-		metadata.WithMongodbAtlasProcessID(process.ID),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetMongodbAtlasOrgName(orgName)
+	rb.SetMongodbAtlasProjectName(project.Name)
+	rb.SetMongodbAtlasProjectID(project.ID)
+	rb.SetMongodbAtlasHostName(process.Hostname)
+	rb.SetMongodbAtlasUserAlias(process.UserAlias)
+	rb.SetMongodbAtlasClusterName(clusterName)
+	rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+	rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+	rb.SetMongodbAtlasProcessID(process.ID)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return nil
 }
@@ -219,18 +208,18 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		); err != nil {
 			return fmt.Errorf("error when polling database metrics from MongoDB Atlas: %w", err)
 		}
-		s.mb.EmitForResource(
-			metadata.WithMongodbAtlasOrgName(orgName),
-			metadata.WithMongodbAtlasProjectName(project.Name),
-			metadata.WithMongodbAtlasProjectID(project.ID),
-			metadata.WithMongodbAtlasHostName(process.Hostname),
-			metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-			metadata.WithMongodbAtlasClusterName(clusterName),
-			metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-			metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-			metadata.WithMongodbAtlasProcessID(process.ID),
-			metadata.WithMongodbAtlasDbName(db.DatabaseName),
-		)
+		rb := s.mb.NewResourceBuilder()
+		rb.SetMongodbAtlasOrgName(orgName)
+		rb.SetMongodbAtlasProjectName(project.Name)
+		rb.SetMongodbAtlasProjectID(project.ID)
+		rb.SetMongodbAtlasHostName(process.Hostname)
+		rb.SetMongodbAtlasUserAlias(process.UserAlias)
+		rb.SetMongodbAtlasClusterName(clusterName)
+		rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+		rb.SetMongodbAtlasProcessID(process.ID)
+		rb.SetMongodbAtlasDbName(db.DatabaseName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return nil
 }
@@ -257,18 +246,18 @@ func (s *receiver) extractProcessDiskMetrics(
 		); err != nil {
 			return fmt.Errorf("error when polling disk metrics from MongoDB Atlas: %w", err)
 		}
-		s.mb.EmitForResource(
-			metadata.WithMongodbAtlasOrgName(orgName),
-			metadata.WithMongodbAtlasProjectName(project.Name),
-			metadata.WithMongodbAtlasProjectID(project.ID),
-			metadata.WithMongodbAtlasHostName(process.Hostname),
-			metadata.WithMongodbAtlasUserAlias(process.UserAlias),
-			metadata.WithMongodbAtlasClusterName(clusterName),
-			metadata.WithMongodbAtlasProcessPort(strconv.Itoa(process.Port)),
-			metadata.WithMongodbAtlasProcessTypeName(process.TypeName),
-			metadata.WithMongodbAtlasProcessID(process.ID),
-			metadata.WithMongodbAtlasDiskPartition(disk.PartitionName),
-		)
+		rb := s.mb.NewResourceBuilder()
+		rb.SetMongodbAtlasOrgName(orgName)
+		rb.SetMongodbAtlasProjectName(project.Name)
+		rb.SetMongodbAtlasProjectID(project.ID)
+		rb.SetMongodbAtlasHostName(process.Hostname)
+		rb.SetMongodbAtlasUserAlias(process.UserAlias)
+		rb.SetMongodbAtlasClusterName(clusterName)
+		rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
+		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
+		rb.SetMongodbAtlasProcessID(process.ID)
+		rb.SetMongodbAtlasDiskPartition(disk.PartitionName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return nil
 }

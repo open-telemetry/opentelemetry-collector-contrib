@@ -1,12 +1,17 @@
 name: "Close stale issues and pull requests"
 on:
+  workflow_dispatch:
   schedule:
     - cron: "12 5 * * *" # arbitrary time not to DDOS GitHub
 
 jobs:
   stale:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Check rate_limit before
+        run: gh api /rate_limit
       - uses: actions/stale@v8
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -20,4 +25,7 @@ jobs:
           days-before-issue-close: 60
           exempt-issue-labels: 'never stale'
           ascending: true
+          operations-per-run: 6000
+      - name: Check rate_limit after
+        run: gh api /rate_limit
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
@@ -191,6 +180,42 @@ func TestScraper(t *testing.T) {
 				),
 			)
 		})
+	}
+}
+
+func TestScraperPropagatesResourceAttributes(t *testing.T) {
+	if !supportedOS() {
+		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
+	}
+	endpoint := setupSSHServer(t)
+	require.NotEmpty(t, endpoint)
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.SSHEndpoint.Enabled = true
+	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	cfg.Username = "otelu"
+	cfg.Password = "otelp"
+	cfg.Endpoint = endpoint
+	cfg.IgnoreHostKey = true
+
+	settings := receivertest.NewNopCreateSettings()
+
+	scraper := newScraper(cfg, settings)
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err, "failed scrape")
+
+	resourceMetrics := actualMetrics.ResourceMetrics()
+	expectedResourceAttributes := map[string]any{"ssh.endpoint": endpoint}
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resourceAttributes := resourceMetrics.At(i).Resource().Attributes()
+		for name, value := range expectedResourceAttributes {
+			actualAttributeValue, ok := resourceAttributes.Get(name)
+			require.True(t, ok)
+			require.Equal(t, value, actualAttributeValue.Str())
+		}
 	}
 }
 

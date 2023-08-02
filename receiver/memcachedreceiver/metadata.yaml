@@ -1,11 +1,13 @@
-type: memcachedreceiver
+type: memcached
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
+
 attributes:
   command:
     description: The type of command.

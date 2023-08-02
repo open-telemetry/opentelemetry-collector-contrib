@@ -1,10 +1,12 @@
-type: haproxyreceiver
+type: haproxy
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [atoulme, MovieStoreGuy]
 
 resource_attributes:
   haproxy.url:

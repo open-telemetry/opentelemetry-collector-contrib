@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -34,6 +23,7 @@ type lokiEntry struct {
 	TraceID              string                 `json:"traceid,omitempty"`
 	SpanID               string                 `json:"spanid,omitempty"`
 	Severity             string                 `json:"severity,omitempty"`
+	Flags                uint32                 `json:"flags,omitempty"`
 	Attributes           map[string]interface{} `json:"attributes,omitempty"`
 	Resources            map[string]interface{} `json:"resources,omitempty"`
 	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
@@ -64,6 +54,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
+		Flags:      uint32(lr.Flags()),
 	}
 
 	scopeName := scope.Name()
@@ -101,6 +92,11 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 	severity := lr.SeverityText()
 	if severity != "" {
 		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
+	}
+
+	flags := lr.Flags()
+	if flags != 0 {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
 	}
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {

@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for nginxreceiver metrics.
+// MetricsConfig provides config for nginx metrics.
 type MetricsConfig struct {
 	NginxConnectionsAccepted MetricConfig `mapstructure:"nginx.connections_accepted"`
 	NginxConnectionsCurrent  MetricConfig `mapstructure:"nginx.connections_current"`
@@ -52,7 +52,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for nginxreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for nginx metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

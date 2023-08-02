@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "redisreceiver"
+	Type             = "redis"
 	MetricsStability = component.StabilityLevelBeta
 )

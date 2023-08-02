@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlmetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 
@@ -32,6 +21,7 @@ var _ internal.MetricContext = TransformContext{}
 
 type TransformContext struct {
 	metric               pmetric.Metric
+	metrics              pmetric.MetricSlice
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
@@ -39,9 +29,10 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(metric pmetric.Metric, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
 		metric:               metric,
+		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
@@ -50,6 +41,10 @@ func NewTransformContext(metric pmetric.Metric, instrumentationScope pcommon.Ins
 
 func (tCtx TransformContext) GetMetric() pmetric.Metric {
 	return tCtx.metric
+}
+
+func (tCtx TransformContext) GetMetrics() pmetric.MetricSlice {
+	return tCtx.metrics
 }
 
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {

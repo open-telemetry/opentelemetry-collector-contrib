@@ -4,5 +4,6 @@ status:
   class: receiver
   stability:
     alpha: [traces]
-  distributions: [contrib]
-  
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [boostchicken, gouthamve, jpkrohling, MovieStoreGuy]

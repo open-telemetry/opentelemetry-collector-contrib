@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awscloudwatchlogsexporter
 
@@ -28,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
@@ -45,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "e1-defaults"),
+			id: component.NewIDWithName(metadata.Type, "e1-defaults"),
 			expected: &Config{
 				RetrySettings:      defaultRetrySettings,
 				LogGroupName:       "test-1",
@@ -58,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "e2-no-retries-short-queue"),
+			id: component.NewIDWithName(metadata.Type, "e2-no-retries-short-queue"),
 			expected: &Config{
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             false,
@@ -77,19 +67,19 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_queue_size"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
 			errorMessage: "'sending_queue.queue_size' must be 1 or greater",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_required_field_stream"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),
 			errorMessage: "'log_stream_name' must be set",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_required_field_group"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_group"),
 			errorMessage: "'log_group_name' must be set",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "invalid_queue_setting"),
+			id:           component.NewIDWithName(metadata.Type, "invalid_queue_setting"),
 			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
 		},
 	}
@@ -170,46 +160,46 @@ func TestValidateTags(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:   component.NewIDWithName(typeStr, "validate-correct"),
+			id:   component.NewIDWithName(metadata.Type, "validate-correct"),
 			tags: map[string]*string{"basicKey": &basicValue},
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "too-little-tags"),
+			id:           component.NewIDWithName(metadata.Type, "too-little-tags"),
 			tags:         emptyMap,
 			errorMessage: "invalid amount of items. Please input at least 1 tag or remove the tag field",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "too-many-tags"),
+			id:           component.NewIDWithName(metadata.Type, "too-many-tags"),
 			tags:         bigMap,
 			errorMessage: "invalid amount of items. Please input at most 50 tags",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "wrong-key-regex"),
+			id:           component.NewIDWithName(metadata.Type, "wrong-key-regex"),
 			tags:         map[string]*string{"***": &basicValue},
 			errorMessage: "key - *** does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`,
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "wrong-value-regex"),
+			id:           component.NewIDWithName(metadata.Type, "wrong-value-regex"),
 			tags:         map[string]*string{"basicKey": &wrongRegexValue},
 			errorMessage: "value - " + wrongRegexValue + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`,
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "key-too-short"),
+			id:           component.NewIDWithName(metadata.Type, "key-too-short"),
 			tags:         map[string]*string{"": &basicValue},
 			errorMessage: "key -  has an invalid length. Please use keys with a length of 1 to 128 characters",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "key-too-long"),
+			id:           component.NewIDWithName(metadata.Type, "key-too-long"),
 			tags:         map[string]*string{strings.Repeat("a", 129): &basicValue},
 			errorMessage: "key - " + strings.Repeat("a", 129) + " has an invalid length. Please use keys with a length of 1 to 128 characters",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "value-too-short"),
+			id:           component.NewIDWithName(metadata.Type, "value-too-short"),
 			tags:         map[string]*string{"basicKey": &emptyValue},
 			errorMessage: "value - " + emptyValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
 		},
 		{
-			id:           component.NewIDWithName(typeStr, "value-too-long"),
+			id:           component.NewIDWithName(metadata.Type, "value-too-long"),
 			tags:         map[string]*string{"basicKey": &tooLongValue},
 			errorMessage: "value - " + tooLongValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
 		},

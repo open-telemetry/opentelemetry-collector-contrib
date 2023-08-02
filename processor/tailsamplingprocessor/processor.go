@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
@@ -128,6 +117,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 }
 
 func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
+
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(settings), nil
@@ -136,7 +127,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewLatency(settings, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
@@ -234,7 +225,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		stats.Record(
 			p.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
-
 		if err != nil {
 			samplingDecision[sampling.Error] = true
 			trace.Decisions[i] = sampling.NotSampled
@@ -301,7 +291,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 }
 
 // ConsumeTraces is required by the processor.Traces interface.
-func (tsp *tailSamplingSpanProcessor) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace.Traces) error {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		tsp.processTraces(resourceSpans.At(i))

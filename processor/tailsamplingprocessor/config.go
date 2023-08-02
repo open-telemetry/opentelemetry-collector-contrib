@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 
@@ -150,6 +139,10 @@ type NumericAttributeCfg struct {
 	MinValue int64 `mapstructure:"min_value"`
 	// MaxValue is the maximum value of the attribute to be considered a match.
 	MaxValue int64 `mapstructure:"max_value"`
+	// InvertMatch indicates that values must not match against attribute values.
+	// If InvertMatch is true and Values is equal to '123', all other values will be sampled except '123'.
+	// Also, if the specified Key does not match any resource or span attributes, data will be sampled.
+	InvertMatch bool `mapstructure:"invert_match"`
 }
 
 // ProbabilisticCfg holds the configurable settings to create a probabilistic

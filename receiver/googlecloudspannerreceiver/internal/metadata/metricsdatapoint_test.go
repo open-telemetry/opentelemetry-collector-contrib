@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metadata
 
@@ -161,6 +150,26 @@ func TestMetricsDataPoint_HideLockStatsRowrangestartkeyPIIWithInvalidLabelValue(
 	}
 	metricsDataPoint.HideLockStatsRowrangestartkeyPII()
 	assert.Equal(t, len(metricsDataPoint.labelValues), 4)
+}
+
+func TestMetricsDataPoint_TruncateQueryText(t *testing.T) {
+	strLabelValueMetadata, _ := NewLabelValueMetadata("query_text", "stringLabelColumnName", StringValueType)
+	labelValue1 := stringLabelValue{metadata: strLabelValueMetadata, value: "SELECT 1"}
+	metricValues := allPossibleMetricValues(metricDataType)
+	labelValues := []LabelValue{labelValue1}
+	timestamp := time.Now().UTC()
+	metricsDataPoint := &MetricsDataPoint{
+		metricName:  metricName,
+		timestamp:   timestamp,
+		databaseID:  databaseID(),
+		labelValues: labelValues,
+		metricValue: metricValues[0],
+	}
+
+	metricsDataPoint.TruncateQueryText(6)
+
+	assert.Equal(t, len(metricsDataPoint.labelValues), 1)
+	assert.Equal(t, metricsDataPoint.labelValues[0].Value(), "SELECT")
 }
 
 func allPossibleLabelValues() []LabelValue {

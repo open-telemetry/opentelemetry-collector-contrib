@@ -14,9 +14,10 @@ The `journald_input` operator will use the `__REALTIME_TIMESTAMP` field of the j
 | `output`          | Next in pipeline | The connected operator(s) that will receive all outbound entries. |
 | `directory`       |                  | A directory containing journal files to read entries from. |
 | `files`           |                  | A list of journal files to read entries from. |
-| `units`           |                  | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples, if you want to use it together with `matches` and/or `priority`. |
+| `units`           |                  | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples. |
 | `matches`         |                  | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples. |
-| `priority`        | `info`           | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples, if you want to use it together with `units` and/or `matches`. |
+| `priority`        | `info`           | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples. |
+| `grep`            |                  | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples. |
 | `start_at`        | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. |
 | `attributes`      | {}               | A map of `key: value` pairs to add to the entry's attributes. |
 | `resource`        | {}               | A map of `key: value` pairs to add to the entry's resource. |
@@ -64,6 +65,8 @@ AND
 ( units[0] OR units[1] OR units[2] OR ... units[U] )
 AND
 ( matches[0] OR matches[1] OR matches[2] OR ... matches[M] )
+AND
+( grep )
 ```
 
 Consider the following example:

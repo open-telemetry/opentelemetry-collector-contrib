@@ -8,5 +8,5 @@ import (
 
 const (
 	Type             = "dynatrace"
-	MetricsStability = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDeprecated
 )

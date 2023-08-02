@@ -4,5 +4,6 @@ status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib]
-  
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski]

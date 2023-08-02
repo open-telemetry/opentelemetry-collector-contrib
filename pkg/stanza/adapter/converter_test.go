@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package adapter
 
@@ -633,6 +622,10 @@ func TestConvertArrayBody(t *testing.T) {
 	require.True(t, v.Bool())
 }
 
+func TestConvertNilBody(t *testing.T) {
+	require.Equal(t, plog.NewLogRecord().Body(), anyToBody(nil))
+}
+
 func TestConvertUnknownBody(t *testing.T) {
 	unknownType := map[string]int{"0": 0, "1": 1}
 	require.Equal(t, fmt.Sprintf("%v", unknownType), anyToBody(unknownType).Str())
@@ -668,11 +661,7 @@ func TestConvertNestedMapBody(t *testing.T) {
 func anyToBody(body interface{}) pcommon.Value {
 	entry := entry.New()
 	entry.Body = body
-	return convertAndDrill(entry).Body()
-}
-
-func convertAndDrill(entry *entry.Entry) plog.LogRecord {
-	return convert(entry)
+	return convert(entry).Body()
 }
 
 func TestConvertSeverity(t *testing.T) {
@@ -766,7 +755,7 @@ func TestConvertSeverity(t *testing.T) {
 			entry := entry.New()
 			entry.Severity = tc.severity
 			entry.SeverityText = tc.severityText
-			log := convertAndDrill(entry)
+			log := convert(entry)
 			require.Equal(t, tc.expectedNumber, log.SeverityNumber())
 			require.Equal(t, tc.expectedText, log.SeverityText())
 		})
@@ -774,7 +763,7 @@ func TestConvertSeverity(t *testing.T) {
 }
 
 func TestConvertTrace(t *testing.T) {
-	record := convertAndDrill(&entry.Entry{
+	record := convert(&entry.Entry{
 		TraceID: []byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
@@ -797,7 +786,7 @@ func TestConvertTrace(t *testing.T) {
 }
 
 func TestConvertTraceEmptyFlags(t *testing.T) {
-	record := convertAndDrill(&entry.Entry{
+	record := convert(&entry.Entry{
 		TraceID: []byte{
 			0x48, 0x01, 0x40, 0xf3, 0xd7, 0x70, 0xa5, 0xae, 0x32, 0xf0, 0xa2, 0x2b, 0x6a, 0x81, 0x2c, 0xff,
 		},
@@ -833,12 +822,11 @@ func BenchmarkConverter(b *testing.B) {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 
-				converter := NewConverter(zap.NewNop())
+				converter := NewConverter(zap.NewNop(), withWorkerCount(wc))
 				converter.Start()
 				defer converter.Stop()
 
 				b.ReportAllocs()
-				b.ResetTimer()
 
 				go func() {
 					for from := 0; from < entryCount; from += int(batchSize) {

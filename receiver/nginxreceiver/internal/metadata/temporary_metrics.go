@@ -2,8 +2,8 @@
 
 package metadata
 
-// WithCurrentConnectionsAsSum sets the current connections metric as a sum.
-func WithCurrentConnectionsAsSum() metricBuilderOption {
+// WithCurrentConnectionsAsGauge sets the current connections metric as a gauge.
+func WithCurrentConnectionsAsGauge() metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		if mb.metricNginxConnectionsCurrent.config.Enabled {
 			mb.metricNginxConnectionsCurrent.config.Enabled = false
@@ -14,9 +14,9 @@ func WithCurrentConnectionsAsSum() metricBuilderOption {
 	}
 }
 
-// WithCurrentConnectionsAsSumDisabled disables the current connections metric as a sum.
+// WithCurrentConnectionsAsGaugeDisabled disables the current connections metric as a gauge.
 // This is necessary because the metric must be enabled by default in order to be able to apply the other option.
-func WithCurrentConnectionsAsSumDisabled() metricBuilderOption {
+func WithCurrentConnectionsAsGaugeDisabled() metricBuilderOption {
 	return func(mb *MetricsBuilder) {
 		mb.metricTempConnectionsCurrent.config.Enabled = false
 	}

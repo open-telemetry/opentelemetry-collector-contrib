@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
@@ -65,7 +54,7 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 }
 
 // Start will instantiate required components needed by the Docker observer
-func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
+func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	dCtx, cancel := context.WithCancel(context.Background())
 	d.cancel = cancel
 	d.ctx = dCtx
@@ -114,7 +103,7 @@ func (d *dockerObserver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (d *dockerObserver) Shutdown(ctx context.Context) error {
+func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.cancel()
 	return nil
 }

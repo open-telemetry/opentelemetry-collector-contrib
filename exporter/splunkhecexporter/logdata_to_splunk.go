@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 
@@ -106,18 +95,8 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 }
 
 // nanoTimestampToEpochMilliseconds transforms nanoseconds into <sec>.<ms>. For example, 1433188255.500 indicates 1433188255 seconds and 500 milliseconds after epoch.
-func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) *float64 {
-	duration := time.Duration(ts)
-	if duration == 0 {
-		// some telemetry sources send data with timestamps set to 0 by design, as their original target destinations
-		// (i.e. before Open Telemetry) are setup with the know-how on how to consume them. In this case,
-		// we want to omit the time field when sending data to the Splunk HEC so that the HEC adds a timestamp
-		// at indexing time, which will be much more useful than a 0-epoch-time value.
-		return nil
-	}
-
-	val := duration.Round(time.Millisecond).Seconds()
-	return &val
+func nanoTimestampToEpochMilliseconds(ts pcommon.Timestamp) float64 {
+	return time.Duration(ts).Round(time.Millisecond).Seconds()
 }
 
 func mergeValue(dst map[string]any, k string, v any) {

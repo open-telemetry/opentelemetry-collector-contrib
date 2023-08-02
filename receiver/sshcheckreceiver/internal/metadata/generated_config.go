@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for sshcheckreceiver metrics.
+// MetricsConfig provides config for sshcheck metrics.
 type MetricsConfig struct {
 	SshcheckDuration     MetricConfig `mapstructure:"sshcheck.duration"`
 	SshcheckError        MetricConfig `mapstructure:"sshcheck.error"`
@@ -61,7 +61,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for sshcheckreceiver resource attributes.
+// ResourceAttributesConfig provides config for sshcheck resource attributes.
 type ResourceAttributesConfig struct {
 	SSHEndpoint ResourceAttributeConfig `mapstructure:"ssh.endpoint"`
 }
@@ -74,7 +74,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for sshcheckreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for sshcheck metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

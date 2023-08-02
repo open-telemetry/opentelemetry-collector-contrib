@@ -4,7 +4,9 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, splunk]
+  codeowners:
+    active: [dmitryax, crobert-1, atoulme]
 
 resource_attributes:
   oracledb.instance.name:

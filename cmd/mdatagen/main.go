@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -66,17 +55,19 @@ func run(ymlPath string) error {
 	if err = os.MkdirAll(codeDir, 0700); err != nil {
 		return fmt.Errorf("unable to create output directory %q: %w", codeDir, err)
 	}
-	if len(md.Status.Stability) > 0 {
+	if md.Status != nil {
 		if err = generateFile(filepath.Join(tmplDir, "status.go.tmpl"),
 			filepath.Join(codeDir, "generated_status.go"), md); err != nil {
 			return err
 		}
 
-		if err = inlineReplace(
-			filepath.Join(tmplDir, "readme.md.tmpl"),
-			filepath.Join(ymlDir, "README.md"),
-			md, statusStart, statusEnd); err != nil {
-			return err
+		if _, err = os.Stat(filepath.Join(ymlDir, "README.md")); err == nil {
+			if err = inlineReplace(
+				filepath.Join(tmplDir, "readme.md.tmpl"),
+				filepath.Join(ymlDir, "README.md"),
+				md, statusStart, statusEnd); err != nil {
+				return err
+			}
 		}
 	}
 	if len(md.Metrics) == 0 && len(md.ResourceAttributes) == 0 {
@@ -98,6 +89,17 @@ func run(ymlPath string) error {
 	if err = generateFile(filepath.Join(tmplDir, "config_test.go.tmpl"),
 		filepath.Join(codeDir, "generated_config_test.go"), md); err != nil {
 		return err
+	}
+
+	if len(md.ResourceAttributes) > 0 {
+		if err = generateFile(filepath.Join(tmplDir, "resource.go.tmpl"),
+			filepath.Join(codeDir, "generated_resource.go"), md); err != nil {
+			return err
+		}
+		if err = generateFile(filepath.Join(tmplDir, "resource_test.go.tmpl"),
+			filepath.Join(codeDir, "generated_resource_test.go"), md); err != nil {
+			return err
+		}
 	}
 
 	if len(md.Metrics) == 0 {
@@ -128,12 +130,6 @@ func templatize(tmplFile string, md metadata) *template.Template {
 				"attributeInfo": func(an attributeName) attribute {
 					return md.Attributes[an]
 				},
-				"attributeName": func(an attributeName) string {
-					if md.Attributes[an].NameOverride != "" {
-						return md.Attributes[an].NameOverride
-					}
-					return string(an)
-				},
 				"metricInfo": func(mn metricName) metric {
 					return md.Metrics[mn]
 				},
@@ -145,9 +141,30 @@ func templatize(tmplFile string, md metadata) *template.Template {
 					}
 					return false
 				},
-				"stringsJoin": strings.Join,
-				"casesTitle":  cases.Title(language.English).String,
-				"inc":         func(i int) int { return i + 1 },
+				"stringsJoin":  strings.Join,
+				"stringsSplit": strings.Split,
+				"userLinks": func(elems []string) []string {
+					result := make([]string, len(elems))
+					for i, elem := range elems {
+						if elem == "open-telemetry/collector-approvers" {
+							result[i] = "[@open-telemetry/collector-approvers](https://github.com/orgs/open-telemetry/teams/collector-approvers)"
+						} else {
+							result[i] = fmt.Sprintf("[@%s](https://www.github.com/%s)", elem, elem)
+						}
+					}
+					return result
+				},
+				"casesTitle": cases.Title(language.English).String,
+				"toCamelCase": func(s string) string {
+					caser := cases.Title(language.English).String
+					parts := strings.Split(s, "_")
+					result := ""
+					for _, part := range parts {
+						result += caser(part)
+					}
+					return result
+				},
+				"inc": func(i int) int { return i + 1 },
 				"distroURL": func(name string) string {
 					return distros[name]
 				},

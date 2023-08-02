@@ -43,10 +43,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUsageSystem:                    MetricConfig{Enabled: true},
 					ContainerCPUUsageTotal:                     MetricConfig{Enabled: true},
 					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: true},
+					ContainerCPUUtilization:                    MetricConfig{Enabled: true},
 					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: true},
 					ContainerMemoryActiveFile:                  MetricConfig{Enabled: true},
+					ContainerMemoryAnon:                        MetricConfig{Enabled: true},
 					ContainerMemoryCache:                       MetricConfig{Enabled: true},
 					ContainerMemoryDirty:                       MetricConfig{Enabled: true},
+					ContainerMemoryFile:                        MetricConfig{Enabled: true},
 					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: true},
 					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: true},
 					ContainerMemoryInactiveAnon:                MetricConfig{Enabled: true},
@@ -59,7 +62,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPgpgout:                     MetricConfig{Enabled: true},
 					ContainerMemoryRss:                         MetricConfig{Enabled: true},
 					ContainerMemoryRssHuge:                     MetricConfig{Enabled: true},
-					ContainerMemorySwap:                        MetricConfig{Enabled: true},
 					ContainerMemoryTotalActiveAnon:             MetricConfig{Enabled: true},
 					ContainerMemoryTotalActiveFile:             MetricConfig{Enabled: true},
 					ContainerMemoryTotalCache:                  MetricConfig{Enabled: true},
@@ -73,7 +75,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryTotalPgpgout:                MetricConfig{Enabled: true},
 					ContainerMemoryTotalRss:                    MetricConfig{Enabled: true},
 					ContainerMemoryTotalRssHuge:                MetricConfig{Enabled: true},
-					ContainerMemoryTotalSwap:                   MetricConfig{Enabled: true},
 					ContainerMemoryTotalUnevictable:            MetricConfig{Enabled: true},
 					ContainerMemoryTotalWriteback:              MetricConfig{Enabled: true},
 					ContainerMemoryUnevictable:                 MetricConfig{Enabled: true},
@@ -89,13 +90,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: true},
 					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: true},
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: true},
+					ContainerPidsCount:                         MetricConfig{Enabled: true},
+					ContainerPidsLimit:                         MetricConfig{Enabled: true},
+					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ContainerHostname:  ResourceAttributeConfig{Enabled: true},
-					ContainerID:        ResourceAttributeConfig{Enabled: true},
-					ContainerImageName: ResourceAttributeConfig{Enabled: true},
-					ContainerName:      ResourceAttributeConfig{Enabled: true},
-					ContainerRuntime:   ResourceAttributeConfig{Enabled: true},
+					ContainerCommandLine: ResourceAttributeConfig{Enabled: true},
+					ContainerHostname:    ResourceAttributeConfig{Enabled: true},
+					ContainerID:          ResourceAttributeConfig{Enabled: true},
+					ContainerImageID:     ResourceAttributeConfig{Enabled: true},
+					ContainerImageName:   ResourceAttributeConfig{Enabled: true},
+					ContainerName:        ResourceAttributeConfig{Enabled: true},
+					ContainerRuntime:     ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -120,10 +126,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerCPUUsageSystem:                    MetricConfig{Enabled: false},
 					ContainerCPUUsageTotal:                     MetricConfig{Enabled: false},
 					ContainerCPUUsageUsermode:                  MetricConfig{Enabled: false},
+					ContainerCPUUtilization:                    MetricConfig{Enabled: false},
 					ContainerMemoryActiveAnon:                  MetricConfig{Enabled: false},
 					ContainerMemoryActiveFile:                  MetricConfig{Enabled: false},
+					ContainerMemoryAnon:                        MetricConfig{Enabled: false},
 					ContainerMemoryCache:                       MetricConfig{Enabled: false},
 					ContainerMemoryDirty:                       MetricConfig{Enabled: false},
+					ContainerMemoryFile:                        MetricConfig{Enabled: false},
 					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: false},
 					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: false},
 					ContainerMemoryInactiveAnon:                MetricConfig{Enabled: false},
@@ -136,7 +145,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPgpgout:                     MetricConfig{Enabled: false},
 					ContainerMemoryRss:                         MetricConfig{Enabled: false},
 					ContainerMemoryRssHuge:                     MetricConfig{Enabled: false},
-					ContainerMemorySwap:                        MetricConfig{Enabled: false},
 					ContainerMemoryTotalActiveAnon:             MetricConfig{Enabled: false},
 					ContainerMemoryTotalActiveFile:             MetricConfig{Enabled: false},
 					ContainerMemoryTotalCache:                  MetricConfig{Enabled: false},
@@ -150,7 +158,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryTotalPgpgout:                MetricConfig{Enabled: false},
 					ContainerMemoryTotalRss:                    MetricConfig{Enabled: false},
 					ContainerMemoryTotalRssHuge:                MetricConfig{Enabled: false},
-					ContainerMemoryTotalSwap:                   MetricConfig{Enabled: false},
 					ContainerMemoryTotalUnevictable:            MetricConfig{Enabled: false},
 					ContainerMemoryTotalWriteback:              MetricConfig{Enabled: false},
 					ContainerMemoryUnevictable:                 MetricConfig{Enabled: false},
@@ -166,13 +173,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerNetworkIoUsageTxDropped:           MetricConfig{Enabled: false},
 					ContainerNetworkIoUsageTxErrors:            MetricConfig{Enabled: false},
 					ContainerNetworkIoUsageTxPackets:           MetricConfig{Enabled: false},
+					ContainerPidsCount:                         MetricConfig{Enabled: false},
+					ContainerPidsLimit:                         MetricConfig{Enabled: false},
+					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					ContainerHostname:  ResourceAttributeConfig{Enabled: false},
-					ContainerID:        ResourceAttributeConfig{Enabled: false},
-					ContainerImageName: ResourceAttributeConfig{Enabled: false},
-					ContainerName:      ResourceAttributeConfig{Enabled: false},
-					ContainerRuntime:   ResourceAttributeConfig{Enabled: false},
+					ContainerCommandLine: ResourceAttributeConfig{Enabled: false},
+					ContainerHostname:    ResourceAttributeConfig{Enabled: false},
+					ContainerID:          ResourceAttributeConfig{Enabled: false},
+					ContainerImageID:     ResourceAttributeConfig{Enabled: false},
+					ContainerImageName:   ResourceAttributeConfig{Enabled: false},
+					ContainerName:        ResourceAttributeConfig{Enabled: false},
+					ContainerRuntime:     ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -193,6 +205,62 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				ContainerCommandLine: ResourceAttributeConfig{Enabled: true},
+				ContainerHostname:    ResourceAttributeConfig{Enabled: true},
+				ContainerID:          ResourceAttributeConfig{Enabled: true},
+				ContainerImageID:     ResourceAttributeConfig{Enabled: true},
+				ContainerImageName:   ResourceAttributeConfig{Enabled: true},
+				ContainerName:        ResourceAttributeConfig{Enabled: true},
+				ContainerRuntime:     ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				ContainerCommandLine: ResourceAttributeConfig{Enabled: false},
+				ContainerHostname:    ResourceAttributeConfig{Enabled: false},
+				ContainerID:          ResourceAttributeConfig{Enabled: false},
+				ContainerImageID:     ResourceAttributeConfig{Enabled: false},
+				ContainerImageName:   ResourceAttributeConfig{Enabled: false},
+				ContainerName:        ResourceAttributeConfig{Enabled: false},
+				ContainerRuntime:     ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

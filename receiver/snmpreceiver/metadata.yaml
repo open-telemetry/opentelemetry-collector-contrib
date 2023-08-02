@@ -4,5 +4,6 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
-  
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [djaglowski, StefanKurek, tamir-michaeli]

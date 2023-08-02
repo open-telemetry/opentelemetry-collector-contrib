@@ -4,5 +4,6 @@ status:
   class: receiver
   stability:
     deprecated: [metrics]
-  distributions: 
-  
+  distributions: [splunk]
+  codeowners:
+    active: [dmitryax]

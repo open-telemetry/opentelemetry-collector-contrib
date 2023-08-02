@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "sshcheckreceiver"
+	Type             = "sshcheck"
 	MetricsStability = component.StabilityLevelAlpha
 )

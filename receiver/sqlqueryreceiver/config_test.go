@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver
 
@@ -43,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				Driver:     "mydriver",
 				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
@@ -106,14 +96,43 @@ func TestLoadConfig(t *testing.T) {
 			errorMessage: "'driver' cannot be empty",
 		},
 		{
-			fname:        "config-invalid-missing-metrics.yaml",
+			fname:        "config-invalid-missing-logs-metrics.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'query.metrics' cannot be empty",
+			errorMessage: "at least one of 'query.logs' and 'query.metrics' must not be empty",
 		},
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
 			errorMessage: "'datasource' cannot be empty",
+		},
+		{
+			fname: "config-logs.yaml",
+			id:    component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
+				},
+				Driver:     "mydriver",
+				DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+				Queries: []Query{
+					{
+						SQL:                "select * from test_logs where log_id > ?",
+						TrackingColumn:     "log_id",
+						TrackingStartValue: "10",
+						Logs: []LogsCfg{
+							{
+								BodyColumn: "log_body",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			fname:        "config-logs-missing-body-column.yaml",
+			id:           component.NewIDWithName(metadata.Type, ""),
+			errorMessage: "'body_column' must not be empty",
 		},
 		{
 			fname:        "config-unnecessary-aggregation.yaml",
@@ -123,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.id.String(), func(t *testing.T) {
+		t.Run(tt.fname, func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", tt.fname))
 			require.NoError(t, err)
 

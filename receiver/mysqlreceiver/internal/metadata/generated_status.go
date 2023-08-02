@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "mysqlreceiver"
+	Type             = "mysql"
 	MetricsStability = component.StabilityLevelBeta
 )

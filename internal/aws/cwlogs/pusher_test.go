@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cwlogs
 
@@ -209,14 +198,14 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 func TestPusher_addLogEventBatch(t *testing.T) {
 	p := newMockPusher()
 
-	cap := cap(p.logEventBatch.putLogEventsInput.LogEvents)
+	c := cap(p.logEventBatch.putLogEventsInput.LogEvents)
 	logEvent := NewEvent(timestampMs, msg)
 
-	for i := 0; i < cap; i++ {
+	for i := 0; i < c; i++ {
 		p.logEventBatch.putLogEventsInput.LogEvents = append(p.logEventBatch.putLogEventsInput.LogEvents, logEvent.InputLogEvent)
 	}
 
-	assert.Equal(t, cap, len(p.logEventBatch.putLogEventsInput.LogEvents))
+	assert.Equal(t, c, len(p.logEventBatch.putLogEventsInput.LogEvents))
 
 	assert.NotNil(t, p.addLogEvent(logEvent))
 	// the actual log event add operation happens after the func newLogEventBatchIfNeeded

@@ -1,10 +1,12 @@
-type: bigipreceiver
+type: bigip
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, StefanKurek]
 
 resource_attributes:
   bigip.virtual_server.name:
