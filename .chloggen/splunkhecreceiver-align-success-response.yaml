@@ -17,3 +17,5 @@ issues: [19219]
 # (optional) additional information to render under the primary note provided above;
 # these lines will be padded with two spaces and inserted directly into the document
 subtext: changes resp from plaintext "ok" to json {"text"："success", "code"：0}
+
+change_logs: [user, api]
