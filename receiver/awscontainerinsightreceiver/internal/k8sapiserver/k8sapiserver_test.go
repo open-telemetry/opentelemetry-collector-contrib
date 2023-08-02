@@ -67,6 +67,14 @@ func (m *mockK8sClient) GetDaemonSetClient() k8sclient.DaemonSetClient {
 	return mockClient
 }
 
+func (m *mockK8sClient) GetStatefulSetClient() k8sclient.StatefulSetClient {
+	return mockClient
+}
+
+func (m *mockK8sClient) GetReplicaSetClient() k8sclient.ReplicaSetClient {
+	return mockClient
+}
+
 func (m *mockK8sClient) ShutdownNodeClient() {
 
 }
@@ -80,6 +88,14 @@ func (m *mockK8sClient) ShutdownDeploymentClient() {
 }
 
 func (m *mockK8sClient) ShutdownDaemonSetClient() {
+
+}
+
+func (m *mockK8sClient) ShutdownStatefulSetClient() {
+
+}
+
+func (m *mockK8sClient) ShutdownReplicaSetClient() {
 
 }
 
@@ -101,6 +117,23 @@ func (client *MockClient) DeploymentInfos() []*k8sclient.DeploymentInfo {
 func (client *MockClient) DaemonSetInfos() []*k8sclient.DaemonSetInfo {
 	args := client.Called()
 	return args.Get(0).([]*k8sclient.DaemonSetInfo)
+}
+
+// k8sclient.StatefulSetClient
+func (client *MockClient) StatefulSetInfos() []*k8sclient.StatefulSetInfo {
+	args := client.Called()
+	return args.Get(0).([]*k8sclient.StatefulSetInfo)
+}
+
+// k8sclient.ReplicaSetClient
+func (client *MockClient) ReplicaSetInfos() []*k8sclient.ReplicaSetInfo {
+	args := client.Called()
+	return args.Get(0).([]*k8sclient.ReplicaSetInfo)
+}
+
+func (client *MockClient) ReplicaSetToDeployment() map[string]string {
+	args := client.Called()
+	return args.Get(0).(map[string]string)
 }
 
 // k8sclient.PodClient
@@ -232,17 +265,45 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			},
 		},
 	})
+	mockClient.On("ReplicaSetInfos").Return([]*k8sclient.ReplicaSetInfo{
+		{
+			Name:      "replicaset1",
+			Namespace: "kube-system",
+			Spec: &k8sclient.ReplicaSetSpec{
+				Replicas: 10,
+			},
+			Status: &k8sclient.ReplicaSetStatus{
+				Replicas:          5,
+				AvailableReplicas: 3,
+			},
+		},
+	})
+	mockClient.On("StatefulSetInfos").Return([]*k8sclient.StatefulSetInfo{
+		{
+			Name:      "statefulset1",
+			Namespace: "kube-system",
+			Spec: &k8sclient.StatefulSetSpec{
+				Replicas: 10,
+			},
+			Status: &k8sclient.StatefulSetStatus{
+				Replicas:          3,
+				AvailableReplicas: 1,
+			},
+		},
+	})
 
 	leaderElection := &LeaderElection{
-		k8sClient:        &mockK8sClient{},
-		nodeClient:       mockClient,
-		epClient:         mockClient,
-		podClient:        mockClient,
-		deploymentClient: mockClient,
-		daemonSetClient:  mockClient,
-		leading:          true,
-		broadcaster:      &mockEventBroadcaster{},
-		isLeadingC:       make(chan struct{}),
+		k8sClient:         &mockK8sClient{},
+		nodeClient:        mockClient,
+		epClient:          mockClient,
+		podClient:         mockClient,
+		deploymentClient:  mockClient,
+		daemonSetClient:   mockClient,
+		statefulSetClient: mockClient,
+		replicaSetClient:  mockClient,
+		leading:           true,
+		broadcaster:       &mockEventBroadcaster{},
+		isLeadingC:        make(chan struct{}),
 	}
 
 	t.Setenv("HOST_NAME", hostName)
@@ -282,8 +343,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		case ci.TypeClusterDeployment:
 			assertMetricValueEqual(t, metric, "deployment_spec_replicas", int64(10))
 			assertMetricValueEqual(t, metric, "deployment_status_replicas", int64(11))
-			assertMetricValueEqual(t, metric, "deployment_status_replicas_available", int64(9))
-			assertMetricValueEqual(t, metric, "deployment_status_replicas_unavailable", int64(2))
+			assertMetricValueEqual(t, metric, "status_replicas_available", int64(9))
+			assertMetricValueEqual(t, metric, "status_replicas_unavailable", int64(2))
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "deployment1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterDeployment", getStringAttrVal(metric, ci.MetricType))
@@ -295,6 +356,20 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "daemonset1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterDaemonSet", getStringAttrVal(metric, ci.MetricType))
+		case ci.TypeClusterReplicaSet:
+			assertMetricValueEqual(t, metric, "replicaset_spec_replicas", int64(10))
+			assertMetricValueEqual(t, metric, "replicaset_status_replicas", int64(5))
+			assertMetricValueEqual(t, metric, "status_replicas_available", int64(3))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "replicaset1", getStringAttrVal(metric, ci.PodNameKey))
+			assert.Equal(t, "ClusterReplicaSet", getStringAttrVal(metric, ci.MetricType))
+		case ci.TypeClusterStatefulSet:
+			assertMetricValueEqual(t, metric, "statefulset_spec_replicas", int64(10))
+			assertMetricValueEqual(t, metric, "statefulset_status_replicas", int64(3))
+			assertMetricValueEqual(t, metric, "status_replicas_available", int64(1))
+			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
+			assert.Equal(t, "statefulset1", getStringAttrVal(metric, ci.PodNameKey))
+			assert.Equal(t, "ClusterStatefulSet", getStringAttrVal(metric, ci.MetricType))
 		default:
 			assert.Fail(t, "Unexpected metric type: "+metricType)
 		}

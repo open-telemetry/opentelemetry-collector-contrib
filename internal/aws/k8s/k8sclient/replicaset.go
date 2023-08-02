@@ -46,7 +46,7 @@ func (nc *noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
 
-func (nd *noOpReplicaSetClient) ReplicaSetInfos() []*ReplicaSetInfo {
+func (nc *noOpReplicaSetClient) ReplicaSetInfos() []*ReplicaSetInfo {
 	return []*ReplicaSetInfo{}
 }
 
