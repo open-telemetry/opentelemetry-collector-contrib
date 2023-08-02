@@ -6,6 +6,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"errors"
 	"fmt"
+
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
