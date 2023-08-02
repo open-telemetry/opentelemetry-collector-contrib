@@ -159,6 +159,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 			kr.setting.Logger.Error("could not perform initial list for watch", zap.String("resource", config.gvr.String()), zap.Error(err))
 			return
 		}
+		// If we still don't have a resourceVersion we can try 1 as a last ditch effort.
+		// This also helps our unit tests since the fake client can't handle returning resource versions
+		// as part of a list of objects.
 		if resourceVersion == "" {
 			resourceVersion = defaultResourceVersion
 		}
