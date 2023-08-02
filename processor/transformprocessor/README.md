@@ -220,8 +220,8 @@ Examples:
 
 ### extract_sum_metric
 
-[!NOTE]
-This function supports Histograms, ExponentialHistograms and Summaries.
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
 
 `extract_sum_metric(is_monotonic, aggregation_temporality)`
 
@@ -231,8 +231,8 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, and `description`. The new metric that is created will be passed to all functions in the metrics statements list.  Function conditions will apply.
 
-[!WARNING]
-This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity and aggregation temporality should be.
+> [!WARNING]  
+> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity and aggregation temporality should be.
 
 Examples:
 
