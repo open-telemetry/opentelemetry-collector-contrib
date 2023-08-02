@@ -61,7 +61,7 @@ func extractSumMetric(monotonic bool, aggTempEnum ottl.Enum) (ottl.ExprFunc[ottl
 			return nil, invalidMetricTypeError
 		}
 
-		sumMetric := tCtx.GetMetrics().AppendEmpty()
+		sumMetric := pmetric.NewMetric()
 		sumMetric.SetDescription(metric.Description())
 		sumMetric.SetName(metric.Name() + "_sum")
 		sumMetric.SetUnit(metric.Unit())
@@ -93,6 +93,10 @@ func extractSumMetric(monotonic bool, aggTempEnum ottl.Enum) (ottl.ExprFunc[ottl
 			}
 		default:
 			return nil, invalidMetricTypeError
+		}
+
+		if sumMetric.Sum().DataPoints().Len() > 0 {
+			sumMetric.MoveTo(tCtx.GetMetrics().AppendEmpty())
 		}
 
 		return nil, nil

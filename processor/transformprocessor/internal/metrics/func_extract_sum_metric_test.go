@@ -198,12 +198,6 @@ func Test_extractSumMetric(t *testing.T) {
 				histogramMetric := getTestHistogramMetric()
 				histogramMetric.Histogram().DataPoints().At(0).RemoveSum()
 				histogramMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sumMetric.Sum().SetIsMonotonic(true)
-
-				sumMetric.SetName(histogramMetric.Name() + "_sum")
 			},
 		},
 		{
@@ -303,12 +297,6 @@ func Test_extractSumMetric(t *testing.T) {
 				expHistogramMetric := getTestExponentialHistogramMetric()
 				expHistogramMetric.ExponentialHistogram().DataPoints().At(0).RemoveSum()
 				expHistogramMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sumMetric.Sum().SetIsMonotonic(true)
-
-				sumMetric.SetName(expHistogramMetric.Name() + "_sum")
 			},
 		},
 		{
