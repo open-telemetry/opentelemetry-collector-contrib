@@ -6,7 +6,9 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"fmt"
 	"math"
+	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/component"
 )
 
@@ -49,21 +51,21 @@ type Config struct {
 	//    span-to-metrics pipeline based on this mechanism may have
 	//    anomalous behavior.
 	//
-	// - "consistent_resample": Using an OTel-specified consistent
-	//   sampling mechanism, this sampler selectively reduces the
-	//   effective sampling probability of arriving spans.  This
-	//   can be useful to select a small fraction of complete
-	//   traces from a stream with mixed sampling rates.  The rate
-	//   of spans passing through depends on how much sampling has
-	//   already been applied.  If an arriving span was head
-	//   sampled at the same probability it passes through.  If
-	//   the span arrives with lower probability, a warning is
-	//   logged because it means this sampler is configured with
-	//   too large a sampling probability to ensure complete traces.
+	// - "resample": Using an OTel-specified consistent sampling
+	//   mechanism, this sampler selectively reduces the effective
+	//   sampling probability of arriving spans.  This can be
+	//   useful to select a small fraction of complete traces from
+	//   a stream with mixed sampling rates.  The rate of spans
+	//   passing through depends on how much sampling has already
+	//   been applied.  If an arriving span was head sampled at
+	//   the same probability it passes through.  If the span
+	//   arrives with lower probability, a warning is logged
+	//   because it means this sampler is configured with too
+	//   large a sampling probability to ensure complete traces.
 	//
-	// - "consistent_downsample": Using an OTel-specified consistent
-	//   sampling mechanism, this sampler reduces the effective sampling
-	//   probability of each span by `Sampling
+	// - "downsample": Using an OTel-specified consistent sampling
+	//   mechanism, this sampler reduces the effective sampling
+	//   probability of each span by `SamplingProbability`.
 	SamplerMode string `mapstructure:"sampler_mode"`
 
 	///////
@@ -93,7 +95,9 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("negative sampling rate: %.2f%%", cfg.SamplingPercentage)
 	case ratio == 0:
 		// Special case
-	case ratio < 0x1p-56:
+	case ratio < sampling.MinSamplingProb:
+		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
+	case ratio > 1:
 		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
 	case math.IsInf(ratio, 0) || math.IsNaN(ratio):
 		return fmt.Errorf("sampling rate is invalid: %.2f%%", cfg.SamplingPercentage)
@@ -102,5 +106,34 @@ func (cfg *Config) Validate() error {
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}
+
+	// Force the mode to lower case, check validity
+	if _, err := parseSamplerMode(cfg.SamplerMode); err != nil {
+		return err
+	}
 	return nil
+}
+
+type samplerMode int
+
+const (
+	modeUnset = iota
+	modeHashSeed
+	modeDownsample
+	modeResample
+)
+
+func parseSamplerMode(s string) (samplerMode, error) {
+	switch strings.ToLower(s) {
+	case "resample":
+		return modeResample, nil
+	case "hash_seed":
+		return modeHashSeed, nil
+	case "downsample":
+		return modeDownsample, nil
+	case "":
+		return modeUnset, nil
+	default:
+		return modeUnset, fmt.Errorf("unknown sampler mode: %q", s)
+	}
 }

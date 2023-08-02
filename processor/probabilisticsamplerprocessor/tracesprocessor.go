@@ -46,12 +46,12 @@ const (
 )
 
 type traceSampler interface {
-	// shouldSample reports the result based on a probabilistic decision.
-	shouldSample(tid pcommon.TraceID, rnd sampling.Randomness) bool
+	// decide reports the result based on a probabilistic decision.
+	decide(s ptrace.Span) bool
 
 	// updateTracestate modifies the OTelTraceState assuming it will be
 	// sampled, probabilistically or otherwise.  The "should" parameter
-	// is the result from shouldSample(), for the span's TraceID, which
+	// is the result from decide(), for the span's TraceID, which
 	// will not be recalculated.
 	updateTracestate(tid pcommon.TraceID, rnd sampling.Randomness, should bool, otts *sampling.OTelTraceState)
 }
@@ -69,12 +69,29 @@ type traceHashSampler struct {
 	svalueEncoding         string
 }
 
-type traceIDSampler struct {
+type traceResampler struct {
 	// TraceID-randomness-based calculation
 	traceIDThreshold sampling.Threshold
 
 	// tValueEncoding includes the leading "t:"
 	tValueEncoding string
+}
+
+func randomnessFromSpan(s ptrace.Span) (sampling.Randomness, *sampling.W3CTraceState, error) {
+	state := s.TraceState()
+	raw := state.AsRaw()
+
+	// Parse the arriving TraceState.
+	wts, err := sampling.NewW3CTraceState(raw)
+	var randomness sampling.Randomness
+	if err == nil && wts.OTelValue().HasRValue() {
+		// When the tracestate is OK and has r-value, use it.
+		randomness = wts.OTelValue().RValueRandomness()
+	} else {
+		// All other cases, use the TraceID.
+		randomness = sampling.RandomnessFromTraceID(s.TraceID())
+	}
+	return randomness, wts, err
 }
 
 // newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
@@ -91,8 +108,19 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		logger: set.Logger,
 	}
 
+	// error ignored below b/c already checked once
+	mode, _ := parseSamplerMode(cfg.SamplerMode)
+	if mode == modeUnset {
+		if cfg.HashSeed != 0 {
+			mode = modeHashSeed
+		} else {
+			mode = modeDownsample
+		}
+	}
+
 	ratio := pct / 100
-	if cfg.HashSeed != 0 {
+	switch mode {
+	case modeHashSeed:
 		ts := &traceHashSampler{}
 
 		// Adjust sampling percentage on private so recalculations are avoided.
@@ -102,28 +130,25 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		ts.svalueEncoding = strconv.FormatFloat(ratio, 'g', 4, 64)
 
 		tp.sampler = ts
-	} else {
-		// Encode t-value (OTEP 226), like %.4f.  (See FormatFloat().)
-		tval, err := sampling.ProbabilityToEncoded(ratio, 'g', 4)
-		if err != nil {
-			return nil, err
-		}
-		// Parse the exact value of probability encoded at this precision.
-		ratio, _, err = sampling.EncodedToProbabilityAndAdjustedCount(tval)
+	case modeResample:
+		// Encode t-value: for cases where the incoming context has
+		tval, err := sampling.ProbabilityToTValue(ratio)
 		if err != nil {
 			return nil, err
 		}
 		// Compute the sampling threshold from the exact probability.
-		threshold, err := sampling.ProbabilityToThreshold(ratio)
+		threshold, err := sampling.TValueToThreshold(tval)
 		if err != nil {
 			return nil, err
 		}
 
-		ts := &traceIDSampler{}
+		ts := &traceResampler{}
 		ts.tValueEncoding = tval
 		ts.traceIDThreshold = threshold
 
 		tp.sampler = ts
+	case modeDownsample:
+		// TODO
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -135,40 +160,24 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (ts *traceHashSampler) shouldSample(tid pcommon.TraceID, _ sampling.Randomness) bool {
+func (ts *traceHashSampler) decide(s ptrace.Span) bool {
 	// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
 	// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 	// Hashing here prevents bias due to such systems.
+	tid := s.TraceID()
 	return computeHash(tid[:], ts.hashSeed)&bitMaskHashBuckets < ts.hashScaledSamplingRate
 }
 
 func (ts *traceHashSampler) updateTracestate(tid pcommon.TraceID, _ sampling.Randomness, should bool, otts *sampling.OTelTraceState) {
-	if !should {
-		otts.SetSValue(sampling.ProbabilityZeroEncoding, 0)
-		return
-	}
-
-	if otts.HasSValue() && otts.SValueProbability() == 0 {
-		// Zero count in, zero count out.
-		otts.SetSValue(sampling.ProbabilityZeroEncoding, 0)
-		return
-	}
-
-	if !otts.HasSValue() {
-		otts.SetSValue(ts.svalueEncoding, ts.probability)
-		return
-	}
-
-	product := ts.probability * otts.SValueProbability()
-
-	otts.SetSValue(strconv.FormatFloat(product, 'g', 4, 64), product)
+	// No action, nothing is specified.
 }
 
-func (ts *traceIDSampler) shouldSample(_ pcommon.TraceID, randomness sampling.Randomness) bool {
+func (ts *traceResampler) decide(s ptrace.Span) bool {
+	rnd := randomnessFromSpan(s)
 	return ts.traceIDThreshold.ShouldSample(randomness)
 }
 
-func (ts *traceIDSampler) updateTracestate(tid pcommon.TraceID, rnd sampling.Randomness, should bool, otts *sampling.OTelTraceState) {
+func (ts *traceResampler) updateTracestate(tid pcommon.TraceID, rnd sampling.Randomness, should bool, otts *sampling.OTelTraceState) {
 	// When this sampler decided not to sample, the t-value becomes zero.
 	// Incoming TValue consistency is not checked when this happens.
 	if !should {
@@ -202,8 +211,8 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				sp := parseSpanSamplingPriority(s)
-				if sp == doNotSampleSpan {
+				priority := parseSpanSamplingPriority(s)
+				if priority == doNotSampleSpan {
 					// The OpenTelemetry mentions this as a "hint" we take a stronger
 					// approach and do not sample the span since some may use it to
 					// remove specific spans from traces.
@@ -215,24 +224,9 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 					return true
 				}
 
-				state := s.TraceState()
-				raw := state.AsRaw()
+				probSample, otts := tp.sampler.decide(s)
 
-				// Parse the arriving TraceState.
-				wts, err := sampling.NewW3CTraceState(raw)
-				var randomness sampling.Randomness
-				if err != nil {
-					tp.logger.Info("span trace state", zap.Error(err))
-					randomness = sampling.RandomnessFromTraceID(s.TraceID())
-				} else if wts.OTelValue().HasRValue() {
-					randomness = wts.OTelValue().RValueRandomness()
-				} else {
-					randomness = sampling.RandomnessFromTraceID(s.TraceID())
-				}
-
-				forceSample := sp == mustSampleSpan
-
-				probSample := tp.sampler.shouldSample(s.TraceID(), randomness)
+				forceSample := priority == mustSampleSpan
 
 				sampled := forceSample || probSample
 
