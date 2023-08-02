@@ -1,0 +1,19 @@
+# use this changelog template to create an entry for the release notes. if
+# your changes don't affect end-users (e.g. test fixes or tooling updates),
+# title your pull request with "[chore]" or use the "skip changelog" label
+
+# choose one: breaking, deprecation, new_component, enhancement, or bug_fix
+change_type: bug_fix
+
+# name of the component or a single word describing the area of concern
+component: splunkhecreceiver
+
+# brief description of the proposed changes
+note: aligns success resp body w/ splunk enterprise
+
+# tracking issues related to the changes (or a pr number if none exist)
+issues: [19219]
+
+# (optional) additional information to render under the primary note provided above;
+# these lines will be padded with two spaces and inserted directly into the document
+subtext: changes resp from plaintext "ok" to json {"text"："success", "code"：0}

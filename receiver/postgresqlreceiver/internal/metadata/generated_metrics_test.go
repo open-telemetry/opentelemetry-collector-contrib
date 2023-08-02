@@ -142,7 +142,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 
-			metrics := mb.Emit(WithPostgresqlDatabaseName("postgresql.database.name-val"), WithPostgresqlIndexName("postgresql.index.name-val"), WithPostgresqlTableName("postgresql.table.name-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -151,32 +156,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("postgresql.database.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlDatabaseName.Enabled, ok)
-			if mb.resourceAttributesConfig.PostgresqlDatabaseName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "postgresql.database.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("postgresql.index.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlIndexName.Enabled, ok)
-			if mb.resourceAttributesConfig.PostgresqlIndexName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "postgresql.index.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("postgresql.table.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.PostgresqlTableName.Enabled, ok)
-			if mb.resourceAttributesConfig.PostgresqlTableName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "postgresql.table.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

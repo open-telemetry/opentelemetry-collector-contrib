@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -39,17 +39,22 @@ func Transform(statefulset *appsv1.StatefulSet) *appsv1.StatefulSet {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, ss *appsv1.StatefulSet) pmetric.Metrics {
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, ss *appsv1.StatefulSet) pmetric.Metrics {
 	if ss.Spec.Replicas == nil {
 		return pmetric.NewMetrics()
 	}
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, int64(*ss.Spec.Replicas))
 	mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, int64(ss.Status.ReadyReplicas))
 	mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, int64(ss.Status.CurrentReplicas))
 	mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, int64(ss.Status.UpdatedReplicas))
-	return mb.Emit(imetadata.WithK8sStatefulsetUID(string(ss.UID)), imetadata.WithK8sStatefulsetName(ss.Name), imetadata.WithK8sNamespaceName(ss.Namespace), imetadata.WithOpencensusResourcetype("k8s"))
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb.SetK8sStatefulsetUID(string(ss.UID))
+	rb.SetK8sStatefulsetName(ss.Name)
+	rb.SetK8sNamespaceName(ss.Namespace)
+	rb.SetOpencensusResourcetype("k8s")
+	return mb.Emit(imetadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(ss *appsv1.StatefulSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
