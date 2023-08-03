@@ -206,6 +206,50 @@ func TestLogToCWLog(t *testing.T) {
 				LogStreamName: "Foo",
 			},
 		},
+		{
+			name:     "invalid emf log",
+			resource: testResource(),
+			log:      createPLog(`1000{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+				EmfOnly:       true,
+			},
+			wantErr: true,
+		},
+		{
+			name:     "invalid emf log no log group",
+			resource: testResource(),
+			log:      createPLog(`{"Timestamp":1574109732004,"log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+				EmfOnly:       true,
+			},
+			wantErr: true,
+		},
+		{
+			name:     "raw emf v0 emf only true",
+			resource: testResource(),
+			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+			config: Config{
+				LogGroupName:  "tLogGroup",
+				LogStreamName: "tStreamName",
+				RawLog:        true,
+				EmfOnly:       true,
+			},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
+				},
+				LogGroupName:  "Foo",
+				LogStreamName: "tStreamName",
+			},
+		},
 	}
 
 	for _, tt := range tests {

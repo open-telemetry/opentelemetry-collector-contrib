@@ -202,7 +202,7 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config) ([]*cwlogs.E
 				log := logs.At(k)
 				event, err := logToCWLog(resourceAttrs, log, config)
 				if err != nil {
-					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
+					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err), zap.String("log", log.Body().AsString()))
 					dropped++
 				} else {
 					out = append(out, event)
@@ -238,17 +238,21 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 		var metadata emfMetadata
 		bodyString := log.Body().AsString()
 		err = json.Unmarshal([]byte(bodyString), &metadata)
+		switch {
 		// v1 emf json
-		if err == nil && metadata.AWSMetadata != nil && metadata.AWSMetadata.LogGroupName != "" {
+		case err == nil && metadata.AWSMetadata != nil && metadata.AWSMetadata.LogGroupName != "":
 			logGroupName = metadata.AWSMetadata.LogGroupName
 			if metadata.AWSMetadata.LogStreamName != "" {
 				logStreamName = metadata.AWSMetadata.LogStreamName
 			}
-		} else /* v0 emf json */ if err == nil && metadata.LogGroupName != "" {
+		// v0 emf json
+		case err == nil && metadata.LogGroupName != "":
 			logGroupName = metadata.LogGroupName
 			if metadata.LogStreamName != "" {
 				logStreamName = metadata.LogStreamName
 			}
+		case config.EmfOnly:
+			return &cwlogs.Event{}, errors.New("invalid emf log")
 		}
 		bodyJSON = []byte(bodyString)
 	} else {

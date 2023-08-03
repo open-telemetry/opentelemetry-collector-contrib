@@ -57,6 +57,10 @@ type Config struct {
 	// Export raw log string instead of log wrapper
 	// Required for emf logs
 	RawLog bool `mapstructure:"raw_log,omitempty"`
+
+	// Only allow emf logs
+	// If this is true raw log must also be true
+	EmfOnly bool `mapstructure:"emf_only,omitempty"`
 }
 
 type QueueSettings struct {
@@ -79,6 +83,9 @@ func (config *Config) Validate() error {
 	}
 	if !isValidRetentionValue(config.LogRetention) {
 		return errors.New("invalid value for retention policy.  Please make sure to use the following values: 0 (Never Expire), 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653")
+	}
+	if config.EmfOnly && !config.RawLog {
+		return errors.New("emf only is true, but raw log is false")
 	}
 	return nil
 }
