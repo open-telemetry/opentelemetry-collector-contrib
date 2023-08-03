@@ -239,7 +239,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 
 	resp, err := prwe.client.Do(req)
 	if err != nil {
-		return consumererror.NewPermanent(err)
+		return fmt.Errorf("remote write network issue; err = %w", err)
 	}
 	defer resp.Body.Close()
 
