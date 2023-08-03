@@ -20,7 +20,7 @@ const (
 	TCP6 Transport = "tcp6"
 )
 
-// Create a Transport based on the transport string or return error if it is not supported.
+// NewTransport creates a Transport based on the transport string or returns an empty Transport.
 func NewTransport(ts string) Transport {
 	trans := Transport(ts)
 	switch trans {
@@ -32,7 +32,7 @@ func NewTransport(ts string) Transport {
 	return Transport("")
 }
 
-// Returns the string of this transport.
+// String casts the transport to a String if the Transport is supported. Return an empty Transport overwise.
 func (trans Transport) String() string {
 	switch trans {
 	case UDP, UDP4, UDP6, TCP, TCP4, TCP6:
@@ -41,7 +41,7 @@ func (trans Transport) String() string {
 	return ""
 }
 
-// Returns true if the transport is packet based.
+// IsPacketTransport returns true if the transport is packet based.
 func (trans Transport) IsPacketTransport() bool {
 	switch trans {
 	case UDP, UDP4, UDP6:
@@ -50,7 +50,7 @@ func (trans Transport) IsPacketTransport() bool {
 	return false
 }
 
-// Returns true if the transport is stream based.
+// IsStreamTransport returns true if the transport is stream based.
 func (trans Transport) IsStreamTransport() bool {
 	switch trans {
 	case TCP, TCP4, TCP6:
