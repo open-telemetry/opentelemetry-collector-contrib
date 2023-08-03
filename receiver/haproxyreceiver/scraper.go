@@ -30,7 +30,6 @@ var (
 type scraper struct {
 	endpoint string
 	logger   *zap.Logger
-	rb       *metadata.ResourceBuilder
 	mb       *metadata.MetricsBuilder
 }
 
@@ -223,10 +222,11 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		s.rb.SetProxyName(record["pxname"])
-		s.rb.SetServiceName(record["svname"])
-		s.rb.SetHaproxyAddr(s.endpoint)
-		s.mb.EmitForResource(metadata.WithResource(s.rb.Emit()))
+		rb := s.mb.NewResourceBuilder()
+		rb.SetProxyName(record["pxname"])
+		rb.SetServiceName(record["svname"])
+		rb.SetHaproxyAddr(s.endpoint)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(scrapeErrors) > 0 {
@@ -272,7 +272,6 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	return &scraper{
 		endpoint: cfg.Endpoint,
 		logger:   settings.TelemetrySettings.Logger,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

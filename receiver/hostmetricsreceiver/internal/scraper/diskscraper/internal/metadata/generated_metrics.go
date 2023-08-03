@@ -416,10 +416,11 @@ func newMetricSystemDiskWeightedIoTime(cfg MetricConfig) metricSystemDiskWeighte
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                 // maximum observed number of metrics per resource.
-	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo // contains version information
+	config                            MetricsBuilderConfig // config of the metrics builder.
+	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                   int                  // maximum observed number of metrics per resource.
+	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                         component.BuildInfo  // contains version information.
 	metricSystemDiskIo                metricSystemDiskIo
 	metricSystemDiskIoTime            metricSystemDiskIoTime
 	metricSystemDiskMerged            metricSystemDiskMerged
@@ -441,6 +442,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,

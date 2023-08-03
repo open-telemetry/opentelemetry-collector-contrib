@@ -277,8 +277,15 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerUptimeDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetContainerCommandLine("container.command_line-val")
+			rb.SetContainerHostname("container.hostname-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageID("container.image.id-val")
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerName("container.name-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

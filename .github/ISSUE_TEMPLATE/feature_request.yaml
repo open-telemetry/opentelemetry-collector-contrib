@@ -206,7 +206,6 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
-      - receiver/prometheusexec
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb
