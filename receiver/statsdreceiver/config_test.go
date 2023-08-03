@@ -82,12 +82,11 @@ func TestValidate(t *testing.T) {
 	}
 
 	const (
-		negativeAggregationIntervalErr      = "aggregation_interval must be a positive duration"
-		noObjectNameErr                     = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr             = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
-		observerTypeNotSupportErr           = "observer_type is not supported for histogram and timing metrics: %s"
-		invalidHistogramErr                 = "histogram configuration requires observer_type: histogram"
-		socketConfigurationWithUDSServerErr = "socket configuration is unsupported if the transport is not a unix domain socket"
+		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
+		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
 	)
 
 	tests := []test{
