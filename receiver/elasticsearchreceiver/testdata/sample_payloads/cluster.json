@@ -1,0 +1,330 @@
+{
+  "_nodes" : {
+    "total" : 1,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "A8Fcp6KfTweCBKzFBkVe9w",
+  "timestamp" : 1668503134584,
+  "status" : "yellow",
+  "indices" : {
+    "count" : 7,
+    "shards" : {
+      "total" : 7,
+      "primaries" : 7,
+      "replication" : 0.0,
+      "index" : {
+        "shards" : {
+          "min" : 1,
+          "max" : 1,
+          "avg" : 1.0
+        },
+        "primaries" : {
+          "min" : 1,
+          "max" : 1,
+          "avg" : 1.0
+        },
+        "replication" : {
+          "min" : 0.0,
+          "max" : 0.0,
+          "avg" : 0.0
+        }
+      }
+    },
+    "docs" : {
+      "count" : 16,
+      "deleted" : 0
+    },
+    "store" : {
+      "size" : "87kb",
+      "size_in_bytes" : 89166,
+      "total_data_set_size" : "87kb",
+      "total_data_set_size_in_bytes" : 89166,
+      "reserved" : "0b",
+      "reserved_in_bytes" : 0
+    },
+    "fielddata" : {
+      "memory_size" : "0b",
+      "memory_size_in_bytes" : 0,
+      "evictions" : 2
+    },
+    "query_cache" : {
+      "memory_size" : "0b",
+      "memory_size_in_bytes" : 0,
+      "total_count" : 0,
+      "hit_count" : 0,
+      "miss_count" : 0,
+      "cache_size" : 0,
+      "cache_count" : 0,
+      "evictions" : 3
+    },
+    "completion" : {
+      "size" : "0b",
+      "size_in_bytes" : 0
+    },
+    "segments" : {
+      "count" : 10,
+      "memory" : "29.9kb",
+      "memory_in_bytes" : 30656,
+      "terms_memory" : "22.5kb",
+      "terms_memory_in_bytes" : 23040,
+      "stored_fields_memory" : "4.7kb",
+      "stored_fields_memory_in_bytes" : 4880,
+      "term_vectors_memory" : "488b",
+      "term_vectors_memory_in_bytes" : 488,
+      "norms_memory" : "1.1kb",
+      "norms_memory_in_bytes" : 1216,
+      "points_memory" : "0b",
+      "points_memory_in_bytes" : 0,
+      "doc_values_memory" : "1kb",
+      "doc_values_memory_in_bytes" : 1032,
+      "index_writer_memory" : "0b",
+      "index_writer_memory_in_bytes" : 0,
+      "version_map_memory" : "0b",
+      "version_map_memory_in_bytes" : 0,
+      "fixed_bit_set" : "0b",
+      "fixed_bit_set_memory_in_bytes" : 0,
+      "max_unsafe_auto_id_timestamp" : -1,
+      "file_sizes" : { }
+    },
+    "mappings" : {
+      "field_types" : [
+        {
+          "name" : "boolean",
+          "count" : 1,
+          "index_count" : 1,
+          "script_count" : 0
+        },
+        {
+          "name" : "constant_keyword",
+          "count" : 3,
+          "index_count" : 1,
+          "script_count" : 0
+        },
+        {
+          "name" : "date",
+          "count" : 7,
+          "index_count" : 3,
+          "script_count" : 0
+        },
+        {
+          "name" : "float",
+          "count" : 1,
+          "index_count" : 1,
+          "script_count" : 0
+        },
+        {
+          "name" : "ip",
+          "count" : 1,
+          "index_count" : 1,
+          "script_count" : 0
+        },
+        {
+          "name" : "keyword",
+          "count" : 30,
+          "index_count" : 5,
+          "script_count" : 0
+        },
+        {
+          "name" : "long",
+          "count" : 2,
+          "index_count" : 2,
+          "script_count" : 0
+        },
+        {
+          "name" : "object",
+          "count" : 14,
+          "index_count" : 3,
+          "script_count" : 0
+        },
+        {
+          "name" : "point",
+          "count" : 1,
+          "index_count" : 1,
+          "script_count" : 0
+        },
+        {
+          "name" : "text",
+          "count" : 17,
+          "index_count" : 6,
+          "script_count" : 0
+        }
+      ],
+      "runtime_field_types" : [ ]
+    },
+    "analysis" : {
+      "char_filter_types" : [ ],
+      "tokenizer_types" : [ ],
+      "filter_types" : [ ],
+      "analyzer_types" : [
+        {
+          "name" : "custom",
+          "count" : 1,
+          "index_count" : 1
+        }
+      ],
+      "built_in_char_filters" : [ ],
+      "built_in_tokenizers" : [
+        {
+          "name" : "whitespace",
+          "count" : 1,
+          "index_count" : 1
+        }
+      ],
+      "built_in_filters" : [
+        {
+          "name" : "lowercase",
+          "count" : 1,
+          "index_count" : 1
+        },
+        {
+          "name" : "type_as_payload",
+          "count" : 1,
+          "index_count" : 1
+        }
+      ],
+      "built_in_analyzers" : [ ]
+    },
+    "versions" : [
+      {
+        "version" : "7.17.6",
+        "index_count" : 7,
+        "primary_shard_count" : 7,
+        "total_primary_size" : "87kb",
+        "total_primary_bytes" : 89166
+      }
+    ]
+  },
+  "nodes" : {
+    "count" : {
+      "total" : 1,
+      "coordinating_only" : 0,
+      "data" : 1,
+      "data_cold" : 1,
+      "data_content" : 1,
+      "data_frozen" : 1,
+      "data_hot" : 1,
+      "data_warm" : 1,
+      "ingest" : 1,
+      "master" : 1,
+      "ml" : 1,
+      "remote_cluster_client" : 1,
+      "transform" : 1,
+      "voting_only" : 0
+    },
+    "versions" : [
+      "7.17.6"
+    ],
+    "os" : {
+      "available_processors" : 2,
+      "allocated_processors" : 2,
+      "names" : [
+        {
+          "name" : "Linux",
+          "count" : 1
+        }
+      ],
+      "pretty_names" : [
+        {
+          "pretty_name" : "Ubuntu 20.04.4 LTS",
+          "count" : 1
+        }
+      ],
+      "architectures" : [
+        {
+          "arch" : "amd64",
+          "count" : 1
+        }
+      ],
+      "mem" : {
+        "total" : "7.7gb",
+        "total_in_bytes" : 8349937664,
+        "free" : "1.1gb",
+        "free_in_bytes" : 1257656320,
+        "used" : "6.6gb",
+        "used_in_bytes" : 7092281344,
+        "free_percent" : 15,
+        "used_percent" : 85
+      }
+    },
+    "process" : {
+      "cpu" : {
+        "percent" : 0
+      },
+      "open_file_descriptors" : {
+        "min" : 308,
+        "max" : 308,
+        "avg" : 308
+      }
+    },
+    "jvm" : {
+      "max_uptime" : "6.3m",
+      "max_uptime_in_millis" : 379751,
+      "versions" : [
+        {
+          "version" : "18.0.2",
+          "vm_name" : "OpenJDK 64-Bit Server VM",
+          "vm_version" : "18.0.2+9-61",
+          "vm_vendor" : "Oracle Corporation",
+          "bundled_jdk" : true,
+          "using_bundled_jdk" : true,
+          "count" : 1
+        }
+      ],
+      "mem" : {
+        "heap_used" : "271.9mb",
+        "heap_used_in_bytes" : 285158912,
+        "heap_max" : "3.8gb",
+        "heap_max_in_bytes" : 4177526784
+      },
+      "threads" : 40
+    },
+    "fs" : {
+      "total" : "58.7gb",
+      "total_in_bytes" : 63089455104,
+      "free" : "21.7gb",
+      "free_in_bytes" : 23328845824,
+      "available" : "18.7gb",
+      "available_in_bytes" : 20090896384
+    },
+    "plugins" : [ ],
+    "network_types" : {
+      "transport_types" : {
+        "security4" : 1
+      },
+      "http_types" : {
+        "security4" : 1
+      }
+    },
+    "discovery_types" : {
+      "single-node" : 1
+    },
+    "packaging_types" : [
+      {
+        "flavor" : "default",
+        "type" : "docker",
+        "count" : 1
+      }
+    ],
+    "ingest" : {
+      "number_of_pipelines" : 1,
+      "processor_stats" : {
+        "gsub" : {
+          "count" : 0,
+          "failed" : 0,
+          "current" : 0,
+          "time" : "0s",
+          "time_in_millis" : 0
+        },
+        "script" : {
+          "count" : 0,
+          "failed" : 0,
+          "current" : 0,
+          "time" : "0s",
+          "time_in_millis" : 0
+        }
+      }
+    }
+  }
+}

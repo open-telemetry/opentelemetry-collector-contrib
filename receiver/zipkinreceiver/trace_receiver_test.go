@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package zipkinreceiver
 
@@ -34,10 +23,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 )
 
@@ -46,8 +36,6 @@ const (
 	zipkinV2NoTimestamp = "../../pkg/translator/zipkin/zipkinv2/testdata/zipkin_v2_notimestamp.json"
 	zipkinV1SingleBatch = "../../pkg/translator/zipkin/zipkinv1/testdata/zipkin_v1_single_batch.json"
 )
-
-var zipkinReceiverID = component.NewIDWithName(typeStr, "receiver_test")
 
 func TestNew(t *testing.T) {
 	type args struct {
@@ -74,12 +62,11 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: tt.args.address,
 				},
 			}
-			got, err := newReceiver(cfg, tt.args.nextConsumer, componenttest.NewNopReceiverCreateSettings())
+			got, err := newReceiver(cfg, tt.args.nextConsumer, receivertest.NewNopCreateSettings())
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
 				require.NotNil(t, got)
@@ -97,12 +84,11 @@ func TestZipkinReceiverPortAlreadyInUse(t *testing.T) {
 	_, portStr, err := net.SplitHostPort(l.Addr().String())
 	require.NoError(t, err, "failed to split listener address: %v", err)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:" + portStr,
 		},
 	}
-	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	traceReceiver, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err, "Failed to create receiver: %v", err)
 	err = traceReceiver.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -146,12 +132,11 @@ func TestStartTraceReception(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "localhost:0",
 				},
 			}
-			zr, err := newReceiver(cfg, sink, componenttest.NewNopReceiverCreateSettings())
+			zr, err := newReceiver(cfg, sink, receivertest.NewNopCreateSettings())
 			require.Nil(t, err)
 			require.NotNil(t, zr)
 
@@ -240,12 +225,11 @@ func TestReceiverContentTypes(t *testing.T) {
 
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 				HTTPServerSettings: confighttp.HTTPServerSettings{
 					Endpoint: "",
 				},
 			}
-			zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
+			zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
 			require.NoError(t, err)
 
 			req := httptest.NewRecorder()
@@ -268,12 +252,11 @@ func TestReceiverInvalidContentType(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -291,12 +274,11 @@ func TestReceiverConsumerError(t *testing.T) {
 	r.Header.Add("content-type", "application/json")
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "localhost:9411",
 		},
 	}
-	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, consumertest.NewErr(errors.New("consumer error")), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -371,6 +353,44 @@ func TestConvertSpansToTraceSpans_JSONWithoutSerivceName(t *testing.T) {
 	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
 }
 
+func TestConvertSpansToTraceSpans_JSONWithSimpleError(t *testing.T) {
+	blob, err := os.ReadFile("./testdata/sample3.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := newTestZipkinReceiver()
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+
+	require.Equal(t, ptrace.StatusCodeError, reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+
+	_, exists := reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("error")
+	require.False(t, exists, "Error attribute should be removed when error is simply set to \"true\".")
+}
+
+func TestConvertSpansToTraceSpans_JSONWithErrorMessage(t *testing.T) {
+	blob, err := os.ReadFile("./testdata/sample4.json")
+	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
+	zi := newTestZipkinReceiver()
+	reqs, err := zi.v2ToTraceSpans(blob, nil)
+	require.NoError(t, err, "Failed to parse convert Zipkin spans in JSON to Trace spans: %v", err)
+
+	require.Equal(t, 1, reqs.ResourceSpans().Len(), "Expecting only one request since all spans share same node/localEndpoint: %v", reqs.ResourceSpans().Len())
+
+	// Expecting 1 non-nil spans
+	require.Equal(t, 1, reqs.SpanCount(), "Incorrect non-nil spans count")
+
+	require.Equal(t, ptrace.StatusCodeError, reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code(),
+		"Error code should be set to the proper error status since the trace had an error tag.")
+
+	errorMessage, exists := reqs.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Get("error")
+	require.True(t, exists, "Given span should have an error attribute with the received span's error message.")
+	require.Equal(t, "Non-basic error message", errorMessage.AsString(), "Error message should be retained in the span.")
+}
+
 func TestReceiverConvertsStringsToTypes(t *testing.T) {
 	body, err := os.ReadFile(zipkinV2Single)
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
@@ -380,13 +400,12 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 
 	next := new(consumertest.TracesSink)
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(zipkinReceiverID),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
-	zr, err := newReceiver(cfg, next, componenttest.NewNopReceiverCreateSettings())
+	zr, err := newReceiver(cfg, next, receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	req := httptest.NewRecorder()
@@ -422,13 +441,12 @@ func TestFromBytesWithNoTimestamp(t *testing.T) {
 	require.NoError(t, err, "Failed to read sample JSON file: %v", err)
 
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 		HTTPServerSettings: confighttp.HTTPServerSettings{
 			Endpoint: "",
 		},
 		ParseStringTags: true,
 	}
-	zi, err := newReceiver(cfg, consumertest.NewNop(), componenttest.NewNopReceiverCreateSettings())
+	zi, err := newReceiver(cfg, consumertest.NewNop(), receivertest.NewNopCreateSettings())
 	require.NoError(t, err)
 
 	hdr := make(http.Header)

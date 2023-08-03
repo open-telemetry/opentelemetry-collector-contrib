@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
@@ -103,10 +92,11 @@ func Test_lexer(t *testing.T) {
 			{"Bytes", "0x0102030405060708"},
 			{"RParen", ")"},
 		}},
-		{"Mixing case", `aBCd`, false, []result{
+		{"Mixing case numbers and underscores", `aBCd_123E_4`, false, []result{
 			{"Lowercase", "a"},
 			{"Uppercase", "BC"},
-			{"Lowercase", "d"},
+			{"Lowercase", "d_123"},
+			{"Uppercase", "E_4"},
 		}},
 		{"Math Operations", `+-*/`, false, []result{
 			{"OpAddSub", "+"},

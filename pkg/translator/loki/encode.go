@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loki // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 
@@ -29,19 +18,26 @@ import (
 
 // JSON representation of the LogRecord as described by https://developers.google.com/protocol-buffers/docs/proto3#json
 type lokiEntry struct {
-	Name       string                 `json:"name,omitempty"`
-	Body       json.RawMessage        `json:"body,omitempty"`
-	TraceID    string                 `json:"traceid,omitempty"`
-	SpanID     string                 `json:"spanid,omitempty"`
-	Severity   string                 `json:"severity,omitempty"`
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
-	Resources  map[string]interface{} `json:"resources,omitempty"`
+	Name                 string                 `json:"name,omitempty"`
+	Body                 json.RawMessage        `json:"body,omitempty"`
+	TraceID              string                 `json:"traceid,omitempty"`
+	SpanID               string                 `json:"spanid,omitempty"`
+	Severity             string                 `json:"severity,omitempty"`
+	Flags                uint32                 `json:"flags,omitempty"`
+	Attributes           map[string]interface{} `json:"attributes,omitempty"`
+	Resources            map[string]interface{} `json:"resources,omitempty"`
+	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
+}
+
+type instrumentationScope struct {
+	Name    string `json:"name,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into JSON.
-func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (string, error) {
 	var logRecord lokiEntry
 	var jsonRecord []byte
 	var err error
@@ -58,6 +54,18 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
+		Flags:      uint32(lr.Flags()),
+	}
+
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		logRecord.InstrumentationScope = &instrumentationScope{
+			Name: scopeName,
+		}
+		if scopeVersion != "" {
+			logRecord.InstrumentationScope.Version = scopeVersion
+		}
 	}
 
 	jsonRecord, err = json.Marshal(logRecord)
@@ -70,7 +78,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 // EncodeLogfmt converts an OTLP log record and its resource attributes into a logfmt
 // string representing a Loki entry. An error is returned when the record can't
 // be marshaled into logfmt.
-func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
+func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (string, error) {
 	keyvals := bodyToKeyvals(lr.Body())
 
 	if traceID := lr.TraceID(); !traceID.IsEmpty() {
@@ -86,6 +94,11 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
 	}
 
+	flags := lr.Flags()
+	if flags != 0 {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
+	}
+
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
 		return true
@@ -97,6 +110,15 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 		return true
 	})
 
+	scopeName := scope.Name()
+	scopeVersion := scope.Version()
+	if scopeName != "" {
+		keyvals = append(keyvals, "instrumentation_scope_name", scopeName)
+		if scopeVersion != "" {
+			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
+		}
+	}
+
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)
 	if err != nil {
 		return "", err
@@ -105,37 +127,12 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource) (string, error) {
 }
 
 func serializeBodyJSON(body pcommon.Value) ([]byte, error) {
-	var str []byte
-	var err error
-	switch body.Type() {
-	case pcommon.ValueTypeEmpty:
+	if body.Type() == pcommon.ValueTypeEmpty {
 		// no body
-
-	case pcommon.ValueTypeStr:
-		str, err = json.Marshal(body.Str())
-
-	case pcommon.ValueTypeInt:
-		str, err = json.Marshal(body.Int())
-
-	case pcommon.ValueTypeDouble:
-		str, err = json.Marshal(body.Double())
-
-	case pcommon.ValueTypeBool:
-		str, err = json.Marshal(body.Bool())
-
-	case pcommon.ValueTypeMap:
-		str, err = json.Marshal(body.Map().AsRaw())
-
-	case pcommon.ValueTypeSlice:
-		str, err = json.Marshal(body.Slice().AsRaw())
-
-	case pcommon.ValueTypeBytes:
-		str, err = json.Marshal(body.Bytes().AsRaw())
-
-	default:
-		err = fmt.Errorf("unsuported body type to serialize")
+		return nil, nil
 	}
-	return str, err
+
+	return json.Marshal(body.AsRaw())
 }
 
 func bodyToKeyvals(body pcommon.Value) []interface{} {

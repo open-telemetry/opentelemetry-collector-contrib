@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package statsdreceiver
 
@@ -20,13 +9,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
 )
 
@@ -41,13 +31,12 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "receiver_settings"),
+			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:12345",
 					Transport: "custom_transport",
@@ -95,8 +84,8 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
-		observerTypeNotSupportErr      = "observer_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
 	)
 
 	tests := []test{
@@ -150,11 +139,74 @@ func TestValidate(t *testing.T) {
 			},
 			expectedErr: fmt.Sprintf(observerTypeNotSupportErr, "gauge1"),
 		},
+		{
+			name: "invalidHistogram",
+			cfg: &Config{
+				AggregationInterval: 20 * time.Second,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{
+						StatsdType:   "timing",
+						ObserverType: "gauge",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 100,
+						},
+					},
+				},
+			},
+			expectedErr: "histogram configuration requires observer_type: histogram",
+		},
+		{
+			name: "negativeAggregationInterval",
+			cfg: &Config{
+				AggregationInterval: -1,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{StatsdType: "timing", ObserverType: "gauge"},
+				},
+			},
+			expectedErr: "aggregation_interval must be a positive duration",
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			require.EqualError(t, test.cfg.validate(), test.expectedErr)
+			require.EqualError(t, test.cfg.Validate(), test.expectedErr)
 		})
+	}
+}
+func TestConfig_Validate_MaxSize(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize + 1, -1, -structure.MaximumMaxSize} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		err := cfg.Validate()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "histogram max_size out of range")
+	}
+}
+func TestConfig_Validate_HistogramGoodConfig(t *testing.T) {
+	for _, maxSize := range []int32{structure.MaximumMaxSize, 0, 2} {
+		cfg := &Config{
+			AggregationInterval: 20 * time.Second,
+			TimerHistogramMapping: []protocol.TimerHistogramMapping{
+				{
+					StatsdType:   "timing",
+					ObserverType: "histogram",
+					Histogram: protocol.HistogramConfig{
+						MaxSize: maxSize,
+					},
+				},
+			},
+		}
+		err := cfg.Validate()
+		assert.NoError(t, err)
 	}
 }

@@ -9,6 +9,8 @@ splunk_hec/allsettings:
   index: "metrics"
   log_data_enabled: true
   profiling_data_enabled: true
+  use_multi_metric_format: false
+  export_raw: true
   tls:
     insecure_skip_verify: false
     ca_file: ""
@@ -34,4 +36,12 @@ splunk_hec/allsettings:
   otel_to_hec_fields:
     severity_text: "myseverityfield"
     severity_number: "myseveritynumfield"
-    name: "mynamefield"
+  heartbeat:
+    interval: 30s
+  telemetry:
+    enabled: true
+    override_metrics_names:
+      otelcol_exporter_splunkhec_heartbeats_sent: app_heartbeats_success_total
+      otelcol_exporter_splunkhec_heartbeats_failed: app_heartbeats_failed_total
+    extra_attributes:
+      customKey: customVal

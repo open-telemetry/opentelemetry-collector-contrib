@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package jmxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 
@@ -27,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/zap"
 
@@ -36,20 +26,20 @@ import (
 // jmxMainClass the class containing the main function for the JMX Metric Gatherer JAR
 const jmxMainClass = "io.opentelemetry.contrib.jmxmetrics.JmxMetrics"
 
-var _ component.MetricsReceiver = (*jmxMetricReceiver)(nil)
+var _ receiver.Metrics = (*jmxMetricReceiver)(nil)
 
 type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       component.ReceiverCreateSettings
-	otlpReceiver component.MetricsReceiver
+	params       receiver.CreateSettings
+	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
 }
 
 func newJMXMetricReceiver(
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {
@@ -108,7 +98,7 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	go func() {
-		for range jmx.subprocess.Stdout {
+		for range jmx.subprocess.Stdout { // nolint
 			// ensure stdout/stderr buffer is read from.
 			// these messages are already debug logged when captured.
 		}
@@ -118,6 +108,9 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
+	if jmx.subprocess == nil {
+		return nil
+	}
 	jmx.logger.Debug("Shutting down JMX Receiver")
 	subprocessErr := jmx.subprocess.Shutdown(ctx)
 	otlpErr := jmx.otlpReceiver.Shutdown(ctx)
@@ -131,7 +124,7 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	return removeErr
 }
 
-func (jmx *jmxMetricReceiver) buildOTLPReceiver() (component.MetricsReceiver, error) {
+func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	endpoint := jmx.config.OTLPExporterConfig.Endpoint
 	host, port, err := net.SplitHostPort(endpoint)
 	if err != nil {
@@ -203,7 +196,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 	}
 
 	if jmx.config.Password != "" {
-		config["otel.jmx.password"] = jmx.config.Password
+		config["otel.jmx.password"] = string(jmx.config.Password)
 	}
 
 	if jmx.config.RemoteProfile != "" {
@@ -218,7 +211,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["javax.net.ssl.keyStore"] = jmx.config.KeystorePath
 	}
 	if jmx.config.KeystorePassword != "" {
-		config["javax.net.ssl.keyStorePassword"] = jmx.config.KeystorePassword
+		config["javax.net.ssl.keyStorePassword"] = string(jmx.config.KeystorePassword)
 	}
 	if jmx.config.KeystoreType != "" {
 		config["javax.net.ssl.keyStoreType"] = jmx.config.KeystoreType
@@ -227,7 +220,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["javax.net.ssl.trustStore"] = jmx.config.TruststorePath
 	}
 	if jmx.config.TruststorePassword != "" {
-		config["javax.net.ssl.trustStorePassword"] = jmx.config.TruststorePassword
+		config["javax.net.ssl.trustStorePassword"] = string(jmx.config.TruststorePassword)
 	}
 	if jmx.config.TruststoreType != "" {
 		config["javax.net.ssl.trustStoreType"] = jmx.config.TruststoreType

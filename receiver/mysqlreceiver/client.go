@@ -1,22 +1,12 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	// registers the mysql driver
@@ -25,12 +15,14 @@ import (
 
 type client interface {
 	Connect() error
+	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
+	getReplicaStatusStats() ([]ReplicaStatusStats, error)
 	Close() error
 }
 
@@ -106,12 +98,75 @@ type tableLockWaitEventStats struct {
 	sumTimerWriteExternal         int64
 }
 
+type ReplicaStatusStats struct {
+	replicaIOState            string
+	sourceHost                string
+	sourceUser                string
+	sourcePort                int64
+	connectRetry              int64
+	sourceLogFile             string
+	readSourceLogPos          int64
+	relayLogFile              string
+	relayLogPos               int64
+	relaySourceLogFile        string
+	replicaIORunning          string
+	replicaSQLRunning         string
+	replicateDoDB             string
+	replicateIgnoreDB         string
+	replicateDoTable          string
+	replicateIgnoreTable      string
+	replicateWildDoTable      string
+	replicateWildIgnoreTable  string
+	lastErrno                 int64
+	lastError                 string
+	skipCounter               int64
+	execSourceLogPos          int64
+	relayLogSpace             int64
+	untilCondition            string
+	untilLogFile              string
+	untilLogPos               string
+	sourceSSLAllowed          string
+	sourceSSLCAFile           string
+	sourceSSLCAPath           string
+	sourceSSLCert             string
+	sourceSSLCipher           string
+	sourceSSLKey              string
+	secondsBehindSource       sql.NullInt64
+	sourceSSLVerifyServerCert string
+	lastIOErrno               int64
+	lastIOError               string
+	lastSQLErrno              int64
+	lastSQLError              string
+	replicateIgnoreServerIds  string
+	sourceServerID            int64
+	sourceUUID                string
+	sourceInfoFile            string
+	sqlDelay                  int64
+	sqlRemainingDelay         sql.NullInt64
+	replicaSQLRunningState    string
+	sourceRetryCount          int64
+	sourceBind                string
+	lastIOErrorTimestamp      string
+	lastSQLErrorTimestamp     string
+	sourceSSLCrl              string
+	sourceSSLCrlpath          string
+	retrievedGtidSet          string
+	executedGtidSet           string
+	autoPosition              string
+	replicateRewriteDB        string
+	channelName               string
+	sourceTLSVersion          string
+	sourcePublicKeyPath       string
+	getSourcePublicKey        int64
+	networkNamespace          string
+}
+
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) client {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               conf.Password,
+		Passwd:               string(conf.Password),
 		Net:                  conf.Transport,
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
@@ -134,6 +189,18 @@ func (c *mySQLClient) Connect() error {
 	}
 	c.client = clientDB
 	return nil
+}
+
+// getVersion queries the db for the version.
+func (c *mySQLClient) getVersion() (string, error) {
+	query := "SELECT VERSION();"
+	var version string
+	err := c.client.QueryRow(query).Scan(&version)
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
 }
 
 // getGlobalStats queries the db for global status metrics.
@@ -265,6 +332,170 @@ func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, e
 			&s.countWriteAllowWrite, &s.countWriteConcurrentInsert, &s.countWriteLowPriority, &s.countWriteNormal, &s.countWriteExternal,
 			&s.sumTimerReadNormal, &s.sumTimerReadWithSharedLocks, &s.sumTimerReadHighPriority, &s.sumTimerReadNoInsert, &s.sumTimerReadExternal,
 			&s.sumTimerWriteAllowWrite, &s.sumTimerWriteConcurrentInsert, &s.sumTimerWriteLowPriority, &s.sumTimerWriteNormal, &s.sumTimerWriteExternal)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
+}
+
+func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
+	version, err := c.getVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	if version < "8.0.22" {
+		return nil, nil
+	}
+
+	query := "SHOW REPLICA STATUS"
+	rows, err := c.client.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+
+	var stats []ReplicaStatusStats
+	for rows.Next() {
+		var s ReplicaStatusStats
+		dest := []interface{}{}
+		for _, col := range cols {
+			switch strings.ToLower(col) {
+			case "replica_io_state":
+				dest = append(dest, &s.replicaIOState)
+			case "source_host":
+				dest = append(dest, &s.sourceHost)
+			case "source_user":
+				dest = append(dest, &s.sourceUser)
+			case "source_port":
+				dest = append(dest, &s.sourcePort)
+			case "connect_retry":
+				dest = append(dest, &s.connectRetry)
+			case "source_log_file":
+				dest = append(dest, &s.sourceLogFile)
+			case "read_source_log_pos":
+				dest = append(dest, &s.readSourceLogPos)
+			case "relay_log_file":
+				dest = append(dest, &s.relayLogFile)
+			case "relay_log_pos":
+				dest = append(dest, &s.relayLogPos)
+			case "relay_source_log_file":
+				dest = append(dest, &s.relaySourceLogFile)
+			case "replica_io_running":
+				dest = append(dest, &s.replicaIORunning)
+			case "replica_sql_running":
+				dest = append(dest, &s.replicaSQLRunning)
+			case "replicate_do_db":
+				dest = append(dest, &s.replicateDoDB)
+			case "replicate_ignore_db":
+				dest = append(dest, &s.replicateIgnoreDB)
+			case "replicate_do_table":
+				dest = append(dest, &s.replicateDoTable)
+			case "replicate_ignore_table":
+				dest = append(dest, &s.replicateIgnoreTable)
+			case "replicate_wild_do_table":
+				dest = append(dest, &s.replicateWildDoTable)
+			case "replicate_wild_ignore_table":
+				dest = append(dest, &s.replicateWildIgnoreTable)
+			case "last_errno":
+				dest = append(dest, &s.lastErrno)
+			case "last_error":
+				dest = append(dest, &s.lastError)
+			case "skip_counter":
+				dest = append(dest, &s.skipCounter)
+			case "exec_source_log_pos":
+				dest = append(dest, &s.execSourceLogPos)
+			case "relay_log_space":
+				dest = append(dest, &s.relayLogSpace)
+			case "until_condition":
+				dest = append(dest, &s.untilCondition)
+			case "until_log_file":
+				dest = append(dest, &s.untilLogFile)
+			case "until_log_pos":
+				dest = append(dest, &s.untilLogPos)
+			case "source_ssl_allowed":
+				dest = append(dest, &s.sourceSSLAllowed)
+			case "source_ssl_ca_file":
+				dest = append(dest, &s.sourceSSLCAFile)
+			case "source_ssl_ca_path":
+				dest = append(dest, &s.sourceSSLCAPath)
+			case "source_ssl_cert":
+				dest = append(dest, &s.sourceSSLCert)
+			case "source_ssl_cipher":
+				dest = append(dest, &s.sourceSSLCipher)
+			case "source_ssl_key":
+				dest = append(dest, &s.sourceSSLKey)
+			case "seconds_behind_source":
+				dest = append(dest, &s.secondsBehindSource)
+			case "source_ssl_verify_server_cert":
+				dest = append(dest, &s.sourceSSLVerifyServerCert)
+			case "last_io_errno":
+				dest = append(dest, &s.lastIOErrno)
+			case "last_io_error":
+				dest = append(dest, &s.lastIOError)
+			case "last_sql_errno":
+				dest = append(dest, &s.lastSQLErrno)
+			case "last_sql_error":
+				dest = append(dest, &s.lastSQLError)
+			case "replicate_ignore_server_ids":
+				dest = append(dest, &s.replicateIgnoreServerIds)
+			case "source_server_id":
+				dest = append(dest, &s.sourceServerID)
+			case "source_uuid":
+				dest = append(dest, &s.sourceUUID)
+			case "source_info_file":
+				dest = append(dest, &s.sourceInfoFile)
+			case "sql_delay":
+				dest = append(dest, &s.sqlDelay)
+			case "sql_remaining_delay":
+				dest = append(dest, &s.sqlRemainingDelay)
+			case "replica_sql_running_state":
+				dest = append(dest, &s.replicaSQLRunningState)
+			case "source_retry_count":
+				dest = append(dest, &s.sourceRetryCount)
+			case "source_bind":
+				dest = append(dest, &s.sourceBind)
+			case "last_io_error_timestamp":
+				dest = append(dest, &s.lastIOErrorTimestamp)
+			case "last_sql_error_timestamp":
+				dest = append(dest, &s.lastSQLErrorTimestamp)
+			case "source_ssl_crl":
+				dest = append(dest, &s.sourceSSLCrl)
+			case "source_ssl_crlpath":
+				dest = append(dest, &s.sourceSSLCrlpath)
+			case "retrieved_gtid_set":
+				dest = append(dest, &s.retrievedGtidSet)
+			case "executed_gtid_set":
+				dest = append(dest, &s.executedGtidSet)
+			case "auto_position":
+				dest = append(dest, &s.autoPosition)
+			case "replicate_rewrite_db":
+				dest = append(dest, &s.replicateRewriteDB)
+			case "channel_name":
+				dest = append(dest, &s.channelName)
+			case "source_tls_version":
+				dest = append(dest, &s.sourceTLSVersion)
+			case "source_public_key_path":
+				dest = append(dest, &s.sourcePublicKeyPath)
+			case "get_source_public_key":
+				dest = append(dest, &s.getSourcePublicKey)
+			case "network_namespace":
+				dest = append(dest, &s.networkNamespace)
+			default:
+				return nil, fmt.Errorf("unknown column name %s for replica status", col)
+			}
+		}
+		err := rows.Scan(dest...)
+
 		if err != nil {
 			return nil, err
 		}

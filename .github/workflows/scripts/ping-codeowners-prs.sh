@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 
 set -euo pipefail
@@ -50,15 +39,17 @@ main() {
     #
     # The GitHub API validates that authors are not requested to review, but
     # accepts duplicate logins and logins that are already reviewers.
+    echo "Requesting review from code owners: ${REVIEWERS}"
     curl \
-        --fail \
         -X POST \
         -H "Accept: application/vnd.github+json" \
         -H "Authorization: Bearer ${GITHUB_TOKEN}" \
         "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
         -d "{\"reviewers\":[${REVIEWERS}]}" \
         | jq ".message" \
-        || echo "Request failed to request review from code owners on #${PR}"
+        || echo "jq was unable to parse GitHub's response"
 }
 
-main || echo "Failed to request review from code owners on PR #${PR}"
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
+main || echo "Failed to run $0"

@@ -11,6 +11,7 @@ prometheusremotewrite/2:
   tls:
     ca_file: "/var/lib/mycert.pem"
   write_buffer_size: 524288
+  add_metric_suffixes: false
   headers:
     Prometheus-Remote-Write-Version: "0.1.0"
     X-Scope-OrgID: 234
@@ -18,6 +19,8 @@ prometheusremotewrite/2:
     key1: value1
     key2: value2
   resource_to_telemetry_conversion:
+    enabled: true
+  export_created_metric:
     enabled: true
   remote_write_queue:
     queue_size: 2000

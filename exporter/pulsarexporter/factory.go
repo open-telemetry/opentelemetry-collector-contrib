@@ -1,33 +1,23 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter/internal/metadata"
 )
 
 const (
-	typeStr = "pulsar"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
-
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
@@ -48,7 +38,7 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 }
 
 // NewFactory creates Pulsar exporter factory.
-func NewFactory(options ...FactoryOption) component.ExporterFactory {
+func NewFactory(options ...FactoryOption) exporter.Factory {
 	f := &pulsarExporterFactory{
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
@@ -57,26 +47,28 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return component.NewExporterFactory(
-		typeStr,
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithMetricsExporter(f.createMetricsExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability),
+		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Endpoint:         defaultBroker,
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Endpoint:        defaultBroker,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:          "",
-		Encoding:       defaultEncoding,
-		Authentication: Authentication{},
+		Topic:                   "",
+		Encoding:                defaultEncoding,
+		Authentication:          Authentication{},
+		MaxConnectionsPerBroker: 1,
+		ConnectionTimeout:       5 * time.Second,
+		OperationTimeout:        30 * time.Second,
 	}
 }
 
@@ -88,9 +80,9 @@ type pulsarExporterFactory struct {
 
 func (f *pulsarExporterFactory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
@@ -118,9 +110,9 @@ func (f *pulsarExporterFactory) createTracesExporter(
 
 func (f *pulsarExporterFactory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
@@ -148,9 +140,9 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 
 func (f *pulsarExporterFactory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config))
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic

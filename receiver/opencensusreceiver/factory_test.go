@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensusreceiver
 
@@ -21,12 +10,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -41,7 +29,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -67,14 +55,12 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_port",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "localhost:112233",
@@ -87,7 +73,6 @@ func TestCreateTracesReceiver(t *testing.T) {
 		{
 			name: "max-msg-size-and-concurrent-connections",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr:              defaultNetAddr,
 					MaxRecvMsgSizeMiB:    32,
@@ -97,7 +82,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
@@ -130,14 +115,12 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		{
 			name: "default",
 			cfg: &Config{
-				ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: defaultGRPCSettings,
 			},
 		},
 		{
 			name: "invalid_address",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: confignet.NetAddr{
 						Endpoint:  "327.0.0.1:1122",
@@ -150,7 +133,6 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		{
 			name: "keepalive",
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				GRPCServerSettings: configgrpc.GRPCServerSettings{
 					NetAddr: defaultNetAddr,
 					Keepalive: &configgrpc.KeepaliveServerConfig{
@@ -166,7 +148,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 	}
-	set := componenttest.NewNopReceiverCreateSettings()
+	set := receivertest.NewNopCreateSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())

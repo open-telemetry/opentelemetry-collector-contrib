@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -26,16 +15,16 @@ import (
 	sfxpb "github.com/signalfx/com_signalfx_metrics_protobuf/model"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -50,7 +39,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -60,7 +49,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -69,7 +58,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -83,7 +72,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -94,14 +83,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -111,79 +100,24 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 	config := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		AccessToken:      "testToken",
-		Realm:            "us1",
-		Headers: map[string]string{
-			"added-entry": "added value",
-			"dot.test":    "test",
+		AccessToken: "testToken",
+		Realm:       "us1",
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Timeout: 2 * time.Second,
+			Headers: map[string]configopaque.String{
+				"added-entry": "added value",
+				"dot.test":    "test",
+			},
 		},
-		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 2 * time.Second},
 	}
 
-	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
+	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
 
-func TestFactory_CreateMetricsExporterFails(t *testing.T) {
-	tests := []struct {
-		name         string
-		config       *Config
-		errorMessage string
-	}{
-		{
-			name: "negative_duration",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "lab",
-				TimeoutSettings:  exporterhelper.TimeoutSettings{Timeout: -2 * time.Second},
-			},
-			errorMessage: "cannot have a negative \"timeout\"",
-		},
-		{
-			name: "empty_realm_and_urls",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-			},
-			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "empty_realm_and_api_url",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				IngestURL:        "http://localhost:123",
-			},
-			errorMessage: "requires a non-empty \"realm\", or \"ingest_url\" and \"api_url\" should be explicitly set",
-		},
-		{
-			name: "negative_MaxConnections",
-			config: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "lab",
-				IngestURL:        "http://localhost:123",
-				APIURL:           "https://api.us1.signalfx.com/",
-				MaxConnections:   -10,
-			},
-			errorMessage: "cannot have a negative \"max_connections\"",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), tt.config)
-			assert.EqualError(t, err, tt.errorMessage)
-			assert.Nil(t, te)
-		})
-	}
-}
-
 func TestDefaultTranslationRules(t *testing.T) {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(t, err)
@@ -217,13 +151,20 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 2)
 	require.Equal(t, 2, len(dps[0].Dimensions))
 	for _, dp := range dps {
-		require.Equal(t, "direction", dp.Dimensions[0].Key)
-		switch dp.Dimensions[1].Value {
-		case "write":
-			require.Equal(t, int64(11e9), *dp.Value.IntValue)
-		case "read":
-			require.Equal(t, int64(3e9), *dp.Value.IntValue)
+		var directionFound bool
+		for _, dim := range dp.Dimensions {
+			if dim.Key != "direction" {
+				continue
+			}
+			directionFound = true
+			switch dim.Value {
+			case "write":
+				require.Equal(t, int64(11e9), *dp.Value.IntValue)
+			case "read":
+				require.Equal(t, int64(3e9), *dp.Value.IntValue)
+			}
 		}
+		require.True(t, directionFound, `missing dimension: direction`)
 	}
 
 	// disk_ops.total gauge from system.disk.operations cumulative, where is disk_ops.total
@@ -233,8 +174,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, int64(8e3), *dps[0].Value.IntValue)
 	require.Equal(t, 1, len(dps[0].Dimensions))
-	require.Equal(t, "host", dps[0].Dimensions[0].Key)
-	require.Equal(t, "host0", dps[0].Dimensions[0].Value)
+	requireDimension(t, dps[0].Dimensions, "host", "host0")
 
 	// system.network.io.total new metric calculation
 	dps, ok = metrics["system.network.io.total"]
@@ -248,8 +188,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Len(t, dps, 1)
 	require.Equal(t, 4, len(dps[0].Dimensions))
 	require.Equal(t, int64(350), *dps[0].Value.IntValue)
-	require.Equal(t, "direction", dps[0].Dimensions[0].Key)
-	require.Equal(t, "receive", dps[0].Dimensions[0].Value)
+	requireDimension(t, dps[0].Dimensions, "direction", "receive")
 
 	// network.total new metric calculation
 	dps, ok = metrics["network.total"]
@@ -259,56 +198,16 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.Equal(t, int64(10e9), *dps[0].Value.IntValue)
 }
 
-func TestCreateMetricsExporterWithDefaultExcludeMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		AccessToken:      "testToken",
-		Realm:            "us1",
+func requireDimension(t *testing.T, dims []*sfxpb.Dimension, key, val string) {
+	var found bool
+	for _, dim := range dims {
+		if dim.Key != key {
+			continue
+		}
+		found = true
+		require.Equal(t, val, dim.Value)
 	}
-
-	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are always loaded.
-	assert.Equal(t, 12, len(config.ExcludeMetrics))
-}
-
-func TestCreateMetricsExporterWithExcludeMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		AccessToken:      "testToken",
-		Realm:            "us1",
-		ExcludeMetrics: []dpfilters.MetricFilter{
-			{
-				MetricNames: []string{"metric1"},
-			},
-		},
-	}
-
-	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are always loaded.
-	assert.Equal(t, 13, len(config.ExcludeMetrics))
-}
-
-func TestCreateMetricsExporterWithEmptyExcludeMetrics(t *testing.T) {
-	config := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		AccessToken:      "testToken",
-		Realm:            "us1",
-		ExcludeMetrics:   []dpfilters.MetricFilter{},
-	}
-
-	te, err := createMetricsExporter(context.Background(), componenttest.NewNopExporterCreateSettings(), config)
-	require.NoError(t, err)
-	require.NotNil(t, te)
-
-	// Validate that default excludes are overridden when exclude metrics
-	// is explicitly set to an empty slice.
-	assert.Equal(t, 0, len(config.ExcludeMetrics))
+	require.True(t, found, `missing dimension: %s`, key)
 }
 
 func testMetricsData() pmetric.Metrics {
@@ -323,7 +222,6 @@ func testMetricsData() pmetric.Metrics {
 	dp11.Attributes().PutStr("host", "host0")
 	dp11.Attributes().PutStr("kubernetes_node", "node0")
 	dp11.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp11.Attributes().Sort()
 	dp11.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp11.SetIntValue(4e9)
 	dp12 := m1.Gauge().DataPoints().AppendEmpty()
@@ -331,7 +229,6 @@ func testMetricsData() pmetric.Metrics {
 	dp12.Attributes().PutStr("host", "host0")
 	dp12.Attributes().PutStr("kubernetes_node", "node0")
 	dp12.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp12.Attributes().Sort()
 	dp12.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp12.SetIntValue(6e9)
 
@@ -345,28 +242,24 @@ func testMetricsData() pmetric.Metrics {
 	dp21.Attributes().PutStr("host", "host0")
 	dp21.Attributes().PutStr("direction", "read")
 	dp21.Attributes().PutStr("device", "sda1")
-	dp21.Attributes().Sort()
 	dp21.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp21.SetIntValue(1e9)
 	dp22 := m2.Sum().DataPoints().AppendEmpty()
 	dp22.Attributes().PutStr("host", "host0")
 	dp22.Attributes().PutStr("direction", "read")
 	dp22.Attributes().PutStr("device", "sda2")
-	dp22.Attributes().Sort()
 	dp22.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp22.SetIntValue(2e9)
 	dp23 := m2.Sum().DataPoints().AppendEmpty()
 	dp23.Attributes().PutStr("host", "host0")
 	dp23.Attributes().PutStr("direction", "write")
 	dp23.Attributes().PutStr("device", "sda1")
-	dp23.Attributes().Sort()
 	dp23.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp23.SetIntValue(3e9)
 	dp24 := m2.Sum().DataPoints().AppendEmpty()
 	dp24.Attributes().PutStr("host", "host0")
 	dp24.Attributes().PutStr("direction", "write")
 	dp24.Attributes().PutStr("device", "sda2")
-	dp24.Attributes().Sort()
 	dp24.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp24.SetIntValue(8e9)
 
@@ -380,28 +273,24 @@ func testMetricsData() pmetric.Metrics {
 	dp31.Attributes().PutStr("host", "host0")
 	dp31.Attributes().PutStr("direction", "write")
 	dp31.Attributes().PutStr("device", "sda1")
-	dp31.Attributes().Sort()
 	dp31.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp31.SetIntValue(4e3)
 	dp32 := m3.Sum().DataPoints().AppendEmpty()
 	dp32.Attributes().PutStr("host", "host0")
 	dp32.Attributes().PutStr("direction", "read")
 	dp32.Attributes().PutStr("device", "sda2")
-	dp32.Attributes().Sort()
 	dp32.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp32.SetIntValue(6e3)
 	dp33 := m3.Sum().DataPoints().AppendEmpty()
 	dp33.Attributes().PutStr("host", "host0")
 	dp33.Attributes().PutStr("direction", "write")
 	dp33.Attributes().PutStr("device", "sda1")
-	dp33.Attributes().Sort()
 	dp33.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp33.SetIntValue(1e3)
 	dp34 := m3.Sum().DataPoints().AppendEmpty()
 	dp34.Attributes().PutStr("host", "host0")
 	dp34.Attributes().PutStr("direction", "write")
 	dp34.Attributes().PutStr("device", "sda2")
-	dp34.Attributes().Sort()
 	dp34.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp34.SetIntValue(5e3)
 
@@ -415,28 +304,24 @@ func testMetricsData() pmetric.Metrics {
 	dp41.Attributes().PutStr("host", "host0")
 	dp41.Attributes().PutStr("direction", "read")
 	dp41.Attributes().PutStr("device", "sda1")
-	dp41.Attributes().Sort()
 	dp41.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp41.SetIntValue(6e3)
 	dp42 := m4.Sum().DataPoints().AppendEmpty()
 	dp42.Attributes().PutStr("host", "host0")
 	dp42.Attributes().PutStr("direction", "read")
 	dp42.Attributes().PutStr("device", "sda2")
-	dp42.Attributes().Sort()
 	dp42.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp42.SetIntValue(8e3)
 	dp43 := m4.Sum().DataPoints().AppendEmpty()
 	dp43.Attributes().PutStr("host", "host0")
 	dp43.Attributes().PutStr("direction", "write")
 	dp43.Attributes().PutStr("device", "sda1")
-	dp43.Attributes().Sort()
 	dp43.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp43.SetIntValue(3e3)
 	dp44 := m4.Sum().DataPoints().AppendEmpty()
 	dp44.Attributes().PutStr("host", "host0")
 	dp44.Attributes().PutStr("direction", "write")
 	dp44.Attributes().PutStr("device", "sda2")
-	dp44.Attributes().Sort()
 	dp44.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000060, 0)))
 	dp44.SetIntValue(7e3)
 
@@ -451,7 +336,6 @@ func testMetricsData() pmetric.Metrics {
 	dp51.Attributes().PutStr("device", "eth0")
 	dp51.Attributes().PutStr("kubernetes_node", "node0")
 	dp51.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp51.Attributes().Sort()
 	dp51.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp51.SetIntValue(4e9)
 	dp52 := m5.Gauge().DataPoints().AppendEmpty()
@@ -460,7 +344,6 @@ func testMetricsData() pmetric.Metrics {
 	dp52.Attributes().PutStr("device", "eth0")
 	dp52.Attributes().PutStr("kubernetes_node", "node0")
 	dp52.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp52.Attributes().Sort()
 	dp52.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp52.SetIntValue(6e9)
 
@@ -473,7 +356,6 @@ func testMetricsData() pmetric.Metrics {
 	dp61.Attributes().PutStr("device", "eth0")
 	dp61.Attributes().PutStr("kubernetes_node", "node0")
 	dp61.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp61.Attributes().Sort()
 	dp61.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp61.SetIntValue(200)
 	dp62 := m6.Gauge().DataPoints().AppendEmpty()
@@ -482,7 +364,6 @@ func testMetricsData() pmetric.Metrics {
 	dp62.Attributes().PutStr("device", "eth1")
 	dp62.Attributes().PutStr("kubernetes_node", "node0")
 	dp62.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp62.Attributes().Sort()
 	dp62.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp62.SetIntValue(150)
 
@@ -494,7 +375,6 @@ func testMetricsData() pmetric.Metrics {
 	dp71.Attributes().PutStr("host", "host0")
 	dp71.Attributes().PutStr("kubernetes_node", "node0")
 	dp71.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp71.Attributes().Sort()
 	dp71.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp71.SetIntValue(1000)
 
@@ -504,7 +384,6 @@ func testMetricsData() pmetric.Metrics {
 	dp81.Attributes().PutStr("host", "host0")
 	dp81.Attributes().PutStr("kubernetes_node", "node0")
 	dp81.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp81.Attributes().Sort()
 	dp81.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp81.SetIntValue(1000)
 
@@ -514,7 +393,6 @@ func testMetricsData() pmetric.Metrics {
 	dp91.Attributes().PutStr("host", "host0")
 	dp91.Attributes().PutStr("kubernetes_node", "node0")
 	dp91.Attributes().PutStr("kubernetes_cluster", "cluster0")
-	dp91.Attributes().Sort()
 	dp91.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(1596000000, 0)))
 	dp91.SetIntValue(1000)
 
@@ -559,8 +437,7 @@ func TestDefaultDiskTranslations(t *testing.T) {
 }
 
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
+	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 3600)
 	require.NoError(t, err)
@@ -619,17 +496,12 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
 	require.NoError(t, err)
 
-	jsonpb := &pmetric.JSONUnmarshaler{}
-	bytes1, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_1.json"))
-	require.NoError(t, err)
-	md1, err := jsonpb.UnmarshalMetrics(bytes1)
+	md1, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_1.yaml"))
 	require.NoError(t, err)
 
 	_ = converter.MetricsToSignalFxV2(md1)
 
-	bytes2, err := os.ReadFile(filepath.Join("testdata", "json", "hostmetrics_system_cpu_time_2.json"))
-	require.NoError(t, err)
-	md2, err := jsonpb.UnmarshalMetrics(bytes2)
+	md2, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_2.yaml"))
 	require.NoError(t, err)
 
 	translated2 := converter.MetricsToSignalFxV2(md2)
@@ -657,7 +529,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	require.Equal(t, 590, int(*cpuIdle[0].Value.IntValue))
 }
 
-func TestDefaultExcludes_translated(t *testing.T) {
+func TestDefaultExcludesTranslated(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
@@ -700,8 +572,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 
 // Benchmark test for default translation rules on an example hostmetrics dataset.
 func BenchmarkMetricConversion(b *testing.B) {
-	rules, err := loadDefaultTranslationRules()
-	require.NoError(b, err)
+	rules := defaultTranslationRules
 	require.NotNil(b, rules, "rules are nil")
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(b, err)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
@@ -26,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func newMockServer(t *testing.T, responseCode int) *httptest.Server {
@@ -51,11 +41,15 @@ func TestScraperStart(t *testing.T) {
 			desc: "Bad Config",
 			scraper: &httpcheckScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
-								CAFile: "/non/existent",
+					Targets: []*targetConfig{
+						{
+							HTTPClientSettings: confighttp.HTTPClientSettings{
+								Endpoint: "http://example.com",
+								TLSSetting: configtls.TLSClientSetting{
+									TLSSetting: configtls.TLSSetting{
+										CAFile: "/non/existent",
+									},
+								},
 							},
 						},
 					},
@@ -68,9 +62,13 @@ func TestScraperStart(t *testing.T) {
 			desc: "Valid Config",
 			scraper: &httpcheckScraper{
 				cfg: &Config{
-					HTTPClientSettings: confighttp.HTTPClientSettings{
-						TLSSetting: configtls.TLSClientSetting{},
-						Endpoint:   defaultEndpoint,
+					Targets: []*targetConfig{
+						{
+							HTTPClientSettings: confighttp.HTTPClientSettings{
+								TLSSetting: configtls.TLSClientSetting{},
+								Endpoint:   "http://example.com",
+							},
+						},
 					},
 				},
 				settings: componenttest.NewNopTelemetrySettings(),
@@ -98,51 +96,60 @@ func TestScaperScrape(t *testing.T) {
 		expectedMetricGen func(t *testing.T) pmetric.Metrics
 		expectedErr       error
 		endpoint          string
-		compareOptions    []scrapertest.CompareOption
+		compareOptions    []pmetrictest.CompareMetricsOption
 	}{
 		{
 			desc:             "Successful Collection",
 			expectedResponse: 200,
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
 			desc:             "Endpoint returning 404",
 			expectedResponse: 404,
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "endpoint_404.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricAttributeValue("http.url"),
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricAttributeValue("http.url"),
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 		{
 			desc:     "Invalid endpoint",
 			endpoint: "http://invalid-endpoint",
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.json")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "invalid_endpoint.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
 			},
 			expectedErr: nil,
-			compareOptions: []scrapertest.CompareOption{
-				scrapertest.IgnoreMetricValues("httpcheck.duration"),
-				scrapertest.IgnoreMetricAttributeValue("error.message"),
+			compareOptions: []pmetrictest.CompareMetricsOption{
+				pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+				pmetrictest.IgnoreMetricAttributeValue("error.message"),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp(),
 			},
 		},
 	}
@@ -151,13 +158,21 @@ func TestScaperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			if len(tc.endpoint) > 0 {
-				cfg.Endpoint = tc.endpoint
+				cfg.Targets = []*targetConfig{{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: tc.endpoint,
+					}},
+				}
 			} else {
 				ms := newMockServer(t, tc.expectedResponse)
 				defer ms.Close()
-				cfg.Endpoint = ms.URL
+				cfg.Targets = []*targetConfig{{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: ms.URL,
+					}},
+				}
 			}
-			scraper := newScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -169,15 +184,52 @@ func TestScaperScrape(t *testing.T) {
 
 			expectedMetrics := tc.expectedMetricGen(t)
 
-			require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, tc.compareOptions...))
 		})
 	}
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), componenttest.NewNopReceiverCreateSettings())
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
-	require.NoError(t, scrapertest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
 
+}
+
+func TestScraperMultipleTargets(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	ms1 := newMockServer(t, 200)
+	defer ms1.Close()
+	ms2 := newMockServer(t, 404)
+	defer ms2.Close()
+
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms1.URL,
+		},
+	})
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms2.URL,
+		},
+	})
+
+	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	goldenPath := filepath.Join("testdata", "expected_metrics", "multiple_targets.yaml")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricAttributeValue("http.url"),
+		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	))
 }

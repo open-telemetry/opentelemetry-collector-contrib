@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
@@ -20,10 +9,11 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -32,7 +22,7 @@ import (
 
 type consumerScraper struct {
 	client       sarama.Client
-	settings     component.ReceiverCreateSettings
+	settings     receiver.CreateSettings
 	groupFilter  *regexp.Regexp
 	topicFilter  *regexp.Regexp
 	clusterAdmin sarama.ClusterAdmin
@@ -46,7 +36,7 @@ func (s *consumerScraper) Name() string {
 }
 
 func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
@@ -175,7 +165,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings component.ReceiverCreateSettings) (scraperhelper.Scraper, error) {
+	settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
 	groupFilter, err := regexp.Compile(cfg.GroupMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile group_match: %w", err)

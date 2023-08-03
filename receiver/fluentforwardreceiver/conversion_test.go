@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fluentforwardreceiver
 
@@ -19,10 +8,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestMessageEventConversion(t *testing.T) {
@@ -33,10 +23,7 @@ func TestMessageEventConversion(t *testing.T) {
 	err := event.DecodeMsg(reader)
 	require.Nil(t, err)
 
-	le := event.LogRecords().At(0)
-	le.Attributes().Sort()
-
-	expected := Logs(
+	expectedLog := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pcommon.NewValueStr("..."),
@@ -47,8 +34,8 @@ func TestMessageEventConversion(t *testing.T) {
 				"source":         "stdout",
 			},
 		},
-	)
-	require.EqualValues(t, expected.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	require.NoError(t, plogtest.CompareLogRecord(expectedLog, event.LogRecords().At(0)))
 }
 
 func TestAttributeTypeConversion(t *testing.T) {
@@ -102,9 +89,8 @@ func TestAttributeTypeConversion(t *testing.T) {
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
-	le.Attributes().Sort()
 
-	require.EqualValues(t, Logs(
+	require.NoError(t, plogtest.CompareLogRecord(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
@@ -128,7 +114,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 				"p":          nil,
 			},
 		},
-	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
 }
 
 func TestEventMode(t *testing.T) {
@@ -239,7 +225,6 @@ func TestBodyConversion(t *testing.T) {
 	require.Nil(t, err)
 
 	le := event.LogRecords().At(0)
-	le.Attributes().Sort()
 
 	body := pcommon.NewValueMap()
 	body.Map().PutStr("a", "value")
@@ -251,10 +236,7 @@ func TestBodyConversion(t *testing.T) {
 	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
-	// Sort the map, sometimes may get in a different order.
-	require.Equal(t, pcommon.ValueTypeMap, le.Body().Type())
-	le.Body().Map().Sort()
-	assert.EqualValues(t, Logs(
+	require.NoError(t, plogtest.CompareLogRecord(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,
@@ -262,5 +244,5 @@ func TestBodyConversion(t *testing.T) {
 				"fluent.tag": "my-tag",
 			},
 		},
-	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le)
+	).ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0), le))
 }

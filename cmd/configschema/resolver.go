@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package configschema // import "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 
@@ -33,6 +22,11 @@ const DefaultSrcRoot = "."
 // DefaultModule is the module prefix of contrib. Can be used to create a
 // DirResolver.
 const DefaultModule = "github.com/open-telemetry/opentelemetry-collector-contrib"
+
+type DirResolverIntf interface {
+	TypeToPackagePath(t reflect.Type) (string, error)
+	ReflectValueToProjectPath(v reflect.Value) string
+}
 
 // DirResolver is used to resolve the base directory of a given reflect.Type.
 type DirResolver struct {
@@ -71,9 +65,10 @@ func (dr DirResolver) TypeToPackagePath(t reflect.Type) (string, error) {
 	return verifiedGoPath, nil
 }
 
-// TypeToProjectPath accepts a Type and returns its directory in the current project. If
+// ReflectValueToProjectPath accepts a reflect.Value and returns its directory in the current project. If
 // the type doesn't live in the current project, returns "".
-func (dr DirResolver) TypeToProjectPath(t reflect.Type) string {
+func (dr DirResolver) ReflectValueToProjectPath(v reflect.Value) string {
+	t := v.Type().Elem()
 	if !strings.HasPrefix(t.PkgPath(), dr.ModuleName) {
 		return ""
 	}

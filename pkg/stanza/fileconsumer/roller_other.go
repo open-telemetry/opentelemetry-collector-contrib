@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -23,20 +12,20 @@ import (
 )
 
 type detectLostFiles struct {
-	oldReaders []*Reader
+	oldReaders []*reader
 }
 
 func newRoller() roller {
-	return &detectLostFiles{[]*Reader{}}
+	return &detectLostFiles{[]*reader{}}
 }
 
-func (r *detectLostFiles) readLostFiles(ctx context.Context, readers []*Reader) {
+func (r *detectLostFiles) readLostFiles(ctx context.Context, newReaders []*reader) {
 	// Detect files that have been rotated out of matching pattern
-	lostReaders := make([]*Reader, 0, len(r.oldReaders))
+	lostReaders := make([]*reader, 0, len(r.oldReaders))
 OUTER:
 	for _, oldReader := range r.oldReaders {
-		for _, reader := range readers {
-			if reader.Fingerprint.StartsWith(oldReader.Fingerprint) {
+		for _, newReader := range newReaders {
+			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
 			}
 		}
@@ -44,26 +33,26 @@ OUTER:
 	}
 
 	var lostWG sync.WaitGroup
-	for _, reader := range lostReaders {
+	for _, lostReader := range lostReaders {
 		lostWG.Add(1)
-		go func(r *Reader) {
+		go func(r *reader) {
 			defer lostWG.Done()
 			r.ReadToEnd(ctx)
-		}(reader)
+		}(lostReader)
 	}
 	lostWG.Wait()
 }
 
-func (r *detectLostFiles) roll(ctx context.Context, readers []*Reader) {
-	for _, reader := range r.oldReaders {
-		reader.Close()
+func (r *detectLostFiles) roll(_ context.Context, newReaders []*reader) {
+	for _, oldReader := range r.oldReaders {
+		oldReader.Close()
 	}
 
-	r.oldReaders = readers
+	r.oldReaders = newReaders
 }
 
 func (r *detectLostFiles) cleanup() {
-	for _, reader := range r.oldReaders {
-		reader.Close()
+	for _, oldReader := range r.oldReaders {
+		oldReader.Close()
 	}
 }

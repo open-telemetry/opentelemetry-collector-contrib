@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver"
 
@@ -22,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/tools/cache"
@@ -45,7 +35,7 @@ type k8sObserver struct {
 }
 
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
-func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
+func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 	if k.once == nil {
 		return fmt.Errorf("cannot Start() partial k8sObserver (nil *sync.Once)")
 	}
@@ -57,21 +47,25 @@ func (k *k8sObserver) Start(ctx context.Context, host component.Host) error {
 		if k.podListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting pod informer")
 			podInformer := cache.NewSharedInformer(k.podListerWatcher, &v1.Pod{}, 0)
-			podInformer.AddEventHandler(k.handler)
+			if _, err := podInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to pod informer", zap.Error(err))
+			}
 			go podInformer.Run(k.stop)
 		}
 		if k.nodeListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting node informer")
 			nodeInformer := cache.NewSharedInformer(k.nodeListerWatcher, &v1.Node{}, 0)
 			go nodeInformer.Run(k.stop)
-			nodeInformer.AddEventHandler(k.handler)
+			if _, err := nodeInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to node informer", zap.Error(err))
+			}
 		}
 	})
 	return nil
 }
 
 // Shutdown tells any cache.SharedInformers to stop running.
-func (k *k8sObserver) Shutdown(ctx context.Context) error {
+func (k *k8sObserver) Shutdown(_ context.Context) error {
 	close(k.stop)
 	return nil
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !race
 
@@ -23,6 +12,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,12 +21,9 @@ import (
 	promConfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 type MockTargetAllocator struct {
@@ -125,7 +112,7 @@ func transformTAResponseMap(rawResponses map[string][]mockTargetAllocatorRespons
 		}
 		responsesMap[path] = responses
 
-		v := atomic.NewInt32(0)
+		v := &atomic.Int32{}
 		responsesIndexMap[path] = v
 	}
 	return responsesMap, responsesIndexMap, nil
@@ -231,7 +218,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -326,7 +312,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -439,7 +424,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    10 * time.Second,
@@ -482,7 +466,6 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 				},
 			},
 			cfg: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				PrometheusConfig: &promConfig.Config{},
 				TargetAllocator: &targetAllocator{
 					Interval:    50 * time.Millisecond,
@@ -510,7 +493,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), tc.cfg, cms, featuregate.GetRegistry())
+			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms)
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 

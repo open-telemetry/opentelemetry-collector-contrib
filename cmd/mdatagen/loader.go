@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -18,13 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
-	"github.com/go-playground/locales/en"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
-	"github.com/go-playground/validator/v10/non-standard/validators"
-	en_translations "github.com/go-playground/validator/v10/translations/en"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -53,7 +39,7 @@ func (mn attributeName) RenderUnexported() (string, error) {
 // ValueType defines an attribute value type.
 type ValueType struct {
 	// ValueType is type of the attribute value.
-	ValueType pcommon.ValueType `validate:"required,notblank"`
+	ValueType pcommon.ValueType
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
@@ -69,6 +55,10 @@ func (mvt *ValueType) UnmarshalText(text []byte) error {
 		mvt.ValueType = pcommon.ValueTypeBool
 	case "bytes":
 		mvt.ValueType = pcommon.ValueTypeBytes
+	case "slice":
+		mvt.ValueType = pcommon.ValueTypeSlice
+	case "map":
+		mvt.ValueType = pcommon.ValueTypeMap
 	default:
 		return fmt.Errorf("invalid type: %q", vtStr)
 	}
@@ -93,35 +83,26 @@ func (mvt ValueType) Primitive() string {
 		return "bool"
 	case pcommon.ValueTypeBytes:
 		return "[]byte"
+	case pcommon.ValueTypeSlice:
+		return "[]any"
+	case pcommon.ValueTypeMap:
+		return "map[string]any"
+	case pcommon.ValueTypeEmpty:
+		return ""
 	default:
 		return ""
 	}
 }
 
-func (mvt ValueType) TestValue() string {
-	switch mvt.ValueType {
-	case pcommon.ValueTypeEmpty, pcommon.ValueTypeStr:
-		return `"attr-val"`
-	case pcommon.ValueTypeInt:
-		return "1"
-	case pcommon.ValueTypeDouble:
-		return "1.1"
-	case pcommon.ValueTypeBool:
-		return "true"
-	case pcommon.ValueTypeMap:
-		return `pcommon.NewMap()`
-	case pcommon.ValueTypeSlice:
-		return `pcommon.NewSlice()`
-	}
-	return ""
-}
-
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
-	Enabled *bool `yaml:"enabled" validate:"required"`
+	Enabled bool `mapstructure:"enabled"`
+
+	// Warnings that will be shown to user under specified conditions.
+	Warnings warnings `mapstructure:"warnings"`
 
 	// Description of the metric.
-	Description string `validate:"required,notblank"`
+	Description string `mapstructure:"description"`
 
 	// ExtendedDocumentation of the metric. If specified, this will
 	// be appended to the description used in generated documentation.
@@ -131,14 +112,24 @@ type metric struct {
 	Unit string `mapstructure:"unit"`
 
 	// Sum stores metadata for sum metric type
-	Sum *sum `yaml:"sum"`
+	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
-	Gauge *gauge `yaml:"gauge"`
+	Gauge *gauge `mapstructure:"gauge,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
-	Attributes []attributeName
+	Attributes []attributeName `mapstructure:"attributes"`
 }
 
+func (m *metric) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("enabled") {
+		return errors.New("missing required field: `enabled`")
+	}
+	err := parser.Unmarshal(m, confmap.WithErrorUnused())
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (m metric) Data() MetricData {
 	if m.Sum != nil {
 		return m.Sum
@@ -149,32 +140,89 @@ func (m metric) Data() MetricData {
 	return nil
 }
 
-func (m metric) IsEnabled() bool {
-	return *m.Enabled
+type warnings struct {
+	// A warning that will be displayed if the metric is enabled in user config.
+	IfEnabled string `mapstructure:"if_enabled"`
+	// A warning that will be displayed if `enabled` field is not set explicitly in user config.
+	IfEnabledNotSet string `mapstructure:"if_enabled_not_set"`
+	// A warning that will be displayed if the metrics is configured by user in any way.
+	IfConfigured string `mapstructure:"if_configured"`
 }
 
 type attribute struct {
 	// Description describes the purpose of the attribute.
-	Description string `validate:"notblank"`
+	Description string `mapstructure:"description"`
 	// NameOverride can be used to override the attribute name.
 	NameOverride string `mapstructure:"name_override"`
+	// Enabled defines whether the attribute is enabled by default.
+	Enabled bool `mapstructure:"enabled"`
 	// Enum can optionally describe the set of values to which the attribute can belong.
-	Enum []string
+	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
-	Type ValueType `mapstructure:"type" validate:"dive"`
+	Type ValueType `mapstructure:"type"`
+	// FullName is the attribute name populated from the map key.
+	FullName attributeName `mapstructure:"-"`
+}
+
+// Name returns actual name of the attribute that is set on the metric after applying NameOverride.
+func (a attribute) Name() attributeName {
+	if a.NameOverride != "" {
+		return attributeName(a.NameOverride)
+	}
+	return a.FullName
+}
+
+func (a attribute) TestValue() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`"%s"`, a.Enum[0])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return fmt.Sprintf("%d", len(a.FullName))
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return fmt.Sprintf("%t", len(a.FullName)%2 == 0)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`bytes("%s-val")`, a.FullName)
+	}
+	return ""
 }
 
 type metadata struct {
-	// Name of the component.
-	Name string `validate:"notblank"`
+	// Type of the component.
+	Type string `mapstructure:"type"`
+	// Type of the parent component (applicable to subcomponents).
+	Parent string `mapstructure:"parent"`
+	// Status information for the component.
+	Status *Status `mapstructure:"status"`
 	// SemConvVersion is a version number of OpenTelemetry semantic conventions applied to the scraped metrics.
 	SemConvVersion string `mapstructure:"sem_conv_version"`
 	// ResourceAttributes that can be emitted by the component.
-	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes" validate:"dive"`
+	ResourceAttributes map[attributeName]attribute `mapstructure:"resource_attributes"`
 	// Attributes emitted by one or more metrics.
-	Attributes map[attributeName]attribute `validate:"dive"`
+	Attributes map[attributeName]attribute `mapstructure:"attributes"`
 	// Metrics that can be emitted by the component.
-	Metrics map[metricName]metric `validate:"dive"`
+	Metrics map[metricName]metric `mapstructure:"metrics"`
+	// ScopeName of the metrics emitted by the component.
+	ScopeName string `mapstructure:"-"`
+	// ShortFolderName is the shortened folder name of the component, removing class if present
+	ShortFolderName string `mapstructure:"-"`
+}
+
+func setAttributesFullName(attrs map[attributeName]attribute) {
+	for k, v := range attrs {
+		v.FullName = k
+		attrs[k] = v
+	}
 }
 
 type templateContext struct {
@@ -189,99 +237,56 @@ func loadMetadata(filePath string) (metadata, error) {
 		return metadata{}, err
 	}
 
-	m, err := cp.AsConf()
+	conf, err := cp.AsConf()
 	if err != nil {
 		return metadata{}, err
 	}
 
-	var md metadata
-	if err := m.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
-		return metadata{}, err
-	}
-
-	if err := validateMetadata(md); err != nil {
+	md := metadata{ScopeName: scopeName(filePath), ShortFolderName: shortFolderName(filePath)}
+	if err := conf.Unmarshal(&md, confmap.WithErrorUnused()); err != nil {
 		return md, err
 	}
+
+	if err := md.Validate(); err != nil {
+		return md, err
+	}
+
+	setAttributesFullName(md.Attributes)
+	setAttributesFullName(md.ResourceAttributes)
 
 	return md, nil
 }
 
-func validateMetadata(out metadata) error {
-	v := validator.New()
-	if err := v.RegisterValidation("notblank", validators.NotBlank); err != nil {
-		return fmt.Errorf("failed registering notblank validator: %w", err)
+func shortFolderName(filePath string) string {
+	parentFolder := filepath.Base(filepath.Dir(filePath))
+	if strings.HasSuffix(parentFolder, "connector") {
+		return strings.TrimSuffix(parentFolder, "connector")
 	}
-
-	// Provides better validation error messages.
-	enLocale := en.New()
-	uni := ut.New(enLocale, enLocale)
-
-	tr, ok := uni.GetTranslator("en")
-	if !ok {
-		return errors.New("unable to lookup en translator")
+	if strings.HasSuffix(parentFolder, "exporter") {
+		return strings.TrimSuffix(parentFolder, "exporter")
 	}
-
-	if err := en_translations.RegisterDefaultTranslations(v, tr); err != nil {
-		return fmt.Errorf("failed registering translations: %w", err)
+	if strings.HasSuffix(parentFolder, "extension") {
+		return strings.TrimSuffix(parentFolder, "extension")
 	}
-
-	if err := v.RegisterTranslation("nosuchattribute", tr, func(ut ut.Translator) error {
-		return ut.Add("nosuchattribute", "unknown attribute value", true) // see universal-translator for details
-	}, func(ut ut.Translator, fe validator.FieldError) string {
-		t, _ := ut.T("nosuchattribute", fe.Field())
-		return t
-	}); err != nil {
-		return fmt.Errorf("failed registering nosuchattribute: %w", err)
+	if strings.HasSuffix(parentFolder, "processor") {
+		return strings.TrimSuffix(parentFolder, "processor")
 	}
-
-	v.RegisterStructValidation(metricValidation, metric{})
-
-	if err := v.Struct(&out); err != nil {
-		var verr validator.ValidationErrors
-		if errors.As(err, &verr) {
-			m := verr.Translate(tr)
-			buf := strings.Builder{}
-			buf.WriteString("error validating struct:\n")
-			for k, v := range m {
-				buf.WriteString(fmt.Sprintf("\t%v: %v\n", k, v))
-			}
-			return errors.New(buf.String())
-		}
-		return fmt.Errorf("unknown validation error: %w", err)
+	if strings.HasSuffix(parentFolder, "receiver") {
+		return strings.TrimSuffix(parentFolder, "receiver")
 	}
-
-	// Set metric data interface.
-	for k, v := range out.Metrics {
-		dataTypesSet := 0
-		if v.Sum != nil {
-			dataTypesSet++
-		}
-		if v.Gauge != nil {
-			dataTypesSet++
-		}
-		if dataTypesSet == 0 {
-			return fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", k)
-		}
-		if dataTypesSet > 1 {
-			return fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", k)
-		}
-	}
-
-	return nil
+	return parentFolder
 }
 
-// metricValidation validates metric structs.
-func metricValidation(sl validator.StructLevel) {
-	// Make sure that the attributes are valid.
-	md := sl.Top().Interface().(*metadata)
-	cur := sl.Current().Interface().(metric)
-
-	for _, l := range cur.Attributes {
-		if _, ok := md.Attributes[l]; !ok {
-			sl.ReportError(cur.Attributes, fmt.Sprintf("Attributes[%s]", string(l)), "Attributes", "nosuchattribute",
-				"")
+func scopeName(filePath string) string {
+	sn := "otelcol"
+	dirs := strings.Split(filepath.Dir(filePath), string(os.PathSeparator))
+	for _, dir := range dirs {
+		if dir != "receiver" && strings.HasSuffix(dir, "receiver") {
+			sn += "/" + dir
+		}
+		if dir != "scraper" && strings.HasSuffix(dir, "scraper") {
+			sn += "/" + strings.TrimSuffix(dir, "scraper")
 		}
 	}
+	return sn
 }

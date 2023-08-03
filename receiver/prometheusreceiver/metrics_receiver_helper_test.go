@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -23,6 +12,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -33,14 +23,11 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/atomic"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -65,7 +52,7 @@ func newMockPrometheus(endpoints map[string][]mockPrometheusResponse) *mockProme
 	wg := &sync.WaitGroup{}
 	wg.Add(len(endpoints))
 	for k := range endpoints {
-		accessIndex[k] = atomic.NewInt32(0)
+		accessIndex[k] = &atomic.Int32{}
 	}
 	mp := &mockPrometheus{
 		wg:          wg,
@@ -111,7 +98,8 @@ func (mp *mockPrometheus) Close() {
 // -------------------------
 
 var (
-	expectedScrapeMetricCount = 5
+	expectedScrapeMetricCount      = 5
+	expectedExtraScrapeMetricCount = 8
 )
 
 type testData struct {
@@ -240,7 +228,8 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedName
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount ||
+			expectedExtraScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedExtraScrapeMetricCount {
 			if isFirstFailedScrape(allMetrics, normalizedNames) {
 				continue
 			}
@@ -263,7 +252,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			continue
 		}
 
@@ -292,6 +281,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 					return false
 				}
 			}
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 		}
 	}
 	return true
@@ -324,7 +314,7 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int
 func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			n++
 		}
 	}
@@ -344,6 +334,14 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	default:
 	}
 	return false
+}
+func isExtraScrapeMetrics(m pmetric.Metric) bool {
+	switch m.Name() {
+	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
+		return true
+	default:
+		return false
+	}
 }
 
 type metricTypeComparator func(*testing.T, pmetric.Metric)
@@ -413,6 +411,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 						require.Equal(t, m.Summary().DataPoints().Len(), len(dataPointExpectations), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 				}
 			}
 		}
@@ -448,11 +447,8 @@ func compareAttributes(attributes map[string]string) numberPointComparator {
 		if req {
 			for k, v := range attributes {
 				val, ok := numberDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Attributes do not match")
-				} else {
-					assert.Failf(t, "Attributes key does not match: %v", k)
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Attributes do not match")
 			}
 		}
 	}
@@ -464,11 +460,8 @@ func compareSummaryAttributes(attributes map[string]string) summaryPointComparat
 		if req {
 			for k, v := range attributes {
 				val, ok := summaryDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Summary attributes value do not match")
-				} else {
-					assert.Failf(t, "Summary attributes key does not match: %v", k)
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Summary attributes value do not match")
 			}
 		}
 	}
@@ -486,11 +479,8 @@ func compareHistogramAttributes(attributes map[string]string) histogramPointComp
 		if req {
 			for k, v := range attributes {
 				val, ok := histogramDataPoint.Attributes().Get(k)
-				if ok {
-					assert.Equal(t, v, val.AsString(), "Histogram attributes value do not match")
-				} else {
-					assert.Fail(t, "Histogram attributes key do not match")
-				}
+				require.True(t, ok)
+				assert.Equal(t, v, val.AsString(), "Histogram attributes value do not match")
 			}
 		}
 	}
@@ -596,7 +586,7 @@ func compareSummary(count uint64, sum float64, quantiles [][]float64) summaryPoi
 }
 
 // starts prometheus receiver with custom config, retrieves metrics from MetricsSink
-func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, startTimeMetricRegex string, registry *featuregate.Registry, cfgMuts ...func(*promcfg.Config)) {
+func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, trimMetricSuffixes bool, startTimeMetricRegex string, cfgMuts ...func(*promcfg.Config)) {
 	ctx := context.Background()
 	mp, cfg, err := setupMockPrometheus(targets...)
 	for _, cfgMut := range cfgMuts {
@@ -606,12 +596,12 @@ func testComponent(t *testing.T, targets []*testData, useStartTimeMetric bool, s
 	defer mp.Close()
 
 	cms := new(consumertest.MetricsSink)
-	receiver := newPrometheusReceiver(componenttest.NewNopReceiverCreateSettings(), &Config{
-		ReceiverSettings:     config.NewReceiverSettings(component.NewID(typeStr)),
+	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), &Config{
 		PrometheusConfig:     cfg,
 		UseStartTimeMetric:   useStartTimeMetric,
 		StartTimeMetricRegex: startTimeMetricRegex,
-	}, cms, registry)
+		TrimMetricSuffixes:   trimMetricSuffixes,
+	}, cms)
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called
@@ -694,6 +684,7 @@ func getTS(ms pmetric.MetricSlice) pcommon.Timestamp {
 		return m.Summary().DataPoints().At(0).Timestamp()
 	case pmetric.MetricTypeExponentialHistogram:
 		return m.ExponentialHistogram().DataPoints().At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
 	}
 	return 0
 }

@@ -6,67 +6,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for riakreceiver metrics.
-type MetricsSettings struct {
-	RiakMemoryLimit              MetricSettings `mapstructure:"riak.memory.limit"`
-	RiakNodeOperationCount       MetricSettings `mapstructure:"riak.node.operation.count"`
-	RiakNodeOperationTimeMean    MetricSettings `mapstructure:"riak.node.operation.time.mean"`
-	RiakNodeReadRepairCount      MetricSettings `mapstructure:"riak.node.read_repair.count"`
-	RiakVnodeIndexOperationCount MetricSettings `mapstructure:"riak.vnode.index.operation.count"`
-	RiakVnodeOperationCount      MetricSettings `mapstructure:"riak.vnode.operation.count"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		RiakMemoryLimit: MetricSettings{
-			Enabled: true,
-		},
-		RiakNodeOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		RiakNodeOperationTimeMean: MetricSettings{
-			Enabled: true,
-		},
-		RiakNodeReadRepairCount: MetricSettings{
-			Enabled: true,
-		},
-		RiakVnodeIndexOperationCount: MetricSettings{
-			Enabled: true,
-		},
-		RiakVnodeOperationCount: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeOperation specifies the a value operation attribute.
 type AttributeOperation int
@@ -126,7 +69,7 @@ var MapAttributeRequest = map[string]AttributeRequest{
 
 type metricRiakMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -141,7 +84,7 @@ func (m *metricRiakMemoryLimit) init() {
 }
 
 func (m *metricRiakMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -159,16 +102,16 @@ func (m *metricRiakMemoryLimit) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakMemoryLimit) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakMemoryLimit(settings MetricSettings) metricRiakMemoryLimit {
-	m := metricRiakMemoryLimit{settings: settings}
-	if settings.Enabled {
+func newMetricRiakMemoryLimit(cfg MetricConfig) metricRiakMemoryLimit {
+	m := metricRiakMemoryLimit{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -177,7 +120,7 @@ func newMetricRiakMemoryLimit(settings MetricSettings) metricRiakMemoryLimit {
 
 type metricRiakNodeOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -193,7 +136,7 @@ func (m *metricRiakNodeOperationCount) init() {
 }
 
 func (m *metricRiakNodeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -212,16 +155,16 @@ func (m *metricRiakNodeOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakNodeOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakNodeOperationCount(settings MetricSettings) metricRiakNodeOperationCount {
-	m := metricRiakNodeOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricRiakNodeOperationCount(cfg MetricConfig) metricRiakNodeOperationCount {
+	m := metricRiakNodeOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -230,7 +173,7 @@ func newMetricRiakNodeOperationCount(settings MetricSettings) metricRiakNodeOper
 
 type metricRiakNodeOperationTimeMean struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -244,7 +187,7 @@ func (m *metricRiakNodeOperationTimeMean) init() {
 }
 
 func (m *metricRiakNodeOperationTimeMean) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
@@ -263,16 +206,16 @@ func (m *metricRiakNodeOperationTimeMean) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakNodeOperationTimeMean) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakNodeOperationTimeMean(settings MetricSettings) metricRiakNodeOperationTimeMean {
-	m := metricRiakNodeOperationTimeMean{settings: settings}
-	if settings.Enabled {
+func newMetricRiakNodeOperationTimeMean(cfg MetricConfig) metricRiakNodeOperationTimeMean {
+	m := metricRiakNodeOperationTimeMean{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -281,7 +224,7 @@ func newMetricRiakNodeOperationTimeMean(settings MetricSettings) metricRiakNodeO
 
 type metricRiakNodeReadRepairCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -296,7 +239,7 @@ func (m *metricRiakNodeReadRepairCount) init() {
 }
 
 func (m *metricRiakNodeReadRepairCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -314,16 +257,16 @@ func (m *metricRiakNodeReadRepairCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakNodeReadRepairCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakNodeReadRepairCount(settings MetricSettings) metricRiakNodeReadRepairCount {
-	m := metricRiakNodeReadRepairCount{settings: settings}
-	if settings.Enabled {
+func newMetricRiakNodeReadRepairCount(cfg MetricConfig) metricRiakNodeReadRepairCount {
+	m := metricRiakNodeReadRepairCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -332,7 +275,7 @@ func newMetricRiakNodeReadRepairCount(settings MetricSettings) metricRiakNodeRea
 
 type metricRiakVnodeIndexOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -348,7 +291,7 @@ func (m *metricRiakVnodeIndexOperationCount) init() {
 }
 
 func (m *metricRiakVnodeIndexOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, operationAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -367,16 +310,16 @@ func (m *metricRiakVnodeIndexOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakVnodeIndexOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakVnodeIndexOperationCount(settings MetricSettings) metricRiakVnodeIndexOperationCount {
-	m := metricRiakVnodeIndexOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricRiakVnodeIndexOperationCount(cfg MetricConfig) metricRiakVnodeIndexOperationCount {
+	m := metricRiakVnodeIndexOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -385,7 +328,7 @@ func newMetricRiakVnodeIndexOperationCount(settings MetricSettings) metricRiakVn
 
 type metricRiakVnodeOperationCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -401,7 +344,7 @@ func (m *metricRiakVnodeOperationCount) init() {
 }
 
 func (m *metricRiakVnodeOperationCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, requestAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -420,16 +363,16 @@ func (m *metricRiakVnodeOperationCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricRiakVnodeOperationCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricRiakVnodeOperationCount(settings MetricSettings) metricRiakVnodeOperationCount {
-	m := metricRiakVnodeOperationCount{settings: settings}
-	if settings.Enabled {
+func newMetricRiakVnodeOperationCount(cfg MetricConfig) metricRiakVnodeOperationCount {
+	m := metricRiakVnodeOperationCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -437,13 +380,13 @@ func newMetricRiakVnodeOperationCount(settings MetricSettings) metricRiakVnodeOp
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                          pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                 // maximum observed number of metrics per resource.
-	resourceCapacity                   int                 // maximum observed number of resource attributes.
-	metricsBuffer                      pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo // contains version information
+	config                             MetricsBuilderConfig // config of the metrics builder.
+	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                    int                  // maximum observed number of metrics per resource.
+	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                          component.BuildInfo  // contains version information.
 	metricRiakMemoryLimit              metricRiakMemoryLimit
 	metricRiakNodeOperationCount       metricRiakNodeOperationCount
 	metricRiakNodeOperationTimeMean    metricRiakNodeOperationTimeMean
@@ -462,17 +405,18 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                             mbc,
 		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          buildInfo,
-		metricRiakMemoryLimit:              newMetricRiakMemoryLimit(settings.RiakMemoryLimit),
-		metricRiakNodeOperationCount:       newMetricRiakNodeOperationCount(settings.RiakNodeOperationCount),
-		metricRiakNodeOperationTimeMean:    newMetricRiakNodeOperationTimeMean(settings.RiakNodeOperationTimeMean),
-		metricRiakNodeReadRepairCount:      newMetricRiakNodeReadRepairCount(settings.RiakNodeReadRepairCount),
-		metricRiakVnodeIndexOperationCount: newMetricRiakVnodeIndexOperationCount(settings.RiakVnodeIndexOperationCount),
-		metricRiakVnodeOperationCount:      newMetricRiakVnodeOperationCount(settings.RiakVnodeOperationCount),
+		buildInfo:                          settings.BuildInfo,
+		metricRiakMemoryLimit:              newMetricRiakMemoryLimit(mbc.Metrics.RiakMemoryLimit),
+		metricRiakNodeOperationCount:       newMetricRiakNodeOperationCount(mbc.Metrics.RiakNodeOperationCount),
+		metricRiakNodeOperationTimeMean:    newMetricRiakNodeOperationTimeMean(mbc.Metrics.RiakNodeOperationTimeMean),
+		metricRiakNodeReadRepairCount:      newMetricRiakNodeReadRepairCount(mbc.Metrics.RiakNodeReadRepairCount),
+		metricRiakVnodeIndexOperationCount: newMetricRiakVnodeIndexOperationCount(mbc.Metrics.RiakVnodeIndexOperationCount),
+		metricRiakVnodeOperationCount:      newMetricRiakVnodeOperationCount(mbc.Metrics.RiakVnodeOperationCount),
 	}
 	for _, op := range options {
 		op(mb)
@@ -480,23 +424,26 @@ func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, 
 	return mb
 }
 
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
-	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
 	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithRiakNodeName sets provided value as "riak.node.name" attribute for current resource.
-func WithRiakNodeName(val string) ResourceMetricsOption {
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().PutStr("riak.node.name", val)
+		res.CopyTo(rm.Resource())
 	}
 }
 
@@ -527,7 +474,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/riakreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -538,6 +484,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRiakNodeReadRepairCount.emit(ils.Metrics())
 	mb.metricRiakVnodeIndexOperationCount.emit(ils.Metrics())
 	mb.metricRiakVnodeOperationCount.emit(ils.Metrics())
+
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -549,11 +496,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

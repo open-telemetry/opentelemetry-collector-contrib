@@ -2,6 +2,12 @@ headers_setter:
 headers_setter/1:
   headers:
     - key: X-Scope-OrgID
+      action: insert
       from_context: "tenant_id"
     - key: User-ID
+      action: update
       from_context: "user_id"
+    - key: User-ID
+      value: "user_id"
+    - key: User-ID
+      action: delete

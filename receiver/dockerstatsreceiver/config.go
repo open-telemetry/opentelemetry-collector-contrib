@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 
@@ -53,14 +42,11 @@ type Config struct {
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
 
-	// Whether to report all CPU metrics.  Default is false
-	ProvidePerCoreCPUMetrics bool `mapstructure:"provide_per_core_cpu_metrics"`
-
 	// Docker client API version. Default is 1.22
 	DockerAPIVersion float64 `mapstructure:"api_version"`
 
-	// Metrics config. Enable or disable stats by name.
-	MetricsConfig metadata.MetricsSettings `mapstructure:"metrics"`
+	// MetricsBuilderConfig config. Enable or disable stats by name.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

@@ -1,8 +1,25 @@
-name: sqlserverreceiver
+type: sqlserver
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, StefanKurek]
 
 resource_attributes:
   sqlserver.database.name:
     description: The name of the SQL Server database.
+    enabled: true
+    type: string
+  sqlserver.instance.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
+    type: string
+  sqlserver.computer.name:
+    description: The name of the SQL Server instance being monitored.
+    enabled: false
     type: string
 
 attributes:
@@ -92,7 +109,7 @@ metrics:
     unit: "{growths}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   sqlserver.transaction_log.shrink.count:
     enabled: true
@@ -100,7 +117,7 @@ metrics:
     unit: "{shrinks}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
   sqlserver.transaction_log.usage:
     enabled: true

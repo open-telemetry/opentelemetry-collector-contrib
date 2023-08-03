@@ -3,925 +3,807 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
+type testConfigCollection int
 
-	enabledMetrics["container.cpu.time"] = true
-	mb.RecordContainerCPUTimeDataPoint(ts, 1)
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics["container.cpu.utilization"] = true
-	mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["container.filesystem.available"] = true
-	mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-
-	enabledMetrics["container.filesystem.capacity"] = true
-	mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-
-	enabledMetrics["container.filesystem.usage"] = true
-	mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.available"] = true
-	mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.major_page_faults"] = true
-	mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.page_faults"] = true
-	mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.rss"] = true
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.usage"] = true
-	mb.RecordContainerMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.working_set"] = true
-	mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.cpu.time"] = true
-	mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.cpu.utilization"] = true
-	mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.filesystem.available"] = true
-	mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.filesystem.capacity"] = true
-	mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.filesystem.usage"] = true
-	mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.available"] = true
-	mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.major_page_faults"] = true
-	mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.page_faults"] = true
-	mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.rss"] = true
-	mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.usage"] = true
-	mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.memory.working_set"] = true
-	mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
-
-	enabledMetrics["k8s.node.network.errors"] = true
-	mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-
-	enabledMetrics["k8s.node.network.io"] = true
-	mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-
-	enabledMetrics["k8s.pod.cpu.time"] = true
-	mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.cpu.utilization"] = true
-	mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.filesystem.available"] = true
-	mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.filesystem.capacity"] = true
-	mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.filesystem.usage"] = true
-	mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.available"] = true
-	mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.major_page_faults"] = true
-	mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.page_faults"] = true
-	mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.rss"] = true
-	mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.usage"] = true
-	mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.memory.working_set"] = true
-	mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
-
-	enabledMetrics["k8s.pod.network.errors"] = true
-	mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-
-	enabledMetrics["k8s.pod.network.io"] = true
-	mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-
-	enabledMetrics["k8s.volume.available"] = true
-	mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
-
-	enabledMetrics["k8s.volume.capacity"] = true
-	mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
-
-	enabledMetrics["k8s.volume.inodes"] = true
-	mb.RecordK8sVolumeInodesDataPoint(ts, 1)
-
-	enabledMetrics["k8s.volume.inodes.free"] = true
-	mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
-
-	enabledMetrics["k8s.volume.inodes.used"] = true
-	mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ContainerCPUTime:               MetricSettings{Enabled: true},
-		ContainerCPUUtilization:        MetricSettings{Enabled: true},
-		ContainerFilesystemAvailable:   MetricSettings{Enabled: true},
-		ContainerFilesystemCapacity:    MetricSettings{Enabled: true},
-		ContainerFilesystemUsage:       MetricSettings{Enabled: true},
-		ContainerMemoryAvailable:       MetricSettings{Enabled: true},
-		ContainerMemoryMajorPageFaults: MetricSettings{Enabled: true},
-		ContainerMemoryPageFaults:      MetricSettings{Enabled: true},
-		ContainerMemoryRss:             MetricSettings{Enabled: true},
-		ContainerMemoryUsage:           MetricSettings{Enabled: true},
-		ContainerMemoryWorkingSet:      MetricSettings{Enabled: true},
-		K8sNodeCPUTime:                 MetricSettings{Enabled: true},
-		K8sNodeCPUUtilization:          MetricSettings{Enabled: true},
-		K8sNodeFilesystemAvailable:     MetricSettings{Enabled: true},
-		K8sNodeFilesystemCapacity:      MetricSettings{Enabled: true},
-		K8sNodeFilesystemUsage:         MetricSettings{Enabled: true},
-		K8sNodeMemoryAvailable:         MetricSettings{Enabled: true},
-		K8sNodeMemoryMajorPageFaults:   MetricSettings{Enabled: true},
-		K8sNodeMemoryPageFaults:        MetricSettings{Enabled: true},
-		K8sNodeMemoryRss:               MetricSettings{Enabled: true},
-		K8sNodeMemoryUsage:             MetricSettings{Enabled: true},
-		K8sNodeMemoryWorkingSet:        MetricSettings{Enabled: true},
-		K8sNodeNetworkErrors:           MetricSettings{Enabled: true},
-		K8sNodeNetworkIo:               MetricSettings{Enabled: true},
-		K8sPodCPUTime:                  MetricSettings{Enabled: true},
-		K8sPodCPUUtilization:           MetricSettings{Enabled: true},
-		K8sPodFilesystemAvailable:      MetricSettings{Enabled: true},
-		K8sPodFilesystemCapacity:       MetricSettings{Enabled: true},
-		K8sPodFilesystemUsage:          MetricSettings{Enabled: true},
-		K8sPodMemoryAvailable:          MetricSettings{Enabled: true},
-		K8sPodMemoryMajorPageFaults:    MetricSettings{Enabled: true},
-		K8sPodMemoryPageFaults:         MetricSettings{Enabled: true},
-		K8sPodMemoryRss:                MetricSettings{Enabled: true},
-		K8sPodMemoryUsage:              MetricSettings{Enabled: true},
-		K8sPodMemoryWorkingSet:         MetricSettings{Enabled: true},
-		K8sPodNetworkErrors:            MetricSettings{Enabled: true},
-		K8sPodNetworkIo:                MetricSettings{Enabled: true},
-		K8sVolumeAvailable:             MetricSettings{Enabled: true},
-		K8sVolumeCapacity:              MetricSettings{Enabled: true},
-		K8sVolumeInodes:                MetricSettings{Enabled: true},
-		K8sVolumeInodesFree:            MetricSettings{Enabled: true},
-		K8sVolumeInodesUsed:            MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sVolumeInodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetAwsVolumeID("aws.volume.id-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetFsType("fs.type-val")
+			rb.SetGcePdName("gce.pd.name-val")
+			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
+			rb.SetGlusterfsPath("glusterfs.path-val")
+			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodUID("k8s.pod.uid-val")
+			rb.SetK8sVolumeName("k8s.volume.name-val")
+			rb.SetK8sVolumeType("k8s.volume.type-val")
+			rb.SetPartition("partition-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "container.cpu.time":
+					assert.False(t, validatedMetrics["container.cpu.time"], "Found a duplicate in the metrics slice: container.cpu.time")
+					validatedMetrics["container.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Container CPU time", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.cpu.utilization":
+					assert.False(t, validatedMetrics["container.cpu.utilization"], "Found a duplicate in the metrics slice: container.cpu.utilization")
+					validatedMetrics["container.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container CPU utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.filesystem.available":
+					assert.False(t, validatedMetrics["container.filesystem.available"], "Found a duplicate in the metrics slice: container.filesystem.available")
+					validatedMetrics["container.filesystem.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.filesystem.capacity":
+					assert.False(t, validatedMetrics["container.filesystem.capacity"], "Found a duplicate in the metrics slice: container.filesystem.capacity")
+					validatedMetrics["container.filesystem.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem capacity", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.filesystem.usage":
+					assert.False(t, validatedMetrics["container.filesystem.usage"], "Found a duplicate in the metrics slice: container.filesystem.usage")
+					validatedMetrics["container.filesystem.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container filesystem usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.available":
+					assert.False(t, validatedMetrics["container.memory.available"], "Found a duplicate in the metrics slice: container.memory.available")
+					validatedMetrics["container.memory.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.major_page_faults":
+					assert.False(t, validatedMetrics["container.memory.major_page_faults"], "Found a duplicate in the metrics slice: container.memory.major_page_faults")
+					validatedMetrics["container.memory.major_page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory major_page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.page_faults":
+					assert.False(t, validatedMetrics["container.memory.page_faults"], "Found a duplicate in the metrics slice: container.memory.page_faults")
+					validatedMetrics["container.memory.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.rss":
+					assert.False(t, validatedMetrics["container.memory.rss"], "Found a duplicate in the metrics slice: container.memory.rss")
+					validatedMetrics["container.memory.rss"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory rss", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.usage":
+					assert.False(t, validatedMetrics["container.memory.usage"], "Found a duplicate in the metrics slice: container.memory.usage")
+					validatedMetrics["container.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.working_set":
+					assert.False(t, validatedMetrics["container.memory.working_set"], "Found a duplicate in the metrics slice: container.memory.working_set")
+					validatedMetrics["container.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Container memory working_set", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.cpu.time":
+					assert.False(t, validatedMetrics["k8s.node.cpu.time"], "Found a duplicate in the metrics slice: k8s.node.cpu.time")
+					validatedMetrics["k8s.node.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Node CPU time", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.node.cpu.utilization":
+					assert.False(t, validatedMetrics["k8s.node.cpu.utilization"], "Found a duplicate in the metrics slice: k8s.node.cpu.utilization")
+					validatedMetrics["k8s.node.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node CPU utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.node.filesystem.available":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.available"], "Found a duplicate in the metrics slice: k8s.node.filesystem.available")
+					validatedMetrics["k8s.node.filesystem.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.capacity":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.node.filesystem.capacity")
+					validatedMetrics["k8s.node.filesystem.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem capacity", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.filesystem.usage":
+					assert.False(t, validatedMetrics["k8s.node.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.node.filesystem.usage")
+					validatedMetrics["k8s.node.filesystem.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node filesystem usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.available":
+					assert.False(t, validatedMetrics["k8s.node.memory.available"], "Found a duplicate in the metrics slice: k8s.node.memory.available")
+					validatedMetrics["k8s.node.memory.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.major_page_faults":
+					assert.False(t, validatedMetrics["k8s.node.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.node.memory.major_page_faults")
+					validatedMetrics["k8s.node.memory.major_page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory major_page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.page_faults":
+					assert.False(t, validatedMetrics["k8s.node.memory.page_faults"], "Found a duplicate in the metrics slice: k8s.node.memory.page_faults")
+					validatedMetrics["k8s.node.memory.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.rss":
+					assert.False(t, validatedMetrics["k8s.node.memory.rss"], "Found a duplicate in the metrics slice: k8s.node.memory.rss")
+					validatedMetrics["k8s.node.memory.rss"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory rss", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.usage":
+					assert.False(t, validatedMetrics["k8s.node.memory.usage"], "Found a duplicate in the metrics slice: k8s.node.memory.usage")
+					validatedMetrics["k8s.node.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.memory.working_set":
+					assert.False(t, validatedMetrics["k8s.node.memory.working_set"], "Found a duplicate in the metrics slice: k8s.node.memory.working_set")
+					validatedMetrics["k8s.node.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node memory working_set", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.network.errors":
+					assert.False(t, validatedMetrics["k8s.node.network.errors"], "Found a duplicate in the metrics slice: k8s.node.network.errors")
+					validatedMetrics["k8s.node.network.errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Node network errors", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.node.network.io":
+					assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
+					validatedMetrics["k8s.node.network.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Node network IO", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.pod.cpu.time":
+					assert.False(t, validatedMetrics["k8s.pod.cpu.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.time")
+					validatedMetrics["k8s.pod.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Pod CPU time", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.pod.cpu.utilization":
+					assert.False(t, validatedMetrics["k8s.pod.cpu.utilization"], "Found a duplicate in the metrics slice: k8s.pod.cpu.utilization")
+					validatedMetrics["k8s.pod.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod CPU utilization", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "k8s.pod.filesystem.available":
+					assert.False(t, validatedMetrics["k8s.pod.filesystem.available"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.available")
+					validatedMetrics["k8s.pod.filesystem.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.filesystem.capacity":
+					assert.False(t, validatedMetrics["k8s.pod.filesystem.capacity"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.capacity")
+					validatedMetrics["k8s.pod.filesystem.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem capacity", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.filesystem.usage":
+					assert.False(t, validatedMetrics["k8s.pod.filesystem.usage"], "Found a duplicate in the metrics slice: k8s.pod.filesystem.usage")
+					validatedMetrics["k8s.pod.filesystem.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod filesystem usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.available":
+					assert.False(t, validatedMetrics["k8s.pod.memory.available"], "Found a duplicate in the metrics slice: k8s.pod.memory.available")
+					validatedMetrics["k8s.pod.memory.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.major_page_faults":
+					assert.False(t, validatedMetrics["k8s.pod.memory.major_page_faults"], "Found a duplicate in the metrics slice: k8s.pod.memory.major_page_faults")
+					validatedMetrics["k8s.pod.memory.major_page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory major_page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.page_faults":
+					assert.False(t, validatedMetrics["k8s.pod.memory.page_faults"], "Found a duplicate in the metrics slice: k8s.pod.memory.page_faults")
+					validatedMetrics["k8s.pod.memory.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory page_faults", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.rss":
+					assert.False(t, validatedMetrics["k8s.pod.memory.rss"], "Found a duplicate in the metrics slice: k8s.pod.memory.rss")
+					validatedMetrics["k8s.pod.memory.rss"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory rss", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.usage":
+					assert.False(t, validatedMetrics["k8s.pod.memory.usage"], "Found a duplicate in the metrics slice: k8s.pod.memory.usage")
+					validatedMetrics["k8s.pod.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.memory.working_set":
+					assert.False(t, validatedMetrics["k8s.pod.memory.working_set"], "Found a duplicate in the metrics slice: k8s.pod.memory.working_set")
+					validatedMetrics["k8s.pod.memory.working_set"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Pod memory working_set", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.network.errors":
+					assert.False(t, validatedMetrics["k8s.pod.network.errors"], "Found a duplicate in the metrics slice: k8s.pod.network.errors")
+					validatedMetrics["k8s.pod.network.errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Pod network errors", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.pod.network.io":
+					assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
+					validatedMetrics["k8s.pod.network.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Pod network IO", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.volume.available":
+					assert.False(t, validatedMetrics["k8s.volume.available"], "Found a duplicate in the metrics slice: k8s.volume.available")
+					validatedMetrics["k8s.volume.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of available bytes in the volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.volume.capacity":
+					assert.False(t, validatedMetrics["k8s.volume.capacity"], "Found a duplicate in the metrics slice: k8s.volume.capacity")
+					validatedMetrics["k8s.volume.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The total capacity in bytes of the volume.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.volume.inodes":
+					assert.False(t, validatedMetrics["k8s.volume.inodes"], "Found a duplicate in the metrics slice: k8s.volume.inodes")
+					validatedMetrics["k8s.volume.inodes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The total inodes in the filesystem.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.volume.inodes.free":
+					assert.False(t, validatedMetrics["k8s.volume.inodes.free"], "Found a duplicate in the metrics slice: k8s.volume.inodes.free")
+					validatedMetrics["k8s.volume.inodes.free"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The free inodes in the filesystem.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.volume.inodes.used":
+					assert.False(t, validatedMetrics["k8s.volume.inodes.used"], "Found a duplicate in the metrics slice: k8s.volume.inodes.used")
+					validatedMetrics["k8s.volume.inodes.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordContainerCPUTimeDataPoint(ts, 1)
-	mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
-	mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
-	mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
-	mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageDataPoint(ts, 1)
-	mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
-	mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
-	mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
-	mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
-
-	metrics := mb.Emit(WithAwsVolumeID("attr-val"), WithContainerID("attr-val"), WithFsType("attr-val"), WithGcePdName("attr-val"), WithGlusterfsEndpointsName("attr-val"), WithGlusterfsPath("attr-val"), WithK8sContainerName("attr-val"), WithK8sNamespaceName("attr-val"), WithK8sNodeName("attr-val"), WithK8sPersistentvolumeclaimName("attr-val"), WithK8sPodName("attr-val"), WithK8sPodUID("attr-val"), WithK8sVolumeName("attr-val"), WithK8sVolumeType("attr-val"), WithPartition("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("aws.volume.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("container.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("fs.type")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("gce.pd.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("glusterfs.endpoints.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("glusterfs.path")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.container.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.node.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.persistentvolumeclaim.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.uid")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.type")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("partition")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "container.cpu.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Container CPU time", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["container.cpu.time"] = struct{}{}
-		case "container.cpu.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container CPU utilization", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["container.cpu.utilization"] = struct{}{}
-		case "container.filesystem.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container filesystem available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.filesystem.available"] = struct{}{}
-		case "container.filesystem.capacity":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container filesystem capacity", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.filesystem.capacity"] = struct{}{}
-		case "container.filesystem.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container filesystem usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.filesystem.usage"] = struct{}{}
-		case "container.memory.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.available"] = struct{}{}
-		case "container.memory.major_page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory major_page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.major_page_faults"] = struct{}{}
-		case "container.memory.page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.page_faults"] = struct{}{}
-		case "container.memory.rss":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory rss", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.rss"] = struct{}{}
-		case "container.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.usage"] = struct{}{}
-		case "container.memory.working_set":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Container memory working_set", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.working_set"] = struct{}{}
-		case "k8s.node.cpu.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Node CPU time", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["k8s.node.cpu.time"] = struct{}{}
-		case "k8s.node.cpu.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node CPU utilization", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["k8s.node.cpu.utilization"] = struct{}{}
-		case "k8s.node.filesystem.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node filesystem available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.filesystem.available"] = struct{}{}
-		case "k8s.node.filesystem.capacity":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node filesystem capacity", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.filesystem.capacity"] = struct{}{}
-		case "k8s.node.filesystem.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node filesystem usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.filesystem.usage"] = struct{}{}
-		case "k8s.node.memory.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.available"] = struct{}{}
-		case "k8s.node.memory.major_page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory major_page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.major_page_faults"] = struct{}{}
-		case "k8s.node.memory.page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.page_faults"] = struct{}{}
-		case "k8s.node.memory.rss":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory rss", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.rss"] = struct{}{}
-		case "k8s.node.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.usage"] = struct{}{}
-		case "k8s.node.memory.working_set":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Node memory working_set", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.node.memory.working_set"] = struct{}{}
-		case "k8s.node.network.errors":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Node network errors", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["k8s.node.network.errors"] = struct{}{}
-		case "k8s.node.network.io":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Node network IO", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["k8s.node.network.io"] = struct{}{}
-		case "k8s.pod.cpu.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Pod CPU time", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["k8s.pod.cpu.time"] = struct{}{}
-		case "k8s.pod.cpu.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod CPU utilization", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["k8s.pod.cpu.utilization"] = struct{}{}
-		case "k8s.pod.filesystem.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod filesystem available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.filesystem.available"] = struct{}{}
-		case "k8s.pod.filesystem.capacity":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod filesystem capacity", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.filesystem.capacity"] = struct{}{}
-		case "k8s.pod.filesystem.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod filesystem usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.filesystem.usage"] = struct{}{}
-		case "k8s.pod.memory.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory available", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.available"] = struct{}{}
-		case "k8s.pod.memory.major_page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory major_page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.major_page_faults"] = struct{}{}
-		case "k8s.pod.memory.page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory page_faults", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.page_faults"] = struct{}{}
-		case "k8s.pod.memory.rss":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory rss", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.rss"] = struct{}{}
-		case "k8s.pod.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.usage"] = struct{}{}
-		case "k8s.pod.memory.working_set":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Pod memory working_set", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.pod.memory.working_set"] = struct{}{}
-		case "k8s.pod.network.errors":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Pod network errors", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["k8s.pod.network.errors"] = struct{}{}
-		case "k8s.pod.network.io":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Pod network IO", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["k8s.pod.network.io"] = struct{}{}
-		case "k8s.volume.available":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The number of available bytes in the volume.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.volume.available"] = struct{}{}
-		case "k8s.volume.capacity":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The total capacity in bytes of the volume.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.volume.capacity"] = struct{}{}
-		case "k8s.volume.inodes":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The total inodes in the filesystem.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.volume.inodes"] = struct{}{}
-		case "k8s.volume.inodes.free":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The free inodes in the filesystem.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.volume.inodes.free"] = struct{}{}
-		case "k8s.volume.inodes.used":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["k8s.volume.inodes.used"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ContainerCPUTime:               MetricSettings{Enabled: false},
-		ContainerCPUUtilization:        MetricSettings{Enabled: false},
-		ContainerFilesystemAvailable:   MetricSettings{Enabled: false},
-		ContainerFilesystemCapacity:    MetricSettings{Enabled: false},
-		ContainerFilesystemUsage:       MetricSettings{Enabled: false},
-		ContainerMemoryAvailable:       MetricSettings{Enabled: false},
-		ContainerMemoryMajorPageFaults: MetricSettings{Enabled: false},
-		ContainerMemoryPageFaults:      MetricSettings{Enabled: false},
-		ContainerMemoryRss:             MetricSettings{Enabled: false},
-		ContainerMemoryUsage:           MetricSettings{Enabled: false},
-		ContainerMemoryWorkingSet:      MetricSettings{Enabled: false},
-		K8sNodeCPUTime:                 MetricSettings{Enabled: false},
-		K8sNodeCPUUtilization:          MetricSettings{Enabled: false},
-		K8sNodeFilesystemAvailable:     MetricSettings{Enabled: false},
-		K8sNodeFilesystemCapacity:      MetricSettings{Enabled: false},
-		K8sNodeFilesystemUsage:         MetricSettings{Enabled: false},
-		K8sNodeMemoryAvailable:         MetricSettings{Enabled: false},
-		K8sNodeMemoryMajorPageFaults:   MetricSettings{Enabled: false},
-		K8sNodeMemoryPageFaults:        MetricSettings{Enabled: false},
-		K8sNodeMemoryRss:               MetricSettings{Enabled: false},
-		K8sNodeMemoryUsage:             MetricSettings{Enabled: false},
-		K8sNodeMemoryWorkingSet:        MetricSettings{Enabled: false},
-		K8sNodeNetworkErrors:           MetricSettings{Enabled: false},
-		K8sNodeNetworkIo:               MetricSettings{Enabled: false},
-		K8sPodCPUTime:                  MetricSettings{Enabled: false},
-		K8sPodCPUUtilization:           MetricSettings{Enabled: false},
-		K8sPodFilesystemAvailable:      MetricSettings{Enabled: false},
-		K8sPodFilesystemCapacity:       MetricSettings{Enabled: false},
-		K8sPodFilesystemUsage:          MetricSettings{Enabled: false},
-		K8sPodMemoryAvailable:          MetricSettings{Enabled: false},
-		K8sPodMemoryMajorPageFaults:    MetricSettings{Enabled: false},
-		K8sPodMemoryPageFaults:         MetricSettings{Enabled: false},
-		K8sPodMemoryRss:                MetricSettings{Enabled: false},
-		K8sPodMemoryUsage:              MetricSettings{Enabled: false},
-		K8sPodMemoryWorkingSet:         MetricSettings{Enabled: false},
-		K8sPodNetworkErrors:            MetricSettings{Enabled: false},
-		K8sPodNetworkIo:                MetricSettings{Enabled: false},
-		K8sVolumeAvailable:             MetricSettings{Enabled: false},
-		K8sVolumeCapacity:              MetricSettings{Enabled: false},
-		K8sVolumeInodes:                MetricSettings{Enabled: false},
-		K8sVolumeInodesFree:            MetricSettings{Enabled: false},
-		K8sVolumeInodesUsed:            MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordContainerCPUTimeDataPoint(ts, 1)
-	mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
-	mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
-	mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
-	mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageDataPoint(ts, 1)
-	mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
-	mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
-	mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
-	mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-	mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
-	mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
-	mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
-	mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
-	mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
-	mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

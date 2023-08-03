@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cwlogs
 
@@ -77,7 +66,10 @@ func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 			check(eventMsg)
 		}
 	})
-	p := newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
+	p := newLogPusher(PusherKey{
+		LogGroupName:  logGroup,
+		LogStreamName: logStreamName,
+	}, *svc, zap.NewNop())
 	return p
 }
 
@@ -174,7 +166,10 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 // Need to remove the tmp state folder after testing.
 func newMockPusher() *logPusher {
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	return newLogPusher(&logGroup, &logStreamName, *svc, zap.NewNop())
+	return newLogPusher(PusherKey{
+		LogGroupName:  logGroup,
+		LogStreamName: logStreamName,
+	}, *svc, zap.NewNop())
 }
 
 //
@@ -187,7 +182,10 @@ var msg = "test log message"
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p := newMockPusher()
 
-	logEventBatch := newEventBatch(p.logGroupName, p.logStreamName)
+	logEventBatch := newEventBatch(PusherKey{
+		LogGroupName:  logGroup,
+		LogStreamName: logStreamName,
+	})
 	assert.Equal(t, int64(0), logEventBatch.maxTimestampMs)
 	assert.Equal(t, int64(0), logEventBatch.minTimestampMs)
 	assert.Equal(t, 0, logEventBatch.byteTotal)
@@ -200,14 +198,14 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 func TestPusher_addLogEventBatch(t *testing.T) {
 	p := newMockPusher()
 
-	cap := cap(p.logEventBatch.putLogEventsInput.LogEvents)
+	c := cap(p.logEventBatch.putLogEventsInput.LogEvents)
 	logEvent := NewEvent(timestampMs, msg)
 
-	for i := 0; i < cap; i++ {
+	for i := 0; i < c; i++ {
 		p.logEventBatch.putLogEventsInput.LogEvents = append(p.logEventBatch.putLogEventsInput.LogEvents, logEvent.InputLogEvent)
 	}
 
-	assert.Equal(t, cap, len(p.logEventBatch.putLogEventsInput.LogEvents))
+	assert.Equal(t, c, len(p.logEventBatch.putLogEventsInput.LogEvents))
 
 	assert.NotNil(t, p.addLogEvent(logEvent))
 	// the actual log event add operation happens after the func newLogEventBatchIfNeeded

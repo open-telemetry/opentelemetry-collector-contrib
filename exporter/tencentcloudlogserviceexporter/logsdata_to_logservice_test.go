@@ -1,28 +1,17 @@
-// Copyright 2021, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package tencentcloudlogserviceexporter
 
 import (
 	"encoding/json"
 	"os"
-	"reflect"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -118,17 +107,11 @@ func TestConvertLogs(t *testing.T) {
 
 	wantLogs := make([][]logKeyValuePair, 0, validLogCount)
 	resultLogFile := "./testdata/logservice_log_data.json"
-	if err := loadFromJSON(resultLogFile, &wantLogs); err != nil {
-		t.Errorf("Failed load log key value pairs from %q: %v", resultLogFile, err)
-		return
-	}
+	require.NoError(t, loadFromJSON(resultLogFile, &wantLogs))
 	for j := 0; j < validLogCount; j++ {
-
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))
-		if !reflect.DeepEqual(gotLogPairs[j], wantLogs[j]) {
-			t.Errorf("Unsuccessful conversion \nGot:\n\t%v\nWant:\n\t%v", gotLogPairs, wantLogs)
-		}
+		assert.Equal(t, wantLogs[j], gotLogPairs[j])
 	}
 }
 

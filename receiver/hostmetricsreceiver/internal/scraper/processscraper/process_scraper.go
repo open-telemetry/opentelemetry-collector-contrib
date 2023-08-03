@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -18,55 +7,65 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
 const (
-	cpuMetricsLen            = 1
-	memoryMetricsLen         = 2
-	diskMetricsLen           = 1
-	pagingMetricsLen         = 1
-	threadMetricsLen         = 1
-	contextSwitchMetricsLen  = 1
-	fileDescriptorMetricsLen = 1
-	signalMetricsLen         = 1
+	cpuMetricsLen               = 1
+	memoryMetricsLen            = 2
+	memoryUtilizationMetricsLen = 1
+	diskMetricsLen              = 1
+	pagingMetricsLen            = 1
+	threadMetricsLen            = 1
+	contextSwitchMetricsLen     = 1
+	fileDescriptorMetricsLen    = 1
+	handleMetricsLen            = 1
+	signalMetricsLen            = 1
 
-	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
+	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
 // scraper for Process Metrics
 type scraper struct {
-	settings           component.ReceiverCreateSettings
+	settings           receiver.CreateSettings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
 	scrapeProcessDelay time.Duration
-	ucal               *ucal.CPUUtilizationCalculator
+	ucals              map[int32]*ucal.CPUUtilizationCalculator
+
 	// for mocking
 	getProcessCreateTime func(p processHandle) (int64, error)
-	getProcessHandles    func() (processHandles, error)
+	getProcessHandles    func(context.Context) (processHandles, error)
+
+	handleCountManager handlecount.Manager
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (*scraper, error) {
+func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:             settings,
 		config:               cfg,
 		getProcessCreateTime: processHandle.CreateTime,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
-		ucal:                 &ucal.CPUUtilizationCalculator{},
+		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
+		handleCountManager:   handlecount.NewManager(),
 	}
 
 	var err error
@@ -89,7 +88,7 @@ func newProcessScraper(settings component.ReceiverCreateSettings, cfg *Config) (
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.Metrics, s.settings.BuildInfo)
+	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
 
@@ -106,10 +105,14 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		errs.AddPartial(partialErr.Failed, partialErr)
 	}
 
+	presentPIDs := make(map[int32]struct{}, len(data))
+
 	for _, md := range data {
+		presentPIDs[md.pid] = struct{}{}
+
 		now := pcommon.NewTimestampFromTime(time.Now())
 
-		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendCPUTimeMetric(now, md.handle, md.pid); err != nil {
 			errs.AddPartial(cpuMetricsLen, fmt.Errorf("error reading cpu times for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -117,7 +120,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(memoryMetricsLen, fmt.Errorf("error reading memory info for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		if err = s.scrapeAndAppendDiskIOMetric(now, md.handle); err != nil {
+		if err = s.scrapeAndAppendMemoryUtilizationMetric(now, md.handle); err != nil {
+			errs.AddPartial(memoryUtilizationMetricsLen, fmt.Errorf("error reading memory utilization for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
+		if err = s.scrapeAndAppendDiskMetrics(now, md.handle); err != nil && !s.config.MuteProcessIOError {
 			errs.AddPartial(diskMetricsLen, fmt.Errorf("error reading disk usage for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
@@ -137,12 +144,23 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(fileDescriptorMetricsLen, fmt.Errorf("error reading open file descriptor count for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
+		if err = s.scrapeAndAppendHandlesMetric(now, int64(md.pid)); err != nil {
+			errs.AddPartial(handleMetricsLen, fmt.Errorf("error reading handle count for process %q (pid %v): %w", md.executable.name, md.pid, err))
+		}
+
 		if err = s.scrapeAndAppendSignalsPendingMetric(now, md.handle); err != nil {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		options := append(md.resourceOptions(), metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
-		s.mb.EmitForResource(options...)
+		s.mb.EmitForResource(metadata.WithResource(md.buildResource(s.mb.NewResourceBuilder())),
+			metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
+	}
+
+	// Cleanup any [ucal.CPUUtilizationCalculator]s for PIDs that are no longer present
+	for pid := range s.ucals {
+		if _, ok := presentPIDs[pid]; !ok {
+			delete(s.ucals, pid)
+		}
 	}
 
 	return s.mb.Emit(), errs.Combine()
@@ -153,25 +171,39 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 // for some processes, an error will be returned, but any processes that were
 // successfully obtained will still be returned.
 func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
-	handles, err := s.getProcessHandles()
+	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
+	handles, err := s.getProcessHandles(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	var errs scrapererror.ScrapeErrors
 
+	if err := s.refreshHandleCounts(); err != nil {
+		errs.Add(err)
+	}
+
 	data := make([]*processMetadata, 0, handles.Len())
 	for i := 0; i < handles.Len(); i++ {
 		pid := handles.Pid(i)
 		handle := handles.At(i)
 
-		executable, err := getProcessExecutable(handle)
+		exe, err := getProcessExecutable(handle)
+		if err != nil {
+			if !s.config.MuteProcessExeError {
+				errs.AddPartial(1, fmt.Errorf("error reading process executable for pid %v: %w", pid, err))
+			}
+		}
+
+		name, err := getProcessName(handle, exe)
 		if err != nil {
 			if !s.config.MuteProcessNameError {
 				errs.AddPartial(1, fmt.Errorf("error reading process name for pid %v: %w", pid, err))
 			}
 			continue
 		}
+
+		executable := &executableMetadata{name: name, path: exe}
 
 		// filter processes by name
 		if (s.includeFS != nil && !s.includeFS.Matches(executable.name)) ||
@@ -220,8 +252,8 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	return data, errs.Combine()
 }
 
-func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessCPUTime.Enabled {
+func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle processHandle, pid int32) error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled && !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
 		return nil
 	}
 
@@ -230,14 +262,24 @@ func (s *scraper) scrapeAndAppendCPUTimeMetric(now pcommon.Timestamp, handle pro
 		return err
 	}
 
-	s.recordCPUTimeMetric(now, times)
+	if s.config.MetricsBuilderConfig.Metrics.ProcessCPUTime.Enabled {
+		s.recordCPUTimeMetric(now, times)
+	}
 
-	err = s.ucal.CalculateAndRecord(now, times, s.recordCPUUtilization)
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessCPUUtilization.Enabled {
+		return nil
+	}
+
+	if _, ok := s.ucals[pid]; !ok {
+		s.ucals[pid] = &ucal.CPUUtilizationCalculator{}
+	}
+
+	err = s.ucals[pid].CalculateAndRecord(now, times, s.recordCPUUtilization)
 	return err
 }
 
 func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !(s.config.Metrics.ProcessMemoryPhysicalUsage.Enabled || s.config.Metrics.ProcessMemoryVirtualUsage.Enabled) {
+	if !(s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUsage.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessMemoryVirtual.Enabled) {
 		return nil
 	}
 
@@ -246,31 +288,49 @@ func (s *scraper) scrapeAndAppendMemoryUsageMetrics(now pcommon.Timestamp, handl
 		return err
 	}
 
-	s.mb.RecordProcessMemoryPhysicalUsageDataPoint(now, int64(mem.RSS))
-	s.mb.RecordProcessMemoryVirtualUsageDataPoint(now, int64(mem.VMS))
 	s.mb.RecordProcessMemoryUsageDataPoint(now, int64(mem.RSS))
 	s.mb.RecordProcessMemoryVirtualDataPoint(now, int64(mem.VMS))
 	return nil
 }
 
-func (s *scraper) scrapeAndAppendDiskIOMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessDiskIo.Enabled {
+func (s *scraper) scrapeAndAppendMemoryUtilizationMetric(now pcommon.Timestamp, handle processHandle) error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessMemoryUtilization.Enabled {
+		return nil
+	}
+
+	memoryPercent, err := handle.MemoryPercent()
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessMemoryUtilizationDataPoint(now, float64(memoryPercent))
+
+	return nil
+}
+
+func (s *scraper) scrapeAndAppendDiskMetrics(now pcommon.Timestamp, handle processHandle) error {
+	if !(s.config.MetricsBuilderConfig.Metrics.ProcessDiskIo.Enabled || s.config.MetricsBuilderConfig.Metrics.ProcessDiskOperations.Enabled) || runtime.GOOS == "darwin" {
 		return nil
 	}
 
 	io, err := handle.IOCounters()
 	if err != nil {
+		if s.config.MuteProcessIOError {
+			return nil
+		}
 		return err
 	}
 
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.ReadBytes), metadata.AttributeDirectionRead)
 	s.mb.RecordProcessDiskIoDataPoint(now, int64(io.WriteBytes), metadata.AttributeDirectionWrite)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.ReadCount), metadata.AttributeDirectionRead)
+	s.mb.RecordProcessDiskOperationsDataPoint(now, int64(io.WriteCount), metadata.AttributeDirectionWrite)
 
 	return nil
 }
 
 func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessPagingFaults.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessPagingFaults.Enabled {
 		return nil
 	}
 
@@ -286,7 +346,7 @@ func (s *scraper) scrapeAndAppendPagingMetric(now pcommon.Timestamp, handle proc
 }
 
 func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessThreads.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessThreads.Enabled {
 		return nil
 	}
 	threads, err := handle.NumThreads()
@@ -299,7 +359,7 @@ func (s *scraper) scrapeAndAppendThreadsMetrics(now pcommon.Timestamp, handle pr
 }
 
 func (s *scraper) scrapeAndAppendContextSwitchMetrics(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessContextSwitches.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessContextSwitches.Enabled {
 		return nil
 	}
 
@@ -316,7 +376,7 @@ func (s *scraper) scrapeAndAppendContextSwitchMetrics(now pcommon.Timestamp, han
 }
 
 func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessOpenFileDescriptors.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessOpenFileDescriptors.Enabled {
 		return nil
 	}
 
@@ -331,8 +391,31 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(now pcommon.Timestamp
 	return nil
 }
 
+func (s *scraper) refreshHandleCounts() error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	return s.handleCountManager.Refresh()
+}
+
+func (s *scraper) scrapeAndAppendHandlesMetric(now pcommon.Timestamp, pid int64) error {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
+		return nil
+	}
+
+	count, err := s.handleCountManager.GetProcessHandleCount(pid)
+	if err != nil {
+		return err
+	}
+
+	s.mb.RecordProcessHandlesDataPoint(now, int64(count))
+
+	return nil
+}
+
 func (s *scraper) scrapeAndAppendSignalsPendingMetric(now pcommon.Timestamp, handle processHandle) error {
-	if !s.config.Metrics.ProcessSignalsPending.Enabled {
+	if !s.config.MetricsBuilderConfig.Metrics.ProcessSignalsPending.Enabled {
 		return nil
 	}
 

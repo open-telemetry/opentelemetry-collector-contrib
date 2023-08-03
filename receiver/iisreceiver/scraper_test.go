@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -21,18 +10,20 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
@@ -42,11 +33,15 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
 	scraper.newWatcher = newMockWatcherFactory(nil, 1)
+	scraper.newWatcherFromPath = newMockWatcherFactorFromPath(nil, 1)
+	scraper.expandWildcardPath = func(s string) ([]string, error) {
+		return []string{strings.Replace(s, "*", "Instance", 1)}, nil
+	}
 
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -54,11 +49,12 @@ func TestScrape(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected.json")
+	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScrapeFailure(t *testing.T) {
@@ -66,7 +62,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := componenttest.NewNopReceiverCreateSettings()
+	rcvrSettings := receivertest.NewNopCreateSettings()
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -96,6 +92,71 @@ func TestScrapeFailure(t *testing.T) {
 	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
 }
 
+func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+
+	core, obs := observer.New(zapcore.WarnLevel)
+	logger := zap.New(core)
+	rcvrSettings := receivertest.NewNopCreateSettings()
+	rcvrSettings.Logger = logger
+
+	scraper := newIisReceiver(
+		rcvrSettings,
+		cfg,
+		consumertest.NewNop(),
+	)
+
+	expectedError := "failure to collect metric"
+	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	require.NoError(t, err)
+	scraper.queueMaxAgeWatchers = []instanceWatcher{
+		{
+			watcher:  mockWatcher,
+			instance: "Instance",
+		},
+	}
+
+	scraper.scrape(context.Background())
+
+	require.Equal(t, 1, obs.Len())
+	log := obs.All()[0]
+	require.Equal(t, log.Level, zapcore.WarnLevel)
+	require.Equal(t, "error", log.Context[0].Key)
+	require.EqualError(t, log.Context[0].Interface.(error), expectedError)
+}
+
+func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	rcvrSettings := receivertest.NewNopCreateSettings()
+
+	scraper := newIisReceiver(
+		rcvrSettings,
+		cfg,
+		consumertest.NewNop(),
+	)
+
+	expectedError := "Failed to scrape counter \"counter\": A counter with a negative denominator value was detected.\r\n"
+	mockWatcher, err := newMockWatcherFactory(fmt.Errorf(expectedError), 1)("", "", "")
+	require.NoError(t, err)
+	scraper.queueMaxAgeWatchers = []instanceWatcher{
+		{
+			watcher:  mockWatcher,
+			instance: "Instance",
+		},
+	}
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "expected_negative_denominator.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+}
+
 type mockPerfCounter struct {
 	watchErr error
 	value    float64
@@ -104,6 +165,12 @@ type mockPerfCounter struct {
 func newMockWatcherFactory(watchErr error, value float64) func(string, string,
 	string) (winperfcounters.PerfCounterWatcher, error) {
 	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
+	}
+}
+
+func newMockWatcherFactorFromPath(watchErr error, value float64) func(string) (winperfcounters.PerfCounterWatcher, error) {
+	return func(s string) (winperfcounters.PerfCounterWatcher, error) {
 		return &mockPerfCounter{watchErr: watchErr, value: value}, nil
 	}
 }

@@ -6,72 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for hostmetricsreceiver/network metrics.
-type MetricsSettings struct {
-	SystemNetworkConnections    MetricSettings `mapstructure:"system.network.connections"`
-	SystemNetworkConntrackCount MetricSettings `mapstructure:"system.network.conntrack.count"`
-	SystemNetworkConntrackMax   MetricSettings `mapstructure:"system.network.conntrack.max"`
-	SystemNetworkDropped        MetricSettings `mapstructure:"system.network.dropped"`
-	SystemNetworkErrors         MetricSettings `mapstructure:"system.network.errors"`
-	SystemNetworkIo             MetricSettings `mapstructure:"system.network.io"`
-	SystemNetworkPackets        MetricSettings `mapstructure:"system.network.packets"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemNetworkConnections: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkConntrackCount: MetricSettings{
-			Enabled: false,
-		},
-		SystemNetworkConntrackMax: MetricSettings{
-			Enabled: false,
-		},
-		SystemNetworkDropped: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkErrors: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkIo: MetricSettings{
-			Enabled: true,
-		},
-		SystemNetworkPackets: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -123,7 +62,7 @@ var MapAttributeProtocol = map[string]AttributeProtocol{
 
 type metricSystemNetworkConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -139,7 +78,7 @@ func (m *metricSystemNetworkConnections) init() {
 }
 
 func (m *metricSystemNetworkConnections) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, protocolAttributeValue string, stateAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -159,16 +98,16 @@ func (m *metricSystemNetworkConnections) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkConnections) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkConnections(settings MetricSettings) metricSystemNetworkConnections {
-	m := metricSystemNetworkConnections{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkConnections(cfg MetricConfig) metricSystemNetworkConnections {
+	m := metricSystemNetworkConnections{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -177,7 +116,7 @@ func newMetricSystemNetworkConnections(settings MetricSettings) metricSystemNetw
 
 type metricSystemNetworkConntrackCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -192,7 +131,7 @@ func (m *metricSystemNetworkConntrackCount) init() {
 }
 
 func (m *metricSystemNetworkConntrackCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -210,16 +149,16 @@ func (m *metricSystemNetworkConntrackCount) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkConntrackCount) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkConntrackCount(settings MetricSettings) metricSystemNetworkConntrackCount {
-	m := metricSystemNetworkConntrackCount{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkConntrackCount(cfg MetricConfig) metricSystemNetworkConntrackCount {
+	m := metricSystemNetworkConntrackCount{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -228,7 +167,7 @@ func newMetricSystemNetworkConntrackCount(settings MetricSettings) metricSystemN
 
 type metricSystemNetworkConntrackMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -243,7 +182,7 @@ func (m *metricSystemNetworkConntrackMax) init() {
 }
 
 func (m *metricSystemNetworkConntrackMax) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -261,16 +200,16 @@ func (m *metricSystemNetworkConntrackMax) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkConntrackMax) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkConntrackMax(settings MetricSettings) metricSystemNetworkConntrackMax {
-	m := metricSystemNetworkConntrackMax{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkConntrackMax(cfg MetricConfig) metricSystemNetworkConntrackMax {
+	m := metricSystemNetworkConntrackMax{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -279,7 +218,7 @@ func newMetricSystemNetworkConntrackMax(settings MetricSettings) metricSystemNet
 
 type metricSystemNetworkDropped struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -295,7 +234,7 @@ func (m *metricSystemNetworkDropped) init() {
 }
 
 func (m *metricSystemNetworkDropped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -315,16 +254,16 @@ func (m *metricSystemNetworkDropped) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkDropped) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkDropped(settings MetricSettings) metricSystemNetworkDropped {
-	m := metricSystemNetworkDropped{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkDropped(cfg MetricConfig) metricSystemNetworkDropped {
+	m := metricSystemNetworkDropped{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -333,7 +272,7 @@ func newMetricSystemNetworkDropped(settings MetricSettings) metricSystemNetworkD
 
 type metricSystemNetworkErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -349,7 +288,7 @@ func (m *metricSystemNetworkErrors) init() {
 }
 
 func (m *metricSystemNetworkErrors) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -369,16 +308,16 @@ func (m *metricSystemNetworkErrors) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkErrors) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkErrors(settings MetricSettings) metricSystemNetworkErrors {
-	m := metricSystemNetworkErrors{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkErrors(cfg MetricConfig) metricSystemNetworkErrors {
+	m := metricSystemNetworkErrors{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -387,7 +326,7 @@ func newMetricSystemNetworkErrors(settings MetricSettings) metricSystemNetworkEr
 
 type metricSystemNetworkIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -403,7 +342,7 @@ func (m *metricSystemNetworkIo) init() {
 }
 
 func (m *metricSystemNetworkIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -423,16 +362,16 @@ func (m *metricSystemNetworkIo) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkIo(settings MetricSettings) metricSystemNetworkIo {
-	m := metricSystemNetworkIo{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkIo(cfg MetricConfig) metricSystemNetworkIo {
+	m := metricSystemNetworkIo{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -441,7 +380,7 @@ func newMetricSystemNetworkIo(settings MetricSettings) metricSystemNetworkIo {
 
 type metricSystemNetworkPackets struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -457,7 +396,7 @@ func (m *metricSystemNetworkPackets) init() {
 }
 
 func (m *metricSystemNetworkPackets) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -477,16 +416,16 @@ func (m *metricSystemNetworkPackets) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemNetworkPackets) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkPackets {
-	m := metricSystemNetworkPackets{settings: settings}
-	if settings.Enabled {
+func newMetricSystemNetworkPackets(cfg MetricConfig) metricSystemNetworkPackets {
+	m := metricSystemNetworkPackets{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -494,13 +433,13 @@ func newMetricSystemNetworkPackets(settings MetricSettings) metricSystemNetworkP
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                 // maximum observed number of metrics per resource.
-	resourceCapacity                  int                 // maximum observed number of resource attributes.
-	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo // contains version information
+	config                            MetricsBuilderConfig // config of the metrics builder.
+	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                   int                  // maximum observed number of metrics per resource.
+	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                         component.BuildInfo  // contains version information.
 	metricSystemNetworkConnections    metricSystemNetworkConnections
 	metricSystemNetworkConntrackCount metricSystemNetworkConntrackCount
 	metricSystemNetworkConntrackMax   metricSystemNetworkConntrackMax
@@ -520,18 +459,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(settings.SystemNetworkConnections),
-		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(settings.SystemNetworkConntrackCount),
-		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(settings.SystemNetworkConntrackMax),
-		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(settings.SystemNetworkDropped),
-		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(settings.SystemNetworkErrors),
-		metricSystemNetworkIo:             newMetricSystemNetworkIo(settings.SystemNetworkIo),
-		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(settings.SystemNetworkPackets),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemNetworkConnections:    newMetricSystemNetworkConnections(mbc.Metrics.SystemNetworkConnections),
+		metricSystemNetworkConntrackCount: newMetricSystemNetworkConntrackCount(mbc.Metrics.SystemNetworkConntrackCount),
+		metricSystemNetworkConntrackMax:   newMetricSystemNetworkConntrackMax(mbc.Metrics.SystemNetworkConntrackMax),
+		metricSystemNetworkDropped:        newMetricSystemNetworkDropped(mbc.Metrics.SystemNetworkDropped),
+		metricSystemNetworkErrors:         newMetricSystemNetworkErrors(mbc.Metrics.SystemNetworkErrors),
+		metricSystemNetworkIo:             newMetricSystemNetworkIo(mbc.Metrics.SystemNetworkIo),
+		metricSystemNetworkPackets:        newMetricSystemNetworkPackets(mbc.Metrics.SystemNetworkPackets),
 	}
 	for _, op := range options {
 		op(mb)
@@ -544,13 +484,18 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	}
+}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
@@ -580,7 +525,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/network")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -592,6 +536,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemNetworkErrors.emit(ils.Metrics())
 	mb.metricSystemNetworkIo.emit(ils.Metrics())
 	mb.metricSystemNetworkPackets.emit(ils.Metrics())
+
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -603,11 +548,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

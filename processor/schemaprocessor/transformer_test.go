@@ -1,23 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package schemaprocessor
 
 import (
 	"context"
 	_ "embed"
-	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -26,22 +14,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.uber.org/zap/zaptest"
 )
 
-//go:embed testdata/schema.yml
-var schemaContent []byte
-
-func SchemaHandler(t *testing.T) func(wr http.ResponseWriter, r *http.Request) {
-	assert.NotEmpty(t, schemaContent, "SchemaContent MUST not be empty")
-	return func(wr http.ResponseWriter, r *http.Request) {
-		_, err := wr.Write(schemaContent)
-		assert.NoError(t, err, "Must not have issues writing schema content")
-	}
-}
-
 func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), component.ProcessorCreateSettings{
+	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.CreateSettings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},

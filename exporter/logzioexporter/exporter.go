@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter"
 
@@ -30,6 +19,7 @@ import (
 	"github.com/jaegertracing/jaeger/pkg/cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -54,7 +44,7 @@ type logzioExporter struct {
 	serviceCache cache.Cache
 }
 
-func newLogzioExporter(cfg *Config, params component.ExporterCreateSettings) (*logzioExporter, error) {
+func newLogzioExporter(cfg *Config, params exporter.CreateSettings) (*logzioExporter, error) {
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,
@@ -75,12 +65,9 @@ func newLogzioExporter(cfg *Config, params component.ExporterCreateSettings) (*l
 	}, nil
 }
 
-func newLogzioTracesExporter(config *Config, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newLogzioTracesExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
-		return nil, err
-	}
-	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
@@ -100,12 +87,9 @@ func newLogzioTracesExporter(config *Config, set component.ExporterCreateSetting
 		exporterhelper.WithRetry(config.RetrySettings),
 	)
 }
-func newLogzioLogsExporter(config *Config, set component.ExporterCreateSettings) (component.LogsExporter, error) {
+func newLogzioLogsExporter(config *Config, set exporter.CreateSettings) (exporter.Logs, error) {
 	exporter, err := newLogzioExporter(config, set)
 	if err != nil {
-		return nil, err
-	}
-	if err = config.Validate(); err != nil {
 		return nil, err
 	}
 	exporter.config.HTTPClientSettings.Endpoint, err = generateEndpoint(config)
@@ -145,7 +129,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 			logRecords := scopeLogs.At(j).LogRecords()
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, resource, exporter.logger)
+				jsonLog := convertLogRecordToJSON(log, resource)
 				logzioLog, err := json.Marshal(jsonLog)
 				if err != nil {
 					return err

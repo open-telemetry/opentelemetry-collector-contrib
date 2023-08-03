@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor
 
@@ -20,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -38,7 +27,8 @@ func TestLogProcessorCapabilities(t *testing.T) {
 	}
 
 	// test
-	p := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, config)
+	p, err := newLogProcessor(noopTelemetrySettings, config)
+	require.NoError(t, err)
 	require.NotNil(t, p)
 
 	// verify
@@ -56,7 +46,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  contextAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -67,13 +57,15 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	l := plog.NewLogs()
 	rl := l.ResourceLogs().AppendEmpty()
 	rl.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-	t.Run("non default route is properly used", func(t *testing.T) {
+	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
@@ -88,7 +80,7 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 		)
 	})
 
-	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
+	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeLogs(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
@@ -99,6 +91,37 @@ func TestLogs_RoutingWorks_Context(t *testing.T) {
 			"log should be routed to default exporter",
 		)
 		assert.Len(t, lExp.AllLogs(), 1,
+			"log should not be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeLogs(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"acme"},
+				})}),
+			l,
+		))
+		assert.Len(t, defaultExp.AllLogs(), 1,
+			"log should not be routed to default exporter",
+		)
+		assert.Len(t, lExp.AllLogs(), 2,
+			"log should be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeLogs(client.NewContext(context.Background(),
+			client.Info{Metadata: client.NewMetadata(map[string][]string{
+				"X-Tenant": {"some-custom-value1"},
+			})}),
+			l,
+		))
+		assert.Len(t, defaultExp.AllLogs(), 2,
+			"log should be routed to default exporter",
+		)
+		assert.Len(t, lExp.AllLogs(), 2,
 			"log should not be routed to non default exporter",
 		)
 	})
@@ -115,7 +138,7 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -126,6 +149,8 @@ func TestLogs_RoutingWorks_ResourceAttribute(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	t.Run("non default route is properly used", func(t *testing.T) {
@@ -168,7 +193,7 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		AttributeSource:              resourceAttributeSource,
 		FromAttribute:                "X-Tenant",
 		DropRoutingResourceAttribute: true,
@@ -180,6 +205,8 @@ func TestLogs_RoutingWorks_ResourceAttribute_DropsRoutingAttribute(t *testing.T)
 			},
 		},
 	})
+	require.NoError(t, err)
+
 	require.NoError(t, exp.Start(context.Background(), host))
 
 	l := plog.NewLogs()
@@ -210,7 +237,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		FromAttribute:    "X-Tenant",
 		AttributeSource:  resourceAttributeSource,
 		DefaultExporters: []string{"otlp"},
@@ -221,6 +248,7 @@ func TestLogs_AreCorrectlySplitPerResourceAttributeRouting(t *testing.T) {
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	l := plog.NewLogs()
 
@@ -264,19 +292,20 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		},
 	})
 
-	exp := newLogProcessor(component.TelemetrySettings{Logger: zap.NewNop()}, &Config{
+	exp, err := newLogProcessor(noopTelemetrySettings, &Config{
 		DefaultExporters: []string{"otlp"},
 		Table: []RoutingTableItem{
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme") == true`,
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], ".*acme")`,
 				Exporters: []string{"otlp/1"},
 			},
 			{
-				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme") == true`,
+				Statement: `route() where IsMatch(resource.attributes["X-Tenant"], "_acme")`,
 				Exporters: []string{"otlp/2"},
 			},
 		},
 	})
+	require.NoError(t, err)
 
 	require.NoError(t, exp.Start(context.Background(), host))
 

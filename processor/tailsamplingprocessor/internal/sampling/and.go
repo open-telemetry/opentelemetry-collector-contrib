@@ -1,20 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
@@ -37,11 +28,11 @@ func NewAnd(
 }
 
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
-func (c *And) Evaluate(traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
+func (c *And) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *TraceData) (Decision, error) {
 	// The policy iterates over all sub-policies and returns Sampled if all sub-policies returned a Sampled Decision.
 	// If any subpolicy returns NotSampled, it returns NotSampled Decision.
 	for _, sub := range c.subpolicies {
-		decision, err := sub.Evaluate(traceID, trace)
+		decision, err := sub.Evaluate(ctx, traceID, trace)
 		if err != nil {
 			return Unspecified, err
 		}

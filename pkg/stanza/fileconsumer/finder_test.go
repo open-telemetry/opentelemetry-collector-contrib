@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -25,128 +14,436 @@ import (
 func TestFinder(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name     string
-		files    []string
-		include  []string
-		exclude  []string
-		expected []string
+		name           string
+		files          []string
+		include        []string
+		exclude        []string
+		filterSortRule OrderingCriteria
+		expected       []string
 	}{
 		{
-			name:     "IncludeOne",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"a1.log"},
-			exclude:  []string{},
-			expected: []string{"a1.log"},
+			name:    "Timestamp Sorting",
+			files:   []string{"err.2023020611.log", "err.2023020612.log", "err.2023020610.log", "err.2023020609.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+				},
+			},
+			expected: []string{"err.2023020612.log"},
 		},
 		{
-			name:     "IncludeNone",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"c*.log"},
-			exclude:  []string{},
-			expected: []string{},
+			name:    "Timestamp Sorting Ascending",
+			files:   []string{"err.2023020612.log", "err.2023020611.log", "err.2023020609.log", "err.2023020610.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: true,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+				},
+			},
+			expected: []string{"err.2023020609.log"},
 		},
 		{
-			name:     "IncludeAll",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"*"},
-			exclude:  []string{},
-			expected: []string{"a1.log", "a2.log", "b1.log", "b2.log"},
+			name:    "Numeric Sorting",
+			files:   []string{"err.123456788.log", "err.123456789.log", "err.123456787.log", "err.123456786.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>\d+).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: false,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.123456789.log"},
 		},
 		{
-			name:     "IncludeLogs",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"*.log"},
-			exclude:  []string{},
-			expected: []string{"a1.log", "a2.log", "b1.log", "b2.log"},
+			name:    "Numeric Sorting Ascending",
+			files:   []string{"err.123456789.log", "err.123456788.log", "err.123456786.log", "err.123456787.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>\d+).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: true,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.123456786.log"},
 		},
 		{
-			name:     "IncludeA",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"a*.log"},
-			exclude:  []string{},
-			expected: []string{"a1.log", "a2.log"},
+			name:    "Alphabetical Sorting",
+			files:   []string{"err.a.log", "err.d.log", "err.b.log", "err.c.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: false,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.d.log"},
 		},
 		{
-			name:     "Include2s",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"*2.log"},
-			exclude:  []string{},
-			expected: []string{"a2.log", "b2.log"},
+			name:    "Alphabetical Sorting Ascending",
+			files:   []string{"err.b.log", "err.a.log", "err.c.log", "err.d.log"},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				SortBy: []sortRuleImpl{
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "value",
+								Ascending: true,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.a.log"},
 		},
 		{
-			name:     "Exclude",
-			files:    []string{"include.log", "exclude.log"},
-			include:  []string{"*"},
-			exclude:  []string{"exclude.log"},
-			expected: []string{"include.log"},
+			name: "Multiple Sorting - timestamp priority sort",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+				},
+			},
+			expected: []string{"err.b.2.2023020602.log"},
 		},
 		{
-			name:     "ExcludeMany",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"*"},
-			exclude:  []string{"a*.log", "*2.log"},
-			expected: []string{"b1.log"},
+			name: "Multiple Sorting - timestamp priority sort - numeric ascending",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: true,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+				},
+			},
+			expected: []string{"err.b.1.2023020602.log"},
 		},
 		{
-			name:     "ExcludeDuplicates",
-			files:    []string{"a1.log", "a2.log", "b1.log", "b2.log"},
-			include:  []string{"*1*", "a*"},
-			exclude:  []string{"a*.log", "*2.log"},
-			expected: []string{"b1.log"},
+			name: "Multiple Sorting - timestamp priority sort",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: false,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.b.2.2023020602.log"},
 		},
 		{
-			name:     "IncludeMultipleDirectories",
-			files:    []string{"a/1.log", "a/2.log", "b/1.log", "b/2.log"},
-			include:  []string{"a/*.log", "b/*.log"},
-			exclude:  []string{},
-			expected: []string{"a/1.log", "a/2.log", "b/1.log", "b/2.log"},
+			name: "Multiple Sorting - alpha priority sort - alpha ascending",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: true,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.a.2.2023020602.log"},
 		},
 		{
-			name:     "IncludeMultipleDirectoriesVaryingDepth",
-			files:    []string{"1.log", "a/1.log", "a/b/1.log", "c/1.log"},
-			include:  []string{"*.log", "a/*.log", "a/b/*.log", "c/*.log"},
-			exclude:  []string{},
-			expected: []string{"1.log", "a/1.log", "a/b/1.log", "c/1.log"},
+			name: "Multiple Sorting - alpha priority sort - timestamp ascending",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: false,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: true,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: false,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.b.2.2023020601.log"},
 		},
 		{
-			name:     "DoubleStarSameDepth",
-			files:    []string{"a/1.log", "b/1.log", "c/1.log"},
-			include:  []string{"**/*.log"},
-			exclude:  []string{},
-			expected: []string{"a/1.log", "b/1.log", "c/1.log"},
-		},
-		{
-			name:     "DoubleStarVaryingDepth",
-			files:    []string{"1.log", "a/1.log", "a/b/1.log", "c/1.log"},
-			include:  []string{"**/*.log"},
-			exclude:  []string{},
-			expected: []string{"1.log", "a/1.log", "a/b/1.log", "c/1.log"},
+			name: "Multiple Sorting - alpha priority sort - timestamp ascending",
+			files: []string{
+				"err.b.1.2023020601.log",
+				"err.b.2.2023020601.log",
+				"err.a.1.2023020601.log",
+				"err.a.2.2023020601.log",
+				"err.b.1.2023020602.log",
+				"err.a.2.2023020602.log",
+				"err.b.2.2023020602.log",
+				"err.a.1.2023020602.log",
+			},
+			include: []string{"err.*.log"},
+			exclude: []string{},
+			filterSortRule: OrderingCriteria{
+				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				SortBy: []sortRuleImpl{
+					{
+						&NumericSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "number",
+								Ascending: true,
+							},
+						},
+					},
+					{
+						&TimestampSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "time",
+								Ascending: false,
+							},
+							Location: "UTC",
+							Layout:   `%Y%m%d%H`,
+						},
+					},
+					{
+						&AlphabeticalSortRule{
+							baseSortRule: baseSortRule{
+								RegexKey:  "alpha",
+								Ascending: false,
+							},
+						},
+					},
+				},
+			},
+			expected: []string{"err.b.1.2023020602.log"},
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-			files := absPath(tempDir, tc.files)
-			include := absPath(tempDir, tc.include)
-			exclude := absPath(tempDir, tc.exclude)
-			expected := absPath(tempDir, tc.expected)
-
-			for _, f := range files {
+			require.NoError(t, os.Chdir(t.TempDir()))
+			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
 				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
 			}
-
-			finder := Finder{include, exclude}
-			require.ElementsMatch(t, finder.FindFiles(), expected)
+			matcher := MatchingCriteria{
+				Include:          tc.include,
+				Exclude:          tc.exclude,
+				OrderingCriteria: tc.filterSortRule,
+			}
+			files, err := matcher.findFiles()
+			require.NoError(t, err)
+			require.Equal(t, tc.expected, files)
 		})
 	}
-}
-
-func absPath(tempDir string, files []string) []string {
-	absFiles := make([]string, 0, len(files))
-	for _, f := range files {
-		absFiles = append(absFiles, filepath.Join(tempDir, f))
-	}
-	return absFiles
 }

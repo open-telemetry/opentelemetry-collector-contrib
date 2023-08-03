@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package processesscraper
 
@@ -28,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
@@ -42,7 +32,7 @@ var (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name         string
-		getMiscStats func() (*load.MiscStat, error)
+		getMiscStats func(context.Context) (*load.MiscStat, error)
 		getProcesses func() ([]proc, error)
 		expectedErr  string
 		validate     func(*testing.T, pmetric.MetricSlice)
@@ -53,12 +43,12 @@ func TestScrape(t *testing.T) {
 		validate: validateRealData,
 	}, {
 		name:         "FakeData",
-		getMiscStats: func() (*load.MiscStat, error) { return &fakeData, nil },
+		getMiscStats: func(ctx context.Context) (*load.MiscStat, error) { return &fakeData, nil },
 		getProcesses: func() ([]proc, error) { return fakeProcessesData, nil },
 		validate:     validateFakeData,
 	}, {
 		name:         "ErrorFromMiscStat",
-		getMiscStats: func() (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
+		getMiscStats: func(context.Context) (*load.MiscStat, error) { return &load.MiscStat{}, errors.New("err1") },
 		expectedErr:  "err1",
 	}, {
 		name:         "ErrorFromProcesses",
@@ -74,8 +64,8 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newProcessesScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{
-				Metrics: metadata.DefaultMetricsSettings(),
+			scraper := newProcessesScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			})
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
 			assert.NoError(t, err, "Failed to initialize processes scraper: %v", err)

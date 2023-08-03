@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package headerssetterextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 
@@ -21,17 +10,19 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/extension/auth"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/action"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension/internal/source"
 )
 
 type Header struct {
-	key    string
+	action action.Action
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
@@ -48,7 +39,23 @@ func newHeadersSetterExtension(cfg *Config) (auth.Client, error) {
 				Key: *header.FromContext,
 			}
 		}
-		headers = append(headers, Header{key: *header.Key, source: s})
+
+		var a action.Action
+		switch header.Action {
+		case INSERT:
+			a = action.Insert{Key: *header.Key}
+		case UPSERT:
+			a = action.Upsert{Key: *header.Key}
+		case UPDATE:
+			a = action.Update{Key: *header.Key}
+		case DELETE:
+			a = action.Delete{Key: *header.Key}
+		default:
+			a = action.Upsert{Key: *header.Key}
+			logger.Warn("The action was not provided, using 'upsert'." +
+				" In future versions, we'll require this to be explicitly set")
+		}
+		headers = append(headers, Header{action: a, source: s})
 	}
 
 	return auth.NewClient(
@@ -84,14 +91,16 @@ func (h *headersPerRPC) GetRequestMetadata(
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine the source: %w", err)
 		}
-		metadata[header.key] = value
+		header.action.ApplyOnMetadata(metadata, value)
 	}
 	return metadata, nil
 }
 
-// RequireTransportSecurity always returns true for this implementation.
+// RequireTransportSecurity always returns false for this implementation.
+// The header setter is not sending auth data, so it should not require
+// a transport security.
 func (h *headersPerRPC) RequireTransportSecurity() bool {
-	return true
+	return false
 }
 
 // headersRoundTripper intercepts downstream requests and sets headers with
@@ -113,7 +122,7 @@ func (h *headersRoundTripper) RoundTrip(req *http.Request) (*http.Response, erro
 		if err != nil {
 			return nil, fmt.Errorf("failed to determine the source: %w", err)
 		}
-		req2.Header.Set(header.key, value)
+		header.action.ApplyOnHeaders(req2.Header, value)
 	}
 	return h.base.RoundTrip(req2)
 }

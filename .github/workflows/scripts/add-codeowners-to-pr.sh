@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 # Adds code owners without write access as reviewers on a PR. Note that
 # the code owners must still be a member of the `open-telemetry`
@@ -30,13 +19,38 @@ fi
 
 main () {
     CUR_DIRECTORY=$(dirname "$0")
-    JSON=$(gh pr view "${PR}" --json "files,author")
+    # Reviews may have comments that need to be cleaned up for jq,
+    # so restrict output to only printable characters and ensure escape
+    # sequences are removed.
+    # The latestReviews key only returns the latest review for each reviewer,
+    # cutting out any other reviews. We use that instead of requestedReviews
+    # since we need to get the list of users eligible for requesting another
+    # review. The GitHub CLI does not offer a list of all reviewers, which
+    # is only available through the API. To cut down on API calls to GitHub,
+    # we use the latest reviews to determine which users to filter out.
+    JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
     AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
     FILES=$(printf "${JSON}"| jq -r '.files[].path')
+    REVIEW_LOGINS=$(printf "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
+    declare -A REVIEWED
+
+    for REVIEWER in ${REVIEW_LOGINS}; do
+        # GitHub adds "app/" in front of user logins. The API docs don't make
+        # it clear what this means or whether it will always be present. The
+        # '/' character isn't a valid character for usernames, so this won't
+        # replace characters within a username.
+        REVIEWED["@${REVIEWER//app\//}"]=true
+    done
+
+    if [[ -v REVIEWED[@] ]]; then
+        echo "Users that have already reviewed this PR and will not have another review requested:" "${!REVIEWED[@]}"
+    else
+        echo "This PR has not yet been reviewed, all code owners are eligible for a review request"
+    fi
 
     for COMPONENT in ${COMPONENTS}; do
         # Files will be in alphabetical order and there are many files to
@@ -63,7 +77,10 @@ main () {
             OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
             for OWNER in ${OWNERS}; do
-                if [[ "${OWNER}" = "@${AUTHOR}" ]]; then
+                # Users that leave reviews are removed from the "requested reviewers"
+                # list and are eligible to have another review requested. We only want
+                # to request a review once, so remove them from the list.
+                if [[ -v REVIEWED["${OWNER}"] || "${OWNER}" = "@${AUTHOR}" ]]; then
                     continue
                 fi
 
@@ -89,7 +106,8 @@ main () {
     done
 
     if [[ -n "${LABELS}" ]]; then
-        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels to #${PR}"
+        echo "Adding labels: ${LABELS}"
+        gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels"
     else
         echo "No labels found"
     fi
@@ -105,6 +123,7 @@ main () {
     # The GitHub API validates that authors are not requested to review, but
     # accepts duplicate logins and logins that are already reviewers.
     if [[ -n "${REVIEWERS}" ]]; then
+        echo "Requesting review from ${REVIEWERS}"
         curl \
             -X POST \
             -H "Accept: application/vnd.github+json" \
@@ -112,10 +131,12 @@ main () {
             "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
             -d "{\"reviewers\":[${REVIEWERS}]}" \
             | jq ".message" \
-            || echo "Failed to add reviewers to #${PR}"
+            || echo "jq was unable to parse GitHub's response"
     else
         echo "No code owners found"
     fi
 }
 
+# We don't want this workflow to ever fail and block a PR,
+# so ensure all errors are caught.
 main || echo "Failed to run $0"

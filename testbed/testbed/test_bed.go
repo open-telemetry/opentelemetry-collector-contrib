@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package testbed allows to easily set up a test that requires running the agent
 // and a load generator, measure and define resource consumption expectations
@@ -61,7 +50,7 @@ var GlobalConfig = struct {
 }{
 	// DefaultAgentExeRelativeFile the default exe that is produced by Makefile "otelcol" target relative
 	// to testbed/tests directory.
-	DefaultAgentExeRelativeFile: "../../bin/otelcontribcol_testbed_{{.GOOS}}_{{.GOARCH}}",
+	DefaultAgentExeRelativeFile: "../../bin/oteltestbedcol_{{.GOOS}}_{{.GOARCH}}",
 }
 
 // DoTestMain is intended to be run from TestMain somewhere in the test suit.
@@ -78,7 +67,6 @@ func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
 
 	if err != nil {
 		log.Fatalf(err.Error())
-		os.Exit(0)
 	}
 
 	res := m.Run()

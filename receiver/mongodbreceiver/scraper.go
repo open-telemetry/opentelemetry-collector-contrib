@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
@@ -25,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
@@ -39,11 +29,13 @@ type mongodbScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func newMongodbScraper(settings component.ReceiverCreateSettings, config *Config) *mongodbScraper {
+func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
+	v, _ := version.NewVersion("0.0")
 	return &mongodbScraper{
-		logger: settings.Logger,
-		config: config,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		logger:       settings.Logger,
+		config:       config,
+		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion: v,
 	}
 }
 
@@ -124,7 +116,9 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
 
-	s.mb.EmitForResource(metadata.WithDatabase(databaseName))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetDatabase(databaseName)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -148,6 +142,9 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	if databaseName == "local" {
+		return
+	}
 	indexStats, err := s.client.IndexStats(ctx, databaseName, collectionName)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
@@ -184,7 +181,11 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 	s.recordGlobalLockTime(now, document, errs)
 	s.recordNetworkCount(now, document, errs)
 	s.recordOperations(now, document, errs)
+	s.recordOperationsRepl(now, document, errs)
 	s.recordSessionCount(now, document, errs)
+	s.recordLatencyTime(now, document, errs)
+	s.recordUptime(now, document, errs)
+	s.recordHealth(now, document, errs)
 }
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {

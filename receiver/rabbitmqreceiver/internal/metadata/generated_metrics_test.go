@@ -3,206 +3,196 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
+type testConfigCollection int
 
-	enabledMetrics["rabbitmq.consumer.count"] = true
-	mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics["rabbitmq.message.acknowledged"] = true
-	mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
-
-	enabledMetrics["rabbitmq.message.current"] = true
-	mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageState(1))
-
-	enabledMetrics["rabbitmq.message.delivered"] = true
-	mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
-
-	enabledMetrics["rabbitmq.message.dropped"] = true
-	mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
-
-	enabledMetrics["rabbitmq.message.published"] = true
-	mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		RabbitmqConsumerCount:       MetricSettings{Enabled: true},
-		RabbitmqMessageAcknowledged: MetricSettings{Enabled: true},
-		RabbitmqMessageCurrent:      MetricSettings{Enabled: true},
-		RabbitmqMessageDelivered:    MetricSettings{Enabled: true},
-		RabbitmqMessageDropped:      MetricSettings{Enabled: true},
-		RabbitmqMessagePublished:    MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
+			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
+			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "rabbitmq.consumer.count":
+					assert.False(t, validatedMetrics["rabbitmq.consumer.count"], "Found a duplicate in the metrics slice: rabbitmq.consumer.count")
+					validatedMetrics["rabbitmq.consumer.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of consumers currently reading from the queue.", ms.At(i).Description())
+					assert.Equal(t, "{consumers}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.message.acknowledged":
+					assert.False(t, validatedMetrics["rabbitmq.message.acknowledged"], "Found a duplicate in the metrics slice: rabbitmq.message.acknowledged")
+					validatedMetrics["rabbitmq.message.acknowledged"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of messages acknowledged by consumers.", ms.At(i).Description())
+					assert.Equal(t, "{messages}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.message.current":
+					assert.False(t, validatedMetrics["rabbitmq.message.current"], "Found a duplicate in the metrics slice: rabbitmq.message.current")
+					validatedMetrics["rabbitmq.message.current"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of messages currently in the queue.", ms.At(i).Description())
+					assert.Equal(t, "{messages}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "ready", attrVal.Str())
+				case "rabbitmq.message.delivered":
+					assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
+					validatedMetrics["rabbitmq.message.delivered"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of messages delivered to consumers.", ms.At(i).Description())
+					assert.Equal(t, "{messages}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.message.dropped":
+					assert.False(t, validatedMetrics["rabbitmq.message.dropped"], "Found a duplicate in the metrics slice: rabbitmq.message.dropped")
+					validatedMetrics["rabbitmq.message.dropped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of messages dropped as unroutable.", ms.At(i).Description())
+					assert.Equal(t, "{messages}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "rabbitmq.message.published":
+					assert.False(t, validatedMetrics["rabbitmq.message.published"], "Found a duplicate in the metrics slice: rabbitmq.message.published")
+					validatedMetrics["rabbitmq.message.published"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
+					assert.Equal(t, "{messages}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageState(1))
-	mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
-	mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
-
-	metrics := mb.Emit(WithRabbitmqNodeName("attr-val"), WithRabbitmqQueueName("attr-val"), WithRabbitmqVhostName("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "rabbitmq.consumer.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of consumers currently reading from the queue.", ms.At(i).Description())
-			assert.Equal(t, "{consumers}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["rabbitmq.consumer.count"] = struct{}{}
-		case "rabbitmq.message.acknowledged":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of messages acknowledged by consumers.", ms.At(i).Description())
-			assert.Equal(t, "{messages}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["rabbitmq.message.acknowledged"] = struct{}{}
-		case "rabbitmq.message.current":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of messages currently in the queue.", ms.At(i).Description())
-			assert.Equal(t, "{messages}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "ready", attrVal.Str())
-			validatedMetrics["rabbitmq.message.current"] = struct{}{}
-		case "rabbitmq.message.delivered":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of messages delivered to consumers.", ms.At(i).Description())
-			assert.Equal(t, "{messages}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["rabbitmq.message.delivered"] = struct{}{}
-		case "rabbitmq.message.dropped":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of messages dropped as unroutable.", ms.At(i).Description())
-			assert.Equal(t, "{messages}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["rabbitmq.message.dropped"] = struct{}{}
-		case "rabbitmq.message.published":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of messages published to a queue.", ms.At(i).Description())
-			assert.Equal(t, "{messages}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["rabbitmq.message.published"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		RabbitmqConsumerCount:       MetricSettings{Enabled: false},
-		RabbitmqMessageAcknowledged: MetricSettings{Enabled: false},
-		RabbitmqMessageCurrent:      MetricSettings{Enabled: false},
-		RabbitmqMessageDelivered:    MetricSettings{Enabled: false},
-		RabbitmqMessageDropped:      MetricSettings{Enabled: false},
-		RabbitmqMessagePublished:    MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageState(1))
-	mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
-	mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
-	mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

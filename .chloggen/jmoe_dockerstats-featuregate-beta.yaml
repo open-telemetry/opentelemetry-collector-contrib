@@ -1,7 +1,0 @@
-change_type: breaking
-component: dockerstatsreceiver
-note: "Enable the `receiver.dockerstats.useScraperV2` feature gate by default."
-issues: [16381, 9794]
-subtext: |
-  See the README for information on how to migrate. 
-  The featuregate can be disabled, but it will be removed in a future release.

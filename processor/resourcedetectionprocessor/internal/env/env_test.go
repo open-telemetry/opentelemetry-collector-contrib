@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package env
 
@@ -20,14 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
 
 func TestNewDetector(t *testing.T) {
-	d, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), nil)
+	d, err := NewDetector(processortest.NewNopCreateSettings(), nil)
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 }
@@ -39,7 +28,7 @@ func TestDetectTrue(t *testing.T) {
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Equal(t, "", schemaURL)
 	require.NoError(t, err)
-	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
+	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
 
 func TestDetectFalse(t *testing.T) {
@@ -60,7 +49,7 @@ func TestDetectDeprecatedEnv(t *testing.T) {
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, "", schemaURL)
-	assert.Equal(t, internal.NewResource(map[string]interface{}{"key": "value"}), res)
+	assert.Equal(t, map[string]any{"key": "value"}, res.Attributes().AsRaw())
 }
 
 func TestDetectError(t *testing.T) {
@@ -77,17 +66,17 @@ func TestInitializeAttributeMap(t *testing.T) {
 	cases := []struct {
 		name               string
 		encoded            string
-		expectedAttributes pcommon.Map
+		expectedAttributes map[string]any
 		expectedError      string
 	}{
 		{
 			name:               "multiple valid attributes",
 			encoded:            ` example.org/test-1 =  test $ %3A \" ,  Abc=Def  `,
-			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"example.org/test-1": `test $ : \"`, "Abc": "Def"}),
+			expectedAttributes: map[string]any{"example.org/test-1": `test $ : \"`, "Abc": "Def"},
 		}, {
 			name:               "single valid attribute",
 			encoded:            `single=key`,
-			expectedAttributes: internal.NewAttributeMap(map[string]interface{}{"single": "key"}),
+			expectedAttributes: map[string]any{"single": "key"},
 		}, {
 			name:          "invalid url escape sequence in value",
 			encoded:       `invalid=url-%3-encoding`,
@@ -120,7 +109,7 @@ func TestInitializeAttributeMap(t *testing.T) {
 				assert.EqualError(t, err, c.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, c.expectedAttributes.Sort(), am.Sort())
+				assert.Equal(t, c.expectedAttributes, am.AsRaw())
 			}
 		})
 	}

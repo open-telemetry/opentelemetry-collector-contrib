@@ -3,143 +3,150 @@
 package {{ .Package }}
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
-	{{- range $name, $metric := .Metrics }}
 
-	{{ if $metric.IsEnabled }}enabledMetrics["{{ $name }}"] = true{{ end }}
-	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
-	{{- end }})
-	{{- end }}
+type testConfigCollection int
 
-	metrics := mb.Emit()
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:       "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:       "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:       "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-	{{- range $name, $_ := .Metrics }}
-		{{ $name.Render }}: MetricSettings{Enabled: true},
-	{{- end }}
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	{{ range $name, $metric := .Metrics }}
-	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
-	{{- end }})
-	{{- end }}
-
-	metrics := mb.Emit(
-		{{- $sep := "" }}
-		{{- range $name, $info := .ResourceAttributes -}}
-			{{- $sep }}With{{ $name.Render }}
-			{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
-			{{- $sep = ", " }}
-		{{- end -}}
-	)
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	{{- $assignSign := ":=" }}
-	attrCount := 0
-	{{- range $name, $info := .ResourceAttributes }}
-	attrCount++
-	attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
-	assert.True(t, ok)
-	{{- if $info.Enum }}
-	assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
-	{{- else }}
-	assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
-	{{- end }}
-	{{- $assignSign = "=" }}
-	{{- end }}
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		{{- range $name, $metric := .Metrics }}
-		case "{{ $name }}":
-			assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
-			assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
-			assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
-			{{- if $metric.Data.HasMonotonic }}
-			assert.Equal(t, {{ $metric.Data.Monotonic }}, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+			expectedWarnings := 0
+			{{- range $name, $metric := .Metrics }}
+			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be enabled: {{ $metric.Warnings.IfEnabled }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			{{- end }}
-			{{- if $metric.Data.HasAggregated }}
-			assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.Aggregated }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+			{{- if $metric.Warnings.IfEnabledNotSet }}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `{{ $name }}`: {{ $metric.Warnings.IfEnabledNotSet }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			{{- end }}
-			dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
-			assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
-			{{- range $i, $attr := $metric.Attributes }}
-			attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeName $attr }}")
-			assert.True(t, ok)
-			{{- if (attributeInfo $attr).Enum }}
-			assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
+			{{- if $metric.Warnings.IfConfigured }}
+			if test.configSet == testSetAll || test.configSet == testSetNone {
+				assert.Equal(t, "[WARNING] `{{ $name }}` should not be configured: {{ $metric.Warnings.IfConfigured }}", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			{{- end }}
+			{{- end }}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+			{{- range $name, $metric := .Metrics }}
+
+				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
+				allMetricsCount++
+				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+				{{- range $metric.Attributes -}}
+					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
+				{{- end }})
+			{{- end }}
+
+			{{ if .ResourceAttributes }}
+			rb := mb.NewResourceBuilder()
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if $attr.Enum }}
+			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
 			{{- else }}
-			assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
+			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
 			{{- end }}
 			{{- end }}
-			validatedMetrics["{{ $name }}"] = struct{}{}
-		{{- end }}
-		}
+			res := rb.Emit()
+			{{- else }}
+			res := pcommon.NewResource()
+			{{- end }}
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				{{- range $name, $metric := .Metrics }}
+				case "{{ $name }}":
+					assert.False(t, validatedMetrics["{{ $name }}"], "Found a duplicate in the metrics slice: {{ $name }}")
+					validatedMetrics["{{ $name }}"] = true
+					assert.Equal(t, pmetric.MetricType{{ $metric.Data.Type }}, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).{{ $metric.Data.Type }}().DataPoints().Len())
+					assert.Equal(t, "{{ $metric.Description }}", ms.At(i).Description())
+					assert.Equal(t, "{{ $metric.Unit }}", ms.At(i).Unit())
+					{{- if $metric.Data.HasMonotonic }}
+					assert.Equal(t, {{ $metric.Data.Monotonic }}, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
+					{{- end }}
+					{{- if $metric.Data.HasAggregated }}
+					assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+					{{- end }}
+					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
+					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+
+					{{- range $i, $attr := $metric.Attributes }}
+					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
+					assert.True(t, ok)
+					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
+					{{- end }}
+				{{- end }}
+				}
+			}
+		})
 	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-	{{- range $name, $_ := .Metrics }}
-		{{ $name.Render }}: MetricSettings{Enabled: false},
-	{{- end }}
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	{{- range $name, $metric := .Metrics }}
-	mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
-	{{- range $metric.Attributes -}}
-	, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
-	{{- end }})
-	{{- end }}
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

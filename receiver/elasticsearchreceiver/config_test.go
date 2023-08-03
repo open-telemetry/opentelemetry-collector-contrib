@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchreceiver
 
@@ -24,7 +13,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -156,29 +144,29 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultMetrics := metadata.DefaultMetricsSettings()
-	defaultMetrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
+	defaultMetrics := metadata.DefaultMetricsBuilderConfig()
+	defaultMetrics.Metrics.ElasticsearchNodeFsDiskAvailable.Enabled = false
 	tests := []struct {
 		id       component.ID
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, "defaults"),
+			id:       component.NewIDWithName(metadata.Type, "defaults"),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SkipClusterMetrics: true,
 				Nodes:              []string{"_local"},
 				Indices:            []string{".geoip_databases"},
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-					ReceiverSettings:   config.NewReceiverSettings(component.NewID(typeStr)),
 					CollectionInterval: 2 * time.Minute,
+					InitialDelay:       time.Second,
 				},
-				Metrics:  defaultMetrics,
-				Username: "otel",
-				Password: "password",
+				MetricsBuilderConfig: defaultMetrics,
+				Username:             "otel",
+				Password:             "password",
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Timeout:  10000000000,
 					Endpoint: "http://example.com:9200",
@@ -197,7 +185,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(config.ReceiverSettings{}, metadata.MetricSettings{})); diff != "" {
+			if diff := cmp.Diff(tt.expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})

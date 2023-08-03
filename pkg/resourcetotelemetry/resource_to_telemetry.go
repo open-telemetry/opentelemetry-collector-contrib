@@ -1,24 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourcetotelemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -36,11 +25,11 @@ type Settings struct {
 }
 
 type wrapperMetricsExporter struct {
-	component.MetricsExporter
+	exporter.Metrics
 }
 
 func (wme *wrapperMetricsExporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	return wme.MetricsExporter.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
+	return wme.Metrics.ConsumeMetrics(ctx, convertToMetricsAttributes(md))
 }
 
 func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
@@ -48,13 +37,13 @@ func (wme *wrapperMetricsExporter) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-// WrapMetricsExporter wraps a given component.MetricsExporter and based on the given settings
+// WrapMetricsExporter wraps a given exporter.Metrics and based on the given settings
 // converts incoming resource attributes to metrics attributes.
-func WrapMetricsExporter(set Settings, exporter component.MetricsExporter) component.MetricsExporter {
+func WrapMetricsExporter(set Settings, exporter exporter.Metrics) exporter.Metrics {
 	if !set.Enabled {
 		return exporter
 	}
-	return &wrapperMetricsExporter{MetricsExporter: exporter}
+	return &wrapperMetricsExporter{Metrics: exporter}
 }
 
 func convertToMetricsAttributes(md pmetric.Metrics) pmetric.Metrics {

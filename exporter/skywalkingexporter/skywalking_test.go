@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package skywalkingexporter
 
@@ -24,13 +13,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"google.golang.org/grpc"
 	v3 "skywalking.apache.org/repo/goapi/collect/common/v3"
 	metricpb "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
@@ -42,8 +30,7 @@ import (
 func TestSwExporter(t *testing.T) {
 	server, addr, handler := initializeGRPCTestServer(t, grpc.MaxConcurrentStreams(10))
 	tt := &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -55,7 +42,7 @@ func TestSwExporter(t *testing.T) {
 	oce := newLogsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got, err := exporterhelper.NewLogsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
@@ -116,8 +103,7 @@ func TestSwExporter(t *testing.T) {
 
 	server, addr, handler2 := initializeGRPCTestServerMetric(t, grpc.MaxConcurrentStreams(10))
 	tt = &Config{
-		NumStreams:       10,
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		NumStreams: 10,
 		GRPCClientSettings: configgrpc.GRPCClientSettings{
 			Endpoint: addr.String(),
 			TLSSetting: configtls.TLSClientSetting{
@@ -129,7 +115,7 @@ func TestSwExporter(t *testing.T) {
 	oce = newMetricsExporter(context.Background(), tt, componenttest.NewNopTelemetrySettings())
 	got2, err2 := exporterhelper.NewMetricsExporter(
 		context.Background(),
-		componenttest.NewNopExporterCreateSettings(),
+		exportertest.NewNopCreateSettings(),
 		tt,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),

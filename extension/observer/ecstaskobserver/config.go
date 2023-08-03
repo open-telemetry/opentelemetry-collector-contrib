@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ecstaskobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 
@@ -19,8 +8,6 @@ import (
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
@@ -30,7 +17,6 @@ const (
 )
 
 type Config struct {
-	config.ExtensionSettings      `mapstructure:",squash"`
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 
 	// RefreshInterval determines the frequency at which the observer
@@ -54,8 +40,7 @@ func (c Config) Validate() error {
 
 func defaultConfig() Config {
 	return Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-		RefreshInterval:   defaultRefreshInterval,
-		PortLabels:        []string{defaultPortLabel},
+		RefreshInterval: defaultRefreshInterval,
+		PortLabels:      []string{defaultPortLabel},
 	}
 }

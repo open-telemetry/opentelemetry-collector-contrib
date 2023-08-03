@@ -6,72 +6,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
-
-// MetricSettings provides common settings for a particular metric.
-type MetricSettings struct {
-	Enabled bool `mapstructure:"enabled"`
-
-	enabledProvidedByUser bool
-}
-
-// IsEnabledProvidedByUser returns true if `enabled` option is explicitly set in user settings to any value.
-func (ms *MetricSettings) IsEnabledProvidedByUser() bool {
-	return ms.enabledProvidedByUser
-}
-
-func (ms *MetricSettings) Unmarshal(parser *confmap.Conf) error {
-	if parser == nil {
-		return nil
-	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
-	if err != nil {
-		return err
-	}
-	ms.enabledProvidedByUser = parser.IsSet("enabled")
-	return nil
-}
-
-// MetricsSettings provides settings for hostmetricsreceiver/disk metrics.
-type MetricsSettings struct {
-	SystemDiskIo                MetricSettings `mapstructure:"system.disk.io"`
-	SystemDiskIoTime            MetricSettings `mapstructure:"system.disk.io_time"`
-	SystemDiskMerged            MetricSettings `mapstructure:"system.disk.merged"`
-	SystemDiskOperationTime     MetricSettings `mapstructure:"system.disk.operation_time"`
-	SystemDiskOperations        MetricSettings `mapstructure:"system.disk.operations"`
-	SystemDiskPendingOperations MetricSettings `mapstructure:"system.disk.pending_operations"`
-	SystemDiskWeightedIoTime    MetricSettings `mapstructure:"system.disk.weighted_io_time"`
-}
-
-func DefaultMetricsSettings() MetricsSettings {
-	return MetricsSettings{
-		SystemDiskIo: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskIoTime: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskMerged: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskOperationTime: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskOperations: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskPendingOperations: MetricSettings{
-			Enabled: true,
-		},
-		SystemDiskWeightedIoTime: MetricSettings{
-			Enabled: true,
-		},
-	}
-}
 
 // AttributeDirection specifies the a value direction attribute.
 type AttributeDirection int
@@ -101,7 +40,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 
 type metricSystemDiskIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -117,7 +56,7 @@ func (m *metricSystemDiskIo) init() {
 }
 
 func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -137,16 +76,16 @@ func (m *metricSystemDiskIo) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskIo) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskIo(settings MetricSettings) metricSystemDiskIo {
-	m := metricSystemDiskIo{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskIo(cfg MetricConfig) metricSystemDiskIo {
+	m := metricSystemDiskIo{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -155,7 +94,7 @@ func newMetricSystemDiskIo(settings MetricSettings) metricSystemDiskIo {
 
 type metricSystemDiskIoTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -171,7 +110,7 @@ func (m *metricSystemDiskIoTime) init() {
 }
 
 func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -190,16 +129,16 @@ func (m *metricSystemDiskIoTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskIoTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskIoTime(settings MetricSettings) metricSystemDiskIoTime {
-	m := metricSystemDiskIoTime{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskIoTime(cfg MetricConfig) metricSystemDiskIoTime {
+	m := metricSystemDiskIoTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -208,7 +147,7 @@ func newMetricSystemDiskIoTime(settings MetricSettings) metricSystemDiskIoTime {
 
 type metricSystemDiskMerged struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -224,7 +163,7 @@ func (m *metricSystemDiskMerged) init() {
 }
 
 func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -244,16 +183,16 @@ func (m *metricSystemDiskMerged) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskMerged) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskMerged(settings MetricSettings) metricSystemDiskMerged {
-	m := metricSystemDiskMerged{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskMerged(cfg MetricConfig) metricSystemDiskMerged {
+	m := metricSystemDiskMerged{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -262,7 +201,7 @@ func newMetricSystemDiskMerged(settings MetricSettings) metricSystemDiskMerged {
 
 type metricSystemDiskOperationTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -278,7 +217,7 @@ func (m *metricSystemDiskOperationTime) init() {
 }
 
 func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -298,16 +237,16 @@ func (m *metricSystemDiskOperationTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskOperationTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskOperationTime(settings MetricSettings) metricSystemDiskOperationTime {
-	m := metricSystemDiskOperationTime{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskOperationTime(cfg MetricConfig) metricSystemDiskOperationTime {
+	m := metricSystemDiskOperationTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -316,7 +255,7 @@ func newMetricSystemDiskOperationTime(settings MetricSettings) metricSystemDiskO
 
 type metricSystemDiskOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -332,7 +271,7 @@ func (m *metricSystemDiskOperations) init() {
 }
 
 func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -352,16 +291,16 @@ func (m *metricSystemDiskOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskOperations(settings MetricSettings) metricSystemDiskOperations {
-	m := metricSystemDiskOperations{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskOperations(cfg MetricConfig) metricSystemDiskOperations {
+	m := metricSystemDiskOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -370,7 +309,7 @@ func newMetricSystemDiskOperations(settings MetricSettings) metricSystemDiskOper
 
 type metricSystemDiskPendingOperations struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -386,7 +325,7 @@ func (m *metricSystemDiskPendingOperations) init() {
 }
 
 func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -405,16 +344,16 @@ func (m *metricSystemDiskPendingOperations) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskPendingOperations) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskPendingOperations(settings MetricSettings) metricSystemDiskPendingOperations {
-	m := metricSystemDiskPendingOperations{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskPendingOperations(cfg MetricConfig) metricSystemDiskPendingOperations {
+	m := metricSystemDiskPendingOperations{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -423,7 +362,7 @@ func newMetricSystemDiskPendingOperations(settings MetricSettings) metricSystemD
 
 type metricSystemDiskWeightedIoTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
-	settings MetricSettings // metric settings provided by user.
+	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
@@ -439,7 +378,7 @@ func (m *metricSystemDiskWeightedIoTime) init() {
 }
 
 func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
-	if !m.settings.Enabled {
+	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
@@ -458,16 +397,16 @@ func (m *metricSystemDiskWeightedIoTime) updateCapacity() {
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricSystemDiskWeightedIoTime) emit(metrics pmetric.MetricSlice) {
-	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
 	}
 }
 
-func newMetricSystemDiskWeightedIoTime(settings MetricSettings) metricSystemDiskWeightedIoTime {
-	m := metricSystemDiskWeightedIoTime{settings: settings}
-	if settings.Enabled {
+func newMetricSystemDiskWeightedIoTime(cfg MetricConfig) metricSystemDiskWeightedIoTime {
+	m := metricSystemDiskWeightedIoTime{config: cfg}
+	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
 	}
@@ -475,13 +414,13 @@ func newMetricSystemDiskWeightedIoTime(settings MetricSettings) metricSystemDisk
 }
 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
-// required to produce metric representation defined in metadata and user settings.
+// required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                 // maximum observed number of metrics per resource.
-	resourceCapacity                  int                 // maximum observed number of resource attributes.
-	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo // contains version information
+	config                            MetricsBuilderConfig // config of the metrics builder.
+	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                   int                  // maximum observed number of metrics per resource.
+	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                         component.BuildInfo  // contains version information.
 	metricSystemDiskIo                metricSystemDiskIo
 	metricSystemDiskIoTime            metricSystemDiskIoTime
 	metricSystemDiskMerged            metricSystemDiskMerged
@@ -501,18 +440,19 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(settings MetricsSettings, buildInfo component.BuildInfo, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         buildInfo,
-		metricSystemDiskIo:                newMetricSystemDiskIo(settings.SystemDiskIo),
-		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(settings.SystemDiskIoTime),
-		metricSystemDiskMerged:            newMetricSystemDiskMerged(settings.SystemDiskMerged),
-		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(settings.SystemDiskOperationTime),
-		metricSystemDiskOperations:        newMetricSystemDiskOperations(settings.SystemDiskOperations),
-		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(settings.SystemDiskPendingOperations),
-		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(settings.SystemDiskWeightedIoTime),
+		buildInfo:                         settings.BuildInfo,
+		metricSystemDiskIo:                newMetricSystemDiskIo(mbc.Metrics.SystemDiskIo),
+		metricSystemDiskIoTime:            newMetricSystemDiskIoTime(mbc.Metrics.SystemDiskIoTime),
+		metricSystemDiskMerged:            newMetricSystemDiskMerged(mbc.Metrics.SystemDiskMerged),
+		metricSystemDiskOperationTime:     newMetricSystemDiskOperationTime(mbc.Metrics.SystemDiskOperationTime),
+		metricSystemDiskOperations:        newMetricSystemDiskOperations(mbc.Metrics.SystemDiskOperations),
+		metricSystemDiskPendingOperations: newMetricSystemDiskPendingOperations(mbc.Metrics.SystemDiskPendingOperations),
+		metricSystemDiskWeightedIoTime:    newMetricSystemDiskWeightedIoTime(mbc.Metrics.SystemDiskWeightedIoTime),
 	}
 	for _, op := range options {
 		op(mb)
@@ -525,13 +465,18 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	}
+}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
@@ -561,7 +506,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/disk")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -573,6 +517,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSystemDiskOperations.emit(ils.Metrics())
 	mb.metricSystemDiskPendingOperations.emit(ils.Metrics())
 	mb.metricSystemDiskWeightedIoTime.emit(ils.Metrics())
+
 	for _, op := range rmo {
 		op(rm)
 	}
@@ -584,11 +529,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
-// produce metric representation defined in metadata and user settings, e.g. delta or cumulative.
+// produce metric representation defined in metadata and user config, e.g. delta or cumulative.
 func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	mb.EmitForResource(rmo...)
-	metrics := pmetric.NewMetrics()
-	mb.metricsBuffer.MoveTo(metrics)
+	metrics := mb.metricsBuffer
+	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
 }
 

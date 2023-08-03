@@ -1,44 +1,97 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver"
 
 import (
 	"context"
+	"database/sql"
+	"net"
+	"net/url"
+	"strconv"
+	"time"
 
+	go_ora "github.com/sijms/go-ora/v2"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
-)
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
-const (
-	typeStr   = "oracledb"
-	stability = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
 
 // NewFactory creates a new Oracle receiver factory.
-func NewFactory() component.ReceiverFactory {
-	return component.NewReceiverFactory(
-		typeStr,
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithMetricsReceiver(createMetricsReceiver, stability))
-}
-
-func createMetricsReceiver(ctx context.Context, settings component.ReceiverCreateSettings, receiver component.Config, metrics consumer.Metrics) (component.MetricsReceiver, error) {
-	return &oracledbreceiver{}, nil
+		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
+			return sql.Open("oracle", dataSourceName)
+		}, newDbClient), metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr))}
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
+	return &Config{
+		ScraperControllerSettings: cfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+	}
+}
+
+type sqlOpenerFunc func(dataSourceName string) (*sql.DB, error)
+
+func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
+	return func(
+		ctx context.Context,
+		settings receiver.CreateSettings,
+		cfg component.Config,
+		consumer consumer.Metrics,
+	) (receiver.Metrics, error) {
+		sqlCfg := cfg.(*Config)
+		metricsBuilder := metadata.NewMetricsBuilder(sqlCfg.MetricsBuilderConfig, settings)
+
+		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
+		if err != nil {
+			return nil, err
+		}
+
+		mp, err := newScraper(settings.ID, metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ScraperControllerSettings, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
+		}, clientProviderFunc, instanceName)
+		if err != nil {
+			return nil, err
+		}
+		opt := scraperhelper.AddScraper(mp)
+
+		return scraperhelper.NewScraperControllerReceiver(
+			&sqlCfg.ScraperControllerSettings,
+			settings,
+			consumer,
+			opt,
+		)
+	}
+}
+
+func getDataSource(cfg Config) string {
+	if cfg.DataSource != "" {
+		return cfg.DataSource
+	}
+
+	// Don't need to worry about errors here as config validation already checked.
+	host, portStr, _ := net.SplitHostPort(cfg.Endpoint)
+	port, _ := strconv.ParseInt(portStr, 10, 32)
+
+	return go_ora.BuildUrl(host, int(port), cfg.Service, cfg.Username, cfg.Password, nil)
+}
+
+func getInstanceName(datasource string) (string, error) {
+	datasourceURL, err := url.Parse(datasource)
+	if err != nil {
+		return "", err
+	}
+
+	instanceName := datasourceURL.Host + datasourceURL.Path
+	return instanceName, nil
 }

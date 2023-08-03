@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
@@ -19,13 +8,14 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/consul/api"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
 const (
@@ -39,10 +29,11 @@ var _ internal.Detector = (*Detector)(nil)
 type Detector struct {
 	provider consul.Provider
 	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	userCfg := dcfg.(Config)
 	cfg := api.DefaultConfig()
 
@@ -56,7 +47,7 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 		cfg.Namespace = userCfg.Namespace
 	}
 	if userCfg.Token != "" {
-		cfg.Token = userCfg.Token
+		cfg.Token = string(userCfg.Token)
 	}
 	if userCfg.TokenFile != "" {
 		cfg.Token = userCfg.TokenFile
@@ -68,26 +59,25 @@ func NewDetector(p component.ProcessorCreateSettings, dcfg internal.DetectorConf
 	}
 
 	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger}, nil
+	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes)}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
-	metadata, err := d.provider.Metadata(ctx)
+	md, err := d.provider.Metadata(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed to get consul metadata: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	for key, element := range metadata.HostMetadata {
-		attrs.PutStr(key, element)
-	}
+	d.rb.SetHostName(md.Hostname)
+	d.rb.SetCloudRegion(md.Datacenter)
+	d.rb.SetHostID(md.NodeID)
 
-	attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
-	attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
+	res := d.rb.Emit()
+
+	for key, element := range md.HostMetadata {
+		res.Attributes().PutStr(key, element)
+	}
 
 	return res, conventions.SchemaURL, nil
 }

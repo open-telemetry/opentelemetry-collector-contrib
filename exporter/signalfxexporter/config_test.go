@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -20,16 +9,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	apmcorrelation "github.com/signalfx/signalfx-agent/pkg/apm/correlations"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation/dpfilters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -41,40 +34,96 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	// Realm doesn't have a default value so set it directly.
-	defaultCfg := createDefaultConfig().(*Config)
-	defaultCfg.Realm = "ap0"
-	defaultTranslationRules, err := loadDefaultTranslationRules()
-	require.NoError(t, err)
-	defaultCfg.TranslationRules = defaultTranslationRules
+	seventy := 70
+	hundred := 100
+	idleConnTimeout := 30 * time.Second
 
 	tests := []struct {
 		id       component.ID
-		expected component.Config
+		expected *Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
-			expected: defaultCfg,
-		},
-		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      "testToken",
-				Realm:            "us1",
-				MaxConnections:   70,
-				Headers: map[string]string{
-					"added-entry": "added value",
-					"dot.test":    "test",
-				},
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: 2 * time.Second,
+				AccessToken: "testToken",
+				Realm:       "ap0",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout:             5 * time.Second,
+					Headers:             nil,
+					MaxIdleConns:        &hundred,
+					MaxIdleConnsPerHost: &hundred,
+					IdleConnTimeout:     &idleConnTimeout,
 				},
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         true,
-					InitialInterval: 10 * time.Second,
-					MaxInterval:     1 * time.Minute,
-					MaxElapsedTime:  10 * time.Minute,
+					Enabled:             true,
+					InitialInterval:     5 * time.Second,
+					MaxInterval:         30 * time.Second,
+					MaxElapsedTime:      5 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
+					AccessTokenPassthrough: true,
+				},
+				LogDimensionUpdates: false,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         10000,
+					SendDelay:           10 * time.Second,
+					MaxIdleConns:        20,
+					MaxIdleConnsPerHost: 20,
+					MaxConnsPerHost:     20,
+					IdleConnTimeout:     30 * time.Second,
+				},
+				TranslationRules:    nil,
+				ExcludeMetrics:      nil,
+				IncludeMetrics:      nil,
+				DeltaTranslationTTL: 3600,
+				ExcludeProperties:   nil,
+				Correlation: &correlation.Config{
+					HTTPClientSettings: confighttp.HTTPClientSettings{
+						Endpoint: "",
+						Timeout:  5 * time.Second,
+					},
+					StaleServiceTimeout: 5 * time.Minute,
+					SyncAttributes: map[string]string{
+						"k8s.pod.uid":  "k8s.pod.uid",
+						"container.id": "container.id",
+					},
+					Config: apmcorrelation.Config{
+						MaxRequests:     20,
+						MaxBuffered:     10_000,
+						MaxRetries:      2,
+						LogUpdates:      false,
+						RetryDelay:      30 * time.Second,
+						CleanupInterval: 1 * time.Minute,
+					},
+				},
+				NonAlphanumericDimensionChars: "_-.",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
+			expected: &Config{
+				AccessToken: "testToken",
+				Realm:       "us1",
+				HTTPClientSettings: confighttp.HTTPClientSettings{
+					Timeout: 2 * time.Second,
+					Headers: map[string]configopaque.String{
+						"added-entry": "added value",
+						"dot.test":    "test",
+					},
+					MaxIdleConns:        &seventy,
+					MaxIdleConnsPerHost: &seventy,
+					IdleConnTimeout:     &idleConnTimeout,
+				},
+				RetrySettings: exporterhelper.RetrySettings{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
@@ -82,6 +131,15 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    10,
 				}, AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: false,
+				},
+				LogDimensionUpdates: true,
+				DimensionClient: DimensionClientConfig{
+					MaxBuffered:         1,
+					SendDelay:           time.Hour,
+					MaxIdleConns:        100,
+					MaxIdleConnsPerHost: 10,
+					MaxConnsPerHost:     10000,
+					IdleConnTimeout:     2 * time.Hour,
 				},
 				TranslationRules: []translation.Rule{
 					{
@@ -158,6 +216,26 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				DeltaTranslationTTL: 3600,
+				ExcludeProperties: []dpfilters.PropertyFilter{
+					{
+						PropertyName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						PropertyValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						DimensionName: mustStringFilter(t, "globbed*"),
+					},
+					{
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+					{
+						PropertyName:   mustStringFilter(t, "globbed*"),
+						PropertyValue:  mustStringFilter(t, "!globbed*value"),
+						DimensionName:  mustStringFilter(t, "globbed*"),
+						DimensionValue: mustStringFilter(t, "!globbed*value"),
+					},
+				},
 				Correlation: &correlation.Config{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
 						Endpoint: "",
@@ -192,120 +270,71 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
+			// We need to add the default exclude rules.
+			assert.NoError(t, setDefaultExcludes(tt.expected))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
 }
 
-func TestConfig_getOptionsFromConfig(t *testing.T) {
-	emptyTranslator := func() *translation.MetricTranslator {
-		translator, err := translation.NewMetricTranslator(nil, 3600)
-		require.NoError(t, err)
-		return translator
-	}
-	type fields struct {
-		AccessToken      string
-		Realm            string
-		IngestURL        string
-		APIURL           string
-		Timeout          time.Duration
-		Headers          map[string]string
-		TranslationRules []translation.Rule
-		SyncHostMetadata bool
-	}
+func TestConfigGetMetricTranslator(t *testing.T) {
 	tests := []struct {
 		name    string
-		fields  fields
-		want    *exporterOptions
+		cfg     *Config
+		want    *translation.MetricTranslator
 		wantErr bool
 	}{
 		{
-			name: "Test URL overrides",
-			fields: fields{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				IngestURL:   "https://ingest.us1.signalfx.com/",
-				APIURL:      "https://api.us1.signalfx.com/",
+			name: "Test empty config",
+			cfg: &Config{
+				DeltaTranslationTTL: 3600,
 			},
-			want: &exporterOptions{
-				ingestURL: &url.URL{
-					Scheme: "https",
-					Host:   "ingest.us1.signalfx.com",
-					Path:   "/",
-				},
-				apiURL: &url.URL{
-					Scheme: "https",
-					Host:   "api.us1.signalfx.com",
-					Path:   "/",
-				},
-				httpTimeout:      5 * time.Second,
-				token:            "access_token",
-				metricTranslator: emptyTranslator(),
-			},
-			wantErr: false,
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
 		},
 		{
-			name: "Test URL from Realm",
-			fields: fields{
-				Realm:       "us0",
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
+			name: "Test empty rules",
+			cfg: &Config{
+				TranslationRules:    []translation.Rule{},
+				DeltaTranslationTTL: 3600,
 			},
-			want: &exporterOptions{
-				ingestURL: &url.URL{
-					Scheme: "https",
-					Host:   "ingest.us0.signalfx.com",
-					Path:   "",
-				},
-				apiURL: &url.URL{
-					Scheme: "https",
-					Host:   "api.us0.signalfx.com",
-				},
-				httpTimeout:      10 * time.Second,
-				token:            "access_token",
-				metricTranslator: emptyTranslator(),
-			},
-			wantErr: false,
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
 		},
 		{
-			name: "Test empty realm and API URL",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				IngestURL:   "https://ingest.us1.signalfx.com/",
+			name: "Test disable rules",
+			cfg: &Config{
+				DisableDefaultTranslationRules: true,
+				DeltaTranslationTTL:            3600,
 			},
-			want:    nil,
-			wantErr: true,
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
 		},
 		{
-			name: "Test empty realm and Ingest URL",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				APIURL:      "https://api.us1.signalfx.com/",
+			name: "Test disable rules overrides rules",
+			cfg: &Config{
+				TranslationRules:               []translation.Rule{{Action: translation.ActionDropDimensions}},
+				DisableDefaultTranslationRules: true,
+				DeltaTranslationTTL:            3600,
 			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "Test invalid URLs",
-			fields: fields{
-				AccessToken: "access_token",
-				Timeout:     10 * time.Second,
-				APIURL:      "https://api us1 signalfx com/",
-				IngestURL:   "https://api us1 signalfx com/",
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "Test empty config",
-			want:    nil,
-			wantErr: true,
+			want: func() *translation.MetricTranslator {
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				require.NoError(t, err)
+				return translator
+			}(),
 		},
 		{
 			name: "Test invalid translation rules",
-			fields: fields{
+			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
 				TranslationRules: []translation.Rule{
@@ -313,34 +342,223 @@ func TestConfig_getOptionsFromConfig(t *testing.T) {
 						Action: translation.ActionRenameDimensionKeys,
 					},
 				},
+				DeltaTranslationTTL: 3600,
 			},
-			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				AccessToken:      tt.fields.AccessToken,
-				Realm:            tt.fields.Realm,
-				IngestURL:        tt.fields.IngestURL,
-				APIURL:           tt.fields.APIURL,
-				TimeoutSettings: exporterhelper.TimeoutSettings{
-					Timeout: tt.fields.Timeout,
-				},
-				Headers:             tt.fields.Headers,
-				TranslationRules:    tt.fields.TranslationRules,
-				SyncHostMetadata:    tt.fields.SyncHostMetadata,
-				DeltaTranslationTTL: 3600,
-			}
-
-			got, err := cfg.getOptionsFromConfig()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getOptionsFromConfig() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := tt.cfg.getMetricTranslator(zap.NewNop())
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
-			require.Equal(t, tt.want, got)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestConfigGetIngestURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		want    *url.URL
+		wantErr bool
+	}{
+		{
+			name: "Test URL from Realm",
+			cfg: &Config{
+				Realm: "us0",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "ingest.us0.signalfx.com",
+				Path:   "",
+			},
+		},
+		{
+			name: "Test URL overrides",
+			cfg: &Config{
+				Realm:     "us0",
+				IngestURL: "https://ingest.us1.signalfx.com/",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "ingest.us1.signalfx.com",
+				Path:   "/",
+			},
+		},
+		{
+			name: "Test invalid URL",
+			cfg: &Config{
+				IngestURL: "https://api us1 signalfx com/",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cfg.getIngestURL()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConfigGetAPIURL(t *testing.T) {
+	tests := []struct {
+		name    string
+		cfg     *Config
+		want    *url.URL
+		wantErr bool
+	}{
+		{
+			name: "Test URL from Realm",
+			cfg: &Config{
+				Realm: "us0",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.us0.signalfx.com",
+			},
+		},
+		{
+			name: "Test URL overrides",
+			cfg: &Config{
+				Realm:  "us0",
+				APIURL: "https://api.us1.signalfx.com/",
+			},
+			want: &url.URL{
+				Scheme: "https",
+				Host:   "api.us1.signalfx.com",
+				Path:   "/",
+			},
+		},
+		{
+			name: "Test invalid URL",
+			cfg: &Config{
+				APIURL: "https://api us1 signalfx com/",
+			},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.cfg.getAPIURL()
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestConfigValidateErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "Test empty config",
+			cfg:  &Config{},
+		},
+		{
+			name: "Test empty realm and API URL",
+			cfg: &Config{
+				AccessToken: "access_token",
+				IngestURL:   "https://ingest.us1.signalfx.com/",
+			},
+		},
+		{
+			name: "Test empty realm and Ingest URL",
+			cfg: &Config{
+				AccessToken: "access_token",
+				APIURL:      "https://api.us1.signalfx.com/",
+			},
+		},
+		{
+			name: "Negative MaxConnections",
+			cfg: &Config{
+				Realm:          "us0",
+				AccessToken:    "access_token",
+				MaxConnections: -1,
+			},
+		},
+		{
+			name: "Negative Timeout",
+			cfg: &Config{
+				Realm:              "us0",
+				AccessToken:        "access_token",
+				HTTPClientSettings: confighttp.HTTPClientSettings{Timeout: -1 * time.Second},
+			},
+		},
+		{
+			name: "Negative QueueSize",
+			cfg: &Config{
+				Realm:       "us0",
+				AccessToken: "access_token",
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:   true,
+					QueueSize: -1,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Error(t, component.ValidateConfig(tt.cfg))
+		})
+	}
+}
+
+func TestUnmarshalExcludeMetrics(t *testing.T) {
+	tests := []struct {
+		name              string
+		cfg               *Config
+		excludeMetricsLen int
+	}{
+		{
+			name:              "empty config",
+			cfg:               &Config{},
+			excludeMetricsLen: 12,
+		},
+		{
+			name: "existing exclude config",
+			cfg: &Config{
+				ExcludeMetrics: []dpfilters.MetricFilter{
+					{
+						MetricNames: []string{"metric1"},
+					},
+				},
+			},
+			excludeMetricsLen: 13,
+		},
+		{
+			name: "existing empty exclude config",
+			cfg: &Config{
+				ExcludeMetrics: []dpfilters.MetricFilter{},
+			},
+			excludeMetricsLen: 0,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, tt.cfg.Unmarshal(confmap.NewFromStringMap(map[string]interface{}{})))
+			assert.Len(t, tt.cfg.ExcludeMetrics, tt.excludeMetricsLen)
+		})
+	}
+}
+
+func mustStringFilter(t *testing.T, filter string) *dpfilters.StringFilter {
+	sf, err := dpfilters.NewStringFilter([]string{filter})
+	require.NoError(t, err)
+	return sf
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor"
 
@@ -21,16 +10,13 @@ import (
 
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 const (
-	// typeStr is the value of "type" for this processor in the configuration.
-	typeStr component.Type = "groupbytrace"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
-
 	defaultWaitDuration   = time.Second
 	defaultNumTraces      = 1_000_000
 	defaultNumWorkers     = 1
@@ -44,23 +30,22 @@ var (
 )
 
 // NewFactory returns a new factory for the Filter processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	// TODO: find a more appropriate way to get this done, as we are swallowing the error here
 	_ = view.Register(MetricViews()...)
 
-	return component.NewProcessorFactory(
-		typeStr,
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability))
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
 // createDefaultConfig creates the default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		NumTraces:         defaultNumTraces,
-		NumWorkers:        defaultNumWorkers,
-		WaitDuration:      defaultWaitDuration,
+		NumTraces:    defaultNumTraces,
+		NumWorkers:   defaultNumWorkers,
+		WaitDuration: defaultWaitDuration,
 
 		// not supported for now
 		DiscardOrphans: defaultDiscardOrphans,
@@ -71,9 +56,9 @@ func createDefaultConfig() component.Config {
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	_ context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
-	nextConsumer consumer.Traces) (component.TracesProcessor, error) {
+	nextConsumer consumer.Traces) (processor.Traces, error) {
 
 	oCfg := cfg.(*Config)
 

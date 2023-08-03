@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlspanevent
 
@@ -28,10 +17,7 @@ import (
 )
 
 var (
-	traceID  = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-	traceID2 = [16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1}
-	spanID   = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
-	spanID2  = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
+	spanID2 = [8]byte{8, 7, 6, 5, 4, 3, 2, 1}
 )
 
 func Test_newPathGetSetter(t *testing.T) {
@@ -39,6 +25,9 @@ func Test_newPathGetSetter(t *testing.T) {
 
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
+
+	newCache := pcommon.NewMap()
+	newCache.PutStr("temp", "value")
 
 	newEvents := ptrace.NewSpanEventSlice()
 	newEvents.AppendEmpty().SetName("new event")
@@ -63,8 +52,39 @@ func Test_newPathGetSetter(t *testing.T) {
 		path     []ottl.Field
 		orig     interface{}
 		newVal   interface{}
-		modified func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource)
+		modified func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map)
 	}{
+		{
+			name: "cache",
+			path: []ottl.Field{
+				{
+					Name: "cache",
+				},
+			},
+			orig:   pcommon.NewMap(),
+			newVal: newCache,
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				newCache.CopyTo(cache)
+			},
+		},
+		{
+			name: "cache access",
+			path: []ottl.Field{
+				{
+					Name: "cache",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("temp"),
+						},
+					},
+				},
+			},
+			orig:   nil,
+			newVal: "new value",
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				cache.PutStr("temp", "new value")
+			},
+		},
 		{
 			name: "name",
 			path: []ottl.Field{
@@ -74,7 +94,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "bear",
 			newVal: "cat",
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.SetName("cat")
 			},
 		},
@@ -87,7 +107,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(100_000_000),
 			newVal: int64(200_000_000),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
@@ -100,7 +120,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refSpanEvent.Attributes(),
 			newVal: newAttrs,
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				newAttrs.CopyTo(spanEvent.Attributes())
 			},
 		},
@@ -108,13 +128,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
 			newVal: "newVal",
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutStr("str", "newVal")
 			},
 		},
@@ -122,13 +146,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutBool("bool", false)
 			},
 		},
@@ -136,13 +164,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutInt("int", 20)
 			},
 		},
@@ -150,13 +182,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   float64(1.2),
 			newVal: float64(2.4),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutDouble("double", 2.4)
 			},
 		},
@@ -164,13 +200,17 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
@@ -178,8 +218,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -187,7 +231,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
 		},
@@ -195,8 +239,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -204,7 +252,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
 		},
@@ -212,8 +260,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -221,7 +273,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
 		},
@@ -229,8 +281,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -238,7 +294,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
 		},
@@ -246,8 +302,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -255,7 +315,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
@@ -263,8 +323,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -272,7 +336,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newPMap,
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				m := spanEvent.Attributes().PutEmptyMap("pMap")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -282,8 +346,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -291,10 +359,67 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newMap,
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				m := spanEvent.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refSpanEvent.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				spanEvent.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				s := spanEvent.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 		{
@@ -306,7 +431,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				spanEvent.SetDroppedAttributesCount(20)
 			},
 		},
@@ -319,7 +444,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refIS,
 			newVal: pcommon.NewInstrumentationScope(),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				pcommon.NewInstrumentationScope().CopyTo(il)
 			},
 		},
@@ -332,7 +457,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refResource,
 			newVal: pcommon.NewResource(),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				pcommon.NewResource().CopyTo(resource)
 			},
 		},
@@ -345,7 +470,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refSpan,
 			newVal: ptrace.NewSpan(),
-			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource) {
+			modified: func(spanEvent ptrace.SpanEvent, span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
 				ptrace.NewSpan().CopyTo(span)
 			},
 		},
@@ -357,19 +482,23 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), NewTransformContext(spanEvent, span, il, resource))
+			tCtx := NewTransformContext(spanEvent, span, il, resource)
+
+			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), NewTransformContext(spanEvent, span, il, resource), tt.newVal)
+			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
 			exSpanEvent, exSpan, exIl, exRes := createTelemetry()
-			tt.modified(exSpanEvent, exSpan, exIl, exRes)
+			exCache := pcommon.NewMap()
+			tt.modified(exSpanEvent, exSpan, exIl, exRes, exCache)
 
 			assert.Equal(t, exSpan, span)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
+			assert.Equal(t, exCache, tCtx.getCache())
 		})
 	}
 }
@@ -412,6 +541,9 @@ func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationSc
 
 	m := spanEvent.Attributes().PutEmptyMap("map")
 	m.PutStr("original", "map")
+
+	s := spanEvent.Attributes().PutEmptySlice("slice")
+	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
 	span := ptrace.NewSpan()
 	span.SetName("test")

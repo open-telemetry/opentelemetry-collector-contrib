@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tracking
 
@@ -21,11 +10,15 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 func TestMetricIdentity_Write(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutBool("resource", true)
+	resHash := pdatautil.MapHash(resource.Attributes())
+	resHashStr := string(resHash[:])
 
 	il := pcommon.NewInstrumentationScope()
 	il.SetName("ilm_name")
@@ -33,6 +26,8 @@ func TestMetricIdentity_Write(t *testing.T) {
 
 	attributes := pcommon.NewMap()
 	attributes.PutStr("label", "value")
+	attrsHash := pdatautil.MapHash(attributes)
+	attrsHashStr := string(attrsHash[:])
 	type fields struct {
 		Resource               pcommon.Resource
 		InstrumentationLibrary pcommon.InstrumentationScope
@@ -58,7 +53,7 @@ func TestMetricIdentity_Write(t *testing.T) {
 				MetricName:             "m_name",
 				MetricUnit:             "m_unit",
 			},
-			want: []string{"A" + SEPSTR + "A", "resource:true", "ilm_name", "ilm_version", "label:value", "N", "0", "m_name", "m_unit"},
+			want: []string{"A" + SEPSTR + "A", resHashStr, "ilm_name", "ilm_version", attrsHashStr, "N", "0", "m_name", "m_unit"},
 		},
 		{
 			name: "value and data type",

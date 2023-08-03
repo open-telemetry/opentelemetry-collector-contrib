@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 
@@ -18,17 +7,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 )
 
 const (
-	typeStr = "kafka"
-	// The stability level of the exporter.
-	stability           = component.StabilityLevelBeta
 	defaultTracesTopic  = "otlp_spans"
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
@@ -81,7 +69,7 @@ func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 }
 
 // NewFactory creates Kafka exporter factory.
-func NewFactory(options ...FactoryOption) component.ExporterFactory {
+func NewFactory(options ...FactoryOption) exporter.Factory {
 	f := &kafkaExporterFactory{
 		tracesMarshalers:  tracesMarshalers(),
 		metricsMarshalers: metricsMarshalers(),
@@ -90,22 +78,21 @@ func NewFactory(options ...FactoryOption) component.ExporterFactory {
 	for _, o := range options {
 		o(f)
 	}
-	return component.NewExporterFactory(
-		typeStr,
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesExporter(f.createTracesExporter, stability),
-		component.WithMetricsExporter(f.createMetricsExporter, stability),
-		component.WithLogsExporter(f.createLogsExporter, stability),
+		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-		Brokers:          []string{defaultBroker},
+		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		Brokers:         []string{defaultBroker},
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:    "",
 		Encoding: defaultEncoding,
@@ -133,9 +120,9 @@ type kafkaExporterFactory struct {
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
@@ -163,9 +150,9 @@ func (f *kafkaExporterFactory) createTracesExporter(
 
 func (f *kafkaExporterFactory) createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
@@ -193,9 +180,9 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 
 func (f *kafkaExporterFactory) createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	cfg component.Config,
-) (component.LogsExporter, error) {
+) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic

@@ -16,8 +16,9 @@ env:
   # Cache downloads for this workflow consistently run in under 10 minutes
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 15
 
+# Do not cancel this workflow on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -31,29 +32,22 @@ jobs:
           - exporter
           - extension
           - internal
+          - pkg
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     steps:
-      - name: Collect Workflow Telemetry
-        if: always()
-        uses: runforesight/foresight-workflow-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-      - name: Checkout Repo
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
       - if: matrix.group == 'receiver-0'
         name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - if: matrix.group == 'receiver-0'
-        name: Install Active Directory DS
-        run: Install-WindowsFeature -name AD-Domain-Services -IncludeManagementTools
-      - name: Setup Go
-        uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.19.12
+          cache: false
       - name: Cache Go
         id: go-mod-cache
+        timeout-minutes: 15
         uses: actions/cache@v3
         with:
           path: |
@@ -61,16 +55,7 @@ jobs:
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit tests
-        run: make -j2 gotest GROUP=${{ matrix.group }}      
-      - name: Analyze Test and/or Coverage Results
-        if: always()
-        uses: runforesight/foresight-test-kit-action@v1
-        with:
-          api_key: ${{ secrets.FORESIGHT_API_KEY }}
-          test_framework: golang
-          test_format: json
-          test_path: |
-            ./**/foresight-test*.json
+        run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     runs-on: windows-latest

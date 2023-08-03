@@ -1,24 +1,13 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -51,7 +40,7 @@ func (v *traceVisitor) visit(
 	}
 
 	for _, envelope := range envelopes {
-		envelope.IKey = v.exporter.config.InstrumentationKey
+		envelope.IKey = string(v.exporter.config.InstrumentationKey)
 
 		// This is a fire and forget operation
 		v.exporter.transportChannel.Send(envelope)
@@ -62,7 +51,7 @@ func (v *traceVisitor) visit(
 	return true
 }
 
-func (exporter *traceExporter) onTraceData(context context.Context, traceData ptrace.Traces) error {
+func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.Traces) error {
 	spanCount := traceData.SpanCount()
 	if spanCount == 0 {
 		return nil
@@ -74,7 +63,7 @@ func (exporter *traceExporter) onTraceData(context context.Context, traceData pt
 }
 
 // Returns a new instance of the trace exporter
-func newTracesExporter(config *Config, transportChannel transportChannel, set component.ExporterCreateSettings) (component.TracesExporter, error) {
+func newTracesExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Traces, error) {
 	exporter := &traceExporter{
 		config:           config,
 		transportChannel: transportChannel,

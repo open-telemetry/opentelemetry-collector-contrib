@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package pulsarreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 
@@ -23,6 +12,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -37,11 +27,11 @@ type pulsarTracesConsumer struct {
 	cancel          context.CancelFunc
 	consumer        pulsar.Consumer
 	unmarshaler     TracesUnmarshaler
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newTracesReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]TracesUnmarshaler, nextConsumer consumer.Traces) (*pulsarTracesConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -119,6 +109,9 @@ func consumerTracesLoop(ctx context.Context, c *pulsarTracesConsumer) error {
 }
 
 func (c *pulsarTracesConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -132,11 +125,11 @@ type pulsarMetricsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newMetricsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]MetricsUnmarshaler, nextConsumer consumer.Metrics) (*pulsarMetricsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -217,6 +210,9 @@ func consumeMetricsLoop(ctx context.Context, c *pulsarMetricsConsumer) error {
 }
 
 func (c *pulsarMetricsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()
@@ -230,11 +226,11 @@ type pulsarLogsConsumer struct {
 	client          pulsar.Client
 	consumer        pulsar.Consumer
 	cancel          context.CancelFunc
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	consumerOptions pulsar.ConsumerOptions
 }
 
-func newLogsReceiver(config Config, set component.ReceiverCreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers map[string]LogsUnmarshaler, nextConsumer consumer.Logs) (*pulsarLogsConsumer, error) {
 	unmarshaler := unmarshalers[config.Encoding]
 	if nil == unmarshaler {
 		return nil, errUnrecognizedEncoding
@@ -314,6 +310,9 @@ func consumeLogsLoop(ctx context.Context, c *pulsarLogsConsumer) error {
 }
 
 func (c *pulsarLogsConsumer) Shutdown(context.Context) error {
+	if c.cancel == nil {
+		return nil
+	}
 	c.cancel()
 	c.consumer.Close()
 	c.client.Close()

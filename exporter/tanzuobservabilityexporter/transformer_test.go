@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tanzuobservabilityexporter
 
@@ -252,10 +241,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 
 	//TestCase2: source value from resAttrs.host.name when source is not present
 	resAttrs = pcommon.NewMap()
@@ -271,10 +257,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_host.name", actual.Source)
 	assert.Equal(t, "test_hostname", actual.Tags["hostname"])
-	if value, isFound := actual.Tags[conventions.AttributeHostName]; isFound {
-		t.Logf("Tag host.name with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, conventions.AttributeHostName)
 
 	//TestCase4: source value from resAttrs.source when spanAttrs.source is present
 	resAttrs = pcommon.NewMap()
@@ -286,10 +269,7 @@ func TestSpanForSourceTag(t *testing.T) {
 	require.NoError(t, err, "transforming span to wavefront format")
 	assert.Equal(t, "test_source", actual.Source)
 	assert.Equal(t, "test_host.name", actual.Tags[conventions.AttributeHostName])
-	if value, isFound := actual.Tags[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actual.Tags, labelSource)
 	assert.Equal(t, "source_from_span_attribute", actual.Tags["_source"])
 }
 
@@ -329,10 +309,7 @@ func TestGetSourceAndResourceTags(t *testing.T) {
 
 	actualSource, actualAttrsWithoutSource := getSourceAndResourceTags(resAttrs)
 	assert.Equal(t, "test_source", actualSource)
-	if value, isFound := actualAttrsWithoutSource[labelSource]; isFound {
-		t.Logf("Tag Source with value " + value + " not expected.")
-		t.Fail()
-	}
+	require.NotContains(t, actualAttrsWithoutSource, labelSource)
 }
 
 func TestGetSourceAndKey(t *testing.T) {

@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbatlasreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
 
@@ -19,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/model"
@@ -53,7 +43,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) plog.Logs {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -66,6 +56,8 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	resourceAttrs.PutStr("mongodb_atlas.project", pc.Project.Name)
 	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterName)
 	resourceAttrs.PutStr("mongodb_atlas.host.name", hostname)
+
+	var errs []error
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
@@ -128,8 +120,9 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 
 		attrs.PutInt("result", int64(log.Result))
 
-		//nolint:errcheck
-		attrs.PutEmptyMap("param").FromRaw(log.Param)
+		if err = attrs.PutEmptyMap("param").FromRaw(log.Param); err != nil {
+			errs = append(errs, err)
+		}
 
 		usersSlice := attrs.PutEmptySlice("users")
 		usersSlice.EnsureCapacity(len(log.Users))
@@ -146,7 +139,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 		attrs.PutStr("log_name", logName)
 	}
 
-	return ld
+	return ld, multierr.Combine(errs...)
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filterprocessor
 
@@ -21,16 +10,16 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processortest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 // All the data we need to test the Span filter
@@ -134,7 +123,6 @@ func TestFilterTraceProcessor(t *testing.T) {
 			ctx := context.Background()
 			next := new(consumertest.TracesSink)
 			cfg := &Config{
-				ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
 				Spans: filterconfig.MatchConfig{
 					Include: test.inc,
 					Exclude: test.exc,
@@ -143,7 +131,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateTracesProcessor(
 				ctx,
-				componenttest.NewNopProcessorCreateSettings(),
+				processortest.NewNopCreateSettings(),
 				cfg,
 				next,
 			)
@@ -189,11 +177,11 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 }
 
 var (
-	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	testSpanStartTimestamp = pcommon.NewTimestampFromTime(testSpanStartTime)
 
-	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+	testSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	testSpanEndTimestamp = pcommon.NewTimestampFromTime(testSpanEndTime)
 
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
@@ -206,6 +194,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 		conditions       TraceFilters
 		filterEverything bool
 		want             func(td ptrace.Traces)
+		errorMode        ottl.ErrorMode
 	}{
 		{
 			name: "drop spans",
@@ -222,15 +211,17 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					return span.Name() == "operationA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "drop everything by dropping all spans",
 			conditions: TraceFilters{
 				SpanConditions: []string{
-					`IsMatch(name, "operation.*") == true`,
+					`IsMatch(name, "operation.*")`,
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
 		},
 		{
 			name: "drop span events",
@@ -247,6 +238,7 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					return event.Name() == "spanEventA"
 				})
 			},
+			errorMode: ottl.IgnoreError,
 		},
 		{
 			name: "multiple conditions",
@@ -257,11 +249,22 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 				},
 			},
 			filterEverything: true,
+			errorMode:        ottl.IgnoreError,
+		},
+		{
+			name: "with error conditions",
+			conditions: TraceFilters{
+				SpanConditions: []string{
+					`Substring("", 0, 100) == "test"`,
+				},
+			},
+			want:      func(td ptrace.Traces) {},
+			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions})
+			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())
@@ -298,8 +301,8 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(spanID2)
 	span.SetTraceID(traceID)
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
@@ -316,8 +319,8 @@ func fillSpanOne(span ptrace.Span) {
 
 func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.Attributes().PutStr("http.method", "get")
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")

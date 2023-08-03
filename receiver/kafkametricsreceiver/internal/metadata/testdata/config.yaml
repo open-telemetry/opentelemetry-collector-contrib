@@ -1,0 +1,49 @@
+default:
+all_set:
+  metrics:
+    kafka.brokers:
+      enabled: true
+    kafka.consumer_group.lag:
+      enabled: true
+    kafka.consumer_group.lag_sum:
+      enabled: true
+    kafka.consumer_group.members:
+      enabled: true
+    kafka.consumer_group.offset:
+      enabled: true
+    kafka.consumer_group.offset_sum:
+      enabled: true
+    kafka.partition.current_offset:
+      enabled: true
+    kafka.partition.oldest_offset:
+      enabled: true
+    kafka.partition.replicas:
+      enabled: true
+    kafka.partition.replicas_in_sync:
+      enabled: true
+    kafka.topic.partitions:
+      enabled: true
+none_set:
+  metrics:
+    kafka.brokers:
+      enabled: false
+    kafka.consumer_group.lag:
+      enabled: false
+    kafka.consumer_group.lag_sum:
+      enabled: false
+    kafka.consumer_group.members:
+      enabled: false
+    kafka.consumer_group.offset:
+      enabled: false
+    kafka.consumer_group.offset_sum:
+      enabled: false
+    kafka.partition.current_offset:
+      enabled: false
+    kafka.partition.oldest_offset:
+      enabled: false
+    kafka.partition.replicas:
+      enabled: false
+    kafka.partition.replicas_in_sync:
+      enabled: false
+    kafka.topic.partitions:
+      enabled: false

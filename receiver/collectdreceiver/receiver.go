@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package collectdreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver"
 
@@ -24,17 +13,16 @@ import (
 	"strings"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
-var _ component.MetricsReceiver = (*collectdReceiver)(nil)
+var _ receiver.Metrics = (*collectdReceiver)(nil)
 
-// collectdReceiver implements the component.MetricsReceiver for CollectD protocol.
+// collectdReceiver implements the receiver.Metrics for CollectD protocol.
 type collectdReceiver struct {
 	logger             *zap.Logger
 	addr               string
@@ -49,7 +37,7 @@ func newCollectdReceiver(
 	addr string,
 	timeout time.Duration,
 	defaultAttrsPrefix string,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
 	}
@@ -109,17 +97,18 @@ func (cdr *collectdReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defaultAttrs := cdr.defaultAttributes(r)
 
-	var metrics []*metricspb.Metric
 	ctx := context.Background()
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	for _, record := range records {
-		metrics, err = record.appendToMetrics(metrics, defaultAttrs)
+		err = record.appendToMetrics(scopeMetrics, defaultAttrs)
 		if err != nil {
 			cdr.handleHTTPErr(w, err, "unable to process metrics")
 			return
 		}
 	}
 
-	err = cdr.nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
+	err = cdr.nextConsumer.ConsumeMetrics(ctx, metrics)
 	if err != nil {
 		cdr.handleHTTPErr(w, err, "unable to process metrics")
 		return

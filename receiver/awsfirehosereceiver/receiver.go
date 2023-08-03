@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsfirehosereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver"
 
@@ -27,6 +16,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +45,7 @@ type firehoseConsumer interface {
 // firehoseReceiver
 type firehoseReceiver struct {
 	// settings is the base receiver settings.
-	settings component.ReceiverCreateSettings
+	settings receiver.CreateSettings
 	// config is the configuration for the receiver.
 	config *Config
 	// server is the HTTP/HTTPS server set up to listen
@@ -110,7 +100,7 @@ type firehoseCommonAttributes struct {
 	CommonAttributes map[string]string `json:"commonAttributes"`
 }
 
-var _ component.MetricsReceiver = (*firehoseReceiver)(nil)
+var _ receiver.Metrics = (*firehoseReceiver)(nil)
 var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
@@ -147,6 +137,9 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 // giving it a chance to perform any necessary clean-up and
 // shutting down its HTTP server.
 func (fmr *firehoseReceiver) Shutdown(context.Context) error {
+	if fmr.server == nil {
+		return nil
+	}
 	err := fmr.server.Close()
 	fmr.shutdownWG.Wait()
 	return err
@@ -239,7 +232,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // validate checks the Firehose access key in the header against
 // the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != fmr.config.AccessKey {
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != string(fmr.config.AccessKey) {
 		return http.StatusUnauthorized, errInvalidAccessKey
 	}
 	return http.StatusAccepted, nil

@@ -1,2 +1,12 @@
 sqlserver:
   collection_interval: 10s
+
+sqlserver/named:
+  collection_interval: 10s
+  computer_name: CustomServer
+  instance_name: CustomInstance
+  resource_attributes:
+    sqlserver.computer.name:
+      enabled: true
+    sqlserver.instance.name:
+      enabled: true

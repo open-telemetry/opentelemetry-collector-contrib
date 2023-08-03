@@ -1,18 +1,8 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
 import (
 	"encoding/hex"
 	"fmt"
@@ -22,8 +12,29 @@ import (
 
 // parsedStatement represents a parsed statement. It is the entry point into the statement DSL.
 type parsedStatement struct {
-	Invocation  invocation         `parser:"@@"`
+	Editor editor `parser:"(@@"`
+	// If converter is matched then return error
+	Converter   *converter         `parser:"|@@)"`
 	WhereClause *booleanExpression `parser:"( 'where' @@ )?"`
+}
+
+func (p *parsedStatement) checkForCustomError() error {
+	if p.Converter != nil {
+		return fmt.Errorf("editor names must start with a lowercase letter but got '%v'", p.Converter.Function)
+	}
+	err := p.Editor.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	if p.WhereClause != nil {
+		return p.WhereClause.checkForCustomError()
+	}
+	return nil
+}
+
+type constExpr struct {
+	Boolean   *boolean   `parser:"( @Boolean"`
+	Converter *converter `parser:"| @@ )"`
 }
 
 // booleanValue represents something that evaluates to a boolean --
@@ -32,8 +43,18 @@ type parsedStatement struct {
 type booleanValue struct {
 	Negation   *string            `parser:"@OpNot?"`
 	Comparison *comparison        `parser:"( @@"`
-	ConstExpr  *boolean           `parser:"| @Boolean"`
+	ConstExpr  *constExpr         `parser:"| @@"`
 	SubExpr    *booleanExpression `parser:"| '(' @@ ')' )"`
+}
+
+func (b *booleanValue) checkForCustomError() error {
+	if b.Comparison != nil {
+		return b.Comparison.checkForCustomError()
+	}
+	if b.SubExpr != nil {
+		return b.SubExpr.checkForCustomError()
+	}
+	return nil
 }
 
 // opAndBooleanValue represents the right side of an AND boolean expression.
@@ -42,10 +63,28 @@ type opAndBooleanValue struct {
 	Value    *booleanValue `parser:"@@"`
 }
 
+func (b *opAndBooleanValue) checkForCustomError() error {
+	return b.Value.checkForCustomError()
+}
+
 // term represents an arbitrary number of boolean values joined by AND.
 type term struct {
 	Left  *booleanValue        `parser:"@@"`
 	Right []*opAndBooleanValue `parser:"@@*"`
+}
+
+func (b *term) checkForCustomError() error {
+	err := b.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range b.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // opOrTerm represents the right side of an OR boolean expression.
@@ -54,11 +93,29 @@ type opOrTerm struct {
 	Term     *term  `parser:"@@"`
 }
 
+func (b *opOrTerm) checkForCustomError() error {
+	return b.Term.checkForCustomError()
+}
+
 // booleanExpression represents a true/false decision expressed
 // as an arbitrary number of terms separated by OR.
 type booleanExpression struct {
 	Left  *term       `parser:"@@"`
 	Right []*opOrTerm `parser:"@@*"`
+}
+
+func (b *booleanExpression) checkForCustomError() error {
+	err := b.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range b.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // compareOp is the type of a comparison operator.
@@ -121,10 +178,42 @@ type comparison struct {
 	Right value     `parser:"@@"`
 }
 
-// invocation represents a function call.
-type invocation struct {
-	Function  string  `parser:"@(Uppercase | Lowercase)+"`
+func (c *comparison) checkForCustomError() error {
+	err := c.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	err = c.Right.checkForCustomError()
+	return err
+}
+
+// editor represents the function call of a statement.
+type editor struct {
+	Function  string  `parser:"@(Lowercase(Uppercase | Lowercase)*)"`
 	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+	// If keys are matched return an error
+	Keys []Key `parser:"( @@ )*"`
+}
+
+func (i *editor) checkForCustomError() error {
+	var err error
+	for _, arg := range i.Arguments {
+		err = arg.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	if i.Keys != nil {
+		return fmt.Errorf("only paths and converters may be indexed, not editors, but got %v %v", i.Function, i.Keys)
+	}
+	return nil
+}
+
+// converter represents a converter function call.
+type converter struct {
+	Function  string  `parser:"@(Uppercase(Uppercase | Lowercase)*)"`
+	Arguments []value `parser:"'(' ( @@ ( ',' @@ )* )? ')'"`
+	Keys      []Key   `parser:"( @@ )*"`
 }
 
 // value represents a part of a parsed statement which is resolved to a value of some sort. This can be a telemetry path
@@ -140,6 +229,16 @@ type value struct {
 	List           *list            `parser:"| @@)"`
 }
 
+func (v *value) checkForCustomError() error {
+	if v.Literal != nil {
+		return v.Literal.checkForCustomError()
+	}
+	if v.MathExpression != nil {
+		return v.MathExpression.checkForCustomError()
+	}
+	return nil
+}
+
 // Path represents a telemetry path mathExpression.
 type Path struct {
 	Fields []Field `parser:"@@ ( '.' @@ )*"`
@@ -147,8 +246,13 @@ type Path struct {
 
 // Field is an item within a Path.
 type Field struct {
-	Name   string  `parser:"@Lowercase"`
-	MapKey *string `parser:"( '[' @String ']' )?"`
+	Name string `parser:"@Lowercase"`
+	Keys []Key  `parser:"( @@ )*"`
+}
+
+type Key struct {
+	String *string `parser:"'[' (@String "`
+	Int    *int64  `parser:"| @Int) ']'"`
 }
 
 type list struct {
@@ -185,10 +289,19 @@ func (n *isNil) Capture(_ []string) error {
 }
 
 type mathExprLiteral struct {
-	Invocation *invocation `parser:"( @@"`
-	Float      *float64    `parser:"| @Float"`
-	Int        *int64      `parser:"| @Int"`
-	Path       *Path       `parser:"| @@ )"`
+	// If editor is matched then error
+	Editor    *editor    `parser:"( @@"`
+	Converter *converter `parser:"| @@"`
+	Float     *float64   `parser:"| @Float"`
+	Int       *int64     `parser:"| @Int"`
+	Path      *Path      `parser:"| @@ )"`
+}
+
+func (m *mathExprLiteral) checkForCustomError() error {
+	if m.Editor != nil {
+		return fmt.Errorf("converter names must start with an uppercase letter but got '%v'", m.Editor.Function)
+	}
+	return nil
 }
 
 type mathValue struct {
@@ -196,9 +309,20 @@ type mathValue struct {
 	SubExpression *mathExpression  `parser:"| '(' @@ ')' )"`
 }
 
+func (m *mathValue) checkForCustomError() error {
+	if m.Literal != nil {
+		return m.Literal.checkForCustomError()
+	}
+	return m.SubExpression.checkForCustomError()
+}
+
 type opMultDivValue struct {
 	Operator mathOp     `parser:"@OpMultDiv"`
 	Value    *mathValue `parser:"@@"`
+}
+
+func (m *opMultDivValue) checkForCustomError() error {
+	return m.Value.checkForCustomError()
 }
 
 type addSubTerm struct {
@@ -206,14 +330,46 @@ type addSubTerm struct {
 	Right []*opMultDivValue `parser:"@@*"`
 }
 
+func (m *addSubTerm) checkForCustomError() error {
+	err := m.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range m.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 type opAddSubTerm struct {
 	Operator mathOp      `parser:"@OpAddSub"`
 	Term     *addSubTerm `parser:"@@"`
 }
 
+func (m *opAddSubTerm) checkForCustomError() error {
+	return m.Term.checkForCustomError()
+}
+
 type mathExpression struct {
 	Left  *addSubTerm     `parser:"@@"`
 	Right []*opAddSubTerm `parser:"@@*"`
+}
+
+func (m *mathExpression) checkForCustomError() error {
+	err := m.Left.checkForCustomError()
+	if err != nil {
+		return err
+	}
+	for _, r := range m.Right {
+		err = r.checkForCustomError()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type mathOp int
@@ -277,8 +433,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
-		{Name: `Uppercase`, Pattern: `[A-Z_][A-Z0-9_]*`},
-		{Name: `Lowercase`, Pattern: `[a-z_][a-z0-9_]*`},
+		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
+		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
 		{Name: "whitespace", Pattern: `\s+`},
 	})
 }

@@ -1,16 +1,5 @@
-// Copyright 2019 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awskinesisexporter
 
@@ -19,15 +8,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -41,12 +31,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-				QueueSettings:    exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings:    exporterhelper.NewDefaultRetrySettings(),
-				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				Encoding: Encoding{
 					Name:        "otlp",
 					Compression: "none",
@@ -59,14 +48,15 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				RetrySettings: exporterhelper.RetrySettings{
-					Enabled:         false,
-					MaxInterval:     30 * time.Second,
-					InitialInterval: 5 * time.Second,
-					MaxElapsedTime:  300 * time.Second,
+					Enabled:             false,
+					MaxInterval:         30 * time.Second,
+					InitialInterval:     5 * time.Second,
+					MaxElapsedTime:      300 * time.Second,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
 				},
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

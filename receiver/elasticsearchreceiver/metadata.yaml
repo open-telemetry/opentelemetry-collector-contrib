@@ -1,15 +1,30 @@
-name: elasticsearchreceiver
+type: elasticsearch
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, binaryfissiongames]
 
 resource_attributes:
   elasticsearch.cluster.name:
     description: The name of the elasticsearch cluster.
     type: string
+    enabled: true
   elasticsearch.node.name:
     description: The name of the elasticsearch node.
     type: string
+    enabled: true
+  elasticsearch.node.version:
+    description: The version of the elasticsearch node.
+    type: string
+    enabled: true
   elasticsearch.index.name:
     description: The name of the elasticsearch index.
     type: string
+    enabled: true
 
 attributes:
   cache_name:
@@ -18,13 +33,6 @@ attributes:
     enum:
     - fielddata
     - query
-  fs_direction:
-    name_override: direction
-    description: The direction of filesystem IO.
-    type: string
-    enum:
-    - read
-    - write
   collector_name:
     name_override: name
     description: The name of the garbage collector.
@@ -109,13 +117,6 @@ attributes:
     enum:
       - free
       - used
-  indexing_memory_state:
-    name_override: state
-    description: State of the indexing memory
-    type: string
-    enum:
-      - current
-      - total
   cluster_published_difference_state:
     name_override: state
     description: State of the published differences
@@ -202,7 +203,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
@@ -211,7 +212,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [circuit_breaker_name]
     enabled: true
@@ -220,7 +221,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name]
     enabled: true
@@ -229,7 +230,7 @@ metrics:
     unit: "{evictions}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name]
     enabled: true
@@ -238,16 +239,25 @@ metrics:
     unit: "{count}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ query_cache_count_type ]
     enabled: true
+  elasticsearch.node.cache.size:
+    description: Total amount of memory used for the query cache across all shards assigned to the node.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
   elasticsearch.node.fs.disk.available:
     description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -256,7 +266,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -265,7 +275,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -279,7 +289,7 @@ metrics:
     unit: KiBy
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -293,7 +303,7 @@ metrics:
     unit: KiBy
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -302,7 +312,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -311,7 +321,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -320,16 +330,23 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
+  elasticsearch.node.operations.current:
+    description: Number of query operations currently running.
+    unit: "{operations}"
+    gauge:
+      value_type: int
+    attributes: [ operation ]
+    enabled: false
   elasticsearch.node.operations.completed:
     description: The number of operations completed by a node.
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation]
     enabled: true
@@ -338,7 +355,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation]
     enabled: true
@@ -347,7 +364,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [get_result]
     enabled: false
@@ -356,7 +373,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [get_result]
     enabled: false
@@ -365,7 +382,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -374,7 +391,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -383,7 +400,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -392,7 +409,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -401,7 +418,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -410,7 +427,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -419,7 +436,7 @@ metrics:
     unit: "{threads}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name, thread_state]
     enabled: true
@@ -428,7 +445,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name]
     enabled: true
@@ -437,7 +454,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [thread_pool_name, task_state]
     enabled: true
@@ -446,7 +463,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [document_state]
     enabled: true
@@ -455,7 +472,7 @@ metrics:
     unit: "{files}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -473,7 +490,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [collector_name]
     enabled: true
@@ -482,7 +499,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [collector_name]
     enabled: true
@@ -555,7 +572,7 @@ metrics:
     unit: "{tasks}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -564,7 +581,7 @@ metrics:
     unit: "{fetches}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -574,7 +591,7 @@ metrics:
     unit: "{shards}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [shard_state]
     enabled: true
@@ -583,7 +600,7 @@ metrics:
     unit: "{nodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -592,7 +609,7 @@ metrics:
     unit: "{nodes}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: []
     enabled: true
@@ -606,7 +623,7 @@ metrics:
     unit: "{status}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [health_status]
     enabled: true
@@ -650,7 +667,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [  indexing_pressure_stage ]
     enabled: true
@@ -659,7 +676,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -668,7 +685,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -684,7 +701,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_queue_state ]
     enabled: true
@@ -693,7 +710,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -702,7 +719,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_published_difference_state ]
     enabled: true
@@ -711,7 +728,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_update_state ]
     enabled: true
@@ -720,16 +737,25 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ cluster_state_update_state, cluster_state_update_type ]
     enabled: true
+  elasticsearch.cluster.indices.cache.evictions:
+    description: The number of evictions from the cache for indices in cluster.
+    unit: "{evictions}"
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [cache_name]
+    enabled: false
   elasticsearch.node.ingest.documents:
     description: Total number of documents ingested during the lifetime of this node.
     unit: "{documents}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -738,7 +764,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -747,7 +773,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -756,7 +782,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -765,7 +791,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -774,7 +800,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ingest_pipeline_name ]
     enabled: true
@@ -783,7 +809,7 @@ metrics:
     unit: "{compilations}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -792,7 +818,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -801,7 +827,7 @@ metrics:
     unit: 1
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [ ]
     enabled: true
@@ -810,7 +836,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [segments_memory_object_type]
     enabled: false
@@ -820,7 +846,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation, index_aggregation_type]
     enabled: true
@@ -829,7 +855,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation, index_aggregation_type]
     enabled: true
@@ -838,7 +864,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: true
@@ -847,7 +873,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -856,7 +882,7 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -865,7 +891,7 @@ metrics:
     unit: "{segments}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -874,7 +900,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -883,7 +909,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type, segments_memory_object_type]
     enabled: false
@@ -892,7 +918,7 @@ metrics:
     unit: "{operations}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -901,7 +927,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -910,7 +936,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
     enabled: false
@@ -919,7 +945,7 @@ metrics:
     unit: 1
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [index_aggregation_type]
     enabled: false
@@ -928,7 +954,7 @@ metrics:
     unit: "{evictions}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [cache_name, index_aggregation_type]
     enabled: false
@@ -937,7 +963,32 @@ metrics:
     unit: "{documents}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [document_state, index_aggregation_type]
+    enabled: false
+  elasticsearch.process.cpu.usage:
+    description: CPU usage in percent.
+    unit: 1.0
+    gauge:
+      value_type: double
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.cpu.time:
+    description: CPU time used by the process on which the Java virtual machine is running.
+    unit: ms
+    sum:
+      monotonic: true
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [ ]
+    enabled: false
+  elasticsearch.process.memory.virtual:
+    description: Size of virtual memory that is guaranteed to be available to the running process.
+    unit: By
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [ ]
     enabled: false

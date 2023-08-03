@@ -3,1896 +3,1833 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["elasticsearch.breaker.memory.estimated"] = true
-	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.breaker.memory.limit"] = true
-	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.breaker.tripped"] = true
-	mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.cluster.data_nodes"] = true
-	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.cluster.health"] = true
-	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
-
-	enabledMetrics["elasticsearch.cluster.in_flight_fetch"] = true
-	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.cluster.nodes"] = true
-	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.cluster.pending_tasks"] = true
-	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.cluster.published_states.differences"] = true
-	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
-
-	enabledMetrics["elasticsearch.cluster.published_states.full"] = true
-	mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.cluster.shards"] = true
-	mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardState(1))
-
-	enabledMetrics["elasticsearch.cluster.state_queue"] = true
-	mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueState(1))
-
-	enabledMetrics["elasticsearch.cluster.state_update.count"] = true
-	mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.cluster.state_update.time"] = true
-	mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "attr-val", AttributeClusterStateUpdateType(1))
-
-	mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentState(1), AttributeIndexAggregationType(1))
-
-	enabledMetrics["elasticsearch.index.operations.completed"] = true
-	mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	enabledMetrics["elasticsearch.index.operations.time"] = true
-	mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationType(1), AttributeSegmentsMemoryObjectType(1))
-
-	mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	enabledMetrics["elasticsearch.index.shards.size"] = true
-	mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-
-	enabledMetrics["elasticsearch.indexing_pressure.memory.limit"] = true
-	mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.indexing_pressure.memory.total.primary_rejections"] = true
-	mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.indexing_pressure.memory.total.replica_rejections"] = true
-	mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.memory.indexing_pressure"] = true
-	mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStage(1))
-
-	enabledMetrics["elasticsearch.node.cache.count"] = true
-	mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
-
-	enabledMetrics["elasticsearch.node.cache.evictions"] = true
-	mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
-
-	enabledMetrics["elasticsearch.node.cache.memory.usage"] = true
-	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
-
-	enabledMetrics["elasticsearch.node.cluster.connections"] = true
-	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.cluster.io"] = true
-	mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["elasticsearch.node.disk.io.read"] = true
-	mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.disk.io.write"] = true
-	mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.documents"] = true
-	mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentState(1))
-
-	enabledMetrics["elasticsearch.node.fs.disk.available"] = true
-	mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.fs.disk.free"] = true
-	mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.fs.disk.total"] = true
-	mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.http.connections"] = true
-	mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.ingest.documents"] = true
-	mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.ingest.documents.current"] = true
-	mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.ingest.operations.failed"] = true
-	mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.open_files"] = true
-	mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.operations.completed"] = true
-	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
-
-	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
-
-	mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
-
-	enabledMetrics["elasticsearch.node.operations.time"] = true
-	mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
-
-	enabledMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
-	mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
-	mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
-	mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.node.script.cache_evictions"] = true
-	mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.script.compilation_limit_triggered"] = true
-	mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.script.compilations"] = true
-	mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
-
-	mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectType(1))
-
-	enabledMetrics["elasticsearch.node.shards.data_set.size"] = true
-	mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.shards.reserved.size"] = true
-	mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.shards.size"] = true
-	mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
-	mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "attr-val", AttributeTaskState(1))
-
-	enabledMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
-	mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["elasticsearch.node.thread_pool.threads"] = true
-	mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "attr-val", AttributeThreadState(1))
-
-	enabledMetrics["elasticsearch.node.translog.operations"] = true
-	mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.translog.size"] = true
-	mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.node.translog.uncommitted.size"] = true
-	mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.os.cpu.load_avg.15m"] = true
-	mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.os.cpu.load_avg.1m"] = true
-	mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.os.cpu.load_avg.5m"] = true
-	mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.os.cpu.usage"] = true
-	mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
-
-	enabledMetrics["elasticsearch.os.memory"] = true
-	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
-
-	enabledMetrics["jvm.classes.loaded"] = true
-	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
-
-	enabledMetrics["jvm.gc.collections.count"] = true
-	mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["jvm.gc.collections.elapsed"] = true
-	mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["jvm.memory.heap.committed"] = true
-	mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
-
-	enabledMetrics["jvm.memory.heap.max"] = true
-	mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
-
-	enabledMetrics["jvm.memory.heap.used"] = true
-	mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
-
-	mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["jvm.memory.nonheap.committed"] = true
-	mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
-
-	enabledMetrics["jvm.memory.nonheap.used"] = true
-	mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
-
-	enabledMetrics["jvm.memory.pool.max"] = true
-	mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["jvm.memory.pool.used"] = true
-	mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["jvm.threads.count"] = true
-	mb.RecordJvmThreadsCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+type testConfigCollection int
+
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
+
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: true},
-		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: true},
-		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: true},
-		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: true},
-		ElasticsearchClusterHealth:                                MetricSettings{Enabled: true},
-		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: true},
-		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: true},
-		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: true},
-		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: true},
-		ElasticsearchClusterPublishedStatesFull:                   MetricSettings{Enabled: true},
-		ElasticsearchClusterShards:                                MetricSettings{Enabled: true},
-		ElasticsearchClusterStateQueue:                            MetricSettings{Enabled: true},
-		ElasticsearchClusterStateUpdateCount:                      MetricSettings{Enabled: true},
-		ElasticsearchClusterStateUpdateTime:                       MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheEvictions:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheMemoryUsage:                        MetricSettings{Enabled: true},
-		ElasticsearchIndexCacheSize:                               MetricSettings{Enabled: true},
-		ElasticsearchIndexDocuments:                               MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsCompleted:                     MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsMergeDocsCount:                MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsMergeSize:                     MetricSettings{Enabled: true},
-		ElasticsearchIndexOperationsTime:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsCount:                           MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsMemory:                          MetricSettings{Enabled: true},
-		ElasticsearchIndexSegmentsSize:                            MetricSettings{Enabled: true},
-		ElasticsearchIndexShardsSize:                              MetricSettings{Enabled: true},
-		ElasticsearchIndexTranslogOperations:                      MetricSettings{Enabled: true},
-		ElasticsearchIndexTranslogSize:                            MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryLimit:                  MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricSettings{Enabled: true},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricSettings{Enabled: true},
-		ElasticsearchMemoryIndexingPressure:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: true},
-		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: true},
-		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeDiskIoWrite:                              MetricSettings{Enabled: true},
-		ElasticsearchNodeDocuments:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskAvailable:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskFree:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeFsDiskTotal:                              MetricSettings{Enabled: true},
-		ElasticsearchNodeHTTPConnections:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestDocuments:                          MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestDocumentsCurrent:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricSettings{Enabled: true},
-		ElasticsearchNodePipelineIngestOperationsFailed:           MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCacheEvictions:                     MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCompilationLimitTriggered:          MetricSettings{Enabled: true},
-		ElasticsearchNodeScriptCompilations:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeSegmentsMemory:                           MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsDataSetSize:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsReservedSize:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeShardsSize:                               MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolTasksFinished:                  MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolTasksQueued:                    MetricSettings{Enabled: true},
-		ElasticsearchNodeThreadPoolThreads:                        MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogOperations:                       MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogSize:                             MetricSettings{Enabled: true},
-		ElasticsearchNodeTranslogUncommittedSize:                  MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg15m:                              MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg1m:                               MetricSettings{Enabled: true},
-		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: true},
-		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: true},
-		ElasticsearchOsMemory:                                     MetricSettings{Enabled: true},
-		JvmClassesLoaded:                                          MetricSettings{Enabled: true},
-		JvmGcCollectionsCount:                                     MetricSettings{Enabled: true},
-		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: true},
-		JvmMemoryHeapCommitted:                                    MetricSettings{Enabled: true},
-		JvmMemoryHeapMax:                                          MetricSettings{Enabled: true},
-		JvmMemoryHeapUsed:                                         MetricSettings{Enabled: true},
-		JvmMemoryHeapUtilization:                                  MetricSettings{Enabled: true},
-		JvmMemoryNonheapCommitted:                                 MetricSettings{Enabled: true},
-		JvmMemoryNonheapUsed:                                      MetricSettings{Enabled: true},
-		JvmMemoryPoolMax:                                          MetricSettings{Enabled: true},
-		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: true},
-		JvmThreadsCount:                                           MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards, AttributeSegmentsMemoryObjectTypeTerm)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			allMetricsCount++
+			mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
+
+			allMetricsCount++
+			mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
+
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperationIndex)
+
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResultHit)
+
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResultHit)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectTypeTerm)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
+
+			allMetricsCount++
+			mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmClassesLoadedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordJvmThreadsCountDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
+			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
+			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
+			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "elasticsearch.breaker.memory.estimated":
+					assert.False(t, validatedMetrics["elasticsearch.breaker.memory.estimated"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.estimated")
+					validatedMetrics["elasticsearch.breaker.memory.estimated"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Estimated memory used for the operation.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
+				case "elasticsearch.breaker.memory.limit":
+					assert.False(t, validatedMetrics["elasticsearch.breaker.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.breaker.memory.limit")
+					validatedMetrics["elasticsearch.breaker.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Memory limit for the circuit breaker.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
+				case "elasticsearch.breaker.tripped":
+					assert.False(t, validatedMetrics["elasticsearch.breaker.tripped"], "Found a duplicate in the metrics slice: elasticsearch.breaker.tripped")
+					validatedMetrics["elasticsearch.breaker.tripped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "circuit_breaker_name-val", attrVal.Str())
+				case "elasticsearch.cluster.data_nodes":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.data_nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.data_nodes")
+					validatedMetrics["elasticsearch.cluster.data_nodes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of data nodes in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{nodes}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.cluster.health":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.health"], "Found a duplicate in the metrics slice: elasticsearch.cluster.health")
+					validatedMetrics["elasticsearch.cluster.health"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The health status of the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "green", attrVal.Str())
+				case "elasticsearch.cluster.in_flight_fetch":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.in_flight_fetch"], "Found a duplicate in the metrics slice: elasticsearch.cluster.in_flight_fetch")
+					validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of unfinished fetches.", ms.At(i).Description())
+					assert.Equal(t, "{fetches}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.cluster.indices.cache.evictions":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.indices.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.cluster.indices.cache.evictions")
+					validatedMetrics["elasticsearch.cluster.indices.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache for indices in cluster.", ms.At(i).Description())
+					assert.Equal(t, "{evictions}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "fielddata", attrVal.Str())
+				case "elasticsearch.cluster.nodes":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.nodes"], "Found a duplicate in the metrics slice: elasticsearch.cluster.nodes")
+					validatedMetrics["elasticsearch.cluster.nodes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of nodes in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{nodes}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.cluster.pending_tasks":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.pending_tasks"], "Found a duplicate in the metrics slice: elasticsearch.cluster.pending_tasks")
+					validatedMetrics["elasticsearch.cluster.pending_tasks"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of cluster-level changes that have not yet been executed.", ms.At(i).Description())
+					assert.Equal(t, "{tasks}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.cluster.published_states.differences":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.differences"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.differences")
+					validatedMetrics["elasticsearch.cluster.published_states.differences"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of differences between published cluster states.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "incompatible", attrVal.Str())
+				case "elasticsearch.cluster.published_states.full":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.published_states.full"], "Found a duplicate in the metrics slice: elasticsearch.cluster.published_states.full")
+					validatedMetrics["elasticsearch.cluster.published_states.full"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of published cluster states.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.cluster.shards":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.shards"], "Found a duplicate in the metrics slice: elasticsearch.cluster.shards")
+					validatedMetrics["elasticsearch.cluster.shards"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of shards in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{shards}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "active", attrVal.Str())
+				case "elasticsearch.cluster.state_queue":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_queue"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_queue")
+					validatedMetrics["elasticsearch.cluster.state_queue"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of cluster states in queue.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "pending", attrVal.Str())
+				case "elasticsearch.cluster.state_update.count":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.count"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.count")
+					validatedMetrics["elasticsearch.cluster.state_update.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cluster_state_update_state-val", attrVal.Str())
+				case "elasticsearch.cluster.state_update.time":
+					assert.False(t, validatedMetrics["elasticsearch.cluster.state_update.time"], "Found a duplicate in the metrics slice: elasticsearch.cluster.state_update.time")
+					validatedMetrics["elasticsearch.cluster.state_update.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cluster_state_update_state-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "computation", attrVal.Str())
+				case "elasticsearch.index.cache.evictions":
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.evictions")
+					validatedMetrics["elasticsearch.index.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache for an index.", ms.At(i).Description())
+					assert.Equal(t, "{evictions}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "fielddata", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.cache.memory.usage":
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.memory.usage")
+					validatedMetrics["elasticsearch.index.cache.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The size in bytes of the cache for an index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "fielddata", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.cache.size":
+					assert.False(t, validatedMetrics["elasticsearch.index.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.index.cache.size")
+					validatedMetrics["elasticsearch.index.cache.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of elements of the query cache for an index.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.documents":
+					assert.False(t, validatedMetrics["elasticsearch.index.documents"], "Found a duplicate in the metrics slice: elasticsearch.index.documents")
+					validatedMetrics["elasticsearch.index.documents"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of documents for an index.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "active", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.operations.completed":
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.completed")
+					validatedMetrics["elasticsearch.index.operations.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of operations completed for an index.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.operations.merge.docs_count":
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.docs_count"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.docs_count")
+					validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of documents in merge operations for an index.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.operations.merge.size":
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.merge.size"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.merge.size")
+					validatedMetrics["elasticsearch.index.operations.merge.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total size of merged segments for an index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.operations.time":
+					assert.False(t, validatedMetrics["elasticsearch.index.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.index.operations.time")
+					validatedMetrics["elasticsearch.index.operations.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent on operations for an index.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.segments.count":
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.count"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.count")
+					validatedMetrics["elasticsearch.index.segments.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of segments of an index.", ms.At(i).Description())
+					assert.Equal(t, "{segments}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.segments.memory":
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.memory")
+					validatedMetrics["elasticsearch.index.segments.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of memory for segment object of an index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.EqualValues(t, "term", attrVal.Str())
+				case "elasticsearch.index.segments.size":
+					assert.False(t, validatedMetrics["elasticsearch.index.segments.size"], "Found a duplicate in the metrics slice: elasticsearch.index.segments.size")
+					validatedMetrics["elasticsearch.index.segments.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of segments of an index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.shards.size":
+					assert.False(t, validatedMetrics["elasticsearch.index.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.index.shards.size")
+					validatedMetrics["elasticsearch.index.shards.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The size of the shards assigned to this index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.translog.operations":
+					assert.False(t, validatedMetrics["elasticsearch.index.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.operations")
+					validatedMetrics["elasticsearch.index.translog.operations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of transaction log operations for an index.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.index.translog.size":
+					assert.False(t, validatedMetrics["elasticsearch.index.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.index.translog.size")
+					validatedMetrics["elasticsearch.index.translog.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of the transaction log for an index.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("aggregation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary_shards", attrVal.Str())
+				case "elasticsearch.indexing_pressure.memory.limit":
+					assert.False(t, validatedMetrics["elasticsearch.indexing_pressure.memory.limit"], "Found a duplicate in the metrics slice: elasticsearch.indexing_pressure.memory.limit")
+					validatedMetrics["elasticsearch.indexing_pressure.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Configured memory limit, in bytes, for the indexing requests.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.indexing_pressure.memory.total.primary_rejections":
+					assert.False(t, validatedMetrics["elasticsearch.indexing_pressure.memory.total.primary_rejections"], "Found a duplicate in the metrics slice: elasticsearch.indexing_pressure.memory.total.primary_rejections")
+					validatedMetrics["elasticsearch.indexing_pressure.memory.total.primary_rejections"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cumulative number of indexing requests rejected in the primary stage.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.indexing_pressure.memory.total.replica_rejections":
+					assert.False(t, validatedMetrics["elasticsearch.indexing_pressure.memory.total.replica_rejections"], "Found a duplicate in the metrics slice: elasticsearch.indexing_pressure.memory.total.replica_rejections")
+					validatedMetrics["elasticsearch.indexing_pressure.memory.total.replica_rejections"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of indexing requests rejected in the replica stage.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.memory.indexing_pressure":
+					assert.False(t, validatedMetrics["elasticsearch.memory.indexing_pressure"], "Found a duplicate in the metrics slice: elasticsearch.memory.indexing_pressure")
+					validatedMetrics["elasticsearch.memory.indexing_pressure"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("stage")
+					assert.True(t, ok)
+					assert.EqualValues(t, "coordinating", attrVal.Str())
+				case "elasticsearch.node.cache.count":
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.count"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.count")
+					validatedMetrics["elasticsearch.node.cache.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", ms.At(i).Description())
+					assert.Equal(t, "{count}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "hit", attrVal.Str())
+				case "elasticsearch.node.cache.evictions":
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.evictions")
+					validatedMetrics["elasticsearch.node.cache.evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of evictions from the cache on a node.", ms.At(i).Description())
+					assert.Equal(t, "{evictions}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "fielddata", attrVal.Str())
+				case "elasticsearch.node.cache.memory.usage":
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.memory.usage"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.memory.usage")
+					validatedMetrics["elasticsearch.node.cache.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The size in bytes of the cache on a node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cache_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "fielddata", attrVal.Str())
+				case "elasticsearch.node.cache.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.cache.size"], "Found a duplicate in the metrics slice: elasticsearch.node.cache.size")
+					validatedMetrics["elasticsearch.node.cache.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of memory used for the query cache across all shards assigned to the node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.cluster.connections":
+					assert.False(t, validatedMetrics["elasticsearch.node.cluster.connections"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.connections")
+					validatedMetrics["elasticsearch.node.cluster.connections"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of open tcp connections for internal cluster communication.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.cluster.io":
+					assert.False(t, validatedMetrics["elasticsearch.node.cluster.io"], "Found a duplicate in the metrics slice: elasticsearch.node.cluster.io")
+					validatedMetrics["elasticsearch.node.cluster.io"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "received", attrVal.Str())
+				case "elasticsearch.node.disk.io.read":
+					assert.False(t, validatedMetrics["elasticsearch.node.disk.io.read"], "Found a duplicate in the metrics slice: elasticsearch.node.disk.io.read")
+					validatedMetrics["elasticsearch.node.disk.io.read"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of kilobytes read across all file stores for this node.", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.disk.io.write":
+					assert.False(t, validatedMetrics["elasticsearch.node.disk.io.write"], "Found a duplicate in the metrics slice: elasticsearch.node.disk.io.write")
+					validatedMetrics["elasticsearch.node.disk.io.write"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of kilobytes written across all file stores for this node.", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.documents":
+					assert.False(t, validatedMetrics["elasticsearch.node.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.documents")
+					validatedMetrics["elasticsearch.node.documents"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of documents on the node.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "active", attrVal.Str())
+				case "elasticsearch.node.fs.disk.available":
+					assert.False(t, validatedMetrics["elasticsearch.node.fs.disk.available"], "Found a duplicate in the metrics slice: elasticsearch.node.fs.disk.available")
+					validatedMetrics["elasticsearch.node.fs.disk.available"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.fs.disk.free":
+					assert.False(t, validatedMetrics["elasticsearch.node.fs.disk.free"], "Found a duplicate in the metrics slice: elasticsearch.node.fs.disk.free")
+					validatedMetrics["elasticsearch.node.fs.disk.free"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of unallocated disk space across all file stores for this node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.fs.disk.total":
+					assert.False(t, validatedMetrics["elasticsearch.node.fs.disk.total"], "Found a duplicate in the metrics slice: elasticsearch.node.fs.disk.total")
+					validatedMetrics["elasticsearch.node.fs.disk.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of disk space across all file stores for this node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.http.connections":
+					assert.False(t, validatedMetrics["elasticsearch.node.http.connections"], "Found a duplicate in the metrics slice: elasticsearch.node.http.connections")
+					validatedMetrics["elasticsearch.node.http.connections"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of HTTP connections to the node.", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.ingest.documents":
+					assert.False(t, validatedMetrics["elasticsearch.node.ingest.documents"], "Found a duplicate in the metrics slice: elasticsearch.node.ingest.documents")
+					validatedMetrics["elasticsearch.node.ingest.documents"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of documents ingested during the lifetime of this node.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.ingest.documents.current":
+					assert.False(t, validatedMetrics["elasticsearch.node.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.ingest.documents.current")
+					validatedMetrics["elasticsearch.node.ingest.documents.current"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of documents currently being ingested.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.ingest.operations.failed":
+					assert.False(t, validatedMetrics["elasticsearch.node.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.ingest.operations.failed")
+					validatedMetrics["elasticsearch.node.ingest.operations.failed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of failed ingest operations during the lifetime of this node.", ms.At(i).Description())
+					assert.Equal(t, "{operation}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.open_files":
+					assert.False(t, validatedMetrics["elasticsearch.node.open_files"], "Found a duplicate in the metrics slice: elasticsearch.node.open_files")
+					validatedMetrics["elasticsearch.node.open_files"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of open file descriptors held by the node.", ms.At(i).Description())
+					assert.Equal(t, "{files}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.operations.completed":
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.completed")
+					validatedMetrics["elasticsearch.node.operations.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of operations completed by a node.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index", attrVal.Str())
+				case "elasticsearch.node.operations.current":
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.current"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.current")
+					validatedMetrics["elasticsearch.node.operations.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of query operations currently running.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index", attrVal.Str())
+				case "elasticsearch.node.operations.get.completed":
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.completed"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.completed")
+					validatedMetrics["elasticsearch.node.operations.get.completed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of hits and misses resulting from GET operations.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("result")
+					assert.True(t, ok)
+					assert.EqualValues(t, "hit", attrVal.Str())
+				case "elasticsearch.node.operations.get.time":
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.get.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.get.time")
+					validatedMetrics["elasticsearch.node.operations.get.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("result")
+					assert.True(t, ok)
+					assert.EqualValues(t, "hit", attrVal.Str())
+				case "elasticsearch.node.operations.time":
+					assert.False(t, validatedMetrics["elasticsearch.node.operations.time"], "Found a duplicate in the metrics slice: elasticsearch.node.operations.time")
+					validatedMetrics["elasticsearch.node.operations.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent on operations by a node.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index", attrVal.Str())
+				case "elasticsearch.node.pipeline.ingest.documents.current":
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.current")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
+				case "elasticsearch.node.pipeline.ingest.documents.preprocessed":
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.documents.preprocessed")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", ms.At(i).Description())
+					assert.Equal(t, "{documents}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
+				case "elasticsearch.node.pipeline.ingest.operations.failed":
+					assert.False(t, validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"], "Found a duplicate in the metrics slice: elasticsearch.node.pipeline.ingest.operations.failed")
+					validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of failed operations for the ingest pipeline.", ms.At(i).Description())
+					assert.Equal(t, "{operation}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "ingest_pipeline_name-val", attrVal.Str())
+				case "elasticsearch.node.script.cache_evictions":
+					assert.False(t, validatedMetrics["elasticsearch.node.script.cache_evictions"], "Found a duplicate in the metrics slice: elasticsearch.node.script.cache_evictions")
+					validatedMetrics["elasticsearch.node.script.cache_evictions"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the script cache has evicted old data.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.script.compilation_limit_triggered":
+					assert.False(t, validatedMetrics["elasticsearch.node.script.compilation_limit_triggered"], "Found a duplicate in the metrics slice: elasticsearch.node.script.compilation_limit_triggered")
+					validatedMetrics["elasticsearch.node.script.compilation_limit_triggered"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of times the script compilation circuit breaker has limited inline script compilations.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.script.compilations":
+					assert.False(t, validatedMetrics["elasticsearch.node.script.compilations"], "Found a duplicate in the metrics slice: elasticsearch.node.script.compilations")
+					validatedMetrics["elasticsearch.node.script.compilations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total number of inline script compilations performed by the node.", ms.At(i).Description())
+					assert.Equal(t, "{compilations}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.segments.memory":
+					assert.False(t, validatedMetrics["elasticsearch.node.segments.memory"], "Found a duplicate in the metrics slice: elasticsearch.node.segments.memory")
+					validatedMetrics["elasticsearch.node.segments.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of memory for segment object of a node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("object")
+					assert.True(t, ok)
+					assert.EqualValues(t, "term", attrVal.Str())
+				case "elasticsearch.node.shards.data_set.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.shards.data_set.size"], "Found a duplicate in the metrics slice: elasticsearch.node.shards.data_set.size")
+					validatedMetrics["elasticsearch.node.shards.data_set.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.shards.reserved.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.shards.reserved.size"], "Found a duplicate in the metrics slice: elasticsearch.node.shards.reserved.size")
+					validatedMetrics["elasticsearch.node.shards.reserved.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.shards.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.shards.size"], "Found a duplicate in the metrics slice: elasticsearch.node.shards.size")
+					validatedMetrics["elasticsearch.node.shards.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The size of the shards assigned to this node.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.thread_pool.tasks.finished":
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.finished")
+					validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of tasks finished by the thread pool.", ms.At(i).Description())
+					assert.Equal(t, "{tasks}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "rejected", attrVal.Str())
+				case "elasticsearch.node.thread_pool.tasks.queued":
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.tasks.queued")
+					validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of queued tasks in the thread pool.", ms.At(i).Description())
+					assert.Equal(t, "{tasks}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
+				case "elasticsearch.node.thread_pool.threads":
+					assert.False(t, validatedMetrics["elasticsearch.node.thread_pool.threads"], "Found a duplicate in the metrics slice: elasticsearch.node.thread_pool.threads")
+					validatedMetrics["elasticsearch.node.thread_pool.threads"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of threads in the thread pool.", ms.At(i).Description())
+					assert.Equal(t, "{threads}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("thread_pool_name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "thread_pool_name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "active", attrVal.Str())
+				case "elasticsearch.node.translog.operations":
+					assert.False(t, validatedMetrics["elasticsearch.node.translog.operations"], "Found a duplicate in the metrics slice: elasticsearch.node.translog.operations")
+					validatedMetrics["elasticsearch.node.translog.operations"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of transaction log operations.", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.translog.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.translog.size"], "Found a duplicate in the metrics slice: elasticsearch.node.translog.size")
+					validatedMetrics["elasticsearch.node.translog.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of the transaction log.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.node.translog.uncommitted.size":
+					assert.False(t, validatedMetrics["elasticsearch.node.translog.uncommitted.size"], "Found a duplicate in the metrics slice: elasticsearch.node.translog.uncommitted.size")
+					validatedMetrics["elasticsearch.node.translog.uncommitted.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of uncommitted transaction log operations.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.os.cpu.load_avg.15m":
+					assert.False(t, validatedMetrics["elasticsearch.os.cpu.load_avg.15m"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.load_avg.15m")
+					validatedMetrics["elasticsearch.os.cpu.load_avg.15m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "elasticsearch.os.cpu.load_avg.1m":
+					assert.False(t, validatedMetrics["elasticsearch.os.cpu.load_avg.1m"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.load_avg.1m")
+					validatedMetrics["elasticsearch.os.cpu.load_avg.1m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "One-minute load average on the system (field is not present if one-minute load average is not available).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "elasticsearch.os.cpu.load_avg.5m":
+					assert.False(t, validatedMetrics["elasticsearch.os.cpu.load_avg.5m"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.load_avg.5m")
+					validatedMetrics["elasticsearch.os.cpu.load_avg.5m"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Five-minute load average on the system (field is not present if five-minute load average is not available).", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "elasticsearch.os.cpu.usage":
+					assert.False(t, validatedMetrics["elasticsearch.os.cpu.usage"], "Found a duplicate in the metrics slice: elasticsearch.os.cpu.usage")
+					validatedMetrics["elasticsearch.os.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Recent CPU usage for the whole system, or -1 if not supported.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.os.memory":
+					assert.False(t, validatedMetrics["elasticsearch.os.memory"], "Found a duplicate in the metrics slice: elasticsearch.os.memory")
+					validatedMetrics["elasticsearch.os.memory"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Amount of physical memory.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "free", attrVal.Str())
+				case "elasticsearch.process.cpu.time":
+					assert.False(t, validatedMetrics["elasticsearch.process.cpu.time"], "Found a duplicate in the metrics slice: elasticsearch.process.cpu.time")
+					validatedMetrics["elasticsearch.process.cpu.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "CPU time used by the process on which the Java virtual machine is running.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "elasticsearch.process.cpu.usage":
+					assert.False(t, validatedMetrics["elasticsearch.process.cpu.usage"], "Found a duplicate in the metrics slice: elasticsearch.process.cpu.usage")
+					validatedMetrics["elasticsearch.process.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU usage in percent.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "elasticsearch.process.memory.virtual":
+					assert.False(t, validatedMetrics["elasticsearch.process.memory.virtual"], "Found a duplicate in the metrics slice: elasticsearch.process.memory.virtual")
+					validatedMetrics["elasticsearch.process.memory.virtual"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Size of virtual memory that is guaranteed to be available to the running process.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.classes.loaded":
+					assert.False(t, validatedMetrics["jvm.classes.loaded"], "Found a duplicate in the metrics slice: jvm.classes.loaded")
+					validatedMetrics["jvm.classes.loaded"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of loaded classes", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.gc.collections.count":
+					assert.False(t, validatedMetrics["jvm.gc.collections.count"], "Found a duplicate in the metrics slice: jvm.gc.collections.count")
+					validatedMetrics["jvm.gc.collections.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of garbage collections that have occurred", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "collector_name-val", attrVal.Str())
+				case "jvm.gc.collections.elapsed":
+					assert.False(t, validatedMetrics["jvm.gc.collections.elapsed"], "Found a duplicate in the metrics slice: jvm.gc.collections.elapsed")
+					validatedMetrics["jvm.gc.collections.elapsed"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The approximate accumulated collection elapsed time", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "collector_name-val", attrVal.Str())
+				case "jvm.memory.heap.committed":
+					assert.False(t, validatedMetrics["jvm.memory.heap.committed"], "Found a duplicate in the metrics slice: jvm.memory.heap.committed")
+					validatedMetrics["jvm.memory.heap.committed"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is guaranteed to be available for the heap", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.memory.heap.max":
+					assert.False(t, validatedMetrics["jvm.memory.heap.max"], "Found a duplicate in the metrics slice: jvm.memory.heap.max")
+					validatedMetrics["jvm.memory.heap.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of memory can be used for the heap", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.memory.heap.used":
+					assert.False(t, validatedMetrics["jvm.memory.heap.used"], "Found a duplicate in the metrics slice: jvm.memory.heap.used")
+					validatedMetrics["jvm.memory.heap.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current heap memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.memory.heap.utilization":
+					assert.False(t, validatedMetrics["jvm.memory.heap.utilization"], "Found a duplicate in the metrics slice: jvm.memory.heap.utilization")
+					validatedMetrics["jvm.memory.heap.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Fraction of heap memory usage", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "jvm.memory.nonheap.committed":
+					assert.False(t, validatedMetrics["jvm.memory.nonheap.committed"], "Found a duplicate in the metrics slice: jvm.memory.nonheap.committed")
+					validatedMetrics["jvm.memory.nonheap.committed"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is guaranteed to be available for non-heap purposes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.memory.nonheap.used":
+					assert.False(t, validatedMetrics["jvm.memory.nonheap.used"], "Found a duplicate in the metrics slice: jvm.memory.nonheap.used")
+					validatedMetrics["jvm.memory.nonheap.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current non-heap memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "jvm.memory.pool.max":
+					assert.False(t, validatedMetrics["jvm.memory.pool.max"], "Found a duplicate in the metrics slice: jvm.memory.pool.max")
+					validatedMetrics["jvm.memory.pool.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of memory can be used for the memory pool", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "memory_pool_name-val", attrVal.Str())
+				case "jvm.memory.pool.used":
+					assert.False(t, validatedMetrics["jvm.memory.pool.used"], "Found a duplicate in the metrics slice: jvm.memory.pool.used")
+					validatedMetrics["jvm.memory.pool.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current memory pool memory usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "memory_pool_name-val", attrVal.Str())
+				case "jvm.threads.count":
+					assert.False(t, validatedMetrics["jvm.threads.count"], "Found a duplicate in the metrics slice: jvm.threads.count")
+					validatedMetrics["jvm.threads.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The current number of threads", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
-	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
-	mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardState(1))
-	mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueState(1))
-	mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "attr-val", AttributeClusterStateUpdateType(1))
-	mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentState(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationType(1), AttributeSegmentsMemoryObjectType(1))
-	mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
-	mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStage(1))
-	mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
-	mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
-	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
-	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentState(1))
-	mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
-	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
-	mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
-	mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
-	mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectType(1))
-	mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "attr-val", AttributeTaskState(1))
-	mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "attr-val", AttributeThreadState(1))
-	mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
-	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
-	mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
-	mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
-	mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
-	mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmThreadsCountDataPoint(ts, 1)
-
-	metrics := mb.Emit(WithElasticsearchClusterName("attr-val"), WithElasticsearchIndexName("attr-val"), WithElasticsearchNodeName("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("elasticsearch.cluster.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.index.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("elasticsearch.node.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "elasticsearch.breaker.memory.estimated":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Estimated memory used for the operation.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.breaker.memory.estimated"] = struct{}{}
-		case "elasticsearch.breaker.memory.limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Memory limit for the circuit breaker.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.breaker.memory.limit"] = struct{}{}
-		case "elasticsearch.breaker.tripped":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of times the circuit breaker has been triggered and prevented an out of memory error.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.breaker.tripped"] = struct{}{}
-		case "elasticsearch.cluster.data_nodes":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of data nodes in the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{nodes}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.cluster.data_nodes"] = struct{}{}
-		case "elasticsearch.cluster.health":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The health status of the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{status}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("status")
-			assert.True(t, ok)
-			assert.Equal(t, "green", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.health"] = struct{}{}
-		case "elasticsearch.cluster.in_flight_fetch":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of unfinished fetches.", ms.At(i).Description())
-			assert.Equal(t, "{fetches}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.cluster.in_flight_fetch"] = struct{}{}
-		case "elasticsearch.cluster.nodes":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of nodes in the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{nodes}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.cluster.nodes"] = struct{}{}
-		case "elasticsearch.cluster.pending_tasks":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of cluster-level changes that have not yet been executed.", ms.At(i).Description())
-			assert.Equal(t, "{tasks}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.cluster.pending_tasks"] = struct{}{}
-		case "elasticsearch.cluster.published_states.differences":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of differences between published cluster states.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "incompatible", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.published_states.differences"] = struct{}{}
-		case "elasticsearch.cluster.published_states.full":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of published cluster states.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.cluster.published_states.full"] = struct{}{}
-		case "elasticsearch.cluster.shards":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of shards in the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{shards}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "active", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.shards"] = struct{}{}
-		case "elasticsearch.cluster.state_queue":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of cluster states in queue.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "pending", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.state_queue"] = struct{}{}
-		case "elasticsearch.cluster.state_update.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of cluster state update attempts that changed the cluster state since the node started.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.state_update.count"] = struct{}{}
-		case "elasticsearch.cluster.state_update.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The cumulative amount of time updating the cluster state since the node started.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "computation", attrVal.Str())
-			validatedMetrics["elasticsearch.cluster.state_update.time"] = struct{}{}
-		case "elasticsearch.index.cache.evictions":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of evictions from the cache for an index.", ms.At(i).Description())
-			assert.Equal(t, "{evictions}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("cache_name")
-			assert.True(t, ok)
-			assert.Equal(t, "fielddata", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.cache.evictions"] = struct{}{}
-		case "elasticsearch.index.cache.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The size in bytes of the cache for an index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("cache_name")
-			assert.True(t, ok)
-			assert.Equal(t, "fielddata", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.cache.memory.usage"] = struct{}{}
-		case "elasticsearch.index.cache.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of elements of the query cache for an index.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.cache.size"] = struct{}{}
-		case "elasticsearch.index.documents":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of documents for an index.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "active", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.documents"] = struct{}{}
-		case "elasticsearch.index.operations.completed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of operations completed for an index.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.Equal(t, "index", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.operations.completed"] = struct{}{}
-		case "elasticsearch.index.operations.merge.docs_count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of documents in merge operations for an index.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.operations.merge.docs_count"] = struct{}{}
-		case "elasticsearch.index.operations.merge.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total size of merged segments for an index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.operations.merge.size"] = struct{}{}
-		case "elasticsearch.index.operations.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Time spent on operations for an index.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.Equal(t, "index", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.operations.time"] = struct{}{}
-		case "elasticsearch.index.segments.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of segments of an index.", ms.At(i).Description())
-			assert.Equal(t, "{segments}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.segments.count"] = struct{}{}
-		case "elasticsearch.index.segments.memory":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of memory for segment object of an index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("object")
-			assert.True(t, ok)
-			assert.Equal(t, "term", attrVal.Str())
-			validatedMetrics["elasticsearch.index.segments.memory"] = struct{}{}
-		case "elasticsearch.index.segments.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of segments of an index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.segments.size"] = struct{}{}
-		case "elasticsearch.index.shards.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The size of the shards assigned to this index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.shards.size"] = struct{}{}
-		case "elasticsearch.index.translog.operations":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of transaction log operations for an index.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.translog.operations"] = struct{}{}
-		case "elasticsearch.index.translog.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of the transaction log for an index.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("aggregation")
-			assert.True(t, ok)
-			assert.Equal(t, "primary_shards", attrVal.Str())
-			validatedMetrics["elasticsearch.index.translog.size"] = struct{}{}
-		case "elasticsearch.indexing_pressure.memory.limit":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Configured memory limit, in bytes, for the indexing requests.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.indexing_pressure.memory.limit"] = struct{}{}
-		case "elasticsearch.indexing_pressure.memory.total.primary_rejections":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cumulative number of indexing requests rejected in the primary stage.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.indexing_pressure.memory.total.primary_rejections"] = struct{}{}
-		case "elasticsearch.indexing_pressure.memory.total.replica_rejections":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of indexing requests rejected in the replica stage.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.indexing_pressure.memory.total.replica_rejections"] = struct{}{}
-		case "elasticsearch.memory.indexing_pressure":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Memory consumed, in bytes, by indexing requests in the specified stage.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("stage")
-			assert.True(t, ok)
-			assert.Equal(t, "coordinating", attrVal.Str())
-			validatedMetrics["elasticsearch.memory.indexing_pressure"] = struct{}{}
-		case "elasticsearch.node.cache.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total count of query cache misses across all shards assigned to selected nodes.", ms.At(i).Description())
-			assert.Equal(t, "{count}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("type")
-			assert.True(t, ok)
-			assert.Equal(t, "hit", attrVal.Str())
-			validatedMetrics["elasticsearch.node.cache.count"] = struct{}{}
-		case "elasticsearch.node.cache.evictions":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of evictions from the cache on a node.", ms.At(i).Description())
-			assert.Equal(t, "{evictions}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("cache_name")
-			assert.True(t, ok)
-			assert.Equal(t, "fielddata", attrVal.Str())
-			validatedMetrics["elasticsearch.node.cache.evictions"] = struct{}{}
-		case "elasticsearch.node.cache.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The size in bytes of the cache on a node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("cache_name")
-			assert.True(t, ok)
-			assert.Equal(t, "fielddata", attrVal.Str())
-			validatedMetrics["elasticsearch.node.cache.memory.usage"] = struct{}{}
-		case "elasticsearch.node.cluster.connections":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of open tcp connections for internal cluster communication.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.cluster.connections"] = struct{}{}
-		case "elasticsearch.node.cluster.io":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of bytes sent and received on the network for internal cluster communication.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "received", attrVal.Str())
-			validatedMetrics["elasticsearch.node.cluster.io"] = struct{}{}
-		case "elasticsearch.node.disk.io.read":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of kilobytes read across all file stores for this node.", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.disk.io.read"] = struct{}{}
-		case "elasticsearch.node.disk.io.write":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of kilobytes written across all file stores for this node.", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.disk.io.write"] = struct{}{}
-		case "elasticsearch.node.documents":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of documents on the node.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "active", attrVal.Str())
-			validatedMetrics["elasticsearch.node.documents"] = struct{}{}
-		case "elasticsearch.node.fs.disk.available":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.fs.disk.available"] = struct{}{}
-		case "elasticsearch.node.fs.disk.free":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of unallocated disk space across all file stores for this node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.fs.disk.free"] = struct{}{}
-		case "elasticsearch.node.fs.disk.total":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of disk space across all file stores for this node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.fs.disk.total"] = struct{}{}
-		case "elasticsearch.node.http.connections":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of HTTP connections to the node.", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.http.connections"] = struct{}{}
-		case "elasticsearch.node.ingest.documents":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of documents ingested during the lifetime of this node.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.ingest.documents"] = struct{}{}
-		case "elasticsearch.node.ingest.documents.current":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of documents currently being ingested.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.ingest.documents.current"] = struct{}{}
-		case "elasticsearch.node.ingest.operations.failed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of failed ingest operations during the lifetime of this node.", ms.At(i).Description())
-			assert.Equal(t, "{operation}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.ingest.operations.failed"] = struct{}{}
-		case "elasticsearch.node.open_files":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of open file descriptors held by the node.", ms.At(i).Description())
-			assert.Equal(t, "{files}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.open_files"] = struct{}{}
-		case "elasticsearch.node.operations.completed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of operations completed by a node.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.Equal(t, "index", attrVal.Str())
-			validatedMetrics["elasticsearch.node.operations.completed"] = struct{}{}
-		case "elasticsearch.node.operations.get.completed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of hits and misses resulting from GET operations.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("result")
-			assert.True(t, ok)
-			assert.Equal(t, "hit", attrVal.Str())
-			validatedMetrics["elasticsearch.node.operations.get.completed"] = struct{}{}
-		case "elasticsearch.node.operations.get.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The time spent on hits and misses resulting from GET operations.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("result")
-			assert.True(t, ok)
-			assert.Equal(t, "hit", attrVal.Str())
-			validatedMetrics["elasticsearch.node.operations.get.time"] = struct{}{}
-		case "elasticsearch.node.operations.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Time spent on operations by a node.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.Equal(t, "index", attrVal.Str())
-			validatedMetrics["elasticsearch.node.operations.time"] = struct{}{}
-		case "elasticsearch.node.pipeline.ingest.documents.current":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of documents currently being ingested by a pipeline.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.node.pipeline.ingest.documents.current"] = struct{}{}
-		case "elasticsearch.node.pipeline.ingest.documents.preprocessed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of documents preprocessed by the ingest pipeline.", ms.At(i).Description())
-			assert.Equal(t, "{documents}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.node.pipeline.ingest.documents.preprocessed"] = struct{}{}
-		case "elasticsearch.node.pipeline.ingest.operations.failed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of failed operations for the ingest pipeline.", ms.At(i).Description())
-			assert.Equal(t, "{operation}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.node.pipeline.ingest.operations.failed"] = struct{}{}
-		case "elasticsearch.node.script.cache_evictions":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of times the script cache has evicted old data.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.script.cache_evictions"] = struct{}{}
-		case "elasticsearch.node.script.compilation_limit_triggered":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of times the script compilation circuit breaker has limited inline script compilations.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.script.compilation_limit_triggered"] = struct{}{}
-		case "elasticsearch.node.script.compilations":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total number of inline script compilations performed by the node.", ms.At(i).Description())
-			assert.Equal(t, "{compilations}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.script.compilations"] = struct{}{}
-		case "elasticsearch.node.segments.memory":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of memory for segment object of a node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("object")
-			assert.True(t, ok)
-			assert.Equal(t, "term", attrVal.Str())
-			validatedMetrics["elasticsearch.node.segments.memory"] = struct{}{}
-		case "elasticsearch.node.shards.data_set.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.shards.data_set.size"] = struct{}{}
-		case "elasticsearch.node.shards.reserved.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.shards.reserved.size"] = struct{}{}
-		case "elasticsearch.node.shards.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The size of the shards assigned to this node.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.shards.size"] = struct{}{}
-		case "elasticsearch.node.thread_pool.tasks.finished":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of tasks finished by the thread pool.", ms.At(i).Description())
-			assert.Equal(t, "{tasks}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("thread_pool_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "rejected", attrVal.Str())
-			validatedMetrics["elasticsearch.node.thread_pool.tasks.finished"] = struct{}{}
-		case "elasticsearch.node.thread_pool.tasks.queued":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of queued tasks in the thread pool.", ms.At(i).Description())
-			assert.Equal(t, "{tasks}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("thread_pool_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["elasticsearch.node.thread_pool.tasks.queued"] = struct{}{}
-		case "elasticsearch.node.thread_pool.threads":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of threads in the thread pool.", ms.At(i).Description())
-			assert.Equal(t, "{threads}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("thread_pool_name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "active", attrVal.Str())
-			validatedMetrics["elasticsearch.node.thread_pool.threads"] = struct{}{}
-		case "elasticsearch.node.translog.operations":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of transaction log operations.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.translog.operations"] = struct{}{}
-		case "elasticsearch.node.translog.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of the transaction log.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.translog.size"] = struct{}{}
-		case "elasticsearch.node.translog.uncommitted.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Size of uncommitted transaction log operations.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.node.translog.uncommitted.size"] = struct{}{}
-		case "elasticsearch.os.cpu.load_avg.15m":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["elasticsearch.os.cpu.load_avg.15m"] = struct{}{}
-		case "elasticsearch.os.cpu.load_avg.1m":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "One-minute load average on the system (field is not present if one-minute load average is not available).", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["elasticsearch.os.cpu.load_avg.1m"] = struct{}{}
-		case "elasticsearch.os.cpu.load_avg.5m":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Five-minute load average on the system (field is not present if five-minute load average is not available).", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["elasticsearch.os.cpu.load_avg.5m"] = struct{}{}
-		case "elasticsearch.os.cpu.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Recent CPU usage for the whole system, or -1 if not supported.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["elasticsearch.os.cpu.usage"] = struct{}{}
-		case "elasticsearch.os.memory":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Amount of physical memory.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("state")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["elasticsearch.os.memory"] = struct{}{}
-		case "jvm.classes.loaded":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The number of loaded classes", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.classes.loaded"] = struct{}{}
-		case "jvm.gc.collections.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The total number of garbage collections that have occurred", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["jvm.gc.collections.count"] = struct{}{}
-		case "jvm.gc.collections.elapsed":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The approximate accumulated collection elapsed time", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["jvm.gc.collections.elapsed"] = struct{}{}
-		case "jvm.memory.heap.committed":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that is guaranteed to be available for the heap", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.memory.heap.committed"] = struct{}{}
-		case "jvm.memory.heap.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The maximum amount of memory can be used for the heap", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.memory.heap.max"] = struct{}{}
-		case "jvm.memory.heap.used":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The current heap memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.memory.heap.used"] = struct{}{}
-		case "jvm.memory.heap.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Fraction of heap memory usage", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["jvm.memory.heap.utilization"] = struct{}{}
-		case "jvm.memory.nonheap.committed":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that is guaranteed to be available for non-heap purposes", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.memory.nonheap.committed"] = struct{}{}
-		case "jvm.memory.nonheap.used":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The current non-heap memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.memory.nonheap.used"] = struct{}{}
-		case "jvm.memory.pool.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The maximum amount of memory can be used for the memory pool", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["jvm.memory.pool.max"] = struct{}{}
-		case "jvm.memory.pool.used":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The current memory pool memory usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("name")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["jvm.memory.pool.used"] = struct{}{}
-		case "jvm.threads.count":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The current number of threads", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["jvm.threads.count"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ElasticsearchBreakerMemoryEstimated:                       MetricSettings{Enabled: false},
-		ElasticsearchBreakerMemoryLimit:                           MetricSettings{Enabled: false},
-		ElasticsearchBreakerTripped:                               MetricSettings{Enabled: false},
-		ElasticsearchClusterDataNodes:                             MetricSettings{Enabled: false},
-		ElasticsearchClusterHealth:                                MetricSettings{Enabled: false},
-		ElasticsearchClusterInFlightFetch:                         MetricSettings{Enabled: false},
-		ElasticsearchClusterNodes:                                 MetricSettings{Enabled: false},
-		ElasticsearchClusterPendingTasks:                          MetricSettings{Enabled: false},
-		ElasticsearchClusterPublishedStatesDifferences:            MetricSettings{Enabled: false},
-		ElasticsearchClusterPublishedStatesFull:                   MetricSettings{Enabled: false},
-		ElasticsearchClusterShards:                                MetricSettings{Enabled: false},
-		ElasticsearchClusterStateQueue:                            MetricSettings{Enabled: false},
-		ElasticsearchClusterStateUpdateCount:                      MetricSettings{Enabled: false},
-		ElasticsearchClusterStateUpdateTime:                       MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheEvictions:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheMemoryUsage:                        MetricSettings{Enabled: false},
-		ElasticsearchIndexCacheSize:                               MetricSettings{Enabled: false},
-		ElasticsearchIndexDocuments:                               MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsCompleted:                     MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsMergeDocsCount:                MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsMergeSize:                     MetricSettings{Enabled: false},
-		ElasticsearchIndexOperationsTime:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsCount:                           MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsMemory:                          MetricSettings{Enabled: false},
-		ElasticsearchIndexSegmentsSize:                            MetricSettings{Enabled: false},
-		ElasticsearchIndexShardsSize:                              MetricSettings{Enabled: false},
-		ElasticsearchIndexTranslogOperations:                      MetricSettings{Enabled: false},
-		ElasticsearchIndexTranslogSize:                            MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryLimit:                  MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: MetricSettings{Enabled: false},
-		ElasticsearchIndexingPressureMemoryTotalReplicaRejections: MetricSettings{Enabled: false},
-		ElasticsearchMemoryIndexingPressure:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheCount:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheEvictions:                           MetricSettings{Enabled: false},
-		ElasticsearchNodeCacheMemoryUsage:                         MetricSettings{Enabled: false},
-		ElasticsearchNodeClusterConnections:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeClusterIo:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeDiskIoRead:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeDiskIoWrite:                              MetricSettings{Enabled: false},
-		ElasticsearchNodeDocuments:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskAvailable:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskFree:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeFsDiskTotal:                              MetricSettings{Enabled: false},
-		ElasticsearchNodeHTTPConnections:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestDocuments:                          MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestDocumentsCurrent:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeIngestOperationsFailed:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeOpenFiles:                                MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsCompleted:                      MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsGetCompleted:                   MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsGetTime:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeOperationsTime:                           MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestDocumentsCurrent:           MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestDocumentsPreprocessed:      MetricSettings{Enabled: false},
-		ElasticsearchNodePipelineIngestOperationsFailed:           MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCacheEvictions:                     MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCompilationLimitTriggered:          MetricSettings{Enabled: false},
-		ElasticsearchNodeScriptCompilations:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeSegmentsMemory:                           MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsDataSetSize:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsReservedSize:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeShardsSize:                               MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolTasksFinished:                  MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolTasksQueued:                    MetricSettings{Enabled: false},
-		ElasticsearchNodeThreadPoolThreads:                        MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogOperations:                       MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogSize:                             MetricSettings{Enabled: false},
-		ElasticsearchNodeTranslogUncommittedSize:                  MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg15m:                              MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg1m:                               MetricSettings{Enabled: false},
-		ElasticsearchOsCPULoadAvg5m:                               MetricSettings{Enabled: false},
-		ElasticsearchOsCPUUsage:                                   MetricSettings{Enabled: false},
-		ElasticsearchOsMemory:                                     MetricSettings{Enabled: false},
-		JvmClassesLoaded:                                          MetricSettings{Enabled: false},
-		JvmGcCollectionsCount:                                     MetricSettings{Enabled: false},
-		JvmGcCollectionsElapsed:                                   MetricSettings{Enabled: false},
-		JvmMemoryHeapCommitted:                                    MetricSettings{Enabled: false},
-		JvmMemoryHeapMax:                                          MetricSettings{Enabled: false},
-		JvmMemoryHeapUsed:                                         MetricSettings{Enabled: false},
-		JvmMemoryHeapUtilization:                                  MetricSettings{Enabled: false},
-		JvmMemoryNonheapCommitted:                                 MetricSettings{Enabled: false},
-		JvmMemoryNonheapUsed:                                      MetricSettings{Enabled: false},
-		JvmMemoryPoolMax:                                          MetricSettings{Enabled: false},
-		JvmMemoryPoolUsed:                                         MetricSettings{Enabled: false},
-		JvmThreadsCount:                                           MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatus(1))
-	mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceState(1))
-	mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
-	mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardState(1))
-	mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueState(1))
-	mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "attr-val", AttributeClusterStateUpdateType(1))
-	mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentState(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperation(1), AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationType(1), AttributeSegmentsMemoryObjectType(1))
-	mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationType(1))
-	mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
-	mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStage(1))
-	mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountType(1))
-	mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheName(1))
-	mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheName(1))
-	mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentState(1))
-	mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperation(1))
-	mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResult(1))
-	mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResult(1))
-	mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperation(1))
-	mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectType(1))
-	mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "attr-val", AttributeTaskState(1))
-	mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "attr-val")
-	mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "attr-val", AttributeThreadState(1))
-	mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
-	mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
-	mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordJvmClassesLoadedDataPoint(ts, 1)
-	mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
-	mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
-	mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
-	mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
-	mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "attr-val")
-	mb.RecordJvmThreadsCountDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

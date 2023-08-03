@@ -19,23 +19,33 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/configschema
+      - cmd/githubgen
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
+      - cmd/oteltestbedcol
       - cmd/telemetrygen
-      - cmd/tracegen
       - confmap/provider/s3provider
+      - connector/count
+      - connector/exceptions
+      - connector/routing
+      - connector/servicegraph
+      - connector/spanmetrics
       - examples/demo
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
       - exporter/awsemf
       - exporter/awskinesis
+      - exporter/awss3
       - exporter/awsxray
       - exporter/azuredataexplorer
       - exporter/azuremonitor
       - exporter/carbon
+      - exporter/cassandra
       - exporter/clickhouse
       - exporter/coralogix
       - exporter/datadog
+      - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/f5cloud
@@ -43,7 +53,6 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
-      - exporter/humio
       - exporter/influxdb
       - exporter/instana
       - exporter/jaeger
@@ -55,6 +64,7 @@ body:
       - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
+      - exporter/opensearch
       - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
@@ -65,6 +75,7 @@ body:
       - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
+      - exporter/syslog
       - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
@@ -72,12 +83,15 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
+      - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
+      - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
@@ -92,9 +106,9 @@ body:
       - internal/docker
       - internal/filter
       - internal/k8sconfig
+      - internal/k8stest
       - internal/kubelet
       - internal/metadataproviders
-      - internal/scrapertest
       - internal/sharedcomponent
       - internal/splunk
       - internal/tools
@@ -102,6 +116,8 @@ body:
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata
       - pkg/ottl
+      - pkg/pdatatest
+      - pkg/pdatautil
       - pkg/resourcetotelemetry
       - pkg/stanza
       - pkg/translator/jaeger
@@ -114,6 +130,7 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
+      - processor/datadog
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
@@ -124,9 +141,12 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
       - processor/servicegraph
@@ -137,27 +157,36 @@ body:
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
+      - receiver/apachespark
       - receiver/awscloudwatch
+      - receiver/awscloudwatchmetrics
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
+      - receiver/azuremonitor
       - receiver/bigip
       - receiver/carbon
       - receiver/chrony
+      - receiver/cloudflare
       - receiver/cloudfoundry
       - receiver/collectd
       - receiver/couchdb
+      - receiver/datadog
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
+      - receiver/file
       - receiver/filelog
+      - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitprovider
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
+      - receiver/haproxy
       - receiver/hostmetrics
       - receiver/httpcheck
       - receiver/iis
@@ -171,6 +200,7 @@ body:
       - receiver/kafka
       - receiver/kafkametrics
       - receiver/kubeletstats
+      - receiver/loki
       - receiver/memcached
       - receiver/mongodb
       - receiver/mongodbatlas
@@ -183,10 +213,9 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
-      - receiver/prometheusexec
-      - receiver/promtail
       - receiver/pulsar
       - receiver/purefa
+      - receiver/purefb
       - receiver/rabbitmq
       - receiver/receivercreator
       - receiver/redis
@@ -199,21 +228,25 @@ body:
       - receiver/snmp
       - receiver/snowflake
       - receiver/solace
+      - receiver/splunkenterprise
       - receiver/splunkhec
       - receiver/sqlquery
       - receiver/sqlserver
+      - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
       - receiver/tcplog
       - receiver/udplog
       - receiver/vcenter
       - receiver/wavefront
+      - receiver/webhookevent
       - receiver/windowseventlog
       - receiver/windowsperfcounters
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
       - testbed/mockdatareceivers/mockawsxrayreceiver
+      - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea
     attributes:
@@ -221,7 +254,7 @@ body:
       description: Please provide as much detail as you reasonably can.
       value: |
         ## Description
-      
+
         ## Steps to Reproduce
 
         ## Expected Result

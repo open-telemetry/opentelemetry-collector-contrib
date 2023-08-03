@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 
@@ -34,7 +23,7 @@ func NewFloat64DeltaCalculator() MetricCalculator {
 	return NewMetricCalculator(calculateDelta)
 }
 
-func calculateDelta(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	var deltaValue float64
 	if prev != nil {
 		deltaValue = val.(float64) - prev.RawValue.(float64)
@@ -61,11 +50,11 @@ func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	}
 }
 
-// Calculate accepts a new metric value identified by matricName and labels, and delegates
-// the calculation with value and timestamp back to CalculateFunc for the result. Returns
+// Calculate accepts a new metric value identified by metric key (consists of metric metadata and labels),
+// https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/eacfde3fcbd46ba60a6db0e9a41977390c4883bd/internal/aws/metrics/metric_calculator.go#L88-L91
+// and delegates the calculation with value and timestamp back to CalculateFunc for the result. Returns
 // true if the calculation is executed successfully.
-func (rm *MetricCalculator) Calculate(metricName string, labels map[string]string, value interface{}, timestamp time.Time) (interface{}, bool) {
-	k := NewKey(metricName, labels)
+func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp time.Time) (interface{}, bool) {
 	cacheStore := rm.cache
 
 	var result interface{}
@@ -74,10 +63,10 @@ func (rm *MetricCalculator) Calculate(metricName string, labels map[string]strin
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 
-	prev, exists := cacheStore.Get(k)
+	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
 	if !exists || done {
-		cacheStore.Set(k, MetricValue{
+		cacheStore.Set(mKey, MetricValue{
 			RawValue:  value,
 			Timestamp: timestamp,
 		})

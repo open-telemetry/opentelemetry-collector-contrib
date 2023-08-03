@@ -1,29 +1,20 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,10 +29,9 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(componentType, "primary"),
+			id: component.NewIDWithName(metadata.Type, "primary"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(componentType)),
-				Broker:           []string{"myHost:5671"},
+				Broker: []string{"myHost:5671"},
 				Auth: Authentication{
 					PlainText: &SaslPlainTextConfig{
 						Username: "otel",
@@ -54,14 +44,19 @@ func TestLoadConfig(t *testing.T) {
 					Insecure:           false,
 					InsecureSkipVerify: false,
 				},
+				Flow: FlowControl{
+					DelayedRetry: &FlowControlDelayedRetry{
+						Delay: 1 * time.Second,
+					},
+				},
 			},
 		},
 		{
-			id:          component.NewIDWithName(componentType, "noauth"),
+			id:          component.NewIDWithName(metadata.Type, "noauth"),
 			expectedErr: errMissingAuthDetails,
 		},
 		{
-			id:          component.NewIDWithName(componentType, "noqueue"),
+			id:          component.NewIDWithName(metadata.Type, "noqueue"),
 			expectedErr: errMissingQueueName,
 		},
 	}
@@ -97,6 +92,27 @@ func TestConfigValidateMissingQueue(t *testing.T) {
 	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
 	err := component.ValidateConfig(cfg)
 	assert.Equal(t, errMissingQueueName, err)
+}
+
+func TestConfigValidateMissingFlowControl(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	// this should never happen in reality, test validation anyway
+	cfg.Flow.DelayedRetry = nil
+	err := cfg.Validate()
+	assert.Equal(t, errMissingFlowControl, err)
+}
+
+func TestConfigValidateInvalidFlowControlDelayedRetryDelay(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Queue = "someQueue"
+	cfg.Auth.PlainText = &SaslPlainTextConfig{"Username", "Password"}
+	cfg.Flow.DelayedRetry = &FlowControlDelayedRetry{
+		Delay: -30 * time.Second,
+	}
+	err := cfg.Validate()
+	assert.Equal(t, errInvalidDelayedRetryDelay, err)
 }
 
 func TestConfigValidateSuccess(t *testing.T) {

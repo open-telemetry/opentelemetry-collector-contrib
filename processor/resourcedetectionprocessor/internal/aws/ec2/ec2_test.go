@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ec2
 
@@ -25,12 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
@@ -96,7 +85,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(componenttest.NewNopProcessorCreateSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopCreateSettings(), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)
@@ -187,6 +176,7 @@ func TestDetector_Detect(t *testing.T) {
 			d := &Detector{
 				metadataProvider: tt.fields.metadataProvider,
 				logger:           zap.NewNop(),
+				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 
@@ -195,7 +185,7 @@ func TestDetector_Detect(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
-				assert.Equal(t, internal.AttributesToMap(tt.want.Attributes()), internal.AttributesToMap(got.Attributes()))
+				assert.Equal(t, tt.want.Attributes().AsRaw(), got.Attributes().AsRaw())
 			}
 		})
 	}

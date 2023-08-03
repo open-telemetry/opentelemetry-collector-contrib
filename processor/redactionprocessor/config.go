@@ -1,25 +1,9 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
-import (
-	"go.opentelemetry.io/collector/config"
-)
-
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"`
 
 	// AllowAllKeys is a flag to allow all span attribute keys. Setting this
 	// to true disables the AllowedKeys list. The list of BlockedValues is
@@ -30,6 +14,11 @@ type Config struct {
 	// not on the list are removed. The list fails closed if it's empty. To
 	// allow all keys, you should explicitly set AllowAllKeys
 	AllowedKeys []string `mapstructure:"allowed_keys"`
+
+	// IgnoredKeys is a list of span attribute keys that are not redacted.
+	// Span attributes in this list are allowed to pass through the filter
+	// without being changed or removed.
+	IgnoredKeys []string `mapstructure:"ignored_keys"`
 
 	// BlockedValues is a list of regular expressions for blocking values of
 	// allowed span attributes. Values that match are masked

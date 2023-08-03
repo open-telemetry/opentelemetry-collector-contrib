@@ -1,41 +1,32 @@
-// Copyright 2022 The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package purefareceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
 
 import (
 	"context"
 
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver/internal"
 )
 
-var _ component.MetricsReceiver = (*purefaReceiver)(nil)
+var _ receiver.Metrics = (*purefaReceiver)(nil)
 
 type purefaReceiver struct {
 	cfg  *Config
-	set  component.ReceiverCreateSettings
+	set  receiver.CreateSettings
 	next consumer.Metrics
 
-	wrapped component.MetricsReceiver
+	wrapped receiver.Metrics
 }
 
-func newReceiver(cfg *Config, set component.ReceiverCreateSettings, next consumer.Metrics) *purefaReceiver {
+func newReceiver(cfg *Config, set receiver.CreateSettings, next consumer.Metrics) *purefaReceiver {
 	return &purefaReceiver{
 		cfg:  cfg,
 		set:  set,
@@ -47,15 +38,48 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	fact := prometheusreceiver.NewFactory()
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	arrScraper := internal.NewScraper(ctx, "array", r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array)
+	commomLabel := model.LabelSet{
+		"deployment.environment": model.LabelValue(r.cfg.Env),
+		"host.name":              model.LabelValue(r.cfg.Endpoint),
+	}
+
+	// Extracting deployment.environment from commonLabel
+	deploymentEnv := commomLabel["deployment.environment"]
+
+	labelSet := model.LabelSet{
+		"deployment.environment": deploymentEnv,
+	}
+
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	hostScraper := internal.NewScraper(ctx, "hosts", r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Host)
+	hostScraper := internal.NewScraper(ctx, internal.ScraperTypeHosts, r.cfg.Endpoint, r.cfg.Hosts, r.cfg.Settings.ReloadIntervals.Hosts, labelSet)
 	if scCfgs, err := hostScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
+		scrapeCfgs = append(scrapeCfgs, scCfgs...)
+	} else {
+		return err
+	}
+
+	directoriesScraper := internal.NewScraper(ctx, internal.ScraperTypeDirectories, r.cfg.Endpoint, r.cfg.Directories, r.cfg.Settings.ReloadIntervals.Directories, commomLabel)
+	if scCfgs, err := directoriesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
+		scrapeCfgs = append(scrapeCfgs, scCfgs...)
+	} else {
+		return err
+	}
+
+	podsScraper := internal.NewScraper(ctx, internal.ScraperTypePods, r.cfg.Endpoint, r.cfg.Pods, r.cfg.Settings.ReloadIntervals.Pods, commomLabel)
+	if scCfgs, err := podsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
+		scrapeCfgs = append(scrapeCfgs, scCfgs...)
+	} else {
+		return err
+	}
+
+	volumesScraper := internal.NewScraper(ctx, internal.ScraperTypeVolumes, r.cfg.Endpoint, r.cfg.Volumes, r.cfg.Settings.ReloadIntervals.Volumes, labelSet)
+	if scCfgs, err := volumesScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err

@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbyattrsprocessor
 
@@ -49,7 +38,6 @@ func prepareResource(attrMap pcommon.Map, selectedKeys []string) pcommon.Resourc
 			val.CopyTo(res.Attributes().PutEmpty(key))
 		}
 	}
-	res.Attributes().Sort()
 	return res
 }
 
@@ -64,7 +52,6 @@ func filterAttributeMap(attrMap pcommon.Map, selectedKeys []string) pcommon.Map 
 		val, _ := attrMap.Get(key)
 		val.CopyTo(filteredAttrMap.PutEmpty(key))
 	}
-	filteredAttrMap.Sort()
 	return filteredAttrMap
 }
 
@@ -474,8 +461,7 @@ func TestAttributeGrouping(t *testing.T) {
 			}
 
 			for _, res := range resources {
-				res.Attributes().Sort()
-				assert.Equal(t, expectedResource, res)
+				assert.Equal(t, expectedResource.Attributes().AsRaw(), res.Attributes().AsRaw())
 			}
 
 			ills := processedLogs.ResourceLogs().At(0).ScopeLogs()
@@ -518,21 +504,13 @@ func TestAttributeGrouping(t *testing.T) {
 				histogramDataPoint := hms.At(i).Histogram().DataPoints().At(0)
 				exponentialHistogramDataPoint := ehms.At(i).ExponentialHistogram().DataPoints().At(0)
 
-				log.Attributes().Sort()
-				span.Attributes().Sort()
-				gaugeDataPoint.Attributes().Sort()
-				sumDataPoint.Attributes().Sort()
-				summaryDataPoint.Attributes().Sort()
-				histogramDataPoint.Attributes().Sort()
-				exponentialHistogramDataPoint.Attributes().Sort()
-
-				assert.EqualValues(t, expectedAttributes, log.Attributes())
-				assert.EqualValues(t, expectedAttributes, span.Attributes())
-				assert.EqualValues(t, expectedAttributes, gaugeDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, sumDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, summaryDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, histogramDataPoint.Attributes())
-				assert.EqualValues(t, expectedAttributes, exponentialHistogramDataPoint.Attributes())
+				assert.Equal(t, expectedAttributes.AsRaw(), log.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), span.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), gaugeDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), sumDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), summaryDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), histogramDataPoint.Attributes().AsRaw())
+				assert.Equal(t, expectedAttributes.AsRaw(), exponentialHistogramDataPoint.Attributes().AsRaw())
 			}
 		})
 	}

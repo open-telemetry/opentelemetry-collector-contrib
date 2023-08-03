@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Sample contains a simple http server that exports to the OpenTelemetry agent.
 
@@ -28,16 +17,12 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/baggage"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/metric/global"
-	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
-	controller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -52,37 +37,6 @@ var rng = rand.New(rand.NewSource(time.Now().UnixNano()))
 func initProvider() func() {
 	ctx := context.Background()
 
-	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if !ok {
-		otelAgentAddr = "0.0.0.0:4317"
-	}
-
-	metricClient := otlpmetricgrpc.NewClient(
-		otlpmetricgrpc.WithInsecure(),
-		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
-	metricExp, err := otlpmetric.New(ctx, metricClient)
-	handleErr(err, "Failed to create the collector metric exporter")
-
-	pusher := controller.New(
-		processor.NewFactory(
-			simple.NewWithHistogramDistribution(),
-			metricExp,
-		),
-		controller.WithExporter(metricExp),
-		controller.WithCollectPeriod(2*time.Second),
-	)
-	global.SetMeterProvider(pusher)
-
-	err = pusher.Start(ctx)
-	handleErr(err, "Failed to start metric pusher")
-
-	traceClient := otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(otelAgentAddr),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()))
-	traceExp, err := otlptrace.New(ctx, traceClient)
-	handleErr(err, "Failed to create the collector trace exporter")
-
 	res, err := resource.New(ctx,
 		resource.WithFromEnv(),
 		resource.WithProcess(),
@@ -94,6 +48,35 @@ func initProvider() func() {
 		),
 	)
 	handleErr(err, "failed to create resource")
+
+	otelAgentAddr, ok := os.LookupEnv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if !ok {
+		otelAgentAddr = "0.0.0.0:4317"
+	}
+
+	metricExp, err := otlpmetricgrpc.New(
+		ctx,
+		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithEndpoint(otelAgentAddr))
+	handleErr(err, "Failed to create the collector metric exporter")
+
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(
+			sdkmetric.NewPeriodicReader(
+				metricExp,
+				sdkmetric.WithInterval(2*time.Second),
+			),
+		),
+	)
+	otel.SetMeterProvider(meterProvider)
+
+	traceClient := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(otelAgentAddr),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()))
+	traceExp, err := otlptrace.New(ctx, traceClient)
+	handleErr(err, "Failed to create the collector trace exporter")
 
 	bsp := sdktrace.NewBatchSpanProcessor(traceExp)
 	tracerProvider := sdktrace.NewTracerProvider(
@@ -113,7 +96,7 @@ func initProvider() func() {
 			otel.Handle(err)
 		}
 		// pushes any last exports to the receiver
-		if err := pusher.Stop(cxt); err != nil {
+		if err := meterProvider.Shutdown(cxt); err != nil {
 			otel.Handle(err)
 		}
 	}
@@ -129,12 +112,12 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	meter := global.Meter("demo-server-meter")
+	meter := otel.Meter("demo-server-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
 	commonLabels := []attribute.KeyValue{serverAttribute}
-	requestCount, _ := meter.SyncInt64().Counter(
+	requestCount, _ := meter.Int64Counter(
 		"demo_server/request_counts",
-		instrument.WithDescription("The number of requests received"),
+		metric.WithDescription("The number of requests received"),
 	)
 
 	// create a handler wrapped in OpenTelemetry instrumentation
@@ -156,7 +139,7 @@ func main() {
 		}
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		ctx := req.Context()
-		requestCount.Add(ctx, 1, commonLabels...)
+		requestCount.Add(ctx, 1, metric.WithAttributes(commonLabels...))
 		span := trace.SpanFromContext(ctx)
 		bag := baggage.FromContext(ctx)
 
@@ -177,8 +160,9 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/hello", otelhttp.NewHandler(handler, "/hello"))
 	server := &http.Server{
-		Addr:    ":7080",
-		Handler: mux,
+		Addr:              ":7080",
+		Handler:           mux,
+		ReadHeaderTimeout: 20 * time.Second,
 	}
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
 		handleErr(err, "server failed to serve")

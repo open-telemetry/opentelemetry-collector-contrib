@@ -3,1413 +3,1248 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
-
-	enabledMetrics["mongodbatlas.db.counts"] = true
-	mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectType(1))
-
-	enabledMetrics["mongodbatlas.db.size"] = true
-	mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectType(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.iops.average"] = true
-	mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.iops.max"] = true
-	mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.latency.average"] = true
-	mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.latency.max"] = true
-	mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.space.average"] = true
-	mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.space.max"] = true
-	mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.usage.average"] = true
-	mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.usage.max"] = true
-	mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.utilization.average"] = true
-	mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.disk.partition.utilization.max"] = true
-	mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-
-	enabledMetrics["mongodbatlas.process.asserts"] = true
-	mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertType(1))
-
-	enabledMetrics["mongodbatlas.process.background_flush"] = true
-	mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.cache.io"] = true
-	mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirection(1))
-
-	enabledMetrics["mongodbatlas.process.cache.size"] = true
-	mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatus(1))
-
-	enabledMetrics["mongodbatlas.process.connections"] = true
-	mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
-	mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
-	mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.usage.average"] = true
-	mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cpu.usage.max"] = true
-	mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.cursors"] = true
-	mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorState(1))
-
-	enabledMetrics["mongodbatlas.process.db.document.rate"] = true
-	mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatus(1))
-
-	enabledMetrics["mongodbatlas.process.db.operations.rate"] = true
-	mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperation(1), AttributeClusterRole(1))
-
-	enabledMetrics["mongodbatlas.process.db.operations.time"] = true
-	mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionType(1))
-
-	enabledMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
-	mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedType(1))
-
-	enabledMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
-	mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedType(1))
-
-	enabledMetrics["mongodbatlas.process.db.storage"] = true
-	mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatus(1))
-
-	enabledMetrics["mongodbatlas.process.fts.cpu.usage"] = true
-	mb.RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.process.global_lock"] = true
-	mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockState(1))
-
-	enabledMetrics["mongodbatlas.process.index.btree_miss_ratio"] = true
-	mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.index.counters"] = true
-	mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterType(1))
-
-	enabledMetrics["mongodbatlas.process.journaling.commits"] = true
-	mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.journaling.data_files"] = true
-	mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.journaling.written"] = true
-	mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.memory.usage"] = true
-	mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-
-	enabledMetrics["mongodbatlas.process.network.io"] = true
-	mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["mongodbatlas.process.network.requests"] = true
-	mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.oplog.rate"] = true
-	mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.oplog.time"] = true
-	mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogType(1))
-
-	enabledMetrics["mongodbatlas.process.page_faults"] = true
-	mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueType(1))
-
-	enabledMetrics["mongodbatlas.process.restarts"] = true
-	mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.process.tickets"] = true
-	mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketType(1))
-
-	enabledMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.cpu.usage.average"] = true
-	mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.cpu.usage.max"] = true
-	mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
-	mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.fts.cpu.usage"] = true
-	mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-
-	enabledMetrics["mongodbatlas.system.fts.disk.used"] = true
-	mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
-
-	enabledMetrics["mongodbatlas.system.fts.memory.usage"] = true
-	mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-
-	enabledMetrics["mongodbatlas.system.memory.usage.average"] = true
-	mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatus(1))
-
-	enabledMetrics["mongodbatlas.system.memory.usage.max"] = true
-	mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatus(1))
-
-	enabledMetrics["mongodbatlas.system.network.io.average"] = true
-	mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["mongodbatlas.system.network.io.max"] = true
-	mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["mongodbatlas.system.paging.io.average"] = true
-	mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["mongodbatlas.system.paging.io.max"] = true
-	mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirection(1))
-
-	enabledMetrics["mongodbatlas.system.paging.usage.average"] = true
-	mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryState(1))
-
-	enabledMetrics["mongodbatlas.system.paging.usage.max"] = true
-	mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+type testConfigCollection int
+
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
+
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		MongodbatlasDbCounts:                                  MetricSettings{Enabled: true},
-		MongodbatlasDbSize:                                    MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionIopsAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionIopsMax:                      MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionLatencyAverage:               MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionLatencyMax:                   MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionSpaceAverage:                 MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionSpaceMax:                     MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUsageAverage:                 MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUsageMax:                     MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUtilizationAverage:           MetricSettings{Enabled: true},
-		MongodbatlasDiskPartitionUtilizationMax:               MetricSettings{Enabled: true},
-		MongodbatlasProcessAsserts:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessBackgroundFlush:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessCacheIo:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessCacheSize:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessConnections:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenUsageAverage:            MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUChildrenUsageMax:                MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUNormalizedUsageAverage:          MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUNormalizedUsageMax:              MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUUsageAverage:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessCPUUsageMax:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessCursors:                            MetricSettings{Enabled: true},
-		MongodbatlasProcessDbDocumentRate:                     MetricSettings{Enabled: true},
-		MongodbatlasProcessDbOperationsRate:                   MetricSettings{Enabled: true},
-		MongodbatlasProcessDbOperationsTime:                   MetricSettings{Enabled: true},
-		MongodbatlasProcessDbQueryExecutorScanned:             MetricSettings{Enabled: true},
-		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricSettings{Enabled: true},
-		MongodbatlasProcessDbStorage:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessFtsCPUUsage:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessGlobalLock:                         MetricSettings{Enabled: true},
-		MongodbatlasProcessIndexBtreeMissRatio:                MetricSettings{Enabled: true},
-		MongodbatlasProcessIndexCounters:                      MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingCommits:                  MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingDataFiles:                MetricSettings{Enabled: true},
-		MongodbatlasProcessJournalingWritten:                  MetricSettings{Enabled: true},
-		MongodbatlasProcessMemoryUsage:                        MetricSettings{Enabled: true},
-		MongodbatlasProcessNetworkIo:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessNetworkRequests:                    MetricSettings{Enabled: true},
-		MongodbatlasProcessOplogRate:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessOplogTime:                          MetricSettings{Enabled: true},
-		MongodbatlasProcessPageFaults:                         MetricSettings{Enabled: true},
-		MongodbatlasProcessRestarts:                           MetricSettings{Enabled: true},
-		MongodbatlasProcessTickets:                            MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUNormalizedUsageAverage:           MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUNormalizedUsageMax:               MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUUsageAverage:                     MetricSettings{Enabled: true},
-		MongodbatlasSystemCPUUsageMax:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsCPUNormalizedUsage:               MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsCPUUsage:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsDiskUsed:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemFtsMemoryUsage:                      MetricSettings{Enabled: true},
-		MongodbatlasSystemMemoryUsageAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasSystemMemoryUsageMax:                      MetricSettings{Enabled: true},
-		MongodbatlasSystemNetworkIoAverage:                    MetricSettings{Enabled: true},
-		MongodbatlasSystemNetworkIoMax:                        MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingIoAverage:                     MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingIoMax:                         MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingUsageAverage:                  MetricSettings{Enabled: true},
-		MongodbatlasSystemPagingUsageMax:                      MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetMongodbAtlasClusterName("mongodb_atlas.cluster.name-val")
+			rb.SetMongodbAtlasDbName("mongodb_atlas.db.name-val")
+			rb.SetMongodbAtlasDiskPartition("mongodb_atlas.disk.partition-val")
+			rb.SetMongodbAtlasHostName("mongodb_atlas.host.name-val")
+			rb.SetMongodbAtlasOrgName("mongodb_atlas.org_name-val")
+			rb.SetMongodbAtlasProcessID("mongodb_atlas.process.id-val")
+			rb.SetMongodbAtlasProcessPort("mongodb_atlas.process.port-val")
+			rb.SetMongodbAtlasProcessTypeName("mongodb_atlas.process.type_name-val")
+			rb.SetMongodbAtlasProjectID("mongodb_atlas.project.id-val")
+			rb.SetMongodbAtlasProjectName("mongodb_atlas.project.name-val")
+			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "mongodbatlas.db.counts":
+					assert.False(t, validatedMetrics["mongodbatlas.db.counts"], "Found a duplicate in the metrics slice: mongodbatlas.db.counts")
+					validatedMetrics["mongodbatlas.db.counts"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Database feature size", ms.At(i).Description())
+					assert.Equal(t, "{objects}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("object_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "collection", attrVal.Str())
+				case "mongodbatlas.db.size":
+					assert.False(t, validatedMetrics["mongodbatlas.db.size"], "Found a duplicate in the metrics slice: mongodbatlas.db.size")
+					validatedMetrics["mongodbatlas.db.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Database feature size", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("object_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "collection", attrVal.Str())
+				case "mongodbatlas.disk.partition.iops.average":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.average")
+					validatedMetrics["mongodbatlas.disk.partition.iops.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition iops", ms.At(i).Description())
+					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "mongodbatlas.disk.partition.iops.max":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.iops.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.iops.max")
+					validatedMetrics["mongodbatlas.disk.partition.iops.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition iops", ms.At(i).Description())
+					assert.Equal(t, "{ops}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "mongodbatlas.disk.partition.latency.average":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.average")
+					validatedMetrics["mongodbatlas.disk.partition.latency.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition latency", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "mongodbatlas.disk.partition.latency.max":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.latency.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.latency.max")
+					validatedMetrics["mongodbatlas.disk.partition.latency.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition latency", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "mongodbatlas.disk.partition.space.average":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.average")
+					validatedMetrics["mongodbatlas.disk.partition.space.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition space", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "free", attrVal.Str())
+				case "mongodbatlas.disk.partition.space.max":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.space.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.space.max")
+					validatedMetrics["mongodbatlas.disk.partition.space.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition space", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "free", attrVal.Str())
+				case "mongodbatlas.disk.partition.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.average")
+					validatedMetrics["mongodbatlas.disk.partition.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "free", attrVal.Str())
+				case "mongodbatlas.disk.partition.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.usage.max")
+					validatedMetrics["mongodbatlas.disk.partition.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Disk partition usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("disk_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "free", attrVal.Str())
+				case "mongodbatlas.disk.partition.utilization.average":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.utilization.average"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.utilization.average")
+					validatedMetrics["mongodbatlas.disk.partition.utilization.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.disk.partition.utilization.max":
+					assert.False(t, validatedMetrics["mongodbatlas.disk.partition.utilization.max"], "Found a duplicate in the metrics slice: mongodbatlas.disk.partition.utilization.max")
+					validatedMetrics["mongodbatlas.disk.partition.utilization.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The maximum percentage of time during which requests are being issued to and serviced by the partition.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.asserts":
+					assert.False(t, validatedMetrics["mongodbatlas.process.asserts"], "Found a duplicate in the metrics slice: mongodbatlas.process.asserts")
+					validatedMetrics["mongodbatlas.process.asserts"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of assertions per second", ms.At(i).Description())
+					assert.Equal(t, "{assertions}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("assert_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "regular", attrVal.Str())
+				case "mongodbatlas.process.background_flush":
+					assert.False(t, validatedMetrics["mongodbatlas.process.background_flush"], "Found a duplicate in the metrics slice: mongodbatlas.process.background_flush")
+					validatedMetrics["mongodbatlas.process.background_flush"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Amount of data flushed in the background", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.cache.io":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cache.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.io")
+					validatedMetrics["mongodbatlas.process.cache.io"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Cache throughput (per second)", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cache_direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read_into", attrVal.Str())
+				case "mongodbatlas.process.cache.size":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cache.size"], "Found a duplicate in the metrics slice: mongodbatlas.process.cache.size")
+					validatedMetrics["mongodbatlas.process.cache.size"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cache sizes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cache_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "dirty", attrVal.Str())
+				case "mongodbatlas.process.connections":
+					assert.False(t, validatedMetrics["mongodbatlas.process.connections"], "Found a duplicate in the metrics slice: mongodbatlas.process.connections")
+					validatedMetrics["mongodbatlas.process.connections"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of current connections", ms.At(i).Description())
+					assert.Equal(t, "{connections}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.cpu.children.normalized.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.average")
+					validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage for child processes, normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.children.normalized.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.normalized.usage.max")
+					validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage for child processes, normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.children.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.average")
+					validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage for child processes (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.children.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.children.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.children.usage.max")
+					validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage for child processes (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.normalized.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.average")
+					validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage, normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.normalized.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.normalized.usage.max")
+					validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage, normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.average")
+					validatedMetrics["mongodbatlas.process.cpu.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cpu.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.process.cpu.usage.max")
+					validatedMetrics["mongodbatlas.process.cpu.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "CPU Usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.process.cursors":
+					assert.False(t, validatedMetrics["mongodbatlas.process.cursors"], "Found a duplicate in the metrics slice: mongodbatlas.process.cursors")
+					validatedMetrics["mongodbatlas.process.cursors"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of cursors", ms.At(i).Description())
+					assert.Equal(t, "{cursors}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cursor_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "timed_out", attrVal.Str())
+				case "mongodbatlas.process.db.document.rate":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.document.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.document.rate")
+					validatedMetrics["mongodbatlas.process.db.document.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Document access rates", ms.At(i).Description())
+					assert.Equal(t, "{documents}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("document_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "returned", attrVal.Str())
+				case "mongodbatlas.process.db.operations.rate":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.rate")
+					validatedMetrics["mongodbatlas.process.db.operations.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "DB Operation Rates", ms.At(i).Description())
+					assert.Equal(t, "{operations}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cmd", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("cluster_role")
+					assert.True(t, ok)
+					assert.EqualValues(t, "primary", attrVal.Str())
+				case "mongodbatlas.process.db.operations.time":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.operations.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.operations.time")
+					validatedMetrics["mongodbatlas.process.db.operations.time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "DB Operation Times", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("execution_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "reads", attrVal.Str())
+				case "mongodbatlas.process.db.query_executor.scanned":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.query_executor.scanned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_executor.scanned")
+					validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Scanned objects", ms.At(i).Description())
+					assert.Equal(t, "{objects}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("scanned_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index_items", attrVal.Str())
+				case "mongodbatlas.process.db.query_targeting.scanned_per_returned":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.query_targeting.scanned_per_returned")
+					validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Scanned objects per returned", ms.At(i).Description())
+					assert.Equal(t, "{scanned}/{returned}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("scanned_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "index_items", attrVal.Str())
+				case "mongodbatlas.process.db.storage":
+					assert.False(t, validatedMetrics["mongodbatlas.process.db.storage"], "Found a duplicate in the metrics slice: mongodbatlas.process.db.storage")
+					validatedMetrics["mongodbatlas.process.db.storage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Storage used by the database", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("storage_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "total", attrVal.Str())
+				case "mongodbatlas.process.global_lock":
+					assert.False(t, validatedMetrics["mongodbatlas.process.global_lock"], "Found a duplicate in the metrics slice: mongodbatlas.process.global_lock")
+					validatedMetrics["mongodbatlas.process.global_lock"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number and status of locks", ms.At(i).Description())
+					assert.Equal(t, "{locks}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("global_lock_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "current_queue_total", attrVal.Str())
+				case "mongodbatlas.process.index.btree_miss_ratio":
+					assert.False(t, validatedMetrics["mongodbatlas.process.index.btree_miss_ratio"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.btree_miss_ratio")
+					validatedMetrics["mongodbatlas.process.index.btree_miss_ratio"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Index miss ratio (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.index.counters":
+					assert.False(t, validatedMetrics["mongodbatlas.process.index.counters"], "Found a duplicate in the metrics slice: mongodbatlas.process.index.counters")
+					validatedMetrics["mongodbatlas.process.index.counters"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Indexes", ms.At(i).Description())
+					assert.Equal(t, "{indexes}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("btree_counter_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "accesses", attrVal.Str())
+				case "mongodbatlas.process.journaling.commits":
+					assert.False(t, validatedMetrics["mongodbatlas.process.journaling.commits"], "Found a duplicate in the metrics slice: mongodbatlas.process.journaling.commits")
+					validatedMetrics["mongodbatlas.process.journaling.commits"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Journaling commits", ms.At(i).Description())
+					assert.Equal(t, "{commits}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.journaling.data_files":
+					assert.False(t, validatedMetrics["mongodbatlas.process.journaling.data_files"], "Found a duplicate in the metrics slice: mongodbatlas.process.journaling.data_files")
+					validatedMetrics["mongodbatlas.process.journaling.data_files"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Data file sizes", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.journaling.written":
+					assert.False(t, validatedMetrics["mongodbatlas.process.journaling.written"], "Found a duplicate in the metrics slice: mongodbatlas.process.journaling.written")
+					validatedMetrics["mongodbatlas.process.journaling.written"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Journals written", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.memory.usage":
+					assert.False(t, validatedMetrics["mongodbatlas.process.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.process.memory.usage")
+					validatedMetrics["mongodbatlas.process.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Memory Usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resident", attrVal.Str())
+				case "mongodbatlas.process.network.io":
+					assert.False(t, validatedMetrics["mongodbatlas.process.network.io"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.io")
+					validatedMetrics["mongodbatlas.process.network.io"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Network IO", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "mongodbatlas.process.network.requests":
+					assert.False(t, validatedMetrics["mongodbatlas.process.network.requests"], "Found a duplicate in the metrics slice: mongodbatlas.process.network.requests")
+					validatedMetrics["mongodbatlas.process.network.requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Network requests", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.oplog.rate":
+					assert.False(t, validatedMetrics["mongodbatlas.process.oplog.rate"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.rate")
+					validatedMetrics["mongodbatlas.process.oplog.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Execution rate by operation", ms.At(i).Description())
+					assert.Equal(t, "GiBy/h", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.oplog.time":
+					assert.False(t, validatedMetrics["mongodbatlas.process.oplog.time"], "Found a duplicate in the metrics slice: mongodbatlas.process.oplog.time")
+					validatedMetrics["mongodbatlas.process.oplog.time"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Execution time by operation", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("oplog_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "slave_lag_master_time", attrVal.Str())
+				case "mongodbatlas.process.page_faults":
+					assert.False(t, validatedMetrics["mongodbatlas.process.page_faults"], "Found a duplicate in the metrics slice: mongodbatlas.process.page_faults")
+					validatedMetrics["mongodbatlas.process.page_faults"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Page faults", ms.At(i).Description())
+					assert.Equal(t, "{faults}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_issue_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "extra_info", attrVal.Str())
+				case "mongodbatlas.process.restarts":
+					assert.False(t, validatedMetrics["mongodbatlas.process.restarts"], "Found a duplicate in the metrics slice: mongodbatlas.process.restarts")
+					validatedMetrics["mongodbatlas.process.restarts"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Restarts in last hour", ms.At(i).Description())
+					assert.Equal(t, "{restarts}/h", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.process.tickets":
+					assert.False(t, validatedMetrics["mongodbatlas.process.tickets"], "Found a duplicate in the metrics slice: mongodbatlas.process.tickets")
+					validatedMetrics["mongodbatlas.process.tickets"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Tickets", ms.At(i).Description())
+					assert.Equal(t, "{tickets}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("ticket_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "available_reads", attrVal.Str())
+				case "mongodbatlas.system.cpu.normalized.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.average")
+					validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System CPU Normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.cpu.normalized.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.normalized.usage.max")
+					validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System CPU Normalized to pct", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.cpu.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.average")
+					validatedMetrics["mongodbatlas.system.cpu.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System CPU Usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.cpu.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.cpu.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.cpu.usage.max")
+					validatedMetrics["mongodbatlas.system.cpu.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System CPU Usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.fts.cpu.normalized.usage":
+					assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.normalized.usage")
+					validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Full text search disk usage (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.fts.cpu.usage":
+					assert.False(t, validatedMetrics["mongodbatlas.system.fts.cpu.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.cpu.usage")
+					validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Full-text search (%)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cpu_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "kernel", attrVal.Str())
+				case "mongodbatlas.system.fts.disk.used":
+					assert.False(t, validatedMetrics["mongodbatlas.system.fts.disk.used"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.disk.used")
+					validatedMetrics["mongodbatlas.system.fts.disk.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Full text search disk usage", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "mongodbatlas.system.fts.memory.usage":
+					assert.False(t, validatedMetrics["mongodbatlas.system.fts.memory.usage"], "Found a duplicate in the metrics slice: mongodbatlas.system.fts.memory.usage")
+					validatedMetrics["mongodbatlas.system.fts.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Full-text search", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resident", attrVal.Str())
+				case "mongodbatlas.system.memory.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.average")
+					validatedMetrics["mongodbatlas.system.memory.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System Memory Usage", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "available", attrVal.Str())
+				case "mongodbatlas.system.memory.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.memory.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.memory.usage.max")
+					validatedMetrics["mongodbatlas.system.memory.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System Memory Usage", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "available", attrVal.Str())
+				case "mongodbatlas.system.network.io.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.network.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.average")
+					validatedMetrics["mongodbatlas.system.network.io.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System Network IO", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "mongodbatlas.system.network.io.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.network.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.network.io.max")
+					validatedMetrics["mongodbatlas.system.network.io.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "System Network IO", ms.At(i).Description())
+					assert.Equal(t, "By/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "mongodbatlas.system.paging.io.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.average")
+					validatedMetrics["mongodbatlas.system.paging.io.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Swap IO", ms.At(i).Description())
+					assert.Equal(t, "{pages}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "mongodbatlas.system.paging.io.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.paging.io.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.io.max")
+					validatedMetrics["mongodbatlas.system.paging.io.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Swap IO", ms.At(i).Description())
+					assert.Equal(t, "{pages}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "receive", attrVal.Str())
+				case "mongodbatlas.system.paging.usage.average":
+					assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.average"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.average")
+					validatedMetrics["mongodbatlas.system.paging.usage.average"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Swap usage", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resident", attrVal.Str())
+				case "mongodbatlas.system.paging.usage.max":
+					assert.False(t, validatedMetrics["mongodbatlas.system.paging.usage.max"], "Found a duplicate in the metrics slice: mongodbatlas.system.paging.usage.max")
+					validatedMetrics["mongodbatlas.system.paging.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Swap usage", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("memory_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "resident", attrVal.Str())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectType(1))
-	mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectType(1))
-	mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertType(1))
-	mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirection(1))
-	mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatus(1))
-	mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorState(1))
-	mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatus(1))
-	mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperation(1), AttributeClusterRole(1))
-	mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionType(1))
-	mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedType(1))
-	mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedType(1))
-	mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatus(1))
-	mb.RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockState(1))
-	mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterType(1))
-	mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogType(1))
-	mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueType(1))
-	mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketType(1))
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
-	mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatus(1))
-	mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatus(1))
-	mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
-
-	metrics := mb.Emit(WithMongodbAtlasDbName("attr-val"), WithMongodbAtlasDiskPartition("attr-val"), WithMongodbAtlasHostName("attr-val"), WithMongodbAtlasOrgName("attr-val"), WithMongodbAtlasProcessID("attr-val"), WithMongodbAtlasProcessPort("attr-val"), WithMongodbAtlasProcessTypeName("attr-val"), WithMongodbAtlasProjectID("attr-val"), WithMongodbAtlasProjectName("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("mongodb_atlas.db.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.disk.partition")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.host.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.org_name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.port")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.process.type_name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("mongodb_atlas.project.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "mongodbatlas.db.counts":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Database feature size", ms.At(i).Description())
-			assert.Equal(t, "{objects}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("object_type")
-			assert.True(t, ok)
-			assert.Equal(t, "collection", attrVal.Str())
-			validatedMetrics["mongodbatlas.db.counts"] = struct{}{}
-		case "mongodbatlas.db.size":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Database feature size", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("object_type")
-			assert.True(t, ok)
-			assert.Equal(t, "collection", attrVal.Str())
-			validatedMetrics["mongodbatlas.db.size"] = struct{}{}
-		case "mongodbatlas.disk.partition.iops.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition iops", ms.At(i).Description())
-			assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.iops.average"] = struct{}{}
-		case "mongodbatlas.disk.partition.iops.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition iops", ms.At(i).Description())
-			assert.Equal(t, "{ops}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.iops.max"] = struct{}{}
-		case "mongodbatlas.disk.partition.latency.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition latency", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.latency.average"] = struct{}{}
-		case "mongodbatlas.disk.partition.latency.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition latency", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.latency.max"] = struct{}{}
-		case "mongodbatlas.disk.partition.space.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition space", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.space.average"] = struct{}{}
-		case "mongodbatlas.disk.partition.space.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition space", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.space.max"] = struct{}{}
-		case "mongodbatlas.disk.partition.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.usage.average"] = struct{}{}
-		case "mongodbatlas.disk.partition.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.usage.max"] = struct{}{}
-		case "mongodbatlas.disk.partition.utilization.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition utilization (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.utilization.average"] = struct{}{}
-		case "mongodbatlas.disk.partition.utilization.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Disk partition utilization (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("disk_status")
-			assert.True(t, ok)
-			assert.Equal(t, "free", attrVal.Str())
-			validatedMetrics["mongodbatlas.disk.partition.utilization.max"] = struct{}{}
-		case "mongodbatlas.process.asserts":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of assertions per second", ms.At(i).Description())
-			assert.Equal(t, "{assertions}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("assert_type")
-			assert.True(t, ok)
-			assert.Equal(t, "regular", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.asserts"] = struct{}{}
-		case "mongodbatlas.process.background_flush":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Amount of data flushed in the background", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.background_flush"] = struct{}{}
-		case "mongodbatlas.process.cache.io":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Cache throughput (per second)", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cache_direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read_into", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cache.io"] = struct{}{}
-		case "mongodbatlas.process.cache.size":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cache sizes", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cache_status")
-			assert.True(t, ok)
-			assert.Equal(t, "dirty", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cache.size"] = struct{}{}
-		case "mongodbatlas.process.connections":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of current connections", ms.At(i).Description())
-			assert.Equal(t, "{connections}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.connections"] = struct{}{}
-		case "mongodbatlas.process.cpu.children.normalized.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage for child processes, normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.average"] = struct{}{}
-		case "mongodbatlas.process.cpu.children.normalized.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage for child processes, normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.children.normalized.usage.max"] = struct{}{}
-		case "mongodbatlas.process.cpu.children.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage for child processes (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.children.usage.average"] = struct{}{}
-		case "mongodbatlas.process.cpu.children.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage for child processes (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.children.usage.max"] = struct{}{}
-		case "mongodbatlas.process.cpu.normalized.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage, normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.normalized.usage.average"] = struct{}{}
-		case "mongodbatlas.process.cpu.normalized.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage, normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.normalized.usage.max"] = struct{}{}
-		case "mongodbatlas.process.cpu.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.usage.average"] = struct{}{}
-		case "mongodbatlas.process.cpu.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "CPU Usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cpu.usage.max"] = struct{}{}
-		case "mongodbatlas.process.cursors":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number of cursors", ms.At(i).Description())
-			assert.Equal(t, "{cursors}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cursor_state")
-			assert.True(t, ok)
-			assert.Equal(t, "timed_out", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.cursors"] = struct{}{}
-		case "mongodbatlas.process.db.document.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Document access rates", ms.At(i).Description())
-			assert.Equal(t, "{documents}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("document_status")
-			assert.True(t, ok)
-			assert.Equal(t, "returned", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.document.rate"] = struct{}{}
-		case "mongodbatlas.process.db.operations.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "DB Operation Rates", ms.At(i).Description())
-			assert.Equal(t, "{operations}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.Equal(t, "cmd", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("cluster_role")
-			assert.True(t, ok)
-			assert.Equal(t, "primary", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.operations.rate"] = struct{}{}
-		case "mongodbatlas.process.db.operations.time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "DB Operation Times", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("execution_type")
-			assert.True(t, ok)
-			assert.Equal(t, "reads", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.operations.time"] = struct{}{}
-		case "mongodbatlas.process.db.query_executor.scanned":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Scanned objects", ms.At(i).Description())
-			assert.Equal(t, "{objects}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("scanned_type")
-			assert.True(t, ok)
-			assert.Equal(t, "index_items", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.query_executor.scanned"] = struct{}{}
-		case "mongodbatlas.process.db.query_targeting.scanned_per_returned":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Scanned objects per returned", ms.At(i).Description())
-			assert.Equal(t, "{scanned}/{returned}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("scanned_type")
-			assert.True(t, ok)
-			assert.Equal(t, "index_items", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.query_targeting.scanned_per_returned"] = struct{}{}
-		case "mongodbatlas.process.db.storage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Storage used by the database", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("storage_status")
-			assert.True(t, ok)
-			assert.Equal(t, "total", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.db.storage"] = struct{}{}
-		case "mongodbatlas.process.fts.cpu.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Full text search CPU (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.fts.cpu.usage"] = struct{}{}
-		case "mongodbatlas.process.global_lock":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Number and status of locks", ms.At(i).Description())
-			assert.Equal(t, "{locks}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("global_lock_state")
-			assert.True(t, ok)
-			assert.Equal(t, "current_queue_total", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.global_lock"] = struct{}{}
-		case "mongodbatlas.process.index.btree_miss_ratio":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Index miss ratio (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.index.btree_miss_ratio"] = struct{}{}
-		case "mongodbatlas.process.index.counters":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Indexes", ms.At(i).Description())
-			assert.Equal(t, "{indexes}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("btree_counter_type")
-			assert.True(t, ok)
-			assert.Equal(t, "accesses", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.index.counters"] = struct{}{}
-		case "mongodbatlas.process.journaling.commits":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Journaling commits", ms.At(i).Description())
-			assert.Equal(t, "{commits}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.journaling.commits"] = struct{}{}
-		case "mongodbatlas.process.journaling.data_files":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Data file sizes", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.journaling.data_files"] = struct{}{}
-		case "mongodbatlas.process.journaling.written":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Journals written", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.journaling.written"] = struct{}{}
-		case "mongodbatlas.process.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Memory Usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_state")
-			assert.True(t, ok)
-			assert.Equal(t, "resident", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.memory.usage"] = struct{}{}
-		case "mongodbatlas.process.network.io":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Network IO", ms.At(i).Description())
-			assert.Equal(t, "By/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.network.io"] = struct{}{}
-		case "mongodbatlas.process.network.requests":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Network requests", ms.At(i).Description())
-			assert.Equal(t, "{requests}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.network.requests"] = struct{}{}
-		case "mongodbatlas.process.oplog.rate":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Execution rate by operation", ms.At(i).Description())
-			assert.Equal(t, "GiBy/h", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.oplog.rate"] = struct{}{}
-		case "mongodbatlas.process.oplog.time":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Execution time by operation", ms.At(i).Description())
-			assert.Equal(t, "s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("oplog_type")
-			assert.True(t, ok)
-			assert.Equal(t, "slave_lag_master_time", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.oplog.time"] = struct{}{}
-		case "mongodbatlas.process.page_faults":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Page faults", ms.At(i).Description())
-			assert.Equal(t, "{faults}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_issue_type")
-			assert.True(t, ok)
-			assert.Equal(t, "extra_info", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.page_faults"] = struct{}{}
-		case "mongodbatlas.process.restarts":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Restarts in last hour", ms.At(i).Description())
-			assert.Equal(t, "{restarts}/h", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.process.restarts"] = struct{}{}
-		case "mongodbatlas.process.tickets":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Tickets", ms.At(i).Description())
-			assert.Equal(t, "{tickets}", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("ticket_type")
-			assert.True(t, ok)
-			assert.Equal(t, "available_reads", attrVal.Str())
-			validatedMetrics["mongodbatlas.process.tickets"] = struct{}{}
-		case "mongodbatlas.system.cpu.normalized.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System CPU Normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.cpu.normalized.usage.average"] = struct{}{}
-		case "mongodbatlas.system.cpu.normalized.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System CPU Normalized to pct", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.cpu.normalized.usage.max"] = struct{}{}
-		case "mongodbatlas.system.cpu.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System CPU Usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.cpu.usage.average"] = struct{}{}
-		case "mongodbatlas.system.cpu.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System CPU Usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.cpu.usage.max"] = struct{}{}
-		case "mongodbatlas.system.fts.cpu.normalized.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Full text search disk usage (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.fts.cpu.normalized.usage"] = struct{}{}
-		case "mongodbatlas.system.fts.cpu.usage":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Full-text search (%)", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("cpu_state")
-			assert.True(t, ok)
-			assert.Equal(t, "kernel", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.fts.cpu.usage"] = struct{}{}
-		case "mongodbatlas.system.fts.disk.used":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Full text search disk usage", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["mongodbatlas.system.fts.disk.used"] = struct{}{}
-		case "mongodbatlas.system.fts.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Full-text search", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_state")
-			assert.True(t, ok)
-			assert.Equal(t, "resident", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.fts.memory.usage"] = struct{}{}
-		case "mongodbatlas.system.memory.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System Memory Usage", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_status")
-			assert.True(t, ok)
-			assert.Equal(t, "available", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.memory.usage.average"] = struct{}{}
-		case "mongodbatlas.system.memory.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System Memory Usage", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_status")
-			assert.True(t, ok)
-			assert.Equal(t, "available", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.memory.usage.max"] = struct{}{}
-		case "mongodbatlas.system.network.io.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System Network IO", ms.At(i).Description())
-			assert.Equal(t, "By/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.network.io.average"] = struct{}{}
-		case "mongodbatlas.system.network.io.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "System Network IO", ms.At(i).Description())
-			assert.Equal(t, "By/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.network.io.max"] = struct{}{}
-		case "mongodbatlas.system.paging.io.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Swap IO", ms.At(i).Description())
-			assert.Equal(t, "{pages}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.paging.io.average"] = struct{}{}
-		case "mongodbatlas.system.paging.io.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Swap IO", ms.At(i).Description())
-			assert.Equal(t, "{pages}/s", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "receive", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.paging.io.max"] = struct{}{}
-		case "mongodbatlas.system.paging.usage.average":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Swap usage", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_state")
-			assert.True(t, ok)
-			assert.Equal(t, "resident", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.paging.usage.average"] = struct{}{}
-		case "mongodbatlas.system.paging.usage.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Swap usage", ms.At(i).Description())
-			assert.Equal(t, "KiBy", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			attrVal, ok := dp.Attributes().Get("memory_state")
-			assert.True(t, ok)
-			assert.Equal(t, "resident", attrVal.Str())
-			validatedMetrics["mongodbatlas.system.paging.usage.max"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		MongodbatlasDbCounts:                                  MetricSettings{Enabled: false},
-		MongodbatlasDbSize:                                    MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionIopsAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionIopsMax:                      MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionLatencyAverage:               MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionLatencyMax:                   MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionSpaceAverage:                 MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionSpaceMax:                     MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUsageAverage:                 MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUsageMax:                     MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUtilizationAverage:           MetricSettings{Enabled: false},
-		MongodbatlasDiskPartitionUtilizationMax:               MetricSettings{Enabled: false},
-		MongodbatlasProcessAsserts:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessBackgroundFlush:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessCacheIo:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessCacheSize:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessConnections:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenNormalizedUsageAverage:  MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenNormalizedUsageMax:      MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenUsageAverage:            MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUChildrenUsageMax:                MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUNormalizedUsageAverage:          MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUNormalizedUsageMax:              MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUUsageAverage:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessCPUUsageMax:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessCursors:                            MetricSettings{Enabled: false},
-		MongodbatlasProcessDbDocumentRate:                     MetricSettings{Enabled: false},
-		MongodbatlasProcessDbOperationsRate:                   MetricSettings{Enabled: false},
-		MongodbatlasProcessDbOperationsTime:                   MetricSettings{Enabled: false},
-		MongodbatlasProcessDbQueryExecutorScanned:             MetricSettings{Enabled: false},
-		MongodbatlasProcessDbQueryTargetingScannedPerReturned: MetricSettings{Enabled: false},
-		MongodbatlasProcessDbStorage:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessFtsCPUUsage:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessGlobalLock:                         MetricSettings{Enabled: false},
-		MongodbatlasProcessIndexBtreeMissRatio:                MetricSettings{Enabled: false},
-		MongodbatlasProcessIndexCounters:                      MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingCommits:                  MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingDataFiles:                MetricSettings{Enabled: false},
-		MongodbatlasProcessJournalingWritten:                  MetricSettings{Enabled: false},
-		MongodbatlasProcessMemoryUsage:                        MetricSettings{Enabled: false},
-		MongodbatlasProcessNetworkIo:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessNetworkRequests:                    MetricSettings{Enabled: false},
-		MongodbatlasProcessOplogRate:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessOplogTime:                          MetricSettings{Enabled: false},
-		MongodbatlasProcessPageFaults:                         MetricSettings{Enabled: false},
-		MongodbatlasProcessRestarts:                           MetricSettings{Enabled: false},
-		MongodbatlasProcessTickets:                            MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUNormalizedUsageAverage:           MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUNormalizedUsageMax:               MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUUsageAverage:                     MetricSettings{Enabled: false},
-		MongodbatlasSystemCPUUsageMax:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsCPUNormalizedUsage:               MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsCPUUsage:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsDiskUsed:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemFtsMemoryUsage:                      MetricSettings{Enabled: false},
-		MongodbatlasSystemMemoryUsageAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasSystemMemoryUsageMax:                      MetricSettings{Enabled: false},
-		MongodbatlasSystemNetworkIoAverage:                    MetricSettings{Enabled: false},
-		MongodbatlasSystemNetworkIoMax:                        MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingIoAverage:                     MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingIoMax:                         MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingUsageAverage:                  MetricSettings{Enabled: false},
-		MongodbatlasSystemPagingUsageMax:                      MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectType(1))
-	mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectType(1))
-	mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1, AttributeDiskStatus(1))
-	mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertType(1))
-	mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirection(1))
-	mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatus(1))
-	mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorState(1))
-	mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatus(1))
-	mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperation(1), AttributeClusterRole(1))
-	mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionType(1))
-	mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedType(1))
-	mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedType(1))
-	mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatus(1))
-	mb.RecordMongodbatlasProcessFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockState(1))
-	mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterType(1))
-	mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogType(1))
-	mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueType(1))
-	mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
-	mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketType(1))
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUState(1))
-	mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
-	mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatus(1))
-	mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatus(1))
-	mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirection(1))
-	mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryState(1))
-	mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryState(1))
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

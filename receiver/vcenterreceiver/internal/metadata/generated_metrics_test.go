@@ -3,798 +3,808 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
+type testConfigCollection int
 
-	enabledMetrics["vcenter.cluster.cpu.effective"] = true
-	mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
 
-	enabledMetrics["vcenter.cluster.cpu.limit"] = true
-	mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.cluster.host.count"] = true
-	mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
-
-	enabledMetrics["vcenter.cluster.memory.effective"] = true
-	mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.cluster.memory.limit"] = true
-	mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.cluster.memory.used"] = true
-	mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.cluster.vm.count"] = true
-	mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerState(1))
-
-	enabledMetrics["vcenter.datastore.disk.usage"] = true
-	mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-
-	enabledMetrics["vcenter.datastore.disk.utilization"] = true
-	mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.cpu.usage"] = true
-	mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.cpu.utilization"] = true
-	mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.disk.latency.avg"] = true
-	mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["vcenter.host.disk.latency.max"] = true
-	mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.disk.throughput"] = true
-	mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirection(1))
-
-	enabledMetrics["vcenter.host.memory.usage"] = true
-	mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.memory.utilization"] = true
-	mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.host.network.packet.count"] = true
-	mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-
-	enabledMetrics["vcenter.host.network.packet.errors"] = true
-	mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirection(1))
-
-	enabledMetrics["vcenter.host.network.throughput"] = true
-	mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-
-	enabledMetrics["vcenter.host.network.usage"] = true
-	mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.resource_pool.cpu.shares"] = true
-	mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.resource_pool.cpu.usage"] = true
-	mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.resource_pool.memory.shares"] = true
-	mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.resource_pool.memory.usage"] = true
-	mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.disk.latency.avg"] = true
-	mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1), AttributeDiskType(1))
-
-	enabledMetrics["vcenter.vm.disk.latency.max"] = true
-	mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.disk.throughput"] = true
-	mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.disk.usage"] = true
-	mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-
-	enabledMetrics["vcenter.vm.disk.utilization"] = true
-	mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.memory.ballooned"] = true
-	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.memory.usage"] = true
-	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-
-	enabledMetrics["vcenter.vm.network.packet.count"] = true
-	mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-
-	enabledMetrics["vcenter.vm.network.throughput"] = true
-	mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-
-	enabledMetrics["vcenter.vm.network.usage"] = true
-	mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		VcenterClusterCPUEffective:      MetricSettings{Enabled: true},
-		VcenterClusterCPULimit:          MetricSettings{Enabled: true},
-		VcenterClusterHostCount:         MetricSettings{Enabled: true},
-		VcenterClusterMemoryEffective:   MetricSettings{Enabled: true},
-		VcenterClusterMemoryLimit:       MetricSettings{Enabled: true},
-		VcenterClusterMemoryUsed:        MetricSettings{Enabled: true},
-		VcenterClusterVMCount:           MetricSettings{Enabled: true},
-		VcenterDatastoreDiskUsage:       MetricSettings{Enabled: true},
-		VcenterDatastoreDiskUtilization: MetricSettings{Enabled: true},
-		VcenterHostCPUUsage:             MetricSettings{Enabled: true},
-		VcenterHostCPUUtilization:       MetricSettings{Enabled: true},
-		VcenterHostDiskLatencyAvg:       MetricSettings{Enabled: true},
-		VcenterHostDiskLatencyMax:       MetricSettings{Enabled: true},
-		VcenterHostDiskThroughput:       MetricSettings{Enabled: true},
-		VcenterHostMemoryUsage:          MetricSettings{Enabled: true},
-		VcenterHostMemoryUtilization:    MetricSettings{Enabled: true},
-		VcenterHostNetworkPacketCount:   MetricSettings{Enabled: true},
-		VcenterHostNetworkPacketErrors:  MetricSettings{Enabled: true},
-		VcenterHostNetworkThroughput:    MetricSettings{Enabled: true},
-		VcenterHostNetworkUsage:         MetricSettings{Enabled: true},
-		VcenterResourcePoolCPUShares:    MetricSettings{Enabled: true},
-		VcenterResourcePoolCPUUsage:     MetricSettings{Enabled: true},
-		VcenterResourcePoolMemoryShares: MetricSettings{Enabled: true},
-		VcenterResourcePoolMemoryUsage:  MetricSettings{Enabled: true},
-		VcenterVMDiskLatencyAvg:         MetricSettings{Enabled: true},
-		VcenterVMDiskLatencyMax:         MetricSettings{Enabled: true},
-		VcenterVMDiskThroughput:         MetricSettings{Enabled: true},
-		VcenterVMDiskUsage:              MetricSettings{Enabled: true},
-		VcenterVMDiskUtilization:        MetricSettings{Enabled: true},
-		VcenterVMMemoryBallooned:        MetricSettings{Enabled: true},
-		VcenterVMMemoryUsage:            MetricSettings{Enabled: true},
-		VcenterVMNetworkPacketCount:     MetricSettings{Enabled: true},
-		VcenterVMNetworkThroughput:      MetricSettings{Enabled: true},
-		VcenterVMNetworkUsage:           MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetVcenterClusterName("vcenter.cluster.name-val")
+			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
+			rb.SetVcenterHostName("vcenter.host.name-val")
+			rb.SetVcenterResourcePoolName("vcenter.resource_pool.name-val")
+			rb.SetVcenterVMID("vcenter.vm.id-val")
+			rb.SetVcenterVMName("vcenter.vm.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "vcenter.cluster.cpu.effective":
+					assert.False(t, validatedMetrics["vcenter.cluster.cpu.effective"], "Found a duplicate in the metrics slice: vcenter.cluster.cpu.effective")
+					validatedMetrics["vcenter.cluster.cpu.effective"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
+					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.cpu.limit":
+					assert.False(t, validatedMetrics["vcenter.cluster.cpu.limit"], "Found a duplicate in the metrics slice: vcenter.cluster.cpu.limit")
+					validatedMetrics["vcenter.cluster.cpu.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU available to the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.host.count":
+					assert.False(t, validatedMetrics["vcenter.cluster.host.count"], "Found a duplicate in the metrics slice: vcenter.cluster.host.count")
+					validatedMetrics["vcenter.cluster.host.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of hosts in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{hosts}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("effective")
+					assert.True(t, ok)
+					assert.EqualValues(t, true, attrVal.Bool())
+				case "vcenter.cluster.memory.effective":
+					assert.False(t, validatedMetrics["vcenter.cluster.memory.effective"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.effective")
+					validatedMetrics["vcenter.cluster.memory.effective"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.memory.limit":
+					assert.False(t, validatedMetrics["vcenter.cluster.memory.limit"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.limit")
+					validatedMetrics["vcenter.cluster.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The available memory of the cluster.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.memory.used":
+					assert.False(t, validatedMetrics["vcenter.cluster.memory.used"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.used")
+					validatedMetrics["vcenter.cluster.memory.used"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The memory that is currently used by the cluster.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.cluster.vm.count":
+					assert.False(t, validatedMetrics["vcenter.cluster.vm.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm.count")
+					validatedMetrics["vcenter.cluster.vm.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "the number of virtual machines in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("power_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "on", attrVal.Str())
+				case "vcenter.datastore.disk.usage":
+					assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
+					validatedMetrics["vcenter.datastore.disk.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of space in the datastore.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("disk_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "available", attrVal.Str())
+				case "vcenter.datastore.disk.utilization":
+					assert.False(t, validatedMetrics["vcenter.datastore.disk.utilization"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.utilization")
+					validatedMetrics["vcenter.datastore.disk.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The utilization of the datastore.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.host.cpu.usage":
+					assert.False(t, validatedMetrics["vcenter.host.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.host.cpu.usage")
+					validatedMetrics["vcenter.host.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU used by the host.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.cpu.utilization":
+					assert.False(t, validatedMetrics["vcenter.host.cpu.utilization"], "Found a duplicate in the metrics slice: vcenter.host.cpu.utilization")
+					validatedMetrics["vcenter.host.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The CPU utilization of the host system.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.host.disk.latency.avg":
+					assert.False(t, validatedMetrics["vcenter.host.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.avg")
+					validatedMetrics["vcenter.host.disk.latency.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The latency of operations to the host system's disk.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "vcenter.host.disk.latency.max":
+					assert.False(t, validatedMetrics["vcenter.host.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.host.disk.latency.max")
+					validatedMetrics["vcenter.host.disk.latency.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Highest latency value across all disks used by the host.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.disk.throughput":
+					assert.False(t, validatedMetrics["vcenter.host.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.host.disk.throughput")
+					validatedMetrics["vcenter.host.disk.throughput"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+				case "vcenter.host.memory.usage":
+					assert.False(t, validatedMetrics["vcenter.host.memory.usage"], "Found a duplicate in the metrics slice: vcenter.host.memory.usage")
+					validatedMetrics["vcenter.host.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory the host system is using.", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.memory.utilization":
+					assert.False(t, validatedMetrics["vcenter.host.memory.utilization"], "Found a duplicate in the metrics slice: vcenter.host.memory.utilization")
+					validatedMetrics["vcenter.host.memory.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The percentage of the host system's memory capacity that is being utilized.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.host.network.packet.count":
+					assert.False(t, validatedMetrics["vcenter.host.network.packet.count"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.count")
+					validatedMetrics["vcenter.host.network.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of packets transmitted and received, as measured over the most recent 20s interval.", ms.At(i).Description())
+					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+				case "vcenter.host.network.packet.errors":
+					assert.False(t, validatedMetrics["vcenter.host.network.packet.errors"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.errors")
+					validatedMetrics["vcenter.host.network.packet.errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The summation of packet errors on the host network.", ms.At(i).Description())
+					assert.Equal(t, "{errors}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+				case "vcenter.host.network.throughput":
+					assert.False(t, validatedMetrics["vcenter.host.network.throughput"], "Found a duplicate in the metrics slice: vcenter.host.network.throughput")
+					validatedMetrics["vcenter.host.network.throughput"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+				case "vcenter.host.network.usage":
+					assert.False(t, validatedMetrics["vcenter.host.network.usage"], "Found a duplicate in the metrics slice: vcenter.host.network.usage")
+					validatedMetrics["vcenter.host.network.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.resource_pool.cpu.shares":
+					assert.False(t, validatedMetrics["vcenter.resource_pool.cpu.shares"], "Found a duplicate in the metrics slice: vcenter.resource_pool.cpu.shares")
+					validatedMetrics["vcenter.resource_pool.cpu.shares"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of shares of CPU in the resource pool.", ms.At(i).Description())
+					assert.Equal(t, "{shares}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.resource_pool.cpu.usage":
+					assert.False(t, validatedMetrics["vcenter.resource_pool.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.cpu.usage")
+					validatedMetrics["vcenter.resource_pool.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The usage of the CPU used by the resource pool.", ms.At(i).Description())
+					assert.Equal(t, "{MHz}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.resource_pool.memory.shares":
+					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.shares"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.shares")
+					validatedMetrics["vcenter.resource_pool.memory.shares"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of shares of memory in the resource pool.", ms.At(i).Description())
+					assert.Equal(t, "{shares}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.resource_pool.memory.usage":
+					assert.False(t, validatedMetrics["vcenter.resource_pool.memory.usage"], "Found a duplicate in the metrics slice: vcenter.resource_pool.memory.usage")
+					validatedMetrics["vcenter.resource_pool.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The usage of the memory by the resource pool.", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.usage":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.usage")
+					validatedMetrics["vcenter.vm.cpu.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of CPU used by the VM.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.utilization":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.utilization")
+					validatedMetrics["vcenter.vm.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The CPU utilization of the VM.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.vm.disk.latency.avg":
+					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.avg"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.avg")
+					validatedMetrics["vcenter.vm.disk.latency.avg"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The latency of operations to the virtual machine's disk.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("disk_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "virtual", attrVal.Str())
+				case "vcenter.vm.disk.latency.max":
+					assert.False(t, validatedMetrics["vcenter.vm.disk.latency.max"], "Found a duplicate in the metrics slice: vcenter.vm.disk.latency.max")
+					validatedMetrics["vcenter.vm.disk.latency.max"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.disk.throughput":
+					assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
+					validatedMetrics["vcenter.vm.disk.throughput"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The throughput of the virtual machine's disk.", ms.At(i).Description())
+					assert.Equal(t, "By/sec", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.disk.usage":
+					assert.False(t, validatedMetrics["vcenter.vm.disk.usage"], "Found a duplicate in the metrics slice: vcenter.vm.disk.usage")
+					validatedMetrics["vcenter.vm.disk.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of storage space used by the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("disk_state")
+					assert.True(t, ok)
+					assert.EqualValues(t, "available", attrVal.Str())
+				case "vcenter.vm.disk.utilization":
+					assert.False(t, validatedMetrics["vcenter.vm.disk.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.disk.utilization")
+					validatedMetrics["vcenter.vm.disk.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The utilization of storage on the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.vm.memory.ballooned":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.ballooned"], "Found a duplicate in the metrics slice: vcenter.vm.memory.ballooned")
+					validatedMetrics["vcenter.vm.memory.ballooned"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.memory.swapped":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.swapped"], "Found a duplicate in the metrics slice: vcenter.vm.memory.swapped")
+					validatedMetrics["vcenter.vm.memory.swapped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The portion of memory that is granted to this VM from the host's swap space.", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.memory.swapped_ssd":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.swapped_ssd"], "Found a duplicate in the metrics slice: vcenter.vm.memory.swapped_ssd")
+					validatedMetrics["vcenter.vm.memory.swapped_ssd"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory swapped to fast disk device such as SSD.", ms.At(i).Description())
+					assert.Equal(t, "KiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.memory.usage":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.usage"], "Found a duplicate in the metrics slice: vcenter.vm.memory.usage")
+					validatedMetrics["vcenter.vm.memory.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that is used by the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "MiBy", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.memory.utilization":
+					assert.False(t, validatedMetrics["vcenter.vm.memory.utilization"], "Found a duplicate in the metrics slice: vcenter.vm.memory.utilization")
+					validatedMetrics["vcenter.vm.memory.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The memory utilization of the VM.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.vm.network.packet.count":
+					assert.False(t, validatedMetrics["vcenter.vm.network.packet.count"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.count")
+					validatedMetrics["vcenter.vm.network.packet.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of packets that was received or transmitted over the instance's network.", ms.At(i).Description())
+					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+				case "vcenter.vm.network.throughput":
+					assert.False(t, validatedMetrics["vcenter.vm.network.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.network.throughput")
+					validatedMetrics["vcenter.vm.network.throughput"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "By/sec", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "transmitted", attrVal.Str())
+				case "vcenter.vm.network.usage":
+					assert.False(t, validatedMetrics["vcenter.vm.network.usage"], "Found a duplicate in the metrics slice: vcenter.vm.network.usage")
+					validatedMetrics["vcenter.vm.network.usage"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
-	mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-	mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
-	mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-	mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-	mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
-	mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerState(1))
-	mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-	mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-	mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
-	mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1), AttributeDiskType(1))
-	mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-	mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
-	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
-
-	metrics := mb.Emit(WithVcenterClusterName("attr-val"), WithVcenterDatastoreName("attr-val"), WithVcenterHostName("attr-val"), WithVcenterResourcePoolName("attr-val"), WithVcenterVMID("attr-val"), WithVcenterVMName("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("vcenter.cluster.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("vcenter.datastore.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("vcenter.host.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("vcenter.resource_pool.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "vcenter.cluster.cpu.effective":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
-			assert.Equal(t, "{MHz}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.cluster.cpu.effective"] = struct{}{}
-		case "vcenter.cluster.cpu.limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of CPU available to the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{MHz}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.cluster.cpu.limit"] = struct{}{}
-		case "vcenter.cluster.host.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of hosts in the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{hosts}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("effective")
-			assert.True(t, ok)
-			assert.EqualValues(t, true, attrVal.Bool())
-			validatedMetrics["vcenter.cluster.host.count"] = struct{}{}
-		case "vcenter.cluster.memory.effective":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.cluster.memory.effective"] = struct{}{}
-		case "vcenter.cluster.memory.limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The available memory of the cluster.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.cluster.memory.limit"] = struct{}{}
-		case "vcenter.cluster.memory.used":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The memory that is currently used by the cluster.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.cluster.memory.used"] = struct{}{}
-		case "vcenter.cluster.vm.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "the number of virtual machines in the cluster.", ms.At(i).Description())
-			assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("power_state")
-			assert.True(t, ok)
-			assert.Equal(t, "on", attrVal.Str())
-			validatedMetrics["vcenter.cluster.vm.count"] = struct{}{}
-		case "vcenter.datastore.disk.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of space in the datastore.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("disk_state")
-			assert.True(t, ok)
-			assert.Equal(t, "available", attrVal.Str())
-			validatedMetrics["vcenter.datastore.disk.usage"] = struct{}{}
-		case "vcenter.datastore.disk.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The utilization of the datastore.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["vcenter.datastore.disk.utilization"] = struct{}{}
-		case "vcenter.host.cpu.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of CPU in Hz used by the host.", ms.At(i).Description())
-			assert.Equal(t, "MHz", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.host.cpu.usage"] = struct{}{}
-		case "vcenter.host.cpu.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The CPU utilization of the host system.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["vcenter.host.cpu.utilization"] = struct{}{}
-		case "vcenter.host.disk.latency.avg":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The latency of operations to the host system's disk.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["vcenter.host.disk.latency.avg"] = struct{}{}
-		case "vcenter.host.disk.latency.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Highest latency value across all disks used by the host.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.host.disk.latency.max"] = struct{}{}
-		case "vcenter.host.disk.throughput":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Average number of kilobytes read from or written to the disk each second.", ms.At(i).Description())
-			assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			validatedMetrics["vcenter.host.disk.throughput"] = struct{}{}
-		case "vcenter.host.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory the host system is using.", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.host.memory.usage"] = struct{}{}
-		case "vcenter.host.memory.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The percentage of the host system's memory capacity that is being utilized.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["vcenter.host.memory.utilization"] = struct{}{}
-		case "vcenter.host.network.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The number of packets transmitted and received, as measured over the most recent 20s interval.", ms.At(i).Description())
-			assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "transmitted", attrVal.Str())
-			validatedMetrics["vcenter.host.network.packet.count"] = struct{}{}
-		case "vcenter.host.network.packet.errors":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The summation of packet errors on the host network.", ms.At(i).Description())
-			assert.Equal(t, "{errors}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "transmitted", attrVal.Str())
-			validatedMetrics["vcenter.host.network.packet.errors"] = struct{}{}
-		case "vcenter.host.network.throughput":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of data that was transmitted or received over the network by the host.", ms.At(i).Description())
-			assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "transmitted", attrVal.Str())
-			validatedMetrics["vcenter.host.network.throughput"] = struct{}{}
-		case "vcenter.host.network.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The sum of the data transmitted and received for all the NIC instances of the host.", ms.At(i).Description())
-			assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.host.network.usage"] = struct{}{}
-		case "vcenter.resource_pool.cpu.shares":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of shares of CPU in the resource pool.", ms.At(i).Description())
-			assert.Equal(t, "{shares}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.resource_pool.cpu.shares"] = struct{}{}
-		case "vcenter.resource_pool.cpu.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The usage of the CPU used by the resource pool.", ms.At(i).Description())
-			assert.Equal(t, "{MHz}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.resource_pool.cpu.usage"] = struct{}{}
-		case "vcenter.resource_pool.memory.shares":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of shares of memory in the resource pool.", ms.At(i).Description())
-			assert.Equal(t, "{shares}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.resource_pool.memory.shares"] = struct{}{}
-		case "vcenter.resource_pool.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The usage of the memory by the resource pool.", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.resource_pool.memory.usage"] = struct{}{}
-		case "vcenter.vm.disk.latency.avg":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The latency of operations to the virtual machine's disk.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "read", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("disk_type")
-			assert.True(t, ok)
-			assert.Equal(t, "virtual", attrVal.Str())
-			validatedMetrics["vcenter.vm.disk.latency.avg"] = struct{}{}
-		case "vcenter.vm.disk.latency.max":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The highest reported total latency (device and kernel times) over an interval of 20 seconds.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.vm.disk.latency.max"] = struct{}{}
-		case "vcenter.vm.disk.throughput":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The throughput of the virtual machine's disk.", ms.At(i).Description())
-			assert.Equal(t, "By/sec", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.vm.disk.throughput"] = struct{}{}
-		case "vcenter.vm.disk.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of storage space used by the virtual machine.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("disk_state")
-			assert.True(t, ok)
-			assert.Equal(t, "available", attrVal.Str())
-			validatedMetrics["vcenter.vm.disk.usage"] = struct{}{}
-		case "vcenter.vm.disk.utilization":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "The utilization of storage on the virtual machine.", ms.At(i).Description())
-			assert.Equal(t, "%", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["vcenter.vm.disk.utilization"] = struct{}{}
-		case "vcenter.vm.memory.ballooned":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.vm.memory.ballooned"] = struct{}{}
-		case "vcenter.vm.memory.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that is used by the virtual machine.", ms.At(i).Description())
-			assert.Equal(t, "MiBy", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.vm.memory.usage"] = struct{}{}
-		case "vcenter.vm.network.packet.count":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of packets that was received or transmitted over the instance's network.", ms.At(i).Description())
-			assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "transmitted", attrVal.Str())
-			validatedMetrics["vcenter.vm.network.packet.count"] = struct{}{}
-		case "vcenter.vm.network.throughput":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of data that was transmitted or received over the network of the virtual machine.", ms.At(i).Description())
-			assert.Equal(t, "By/sec", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("direction")
-			assert.True(t, ok)
-			assert.Equal(t, "transmitted", attrVal.Str())
-			validatedMetrics["vcenter.vm.network.throughput"] = struct{}{}
-		case "vcenter.vm.network.usage":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The network utilization combined transmit and receive rates during an interval.", ms.At(i).Description())
-			assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["vcenter.vm.network.usage"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		VcenterClusterCPUEffective:      MetricSettings{Enabled: false},
-		VcenterClusterCPULimit:          MetricSettings{Enabled: false},
-		VcenterClusterHostCount:         MetricSettings{Enabled: false},
-		VcenterClusterMemoryEffective:   MetricSettings{Enabled: false},
-		VcenterClusterMemoryLimit:       MetricSettings{Enabled: false},
-		VcenterClusterMemoryUsed:        MetricSettings{Enabled: false},
-		VcenterClusterVMCount:           MetricSettings{Enabled: false},
-		VcenterDatastoreDiskUsage:       MetricSettings{Enabled: false},
-		VcenterDatastoreDiskUtilization: MetricSettings{Enabled: false},
-		VcenterHostCPUUsage:             MetricSettings{Enabled: false},
-		VcenterHostCPUUtilization:       MetricSettings{Enabled: false},
-		VcenterHostDiskLatencyAvg:       MetricSettings{Enabled: false},
-		VcenterHostDiskLatencyMax:       MetricSettings{Enabled: false},
-		VcenterHostDiskThroughput:       MetricSettings{Enabled: false},
-		VcenterHostMemoryUsage:          MetricSettings{Enabled: false},
-		VcenterHostMemoryUtilization:    MetricSettings{Enabled: false},
-		VcenterHostNetworkPacketCount:   MetricSettings{Enabled: false},
-		VcenterHostNetworkPacketErrors:  MetricSettings{Enabled: false},
-		VcenterHostNetworkThroughput:    MetricSettings{Enabled: false},
-		VcenterHostNetworkUsage:         MetricSettings{Enabled: false},
-		VcenterResourcePoolCPUShares:    MetricSettings{Enabled: false},
-		VcenterResourcePoolCPUUsage:     MetricSettings{Enabled: false},
-		VcenterResourcePoolMemoryShares: MetricSettings{Enabled: false},
-		VcenterResourcePoolMemoryUsage:  MetricSettings{Enabled: false},
-		VcenterVMDiskLatencyAvg:         MetricSettings{Enabled: false},
-		VcenterVMDiskLatencyMax:         MetricSettings{Enabled: false},
-		VcenterVMDiskThroughput:         MetricSettings{Enabled: false},
-		VcenterVMDiskUsage:              MetricSettings{Enabled: false},
-		VcenterVMDiskUtilization:        MetricSettings{Enabled: false},
-		VcenterVMMemoryBallooned:        MetricSettings{Enabled: false},
-		VcenterVMMemoryUsage:            MetricSettings{Enabled: false},
-		VcenterVMNetworkPacketCount:     MetricSettings{Enabled: false},
-		VcenterVMNetworkThroughput:      MetricSettings{Enabled: false},
-		VcenterVMNetworkUsage:           MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
-	mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-	mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
-	mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-	mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-	mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
-	mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerState(1))
-	mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-	mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-	mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
-	mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirection(1))
-	mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-	mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirection(1), AttributeDiskType(1))
-	mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
-	mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskState(1))
-	mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-	mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
-	mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-	mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirection(1))
-	mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

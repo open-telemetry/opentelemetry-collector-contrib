@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
@@ -19,21 +8,13 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "k8sattributes"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 var kubeClientProvider = kube.ClientProvider(nil)
@@ -41,58 +22,57 @@ var consumerCapabilities = consumer.Capabilities{MutatesData: true}
 var defaultExcludes = ExcludeConfig{Pods: []ExcludePodConfig{{Name: "jaeger-agent"}, {Name: "jaeger-collector"}}}
 
 // NewFactory returns a new factory for the k8s processor.
-func NewFactory() component.ProcessorFactory {
-	return component.NewProcessorFactory(
-		typeStr,
+func NewFactory() processor.Factory {
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesProcessor(createTracesProcessor, stability),
-		component.WithMetricsProcessor(createMetricsProcessor, stability),
-		component.WithLogsProcessor(createLogsProcessor, stability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings: config.NewProcessorSettings(component.NewID(typeStr)),
-		APIConfig:         k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
-		Exclude:           defaultExcludes,
+		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
+		Exclude:   defaultExcludes,
 	}
 }
 
 func createTracesProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	return createTracesProcessorWithOptions(ctx, params, cfg, next)
 }
 
 func createLogsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	return createLogsProcessorWithOptions(ctx, params, cfg, nextLogsConsumer)
 }
 
 func createMetricsProcessor(
 	ctx context.Context,
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	return createMetricsProcessorWithOptions(ctx, params, cfg, nextMetricsConsumer)
 }
 
 func createTracesProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	next consumer.Traces,
 	options ...option,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -111,11 +91,11 @@ func createTracesProcessorWithOptions(
 
 func createMetricsProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 	options ...option,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -134,11 +114,11 @@ func createMetricsProcessorWithOptions(
 
 func createLogsProcessorWithOptions(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextLogsConsumer consumer.Logs,
 	options ...option,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	kp, err := createKubernetesProcessor(set, cfg, options...)
 	if err != nil {
 		return nil, err
@@ -156,14 +136,11 @@ func createLogsProcessorWithOptions(
 }
 
 func createKubernetesProcessor(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 	options ...option,
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
-
-	warnDeprecatedMetadataConfig(kp.logger, cfg)
-	warnDeprecatedPodAssociationConfig(kp.logger, cfg)
 
 	err := errWrongKeyConfig(cfg)
 	if err != nil {
@@ -215,41 +192,6 @@ func createProcessorOpts(cfg component.Config) []option {
 	return opts
 }
 
-func warnDeprecatedMetadataConfig(logger *zap.Logger, cfg component.Config) {
-	oCfg := cfg.(*Config)
-	for _, field := range oCfg.Extract.Metadata {
-		var oldName, newName string
-		switch field {
-		case metdataNamespace:
-			oldName = metdataNamespace
-			newName = conventions.AttributeK8SNamespaceName
-		case metadataPodName:
-			oldName = metadataPodName
-			newName = conventions.AttributeK8SPodName
-		case metadataPodUID:
-			oldName = metadataPodUID
-			newName = conventions.AttributeK8SPodUID
-		case metadataStartTime:
-			oldName = metadataStartTime
-			newName = metadataPodStartTime
-		case metadataDeployment:
-			oldName = metadataDeployment
-			newName = conventions.AttributeK8SDeploymentName
-		case metadataNode:
-			oldName = metadataNode
-			newName = conventions.AttributeK8SNodeName
-		case deprecatedMetadataCluster:
-			logger.Warn("cluster metadata param has been deprecated and will be removed soon")
-		case conventions.AttributeK8SClusterName:
-			logger.Warn("k8s.cluster.name metadata param has been deprecated and will be removed soon")
-		}
-		if oldName != "" {
-			logger.Warn(fmt.Sprintf("%s has been deprecated in favor of %s for k8s-tagger processor", oldName, newName))
-		}
-	}
-
-}
-
 func errWrongKeyConfig(cfg component.Config) error {
 	oCfg := cfg.(*Config)
 
@@ -260,43 +202,4 @@ func errWrongKeyConfig(cfg component.Config) error {
 	}
 
 	return nil
-}
-
-func warnDeprecatedPodAssociationConfig(logger *zap.Logger, cfg component.Config) {
-	oCfg := cfg.(*Config)
-	deprecated := ""
-	actual := ""
-	for _, assoc := range oCfg.Association {
-		if assoc.From == "" && assoc.Name == "" {
-			continue
-		}
-
-		deprecated += fmt.Sprintf(`
-- from: %s`, assoc.From)
-		actual += fmt.Sprintf(`
-- sources:
-  - from: %s`, assoc.From)
-
-		if assoc.Name != "" {
-			deprecated += fmt.Sprintf(`
-  name: %s`, assoc.Name)
-		}
-
-		if assoc.From != kube.ConnectionSource {
-			actual += fmt.Sprintf(`
-    name: %s`, assoc.Name)
-		}
-	}
-
-	if deprecated != "" {
-		logger.Warn(fmt.Sprintf(`Deprecated pod_association configuration detected. Please replace:
-
-pod_association:%s
-
-with
-
-pod_association:%s
-
-`, deprecated, actual))
-	}
 }

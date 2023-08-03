@@ -1,28 +1,18 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package consul // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 
 import (
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/config/configopaque"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
 // The struct requires no user-specified fields by default as consul agent's default
 // configuration will be provided to the API client.
 // See `consul.go#NewDetector` for more information.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Address is the address of the Consul server
 	Address string `mapstructure:"address"`
@@ -34,7 +24,7 @@ type Config struct {
 	// which overrides the agent's default (empty) token.
 	// Token or Tokenfile are only required if [Consul's ACL
 	// System](https://www.consul.io/docs/security/acl/acl-system) is enabled.
-	Token string `mapstructure:"token"`
+	Token configopaque.String `mapstructure:"token"`
 
 	// TokenFile is a file containing the current token to use for this client.
 	// If provided it is read once at startup and never again.
@@ -50,4 +40,13 @@ type Config struct {
 	// Metadata](https://www.consul.io/docs/agent/options#node_meta) keys to use as
 	// resource attributes.
 	MetaLabels map[string]interface{} `mapstructure:"meta"`
+
+	// ResourceAttributes configuration for Consul detector
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
+}
+
+func CreateDefaultConfig() Config {
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottldatapoint
 
@@ -26,6 +15,75 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
+
+func Test_newPathGetSetter_Cache(t *testing.T) {
+	newCache := pcommon.NewMap()
+	newCache.PutStr("temp", "value")
+
+	tests := []struct {
+		name      string
+		path      []ottl.Field
+		orig      interface{}
+		newVal    interface{}
+		modified  func(cache pcommon.Map)
+		valueType pmetric.NumberDataPointValueType
+	}{
+
+		{
+			name: "cache",
+			path: []ottl.Field{
+				{
+					Name: "cache",
+				},
+			},
+			orig:   pcommon.NewMap(),
+			newVal: newCache,
+			modified: func(cache pcommon.Map) {
+				newCache.CopyTo(cache)
+			},
+		},
+		{
+			name: "cache access",
+			path: []ottl.Field{
+				{
+					Name: "cache",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("temp"),
+						},
+					},
+				},
+			},
+			orig:   nil,
+			newVal: "new value",
+			modified: func(cache pcommon.Map) {
+				cache.PutStr("temp", "new value")
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			accessor, err := newPathGetSetter(tt.path)
+			assert.NoError(t, err)
+
+			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+
+			ctx := NewTransformContext(numberDataPoint, pmetric.NewMetric(), pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
+
+			got, err := accessor.Get(context.Background(), ctx)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.orig, got)
+
+			err = accessor.Set(context.Background(), ctx, tt.newVal)
+			assert.Nil(t, err)
+
+			exCache := pcommon.NewMap()
+			tt.modified(exCache)
+
+			assert.Equal(t, exCache, ctx.getCache())
+		})
+	}
+}
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 	refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
@@ -145,8 +203,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -159,8 +221,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -173,8 +239,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -187,8 +257,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   float64(1.2),
@@ -201,8 +275,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -215,8 +293,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -232,8 +314,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -249,8 +335,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -266,8 +356,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -283,8 +377,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -300,8 +398,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -319,8 +421,12 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -332,6 +438,63 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				m := datapoint.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refNumberDataPoint.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				s := datapoint.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 	}
@@ -519,8 +682,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -533,8 +700,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -547,8 +718,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -561,8 +736,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   float64(1.2),
@@ -575,8 +754,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -589,8 +772,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -606,8 +793,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -623,8 +814,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -640,8 +835,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -657,8 +856,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -674,8 +877,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -693,8 +900,12 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -706,6 +917,63 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 				m := datapoint.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refHistogramDataPoint.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				s := datapoint.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 	}
@@ -989,8 +1257,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -1003,8 +1275,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -1017,8 +1293,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -1031,8 +1311,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   1.2,
@@ -1045,8 +1329,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -1059,8 +1347,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1076,8 +1368,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1093,8 +1389,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1110,8 +1410,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1127,8 +1431,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1144,8 +1452,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1163,8 +1475,12 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1176,6 +1492,63 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 				m := datapoint.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refExpoHistogramDataPoint.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				s := datapoint.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 	}
@@ -1344,8 +1717,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("str"),
+						},
+					},
 				},
 			},
 			orig:   "val",
@@ -1358,8 +1735,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bool"),
+						},
+					},
 				},
 			},
 			orig:   true,
@@ -1372,8 +1753,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("int"),
+						},
+					},
 				},
 			},
 			orig:   int64(10),
@@ -1386,8 +1771,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("double"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("double"),
+						},
+					},
 				},
 			},
 			orig:   1.2,
@@ -1400,8 +1789,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("bytes"),
+						},
+					},
 				},
 			},
 			orig:   []byte{1, 3, 2},
@@ -1414,8 +1807,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array string",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_str"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_str"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1431,8 +1828,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array bool",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bool"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bool"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1448,8 +1849,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array int",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_int"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_int"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1465,8 +1870,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array float",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_float"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_float"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1482,8 +1891,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes array bytes",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("arr_bytes"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("arr_bytes"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Slice {
@@ -1499,8 +1912,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes pcommon.Map",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("pMap"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("pMap"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1518,8 +1935,12 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 			name: "attributes map[string]interface{}",
 			path: []ottl.Field{
 				{
-					Name:   "attributes",
-					MapKey: ottltest.Strp("map"),
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
 				},
 			},
 			orig: func() pcommon.Map {
@@ -1531,6 +1952,63 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 				m := datapoint.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
+			},
+		},
+		{
+			name: "attributes nested",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("slice"),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+						{
+							String: ottltest.Strp("map"),
+						},
+					},
+				},
+			},
+			orig: func() string {
+				val, _ := refSummaryDataPoint.Attributes().Get("slice")
+				val, _ = val.Slice().At(0).Map().Get("map")
+				return val.Str()
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+			},
+		},
+		{
+			name: "attributes nested new values",
+			path: []ottl.Field{
+				{
+					Name: "attributes",
+					Keys: []ottl.Key{
+						{
+							String: ottltest.Strp("new"),
+						},
+						{
+							Int: ottltest.Intp(2),
+						},
+						{
+							Int: ottltest.Intp(0),
+						},
+					},
+				},
+			},
+			orig: func() interface{} {
+				return nil
+			}(),
+			newVal: "new",
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				s := datapoint.Attributes().PutEmptySlice("new")
+				s.AppendEmpty()
+				s.AppendEmpty()
+				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
 			},
 		},
 	}
@@ -1571,6 +2049,7 @@ func createSummaryDataPointTelemetry() pmetric.SummaryDataPoint {
 
 	return summaryDataPoint
 }
+
 func createAttributeTelemetry(attributes pcommon.Map) {
 	attributes.PutStr("str", "val")
 	attributes.PutBool("bool", true)
@@ -1597,6 +2076,9 @@ func createAttributeTelemetry(attributes pcommon.Map) {
 	arrBytes := attributes.PutEmptySlice("arr_bytes")
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{1, 2, 3})
 	arrBytes.AppendEmpty().SetEmptyBytes().FromRaw([]byte{2, 3, 4})
+
+	s := attributes.PutEmptySlice("slice")
+	s.AppendEmpty().SetEmptyMap().PutStr("map", "pass")
 
 	pMap := attributes.PutEmptyMap("pMap")
 	pMap.PutStr("original", "map")

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
@@ -19,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"go.opentelemetry.io/collector/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 var (
@@ -31,7 +20,6 @@ var (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	config.ProcessorSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// DefaultExporters contains the list of exporters to use when a more specific record can't be found in the routing table.
 	// Optional.
@@ -58,6 +46,14 @@ type Config struct {
 	// Optional.
 	DropRoutingResourceAttribute bool `mapstructure:"drop_resource_routing_attribute"`
 
+	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL condition.
+	// Valid values are `ignore` and `propagate`.
+	// `ignore` means the processor ignores errors returned by conditions and continues on to the next condition. This is the recommended mode.
+	// If `ignored` is used and a statement's condition has an error then the payload will be routed to the default exporter.
+	// `propagate` means the processor returns the error up the pipeline.  This will result in the payload being dropped from the collector.
+	// The default value is `propagate`.
+	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
+
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
@@ -70,6 +66,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("invalid routing table: %w", errNoTableItems)
 	}
 
+	ottlRoutingOnly := true
 	// validate that every route has a value for the routing attribute and has
 	// at least one exporter
 	for _, item := range c.Table {
@@ -84,10 +81,17 @@ func (c *Config) Validate() error {
 		if len(item.Exporters) == 0 {
 			return fmt.Errorf("invalid route %s: %w", item.Value, errNoExporters)
 		}
+
+		if item.Value != "" {
+			ottlRoutingOnly = false
+		}
 	}
 
-	// we also need a "FromAttribute" value
-	if len(c.FromAttribute) == 0 {
+	if ottlRoutingOnly {
+		c.AttributeSource = ""
+		c.FromAttribute = ""
+	} else if len(c.FromAttribute) == 0 {
+		// we also need a "FromAttribute" value
 		return fmt.Errorf(
 			"invalid attribute to read the route's value from: %w",
 			errNoMissingFromAttribute,

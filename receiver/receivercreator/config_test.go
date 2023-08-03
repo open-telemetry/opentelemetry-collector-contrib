@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package receivercreator
 
@@ -22,18 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/service/servicetest"
+	"go.opentelemetry.io/collector/otelcol"
+	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal/metadata"
 )
 
 type mockHostFactories struct {
 	component.Host
-	factories  component.Factories
+	factories  otelcol.Factories
 	extensions map[component.ID]component.Component
 }
 
@@ -48,6 +39,8 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType compo
 		return mh.factories.Exporters[componentType]
 	case component.KindExtension:
 		return mh.factories.Extensions[componentType]
+	case component.KindConnector:
+		return mh.factories.Connectors[componentType]
 	}
 	return nil
 }
@@ -55,6 +48,14 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType compo
 func (mh *mockHostFactories) GetExtensions() map[component.ID]component.Component {
 	return mh.extensions
 }
+
+var portRule = func(s string) rule {
+	r, err := newRule(s)
+	if err != nil {
+		panic(err)
+	}
+	return r
+}(`type == "port"`)
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -67,13 +68,16 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id:       component.NewIDWithName("receiver_creator", ""),
+			expected: createDefaultConfig(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
@@ -85,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]interface{}{"one": "two"},
-						rule:               newRuleOrPanic(`type == "port"`),
+						rule:               portRule,
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -97,7 +101,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]interface{}{"two": "three"},
-						rule:               newRuleOrPanic(`type == "port"`),
+						rule:               portRule,
 					},
 				},
 				WatchObservers: []component.ID{
@@ -131,49 +135,52 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestInvalidResourceAttributeEndpointType(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.Nil(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading receivers configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
+	factories.Receivers[metadata.Type] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
+	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
 }
 
 func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
-	factories, err := componenttest.NopFactories()
+	factories, err := otelcoltest.NopFactories()
 	require.Nil(t, err)
 
-	factories.Receivers[("nop")] = &nopWithEndpointFactory{ReceiverFactory: componenttest.NewNopReceiverFactory()}
+	factories.Receivers[("nop")] = &nopWithEndpointFactory{Factory: receivertest.NewNopFactory()}
 
 	factory := NewFactory()
-	factories.Receivers[typeStr] = factory
-	cfg, err := servicetest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
-	require.Contains(t, err.Error(), "error reading receivers configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
+	factories.Receivers[metadata.Type] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
+	require.Contains(t, err.Error(), "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
 }
 
 type nopWithEndpointConfig struct {
-	config.ReceiverSettings `mapstructure:",squash"`
-	Endpoint                string `mapstructure:"endpoint"`
+	Endpoint string `mapstructure:"endpoint"`
+	IntField int    `mapstructure:"int_field"`
 }
 
 type nopWithEndpointFactory struct {
-	component.ReceiverFactory
+	rcvr.Factory
 }
 
 type nopWithEndpointReceiver struct {
-	component.Component
+	mockComponent
+	consumer.Logs
 	consumer.Metrics
-	component.ReceiverCreateSettings
+	consumer.Traces
+	rcvr.CreateSettings
+	cfg component.Config
 }
 
 func (*nopWithEndpointFactory) CreateDefaultConfig() component.Config {
 	return &nopWithEndpointConfig{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID("nop")),
+		IntField: 1234,
 	}
 }
 
@@ -182,14 +189,98 @@ type mockComponent struct {
 	component.ShutdownFunc
 }
 
-func (*nopWithEndpointFactory) CreateMetricsReceiver(
-	ctx context.Context,
-	rcs component.ReceiverCreateSettings,
-	_ component.Config,
-	nextConsumer consumer.Metrics) (component.MetricsReceiver, error) {
+func (*nopWithEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
-		Component:              mockComponent{},
-		Metrics:                nextConsumer,
-		ReceiverCreateSettings: rcs,
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithEndpointFactory) CreateMetricsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	return &nopWithEndpointReceiver{
+		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithEndpointReceiver{
+		Traces:         nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+type nopWithoutEndpointConfig struct {
+	NotEndpoint string `mapstructure:"not_endpoint"`
+	IntField    int    `mapstructure:"int_field"`
+}
+
+type nopWithoutEndpointFactory struct {
+	rcvr.Factory
+}
+
+type nopWithoutEndpointReceiver struct {
+	mockComponent
+	consumer.Logs
+	consumer.Metrics
+	consumer.Traces
+	rcvr.CreateSettings
+	cfg component.Config
+}
+
+func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
+	return &nopWithoutEndpointConfig{
+		IntField: 2345,
+	}
+}
+
+func (*nopWithoutEndpointFactory) CreateLogsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Logs) (rcvr.Logs, error) {
+	return &nopWithoutEndpointReceiver{
+		Logs:           nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
+	return &nopWithoutEndpointReceiver{
+		Metrics:        nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
+	}, nil
+}
+
+func (*nopWithoutEndpointFactory) CreateTracesReceiver(
+	_ context.Context,
+	rcs rcvr.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Traces) (rcvr.Traces, error) {
+	return &nopWithoutEndpointReceiver{
+		Traces:         nextConsumer,
+		CreateSettings: rcs,
+		cfg:            cfg,
 	}, nil
 }

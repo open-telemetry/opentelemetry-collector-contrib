@@ -41,12 +41,32 @@ tail_sampling:
        {
           name: test-policy-8,
           type: span_count,
-          span_count: {min_spans: 2}
+          span_count: {min_spans: 2, max_spans: 20}
        },
        {
           name: test-policy-9,
           type: trace_state,
           trace_state: { key: key3, values: [ value1, value2 ] }
+       },
+       {
+         name: test-policy-10,
+         type: boolean_attribute,
+         boolean_attribute: { key: key4, value: true }
+       },
+       {
+         name: test-policy-11,
+         type: ottl_condition,
+         ottl_condition: {
+             error_mode: ignore,
+             span: [
+                "attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"",
+                "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\"",
+             ],
+             spanevent: [
+                "name != \"test_span_event_name\"",
+                "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\"",
+             ]
+         }
        },
        {
           name: and-policy-1,

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -19,14 +8,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter/internal/metadata"
 )
 
 const (
 	// The value of "type" key in configuration.
-	typeStr            = "azuredataexplorer"
 	managedIngestType  = "managed"
 	queuedIngestTest   = "queued"
 	otelDb             = "oteldb"
@@ -36,47 +26,44 @@ const (
 	metricsType        = 1
 	logsType           = 2
 	tracesType         = 3
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
 )
 
 // Creates a factory for the ADX Exporter
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
-		component.WithMetricsExporter(createMetricsExporter, stability),
-		component.WithLogsExporter(createLogsExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
 // Create default configurations
 func createDefaultConfig() component.Config {
 	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-		Database:         otelDb,
-		MetricTable:      defaultMetricTable,
-		LogTable:         defaultLogTable,
-		TraceTable:       defaultTraceTable,
-		IngestionType:    queuedIngestTest,
+		Database:      otelDb,
+		MetricTable:   defaultMetricTable,
+		LogTable:      defaultLogTable,
+		TraceTable:    defaultTraceTable,
+		IngestionType: queuedIngestTest,
 	}
 }
 
 func createMetricsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	config component.Config,
-) (component.MetricsExporter, error) {
+) (exporter.Metrics, error) {
 	if config == nil {
 		return nil, errors.New("nil config")
 	}
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, metricsType)
+	adp, err := newExporter(adxCfg, set.Logger, metricsType, version)
 
 	if err != nil {
 		return nil, err
@@ -98,15 +85,15 @@ func createMetricsExporter(
 
 func createTracesExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	config component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, tracesType)
+	adp, err := newExporter(adxCfg, set.Logger, tracesType, version)
 
 	if err != nil {
 		return nil, err
@@ -128,15 +115,15 @@ func createTracesExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set component.ExporterCreateSettings,
+	set exporter.CreateSettings,
 	config component.Config,
-) (exp component.LogsExporter, err error) {
+) (exp exporter.Logs, err error) {
 	adxCfg := config.(*Config)
 	setDefaultIngestionType(adxCfg, set.Logger)
-
+	version := set.BuildInfo.Version
 	// call the common exporter function in baseexporter. This ensures that the client and the ingest
 	// are initialized and the metrics struct are available for operations
-	adp, err := newExporter(adxCfg, set.Logger, logsType)
+	adp, err := newExporter(adxCfg, set.Logger, logsType, version)
 
 	if err != nil {
 		return nil, err

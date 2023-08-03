@@ -1,4 +1,0 @@
-change_type: enhancement
-component: jmxreceiver
-note: Add the JMX metrics gatherer version 1.20.1-alpha to the supported jars hash list
-issues: [ 16437 ]

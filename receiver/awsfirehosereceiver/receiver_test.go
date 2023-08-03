@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsfirehosereceiver
 
@@ -30,8 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
 const (
@@ -69,8 +58,7 @@ func TestStart(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
-				ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-				RecordType:       defaultRecordType,
+				RecordType: defaultRecordType,
 			}
 			ctx := context.TODO()
 			r := testFirehoseReceiver(cfg, nil)
@@ -88,8 +76,7 @@ func TestStart(t *testing.T) {
 			require.NoError(t, listener.Close())
 		})
 		cfg := &Config{
-			ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-			RecordType:       defaultRecordType,
+			RecordType: defaultRecordType,
 			HTTPServerSettings: confighttp.HTTPServerSettings{
 				Endpoint: listener.Addr().String(),
 			},
@@ -108,9 +95,8 @@ func TestFirehoseRequest(t *testing.T) {
 	defaultConsumer := newNopFirehoseConsumer(http.StatusOK, nil)
 	firehoseConsumerErr := errors.New("firehose consumer error")
 	cfg := &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		RecordType:       defaultRecordType,
-		AccessKey:        testFirehoseAccessKey,
+		RecordType: defaultRecordType,
+		AccessKey:  testFirehoseAccessKey,
 	}
 	var noRecords []firehoseRecord
 	testCases := map[string]struct {
@@ -241,7 +227,7 @@ func TestFirehoseRequest(t *testing.T) {
 // testFirehoseReceiver is a convenience function for creating a test firehoseReceiver
 func testFirehoseReceiver(config *Config, consumer firehoseConsumer) *firehoseReceiver {
 	return &firehoseReceiver{
-		settings: componenttest.NewNopReceiverCreateSettings(),
+		settings: receivertest.NewNopCreateSettings(),
 		config:   config,
 		consumer: consumer,
 	}

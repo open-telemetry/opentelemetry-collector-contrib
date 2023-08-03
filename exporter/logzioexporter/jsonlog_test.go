@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package logzioexporter
 
@@ -23,13 +12,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashicorp/go-hclog"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
@@ -47,7 +34,6 @@ func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
 }
 
 func TestConvertLogRecordToJSON(t *testing.T) {
-	logger := hclog.NewNullLogger()
 	type convertLogRecordToJSONTest struct {
 		log      plog.LogRecord
 		resource pcommon.Resource
@@ -84,7 +70,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.resource, logger)
+		output := convertLogRecordToJSON(test.log, test.resource)
 		require.Equal(t, output, test.expected)
 	}
 
@@ -97,16 +83,15 @@ func TestSetTimeStamp(t *testing.T) {
 	}))
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
-		Region:           "us",
-		Token:            "token",
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
+		Region: "us",
+		Token:  "token",
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint:    server.URL,
 			Compression: configcompression.Gzip,
 		},
 	}
 	var err error
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())

@@ -1,26 +1,19 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/watch"
 )
 
 func TestUnstructuredListToLogData(t *testing.T) {
@@ -38,7 +31,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			object.SetName(fmt.Sprintf("pod-%d", i))
 			objects.Items = append(objects.Items, object)
 		}
-		logs := unstructuredListToLogData(&objects)
+
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "pods",
+			},
+		}
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 4)
 
@@ -67,7 +68,15 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			objects.Items = append(objects.Items, object)
 		}
 
-		logs := unstructuredListToLogData(&objects)
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "nodes",
+			},
+		}
+
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
 
 		assert.Equal(t, logs.LogRecordCount(), 3)
 
@@ -75,10 +84,87 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, resourceLogs.Len(), 1)
 		rl := resourceLogs.At(0)
 		resourceAttributes := rl.Resource().Attributes()
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
 		_, ok := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
 		assert.Equal(t, ok, false)
 		assert.Equal(t, rl.ScopeLogs().Len(), 1)
-		assert.Equal(t, rl.ScopeLogs().At(0).LogRecords().Len(), 3)
+		assert.Equal(t, logRecords.Len(), 3)
+
+	})
+
+	t.Run("Test event.name in watch events", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		logs := watchObjectsToLogData(event, time.Now(), config)
+
+		assert.Equal(t, logs.LogRecordCount(), 1)
+
+		resourceLogs := logs.ResourceLogs()
+		assert.Equal(t, resourceLogs.Len(), 1)
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		assert.Equal(t, rl.ScopeLogs().Len(), 1)
+		assert.Equal(t, logRecords.Len(), 1)
+
+		attrs := logRecords.At(0).Attributes()
+		eventName, ok := attrs.Get("event.name")
+		require.True(t, ok)
+		assert.EqualValues(t, "generic-name", eventName.AsRaw())
+
+	})
+
+	t.Run("Test event observed timestamp is present", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		observedAt := time.Now()
+		logs := watchObjectsToLogData(event, observedAt, config)
+
+		assert.Equal(t, logs.LogRecordCount(), 1)
+
+		resourceLogs := logs.ResourceLogs()
+		assert.Equal(t, resourceLogs.Len(), 1)
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		assert.Equal(t, rl.ScopeLogs().Len(), 1)
+		assert.Equal(t, logRecords.Len(), 1)
+		assert.Greater(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), int64(0))
+		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
 }

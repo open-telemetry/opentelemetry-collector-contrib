@@ -1,23 +1,11 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package apachereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
 
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -25,35 +13,14 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver/internal/metadata"
 )
-
-const (
-	readmeURL                         = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/apachereceiver/README.md"
-	EmitServerNameAsResourceAttribute = "receiver.apache.emitServerNameAsResourceAttribute"
-	EmitPortAsResourceAttribute       = "receiver.apache.emitPortAsResourceAttribute"
-)
-
-func init() {
-	featuregate.GetRegistry().MustRegisterID(
-		EmitServerNameAsResourceAttribute,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, the name of the server will be sent as an apache.server.name resource attribute instead of a metric-level server_name attribute."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14791"),
-	)
-	featuregate.GetRegistry().MustRegisterID(
-		EmitPortAsResourceAttribute,
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, the port of the server will be sent as an apache.server.port resource attribute."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14791"),
-	)
-}
 
 type apacheScraper struct {
 	settings   component.TelemetrySettings
@@ -62,14 +29,10 @@ type apacheScraper struct {
 	mb         *metadata.MetricsBuilder
 	serverName string
 	port       string
-
-	// Feature gates regarding resource attributes
-	emitMetricsWithServerNameAsResourceAttribute bool
-	emitMetricsWithPortAsResourceAttribute       bool
 }
 
 func newApacheScraper(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	cfg *Config,
 	serverName string,
 	port string,
@@ -77,23 +40,9 @@ func newApacheScraper(
 	a := &apacheScraper{
 		settings:   settings.TelemetrySettings,
 		cfg:        cfg,
-		mb:         metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo),
+		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
-		emitMetricsWithServerNameAsResourceAttribute: featuregate.GetRegistry().IsEnabled(EmitServerNameAsResourceAttribute),
-		emitMetricsWithPortAsResourceAttribute:       featuregate.GetRegistry().IsEnabled(EmitPortAsResourceAttribute),
-	}
-
-	if !a.emitMetricsWithServerNameAsResourceAttribute {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitServerNameAsResourceAttribute, readmeURL),
-		)
-	}
-
-	if !a.emitMetricsWithPortAsResourceAttribute {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", EmitPortAsResourceAttribute, readmeURL),
-		)
 	}
 
 	return a
@@ -119,88 +68,6 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	emitWith := []metadata.ResourceMetricsOption{}
-
-	if r.emitMetricsWithServerNameAsResourceAttribute {
-		err = r.scrapeWithoutServerNameAttr(stats)
-		emitWith = append(emitWith, metadata.WithApacheServerName(r.serverName))
-	} else {
-		err = r.scrapeWithServerNameAttr(stats)
-	}
-
-	if r.emitMetricsWithPortAsResourceAttribute {
-		emitWith = append(emitWith, metadata.WithApacheServerPort(r.port))
-	}
-
-	return r.mb.Emit(emitWith...), err
-}
-
-func (r *apacheScraper) scrapeWithServerNameAttr(stats string) error {
-	errs := &scrapererror.ScrapeErrors{}
-	now := pcommon.NewTimestampFromTime(time.Now())
-	for metricKey, metricValue := range parseStats(stats) {
-		switch metricKey {
-		case "ServerUptimeSeconds":
-			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPointWithServerName(now, metricValue, r.serverName))
-		case "ConnsTotal":
-			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPointWithServerName(now, metricValue, r.serverName))
-		case "BusyWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPointWithServerName(now, metricValue, r.serverName,
-				metadata.AttributeWorkersStateBusy))
-		case "IdleWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPointWithServerName(now, metricValue, r.serverName,
-				metadata.AttributeWorkersStateIdle))
-		case "Total Accesses":
-			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPointWithServerName(now, metricValue, r.serverName))
-		case "Total kBytes":
-			i, err := strconv.ParseInt(metricValue, 10, 64)
-			if err != nil {
-				errs.AddPartial(1, err)
-			} else {
-				r.mb.RecordApacheTrafficDataPointWithServerName(now, kbytesToBytes(i), r.serverName)
-			}
-		case "CPUChildrenSystem":
-			addPartialIfError(
-				errs,
-				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
-			)
-		case "CPUChildrenUser":
-			addPartialIfError(
-				errs,
-				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.serverName, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
-			)
-		case "CPUSystem":
-			addPartialIfError(
-				errs,
-				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
-			)
-		case "CPUUser":
-			addPartialIfError(
-				errs,
-				r.mb.RecordApacheCPUTimeDataPointWithServerName(now, metricValue, r.serverName, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
-			)
-		case "CPULoad":
-			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPointWithServerName(now, metricValue, r.serverName))
-		case "Load1":
-			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPointWithServerName(now, metricValue, r.serverName))
-		case "Load5":
-			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPointWithServerName(now, metricValue, r.serverName))
-		case "Load15":
-			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPointWithServerName(now, metricValue, r.serverName))
-		case "Total Duration":
-			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPointWithServerName(now, metricValue, r.serverName))
-		case "Scoreboard":
-			scoreboardMap := parseScoreboard(metricValue)
-			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPointWithServerName(now, score, r.serverName, state)
-			}
-		}
-	}
-
-	return errs.Combine()
-}
-
-func (r *apacheScraper) scrapeWithoutServerNameAttr(stats string) error {
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
@@ -260,7 +127,10 @@ func (r *apacheScraper) scrapeWithoutServerNameAttr(stats string) error {
 		}
 	}
 
-	return errs.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetApacheServerName(r.serverName)
+	rb.SetApacheServerPort(r.port)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

@@ -1,16 +1,5 @@
-// Copyright 2022, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package instanaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 
@@ -24,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
@@ -84,7 +74,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	headers := map[string]string{
-		backend.HeaderKey:  e.config.AgentKey,
+		backend.HeaderKey:  string(e.config.AgentKey),
 		backend.HeaderHost: hostID,
 		// Used only by the Instana agent and can be set to "0" for the exporter
 		backend.HeaderTime: "0",
@@ -93,7 +83,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func newInstanaExporter(cfg component.Config, set component.ExporterCreateSettings) *instanaExporter {
+func newInstanaExporter(cfg component.Config, set exporter.CreateSettings) *instanaExporter {
 	iCfg := cfg.(*Config)
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	return &instanaExporter{

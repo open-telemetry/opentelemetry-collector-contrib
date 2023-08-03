@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package redisreceiver
 
@@ -20,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
@@ -29,10 +18,10 @@ import (
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := componenttest.NewNopReceiverCreateSettings()
+	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
-	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.Metrics, settings.BuildInfo)}
+	rs := &redisScraper{mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)}
 	runner, err := newRedisScraperWithClient(newFakeClient(), settings, cfg)
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
@@ -53,7 +42,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 			CAFile: "/invalid",
 		},
 	}
-	r, err := createMetricsReceiver(context.Background(), componenttest.NewNopReceiverCreateSettings(), c, nil)
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)

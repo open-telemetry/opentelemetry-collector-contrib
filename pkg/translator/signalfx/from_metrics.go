@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfx // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
 
@@ -82,6 +71,8 @@ func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.
 		dps = convertHistogram(m.Histogram().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
+	case pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeEmpty:
 	}
 
 	return dps
@@ -106,6 +97,15 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
+
+	case pmetric.MetricTypeEmpty:
+		return nil
+
+	case pmetric.MetricTypeSummary:
+		return nil
+
+	case pmetric.MetricTypeExponentialHistogram:
+		return nil
 	}
 
 	return nil
@@ -125,6 +125,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 		case pmetric.NumberDataPointValueTypeDouble:
 			val := inDp.DoubleValue()
 			dp.Value.DoubleValue = &val
+		case pmetric.NumberDataPointValueTypeEmpty:
 		}
 	}
 	return dps.out

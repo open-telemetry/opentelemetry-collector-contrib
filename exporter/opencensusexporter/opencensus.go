@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensusexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 
@@ -72,8 +61,11 @@ func newOcExporter(_ context.Context, cfg *Config, settings component.TelemetryS
 
 	oce := &ocExporter{
 		cfg:      cfg,
-		metadata: metadata.New(cfg.GRPCClientSettings.Headers),
+		metadata: metadata.New(nil),
 		settings: settings,
+	}
+	for k, v := range cfg.GRPCClientSettings.Headers {
+		oce.metadata.Set(k, string(v))
 	}
 	return oce, nil
 }
@@ -109,6 +101,9 @@ func (oce *ocExporter) start(ctx context.Context, host component.Host) error {
 }
 
 func (oce *ocExporter) shutdown(context.Context) error {
+	if oce.grpcClientConn == nil {
+		return nil
+	}
 	if oce.tracesClients != nil {
 		// First remove all the clients from the channel.
 		for i := 0; i < oce.cfg.NumWorkers; i++ {
@@ -245,7 +240,7 @@ func (oce *ocExporter) createTraceServiceRPC() (*tracesClientWithCancel, error) 
 	// Initiate the trace service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	traceClient, err := oce.traceSvcClient.Export(ctx)
@@ -260,7 +255,7 @@ func (oce *ocExporter) createMetricsServiceRPC() (*metricsClientWithCancel, erro
 	// Initiate the trace service by sending over node identifier info.
 	ctx, cancel := context.WithCancel(context.Background())
 	if len(oce.cfg.Headers) > 0 {
-		ctx = metadata.NewOutgoingContext(ctx, metadata.New(oce.cfg.Headers))
+		ctx = metadata.NewOutgoingContext(ctx, oce.metadata.Copy())
 	}
 	// Cannot use grpc.WaitForReady(cfg.WaitForReady) because will block forever.
 	metricsClient, err := oce.metricsSvcClient.Export(ctx)

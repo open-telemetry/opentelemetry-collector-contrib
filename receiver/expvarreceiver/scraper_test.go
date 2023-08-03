@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package expvarreceiver
 
@@ -25,16 +14,17 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/scrapertest/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver/internal/metadata"
 )
 
 var (
-	metricEnabled     = metadata.MetricSettings{Enabled: true}
-	metricDisabled    = metadata.MetricSettings{Enabled: false}
-	allMetricsEnabled = metadata.MetricsSettings{
+	metricEnabled     = metadata.MetricConfig{Enabled: true}
+	metricDisabled    = metadata.MetricConfig{Enabled: false}
+	allMetricsEnabled = metadata.MetricsConfig{
 		ProcessRuntimeMemstatsBuckHashSys:   metricEnabled,
 		ProcessRuntimeMemstatsFrees:         metricEnabled,
 		ProcessRuntimeMemstatsGcCPUFraction: metricEnabled,
@@ -62,7 +52,7 @@ var (
 		ProcessRuntimeMemstatsSys:           metricEnabled,
 		ProcessRuntimeMemstatsTotalAlloc:    metricEnabled,
 	}
-	allMetricsDisabled = metadata.MetricsSettings{
+	allMetricsDisabled = metadata.MetricsConfig{
 		ProcessRuntimeMemstatsBuckHashSys:   metricDisabled,
 		ProcessRuntimeMemstatsFrees:         metricDisabled,
 		ProcessRuntimeMemstatsGcCPUFraction: metricDisabled,
@@ -111,19 +101,20 @@ func TestAllMetrics(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	cfg.MetricsConfig = allMetricsEnabled
+	cfg.MetricsBuilderConfig.Metrics = allMetricsEnabled
 
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.json")
+	expectedFile := filepath.Join("testdata", "metrics", "expected_all_metrics.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestNoMetrics(t *testing.T) {
@@ -131,15 +122,15 @@ func TestNoMetrics(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }
 
 func TestNotFoundResponse(t *testing.T) {
@@ -147,7 +138,7 @@ func TestNotFoundResponse(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + "/nonexistent/path"
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -159,7 +150,7 @@ func TestBadTypeInReturnedData(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -171,7 +162,7 @@ func TestJSONParseError(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	_, err = scraper.scrape(context.Background())
@@ -183,13 +174,13 @@ func TestEmptyResponseBodyError(t *testing.T) {
 	defer ms.Close()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Endpoint = ms.URL + defaultPath
-	cfg.MetricsConfig = allMetricsDisabled
-	scraper := newExpVarScraper(cfg, componenttest.NewNopReceiverCreateSettings())
+	cfg.MetricsBuilderConfig.Metrics = allMetricsDisabled
+	scraper := newExpVarScraper(cfg, receivertest.NewNopCreateSettings())
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	expectedMetrics := pmetric.NewMetrics() // empty
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, "could not decode response body to JSON: EOF")
-	require.NoError(t, scrapertest.CompareMetrics(expectedMetrics, actualMetrics))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
 }

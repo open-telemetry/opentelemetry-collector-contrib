@@ -1,16 +1,5 @@
-// Copyright 2019, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver"
 
@@ -33,11 +22,13 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
 const (
@@ -62,8 +53,6 @@ const (
 )
 
 var (
-	errEmptyEndpoint = errors.New("empty endpoint")
-
 	okRespBody               = initJSONResponse(responseOK)
 	invalidMethodRespBody    = initJSONResponse(responseInvalidMethod)
 	invalidContentRespBody   = initJSONResponse(responseInvalidContentType)
@@ -78,9 +67,9 @@ var (
 	translator = &signalfx.ToTranslator{}
 )
 
-// sfxReceiver implements the component.MetricsReceiver for SignalFx metric protocol.
+// sfxReceiver implements the receiver.Metrics for SignalFx metric protocol.
 type sfxReceiver struct {
-	settings        component.ReceiverCreateSettings
+	settings        receiver.CreateSettings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
@@ -89,11 +78,11 @@ type sfxReceiver struct {
 	obsrecv         *obsreport.Receiver
 }
 
-var _ component.MetricsReceiver = (*sfxReceiver)(nil)
+var _ receiver.Metrics = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 	config Config,
 ) (*sfxReceiver, error) {
 	transport := "http"
@@ -170,6 +159,9 @@ func (r *sfxReceiver) Start(_ context.Context, host component.Host) error {
 // Shutdown tells the receiver that should stop reception,
 // giving it a chance to perform any necessary clean-up.
 func (r *sfxReceiver) Shutdown(context.Context) error {
+	if r.server == nil {
+		return nil
+	}
 	err := r.server.Close()
 	r.shutdownWG.Wait()
 	return err
@@ -243,7 +235,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -264,7 +256,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, typeStr, len(msg.Datapoints), err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(msg.Datapoints), err)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -289,7 +281,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	}
 
 	if len(msg.Events) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, typeStr, 0, nil)
+		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
 		_, _ = resp.Write(okRespBody)
 		return
 	}
@@ -308,7 +300,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 	err := r.logsConsumer.ConsumeLogs(ctx, ld)
 	r.obsrecv.EndMetricsOp(
 		ctx,
-		typeStr,
+		metadata.Type,
 		len(msg.Events),
 		err)
 

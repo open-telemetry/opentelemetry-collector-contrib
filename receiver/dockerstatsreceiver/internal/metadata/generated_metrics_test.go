@@ -3,1396 +3,1341 @@
 package metadata
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
-func TestDefaultMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	mb := NewMetricsBuilder(DefaultMetricsSettings(), component.BuildInfo{}, WithStartTime(start))
-	enabledMetrics := make(map[string]bool)
-
-	mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	enabledMetrics["container.blockio.io_service_bytes_recursive"] = true
-	mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-
-	enabledMetrics["container.cpu.percent"] = true
-	mb.RecordContainerCPUPercentDataPoint(ts, 1)
-
-	mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
-
-	mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
-
-	mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-
-	enabledMetrics["container.cpu.usage.kernelmode"] = true
-	mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
-
-	mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "attr-val")
-
-	mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-
-	enabledMetrics["container.cpu.usage.total"] = true
-	mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-
-	enabledMetrics["container.cpu.usage.usermode"] = true
-	mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryCacheDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.percent"] = true
-	mb.RecordContainerMemoryPercentDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryPgpginDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
-
-	mb.RecordContainerMemorySwapDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.total_cache"] = true
-	mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalSwapDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.usage.limit"] = true
-	mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-
-	enabledMetrics["container.memory.usage.total"] = true
-	mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
-
-	mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-
-	enabledMetrics["container.network.io.usage.rx_bytes"] = true
-	mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["container.network.io.usage.rx_dropped"] = true
-	mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "attr-val")
-
-	mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "attr-val")
-
-	mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["container.network.io.usage.tx_bytes"] = true
-	mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "attr-val")
-
-	enabledMetrics["container.network.io.usage.tx_dropped"] = true
-	mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "attr-val")
-
-	mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "attr-val")
-
-	mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	sm := metrics.ResourceMetrics().At(0).ScopeMetrics()
-	assert.Equal(t, 1, sm.Len())
-	ms := sm.At(0).Metrics()
-	assert.Equal(t, len(enabledMetrics), ms.Len())
-	seenMetrics := make(map[string]bool)
-	for i := 0; i < ms.Len(); i++ {
-		assert.True(t, enabledMetrics[ms.At(i).Name()])
-		seenMetrics[ms.At(i).Name()] = true
+type testConfigCollection int
+
+const (
+	testSetDefault testConfigCollection = iota
+	testSetAll
+	testSetNone
+)
+
+func TestMetricsBuilder(t *testing.T) {
+	tests := []struct {
+		name      string
+		configSet testConfigCollection
+	}{
+		{
+			name:      "default",
+			configSet: testSetDefault,
+		},
+		{
+			name:      "all_set",
+			configSet: testSetAll,
+		},
+		{
+			name:      "none_set",
+			configSet: testSetNone,
+		},
 	}
-	assert.Equal(t, len(enabledMetrics), len(seenMetrics))
-}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			start := pcommon.Timestamp(1_000_000_000)
+			ts := pcommon.Timestamp(1_000_001_000)
+			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+			settings := receivertest.NewNopCreateSettings()
+			settings.Logger = zap.New(observedZapCore)
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-func TestAllMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ContainerBlockioIoMergedRecursive:          MetricSettings{Enabled: true},
-		ContainerBlockioIoQueuedRecursive:          MetricSettings{Enabled: true},
-		ContainerBlockioIoServiceBytesRecursive:    MetricSettings{Enabled: true},
-		ContainerBlockioIoServiceTimeRecursive:     MetricSettings{Enabled: true},
-		ContainerBlockioIoServicedRecursive:        MetricSettings{Enabled: true},
-		ContainerBlockioIoTimeRecursive:            MetricSettings{Enabled: true},
-		ContainerBlockioIoWaitTimeRecursive:        MetricSettings{Enabled: true},
-		ContainerBlockioSectorsRecursive:           MetricSettings{Enabled: true},
-		ContainerCPUPercent:                        MetricSettings{Enabled: true},
-		ContainerCPUThrottlingDataPeriods:          MetricSettings{Enabled: true},
-		ContainerCPUThrottlingDataThrottledPeriods: MetricSettings{Enabled: true},
-		ContainerCPUThrottlingDataThrottledTime:    MetricSettings{Enabled: true},
-		ContainerCPUUsageKernelmode:                MetricSettings{Enabled: true},
-		ContainerCPUUsagePercpu:                    MetricSettings{Enabled: true},
-		ContainerCPUUsageSystem:                    MetricSettings{Enabled: true},
-		ContainerCPUUsageTotal:                     MetricSettings{Enabled: true},
-		ContainerCPUUsageUsermode:                  MetricSettings{Enabled: true},
-		ContainerMemoryActiveAnon:                  MetricSettings{Enabled: true},
-		ContainerMemoryActiveFile:                  MetricSettings{Enabled: true},
-		ContainerMemoryCache:                       MetricSettings{Enabled: true},
-		ContainerMemoryDirty:                       MetricSettings{Enabled: true},
-		ContainerMemoryHierarchicalMemoryLimit:     MetricSettings{Enabled: true},
-		ContainerMemoryHierarchicalMemswLimit:      MetricSettings{Enabled: true},
-		ContainerMemoryInactiveAnon:                MetricSettings{Enabled: true},
-		ContainerMemoryInactiveFile:                MetricSettings{Enabled: true},
-		ContainerMemoryMappedFile:                  MetricSettings{Enabled: true},
-		ContainerMemoryPercent:                     MetricSettings{Enabled: true},
-		ContainerMemoryPgfault:                     MetricSettings{Enabled: true},
-		ContainerMemoryPgmajfault:                  MetricSettings{Enabled: true},
-		ContainerMemoryPgpgin:                      MetricSettings{Enabled: true},
-		ContainerMemoryPgpgout:                     MetricSettings{Enabled: true},
-		ContainerMemoryRss:                         MetricSettings{Enabled: true},
-		ContainerMemoryRssHuge:                     MetricSettings{Enabled: true},
-		ContainerMemorySwap:                        MetricSettings{Enabled: true},
-		ContainerMemoryTotalActiveAnon:             MetricSettings{Enabled: true},
-		ContainerMemoryTotalActiveFile:             MetricSettings{Enabled: true},
-		ContainerMemoryTotalCache:                  MetricSettings{Enabled: true},
-		ContainerMemoryTotalDirty:                  MetricSettings{Enabled: true},
-		ContainerMemoryTotalInactiveAnon:           MetricSettings{Enabled: true},
-		ContainerMemoryTotalInactiveFile:           MetricSettings{Enabled: true},
-		ContainerMemoryTotalMappedFile:             MetricSettings{Enabled: true},
-		ContainerMemoryTotalPgfault:                MetricSettings{Enabled: true},
-		ContainerMemoryTotalPgmajfault:             MetricSettings{Enabled: true},
-		ContainerMemoryTotalPgpgin:                 MetricSettings{Enabled: true},
-		ContainerMemoryTotalPgpgout:                MetricSettings{Enabled: true},
-		ContainerMemoryTotalRss:                    MetricSettings{Enabled: true},
-		ContainerMemoryTotalRssHuge:                MetricSettings{Enabled: true},
-		ContainerMemoryTotalSwap:                   MetricSettings{Enabled: true},
-		ContainerMemoryTotalUnevictable:            MetricSettings{Enabled: true},
-		ContainerMemoryTotalWriteback:              MetricSettings{Enabled: true},
-		ContainerMemoryUnevictable:                 MetricSettings{Enabled: true},
-		ContainerMemoryUsageLimit:                  MetricSettings{Enabled: true},
-		ContainerMemoryUsageMax:                    MetricSettings{Enabled: true},
-		ContainerMemoryUsageTotal:                  MetricSettings{Enabled: true},
-		ContainerMemoryWriteback:                   MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageRxBytes:             MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageRxDropped:           MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageRxErrors:            MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageRxPackets:           MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageTxBytes:             MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageTxDropped:           MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageTxErrors:            MetricSettings{Enabled: true},
-		ContainerNetworkIoUsageTxPackets:           MetricSettings{Enabled: true},
+			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.configSet == testSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUPercentDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
+
+			allMetricsCount++
+			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryCacheDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPgpginDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryRssDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "interface-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			mb.RecordContainerPidsCountDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerPidsLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordContainerUptimeDataPoint(ts, 1)
+
+			rb := mb.NewResourceBuilder()
+			rb.SetContainerCommandLine("container.command_line-val")
+			rb.SetContainerHostname("container.hostname-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageID("container.image.id-val")
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerName("container.name-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
+
+			if test.configSet == testSetNone {
+				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+				return
+			}
+
+			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+			rm := metrics.ResourceMetrics().At(0)
+			assert.Equal(t, res, rm.Resource())
+			assert.Equal(t, 1, rm.ScopeMetrics().Len())
+			ms := rm.ScopeMetrics().At(0).Metrics()
+			if test.configSet == testSetDefault {
+				assert.Equal(t, defaultMetricsCount, ms.Len())
+			}
+			if test.configSet == testSetAll {
+				assert.Equal(t, allMetricsCount, ms.Len())
+			}
+			validatedMetrics := make(map[string]bool)
+			for i := 0; i < ms.Len(); i++ {
+				switch ms.At(i).Name() {
+				case "container.blockio.io_merged_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_merged_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_merged_recursive")
+					validatedMetrics["container.blockio.io_merged_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_queued_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_queued_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_queued_recursive")
+					validatedMetrics["container.blockio.io_queued_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of requests queued up for this cgroup and its descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_service_bytes_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_service_bytes_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_bytes_recursive")
+					validatedMetrics["container.blockio.io_service_bytes_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bytes transferred to/from the disk by the group and descendant groups.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_service_time_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_service_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_service_time_recursive")
+					validatedMetrics["container.blockio.io_service_time_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_serviced_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_serviced_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_serviced_recursive")
+					validatedMetrics["container.blockio.io_serviced_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of IOs (bio) issued to the disk by the group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_time_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_time_recursive")
+					validatedMetrics["container.blockio.io_time_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "ms", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.io_wait_time_recursive":
+					assert.False(t, validatedMetrics["container.blockio.io_wait_time_recursive"], "Found a duplicate in the metrics slice: container.blockio.io_wait_time_recursive")
+					validatedMetrics["container.blockio.io_wait_time_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.blockio.sectors_recursive":
+					assert.False(t, validatedMetrics["container.blockio.sectors_recursive"], "Found a duplicate in the metrics slice: container.blockio.sectors_recursive")
+					validatedMetrics["container.blockio.sectors_recursive"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of sectors transferred to/from disk by the group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{sectors}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("device_major")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_major-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("device_minor")
+					assert.True(t, ok)
+					assert.EqualValues(t, "device_minor-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("operation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "operation-val", attrVal.Str())
+				case "container.cpu.percent":
+					assert.False(t, validatedMetrics["container.cpu.percent"], "Found a duplicate in the metrics slice: container.cpu.percent")
+					validatedMetrics["container.cpu.percent"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.cpu.throttling_data.periods":
+					assert.False(t, validatedMetrics["container.cpu.throttling_data.periods"], "Found a duplicate in the metrics slice: container.cpu.throttling_data.periods")
+					validatedMetrics["container.cpu.throttling_data.periods"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of periods with throttling active.", ms.At(i).Description())
+					assert.Equal(t, "{periods}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.throttling_data.throttled_periods":
+					assert.False(t, validatedMetrics["container.cpu.throttling_data.throttled_periods"], "Found a duplicate in the metrics slice: container.cpu.throttling_data.throttled_periods")
+					validatedMetrics["container.cpu.throttling_data.throttled_periods"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of periods when the container hits its throttling limit.", ms.At(i).Description())
+					assert.Equal(t, "{periods}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.throttling_data.throttled_time":
+					assert.False(t, validatedMetrics["container.cpu.throttling_data.throttled_time"], "Found a duplicate in the metrics slice: container.cpu.throttling_data.throttled_time")
+					validatedMetrics["container.cpu.throttling_data.throttled_time"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Aggregate time the container was throttled.", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.usage.kernelmode":
+					assert.False(t, validatedMetrics["container.cpu.usage.kernelmode"], "Found a duplicate in the metrics slice: container.cpu.usage.kernelmode")
+					validatedMetrics["container.cpu.usage.kernelmode"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.usage.percpu":
+					assert.False(t, validatedMetrics["container.cpu.usage.percpu"], "Found a duplicate in the metrics slice: container.cpu.usage.percpu")
+					validatedMetrics["container.cpu.usage.percpu"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Per-core CPU usage by the container (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("core")
+					assert.True(t, ok)
+					assert.EqualValues(t, "core-val", attrVal.Str())
+				case "container.cpu.usage.system":
+					assert.False(t, validatedMetrics["container.cpu.usage.system"], "Found a duplicate in the metrics slice: container.cpu.usage.system")
+					validatedMetrics["container.cpu.usage.system"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "System CPU usage, as reported by docker.", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.usage.total":
+					assert.False(t, validatedMetrics["container.cpu.usage.total"], "Found a duplicate in the metrics slice: container.cpu.usage.total")
+					validatedMetrics["container.cpu.usage.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU time consumed.", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.usage.usermode":
+					assert.False(t, validatedMetrics["container.cpu.usage.usermode"], "Found a duplicate in the metrics slice: container.cpu.usage.usermode")
+					validatedMetrics["container.cpu.usage.usermode"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).", ms.At(i).Description())
+					assert.Equal(t, "ns", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.cpu.utilization":
+					assert.False(t, validatedMetrics["container.cpu.utilization"], "Found a duplicate in the metrics slice: container.cpu.utilization")
+					validatedMetrics["container.cpu.utilization"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percent of CPU used by the container.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.memory.active_anon":
+					assert.False(t, validatedMetrics["container.memory.active_anon"], "Found a duplicate in the metrics slice: container.memory.active_anon")
+					validatedMetrics["container.memory.active_anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.active_file":
+					assert.False(t, validatedMetrics["container.memory.active_file"], "Found a duplicate in the metrics slice: container.memory.active_file")
+					validatedMetrics["container.memory.active_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cache memory that has been identified as active by the kernel.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.anon":
+					assert.False(t, validatedMetrics["container.memory.anon"], "Found a duplicate in the metrics slice: container.memory.anon")
+					validatedMetrics["container.memory.anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.cache":
+					assert.False(t, validatedMetrics["container.memory.cache"], "Found a duplicate in the metrics slice: container.memory.cache")
+					validatedMetrics["container.memory.cache"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.dirty":
+					assert.False(t, validatedMetrics["container.memory.dirty"], "Found a duplicate in the metrics slice: container.memory.dirty")
+					validatedMetrics["container.memory.dirty"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.file":
+					assert.False(t, validatedMetrics["container.memory.file"], "Found a duplicate in the metrics slice: container.memory.file")
+					validatedMetrics["container.memory.file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.hierarchical_memory_limit":
+					assert.False(t, validatedMetrics["container.memory.hierarchical_memory_limit"], "Found a duplicate in the metrics slice: container.memory.hierarchical_memory_limit")
+					validatedMetrics["container.memory.hierarchical_memory_limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.hierarchical_memsw_limit":
+					assert.False(t, validatedMetrics["container.memory.hierarchical_memsw_limit"], "Found a duplicate in the metrics slice: container.memory.hierarchical_memsw_limit")
+					validatedMetrics["container.memory.hierarchical_memsw_limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The maximum amount of RAM + swap that can be used by the processes of this control group (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.inactive_anon":
+					assert.False(t, validatedMetrics["container.memory.inactive_anon"], "Found a duplicate in the metrics slice: container.memory.inactive_anon")
+					validatedMetrics["container.memory.inactive_anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.inactive_file":
+					assert.False(t, validatedMetrics["container.memory.inactive_file"], "Found a duplicate in the metrics slice: container.memory.inactive_file")
+					validatedMetrics["container.memory.inactive_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cache memory that has been identified as inactive by the kernel.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.mapped_file":
+					assert.False(t, validatedMetrics["container.memory.mapped_file"], "Found a duplicate in the metrics slice: container.memory.mapped_file")
+					validatedMetrics["container.memory.mapped_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.percent":
+					assert.False(t, validatedMetrics["container.memory.percent"], "Found a duplicate in the metrics slice: container.memory.percent")
+					validatedMetrics["container.memory.percent"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of memory used.", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "container.memory.pgfault":
+					assert.False(t, validatedMetrics["container.memory.pgfault"], "Found a duplicate in the metrics slice: container.memory.pgfault")
+					validatedMetrics["container.memory.pgfault"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup triggered a page fault.", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.pgmajfault":
+					assert.False(t, validatedMetrics["container.memory.pgmajfault"], "Found a duplicate in the metrics slice: container.memory.pgmajfault")
+					validatedMetrics["container.memory.pgmajfault"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup triggered a major fault.", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.pgpgin":
+					assert.False(t, validatedMetrics["container.memory.pgpgin"], "Found a duplicate in the metrics slice: container.memory.pgpgin")
+					validatedMetrics["container.memory.pgpgin"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pages read from disk by the cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.pgpgout":
+					assert.False(t, validatedMetrics["container.memory.pgpgout"], "Found a duplicate in the metrics slice: container.memory.pgpgout")
+					validatedMetrics["container.memory.pgpgout"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pages written to disk by the cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.rss":
+					assert.False(t, validatedMetrics["container.memory.rss"], "Found a duplicate in the metrics slice: container.memory.rss")
+					validatedMetrics["container.memory.rss"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.rss_huge":
+					assert.False(t, validatedMetrics["container.memory.rss_huge"], "Found a duplicate in the metrics slice: container.memory.rss_huge")
+					validatedMetrics["container.memory.rss_huge"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_active_anon":
+					assert.False(t, validatedMetrics["container.memory.total_active_anon"], "Found a duplicate in the metrics slice: container.memory.total_active_anon")
+					validatedMetrics["container.memory.total_active_anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_active_file":
+					assert.False(t, validatedMetrics["container.memory.total_active_file"], "Found a duplicate in the metrics slice: container.memory.total_active_file")
+					validatedMetrics["container.memory.total_active_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cache memory that has been identified as active by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_cache":
+					assert.False(t, validatedMetrics["container.memory.total_cache"], "Found a duplicate in the metrics slice: container.memory.total_cache")
+					validatedMetrics["container.memory.total_cache"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_dirty":
+					assert.False(t, validatedMetrics["container.memory.total_dirty"], "Found a duplicate in the metrics slice: container.memory.total_dirty")
+					validatedMetrics["container.memory.total_dirty"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup and descendants (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_inactive_anon":
+					assert.False(t, validatedMetrics["container.memory.total_inactive_anon"], "Found a duplicate in the metrics slice: container.memory.total_inactive_anon")
+					validatedMetrics["container.memory.total_inactive_anon"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_inactive_file":
+					assert.False(t, validatedMetrics["container.memory.total_inactive_file"], "Found a duplicate in the metrics slice: container.memory.total_inactive_file")
+					validatedMetrics["container.memory.total_inactive_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_mapped_file":
+					assert.False(t, validatedMetrics["container.memory.total_mapped_file"], "Found a duplicate in the metrics slice: container.memory.total_mapped_file")
+					validatedMetrics["container.memory.total_mapped_file"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_pgfault":
+					assert.False(t, validatedMetrics["container.memory.total_pgfault"], "Found a duplicate in the metrics slice: container.memory.total_pgfault")
+					validatedMetrics["container.memory.total_pgfault"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_pgmajfault":
+					assert.False(t, validatedMetrics["container.memory.total_pgmajfault"], "Found a duplicate in the metrics slice: container.memory.total_pgmajfault")
+					validatedMetrics["container.memory.total_pgmajfault"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{faults}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_pgpgin":
+					assert.False(t, validatedMetrics["container.memory.total_pgpgin"], "Found a duplicate in the metrics slice: container.memory.total_pgpgin")
+					validatedMetrics["container.memory.total_pgpgin"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pages read from disk by the cgroup and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_pgpgout":
+					assert.False(t, validatedMetrics["container.memory.total_pgpgout"], "Found a duplicate in the metrics slice: container.memory.total_pgpgout")
+					validatedMetrics["container.memory.total_pgpgout"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pages written to disk by the cgroup and descendant groups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "{operations}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_rss":
+					assert.False(t, validatedMetrics["container.memory.total_rss"], "Found a duplicate in the metrics slice: container.memory.total_rss")
+					validatedMetrics["container.memory.total_rss"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_rss_huge":
+					assert.False(t, validatedMetrics["container.memory.total_rss_huge"], "Found a duplicate in the metrics slice: container.memory.total_rss_huge")
+					validatedMetrics["container.memory.total_rss_huge"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_unevictable":
+					assert.False(t, validatedMetrics["container.memory.total_unevictable"], "Found a duplicate in the metrics slice: container.memory.total_unevictable")
+					validatedMetrics["container.memory.total_unevictable"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that cannot be reclaimed. Includes descendant cgroups (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.total_writeback":
+					assert.False(t, validatedMetrics["container.memory.total_writeback"], "Found a duplicate in the metrics slice: container.memory.total_writeback")
+					validatedMetrics["container.memory.total_writeback"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.unevictable":
+					assert.False(t, validatedMetrics["container.memory.unevictable"], "Found a duplicate in the metrics slice: container.memory.unevictable")
+					validatedMetrics["container.memory.unevictable"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of memory that cannot be reclaimed.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.usage.limit":
+					assert.False(t, validatedMetrics["container.memory.usage.limit"], "Found a duplicate in the metrics slice: container.memory.usage.limit")
+					validatedMetrics["container.memory.usage.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Memory limit of the container.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.usage.max":
+					assert.False(t, validatedMetrics["container.memory.usage.max"], "Found a duplicate in the metrics slice: container.memory.usage.max")
+					validatedMetrics["container.memory.usage.max"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Maximum memory usage.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.usage.total":
+					assert.False(t, validatedMetrics["container.memory.usage.total"], "Found a duplicate in the metrics slice: container.memory.usage.total")
+					validatedMetrics["container.memory.usage.total"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Memory usage of the container. This excludes the cache.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.memory.writeback":
+					assert.False(t, validatedMetrics["container.memory.writeback"], "Found a duplicate in the metrics slice: container.memory.writeback")
+					validatedMetrics["container.memory.writeback"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup (Only available with cgroups v1).", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.network.io.usage.rx_bytes":
+					assert.False(t, validatedMetrics["container.network.io.usage.rx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_bytes")
+					validatedMetrics["container.network.io.usage.rx_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes received by the container.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.rx_dropped":
+					assert.False(t, validatedMetrics["container.network.io.usage.rx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_dropped")
+					validatedMetrics["container.network.io.usage.rx_dropped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Incoming packets dropped.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.rx_errors":
+					assert.False(t, validatedMetrics["container.network.io.usage.rx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_errors")
+					validatedMetrics["container.network.io.usage.rx_errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Received errors.", ms.At(i).Description())
+					assert.Equal(t, "{errors}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.rx_packets":
+					assert.False(t, validatedMetrics["container.network.io.usage.rx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.rx_packets")
+					validatedMetrics["container.network.io.usage.rx_packets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Packets received.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.tx_bytes":
+					assert.False(t, validatedMetrics["container.network.io.usage.tx_bytes"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_bytes")
+					validatedMetrics["container.network.io.usage.tx_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Bytes sent.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.tx_dropped":
+					assert.False(t, validatedMetrics["container.network.io.usage.tx_dropped"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_dropped")
+					validatedMetrics["container.network.io.usage.tx_dropped"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Outgoing packets dropped.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.tx_errors":
+					assert.False(t, validatedMetrics["container.network.io.usage.tx_errors"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_errors")
+					validatedMetrics["container.network.io.usage.tx_errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Sent errors.", ms.At(i).Description())
+					assert.Equal(t, "{errors}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.network.io.usage.tx_packets":
+					assert.False(t, validatedMetrics["container.network.io.usage.tx_packets"], "Found a duplicate in the metrics slice: container.network.io.usage.tx_packets")
+					validatedMetrics["container.network.io.usage.tx_packets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Packets sent.", ms.At(i).Description())
+					assert.Equal(t, "{packets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("interface")
+					assert.True(t, ok)
+					assert.EqualValues(t, "interface-val", attrVal.Str())
+				case "container.pids.count":
+					assert.False(t, validatedMetrics["container.pids.count"], "Found a duplicate in the metrics slice: container.pids.count")
+					validatedMetrics["container.pids.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of pids in the container's cgroup.", ms.At(i).Description())
+					assert.Equal(t, "{pids}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.pids.limit":
+					assert.False(t, validatedMetrics["container.pids.limit"], "Found a duplicate in the metrics slice: container.pids.limit")
+					validatedMetrics["container.pids.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Maximum number of pids in the container's cgroup.", ms.At(i).Description())
+					assert.Equal(t, "{pids}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.uptime":
+					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
+					validatedMetrics["container.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Time elapsed since container start time.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				}
+			}
+		})
 	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-
-	mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerCPUPercentDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
-	mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-	mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryCacheDataPoint(ts, 1)
-	mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
-	mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryPercentDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgpginDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
-	mb.RecordContainerMemorySwapDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalSwapDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
-	mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
-	mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-	mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
-
-	metrics := mb.Emit(WithContainerHostname("attr-val"), WithContainerID("attr-val"), WithContainerImageName("attr-val"), WithContainerName("attr-val"), WithContainerRuntime("attr-val"))
-
-	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
-	rm := metrics.ResourceMetrics().At(0)
-	attrCount := 0
-	attrCount++
-	attrVal, ok := rm.Resource().Attributes().Get("container.hostname")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("container.id")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("container.image.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("container.name")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	attrCount++
-	attrVal, ok = rm.Resource().Attributes().Get("container.runtime")
-	assert.True(t, ok)
-	assert.EqualValues(t, "attr-val", attrVal.Str())
-	assert.Equal(t, attrCount, rm.Resource().Attributes().Len())
-
-	assert.Equal(t, 1, rm.ScopeMetrics().Len())
-	ms := rm.ScopeMetrics().At(0).Metrics()
-	allMetricsCount := reflect.TypeOf(MetricsSettings{}).NumField()
-	assert.Equal(t, allMetricsCount, ms.Len())
-	validatedMetrics := make(map[string]struct{})
-	for i := 0; i < ms.Len(); i++ {
-		switch ms.At(i).Name() {
-		case "container.blockio.io_merged_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bios/requests merged into requests belonging to this cgroup and its descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_merged_recursive"] = struct{}{}
-		case "container.blockio.io_queued_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of requests queued up for this cgroup and its descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_queued_recursive"] = struct{}{}
-		case "container.blockio.io_service_bytes_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bytes transferred to/from the disk by the group and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_service_bytes_recursive"] = struct{}{}
-		case "container.blockio.io_service_time_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total amount of time in nanoseconds between request dispatch and request completion for the IOs done by this cgroup and descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_service_time_recursive"] = struct{}{}
-		case "container.blockio.io_serviced_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of IOs (bio) issued to the disk by the group and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_serviced_recursive"] = struct{}{}
-		case "container.blockio.io_time_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Disk time allocated to cgroup (and descendant cgroups) per device in milliseconds.", ms.At(i).Description())
-			assert.Equal(t, "ms", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_time_recursive"] = struct{}{}
-		case "container.blockio.io_wait_time_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total amount of time the IOs for this cgroup (and descendant cgroups) spent waiting in the scheduler queues for service.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.io_wait_time_recursive"] = struct{}{}
-		case "container.blockio.sectors_recursive":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of sectors transferred to/from disk by the group and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "{sectors}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("device_major")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("device_minor")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			attrVal, ok = dp.Attributes().Get("operation")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.blockio.sectors_recursive"] = struct{}{}
-		case "container.cpu.percent":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Percent of CPU used by the container.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["container.cpu.percent"] = struct{}{}
-		case "container.cpu.throttling_data.periods":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of periods with throttling active.", ms.At(i).Description())
-			assert.Equal(t, "{periods}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.throttling_data.periods"] = struct{}{}
-		case "container.cpu.throttling_data.throttled_periods":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of periods when the container hits its throttling limit.", ms.At(i).Description())
-			assert.Equal(t, "{periods}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.throttling_data.throttled_periods"] = struct{}{}
-		case "container.cpu.throttling_data.throttled_time":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Aggregate time the container was throttled.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.throttling_data.throttled_time"] = struct{}{}
-		case "container.cpu.usage.kernelmode":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.usage.kernelmode"] = struct{}{}
-		case "container.cpu.usage.percpu":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Per-core CPU usage by the container.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("core")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.cpu.usage.percpu"] = struct{}{}
-		case "container.cpu.usage.system":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "System CPU usage, as reported by docker.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.usage.system"] = struct{}{}
-		case "container.cpu.usage.total":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total CPU time consumed.", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.usage.total"] = struct{}{}
-		case "container.cpu.usage.usermode":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).", ms.At(i).Description())
-			assert.Equal(t, "ns", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.cpu.usage.usermode"] = struct{}{}
-		case "container.memory.active_anon":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.active_anon"] = struct{}{}
-		case "container.memory.active_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cache memory that has been identified as active by the kernel.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.active_file"] = struct{}{}
-		case "container.memory.cache":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory used by the processes of this control group that can be associated precisely with a block on a block device.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.cache"] = struct{}{}
-		case "container.memory.dirty":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.dirty"] = struct{}{}
-		case "container.memory.hierarchical_memory_limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The maximum amount of physical memory that can be used by the processes of this control group.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.hierarchical_memory_limit"] = struct{}{}
-		case "container.memory.hierarchical_memsw_limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The maximum amount of RAM + swap that can be used by the processes of this control group.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.hierarchical_memsw_limit"] = struct{}{}
-		case "container.memory.inactive_anon":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.inactive_anon"] = struct{}{}
-		case "container.memory.inactive_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cache memory that has been identified as inactive by the kernel.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.inactive_file"] = struct{}{}
-		case "container.memory.mapped_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.mapped_file"] = struct{}{}
-		case "container.memory.percent":
-			assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-			assert.Equal(t, "Percentage of memory used.", ms.At(i).Description())
-			assert.Equal(t, "1", ms.At(i).Unit())
-			dp := ms.At(i).Gauge().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-			assert.Equal(t, float64(1), dp.DoubleValue())
-			validatedMetrics["container.memory.percent"] = struct{}{}
-		case "container.memory.pgfault":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicate the number of times that a process of the cgroup triggered a page fault.", ms.At(i).Description())
-			assert.Equal(t, "{faults}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.pgfault"] = struct{}{}
-		case "container.memory.pgmajfault":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicate the number of times that a process of the cgroup triggered a major fault.", ms.At(i).Description())
-			assert.Equal(t, "{faults}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.pgmajfault"] = struct{}{}
-		case "container.memory.pgpgin":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of pages read from disk by the cgroup.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.pgpgin"] = struct{}{}
-		case "container.memory.pgpgout":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of pages written to disk by the cgroup.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.pgpgout"] = struct{}{}
-		case "container.memory.rss":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.rss"] = struct{}{}
-		case "container.memory.rss_huge":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.rss_huge"] = struct{}{}
-		case "container.memory.swap":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of swap currently used by the processes in this cgroup.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.swap"] = struct{}{}
-		case "container.memory.total_active_anon":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of anonymous memory that has been identified as active by the kernel. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_active_anon"] = struct{}{}
-		case "container.memory.total_active_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cache memory that has been identified as active by the kernel. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_active_file"] = struct{}{}
-		case "container.memory.total_cache":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Total amount of memory used by the processes of this cgroup (and descendants) that can be associated with a block on a block device. Also accounts for memory used by tmpfs.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_cache"] = struct{}{}
-		case "container.memory.total_dirty":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Bytes that are waiting to get written back to the disk, from this cgroup and descendants.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_dirty"] = struct{}{}
-		case "container.memory.total_inactive_anon":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of anonymous memory that has been identified as inactive by the kernel. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_inactive_anon"] = struct{}{}
-		case "container.memory.total_inactive_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Cache memory that has been identified as inactive by the kernel. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_inactive_file"] = struct{}{}
-		case "container.memory.total_mapped_file":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicates the amount of memory mapped by the processes in the control group and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_mapped_file"] = struct{}{}
-		case "container.memory.total_pgfault":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a page fault.", ms.At(i).Description())
-			assert.Equal(t, "{faults}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_pgfault"] = struct{}{}
-		case "container.memory.total_pgmajfault":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Indicate the number of times that a process of the cgroup (or descendant cgroups) triggered a major fault.", ms.At(i).Description())
-			assert.Equal(t, "{faults}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_pgmajfault"] = struct{}{}
-		case "container.memory.total_pgpgin":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of pages read from disk by the cgroup and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_pgpgin"] = struct{}{}
-		case "container.memory.total_pgpgout":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of pages written to disk by the cgroup and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "{operations}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_pgpgout"] = struct{}{}
-		case "container.memory.total_rss":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that doesn’t correspond to anything on disk: stacks, heaps, and anonymous memory maps. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_rss"] = struct{}{}
-		case "container.memory.total_rss_huge":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bytes of anonymous transparent hugepages in this cgroup and descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_rss_huge"] = struct{}{}
-		case "container.memory.total_swap":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of swap currently used by the processes in this cgroup and descendant groups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_swap"] = struct{}{}
-		case "container.memory.total_unevictable":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that cannot be reclaimed. Includes descendant cgroups.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_unevictable"] = struct{}{}
-		case "container.memory.total_writeback":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup and descendants.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.total_writeback"] = struct{}{}
-		case "container.memory.unevictable":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "The amount of memory that cannot be reclaimed.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.unevictable"] = struct{}{}
-		case "container.memory.usage.limit":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Memory limit of the container.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.usage.limit"] = struct{}{}
-		case "container.memory.usage.max":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Maximum memory usage.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.usage.max"] = struct{}{}
-		case "container.memory.usage.total":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Memory usage of the container. This excludes the total cache.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.usage.total"] = struct{}{}
-		case "container.memory.writeback":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Number of bytes of file/anon cache that are queued for syncing to disk in this cgroup.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			validatedMetrics["container.memory.writeback"] = struct{}{}
-		case "container.network.io.usage.rx_bytes":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Bytes received by the container.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.rx_bytes"] = struct{}{}
-		case "container.network.io.usage.rx_dropped":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Incoming packets dropped.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.rx_dropped"] = struct{}{}
-		case "container.network.io.usage.rx_errors":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Received errors.", ms.At(i).Description())
-			assert.Equal(t, "{errors}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.rx_errors"] = struct{}{}
-		case "container.network.io.usage.rx_packets":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Packets received.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.rx_packets"] = struct{}{}
-		case "container.network.io.usage.tx_bytes":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Bytes sent.", ms.At(i).Description())
-			assert.Equal(t, "By", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.tx_bytes"] = struct{}{}
-		case "container.network.io.usage.tx_dropped":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Outgoing packets dropped.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.tx_dropped"] = struct{}{}
-		case "container.network.io.usage.tx_errors":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Sent errors.", ms.At(i).Description())
-			assert.Equal(t, "{errors}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.tx_errors"] = struct{}{}
-		case "container.network.io.usage.tx_packets":
-			assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-			assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-			assert.Equal(t, "Packets sent.", ms.At(i).Description())
-			assert.Equal(t, "{packets}", ms.At(i).Unit())
-			assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
-			assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-			dp := ms.At(i).Sum().DataPoints().At(0)
-			assert.Equal(t, start, dp.StartTimestamp())
-			assert.Equal(t, ts, dp.Timestamp())
-			assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-			assert.Equal(t, int64(1), dp.IntValue())
-			attrVal, ok := dp.Attributes().Get("interface")
-			assert.True(t, ok)
-			assert.EqualValues(t, "attr-val", attrVal.Str())
-			validatedMetrics["container.network.io.usage.tx_packets"] = struct{}{}
-		}
-	}
-	assert.Equal(t, allMetricsCount, len(validatedMetrics))
-}
-
-func TestNoMetrics(t *testing.T) {
-	start := pcommon.Timestamp(1_000_000_000)
-	ts := pcommon.Timestamp(1_000_001_000)
-	settings := MetricsSettings{
-		ContainerBlockioIoMergedRecursive:          MetricSettings{Enabled: false},
-		ContainerBlockioIoQueuedRecursive:          MetricSettings{Enabled: false},
-		ContainerBlockioIoServiceBytesRecursive:    MetricSettings{Enabled: false},
-		ContainerBlockioIoServiceTimeRecursive:     MetricSettings{Enabled: false},
-		ContainerBlockioIoServicedRecursive:        MetricSettings{Enabled: false},
-		ContainerBlockioIoTimeRecursive:            MetricSettings{Enabled: false},
-		ContainerBlockioIoWaitTimeRecursive:        MetricSettings{Enabled: false},
-		ContainerBlockioSectorsRecursive:           MetricSettings{Enabled: false},
-		ContainerCPUPercent:                        MetricSettings{Enabled: false},
-		ContainerCPUThrottlingDataPeriods:          MetricSettings{Enabled: false},
-		ContainerCPUThrottlingDataThrottledPeriods: MetricSettings{Enabled: false},
-		ContainerCPUThrottlingDataThrottledTime:    MetricSettings{Enabled: false},
-		ContainerCPUUsageKernelmode:                MetricSettings{Enabled: false},
-		ContainerCPUUsagePercpu:                    MetricSettings{Enabled: false},
-		ContainerCPUUsageSystem:                    MetricSettings{Enabled: false},
-		ContainerCPUUsageTotal:                     MetricSettings{Enabled: false},
-		ContainerCPUUsageUsermode:                  MetricSettings{Enabled: false},
-		ContainerMemoryActiveAnon:                  MetricSettings{Enabled: false},
-		ContainerMemoryActiveFile:                  MetricSettings{Enabled: false},
-		ContainerMemoryCache:                       MetricSettings{Enabled: false},
-		ContainerMemoryDirty:                       MetricSettings{Enabled: false},
-		ContainerMemoryHierarchicalMemoryLimit:     MetricSettings{Enabled: false},
-		ContainerMemoryHierarchicalMemswLimit:      MetricSettings{Enabled: false},
-		ContainerMemoryInactiveAnon:                MetricSettings{Enabled: false},
-		ContainerMemoryInactiveFile:                MetricSettings{Enabled: false},
-		ContainerMemoryMappedFile:                  MetricSettings{Enabled: false},
-		ContainerMemoryPercent:                     MetricSettings{Enabled: false},
-		ContainerMemoryPgfault:                     MetricSettings{Enabled: false},
-		ContainerMemoryPgmajfault:                  MetricSettings{Enabled: false},
-		ContainerMemoryPgpgin:                      MetricSettings{Enabled: false},
-		ContainerMemoryPgpgout:                     MetricSettings{Enabled: false},
-		ContainerMemoryRss:                         MetricSettings{Enabled: false},
-		ContainerMemoryRssHuge:                     MetricSettings{Enabled: false},
-		ContainerMemorySwap:                        MetricSettings{Enabled: false},
-		ContainerMemoryTotalActiveAnon:             MetricSettings{Enabled: false},
-		ContainerMemoryTotalActiveFile:             MetricSettings{Enabled: false},
-		ContainerMemoryTotalCache:                  MetricSettings{Enabled: false},
-		ContainerMemoryTotalDirty:                  MetricSettings{Enabled: false},
-		ContainerMemoryTotalInactiveAnon:           MetricSettings{Enabled: false},
-		ContainerMemoryTotalInactiveFile:           MetricSettings{Enabled: false},
-		ContainerMemoryTotalMappedFile:             MetricSettings{Enabled: false},
-		ContainerMemoryTotalPgfault:                MetricSettings{Enabled: false},
-		ContainerMemoryTotalPgmajfault:             MetricSettings{Enabled: false},
-		ContainerMemoryTotalPgpgin:                 MetricSettings{Enabled: false},
-		ContainerMemoryTotalPgpgout:                MetricSettings{Enabled: false},
-		ContainerMemoryTotalRss:                    MetricSettings{Enabled: false},
-		ContainerMemoryTotalRssHuge:                MetricSettings{Enabled: false},
-		ContainerMemoryTotalSwap:                   MetricSettings{Enabled: false},
-		ContainerMemoryTotalUnevictable:            MetricSettings{Enabled: false},
-		ContainerMemoryTotalWriteback:              MetricSettings{Enabled: false},
-		ContainerMemoryUnevictable:                 MetricSettings{Enabled: false},
-		ContainerMemoryUsageLimit:                  MetricSettings{Enabled: false},
-		ContainerMemoryUsageMax:                    MetricSettings{Enabled: false},
-		ContainerMemoryUsageTotal:                  MetricSettings{Enabled: false},
-		ContainerMemoryWriteback:                   MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageRxBytes:             MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageRxDropped:           MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageRxErrors:            MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageRxPackets:           MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageTxBytes:             MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageTxDropped:           MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageTxErrors:            MetricSettings{Enabled: false},
-		ContainerNetworkIoUsageTxPackets:           MetricSettings{Enabled: false},
-	}
-	mb := NewMetricsBuilder(settings, component.BuildInfo{}, WithStartTime(start))
-	mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "attr-val", "attr-val", "attr-val")
-	mb.RecordContainerCPUPercentDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
-	mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
-	mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
-	mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-	mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryCacheDataPoint(ts, 1)
-	mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
-	mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryPercentDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgpginDataPoint(ts, 1)
-	mb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
-	mb.RecordContainerMemorySwapDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalSwapDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
-	mb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
-	mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
-	mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
-	mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
-	mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "attr-val")
-	mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "attr-val")
-
-	metrics := mb.Emit()
-
-	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 }

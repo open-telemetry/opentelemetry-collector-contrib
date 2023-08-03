@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor"
 
@@ -18,6 +7,8 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/obsreport"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 var (
@@ -40,57 +31,57 @@ func MetricViews() []*view.View {
 
 	return []*view.View{
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedSpans.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedSpans.Name()),
 			Measure:     mNumGroupedSpans,
 			Description: mNumGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedSpans.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedSpans.Name()),
 			Measure:     mNumNonGroupedSpans,
 			Description: mNumNonGroupedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistSpanGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistSpanGroups.Name()),
 			Measure:     mDistSpanGroups,
 			Description: mDistSpanGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedLogs.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedLogs.Name()),
 			Measure:     mNumGroupedLogs,
 			Description: mNumGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedLogs.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedLogs.Name()),
 			Measure:     mNumNonGroupedLogs,
 			Description: mNumNonGroupedLogs.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistLogGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistLogGroups.Name()),
 			Measure:     mDistLogGroups,
 			Description: mDistLogGroups.Description(),
 			Aggregation: distributionGroups,
 		},
 
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumGroupedMetrics.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumGroupedMetrics.Name()),
 			Measure:     mNumGroupedMetrics,
 			Description: mNumGroupedMetrics.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mNumNonGroupedMetrics.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumNonGroupedMetrics.Name()),
 			Measure:     mNumNonGroupedMetrics,
 			Description: mNumNonGroupedMetrics.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        obsreport.BuildProcessorCustomMetricName(string(typeStr), mDistMetricGroups.Name()),
+			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mDistMetricGroups.Name()),
 			Measure:     mDistMetricGroups,
 			Description: mDistMetricGroups.Description(),
 			Aggregation: distributionGroups,

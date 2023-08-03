@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package datasenders // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/datasenders"
 
@@ -18,10 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -52,15 +40,19 @@ func NewSFxMetricDataSender(port int) *SFxMetricsDataSender {
 func (sf *SFxMetricsDataSender) Start() error {
 	factory := signalfxexporter.NewFactory()
 	cfg := &signalfxexporter.Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(factory.Type())),
-		IngestURL:        fmt.Sprintf("http://%s", sf.GetEndpoint()),
-		APIURL:           "http://127.0.0.1",
-		AccessToken:      "access_token",
+		IngestURL:   fmt.Sprintf("http://%s", sf.GetEndpoint()),
+		APIURL:      "http://127.0.0.1",
+		AccessToken: "access_token",
 	}
-	params := componenttest.NewNopExporterCreateSettings()
+	params := exportertest.NewNopCreateSettings()
 	params.Logger = zap.L()
 
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	if err != nil {
+		return err
+	}
+
+	err = exporter.Start(context.Background(), componenttest.NewNopHost())
 	if err != nil {
 		return err
 	}

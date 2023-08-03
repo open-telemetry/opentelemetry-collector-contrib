@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver"
 
@@ -19,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -45,15 +34,15 @@ type kubletScraper struct {
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
-	cachedVolumeLabels    map[string][]metadata.ResourceMetricsOption
+	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
 }
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	rOptions *scraperOptions,
-	metricsConfig metadata.MetricsSettings,
+	metricsConfig metadata.MetricsBuilderConfig,
 ) (scraperhelper.Scraper, error) {
 	ks := &kubletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
@@ -62,15 +51,15 @@ func newKubletScraper(
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
-		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
+		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
 		mbs: &metadata.MetricsBuilders{
-			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
-			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set.BuildInfo),
+			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
+			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
+			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
+			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
 	}
-	return scraperhelper.NewScraper(typeStr, ks.scrape)
+	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }
 
 func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
@@ -99,34 +88,33 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
-	return func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 		if r.k8sAPIClient == nil {
-			return nil, nil
+			return nil
 		}
 
-		if r.cachedVolumeLabels[volCacheID] == nil {
+		if _, ok := r.cachedVolumeSource[volCacheID]; !ok {
 			ctx := context.Background()
 			pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeClaim, metav1.GetOptions{})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			volName := pvc.Spec.VolumeName
 			if volName == "" {
-				return nil, fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
+				return fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
 			}
 
 			pv, err := r.k8sAPIClient.CoreV1().PersistentVolumes().Get(ctx, volName, metav1.GetOptions{})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			ro := kubelet.GetPersistentVolumeLabels(pv.Spec.PersistentVolumeSource)
-
-			// Cache collected labels.
-			r.cachedVolumeLabels[volCacheID] = ro
+			// Cache collected source.
+			r.cachedVolumeSource[volCacheID] = pv.Spec.PersistentVolumeSource
 		}
-		return r.cachedVolumeLabels[volCacheID], nil
+		kubelet.SetPersistentVolumeLabels(rb, r.cachedVolumeSource[volCacheID])
+		return nil
 	}
 }

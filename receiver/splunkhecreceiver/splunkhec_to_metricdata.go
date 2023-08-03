@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
@@ -32,31 +21,13 @@ import (
 func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resourceCustomizer func(pcommon.Resource), config *Config) (pmetric.Metrics, int) {
 	numDroppedTimeSeries := 0
 	md := pmetric.NewMetrics()
-
+	scopeMetricsMap := make(map[[4]string]pmetric.ScopeMetrics)
 	for _, event := range events {
-		resourceMetrics := pmetric.NewResourceMetrics()
-		if resourceCustomizer != nil {
-			resourceCustomizer(resourceMetrics.Resource())
-		}
-		attrs := resourceMetrics.Resource().Attributes()
-		if event.Host != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
-		}
-		if event.Source != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
-		}
-		if event.SourceType != "" {
-			attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
-		}
-		if event.Index != "" {
-			attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
-		}
-
 		values := event.GetMetricValues()
 
 		labels := buildAttributes(event.Fields)
 
-		metrics := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics()
+		metrics := pmetric.NewMetricSlice()
 		for metricName, metricValue := range values {
 			pointTimestamp := convertTimestamp(event.Time)
 			metric := pmetric.NewMetric()
@@ -83,10 +54,35 @@ func splunkHecToMetricsData(logger *zap.Logger, events []*splunk.Event, resource
 			}
 		}
 
-		if metrics.Len() > 0 {
-			tgt := md.ResourceMetrics().AppendEmpty()
-			resourceMetrics.CopyTo(tgt)
+		if metrics.Len() == 0 {
+			continue
 		}
+		key := [4]string{event.Host, event.Source, event.SourceType, event.Index}
+		var sm pmetric.ScopeMetrics
+		var found bool
+		if sm, found = scopeMetricsMap[key]; !found {
+			resourceMetrics := md.ResourceMetrics().AppendEmpty()
+			sm = resourceMetrics.ScopeMetrics().AppendEmpty()
+			scopeMetricsMap[key] = sm
+
+			attrs := resourceMetrics.Resource().Attributes()
+			if event.Host != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Host, event.Host)
+			}
+			if event.Source != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Source, event.Source)
+			}
+			if event.SourceType != "" {
+				attrs.PutStr(config.HecToOtelAttrs.SourceType, event.SourceType)
+			}
+			if event.Index != "" {
+				attrs.PutStr(config.HecToOtelAttrs.Index, event.Index)
+			}
+			if resourceCustomizer != nil {
+				resourceCustomizer(resourceMetrics.Resource())
+			}
+		}
+		metrics.MoveAndAppendTo(sm.Metrics())
 	}
 
 	return md, numDroppedTimeSeries
@@ -122,12 +118,8 @@ func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float6
 	attributes.CopyTo(doublePt.Attributes())
 }
 
-func convertTimestamp(sec *float64) pcommon.Timestamp {
-	if sec == nil {
-		return 0
-	}
-
-	return pcommon.Timestamp(*sec * 1e9)
+func convertTimestamp(sec float64) pcommon.Timestamp {
+	return pcommon.Timestamp(sec * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.

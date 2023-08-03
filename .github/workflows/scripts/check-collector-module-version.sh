@@ -1,23 +1,15 @@
 #!/usr/bin/env bash
 
-#   Copyright The OpenTelemetry Authors
-
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-
-#       http://www.apache.org/licenses/LICENSE-2.0
-
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 
 #
 # verifies if the collector components are using the main core collector version
 # as a dependency.
 #
+
+source ./internal/buildscripts/modules
+
 set -eu -o pipefail
 
 # Return the collector main core version
@@ -26,7 +18,7 @@ get_collector_version() {
    main_mod_file="$2"
 
    if grep -q "$collector_module" "$main_mod_file"; then
-      grep "$collector_module" "$main_mod_file" | (read mod version;
+      grep "$collector_module" "$main_mod_file" | (read mod version rest;
          echo $version)
    else
       echo "Error: failed to retrieve the \"$collector_module\" version from \"$main_mod_file\"."
@@ -45,7 +37,7 @@ check_collector_versions_correct() {
    # Loop through all the module files, checking the collector version
    for mod_file in $mod_files; do
       if grep -q "$collector_module" "$mod_file"; then
-         mod_line=$(grep "$collector_module" "$mod_file")
+         mod_line=$(grep -m1 "$collector_module" "$mod_file")
          version=$(echo "$mod_line" | cut -d" " -f2)
 
          # To account for a module on its own 'require' line,
@@ -69,17 +61,29 @@ check_collector_versions_correct() {
    fi
 }
 
+MAIN_MOD_FILE="./go.mod"
+
 # Note space at end of string. This is so it filters for the exact string
 # only and does not return string which contains this string as a substring.
-COLLECTOR_MODULE="go.opentelemetry.io/collector "
+BETA_MODULE="go.opentelemetry.io/collector "
+BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE" "$MAIN_MOD_FILE")
+check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
+for mod in ${beta_modules[@]}; do
+   check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
+done
 
-MAIN_MOD_FILE="./go.mod"
-COLLECTOR_MOD_VERSION=$(get_collector_version "$COLLECTOR_MODULE" "$MAIN_MOD_FILE")
+# Check RC modules
+RC_MODULE="go.opentelemetry.io/collector/pdata "
+RC_MOD_VERSION=$(get_collector_version "$RC_MODULE" "$MAIN_MOD_FILE")
+check_collector_versions_correct "$RC_MODULE" "$RC_MOD_VERSION"
+for mod in ${rc_modules[@]}; do
+   check_collector_versions_correct "$mod" "$RC_MOD_VERSION"
+done
 
-# Check the collector module version in each of the module files
-check_collector_versions_correct "$COLLECTOR_MODULE" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/component" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/consumer" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/featuregate" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/pdata" "$COLLECTOR_MOD_VERSION"
-check_collector_versions_correct "go.opentelemetry.io/collector/semconv" "$COLLECTOR_MOD_VERSION"
+# Check stable modules, none currently exist, uncomment when pdata is 1.0.0
+# STABLE_MODULE="go.opentelemetry.io/collector/pdata "
+# STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
+# check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
+# for mod in ${stable_modules[@]}; do
+#    check_collector_versions_correct "$mod" "$STABLE_MOD_VERSION"
+# done

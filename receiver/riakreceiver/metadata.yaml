@@ -1,8 +1,17 @@
-name: riakreceiver
+type: riak
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, armstrmi]
 
 resource_attributes:
   riak.node.name:
     description: The name this node uses to identify itself.
+    enabled: true
     type: string
 
 attributes:
@@ -26,7 +35,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [request]
@@ -42,7 +51,7 @@ metrics:
     unit: "{read_repair}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   riak.memory.limit:
@@ -50,7 +59,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   riak.vnode.operation.count:
@@ -58,7 +67,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
     attributes: [request]
@@ -67,7 +76,7 @@ metrics:
     unit: "{operation}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [operation]
     enabled: true

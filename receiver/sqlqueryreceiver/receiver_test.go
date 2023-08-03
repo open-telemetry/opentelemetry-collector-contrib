@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver
 
@@ -23,19 +12,47 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 )
 
-func TestCreateReceiver(t *testing.T) {
-	createReceiver := createReceiverFunc(fakeDBConnect, mkFakeClient)
+func TestCreateLogsReceiver(t *testing.T) {
+	createReceiver := createLogsReceiverFunc(fakeDBConnect, mkFakeClient)
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		componenttest.NewNopReceiverCreateSettings(),
+		receivertest.NewNopCreateSettings(),
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 10 * time.Second,
+			},
+			Driver:     "mydriver",
+			DataSource: "my-datasource",
+			Queries: []Query{{
+				SQL: "select * from foo",
+				Logs: []LogsCfg{
+					{},
+				},
+			}},
+		},
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+}
+
+func TestCreateMetricsReceiver(t *testing.T) {
+	createReceiver := createMetricsReceiverFunc(fakeDBConnect, mkFakeClient)
+	ctx := context.Background()
+	receiver, err := createReceiver(
+		ctx,
+		receivertest.NewNopCreateSettings(),
+		&Config{
+			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				CollectionInterval: 10 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			Driver:     "mydriver",
 			DataSource: "my-datasource",
@@ -58,6 +75,6 @@ func fakeDBConnect(string, string) (*sql.DB, error) {
 	return nil, nil
 }
 
-func mkFakeClient(db *sql.DB, s string, logger *zap.Logger) dbClient {
-	return &fakeDBClient{responses: [][]metricRow{{{"foo": "111"}}}}
+func mkFakeClient(db, string, *zap.Logger) dbClient {
+	return &fakeDBClient{stringMaps: [][]stringMap{{{"foo": "111"}}}}
 }

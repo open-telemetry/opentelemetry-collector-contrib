@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -24,13 +13,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-var _ component.MetricsReceiver = (*vcenterMetricScraper)(nil)
+var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
 	client *vcenterClient
@@ -42,14 +32,14 @@ type vcenterMetricScraper struct {
 func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
-	settings component.ReceiverCreateSettings,
+	settings receiver.CreateSettings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
 		client: client,
 		config: config,
 		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.Metrics, settings.BuildInfo),
+		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
 }
 
@@ -132,9 +122,9 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(c.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(c.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -169,10 +159,10 @@ func (v *vcenterMetricScraper) collectDatastore(
 	}
 
 	v.recordDatastoreProperties(now, moDS)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(cluster.Name()),
-		metadata.WithVcenterDatastoreName(moDS.Name),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(cluster.Name())
+	rb.SetVcenterDatastoreName(moDS.Name)
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -213,10 +203,10 @@ func (v *vcenterMetricScraper) collectHost(
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
-	v.mb.EmitForResource(
-		metadata.WithVcenterHostName(host.Name()),
-		metadata.WithVcenterClusterName(cluster.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterHostName(host.Name())
+	rb.SetVcenterClusterName(cluster.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
@@ -241,7 +231,9 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			continue
 		}
 		v.recordResourcePool(ts, moRP)
-		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterResourcePoolName(rp.Name())
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -286,19 +278,30 @@ func (v *vcenterMetricScraper) collectVMs(
 			return
 		}
 
+		var hwSum mo.HostSystem
+		err = host.Properties(ctx, host.Reference(),
+			[]string{
+				"summary.hardware",
+			}, &hwSum)
+
+		if err != nil {
+			errs.AddPartial(1, err)
+			return
+		}
+
 		if moVM.Config == nil {
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		v.collectVM(ctx, colTime, moVM, errs)
-		v.mb.EmitForResource(
-			metadata.WithVcenterVMName(vm.Name()),
-			metadata.WithVcenterVMID(vmUUID),
-			metadata.WithVcenterClusterName(cluster.Name()),
-			metadata.WithVcenterHostName(hostname),
-		)
+		v.collectVM(ctx, colTime, moVM, hwSum, errs)
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMID(vmUUID)
+		rb.SetVcenterClusterName(cluster.Name())
+		rb.SetVcenterHostName(hostname)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
 }
@@ -307,8 +310,9 @@ func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
+	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	v.recordVMUsages(colTime, vm)
+	v.recordVMUsages(colTime, vm, hs)
 	v.recordVMPerformance(ctx, vm, errs)
 }

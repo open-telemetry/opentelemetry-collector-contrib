@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -26,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 )
 
@@ -33,7 +23,7 @@ func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
 		virtualMemoryFunc func() ([]*pageFileStats, error)
-		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
+		swapMemoryFunc    func(context.Context) (*mem.SwapMemoryStat, error)
 		expectedError     string
 		expectedErrCount  int
 	}
@@ -47,14 +37,14 @@ func TestScrape_Errors(t *testing.T) {
 		},
 		{
 			name:             "swapMemoryError",
-			swapMemoryFunc:   func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:   func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:    "failed to read swap info: err2",
 			expectedErrCount: pagingMetricsLen,
 		},
 		{
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:    func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "failed to read page file stats: err1; failed to read swap info: err2",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},
@@ -62,7 +52,7 @@ func TestScrape_Errors(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), componenttest.NewNopReceiverCreateSettings(), &Config{})
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), &Config{})
 			if test.virtualMemoryFunc != nil {
 				scraper.getPageFileStats = test.virtualMemoryFunc
 			}

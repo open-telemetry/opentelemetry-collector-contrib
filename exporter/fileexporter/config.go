@@ -1,24 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -29,7 +18,6 @@ const (
 
 // Config defines configuration for file exporter.
 type Config struct {
-	config.ExporterSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
 	// Path of the file to write to. Path is relative to current directory.
 	Path string `mapstructure:"path"`
@@ -46,6 +34,10 @@ type Config struct {
 	// Compression Codec used to export telemetry data
 	// Supported compression algorithms:`zstd`
 	Compression string `mapstructure:"compression"`
+
+	// FlushInterval is the duration between flushes.
+	// See time.ParseDuration for valid values.
+	FlushInterval time.Duration `mapstructure:"flush_interval"`
 }
 
 // Rotation an option to rolling log files
@@ -84,6 +76,9 @@ func (cfg *Config) Validate() error {
 	if cfg.Compression != "" && cfg.Compression != compressionZSTD {
 		return errors.New("compression is not supported")
 	}
+	if cfg.FlushInterval < 0 {
+		return errors.New("flush_interval must be larger than zero")
+	}
 	return nil
 }
 
@@ -102,6 +97,11 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	// if rotation is not present it means it is disabled.
 	if !componentParser.IsSet(rotationFieldName) {
 		cfg.Rotation = nil
+	}
+
+	// set flush interval to 1 second if not set.
+	if cfg.FlushInterval == 0 {
+		cfg.FlushInterval = time.Second
 	}
 	return nil
 }

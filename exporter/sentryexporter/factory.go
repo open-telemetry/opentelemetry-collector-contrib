@@ -1,16 +1,7 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
+
+//go:generate mdatagen metadata.yaml
 
 package sentryexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 
@@ -19,35 +10,29 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
-)
+	"go.opentelemetry.io/collector/exporter"
 
-const (
-	typeStr = "sentry"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelBeta
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Sentry exporter.
-func NewFactory() component.ExporterFactory {
-	return component.NewExporterFactory(
-		typeStr,
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesExporter(createTracesExporter, stability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
 func createTracesExporter(
 	_ context.Context,
-	params component.ExporterCreateSettings,
+	params exporter.CreateSettings,
 	config component.Config,
-) (component.TracesExporter, error) {
+) (exporter.Traces, error) {
 	sentryConfig, ok := config.(*Config)
 	if !ok {
 		return nil, fmt.Errorf("unexpected config type: %T", config)

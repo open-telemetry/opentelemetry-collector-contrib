@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
@@ -27,7 +16,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/components"
@@ -90,13 +79,13 @@ func TestHandleCLI_All(t *testing.T) {
 	assert.NotNil(t, writer.fileContents)
 }
 
-func defaultComponents(t *testing.T) component.Factories {
+func defaultComponents(t *testing.T) otelcol.Factories {
 	factories, err := components.Components()
 	require.NoError(t, err)
 	return factories
 }
 
-func testHandleCLI(t *testing.T, cs component.Factories, wr *fakeFilesystemWriter, args []string) {
+func testHandleCLI(t *testing.T, cs otelcol.Factories, wr *fakeFilesystemWriter, args []string) {
 	stdoutWriter := &fakeIOWriter{}
 	tmpl := testTemplate(t)
 	dr := configschema.NewDirResolver(filepath.Join("..", "..", "..", ".."), configschema.DefaultModule)
@@ -113,7 +102,7 @@ type fakeFilesystemWriter struct {
 	configFiles, fileContents []string
 }
 
-func (wr *fakeFilesystemWriter) writeFile(filename string, data []byte, perm os.FileMode) error {
+func (wr *fakeFilesystemWriter) writeFile(filename string, data []byte, _ os.FileMode) error {
 	wr.configFiles = append(wr.configFiles, filename)
 	wr.fileContents = append(wr.fileContents, string(data))
 	return nil

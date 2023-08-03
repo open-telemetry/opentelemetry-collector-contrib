@@ -66,9 +66,6 @@ k8sattributes/2:
     - sources:
       - from: connection
         name: ip
-    # deprecated way
-    - from: resource_attribute
-      name: k8s.pod.uid
 
   exclude:
     pods:

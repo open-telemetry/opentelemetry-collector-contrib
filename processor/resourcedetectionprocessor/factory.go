@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package resourcedetectionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
 
@@ -21,9 +10,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
@@ -31,20 +20,17 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ecs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/elasticbeanstalk"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
-)
-
-const (
-	// The value of "type" key in configuration.
-	typeStr = "resourcedetection"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
 )
 
 var consumerCapabilities = consumer.Capabilities{MutatesData: true}
@@ -59,7 +45,7 @@ type factory struct {
 }
 
 // NewFactory creates a new factory for ResourceDetection processor.
-func NewFactory() component.ProcessorFactory {
+func NewFactory() processor.Factory {
 	resourceProviderFactory := internal.NewProviderFactory(map[internal.DetectorType]internal.DetectorFactory{
 		aks.TypeStr:              aks.NewDetector,
 		azure.TypeStr:            azure.NewDetector,
@@ -69,12 +55,12 @@ func NewFactory() component.ProcessorFactory {
 		ecs.TypeStr:              ecs.NewDetector,
 		eks.TypeStr:              eks.NewDetector,
 		elasticbeanstalk.TypeStr: elasticbeanstalk.NewDetector,
+		lambda.TypeStr:           lambda.NewDetector,
 		env.TypeStr:              env.NewDetector,
 		gcp.TypeStr:              gcp.NewDetector,
-		// TODO(#10348): Remove GKE and GCE after the v0.54.0 release.
-		gcp.DeprecatedGKETypeStr: gcp.NewDetector,
-		gcp.DeprecatedGCETypeStr: gcp.NewDetector,
+		heroku.TypeStr:           heroku.NewDetector,
 		system.TypeStr:           system.NewDetector,
+		openshift.TypeStr:        openshift.NewDetector,
 	})
 
 	f := &factory{
@@ -82,28 +68,28 @@ func NewFactory() component.ProcessorFactory {
 		providers:               map[component.ID]*internal.ResourceProvider{},
 	}
 
-	return component.NewProcessorFactory(
-		typeStr,
+	return processor.NewFactory(
+		metadata.Type,
 		createDefaultConfig,
-		component.WithTracesProcessor(f.createTracesProcessor, stability),
-		component.WithMetricsProcessor(f.createMetricsProcessor, stability),
-		component.WithLogsProcessor(f.createLogsProcessor, stability))
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability))
 }
 
 // Type gets the type of the Option config created by this factory.
 func (*factory) Type() component.Type {
-	return typeStr
+	return metadata.Type
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ProcessorSettings:  config.NewProcessorSettings(component.NewID(typeStr)),
 		Detectors:          []string{env.TypeStr},
 		HTTPClientSettings: defaultHTTPClientSettings(),
 		Override:           true,
 		Attributes:         nil,
+		DetectorConfig:     detectorCreateDefaultConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
-		// 		 Set the default value of 'hostname_source' here instead of 'system' detector
+		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 
@@ -115,10 +101,10 @@ func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
 
 func (f *factory) createTracesProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesProcessor, error) {
+) (processor.Traces, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -136,10 +122,10 @@ func (f *factory) createTracesProcessor(
 
 func (f *factory) createMetricsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
-) (component.MetricsProcessor, error) {
+) (processor.Metrics, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -157,10 +143,10 @@ func (f *factory) createMetricsProcessor(
 
 func (f *factory) createLogsProcessor(
 	ctx context.Context,
-	set component.ProcessorCreateSettings,
+	set processor.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsProcessor, error) {
+) (processor.Logs, error) {
 	rdp, err := f.getResourceDetectionProcessor(set, cfg)
 	if err != nil {
 		return nil, err
@@ -177,11 +163,13 @@ func (f *factory) createLogsProcessor(
 }
 
 func (f *factory) getResourceDetectionProcessor(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-
+	if oCfg.Attributes != nil {
+		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
+	}
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
@@ -196,7 +184,7 @@ func (f *factory) getResourceDetectionProcessor(
 }
 
 func (f *factory) getResourceProvider(
-	params component.ProcessorCreateSettings,
+	params processor.CreateSettings,
 	timeout time.Duration,
 	configuredDetectors []string,
 	detectorConfigs DetectorConfig,
@@ -208,9 +196,6 @@ func (f *factory) getResourceProvider(
 	if provider, ok := f.providers[params.ID]; ok {
 		return provider, nil
 	}
-
-	// TODO(#10348): Remove this after the v0.54.0 release.
-	configuredDetectors = gcp.DeduplicateDetectors(params, configuredDetectors)
 
 	detectorTypes := make([]internal.DetectorType, 0, len(configuredDetectors))
 	for _, key := range configuredDetectors {

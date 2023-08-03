@@ -1,16 +1,5 @@
-// Copyright OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package azureblobreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver"
 
@@ -19,16 +8,15 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr             = "azureblob"
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
 )
@@ -42,32 +30,31 @@ type blobReceiverFactory struct {
 }
 
 // NewFactory returns a factory for Azure Blob receiver.
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	f := &blobReceiverFactory{
 		receivers: sharedcomponent.NewSharedComponents(),
 	}
 
-	return component.NewReceiverFactory(
-		typeStr,
+	return receiver.NewFactory(
+		metadata.Type,
 		f.createDefaultConfig,
-		component.WithTracesReceiver(f.createTracesReceiver, component.StabilityLevelBeta),
-		component.WithLogsReceiver(f.createLogsReceiver, component.StabilityLevelBeta))
+		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
+		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability))
 }
 
 func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-		Logs:             LogsConfig{ContainerName: logsContainerName},
-		Traces:           TracesConfig{ContainerName: tracesContainerName},
+		Logs:   LogsConfig{ContainerName: logsContainerName},
+		Traces: TracesConfig{ContainerName: tracesContainerName},
 	}
 }
 
 func (f *blobReceiverFactory) createLogsReceiver(
-	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	_ context.Context,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
-) (component.LogsReceiver, error) {
+) (receiver.Logs, error) {
 
 	receiver, err := f.getReceiver(set, cfg)
 
@@ -82,11 +69,11 @@ func (f *blobReceiverFactory) createLogsReceiver(
 }
 
 func (f *blobReceiverFactory) createTracesReceiver(
-	ctx context.Context,
-	set component.ReceiverCreateSettings,
+	_ context.Context,
+	set receiver.CreateSettings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
-) (component.TracesReceiver, error) {
+) (receiver.Traces, error) {
 
 	receiver, err := f.getReceiver(set, cfg)
 
@@ -100,7 +87,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set component.ReceiverCreateSettings,
+	set receiver.CreateSettings,
 	cfg component.Config) (component.Component, error) {
 
 	var err error

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
@@ -216,6 +205,19 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 	s.mb.RecordMongodbSessionCountDataPoint(now, val)
 }
 
+func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperationLatency {
+		metricPath := []string{"opLatencies", operationVal + "s", "latency"}
+		metricName := "mongodb.operation.latency.time"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationLatencyTimeDataPoint(now, val, operation)
+	}
+}
+
 // Admin Stats
 func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	for operationVal, operation := range metadata.MapAttributeOperation {
@@ -227,6 +229,19 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			continue
 		}
 		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
+	}
+}
+
+func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	for operationVal, operation := range metadata.MapAttributeOperation {
+		metricPath := []string{"opcountersRepl", operationVal}
+		metricName := "mongodb.operation.repl.count"
+		val, err := collectMetric(doc, metricPath)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
+			continue
+		}
+		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
 	}
 }
 
@@ -311,6 +326,28 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 		}
 		recorder(now, val)
 	}
+}
+
+func (s *mongodbScraper) recordUptime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"uptimeMillis"}
+	metricName := "mongodb.uptime"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbUptimeDataPoint(now, val)
+}
+
+func (s *mongodbScraper) recordHealth(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+	metricPath := []string{"ok"}
+	metricName := "mongodb.health"
+	val, err := collectMetric(doc, metricPath)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
+		return
+	}
+	s.mb.RecordMongodbHealthDataPoint(now, val)
 }
 
 // Lock Metrics are only supported by MongoDB v3.2+

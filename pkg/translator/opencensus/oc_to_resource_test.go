@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package opencensus
 
@@ -43,10 +32,8 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 	expectedAttrs := generateResourceWithOcNodeAndResource().Attributes()
 	// We don't have type information in ocResource, so need to make int attr string
 	expectedAttrs.PutStr("resource-int-attr", "123")
-	expectedAttrs.Sort()
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	resource.Attributes().Sort()
-	assert.EqualValues(t, expectedAttrs, resource.Attributes())
+	assert.Equal(t, expectedAttrs.AsRaw(), resource.Attributes().AsRaw())
 
 	// Make sure hard-coded fields override same-name values in Attributes.
 	// To do that add Attributes with same-name.
@@ -57,15 +44,14 @@ func TestOcNodeResourceToInternal(t *testing.T) {
 		}
 		return true
 	})
-	expectedAttrs.Sort()
 	ocResource.Labels[occonventions.AttributeResourceType] = "this will be overridden 2"
 
 	// Convert again.
 	resource = pcommon.NewResource()
 	ocNodeResourceToInternal(ocNode, ocResource, resource)
-	resource.Attributes().Sort()
+
 	// And verify that same-name attributes were ignored.
-	assert.EqualValues(t, expectedAttrs, resource.Attributes())
+	assert.Equal(t, expectedAttrs.AsRaw(), resource.Attributes().AsRaw())
 }
 
 func BenchmarkOcNodeResourceToInternal(b *testing.B) {

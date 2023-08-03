@@ -1,18 +1,7 @@
 #!/usr/bin/env bash
 #
-#   Copyright The OpenTelemetry Authors.
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+# Copyright The OpenTelemetry Authors
+# SPDX-License-Identifier: Apache-2.0
 #
 # This script checks for issues that have been inactive for a certain number
 # of days. Any inactive issues have codeowners pinged for labels corresponding
@@ -49,7 +38,7 @@ for ISSUE in ${ISSUES}; do
     DIFF_DAYS=$(((NOW-UPDATED_UNIX)/(3600*24)))
 
     if (( DIFF_DAYS < DAYS_BEFORE_STALE )); then
-        echo "Issue #${ISSUE} is not stale. Issues are sorted by updated date in ascending order, so all remaining issues must not be stale. Exiting."
+        echo "Issue #${ISSUE} is not stale: it has only been inactive for ${DIFF_DAYS} days and the threshold is ${DAYS_BEFORE_STALE} days. Issues are sorted by updated date in ascending order, so all remaining issues must not be stale. Exiting."
         exit 0
     fi
 
@@ -67,11 +56,11 @@ for ISSUE in ${ISSUES}; do
     done
 
     if [[ -z "${OWNER_MENTIONS}" ]]; then
-        echo "No code owners found. Marking issue as stale without pinging code owners."
+        echo "No code owners found. Marking issue #${ISSUE} as stale without pinging code owners."
 
         gh issue comment "${ISSUE}" -b "${STALE_MESSAGE}"
     else
-        echo "Pinging code owners for issue #${ISSUE}."
+        printf "Pinging code owners for issue #${ISSUE}:\n${OWNER_MENTIONS}"
 
         # The GitHub CLI only offers multiline strings through file input.
         printf "${STALE_MESSAGE}\n\nPinging code owners:\n${OWNER_MENTIONS}\nSee [Adding Labels via Comments](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#adding-labels-via-comments) if you do not have permissions to add labels yourself." \
@@ -86,6 +75,7 @@ for ISSUE in ${ISSUES}; do
     #    was the last activity on the issue, or the stale bot will remove the stale
     #    label if our comment to ping code owners comes too long after the stale
     #    label is applied.
+    echo "Marking issue #${ISSUE} as stale."
     gh issue edit "${ISSUE}" --add-label "${STALE_LABEL}"
 done
 

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 
@@ -22,6 +11,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +49,7 @@ type loadBalancerImp struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(params component.ExporterCreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
+func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancerImp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Resolver.DNS != nil && oCfg.Resolver.Static != nil {
@@ -79,6 +69,18 @@ func newLoadBalancer(params component.ExporterCreateSettings, cfg component.Conf
 
 		var err error
 		res, err = newDNSResolver(dnsLogger, oCfg.Resolver.DNS.Hostname, oCfg.Resolver.DNS.Port, oCfg.Resolver.DNS.Interval, oCfg.Resolver.DNS.Timeout)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if oCfg.Resolver.K8sSvc != nil {
+		k8sLogger := params.Logger.With(zap.String("resolver", "k8s service"))
+
+		clt, err := newInClusterClient()
+		if err != nil {
+			return nil, err
+		}
+		res, err = newK8sResolver(clt, k8sLogger, oCfg.Resolver.K8sSvc.Service, oCfg.Resolver.K8sSvc.Ports)
 		if err != nil {
 			return nil, err
 		}

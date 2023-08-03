@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//	http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 package csv // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/csv"
 
 import (
@@ -51,6 +40,7 @@ type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
 
 	Header          string `mapstructure:"header"`
+	HeaderDelimiter string `mapstructure:"header_delimiter"`
 	HeaderAttribute string `mapstructure:"header_attribute"`
 	FieldDelimiter  string `mapstructure:"delimiter"`
 	LazyQuotes      bool   `mapstructure:"lazy_quotes"`
@@ -68,14 +58,23 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		c.FieldDelimiter = ","
 	}
 
+	if c.HeaderDelimiter == "" {
+		c.HeaderDelimiter = c.FieldDelimiter
+	}
+
 	if c.IgnoreQuotes && c.LazyQuotes {
 		return nil, errors.New("only one of 'ignore_quotes' or 'lazy_quotes' can be true")
 	}
 
 	fieldDelimiter := []rune(c.FieldDelimiter)[0]
+	headerDelimiter := []rune(c.HeaderDelimiter)[0]
 
 	if len([]rune(c.FieldDelimiter)) != 1 {
 		return nil, fmt.Errorf("invalid 'delimiter': '%s'", c.FieldDelimiter)
+	}
+
+	if len([]rune(c.HeaderDelimiter)) != 1 {
+		return nil, fmt.Errorf("invalid 'header_delimiter': '%s'", c.HeaderDelimiter)
 	}
 
 	var headers []string
@@ -84,10 +83,10 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, errors.New("missing required field 'header' or 'header_attribute'")
 	case c.Header != "" && c.HeaderAttribute != "":
 		return nil, errors.New("only one header parameter can be set: 'header' or 'header_attribute'")
-	case c.Header != "" && !strings.Contains(c.Header, c.FieldDelimiter):
+	case c.Header != "" && !strings.Contains(c.Header, c.HeaderDelimiter):
 		return nil, errors.New("missing field delimiter in header")
 	case c.Header != "":
-		headers = strings.Split(c.Header, c.FieldDelimiter)
+		headers = strings.Split(c.Header, c.HeaderDelimiter)
 	}
 
 	return &Parser{
@@ -95,6 +94,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		header:          headers,
 		headerAttribute: c.HeaderAttribute,
 		fieldDelimiter:  fieldDelimiter,
+		headerDelimiter: headerDelimiter,
 		lazyQuotes:      c.LazyQuotes,
 		ignoreQuotes:    c.IgnoreQuotes,
 		parse:           generateParseFunc(headers, fieldDelimiter, c.LazyQuotes, c.IgnoreQuotes),
@@ -105,6 +105,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 type Parser struct {
 	helper.ParserOperator
 	fieldDelimiter  rune
+	headerDelimiter rune
 	header          []string
 	headerAttribute string
 	lazyQuotes      bool
@@ -132,7 +133,7 @@ func (r *Parser) Process(ctx context.Context, e *entry.Entry) error {
 			r.Error(err)
 			return err
 		}
-		headers := strings.Split(headerString, string([]rune{r.fieldDelimiter}))
+		headers := strings.Split(headerString, string([]rune{r.headerDelimiter}))
 		parse = generateParseFunc(headers, r.fieldDelimiter, r.lazyQuotes, r.ignoreQuotes)
 	}
 

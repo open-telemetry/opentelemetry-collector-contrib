@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudpubsubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 
@@ -19,28 +8,28 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
 
 const (
-	typeStr              = "googlecloudpubsub"
-	stability            = component.StabilityLevelBeta
 	reportTransport      = "pubsub"
 	reportFormatProtobuf = "protobuf"
 )
 
-func NewFactory() component.ReceiverFactory {
+func NewFactory() receiver.Factory {
 	f := &pubsubReceiverFactory{
 		receivers: make(map[*Config]*pubsubReceiver),
 	}
-	return component.NewReceiverFactory(
-		typeStr,
+	return receiver.NewFactory(
+		metadata.Type,
 		f.CreateDefaultConfig,
-		component.WithTracesReceiver(f.CreateTracesReceiver, stability),
-		component.WithMetricsReceiver(f.CreateMetricsReceiver, stability),
-		component.WithLogsReceiver(f.CreateLogsReceiver, stability),
+		receiver.WithTraces(f.CreateTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(f.CreateMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(f.CreateLogsReceiver, metadata.LogsStability),
 	)
 }
 
@@ -49,12 +38,10 @@ type pubsubReceiverFactory struct {
 }
 
 func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
-	return &Config{
-		ReceiverSettings: config.NewReceiverSettings(component.NewID(typeStr)),
-	}
+	return &Config{}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCreateSettings, config component.Config) (*pubsubReceiver, error) {
+func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver, nil
@@ -80,9 +67,9 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params component.ReceiverCr
 
 func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Traces) (component.TracesReceiver, error) {
+	consumer consumer.Traces) (receiver.Traces, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -101,9 +88,9 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 
 func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Metrics) (component.MetricsReceiver, error) {
+	consumer consumer.Metrics) (receiver.Metrics, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -122,9 +109,9 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 
 func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
-	params component.ReceiverCreateSettings,
+	params receiver.CreateSettings,
 	cfg component.Config,
-	consumer consumer.Logs) (component.LogsReceiver, error) {
+	consumer consumer.Logs) (receiver.Logs, error) {
 
 	if consumer == nil {
 		return nil, component.ErrNilNextConsumer

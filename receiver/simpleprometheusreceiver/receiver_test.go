@@ -1,23 +1,11 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package simpleprometheusreceiver
 
 import (
 	"context"
 	"net/url"
-	"reflect"
 	"testing"
 	"time"
 
@@ -25,11 +13,13 @@ import (
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
@@ -57,7 +47,7 @@ func TestReceiver(t *testing.T) {
 
 			r, err := f.CreateMetricsReceiver(
 				context.Background(),
-				componenttest.NewNopReceiverCreateSettings(),
+				receivertest.NewNopCreateSettings(),
 				cfg,
 				consumertest.NewNop(),
 			)
@@ -78,10 +68,9 @@ func TestReceiver(t *testing.T) {
 
 func TestGetPrometheusConfig(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		want    *prometheusreceiver.Config
-		wantErr bool
+		name   string
+		config *Config
+		want   *prometheusreceiver.Config
 	}{
 		{
 			name: "Test without TLS",
@@ -208,23 +197,17 @@ func TestGetPrometheusConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := getPrometheusConfig(tt.config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getPrometheusConfig() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getPrometheusConfig() got = %v, want %v", got, tt.want)
-			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }
 
 func TestGetPrometheusConfigWrapper(t *testing.T) {
 	tests := []struct {
-		name    string
-		config  *Config
-		want    *prometheusreceiver.Config
-		wantErr bool
+		name   string
+		config *Config
+		want   *prometheusreceiver.Config
 	}{
 		{
 			name: "Test TLSEnable true",
@@ -411,14 +394,9 @@ func TestGetPrometheusConfigWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := getPrometheusConfigWrapper(tt.config, componenttest.NewNopReceiverCreateSettings())
-			if (err != nil) != tt.wantErr {
-				t.Errorf("getPrometheusConfigWrapper() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getPrometheusConfigWrapper() got = %v, want %v", got, tt.want)
-			}
+			got, err := getPrometheusConfigWrapper(tt.config, receivertest.NewNopCreateSettings())
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
 		})
 	}
 }

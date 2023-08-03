@@ -1,19 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//go:build windows
-// +build windows
+// SPDX-License-Identifier: Apache-2.0
 
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
@@ -27,22 +13,22 @@ import (
 
 // EventXML is the rendered xml of an event.
 type EventXML struct {
-	EventID          EventID     `xml:"System>EventID"`
-	Provider         Provider    `xml:"System>Provider"`
-	Computer         string      `xml:"System>Computer"`
-	Channel          string      `xml:"System>Channel"`
-	RecordID         uint64      `xml:"System>EventRecordID"`
-	TimeCreated      TimeCreated `xml:"System>TimeCreated"`
-	Message          string      `xml:"RenderingInfo>Message"`
-	RenderedLevel    string      `xml:"RenderingInfo>Level"`
-	Level            string      `xml:"System>Level"`
-	RenderedTask     string      `xml:"RenderingInfo>Task"`
-	Task             string      `xml:"System>Task"`
-	RenderedOpcode   string      `xml:"RenderingInfo>Opcode"`
-	Opcode           string      `xml:"System>Opcode"`
-	RenderedKeywords []string    `xml:"RenderingInfo>Keywords>Keyword"`
-	Keywords         []string    `xml:"System>Keywords"`
-	EventData        []string    `xml:"EventData>Data"`
+	EventID          EventID          `xml:"System>EventID"`
+	Provider         Provider         `xml:"System>Provider"`
+	Computer         string           `xml:"System>Computer"`
+	Channel          string           `xml:"System>Channel"`
+	RecordID         uint64           `xml:"System>EventRecordID"`
+	TimeCreated      TimeCreated      `xml:"System>TimeCreated"`
+	Message          string           `xml:"RenderingInfo>Message"`
+	RenderedLevel    string           `xml:"RenderingInfo>Level"`
+	Level            string           `xml:"System>Level"`
+	RenderedTask     string           `xml:"RenderingInfo>Task"`
+	Task             string           `xml:"System>Task"`
+	RenderedOpcode   string           `xml:"RenderingInfo>Opcode"`
+	Opcode           string           `xml:"System>Opcode"`
+	RenderedKeywords []string         `xml:"RenderingInfo>Keywords>Keyword"`
+	Keywords         []string         `xml:"System>Keywords"`
+	EventData        []EventDataEntry `xml:"EventData>Data"`
 }
 
 // parseTimestamp will parse the timestamp of the event.
@@ -130,7 +116,7 @@ func (e *EventXML) parseBody() map[string]interface{} {
 		"task":        task,
 		"opcode":      opcode,
 		"keywords":    keywords,
-		"event_data":  e.EventData,
+		"event_data":  parseEventData(e.EventData),
 	}
 	if len(details) > 0 {
 		body["details"] = details
@@ -146,6 +132,22 @@ func (e *EventXML) parseMessage() (string, map[string]interface{}) {
 	default:
 		return e.Message, nil
 	}
+}
+
+// parse event data entries into a map[string]interface
+// where the key is the Name attribute, and value is the element value
+// entries without Name are ignored
+// see: https://learn.microsoft.com/en-us/windows/win32/wes/eventschema-datafieldtype-complextype
+func parseEventData(entries []EventDataEntry) map[string]interface{} {
+	outputMap := make(map[string]interface{}, len(entries))
+
+	for _, entry := range entries {
+		if entry.Name != "" {
+			outputMap[entry.Name] = entry.Value
+		}
+	}
+
+	return outputMap
 }
 
 // unmarshalEventXML will unmarshal EventXML from xml bytes.
@@ -173,4 +175,9 @@ type Provider struct {
 	Name            string `xml:"Name,attr"`
 	GUID            string `xml:"Guid,attr"`
 	EventSourceName string `xml:"EventSourceName,attr"`
+}
+
+type EventDataEntry struct {
+	Name  string `xml:"Name,attr"`
+	Value string `xml:",chardata"`
 }

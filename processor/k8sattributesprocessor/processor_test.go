@@ -1,16 +1,5 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor
 
@@ -32,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 
@@ -51,36 +42,36 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 	}
 }
 
-func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (component.TracesProcessor, error) {
+func newTracesProcessor(cfg component.Config, next consumer.Traces, options ...option) (processor.Traces, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createTracesProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		next,
 		opts...,
 	)
 }
 
-func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (component.MetricsProcessor, error) {
+func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, options ...option) (processor.Metrics, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createMetricsProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		nextMetricsConsumer,
 		opts...,
 	)
 }
 
-func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (component.LogsProcessor, error) {
+func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, options ...option) (processor.Logs, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
 	return createLogsProcessorWithOptions(
 		context.Background(),
-		componenttest.NewNopProcessorCreateSettings(),
+		processortest.NewNopCreateSettings(),
 		cfg,
 		nextLogsConsumer,
 		opts...,
@@ -105,9 +96,9 @@ func withExtractKubernetesProcessorInto(kp **kubernetesprocessor) option {
 type multiTest struct {
 	t *testing.T
 
-	tp component.TracesProcessor
-	mp component.MetricsProcessor
-	lp component.LogsProcessor
+	tp processor.Traces
+	mp processor.Metrics
+	lp processor.Logs
 
 	nextTrace   *consumertest.TracesSink
 	nextMetrics *consumertest.MetricsSink
@@ -235,7 +226,7 @@ func TestProcessorBadConfig(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace) (kube.Client, error) {
+	clientProvider := func(_ *zap.Logger, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 		return nil, fmt.Errorf("bad client error")
 	}
 
@@ -303,6 +294,12 @@ func withPodUID(uid string) generateResourceFunc {
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
 		res.Attributes().PutStr(conventions.AttributeK8SContainerName, containerName)
+	}
+}
+
+func withContainerID(id string) generateResourceFunc {
+	return func(res pcommon.Resource) {
+		res.Attributes().PutStr(conventions.AttributeContainerID, id)
 	}
 }
 
@@ -749,6 +746,81 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 		wantAttrs    map[string]string
 	}{
 		{
+			name: "all-by-name",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
+			name: "all-by-id",
+			op: func(kp *kubernetesprocessor) {
+				kp.podAssociations = []kube.Association{
+					{
+						Name: "k8s.pod.uid",
+						Sources: []kube.AssociationSource{
+							{
+								From: "resource_attribute",
+								Name: "k8s.pod.uid",
+							},
+						},
+					},
+				}
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByID: map[string]*kube.Container{
+							"767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd": {
+								Name:      "app",
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
+				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
+			},
+			wantAttrs: map[string]string{
+				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
+				conventions.AttributeK8SContainerName:   "app",
+				conventions.AttributeContainerImageName: "test/app",
+				conventions.AttributeContainerImageTag:  "1.0.1",
+			},
+		},
+		{
 			name: "image-only",
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
@@ -763,10 +835,12 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 					},
 				}
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "19f651bc-73e4-410f-b3e9-f0241679d3b8")] = &kube.Pod{
-					Containers: map[string]*kube.Container{
-						"app": {
-							ImageName: "test/app",
-							ImageTag:  "1.0.1",
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+							},
 						},
 					},
 				}
@@ -786,11 +860,13 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			name: "container-id-only",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
-					Containers: map[string]*kube.Container{
-						"app": {
-							Statuses: map[int]kube.ContainerStatus{
-								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
-								1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Statuses: map[int]kube.ContainerStatus{
+									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+									1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+								},
 							},
 						},
 					},
@@ -809,15 +885,44 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 		},
 		{
+			name: "container-id-latest",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Statuses: map[int]kube.ContainerStatus{
+									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+									1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+									2: {ContainerID: "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848"},
+								},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]string{
+				kube.K8sIPLabelName:                   "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+			},
+		},
+		{
 			name: "container-name-mismatch",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
-					Containers: map[string]*kube.Container{
-						"app": {
-							ImageName: "test/app",
-							ImageTag:  "1.0.1",
-							Statuses: map[int]kube.ContainerStatus{
-								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								ImageName: "test/app",
+								ImageTag:  "1.0.1",
+								Statuses: map[int]kube.ContainerStatus{
+									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+								},
 							},
 						},
 					},
@@ -838,11 +943,13 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			name: "container-run-id-mismatch",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
-					Containers: map[string]*kube.Container{
-						"app": {
-							ImageName: "test/app",
-							Statuses: map[int]kube.ContainerStatus{
-								0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								ImageName: "test/app",
+								Statuses: map[int]kube.ContainerStatus{
+									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
+								},
 							},
 						},
 					},

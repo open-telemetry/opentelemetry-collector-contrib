@@ -2,5 +2,5 @@ mongodb:
   hosts:
     - endpoint: localhost:27017
   username: otel
-  password: $MONGO_PASSWORD
+  password: ${env:MONGO_PASSWORD}
   collection_interval: 60s

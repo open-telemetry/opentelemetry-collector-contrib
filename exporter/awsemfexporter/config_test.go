@@ -1,30 +1,21 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
 import (
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
@@ -40,13 +31,12 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "1"),
+			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -61,12 +51,13 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:         "",
 				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
 				OutputDestination:     "cloudwatch",
+				Version:               "1",
+				logger:                zap.NewNop(),
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "resource_attr_to_label"),
+			id: component.NewIDWithName(metadata.Type, "resource_attr_to_label"),
 			expected: &Config{
-				ExporterSettings: config.NewExporterSettings(component.NewID(typeStr)),
 				AWSSessionSettings: awsutil.AWSSessionSettings{
 					NumberOfWorkers:       8,
 					Endpoint:              "",
@@ -81,7 +72,35 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:               "",
 				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
 				OutputDestination:           "cloudwatch",
+				Version:                     "1",
 				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "metric_descriptors"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:          "",
+				LogStreamName:         "",
+				DimensionRollupOption: "ZeroAndSingleDimensionRollup",
+				OutputDestination:     "cloudwatch",
+				Version:               "1",
+				MetricDescriptors: []MetricDescriptor{{
+					MetricName: "memcached_current_items",
+					Unit:       "Count",
+					Overwrite:  true,
+				}},
+				logger: zap.NewNop(),
 			},
 		},
 	}
@@ -103,13 +122,12 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	incorrectDescriptor := []MetricDescriptor{
-		{metricName: ""},
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "INVALID", metricName: "404"},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{MetricName: ""},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "INVALID", MetricName: "404"},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -123,14 +141,13 @@ func TestConfigValidate(t *testing.T) {
 
 	assert.Equal(t, 2, len(cfg.MetricDescriptors))
 	assert.Equal(t, []MetricDescriptor{
-		{unit: "Count", metricName: "apiserver_total", overwrite: true},
-		{unit: "Megabytes", metricName: "memory_usage"},
+		{Unit: "Count", MetricName: "apiserver_total", Overwrite: true},
+		{Unit: "Megabytes", MetricName: "memory_usage"},
 	}, cfg.MetricDescriptors)
 }
 
 func TestRetentionValidateCorrect(t *testing.T) {
 	cfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "1")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -146,7 +163,6 @@ func TestRetentionValidateCorrect(t *testing.T) {
 
 func TestRetentionValidateWrong(t *testing.T) {
 	wrongcfg := &Config{
-		ExporterSettings: config.NewExporterSettings(component.NewIDWithName(typeStr, "2")),
 		AWSSessionSettings: awsutil.AWSSessionSettings{
 			RequestTimeoutSeconds: 30,
 			MaxRetries:            1,
@@ -156,6 +172,91 @@ func TestRetentionValidateWrong(t *testing.T) {
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
 		logger:                      zap.NewNop(),
 	}
-	assert.Error(t, wrongcfg.Validate())
+	assert.Error(t, component.ValidateConfig(wrongcfg))
 
+}
+
+func TestValidateTags(t *testing.T) {
+	// Create *string values for tags inputs
+	basicValue := "avalue"
+	wrongRegexValue := "***"
+	emptyValue := ""
+	tooLongValue := strings.Repeat("a", 257)
+
+	// Create a map with no items and then one with too many items for testing
+	emptyMap := make(map[string]*string)
+	bigMap := make(map[string]*string)
+	for i := 0; i < 51; i++ {
+		bigMap[strconv.Itoa(i)] = &basicValue
+	}
+
+	tests := []struct {
+		id           component.ID
+		tags         map[string]*string
+		errorMessage string
+	}{
+		{
+			id:   component.NewIDWithName(metadata.Type, "validate-correct"),
+			tags: map[string]*string{"basicKey": &basicValue},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "too-little-tags"),
+			tags:         emptyMap,
+			errorMessage: "invalid amount of items. Please input at least 1 tag or remove the tag field",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "too-many-tags"),
+			tags:         bigMap,
+			errorMessage: "invalid amount of items. Please input at most 50 tags",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "wrong-key-regex"),
+			tags:         map[string]*string{"***": &basicValue},
+			errorMessage: "key - *** does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "wrong-value-regex"),
+			tags:         map[string]*string{"basicKey": &wrongRegexValue},
+			errorMessage: "value - " + wrongRegexValue + " does not follow the regex pattern" + `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`,
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "key-too-short"),
+			tags:         map[string]*string{"": &basicValue},
+			errorMessage: "key -  has an invalid length. Please use keys with a length of 1 to 128 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "key-too-long"),
+			tags:         map[string]*string{strings.Repeat("a", 129): &basicValue},
+			errorMessage: "key - " + strings.Repeat("a", 129) + " has an invalid length. Please use keys with a length of 1 to 128 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "value-too-short"),
+			tags:         map[string]*string{"basicKey": &emptyValue},
+			errorMessage: "value - " + emptyValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "value-too-long"),
+			tags:         map[string]*string{"basicKey": &tooLongValue},
+			errorMessage: "value - " + tooLongValue + " has an invalid length. Please use values with a length of 1 to 256 characters",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cfg := &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            1,
+				},
+				DimensionRollupOption:       "ZeroAndSingleDimensionRollup",
+				Tags:                        tt.tags,
+				ResourceToTelemetrySettings: resourcetotelemetry.Settings{Enabled: true},
+				logger:                      zap.NewNop(),
+			}
+			if tt.errorMessage != "" {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+		})
+	}
 }

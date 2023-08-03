@@ -1,32 +1,57 @@
-name: mongoatlasreceiver
+type: mongodbatlas
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics, logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   mongodb_atlas.org_name:
     description: Organization Name
+    enabled: true
     type: string
   mongodb_atlas.project.name:
     description: Project Name
+    enabled: true
     type: string
   mongodb_atlas.project.id:
     description: Project ID
+    enabled: true
     type: string
   mongodb_atlas.host.name:
     description: Hostname of the process
+    enabled: true
+    type: string
+  mongodb_atlas.user.alias:
+    description: User-friendly hostname of the cluster node
+    enabled: false
+    type: string
+  mongodb_atlas.cluster.name:
+    description: Cluster Name
+    enabled: false
     type: string
   mongodb_atlas.process.port:
     description: Port process is bound to
+    enabled: true
     type: string
   mongodb_atlas.process.type_name:
     description: Process type
+    enabled: true
     type: string
   mongodb_atlas.process.id:
     description: ID of the process
+    enabled: true
     type: string
   mongodb_atlas.db.name:
     description: Name of the Database
+    enabled: true
     type: string
   mongodb_atlas.disk.partition:
     description: Name of a disk partition
+    enabled: true
     type: string
 
 attributes:
@@ -233,7 +258,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.connections:
     enabled: true
     description: Number of current connections
@@ -242,7 +267,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.cpu.usage.max:
     enabled: true
     description: CPU Usage (%)
@@ -331,14 +356,6 @@ metrics:
     attributes: [document_status]
     gauge:
       value_type: double
-  mongodbatlas.process.fts.cpu.usage:
-    enabled: true
-    description: Full text search CPU (%)
-    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
-    unit: 1
-    attributes: [cpu_state]
-    gauge:
-      value_type: double
   mongodbatlas.process.global_lock:
     enabled: true
     description: Number and status of locks
@@ -407,7 +424,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.oplog.time:
     enabled: true
     description: Execution time by operation
@@ -440,7 +457,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.page_faults:
     enabled: true
     description: Page faults
@@ -610,18 +627,16 @@ metrics:
       value_type: double
   mongodbatlas.disk.partition.utilization.max:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The maximum percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics MAX_DISK_PARTITION_UTILIZATION
     unit: 1
-    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.utilization.average:
     enabled: true
-    description: Disk partition utilization (%)
+    description: The percentage of time during which requests are being issued to and serviced by the partition.
     extended_documentation: MongoDB Metrics DISK_PARTITION_UTILIZATION
     unit: 1
-    attributes: [disk_status]
     gauge:
       value_type: double
   mongodbatlas.disk.partition.latency.max:
@@ -681,7 +696,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.system.fts.disk.used:
     enabled: true
     description: Full text search disk usage
@@ -692,6 +707,7 @@ metrics:
   mongodbatlas.system.fts.cpu.usage:
     enabled: true
     description: Full-text search (%)
+    extended_documentation: Aggregate of MongoDB Metrics FTS_PROCESS_CPU_USER, FTS_PROCESS_CPU_KERNEL
     unit: 1
     attributes: [cpu_state]
     gauge:
