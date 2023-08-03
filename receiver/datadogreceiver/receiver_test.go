@@ -10,9 +10,12 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -20,12 +23,11 @@ import (
 )
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
-
 	factory := NewFactory()
 	ddr, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), factory.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err, "Receiver should be created")
 
-	err = ddr.Start(context.Background(), componenttest.NewNopHost())
+	err = startComponentWithRetries(context.Background(), ddr, componenttest.NewNopHost())
 	assert.NoError(t, err, "Server should start")
 
 	err = ddr.Shutdown(context.Background())
@@ -44,7 +46,7 @@ func TestDatadogServer(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
-	require.NoError(t, dd.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(t, startComponentWithRetries(ctx, dd, componenttest.NewNopHost()))
 	t.Cleanup(func() {
 		require.NoError(t, dd.Shutdown(ctx), "Must not error shutting down")
 	})
@@ -84,4 +86,14 @@ func TestDatadogServer(t *testing.T) {
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")
 		})
 	}
+}
+
+// Throughout the repo, many tests are invoked with go test ... -parallel ...
+// This means that in addition to explicitly parallelizable tests (t.Parallel()), most test cases can be executed
+// in parallel. Components that statically try to bind a port (e.g., from an integration test) can therefore fail
+// and cause flaky builds. This function wraps Component.start with a simple ≤5s retry schedule.
+func startComponentWithRetries(ctx context.Context, component component.Component, host component.Host) error {
+	return backoff.Retry(func() error {
+		return component.Start(ctx, host)
+	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(time.Second), 5))
 }
