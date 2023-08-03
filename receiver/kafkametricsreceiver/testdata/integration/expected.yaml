@@ -2,7 +2,7 @@ resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: Number of brokers in the cluster.
+          - description: "[DEPRECATED] Number of brokers in the cluster."
             gauge:
               aggregationTemporality: 2
               dataPoints:
