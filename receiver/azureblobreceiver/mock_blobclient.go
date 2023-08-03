@@ -21,10 +21,8 @@ func (_m *mockBlobClient) readBlob(ctx context.Context, containerName string, bl
 	var r0 *bytes.Buffer
 	if rf, ok := ret.Get(0).(func(context.Context, string, string) *bytes.Buffer); ok {
 		r0 = rf(ctx, containerName, blobName)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*bytes.Buffer)
-		}
+	} else if ret.Get(0) != nil {
+		r0 = ret.Get(0).(*bytes.Buffer)
 	}
 
 	var r1 error
