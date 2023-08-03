@@ -164,10 +164,10 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
 					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
-					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
+					cfg.OrderingCriteria.SortBy = []sortRuleImpl{
 						{
 							&TimestampSortRule{
-								BaseSortRule: BaseSortRule{
+								baseSortRule: baseSortRule{
 									SortType:  sortTypeTimestamp,
 									RegexKey:  "rotation_time",
 									Ascending: true,
@@ -185,10 +185,10 @@ func TestUnmarshal(t *testing.T) {
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
 					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
-					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
+					cfg.OrderingCriteria.SortBy = []sortRuleImpl{
 						{
 							&NumericSortRule{
-								BaseSortRule: BaseSortRule{
+								baseSortRule: baseSortRule{
 									SortType: sortTypeNumeric,
 									RegexKey: "file_num",
 								},
@@ -575,10 +575,10 @@ func TestBuild(t *testing.T) {
 		{
 			"BadOrderingCriteriaRegex",
 			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
+				f.OrderingCriteria.SortBy = []sortRuleImpl{
 					{
 						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeNumeric,
 							},
@@ -593,10 +593,10 @@ func TestBuild(t *testing.T) {
 			"BasicOrderingCriteriaTimetsamp",
 			func(f *Config) {
 				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
+				f.OrderingCriteria.SortBy = []sortRuleImpl{
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,
 							},
@@ -611,10 +611,10 @@ func TestBuild(t *testing.T) {
 			"GoodOrderingCriteriaTimestamp",
 			func(f *Config) {
 				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
+				f.OrderingCriteria.SortBy = []sortRuleImpl{
 					{
 						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
+							baseSortRule: baseSortRule{
 								RegexKey: "value",
 								SortType: sortTypeTimestamp,
 							},
@@ -790,10 +790,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.NotNil(t, f.readerFactory.headerSettings)
-				require.NotNil(t, f.readerFactory.headerSettings.matchRegex)
-				require.NotNil(t, f.readerFactory.headerSettings.splitFunc)
-				require.NotNil(t, f.readerFactory.headerSettings.config)
+				require.NotNil(t, f.readerFactory.headerConfig.SplitFunc)
 			},
 		},
 	}
@@ -810,7 +807,6 @@ func TestBuildWithHeader(t *testing.T) {
 			if err != nil {
 				return
 			}
-
 			tc.validate(t, input)
 		})
 	}

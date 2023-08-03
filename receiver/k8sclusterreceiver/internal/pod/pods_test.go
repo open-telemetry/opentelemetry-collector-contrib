@@ -41,7 +41,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), pod)
+	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), pod)
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
@@ -210,6 +210,7 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 
 	out := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		experimentalmetricmetadata.ResourceID(podUIDLabel): {
+			EntityType:    "k8s.pod",
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{

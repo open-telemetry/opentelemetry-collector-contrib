@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib,observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   couchdb.node.name:

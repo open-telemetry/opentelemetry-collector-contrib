@@ -11,15 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 )
-
-func TestNewDetector(t *testing.T) {
-	dcfg := CreateDefaultConfig()
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, detector)
-}
 
 // Tests Lambda resource detector running in Lambda environment
 func TestLambda(t *testing.T) {
@@ -29,8 +21,8 @@ func TestLambda(t *testing.T) {
 	t.Setenv(awsLambdaFunctionNameEnvVar, functionName)
 
 	// Call Lambda Resource detector to detect resources
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	lambdaDetector := &detector{logger: zap.NewNop(), resourceAttributes: resourceAttributes}
+	lambdaDetector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -45,8 +37,8 @@ func TestLambda(t *testing.T) {
 // Tests Lambda resource detector not running in Lambda environment
 func TestNotLambda(t *testing.T) {
 	ctx := context.Background()
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
-	lambdaDetector := &detector{logger: zap.NewNop(), resourceAttributes: resourceAttributes}
+	lambdaDetector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
 	res, _, err := lambdaDetector.Detect(ctx)
 	require.NoError(t, err)
 	require.NotNil(t, res)

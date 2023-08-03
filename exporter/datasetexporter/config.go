@@ -11,6 +11,7 @@ import (
 	"github.com/scalyr/dataset-go/pkg/buffer"
 	"github.com/scalyr/dataset-go/pkg/buffer_config"
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
+	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,18 +26,32 @@ func newDefaultTracesSettings() TracesSettings {
 }
 
 const logsExportResourceInfoDefault = false
+const logsExportScopeInfoDefault = true
+const logsDecomposeComplexMessageFieldDefault = false
 
 type LogsSettings struct {
 	// ExportResourceInfo is optional flag to signal that the resource info is being exported to DataSet while exporting Logs.
 	// This is especially useful when reducing DataSet billable log volume.
 	// Default value: false.
 	ExportResourceInfo bool `mapstructure:"export_resource_info_on_event"`
+
+	// ExportScopeInfo is an optional flag that signals if scope info should be exported (when available) with each event. If scope
+	// information is not utilized, it makes sense to disable exporting it since it will result in increased billable log volume.
+	ExportScopeInfo bool `mapstructure:"export_scope_info_on_event"`
+
+	// DecomposeComplexMessageField is an optional flag to signal that message / body of complex types (e.g. a map) should be
+	// decomposed / deconstructed into multiple fields. This is usually done outside of the main DataSet integration on the
+	// client side (e.g. as part of the attribute processor or similar) or on the server side (DataSet server side JSON parser
+	// for message field) and that's why this functionality is disabled by default.
+	DecomposeComplexMessageField bool `mapstructure:"decompose_complex_message_field"`
 }
 
 // newDefaultLogsSettings returns the default settings for LogsSettings.
 func newDefaultLogsSettings() LogsSettings {
 	return LogsSettings{
-		ExportResourceInfo: logsExportResourceInfoDefault,
+		ExportResourceInfo:           logsExportResourceInfoDefault,
+		ExportScopeInfo:              logsExportScopeInfoDefault,
+		DecomposeComplexMessageField: logsDecomposeComplexMessageFieldDefault,
 	}
 }
 
@@ -44,6 +59,7 @@ const bufferMaxLifetime = 5 * time.Second
 const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
 const bufferRetryMaxElapsedTime = 300 * time.Second
+const bufferRetryShutdownTimeout = 30 * time.Second
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
@@ -51,6 +67,7 @@ type BufferSettings struct {
 	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
 	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
 	RetryMaxElapsedTime  time.Duration `mapstructure:"retry_max_elapsed_time"`
+	RetryShutdownTimeout time.Duration `mapstructure:"retry_shutdown_timeout"`
 }
 
 // newDefaultBufferSettings returns the default settings for BufferSettings.
@@ -61,6 +78,20 @@ func newDefaultBufferSettings() BufferSettings {
 		RetryInitialInterval: bufferRetryInitialInterval,
 		RetryMaxInterval:     bufferRetryMaxInterval,
 		RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+		RetryShutdownTimeout: bufferRetryShutdownTimeout,
+	}
+}
+
+type ServerHostSettings struct {
+	UseHostName bool   `mapstructure:"use_hostname"`
+	ServerHost  string `mapstructure:"server_host"`
+}
+
+// newDefaultBufferSettings returns the default settings for BufferSettings.
+func newDefaultServerHostSettings() ServerHostSettings {
+	return ServerHostSettings{
+		UseHostName: true,
+		ServerHost:  "",
 	}
 }
 
@@ -70,6 +101,7 @@ type Config struct {
 	BufferSettings                 `mapstructure:"buffer"`
 	TracesSettings                 `mapstructure:"traces"`
 	LogsSettings                   `mapstructure:"logs"`
+	ServerHostSettings             `mapstructure:"server_host"`
 	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
@@ -102,11 +134,12 @@ func (c *Config) String() string {
 	s := ""
 	s += fmt.Sprintf("%s: %s; ", "DatasetURL", c.DatasetURL)
 	s += fmt.Sprintf("%s: %+v; ", "BufferSettings", c.BufferSettings)
+	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
+	s += fmt.Sprintf("%s: %+v; ", "ServerHostSettings", c.ServerHostSettings)
 	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
-	s += fmt.Sprintf("%s: %+v; ", "TimeoutSettings", c.TimeoutSettings)
-	s += fmt.Sprintf("%s: %+v", "LogsSettings", c.LogsSettings)
+	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
 
 	return s
 }
@@ -130,16 +163,23 @@ func (c *Config) convert() (*ExporterConfig, error) {
 					RetryMaxElapsedTime:      c.BufferSettings.RetryMaxElapsedTime,
 					RetryMultiplier:          backoff.DefaultMultiplier,
 					RetryRandomizationFactor: backoff.DefaultRandomizationFactor,
+					RetryShutdownTimeout:     c.BufferSettings.RetryShutdownTimeout,
+				},
+				ServerHostSettings: server_host_config.DataSetServerHostSettings{
+					UseHostName: c.ServerHostSettings.UseHostName,
+					ServerHost:  c.ServerHostSettings.ServerHost,
 				},
 			},
-			tracesSettings: c.TracesSettings,
-			logsSettings:   c.LogsSettings,
+			tracesSettings:     c.TracesSettings,
+			logsSettings:       c.LogsSettings,
+			serverHostSettings: c.ServerHostSettings,
 		},
 		nil
 }
 
 type ExporterConfig struct {
-	datasetConfig  *datasetConfig.DataSetConfig
-	tracesSettings TracesSettings
-	logsSettings   LogsSettings
+	datasetConfig      *datasetConfig.DataSetConfig
+	tracesSettings     TracesSettings
+	logsSettings       LogsSettings
+	serverHostSettings ServerHostSettings
 }

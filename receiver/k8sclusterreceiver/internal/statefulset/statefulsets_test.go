@@ -20,7 +20,7 @@ import (
 func TestStatefulsetMetrics(t *testing.T) {
 	ss := newStatefulset("1")
 
-	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), ss)
+	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), ss)
 
 	require.Equal(t, 1, actualResourceMetrics.ResourceMetrics().Len())
 	require.Equal(t, 4, actualResourceMetrics.MetricCount())
@@ -56,6 +56,7 @@ func TestStatefulsetMetadata(t *testing.T) {
 
 	require.Equal(t,
 		metadata.KubernetesMetadata{
+			EntityType:    "k8s.statefulset",
 			ResourceIDKey: "k8s.statefulset.uid",
 			ResourceID:    "test-statefulset-1-uid",
 			Metadata: map[string]string{
