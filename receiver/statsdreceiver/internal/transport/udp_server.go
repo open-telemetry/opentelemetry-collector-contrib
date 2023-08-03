@@ -44,7 +44,7 @@ func NewUDPServer(transport Transport, address string) (Server, error) {
 	return &usrv, nil
 }
 
-// Start the server ready to recevie metrics.
+// ListenAndServe starts the server ready to receive metrics.
 func (u *udpServer) ListenAndServe(
 	nextConsumer consumer.Metrics,
 	reporter Reporter,
@@ -78,12 +78,12 @@ func (u *udpServer) ListenAndServe(
 	}
 }
 
-// Closes the server
+// Close closes the server.
 func (u *udpServer) Close() error {
 	return u.packetConn.Close()
 }
 
-// This helper parses the buffer and split it line bye line to be parsed upstream.
+// handlePacket is helper that parses the buffer and split it line by line to be parsed upstream.
 func (u *udpServer) handlePacket(
 	data []byte,
 	addr net.Addr,
