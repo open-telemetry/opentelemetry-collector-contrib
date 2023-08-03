@@ -1,0 +1,27 @@
+{
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "NewClient",
+      "receiver": "",
+      "return_types": [
+        "client",
+        "error"
+      ],
+      "param_types": [
+        "context.Context",
+        "*Config",
+        "*zap.Logger"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

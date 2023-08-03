@@ -1,0 +1,16 @@
+{
+  "structs": [
+    "Config",
+    "MetricsConfig",
+    "TracesConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

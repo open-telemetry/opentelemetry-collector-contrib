@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "AssumeRole",
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    }
+  ]
+}

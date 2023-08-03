@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "MetricDimensionsConfig",
+    "MetricsConfig",
+    "NamedConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "BearerAuthRoundTripper",
+    "BearerTokenAuth",
+    "Config",
+    "PerRPCAuth"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    }
+  ]
+}

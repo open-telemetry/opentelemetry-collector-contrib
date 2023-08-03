@@ -1,0 +1,27 @@
+{
+  "values": [
+    "EventTypeDelete",
+    "EventTypeNone",
+    "EventTypeState"
+  ],
+  "structs": [
+    "EntityDeleteDetails",
+    "EntityEvent",
+    "EntityEventsSlice",
+    "EntityStateDetails",
+    "EventType",
+    "MetadataDelta",
+    "MetadataExporter",
+    "MetadataUpdate",
+    "ResourceID"
+  ],
+  "functions": [
+    {
+      "name": "NewEntityEventsSlice",
+      "receiver": "",
+      "return_types": [
+        "EntityEventsSlice"
+      ]
+    }
+  ]
+}

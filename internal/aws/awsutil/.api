@@ -1,0 +1,58 @@
+{
+  "values": [
+    "STSAwsCnPartitionIDSuffix",
+    "STSEndpointPrefix",
+    "STSEndpointSuffix"
+  ],
+  "structs": [
+    "AWSSessionSettings",
+    "Conn",
+    "ConnAttr"
+  ],
+  "functions": [
+    {
+      "name": "CreateDefaultSessionConfig",
+      "receiver": "",
+      "return_types": [
+        "AWSSessionSettings"
+      ]
+    },
+    {
+      "name": "GetAWSConfigSession",
+      "receiver": "",
+      "return_types": [
+        "*aws.Config",
+        "*session.Session",
+        "error"
+      ],
+      "param_types": [
+        "*zap.Logger",
+        "ConnAttr",
+        "*AWSSessionSettings"
+      ]
+    },
+    {
+      "name": "GetDefaultSession",
+      "receiver": "",
+      "return_types": [
+        "*session.Session",
+        "error"
+      ],
+      "param_types": [
+        "*zap.Logger"
+      ]
+    },
+    {
+      "name": "ProxyServerTransport",
+      "receiver": "",
+      "return_types": [
+        "*http.Transport",
+        "error"
+      ],
+      "param_types": [
+        "*zap.Logger",
+        "*AWSSessionSettings"
+      ]
+    }
+  ]
+}

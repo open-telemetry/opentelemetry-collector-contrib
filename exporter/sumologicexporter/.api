@@ -1,0 +1,57 @@
+{
+  "values": [
+    "Carbon2Format",
+    "DefaultClient",
+    "DefaultCompress",
+    "DefaultCompressEncoding",
+    "DefaultGraphiteTemplate",
+    "DefaultLogFormat",
+    "DefaultMaxRequestBodySize",
+    "DefaultMetricFormat",
+    "DefaultSourceCategory",
+    "DefaultSourceHost",
+    "DefaultSourceName",
+    "DeflateCompression",
+    "GZIPCompression",
+    "GraphiteFormat",
+    "JSONFormat",
+    "LogsPipeline",
+    "MetricsPipeline",
+    "NoCompression",
+    "PrometheusFormat",
+    "TextFormat"
+  ],
+  "structs": [
+    "CompressEncodingType",
+    "Config",
+    "LogFormatType",
+    "MetricFormatType",
+    "PipelineType"
+  ],
+  "functions": [
+    {
+      "name": "CreateDefaultHTTPClientSettings",
+      "receiver": "",
+      "return_types": [
+        "confighttp.HTTPClientSettings"
+      ]
+    },
+    {
+      "name": "LogRecordsToLogs",
+      "receiver": "",
+      "return_types": [
+        "plog.Logs"
+      ],
+      "param_types": [
+        "[]plog.LogRecord"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

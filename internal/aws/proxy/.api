@@ -1,0 +1,27 @@
+{
+  "structs": [
+    "Config",
+    "Server"
+  ],
+  "functions": [
+    {
+      "name": "DefaultConfig",
+      "receiver": "",
+      "return_types": [
+        "*Config"
+      ]
+    },
+    {
+      "name": "NewServer",
+      "receiver": "",
+      "return_types": [
+        "Server",
+        "error"
+      ],
+      "param_types": [
+        "*Config",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "structs": [
+    "AdxLog",
+    "AdxMetric",
+    "AdxTrace",
+    "Config",
+    "Event",
+    "Link"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

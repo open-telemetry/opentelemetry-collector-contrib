@@ -1,0 +1,25 @@
+{
+  "structs": [
+    "CommonExporterConfig",
+    "Config",
+    "DockerLabelConfig",
+    "ServiceConfig",
+    "TaskDefinitionConfig"
+  ],
+  "functions": [
+    {
+      "name": "DefaultConfig",
+      "receiver": "",
+      "return_types": [
+        "Config"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    }
+  ]
+}

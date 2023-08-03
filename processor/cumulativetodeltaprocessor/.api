@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "Config",
+    "MatchMetrics"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

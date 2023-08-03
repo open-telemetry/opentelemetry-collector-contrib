@@ -1,0 +1,11 @@
+{
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exp.Factory"
+      ]
+    }
+  ]
+}

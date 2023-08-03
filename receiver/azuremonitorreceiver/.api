@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "ArmClient",
+    "Config",
+    "MetricsDefinitionsClientInterface",
+    "MetricsValuesClient"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

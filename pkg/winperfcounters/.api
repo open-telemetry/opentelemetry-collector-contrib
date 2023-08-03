@@ -1,0 +1,41 @@
+{
+  "structs": [
+    "CounterValue",
+    "PerfCounterWatcher"
+  ],
+  "functions": [
+    {
+      "name": "ExpandWildCardPath",
+      "receiver": "",
+      "return_types": [
+        "[]string",
+        "error"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "NewWatcher",
+      "receiver": "",
+      "return_types": [
+        "PerfCounterWatcher",
+        "error"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "NewWatcherFromPath",
+      "receiver": "",
+      "return_types": [
+        "PerfCounterWatcher",
+        "error"
+      ],
+      "param_types": [
+        "string"
+      ]
+    }
+  ]
+}

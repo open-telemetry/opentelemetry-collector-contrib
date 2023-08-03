@@ -1,0 +1,12 @@
+{
+  "structs": [
+    "Aggregated",
+    "Codeowners",
+    "MetricData",
+    "MetricInputType",
+    "MetricValueType",
+    "Mono",
+    "Status",
+    "ValueType"
+  ]
+}

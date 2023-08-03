@@ -1,0 +1,51 @@
+{
+  "values": [
+    "ForwardMode",
+    "MessageMode",
+    "PackedForwardMode",
+    "UnknownMode"
+  ],
+  "structs": [
+    "AckResponse",
+    "Collector",
+    "Config",
+    "Event",
+    "EventMode",
+    "ForwardEventLogRecords",
+    "Log",
+    "MessageEventLogRecord",
+    "OptionsMap",
+    "PackedForwardEventLogRecords",
+    "Peeker"
+  ],
+  "functions": [
+    {
+      "name": "DetermineNextEventMode",
+      "receiver": "",
+      "return_types": [
+        "EventMode",
+        "error"
+      ],
+      "param_types": [
+        "Peeker"
+      ]
+    },
+    {
+      "name": "Logs",
+      "receiver": "",
+      "return_types": [
+        "plog.Logs"
+      ],
+      "param_types": [
+        "Log..."
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

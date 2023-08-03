@@ -1,0 +1,96 @@
+{
+  "structs": [
+    "TelemetrygenObjInfo"
+  ],
+  "functions": [
+    {
+      "name": "CreateCollectorObjects",
+      "receiver": "",
+      "return_types": [
+        "[]*unstructured.Unstructured"
+      ],
+      "param_types": [
+        "*testing.T",
+        "*dynamic.DynamicClient",
+        "string"
+      ]
+    },
+    {
+      "name": "CreateObject",
+      "receiver": "",
+      "return_types": [
+        "*unstructured.Unstructured",
+        "error"
+      ],
+      "param_types": [
+        "*dynamic.DynamicClient",
+        "[]byte"
+      ]
+    },
+    {
+      "name": "CreateTelemetryGenObjects",
+      "receiver": "",
+      "return_types": [
+        "[]*unstructured.Unstructured",
+        "[]*TelemetrygenObjInfo"
+      ],
+      "param_types": [
+        "*testing.T",
+        "*dynamic.DynamicClient",
+        "string"
+      ]
+    },
+    {
+      "name": "DeleteObject",
+      "receiver": "",
+      "return_types": [
+        "error"
+      ],
+      "param_types": [
+        "*dynamic.DynamicClient",
+        "*unstructured.Unstructured"
+      ]
+    },
+    {
+      "name": "HostEndpoint",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "*testing.T"
+      ]
+    },
+    {
+      "name": "SelectorFromMap",
+      "receiver": "",
+      "return_types": [
+        "labels.Selector"
+      ],
+      "param_types": [
+        "map[string]any"
+      ]
+    },
+    {
+      "name": "WaitForCollectorToStart",
+      "receiver": "",
+      "param_types": [
+        "*testing.T",
+        "*dynamic.DynamicClient",
+        "string",
+        "map[string]any"
+      ]
+    },
+    {
+      "name": "WaitForTelemetryGenToStart",
+      "receiver": "",
+      "param_types": [
+        "*testing.T",
+        "*dynamic.DynamicClient",
+        "string",
+        "map[string]any",
+        "string"
+      ]
+    }
+  ]
+}

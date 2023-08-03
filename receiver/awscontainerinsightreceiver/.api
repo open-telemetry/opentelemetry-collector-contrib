@@ -1,0 +1,16 @@
+{
+  "structs": [
+    "Config",
+    "MockCadvisor",
+    "MockK8sAPIServer"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

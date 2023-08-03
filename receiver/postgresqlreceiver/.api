@@ -1,0 +1,21 @@
+{
+  "values": [
+    "ErrHostPort",
+    "ErrNoPassword",
+    "ErrNoUsername",
+    "ErrNotSupported",
+    "ErrTransportsSupported"
+  ],
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,88 @@
+{
+  "values": [
+    "AWSAccountAttribute",
+    "AWSOperationAttribute",
+    "AWSQueueURLAttribute",
+    "AWSQueueURLAttribute2",
+    "AWSRegionAttribute",
+    "AWSRequestIDAttribute",
+    "AWSRequestIDAttribute2",
+    "AWSServiceAttribute",
+    "AWSTableNameAttribute",
+    "AWSTableNameAttribute2",
+    "AWSXRayInProgressAttribute",
+    "AWSXRayResourceARNAttribute",
+    "AWSXRayTracedAttribute",
+    "AWSXRayXForwardedForAttribute",
+    "AWSXrayExceptionCauseAttribute",
+    "AWSXrayExceptionIDAttribute",
+    "AWSXrayExceptionRemoteAttribute",
+    "AWSXrayExceptionSkippedAttribute",
+    "AWSXrayExceptionTruncatedAttribute",
+    "AWSXrayRetriesAttribute",
+    "AWSXraySegmentAnnotationsAttribute",
+    "AWSXraySegmentMetadataAttributePrefix",
+    "CauseTypeExceptionID",
+    "CauseTypeObject"
+  ],
+  "structs": [
+    "AWSData",
+    "BeanstalkMetadata",
+    "CauseData",
+    "CauseObject",
+    "CauseType",
+    "EC2Data",
+    "EC2Metadata",
+    "ECSData",
+    "ECSMetadata",
+    "EKSMetadata",
+    "ElasticBeanstalkData",
+    "Exception",
+    "HTTPData",
+    "LogGroupMetadata",
+    "RequestData",
+    "ResponseData",
+    "SQLData",
+    "Segment",
+    "ServiceData",
+    "SpanLinkData",
+    "StackFrame",
+    "XRayClient",
+    "XRayMetaData"
+  ],
+  "functions": [
+    {
+      "name": "NewXRayClient",
+      "receiver": "",
+      "return_types": [
+        "XRayClient"
+      ],
+      "param_types": [
+        "*zap.Logger",
+        "*aws.Config",
+        "component.BuildInfo",
+        "*session.Session"
+      ]
+    },
+    {
+      "name": "String",
+      "receiver": "",
+      "return_types": [
+        "*string"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "StringOrEmpty",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "*string"
+      ]
+    }
+  ]
+}

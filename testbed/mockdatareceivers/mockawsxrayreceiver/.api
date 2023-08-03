@@ -1,0 +1,39 @@
+{
+  "structs": [
+    "Config",
+    "MockAwsXrayReceiver"
+  ],
+  "functions": [
+    {
+      "name": "New",
+      "receiver": "",
+      "return_types": [
+        "*MockAwsXrayReceiver",
+        "error"
+      ],
+      "param_types": [
+        "consumer.Traces",
+        "receiver.CreateSettings",
+        "*Config"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    },
+    {
+      "name": "ToTraces",
+      "receiver": "",
+      "return_types": [
+        "ptrace.Traces",
+        "error"
+      ],
+      "param_types": [
+        "[]byte"
+      ]
+    }
+  ]
+}

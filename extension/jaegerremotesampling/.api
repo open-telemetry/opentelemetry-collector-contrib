@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "Config",
+    "Source"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    }
+  ]
+}

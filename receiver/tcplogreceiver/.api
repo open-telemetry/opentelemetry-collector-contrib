@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "ReceiverType",
+    "TCPLogConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "values": [
+    "TestLogTime",
+    "TestLogTimeUnixMilli",
+    "TestLogTimestamp"
+  ],
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "GenerateLogRecordWithMultiTypeValues",
+      "receiver": "",
+      "return_types": [
+        "plog.LogRecord"
+      ]
+    },
+    {
+      "name": "GenerateLogRecordWithNestedBody",
+      "receiver": "",
+      "return_types": [
+        "plog.LogRecord"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

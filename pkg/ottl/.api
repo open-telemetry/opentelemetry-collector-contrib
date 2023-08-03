@@ -1,0 +1,145 @@
+{
+  "values": [
+    "ADD",
+    "DIV",
+    "EQ",
+    "GT",
+    "GTE",
+    "IgnoreError",
+    "LT",
+    "LTE",
+    "MULT",
+    "NE",
+    "PropagateError",
+    "SUB"
+  ],
+  "structs": [
+    "Arguments",
+    "BoolExpr",
+    "CreateFunctionFunc",
+    "Enum",
+    "EnumParser",
+    "EnumSymbol",
+    "ErrorMode",
+    "Expr",
+    "ExprFunc",
+    "Factory",
+    "FactoryOption",
+    "Field",
+    "FloatGetter",
+    "FloatLikeGetter",
+    "FunctionContext",
+    "GetSetter",
+    "Getter",
+    "IntGetter",
+    "IntLikeGetter",
+    "Key",
+    "Option",
+    "PMapGetter",
+    "Parser",
+    "Path",
+    "PathExpressionParser",
+    "Setter",
+    "StandardFloatGetter",
+    "StandardFloatLikeGetter",
+    "StandardGetSetter",
+    "StandardIntGetter",
+    "StandardIntLikeGetter",
+    "StandardPMapGetter",
+    "StandardStringGetter",
+    "StandardStringLikeGetter",
+    "Statement",
+    "Statements",
+    "StatementsOption",
+    "StringGetter",
+    "StringLikeGetter",
+    "TypeError"
+  ],
+  "functions": [
+    {
+      "name": "CreateFactoryMap",
+      "receiver": "",
+      "return_types": [
+        "map[string]Factory[K]"
+      ],
+      "param_types": [
+        "Factory[K]..."
+      ]
+    },
+    {
+      "name": "False",
+      "receiver": "",
+      "return_types": [
+        "ExprFunc[any]",
+        "error"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "Factory[K]"
+      ],
+      "param_types": [
+        "string",
+        "Arguments",
+        "CreateFunctionFunc[K]",
+        "FactoryOption[K]..."
+      ]
+    },
+    {
+      "name": "NewParser",
+      "receiver": "",
+      "return_types": [
+        "Parser[K]",
+        "error"
+      ],
+      "param_types": [
+        "map[string]Factory[K]",
+        "PathExpressionParser[K]",
+        "component.TelemetrySettings",
+        "Option[K]..."
+      ]
+    },
+    {
+      "name": "NewStatements",
+      "receiver": "",
+      "return_types": [
+        "Statements[K]"
+      ],
+      "param_types": [
+        "[]*Statement[K]",
+        "component.TelemetrySettings",
+        "StatementsOption[K]..."
+      ]
+    },
+    {
+      "name": "True",
+      "receiver": "",
+      "return_types": [
+        "ExprFunc[any]",
+        "error"
+      ]
+    },
+    {
+      "name": "WithEnumParser",
+      "receiver": "",
+      "return_types": [
+        "Option[K]"
+      ],
+      "param_types": [
+        "EnumParser"
+      ]
+    },
+    {
+      "name": "WithErrorMode",
+      "receiver": "",
+      "return_types": [
+        "StatementsOption[K]"
+      ],
+      "param_types": [
+        "ErrorMode"
+      ]
+    }
+  ]
+}

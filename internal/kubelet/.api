@@ -1,0 +1,22 @@
+{
+  "structs": [
+    "Client",
+    "ClientConfig",
+    "ClientProvider"
+  ],
+  "functions": [
+    {
+      "name": "NewClientProvider",
+      "receiver": "",
+      "return_types": [
+        "ClientProvider",
+        "error"
+      ],
+      "param_types": [
+        "string",
+        "*ClientConfig",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

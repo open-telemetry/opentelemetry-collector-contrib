@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "ExtraMetricsConfig",
+    "GMPConfig",
+    "MetricConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

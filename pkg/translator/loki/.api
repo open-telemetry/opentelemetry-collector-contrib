@@ -1,0 +1,94 @@
+{
+  "structs": [
+    "Log",
+    "PushEntry",
+    "PushReport",
+    "PushRequest"
+  ],
+  "functions": [
+    {
+      "name": "ConvertEntryToLogRecord",
+      "receiver": "",
+      "param_types": [
+        "*push.Entry",
+        "*plog.LogRecord",
+        "model.LabelSet",
+        "bool"
+      ]
+    },
+    {
+      "name": "Encode",
+      "receiver": "",
+      "return_types": [
+        "string",
+        "error"
+      ],
+      "param_types": [
+        "plog.LogRecord",
+        "pcommon.Resource",
+        "pcommon.InstrumentationScope"
+      ]
+    },
+    {
+      "name": "EncodeLogfmt",
+      "receiver": "",
+      "return_types": [
+        "string",
+        "error"
+      ],
+      "param_types": [
+        "plog.LogRecord",
+        "pcommon.Resource",
+        "pcommon.InstrumentationScope"
+      ]
+    },
+    {
+      "name": "GetTenantFromTenantHint",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "pcommon.Map",
+        "pcommon.Map"
+      ]
+    },
+    {
+      "name": "LogToLokiEntry",
+      "receiver": "",
+      "return_types": [
+        "*PushEntry",
+        "error"
+      ],
+      "param_types": [
+        "plog.LogRecord",
+        "pcommon.Resource",
+        "pcommon.InstrumentationScope",
+        "map[string]bool"
+      ]
+    },
+    {
+      "name": "LogsToLokiRequests",
+      "receiver": "",
+      "return_types": [
+        "map[string]PushRequest"
+      ],
+      "param_types": [
+        "plog.Logs",
+        "map[string]bool"
+      ]
+    },
+    {
+      "name": "PushRequestToLogs",
+      "receiver": "",
+      "return_types": [
+        "plog.Logs",
+        "error"
+      ],
+      "param_types": [
+        "*push.PushRequest",
+        "bool"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "structs": [
+    "Client",
+    "Config",
+    "MockClient"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    },
+    {
+      "name": "NewMockClient",
+      "receiver": "",
+      "return_types": [
+        "*MockClient"
+      ],
+      "param_types": [
+        "testing.TB"
+      ]
+    }
+  ]
+}

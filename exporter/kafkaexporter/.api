@@ -1,0 +1,71 @@
+{
+  "structs": [
+    "AWSMSKConfig",
+    "Authentication",
+    "Config",
+    "FactoryOption",
+    "KerberosConfig",
+    "LogsMarshaler",
+    "Metadata",
+    "MetadataRetry",
+    "MetricsMarshaler",
+    "PlainTextConfig",
+    "Producer",
+    "SASLConfig",
+    "TracesMarshaler",
+    "XDGSCRAMClient"
+  ],
+  "functions": [
+    {
+      "name": "ConfigureAuthentication",
+      "receiver": "",
+      "return_types": [
+        "error"
+      ],
+      "param_types": [
+        "Authentication",
+        "*sarama.Config"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ],
+      "param_types": [
+        "FactoryOption..."
+      ]
+    },
+    {
+      "name": "WithLogsMarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "LogsMarshaler..."
+      ]
+    },
+    {
+      "name": "WithMetricsMarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "MetricsMarshaler..."
+      ]
+    },
+    {
+      "name": "WithTracesMarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "TracesMarshaler..."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "structs": [
+    "Config",
+    "DatabaseAttributes",
+    "ExceptionAttributes",
+    "HTTPAttributes",
+    "MessagingAttributes",
+    "NetworkAttributes",
+    "RPCAttributes",
+    "TraceVisitor"
+  ],
+  "functions": [
+    {
+      "name": "Accept",
+      "receiver": "",
+      "param_types": [
+        "ptrace.Traces",
+        "TraceVisitor"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

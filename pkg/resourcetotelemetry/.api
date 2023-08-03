@@ -1,0 +1,18 @@
+{
+  "structs": [
+    "Settings"
+  ],
+  "functions": [
+    {
+      "name": "WrapMetricsExporter",
+      "receiver": "",
+      "return_types": [
+        "exporter.Metrics"
+      ],
+      "param_types": [
+        "Settings",
+        "exporter.Metrics"
+      ]
+    }
+  ]
+}

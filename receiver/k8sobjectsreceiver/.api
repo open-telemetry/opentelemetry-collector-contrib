@@ -1,0 +1,30 @@
+{
+  "values": [
+    "PullMode",
+    "WatchMode"
+  ],
+  "structs": [
+    "Config",
+    "K8sObjectsConfig",
+    "MockDiscovery"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    },
+    {
+      "name": "NewTicker",
+      "receiver": "",
+      "return_types": [
+        "*time.Ticker"
+      ],
+      "param_types": [
+        "time.Duration"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "structs": [
+    "Authentication",
+    "Config",
+    "FlowControl",
+    "FlowControlDelayedRetry",
+    "SaslExternalConfig",
+    "SaslPlainTextConfig",
+    "SaslXAuth2Config"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

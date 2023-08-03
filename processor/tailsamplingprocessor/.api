@@ -1,0 +1,57 @@
+{
+  "values": [
+    "AlwaysSample",
+    "And",
+    "BooleanAttribute",
+    "Composite",
+    "Latency",
+    "NumericAttribute",
+    "OTTLCondition",
+    "Probabilistic",
+    "RateLimiting",
+    "SpanCount",
+    "StatusCode",
+    "StringAttribute",
+    "TraceState"
+  ],
+  "structs": [
+    "AndCfg",
+    "AndSubPolicyCfg",
+    "BooleanAttributeCfg",
+    "CompositeCfg",
+    "CompositeSubPolicyCfg",
+    "Config",
+    "LatencyCfg",
+    "NumericAttributeCfg",
+    "OTTLConditionCfg",
+    "PolicyCfg",
+    "PolicyType",
+    "ProbabilisticCfg",
+    "RateAllocationCfg",
+    "RateLimitingCfg",
+    "SpanCountCfg",
+    "StatusCodeCfg",
+    "StringAttributeCfg",
+    "TestPolicyEvaluator",
+    "TraceStateCfg"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    },
+    {
+      "name": "SamplingProcessorMetricViews",
+      "receiver": "",
+      "return_types": [
+        "[]*view.View"
+      ],
+      "param_types": [
+        "configtelemetry.Level"
+      ]
+    }
+  ]
+}

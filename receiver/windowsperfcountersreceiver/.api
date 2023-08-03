@@ -1,0 +1,20 @@
+{
+  "structs": [
+    "Config",
+    "CounterConfig",
+    "GaugeMetric",
+    "MetricConfig",
+    "MetricRep",
+    "ObjectConfig",
+    "SumMetric"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "structs": [
+    "FromTranslator",
+    "ToTranslator"
+  ]
+}

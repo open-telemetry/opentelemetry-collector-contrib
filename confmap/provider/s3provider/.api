@@ -1,0 +1,21 @@
+{
+  "functions": [
+    {
+      "name": "New",
+      "receiver": "",
+      "return_types": [
+        "confmap.Provider"
+      ]
+    },
+    {
+      "name": "NewTestProvider",
+      "receiver": "",
+      "return_types": [
+        "confmap.Provider"
+      ],
+      "param_types": [
+        "string"
+      ]
+    }
+  ]
+}

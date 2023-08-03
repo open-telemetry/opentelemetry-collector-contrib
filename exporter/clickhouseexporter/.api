@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "Config",
+    "QueueSettings"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

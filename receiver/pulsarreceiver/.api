@@ -1,0 +1,56 @@
+{
+  "structs": [
+    "Athenz",
+    "Authentication",
+    "Config",
+    "FactoryOption",
+    "LogsUnmarshaler",
+    "MetricsUnmarshaler",
+    "OAuth2",
+    "TLS",
+    "Token",
+    "TracesUnmarshaler"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ],
+      "param_types": [
+        "FactoryOption..."
+      ]
+    },
+    {
+      "name": "WithLogsUnmarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "LogsUnmarshaler..."
+      ]
+    },
+    {
+      "name": "WithMetricsUnmarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "MetricsUnmarshaler..."
+      ]
+    },
+    {
+      "name": "WithTracesUnmarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "TracesUnmarshaler..."
+      ]
+    }
+  ]
+}

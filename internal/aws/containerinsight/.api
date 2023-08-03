@@ -1,0 +1,219 @@
+{
+  "values": [
+    "AutoScalingGroupNameKey",
+    "CPULimit",
+    "CPURequest",
+    "CPUReservedCapacity",
+    "CPUSystem",
+    "CPUTotal",
+    "CPUUser",
+    "CPUUtilization",
+    "CPUUtilizationOverPodLimit",
+    "ClusterNameKey",
+    "ContainerCount",
+    "ContainerIDkey",
+    "ContainerInstanceIDKey",
+    "ContainerLastTerminationReason",
+    "ContainerNamekey",
+    "ContainerRestartCount",
+    "ContainerStatus",
+    "ContainerStatusReason",
+    "CronJob",
+    "DaemonSet",
+    "Deployment",
+    "DiskDev",
+    "DiskIOAsync",
+    "DiskIORead",
+    "DiskIOServiceBytesPrefix",
+    "DiskIOServicedPrefix",
+    "DiskIOSync",
+    "DiskIOTotal",
+    "DiskIOWrite",
+    "ECS",
+    "EKS",
+    "EbsVolumeID",
+    "FSAvailable",
+    "FSCapacity",
+    "FSInodes",
+    "FSInodesfree",
+    "FSType",
+    "FSUsage",
+    "FSUtilization",
+    "FailedNodeCount",
+    "FullPodNameKey",
+    "GoPSUtilProcDirEnv",
+    "HostEbsVolumeID",
+    "InstanceID",
+    "InstanceType",
+    "Job",
+    "K8sNamespace",
+    "K8sPodNameKey",
+    "KubeSecurePort",
+    "Kubernetes",
+    "MemCache",
+    "MemFailcnt",
+    "MemHierarchicalPgfault",
+    "MemHierarchicalPgmajfault",
+    "MemLimit",
+    "MemMappedfile",
+    "MemMaxusage",
+    "MemPgfault",
+    "MemPgmajfault",
+    "MemRequest",
+    "MemReservedCapacity",
+    "MemRss",
+    "MemSwap",
+    "MemUsage",
+    "MemUtilization",
+    "MemUtilizationOverPodLimit",
+    "MemWorkingset",
+    "MetricType",
+    "MinTimeDiff",
+    "NetIfce",
+    "NetRxBytes",
+    "NetRxDropped",
+    "NetRxErrors",
+    "NetRxPackets",
+    "NetTotalBytes",
+    "NetTxBytes",
+    "NetTxDropped",
+    "NetTxErrors",
+    "NetTxPackets",
+    "NodeCount",
+    "NodeNameKey",
+    "PodIDKey",
+    "PodNameKey",
+    "PodStatus",
+    "ReplicaSet",
+    "ReplicationController",
+    "RunningContainerCount",
+    "RunningPodCount",
+    "RunningTaskCount",
+    "SourcesKey",
+    "StatefulSet",
+    "Timestamp",
+    "TypeCluster",
+    "TypeClusterNamespace",
+    "TypeClusterService",
+    "TypeContainer",
+    "TypeContainerDiskIO",
+    "TypeContainerFS",
+    "TypeInfraContainer",
+    "TypeInstance",
+    "TypeInstanceDiskIO",
+    "TypeInstanceFS",
+    "TypeInstanceNet",
+    "TypeNode",
+    "TypeNodeDiskIO",
+    "TypeNodeFS",
+    "TypeNodeNet",
+    "TypePod",
+    "TypePodNet",
+    "TypeService",
+    "UnitBytes",
+    "UnitBytesPerSec",
+    "UnitCount",
+    "UnitCountPerSec",
+    "UnitMegaBytes",
+    "UnitNanoSecond",
+    "UnitPercent",
+    "UnitVCPU",
+    "Version"
+  ],
+  "functions": [
+    {
+      "name": "ConvertToOTLPMetrics",
+      "receiver": "",
+      "return_types": [
+        "pmetric.Metrics"
+      ],
+      "param_types": [
+        "map[string]{}",
+        "map[string]string",
+        "*zap.Logger"
+      ]
+    },
+    {
+      "name": "GetUnitForMetric",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "IsContainer",
+      "receiver": "",
+      "return_types": [
+        "bool"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "IsInstance",
+      "receiver": "",
+      "return_types": [
+        "bool"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "IsNode",
+      "receiver": "",
+      "return_types": [
+        "bool"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "IsPod",
+      "receiver": "",
+      "return_types": [
+        "bool"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "MetricName",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string",
+        "string"
+      ]
+    },
+    {
+      "name": "RemovePrefix",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string",
+        "string"
+      ]
+    },
+    {
+      "name": "SumFields",
+      "receiver": "",
+      "return_types": [
+        "map[string]float64"
+      ],
+      "param_types": [
+        "[]map[string]{}"
+      ]
+    }
+  ]
+}

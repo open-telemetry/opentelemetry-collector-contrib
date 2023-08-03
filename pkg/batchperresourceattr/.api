@@ -1,0 +1,37 @@
+{
+  "functions": [
+    {
+      "name": "NewBatchPerResourceLogs",
+      "receiver": "",
+      "return_types": [
+        "consumer.Logs"
+      ],
+      "param_types": [
+        "string",
+        "consumer.Logs"
+      ]
+    },
+    {
+      "name": "NewBatchPerResourceMetrics",
+      "receiver": "",
+      "return_types": [
+        "consumer.Metrics"
+      ],
+      "param_types": [
+        "string",
+        "consumer.Metrics"
+      ]
+    },
+    {
+      "name": "NewBatchPerResourceTraces",
+      "receiver": "",
+      "return_types": [
+        "consumer.Traces"
+      ],
+      "param_types": [
+        "string",
+        "consumer.Traces"
+      ]
+    }
+  ]
+}

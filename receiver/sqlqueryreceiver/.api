@@ -1,0 +1,31 @@
+{
+  "values": [
+    "MetricAggregationCumulative",
+    "MetricAggregationDelta",
+    "MetricAggregationUnspecified",
+    "MetricTypeGauge",
+    "MetricTypeSum",
+    "MetricTypeUnspecified",
+    "MetricValueTypeDouble",
+    "MetricValueTypeInt",
+    "MetricValueTypeUnspecified"
+  ],
+  "structs": [
+    "Config",
+    "LogsCfg",
+    "MetricAggregation",
+    "MetricCfg",
+    "MetricType",
+    "MetricValueType",
+    "Query"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "values": [
+    "MappingECS",
+    "MappingNone"
+  ],
+  "structs": [
+    "AuthenticationSettings",
+    "Config",
+    "DiscoverySettings",
+    "DynamicIndexSetting",
+    "FlushSettings",
+    "HTTPClientSettings",
+    "MappingMode",
+    "MappingsSettings",
+    "RetrySettings"
+  ],
+  "functions": [
+    {
+      "name": "DurationAsMicroseconds",
+      "receiver": "",
+      "return_types": [
+        "int64"
+      ],
+      "param_types": [
+        "time.Time"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

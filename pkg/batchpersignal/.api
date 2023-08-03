@@ -1,0 +1,24 @@
+{
+  "functions": [
+    {
+      "name": "SplitLogs",
+      "receiver": "",
+      "return_types": [
+        "[]plog.Logs"
+      ],
+      "param_types": [
+        "plog.Logs"
+      ]
+    },
+    {
+      "name": "SplitTraces",
+      "receiver": "",
+      "return_types": [
+        "[]ptrace.Traces"
+      ],
+      "param_types": [
+        "ptrace.Traces"
+      ]
+    }
+  ]
+}

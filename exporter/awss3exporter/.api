@@ -1,0 +1,33 @@
+{
+  "values": [
+    "ErrUnknownMarshaler",
+    "OtlpJSON"
+  ],
+  "structs": [
+    "Config",
+    "MarshalerType",
+    "S3UploaderConfig",
+    "TestWriter"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    },
+    {
+      "name": "NewMarshaler",
+      "receiver": "",
+      "return_types": [
+        "marshaler",
+        "error"
+      ],
+      "param_types": [
+        "MarshalerType",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

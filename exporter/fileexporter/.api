@@ -1,0 +1,21 @@
+{
+  "values": [
+    "SizeByte",
+    "SizeKiloByte",
+    "SizeMegaByte"
+  ],
+  "structs": [
+    "Config",
+    "NopWriteCloser",
+    "Rotation"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

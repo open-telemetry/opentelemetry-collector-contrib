@@ -1,0 +1,57 @@
+{
+  "values": [
+    "Better",
+    "Default",
+    "DefaultBatchBuilder",
+    "Faster",
+    "JavaStringHash",
+    "KeyBasedBatchBuilder",
+    "LZ4",
+    "Murmur3_32Hash",
+    "None",
+    "ZLib",
+    "ZStd"
+  ],
+  "structs": [
+    "Athenz",
+    "Authentication",
+    "BatchBuilderType",
+    "CompressionLevel",
+    "CompressionType",
+    "Config",
+    "FactoryOption",
+    "HashingScheme",
+    "LogsMarshaler",
+    "MetricsMarshaler",
+    "OAuth2",
+    "Producer",
+    "PulsarLogsProducer",
+    "PulsarMetricsProducer",
+    "PulsarTracesProducer",
+    "TLS",
+    "Token",
+    "TracesMarshaler"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ],
+      "param_types": [
+        "FactoryOption..."
+      ]
+    },
+    {
+      "name": "WithTracesMarshalers",
+      "receiver": "",
+      "return_types": [
+        "FactoryOption"
+      ],
+      "param_types": [
+        "TracesMarshaler..."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "GenerationType",
+    "OperationType",
+    "Rule"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

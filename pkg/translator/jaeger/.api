@@ -1,0 +1,37 @@
+{
+  "functions": [
+    {
+      "name": "ProtoFromTraces",
+      "receiver": "",
+      "return_types": [
+        "[]*model.Batch",
+        "error"
+      ],
+      "param_types": [
+        "ptrace.Traces"
+      ]
+    },
+    {
+      "name": "ProtoToTraces",
+      "receiver": "",
+      "return_types": [
+        "ptrace.Traces",
+        "error"
+      ],
+      "param_types": [
+        "[]*model.Batch"
+      ]
+    },
+    {
+      "name": "ThriftToTraces",
+      "receiver": "",
+      "return_types": [
+        "ptrace.Traces",
+        "error"
+      ],
+      "param_types": [
+        "*jaeger.Batch"
+      ]
+    }
+  ]
+}

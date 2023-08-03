@@ -1,0 +1,69 @@
+{
+  "functions": [
+    {
+      "name": "BuildCompliantName",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "pmetric.Metric",
+        "string",
+        "bool"
+      ]
+    },
+    {
+      "name": "BuildPromCompliantName",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "pmetric.Metric",
+        "string"
+      ]
+    },
+    {
+      "name": "CleanUpString",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "NormalizeLabel",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "RemovePromForbiddenRunes",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "TrimPromSuffixes",
+      "receiver": "",
+      "return_types": [
+        "string"
+      ],
+      "param_types": [
+        "string",
+        "pmetric.MetricType",
+        "string"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "LabelsFromName",
+      "receiver": "",
+      "return_types": [
+        "string",
+        "map[string]string"
+      ],
+      "param_types": [
+        "*string"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

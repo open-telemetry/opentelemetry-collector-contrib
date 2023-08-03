@@ -1,0 +1,18 @@
+{
+  "structs": [
+    "AutodiscoverConfig",
+    "Config",
+    "GroupConfig",
+    "LogsConfig",
+    "StreamConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

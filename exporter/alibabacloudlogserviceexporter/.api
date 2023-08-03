@@ -1,0 +1,29 @@
+{
+  "structs": [
+    "Config",
+    "KeyValue",
+    "KeyValues",
+    "LogServiceClient"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    },
+    {
+      "name": "NewLogServiceClient",
+      "receiver": "",
+      "return_types": [
+        "LogServiceClient",
+        "error"
+      ],
+      "param_types": [
+        "*Config",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

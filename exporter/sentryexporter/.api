@@ -1,0 +1,53 @@
+{
+  "structs": [
+    "ClassifyOrphanSpanTestCase",
+    "Config",
+    "PushTraceDataTestCase",
+    "SentryExporter",
+    "SpanDescriptorsCase",
+    "SpanEventToSentryEventCases",
+    "SpanStatusCase",
+    "TransactionFromSpanMarshalEventTestCase"
+  ],
+  "functions": [
+    {
+      "name": "CreateSentryExporter",
+      "receiver": "",
+      "return_types": [
+        "exporter.Traces",
+        "error"
+      ],
+      "param_types": [
+        "*Config",
+        "exporter.CreateSettings"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    },
+    {
+      "name": "SpanIDFromHex",
+      "receiver": "",
+      "return_types": [
+        "sentry.SpanID"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "TraceIDFromHex",
+      "receiver": "",
+      "return_types": [
+        "sentry.TraceID"
+      ],
+      "param_types": [
+        "string"
+      ]
+    }
+  ]
+}

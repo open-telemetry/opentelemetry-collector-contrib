@@ -1,0 +1,26 @@
+{
+  "structs": [
+    "Config",
+    "StoreConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewConnectorFactoryFunc",
+      "receiver": "",
+      "return_types": [
+        "func() connector.Factory"
+      ],
+      "param_types": [
+        "component.Type",
+        "component.StabilityLevel"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

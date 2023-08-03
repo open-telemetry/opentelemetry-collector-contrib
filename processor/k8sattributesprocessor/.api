@@ -1,0 +1,22 @@
+{
+  "structs": [
+    "Config",
+    "ExcludeConfig",
+    "ExcludePodConfig",
+    "ExtractConfig",
+    "FieldExtractConfig",
+    "FieldFilterConfig",
+    "FilterConfig",
+    "PodAssociationConfig",
+    "PodAssociationSourceConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

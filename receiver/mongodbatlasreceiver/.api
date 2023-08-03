@@ -1,0 +1,50 @@
+{
+  "structs": [
+    "AccessLogsConfig",
+    "AlertConfig",
+    "Config",
+    "EventsConfig",
+    "LogConfig",
+    "LogsProjectConfig",
+    "OrgConfig",
+    "ProjectConfig",
+    "ProjectContext"
+  ],
+  "functions": [
+    {
+      "name": "GetTestAuditEvent4_2",
+      "receiver": "",
+      "return_types": [
+        "model.AuditLog"
+      ]
+    },
+    {
+      "name": "GetTestAuditEvent5_0",
+      "receiver": "",
+      "return_types": [
+        "model.AuditLog"
+      ]
+    },
+    {
+      "name": "GetTestEvent4_2",
+      "receiver": "",
+      "return_types": [
+        "model.LogEntry"
+      ]
+    },
+    {
+      "name": "GetTestEvent4_4",
+      "receiver": "",
+      "return_types": [
+        "model.LogEntry"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "rcvr.Factory"
+      ]
+    }
+  ]
+}

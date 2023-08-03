@@ -1,0 +1,16 @@
+{
+  "structs": [
+    "AttributeSource",
+    "Config",
+    "RoutingTableItem"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

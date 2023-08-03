@@ -1,0 +1,53 @@
+{
+  "structs": [
+    "Client",
+    "Config",
+    "Container"
+  ],
+  "functions": [
+    {
+      "name": "ContainerEnvToMap",
+      "receiver": "",
+      "return_types": [
+        "map[string]string"
+      ],
+      "param_types": [
+        "[]string"
+      ]
+    },
+    {
+      "name": "NewConfig",
+      "receiver": "",
+      "return_types": [
+        "*Config",
+        "error"
+      ],
+      "param_types": [
+        "string",
+        "time.Duration",
+        "[]string",
+        "float64"
+      ]
+    },
+    {
+      "name": "NewDefaultConfig",
+      "receiver": "",
+      "return_types": [
+        "*Config"
+      ]
+    },
+    {
+      "name": "NewDockerClient",
+      "receiver": "",
+      "return_types": [
+        "*Client",
+        "error"
+      ],
+      "param_types": [
+        "*Config",
+        "*zap.Logger",
+        "docker.Opt..."
+      ]
+    }
+  ]
+}

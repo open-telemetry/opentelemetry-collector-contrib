@@ -1,0 +1,27 @@
+{
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "New",
+      "receiver": "",
+      "return_types": [
+        "receiver.Metrics",
+        "error"
+      ],
+      "param_types": [
+        "receiver.CreateSettings",
+        "Config",
+        "consumer.Metrics"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "CreateTracesExporter",
+      "receiver": "",
+      "return_types": [
+        "exporter.Traces",
+        "error"
+      ],
+      "param_types": [
+        "context.Context",
+        "exporter.CreateSettings",
+        "component.Config"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

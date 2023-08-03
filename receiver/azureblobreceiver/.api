@@ -1,0 +1,20 @@
+{
+  "structs": [
+    "Config",
+    "EventHubConfig",
+    "LogsConfig",
+    "MockBlobClient",
+    "MockLogsDataConsumer",
+    "MockTracesDataConsumer",
+    "TracesConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

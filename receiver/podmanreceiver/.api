@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "ContainerScraper",
+    "MockClient",
+    "PodmanClient"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "rcvr.Factory"
+      ]
+    }
+  ]
+}

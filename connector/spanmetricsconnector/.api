@@ -1,0 +1,22 @@
+{
+  "values": [
+    "DimensionsCacheSize"
+  ],
+  "structs": [
+    "Config",
+    "Dimension",
+    "ExemplarsConfig",
+    "ExplicitHistogramConfig",
+    "ExponentialHistogramConfig",
+    "HistogramConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "connector.Factory"
+      ]
+    }
+  ]
+}

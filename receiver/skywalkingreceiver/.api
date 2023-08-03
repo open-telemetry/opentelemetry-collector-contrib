@@ -1,0 +1,25 @@
+{
+  "structs": [
+    "Config",
+    "Protocols"
+  ],
+  "functions": [
+    {
+      "name": "MockGrpcTraceSegment",
+      "receiver": "",
+      "return_types": [
+        "*agent.SegmentObject"
+      ],
+      "param_types": [
+        "int"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

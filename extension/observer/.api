@@ -1,0 +1,48 @@
+{
+  "values": [
+    "ContainerType",
+    "HostPortType",
+    "K8sNodeType",
+    "PodType",
+    "PortType",
+    "ProtocolTCP",
+    "ProtocolTCP4",
+    "ProtocolTCP6",
+    "ProtocolUDP",
+    "ProtocolUDP4",
+    "ProtocolUDP6",
+    "ProtocolUnknown"
+  ],
+  "structs": [
+    "Container",
+    "Endpoint",
+    "EndpointDetails",
+    "EndpointEnv",
+    "EndpointID",
+    "EndpointType",
+    "EndpointsLister",
+    "EndpointsWatcher",
+    "HostPort",
+    "K8sNode",
+    "Notify",
+    "NotifyID",
+    "Observable",
+    "Pod",
+    "Port",
+    "Transport"
+  ],
+  "functions": [
+    {
+      "name": "NewEndpointsWatcher",
+      "receiver": "",
+      "return_types": [
+        "*EndpointsWatcher"
+      ],
+      "param_types": [
+        "EndpointsLister",
+        "time.Duration",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

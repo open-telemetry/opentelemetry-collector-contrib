@@ -1,0 +1,32 @@
+{
+  "structs": [
+    "Config",
+    "IndexIoWaitsStats",
+    "IoWaitsStats",
+    "ReplicaStatusStats",
+    "StatementEventStats",
+    "StatementEventsConfig",
+    "TableIoWaitsStats"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    },
+    {
+      "name": "Query",
+      "receiver": "",
+      "return_types": [
+        "map[string]string",
+        "error"
+      ],
+      "param_types": [
+        "mySQLClient",
+        "string"
+      ]
+    }
+  ]
+}

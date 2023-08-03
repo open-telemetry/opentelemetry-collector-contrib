@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "Name",
+    "Status",
+    "ToAttributes"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

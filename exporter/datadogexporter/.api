@@ -1,0 +1,46 @@
+{
+  "values": [
+    "CumulativeMonotonicSumModeRawValue",
+    "CumulativeMonotonicSumModeToDelta",
+    "DefaultSite",
+    "HistogramModeCounters",
+    "HistogramModeDistributions",
+    "HistogramModeNoBuckets",
+    "HostnameSourceConfigOrSystem",
+    "HostnameSourceFirstResource",
+    "InitialValueModeAuto",
+    "InitialValueModeDrop",
+    "InitialValueModeKeep",
+    "SummaryModeGauges",
+    "SummaryModeNoQuantiles"
+  ],
+  "structs": [
+    "APIConfig",
+    "Config",
+    "CumulativeMonotonicSumMode",
+    "HistogramConfig",
+    "HistogramMode",
+    "HostMetadataConfig",
+    "HostnameSource",
+    "InitialValueMode",
+    "LimitedHTTPClientSettings",
+    "LimitedTLSClientSettings",
+    "LogsConfig",
+    "MetricsConfig",
+    "MetricsExporterConfig",
+    "SumConfig",
+    "SummaryConfig",
+    "SummaryMode",
+    "TagsConfig",
+    "TracesConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

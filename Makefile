@@ -257,6 +257,10 @@ mdatagen-test:
 gengithub:
 	$(GOCMD) run cmd/githubgen/main.go .
 
+.PHONY: genbreakcheck
+genbreakcheck:
+	$(GOCMD) run cmd/breakcheck/main.go .
+
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
 

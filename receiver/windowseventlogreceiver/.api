@@ -1,0 +1,23 @@
+{
+  "structs": [
+    "ReceiverType",
+    "WindowsLogConfig",
+    "WindowsLogConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

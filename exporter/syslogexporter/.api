@@ -1,0 +1,29 @@
+{
+  "values": [
+    "DefaultNetwork",
+    "DefaultPort",
+    "DefaultProtocol"
+  ],
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "LogRecordsToLogs",
+      "receiver": "",
+      "return_types": [
+        "plog.Logs"
+      ],
+      "param_types": [
+        "plog.LogRecord"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

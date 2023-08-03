@@ -1,0 +1,34 @@
+{
+  "structs": [
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    },
+    {
+      "name": "NewNode",
+      "receiver": "",
+      "return_types": [
+        "*v1.Node"
+      ],
+      "param_types": [
+        "string"
+      ]
+    },
+    {
+      "name": "NewPod",
+      "receiver": "",
+      "return_types": [
+        "*v1.Pod"
+      ],
+      "param_types": [
+        "string"
+      ]
+    }
+  ]
+}

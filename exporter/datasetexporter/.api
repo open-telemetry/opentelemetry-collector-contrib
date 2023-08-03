@@ -1,0 +1,34 @@
+{
+  "values": [
+    "Process",
+    "Service",
+    "ServiceNameKey"
+  ],
+  "structs": [
+    "BufferSettings",
+    "Config",
+    "CreateTest",
+    "DatasetExporter",
+    "ExporterConfig",
+    "LogsSettings",
+    "ResourceType",
+    "ServerHostSettings",
+    "TracesSettings"
+  ],
+  "functions": [
+    {
+      "name": "GenerateTracesTreesAndOrphans",
+      "receiver": "",
+      "return_types": [
+        "ptrace.Traces"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

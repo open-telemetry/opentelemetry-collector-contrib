@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "Config",
+    "WavefrontParser"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "structs": [
+    "AttributeConfig",
+    "Config",
+    "MetricInfo"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "connector.Factory"
+      ]
+    }
+  ]
+}

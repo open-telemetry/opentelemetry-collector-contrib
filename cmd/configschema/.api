@@ -1,0 +1,66 @@
+{
+  "values": [
+    "DefaultModule",
+    "DefaultSrcRoot"
+  ],
+  "structs": [
+    "CfgInfo",
+    "DirResolver",
+    "DirResolverIntf",
+    "Field"
+  ],
+  "functions": [
+    {
+      "name": "GetAllCfgInfos",
+      "receiver": "",
+      "return_types": [
+        "[]CfgInfo"
+      ],
+      "param_types": [
+        "otelcol.Factories"
+      ]
+    },
+    {
+      "name": "GetCfgInfo",
+      "receiver": "",
+      "return_types": [
+        "CfgInfo",
+        "error"
+      ],
+      "param_types": [
+        "otelcol.Factories",
+        "string"
+      ]
+    },
+    {
+      "name": "NewDefaultDirResolver",
+      "receiver": "",
+      "return_types": [
+        "DirResolver"
+      ]
+    },
+    {
+      "name": "NewDirResolver",
+      "receiver": "",
+      "return_types": [
+        "DirResolver"
+      ],
+      "param_types": [
+        "string",
+        "string"
+      ]
+    },
+    {
+      "name": "ReadFields",
+      "receiver": "",
+      "return_types": [
+        "*Field",
+        "error"
+      ],
+      "param_types": [
+        "reflect.Value",
+        "DirResolver"
+      ]
+    }
+  ]
+}

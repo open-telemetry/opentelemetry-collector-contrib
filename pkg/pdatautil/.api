@@ -1,0 +1,24 @@
+{
+  "functions": [
+    {
+      "name": "MapHash",
+      "receiver": "",
+      "return_types": [
+        "[16]byte"
+      ],
+      "param_types": [
+        "pcommon.Map"
+      ]
+    },
+    {
+      "name": "ValueHash",
+      "receiver": "",
+      "return_types": [
+        "[16]byte"
+      ],
+      "param_types": [
+        "pcommon.Value"
+      ]
+    }
+  ]
+}

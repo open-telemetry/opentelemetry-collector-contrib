@@ -1,0 +1,56 @@
+{
+  "values": [
+    "ActionFieldName",
+    "AddLabel",
+    "AggregateLabelValues",
+    "AggregateLabels",
+    "AggregationTypeFieldName",
+    "Combine",
+    "DeleteLabelValue",
+    "Group",
+    "GroupResourceLabelsFieldName",
+    "IncludeFieldName",
+    "Insert",
+    "LabelFieldName",
+    "Lower",
+    "MatchTypeFieldName",
+    "Max",
+    "Mean",
+    "Min",
+    "NewLabelFieldName",
+    "NewNameFieldName",
+    "NewValueFieldName",
+    "RegexpMatchType",
+    "ScaleFieldName",
+    "ScaleValue",
+    "StrictMatchType",
+    "SubmatchCaseFieldName",
+    "Sum",
+    "ToggleScalarDataType",
+    "Update",
+    "UpdateLabel",
+    "Upper"
+  ],
+  "structs": [
+    "AggregationType",
+    "Config",
+    "ConfigAction",
+    "FilterConfig",
+    "MatchType",
+    "Operation",
+    "OperationAction",
+    "StringMatcher",
+    "SubmatchCase",
+    "Transform",
+    "ValueAction"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

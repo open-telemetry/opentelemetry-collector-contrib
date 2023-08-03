@@ -1,0 +1,49 @@
+{
+  "structs": [
+    "CalculateFunc",
+    "Key",
+    "MapWithExpiry",
+    "MetricCalculator",
+    "MetricValue"
+  ],
+  "functions": [
+    {
+      "name": "NewFloat64DeltaCalculator",
+      "receiver": "",
+      "return_types": [
+        "MetricCalculator"
+      ]
+    },
+    {
+      "name": "NewKey",
+      "receiver": "",
+      "return_types": [
+        "Key"
+      ],
+      "param_types": [
+        "{}",
+        "map[string]string"
+      ]
+    },
+    {
+      "name": "NewMapWithExpiry",
+      "receiver": "",
+      "return_types": [
+        "*MapWithExpiry"
+      ],
+      "param_types": [
+        "time.Duration"
+      ]
+    },
+    {
+      "name": "NewMetricCalculator",
+      "receiver": "",
+      "return_types": [
+        "MetricCalculator"
+      ],
+      "param_types": [
+        "CalculateFunc"
+      ]
+    }
+  ]
+}

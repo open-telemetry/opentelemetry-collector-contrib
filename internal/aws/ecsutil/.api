@@ -1,0 +1,74 @@
+{
+  "structs": [
+    "Client",
+    "ClientProvider",
+    "ContainerMetadata",
+    "Limits",
+    "LogOptions",
+    "MetadataProvider",
+    "Network",
+    "RestClient",
+    "TaskMetadata",
+    "TaskMetadataRestClient"
+  ],
+  "functions": [
+    {
+      "name": "NewClientProvider",
+      "receiver": "",
+      "return_types": [
+        "ClientProvider"
+      ],
+      "param_types": [
+        "url.URL",
+        "confighttp.HTTPClientSettings",
+        "component.Host",
+        "component.TelemetrySettings"
+      ]
+    },
+    {
+      "name": "NewDetectedTaskMetadataProvider",
+      "receiver": "",
+      "return_types": [
+        "MetadataProvider",
+        "error"
+      ],
+      "param_types": [
+        "component.TelemetrySettings"
+      ]
+    },
+    {
+      "name": "NewRestClient",
+      "receiver": "",
+      "return_types": [
+        "RestClient",
+        "error"
+      ],
+      "param_types": [
+        "url.URL",
+        "confighttp.HTTPClientSettings",
+        "component.TelemetrySettings"
+      ]
+    },
+    {
+      "name": "NewRestClientFromClient",
+      "receiver": "",
+      "return_types": [
+        "*TaskMetadataRestClient"
+      ],
+      "param_types": [
+        "Client"
+      ]
+    },
+    {
+      "name": "NewTaskMetadataProvider",
+      "receiver": "",
+      "return_types": [
+        "MetadataProvider"
+      ],
+      "param_types": [
+        "RestClient",
+        "*zap.Logger"
+      ]
+    }
+  ]
+}

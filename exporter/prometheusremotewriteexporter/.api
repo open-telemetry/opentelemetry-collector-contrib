@@ -1,0 +1,18 @@
+{
+  "structs": [
+    "Config",
+    "CreatedMetric",
+    "RemoteWriteQueue",
+    "TargetInfo",
+    "WALConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

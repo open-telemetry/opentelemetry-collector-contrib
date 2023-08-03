@@ -1,0 +1,15 @@
+{
+  "structs": [
+    "SharedComponent",
+    "SharedComponents"
+  ],
+  "functions": [
+    {
+      "name": "NewSharedComponents",
+      "receiver": "",
+      "return_types": [
+        "*SharedComponents"
+      ]
+    }
+  ]
+}

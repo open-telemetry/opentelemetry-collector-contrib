@@ -1,0 +1,20 @@
+{
+  "structs": [
+    "ByLabelName",
+    "Settings"
+  ],
+  "functions": [
+    {
+      "name": "FromMetrics",
+      "receiver": "",
+      "return_types": [
+        "map[string]*prompb.TimeSeries",
+        "error"
+      ],
+      "param_types": [
+        "pmetric.Metrics",
+        "Settings"
+      ]
+    }
+  ]
+}

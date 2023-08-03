@@ -1,0 +1,58 @@
+{
+  "values": [
+    "AuthTypeKubeConfig",
+    "AuthTypeNone",
+    "AuthTypeServiceAccount",
+    "AuthTypeTLS"
+  ],
+  "structs": [
+    "APIConfig",
+    "AuthType"
+  ],
+  "functions": [
+    {
+      "name": "CreateRestConfig",
+      "receiver": "",
+      "return_types": [
+        "*rest.Config",
+        "error"
+      ],
+      "param_types": [
+        "APIConfig"
+      ]
+    },
+    {
+      "name": "MakeClient",
+      "receiver": "",
+      "return_types": [
+        "k8s.Interface",
+        "error"
+      ],
+      "param_types": [
+        "APIConfig"
+      ]
+    },
+    {
+      "name": "MakeDynamicClient",
+      "receiver": "",
+      "return_types": [
+        "dynamic.Interface",
+        "error"
+      ],
+      "param_types": [
+        "APIConfig"
+      ]
+    },
+    {
+      "name": "MakeOpenShiftQuotaClient",
+      "receiver": "",
+      "return_types": [
+        "quotaclientset.Interface",
+        "error"
+      ],
+      "param_types": [
+        "APIConfig"
+      ]
+    }
+  ]
+}

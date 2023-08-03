@@ -1,0 +1,26 @@
+{
+  "structs": [
+    "Config",
+    "DNSResolver",
+    "K8sSvcResolver",
+    "Protocol",
+    "ResolverSettings",
+    "StaticResolver"
+  ],
+  "functions": [
+    {
+      "name": "MetricViews",
+      "receiver": "",
+      "return_types": [
+        "[]*view.View"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

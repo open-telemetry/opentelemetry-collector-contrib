@@ -1,0 +1,55 @@
+{
+  "values": [
+    "DefaultHealthPath",
+    "DefaultIndexLabel",
+    "DefaultNameLabel",
+    "DefaultRawPath",
+    "DefaultSeverityNumberLabel",
+    "DefaultSeverityTextLabel",
+    "DefaultSourceLabel",
+    "DefaultSourceTypeLabel",
+    "HECTokenHeader",
+    "HeaderRetryAfter",
+    "HecEventMetricType",
+    "HecTokenLabel",
+    "HostIDKeyAWS",
+    "HostIDKeyAzure",
+    "HostIDKeyGCP",
+    "HostIDKeyHost",
+    "SFxAccessTokenHeader",
+    "SFxAccessTokenLabel",
+    "SFxEventCategoryKey",
+    "SFxEventPropertiesKey",
+    "SFxEventType"
+  ],
+  "structs": [
+    "AccessTokenPassthroughConfig",
+    "Event",
+    "HecToOtelAttrs",
+    "HostID",
+    "HostIDKey"
+  ],
+  "functions": [
+    {
+      "name": "HandleHTTPCode",
+      "receiver": "",
+      "return_types": [
+        "error"
+      ],
+      "param_types": [
+        "*http.Response"
+      ]
+    },
+    {
+      "name": "ResourceToHostID",
+      "receiver": "",
+      "return_types": [
+        "HostID",
+        "bool"
+      ],
+      "param_types": [
+        "pcommon.Resource"
+      ]
+    }
+  ]
+}

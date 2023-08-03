@@ -1,0 +1,24 @@
+{
+  "structs": [
+    "Attribute",
+    "AttributeConfig",
+    "ColumnOID",
+    "Config",
+    "GaugeMetric",
+    "MetricConfig",
+    "MockClient",
+    "ResourceAttributeConfig",
+    "SNMPData",
+    "ScalarOID",
+    "SumMetric"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

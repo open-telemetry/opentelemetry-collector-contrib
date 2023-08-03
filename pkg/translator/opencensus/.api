@@ -1,0 +1,52 @@
+{
+  "functions": [
+    {
+      "name": "OCToMetrics",
+      "receiver": "",
+      "return_types": [
+        "pmetric.Metrics"
+      ],
+      "param_types": [
+        "*occommon.Node",
+        "*ocresource.Resource",
+        "[]*ocmetrics.Metric"
+      ]
+    },
+    {
+      "name": "OCToTraces",
+      "receiver": "",
+      "return_types": [
+        "ptrace.Traces"
+      ],
+      "param_types": [
+        "*occommon.Node",
+        "*ocresource.Resource",
+        "[]*octrace.Span"
+      ]
+    },
+    {
+      "name": "ResourceMetricsToOC",
+      "receiver": "",
+      "return_types": [
+        "*occommon.Node",
+        "*ocresource.Resource",
+        "[]*ocmetrics.Metric"
+      ],
+      "param_types": [
+        "pmetric.ResourceMetrics"
+      ]
+    },
+    {
+      "name": "ResourceSpansToOC",
+      "receiver": "",
+      "return_types": [
+        "*occommon.Node",
+        "*ocresource.Resource",
+        "[]*octrace.Span"
+      ],
+      "param_types": [
+        "ptrace.ResourceSpans"
+      ]
+    }
+  ]
+}

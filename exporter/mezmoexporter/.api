@@ -1,0 +1,16 @@
+{
+  "structs": [
+    "Config",
+    "MezmoLogBody",
+    "MezmoLogLine"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

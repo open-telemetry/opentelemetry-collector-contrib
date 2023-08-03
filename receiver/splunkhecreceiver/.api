@@ -1,0 +1,19 @@
+{
+  "values": [
+    "SplittingStrategyLine",
+    "SplittingStrategyNone"
+  ],
+  "structs": [
+    "Config",
+    "SplittingStrategy"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

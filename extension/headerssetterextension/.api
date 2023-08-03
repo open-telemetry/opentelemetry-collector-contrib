@@ -1,0 +1,23 @@
+{
+  "values": [
+    "DELETE",
+    "INSERT",
+    "UPDATE",
+    "UPSERT"
+  ],
+  "structs": [
+    "ActionValue",
+    "Config",
+    "Header",
+    "HeaderConfig"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "extension.Factory"
+      ]
+    }
+  ]
+}

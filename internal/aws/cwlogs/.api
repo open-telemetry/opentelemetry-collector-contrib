@@ -1,0 +1,72 @@
+{
+  "structs": [
+    "ByTimestamp",
+    "Client",
+    "Event",
+    "Pusher",
+    "PusherKey",
+    "UnknownError"
+  ],
+  "functions": [
+    {
+      "name": "NewClient",
+      "receiver": "",
+      "return_types": [
+        "*Client"
+      ],
+      "param_types": [
+        "*zap.Logger",
+        "*aws.Config",
+        "component.BuildInfo",
+        "string",
+        "int64",
+        "map[string]*string",
+        "*session.Session"
+      ]
+    },
+    {
+      "name": "NewEvent",
+      "receiver": "",
+      "return_types": [
+        "*Event"
+      ],
+      "param_types": [
+        "int64",
+        "string"
+      ]
+    },
+    {
+      "name": "NewPusher",
+      "receiver": "",
+      "return_types": [
+        "Pusher"
+      ],
+      "param_types": [
+        "PusherKey",
+        "int",
+        "Client",
+        "*zap.Logger"
+      ]
+    },
+    {
+      "name": "ValidateRetentionValue",
+      "receiver": "",
+      "return_types": [
+        "error"
+      ],
+      "param_types": [
+        "int64"
+      ]
+    },
+    {
+      "name": "ValidateTagsInput",
+      "receiver": "",
+      "return_types": [
+        "error"
+      ],
+      "param_types": [
+        "map[string]*string"
+      ]
+    }
+  ]
+}

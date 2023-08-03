@@ -1,0 +1,25 @@
+{
+  "structs": [
+    "AttributeSource",
+    "Config"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    },
+    {
+      "name": "SamplingProcessorMetricViews",
+      "receiver": "",
+      "return_types": [
+        "[]*view.View"
+      ],
+      "param_types": [
+        "configtelemetry.Level"
+      ]
+    }
+  ]
+}

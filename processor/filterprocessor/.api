@@ -1,0 +1,32 @@
+{
+  "values": [
+    "Regexp",
+    "Strict",
+    "TestLogTime",
+    "TestLogTimestamp",
+    "TestObservedTime",
+    "TestObservedTimestamp",
+    "TestSpanEndTime",
+    "TestSpanEndTimestamp",
+    "TestSpanStartTime",
+    "TestSpanStartTimestamp"
+  ],
+  "structs": [
+    "Config",
+    "LogFilters",
+    "LogMatchProperties",
+    "LogMatchType",
+    "LogSeverityNumberMatchProperties",
+    "MetricFilters",
+    "TraceFilters"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "processor.Factory"
+      ]
+    }
+  ]
+}

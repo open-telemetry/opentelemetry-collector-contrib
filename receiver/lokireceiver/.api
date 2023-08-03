@@ -1,0 +1,19 @@
+{
+  "values": [
+    "ErrAtLeastOneEntryFailedToProcess"
+  ],
+  "structs": [
+    "Config",
+    "Log",
+    "Protocols"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}

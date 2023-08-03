@@ -1,0 +1,17 @@
+{
+  "structs": [
+    "Config",
+    "LabelMatcher",
+    "MetricDeclaration",
+    "MetricDescriptor"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    }
+  ]
+}

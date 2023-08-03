@@ -1,0 +1,28 @@
+{
+  "structs": [
+    "AuthConfig",
+    "Config",
+    "ErrorRoundTripper",
+    "InvalidTokenSource",
+    "TokenSourceGetter"
+  ],
+  "functions": [
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ]
+    },
+    {
+      "name": "NewFactoryWithTokenSourceGetter",
+      "receiver": "",
+      "return_types": [
+        "exporter.Factory"
+      ],
+      "param_types": [
+        "TokenSourceGetter"
+      ]
+    }
+  ]
+}

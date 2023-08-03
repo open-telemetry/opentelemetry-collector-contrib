@@ -1,0 +1,25 @@
+{
+  "structs": [
+    "Config",
+    "ProtocolUDP",
+    "Protocols",
+    "RemoteSamplingConfig",
+    "ServerConfigUDP"
+  ],
+  "functions": [
+    {
+      "name": "DefaultServerConfigUDP",
+      "receiver": "",
+      "return_types": [
+        "ServerConfigUDP"
+      ]
+    },
+    {
+      "name": "NewFactory",
+      "receiver": "",
+      "return_types": [
+        "receiver.Factory"
+      ]
+    }
+  ]
+}
