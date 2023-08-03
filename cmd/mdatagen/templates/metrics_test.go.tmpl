@@ -130,7 +130,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, {{ $metric.Data.Monotonic }}, ms.At(i).{{ $metric.Data.Type }}().IsMonotonic())
 					{{- end }}
 					{{- if $metric.Data.HasAggregated }}
-					assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.Aggregated }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
+					assert.Equal(t, pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }}, ms.At(i).{{ $metric.Data.Type }}().AggregationTemporality())
 					{{- end }}
 					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
