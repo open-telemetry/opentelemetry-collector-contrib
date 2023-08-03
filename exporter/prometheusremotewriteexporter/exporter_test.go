@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -455,12 +456,14 @@ func Test_PushMetrics(t *testing.T) {
 		returnErr          bool
 		isStaleMarker      bool
 		skipForWAL         bool
+		isPermanentErr     bool
 	}{
 		{
 			name:             "invalid_type_case",
 			metrics:          invalidTypeBatch,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
+			isPermanentErr:   true,
 		},
 		{
 			name:               "intSum_case",
@@ -562,6 +565,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
+			isPermanentErr:   true,
 		},
 		{
 			name:             "emptyCumulativeSum_case",
@@ -569,6 +573,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
+			isPermanentErr:   true,
 		},
 		{
 			name:             "emptyCumulativeHistogram_case",
@@ -576,6 +581,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
+			isPermanentErr:   true,
 		},
 		{
 			name:             "emptySummary_case",
@@ -583,6 +589,7 @@ func Test_PushMetrics(t *testing.T) {
 			reqTestFunc:      checkFunc,
 			httpResponseCode: http.StatusAccepted,
 			returnErr:        true,
+			isPermanentErr:   true,
 		},
 		{
 			name:               "staleNaNIntGauge_case",
@@ -708,6 +715,7 @@ func Test_PushMetrics(t *testing.T) {
 					err := prwe.PushMetrics(ctx, tt.metrics)
 					if tt.returnErr {
 						assert.Error(t, err)
+						assert.Equal(t, tt.isPermanentErr, consumererror.IsPermanent(err))
 						return
 					}
 					assert.NoError(t, err)
