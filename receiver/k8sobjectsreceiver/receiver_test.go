@@ -88,12 +88,6 @@ func TestWatchObject(t *testing.T) {
 		generatePod("pod1", "default", map[string]interface{}{
 			"environment": "production",
 		}, "1"),
-		generatePod("pod2", "default", map[string]interface{}{
-			"environment": "test",
-		}, "2"),
-		generatePod("pod3", "default_ignore", map[string]interface{}{
-			"environment": "production",
-		}, "3"),
 	)
 
 	rCfg := createDefaultConfig().(*Config)
@@ -124,17 +118,23 @@ func TestWatchObject(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 1)
-	assert.Equal(t, 2, consumer.Count())
+	assert.Len(t, consumer.Logs(), 0)
+	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
+		generatePod("pod2", "default", map[string]interface{}{
+			"environment": "test",
+		}, "2"),
+		generatePod("pod3", "default_ignore", map[string]interface{}{
+			"environment": "production",
+		}, "3"),
 		generatePod("pod4", "default", map[string]interface{}{
 			"environment": "production",
 		}, "4"),
 	)
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, consumer.Logs(), 2)
-	assert.Equal(t, 3, consumer.Count())
+	assert.Equal(t, 2, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }

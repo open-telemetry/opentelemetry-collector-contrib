@@ -147,25 +147,11 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	resourceVersion := config.ResourceVersion
-	var err error
-	if resourceVersion == "" {
-		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
-		// to get the initial state and a useable resourceVersion.
-		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
-		resourceVersion, err = kr.doInitialList(ctx, config, resource)
-		if err != nil {
-			kr.setting.Logger.Error("could not perform initial list for watch", zap.String("resource", config.gvr.String()), zap.Error(err))
-			return
-		}
-		// If we still don't have a resourceVersion we can try 1 as a last ditch effort.
-		// This also helps our unit tests since the fake client can't handle returning resource versions
-		// as part of a list of objects.
-		if resourceVersion == "" {
-			resourceVersion = defaultResourceVersion
-		}
+	resourceVersion, err := getResourceVersion(ctx, config, resource)
+	if err != nil {
+		kr.setting.Logger.Error("could not retrieve an initial resourceVersion", zap.String("resource", config.gvr.String()), zap.Error(err))
+		return
 	}
-
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = config.FieldSelector
 		options.LabelSelector = config.LabelSelector
@@ -202,28 +188,33 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 
 }
 
-func (kr *k8sobjectsreceiver) doInitialList(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
-	objects, err := resource.List(ctx, metav1.ListOptions{
-		FieldSelector: config.FieldSelector,
-		LabelSelector: config.LabelSelector,
-	})
-	if err != nil {
-		return "", err
+func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
+	resourceVersion := config.ResourceVersion
+	if resourceVersion == "" || resourceVersion == "0" {
+		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
+		// to get the initial state and a useable resourceVersion.
+		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
+		objects, err := resource.List(ctx, metav1.ListOptions{
+			FieldSelector: config.FieldSelector,
+			LabelSelector: config.LabelSelector,
+		})
+		if err != nil {
+			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", config.gvr.String(), err)
+		}
+		if objects == nil {
+			return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+		}
+
+		resourceVersion = objects.GetResourceVersion()
+
+		// If we still don't have a resourceVersion we can try 1 as a last ditch effort.
+		// This also helps our unit tests since the fake client can't handle returning resource versions
+		// as part of a list of objects.
+		if resourceVersion == "" || resourceVersion == "0" {
+			resourceVersion = defaultResourceVersion
+		}
 	}
-
-	if objects == nil {
-		return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
-	}
-
-	if len(objects.Items) > 0 {
-		logs := pullObjectsToLogData(objects, time.Now(), config)
-		obsCtx := kr.obsrecv.StartLogsOp(ctx)
-		err = kr.consumer.ConsumeLogs(obsCtx, logs)
-		kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
-	}
-
-	return objects.GetResourceVersion(), nil
-
+	return resourceVersion, nil
 }
 
 // Start ticking immediately.
