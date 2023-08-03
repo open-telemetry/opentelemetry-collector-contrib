@@ -85,7 +85,9 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 			},
 			OnMessageFunc: o.onMessage,
 		},
-		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig,
+		// Include ReportsEffectiveConfig once the extension has access to the
+		// collector's effective configuration.
+		Capabilities: protobufs.AgentCapabilities_AgentCapabilities_Unspecified,
 	}
 
 	if err := o.createAgentDescription(); err != nil {
