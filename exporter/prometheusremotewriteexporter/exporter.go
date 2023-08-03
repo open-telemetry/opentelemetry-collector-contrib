@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -42,6 +43,8 @@ type prwExporter struct {
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
 	settings        component.TelemetrySettings
+	retryWaitMin    time.Duration
+	retryWaitMax    time.Duration
 
 	wal              *prweWAL
 	exporterSettings prometheusremotewrite.Settings
@@ -70,6 +73,8 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
 		client:          retryablehttp.NewClient(),
+		retryWaitMax:    cfg.MaxInterval,
+		retryWaitMin:    cfg.InitialInterval,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -98,6 +103,8 @@ func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err er
 
 	// Set the HTTP client as the underlying client for the retryable client
 	prwe.client.HTTPClient = httpClient
+	prwe.client.RetryWaitMin = prwe.retryWaitMin
+	prwe.client.RetryWaitMax = prwe.retryWaitMax
 
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
@@ -243,7 +250,10 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
 	req.Header.Set("User-Agent", prwe.userAgentHeader)
 
-	retryReq, _ := retryablehttp.FromRequest(req)
+	retryReq, err := retryablehttp.FromRequest(req)
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
 	resp, err := prwe.client.Do(retryReq)
 	if err != nil {
 		return consumererror.NewPermanent(err)
