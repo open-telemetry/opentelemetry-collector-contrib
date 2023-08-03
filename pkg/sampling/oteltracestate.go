@@ -62,7 +62,7 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
 				otts.r = value
 			} else {
-				otts.rnd = Randomness{}
+				otts.rnd = Randomness{} // @@@
 			}
 		case "t":
 			if otts.tt, err = TValueToThreshold(value); err == nil {

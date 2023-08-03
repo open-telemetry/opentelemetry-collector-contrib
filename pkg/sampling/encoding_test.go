@@ -15,12 +15,13 @@
 package sampling
 
 import (
-	"bytes"
 	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling/internal/bytes"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling/internal/unsigned"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -80,16 +81,16 @@ func TestTValueToProbability(t *testing.T) {
 
 func TestProbabilityToThreshold(t *testing.T) {
 	require.Equal(t,
-		Threshold{0x1p+55},
+		must(TValueToThreshold("8")),
 		must(ProbabilityToThreshold(0.5)))
 	require.Equal(t,
-		Threshold{1},
+		must(TValueToThreshold("00000000000001")),
 		must(ProbabilityToThreshold(0x1p-56)))
 	require.Equal(t,
-		Threshold{0x100},
+		must(TValueToThreshold("000000000001")),
 		must(ProbabilityToThreshold(0x100p-56)))
 	require.Equal(t,
-		Threshold{2},
+		must(TValueToThreshold("00000000000002")),
 		must(ProbabilityToThreshold(0x1p-55)))
 	require.Equal(t,
 		AlwaysSampleThreshold,
@@ -97,13 +98,6 @@ func TestProbabilityToThreshold(t *testing.T) {
 	require.Equal(t,
 		NeverSampleThreshold,
 		must(ProbabilityToThreshold(0)))
-
-	require.Equal(t,
-		Threshold{0x555p-12 * MaxAdjustedCount},
-		must(TValueToThreshold("555")))
-	require.Equal(t,
-		Threshold{0x123p-20 * MaxAdjustedCount},
-		must(TValueToThreshold("00123")))
 }
 
 func TestShouldSample(t *testing.T) {
@@ -155,10 +149,14 @@ func (tids *benchTIDs) init() {
 // BenchmarkThresholdCompareAsUint64-10    	1000000000	         0.4515 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkThresholdCompareAsUint64(b *testing.B) {
 	var tids benchTIDs
-	var comps [1024]uint64
+	var comps [1024]unsigned.Threshold
 	tids.init()
 	for i := range comps {
-		comps[i] = (rand.Uint64() % 0x1p+56) + 1
+		var err error
+		comps[i], err = unsigned.ProbabilityToThreshold(rand.Float64())
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	b.ReportAllocs()
@@ -166,12 +164,11 @@ func BenchmarkThresholdCompareAsUint64(b *testing.B) {
 	yes := 0
 	no := 0
 	for i := 0; i < b.N; i++ {
-		tid := tids[i%len(tids)]
-		comp := comps[i%len(comps)]
-		// Read 8 bytes, mask to 7 bytes
-		val := binary.BigEndian.Uint64(tid[8:]) & (0x1p+56 - 1)
+		idx := i % len(tids)
+		tid := tids[idx]
+		comp := comps[idx]
 
-		if val < comp {
+		if comp.ShouldSample(unsigned.RandomnessFromTraceID(tid)) {
 			yes++
 		} else {
 			no++
@@ -182,12 +179,14 @@ func BenchmarkThresholdCompareAsUint64(b *testing.B) {
 // BenchmarkThresholdCompareAsBytes-10     	528679580	         2.288 ns/op	       0 B/op	       0 allocs/op
 func BenchmarkThresholdCompareAsBytes(b *testing.B) {
 	var tids benchTIDs
-	var comps [1024][7]byte
+	var comps [1024]bytes.Threshold
 	tids.init()
 	for i := range comps {
-		var e8 [8]byte
-		binary.BigEndian.PutUint64(e8[:], rand.Uint64())
-		copy(comps[i][:], e8[1:])
+		var err error
+		comps[i], err = bytes.ProbabilityToThreshold(rand.Float64())
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 
 	b.ReportAllocs()
@@ -195,7 +194,11 @@ func BenchmarkThresholdCompareAsBytes(b *testing.B) {
 	yes := 0
 	no := 0
 	for i := 0; i < b.N; i++ {
-		if bytes.Compare(tids[i%len(tids)][9:], comps[i%len(comps)][:]) <= 0 {
+		idx := i % len(tids)
+		tid := tids[idx]
+		comp := comps[idx]
+
+		if comp.ShouldSample(bytes.RandomnessFromTraceID(tid)) {
 			yes++
 		} else {
 			no++

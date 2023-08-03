@@ -95,7 +95,7 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("negative sampling rate: %.2f%%", cfg.SamplingPercentage)
 	case ratio == 0:
 		// Special case
-	case ratio < sampling.MinSamplingProb:
+	case ratio < (1 / sampling.MaxAdjustedCount):
 		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)
 	case ratio > 1:
 		return fmt.Errorf("sampling rate is too small: %.2f%%", cfg.SamplingPercentage)

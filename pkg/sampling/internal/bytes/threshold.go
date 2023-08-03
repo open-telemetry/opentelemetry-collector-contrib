@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
+package bytes
 
 import (
+	"bytes"
+	"encoding/hex"
 	"errors"
 	"strconv"
 	"strings"
@@ -32,19 +34,26 @@ const (
 
 // Threshold used to compare with the least-significant 7 bytes of the TraceID.
 type Threshold struct {
-	// unsigned is in the range [0, MaxAdjustedCount]
-	// - 0 represents never sampling (0 TraceID values are less-than)
-	// - 1 represents 1-in-MaxAdjustedCount (1 TraceID value is less-than)
-	// - MaxAdjustedCount represents always sampling (all TraceID values are less-than).
-	unsigned uint64
+	bytes [8]byte
 }
 
 var (
 	// ErrTValueSize is returned for t-values longer than NumHexDigits hex digits.
 	ErrTValueSize = errors.New("t-value exceeds 14 hex digits")
 
-	NeverSampleThreshold  = Threshold{unsigned: 0}
-	AlwaysSampleThreshold = Threshold{unsigned: MaxAdjustedCount}
+	NeverSampleThreshold = Threshold{bytes: [8]byte{
+		0, 0, 0, 0, 0, 0, 0, 0,
+	}}
+	AlwaysSampleThreshold = Threshold{bytes: [8]byte{
+		1, 0, 0, 0, 0, 0, 0, 0,
+	}}
+
+	hex14Zeros = func() (r [NumHexDigits]byte) {
+		for i := range r {
+			r[i] = '0'
+		}
+		return
+	}()
 )
 
 // TValueToThreshold returns a Threshold, see Threshold.ShouldSample(TraceID).
@@ -56,41 +65,37 @@ func TValueToThreshold(s string) (Threshold, error) {
 		return AlwaysSampleThreshold, nil
 	}
 
-	// Note that this handles zero correctly, but the inverse
-	// operation does not.  I.e., "0" parses as unsigned == 0.
-	unsigned, err := strconv.ParseUint(s, hexBase, 64)
-	if err != nil {
-		return AlwaysSampleThreshold, err
-	}
+	// Fill with padding, then copy most-significant hex digits.
+	hexPadded := hex14Zeros
+	copy(hexPadded[0:len(s)], s)
 
-	// Zero-padding is done by shifting 4 bits per absent hex digit.
-	extend := NumHexDigits - len(s)
-	return Threshold{
-		unsigned: unsigned << (4 * extend),
-	}, nil
+	var th Threshold
+	if _, err := hex.Decode(th.bytes[1:], hexPadded[:]); err != nil {
+		return AlwaysSampleThreshold, strconv.ErrSyntax // ErrSyntax for consistency w/ ../unsigned
+	}
+	return th, nil
 }
 
 func (th Threshold) TValue() string {
 	// Special cases
-	switch th.unsigned {
-	case MaxAdjustedCount:
-		// 100% sampling
+	switch {
+	case th == AlwaysSampleThreshold:
 		return ""
-	case 0:
-		// 0% sampling.  This is a special case, otherwise, the TrimRight
-		// below will return an empty matching the case above.
+	case th == NeverSampleThreshold:
 		return "0"
 	}
-	// Add MaxAdjustedCount yields 15 hex digits with a leading "1".
-	allBits := MaxAdjustedCount + th.unsigned
-	// Then format and remove the most-significant hex digit.
-	digits := strconv.FormatUint(allBits, hexBase)[1:]
-	// Leaving NumHexDigits hex digits, with trailing zeros removed.
-	return strings.TrimRight(digits, "0")
+
+	var hexDigits [14]byte
+	_ = hex.Encode(hexDigits[:], th.bytes[1:])
+	return strings.TrimRight(string(hexDigits[:]), "0")
 }
 
 // ShouldSample returns true when the span passes this sampler's
 // consistent sampling decision.
 func (t Threshold) ShouldSample(rnd Randomness) bool {
-	return rnd.unsigned < t.unsigned
+	if t == AlwaysSampleThreshold {
+		// 100% sampling case
+		return true
+	}
+	return bytes.Compare(rnd.bytes[1:], t.bytes[1:]) < 0
 }

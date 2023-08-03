@@ -1,14 +1,12 @@
-package sampling
+package unsigned
 
 import (
 	"errors"
 	"math"
 )
 
-var (
-	// ErrProbabilityRange is returned when a value should be in the range [1/MaxAdjustedCount, 1].
-	ErrProbabilityRange = errors.New("sampling probability out of range (0x1p-56 <= valid <= 1)")
-)
+// ErrProbabilityRange is returned when a value should be in the range [1/MaxAdjustedCount, 1].
+var ErrProbabilityRange = errors.New("sampling probability out of range (0x1p-56 <= valid <= 1)")
 
 // probabilityInRange tests MinSamplingProb <= prob <= 1.
 func probabilityInRange(prob float64) bool {

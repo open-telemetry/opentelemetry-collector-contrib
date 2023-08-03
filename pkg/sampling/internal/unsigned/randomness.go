@@ -1,4 +1,4 @@
-package sampling
+package unsigned
 
 import (
 	"encoding/binary"
@@ -8,18 +8,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-var (
-	// ErrRValueSize is returned for r-values != NumHexDigits hex digits.
-	ErrRValueSize = errors.New("r-value must have 14 hex digits")
-)
+// ErrRValueSize is returned for r-values != NumHexDigits hex digits.
+var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 
-const (
-	// LeastHalfTraceIDThresholdMask is the mask to use on the
-	// least-significant half of the TraceID, i.e., bytes 8-15.
-	// Because this is a 56 bit mask, the result after masking is
-	// the unsigned value of bytes 9 through 15.
-	LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
-)
+// LeastHalfTraceIDThresholdMask is the mask to use on the
+// least-significant half of the TraceID, i.e., bytes 8-15.
+// Because this is a 56 bit mask, the result after masking is
+// the unsigned value of bytes 9 through 15.
+const LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
 // Randomness may be derived from r-value or TraceID.
 type Randomness struct {
@@ -32,13 +28,6 @@ func RandomnessFromTraceID(id pcommon.TraceID) Randomness {
 	return Randomness{
 		unsigned: binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask,
 	}
-}
-
-// Unsigned is an unsigned integer that scales with the randomness
-// value.  This is useful to compare two randomness values without
-// floating point conversions.
-func (r Randomness) Unsigned() uint64 {
-	return r.unsigned
 }
 
 // RValueToRandomness parses NumHexDigits hex bytes into a Randomness.
