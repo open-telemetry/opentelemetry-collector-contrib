@@ -68,7 +68,7 @@ func (m *metric{{ $name.Render }}) init() {
 	m.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 	{{- end }}
 	{{- if $metric.Data.HasAggregated }}
-	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.Aggregated }})
+	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }})
 	{{- end }}
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
