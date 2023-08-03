@@ -9,7 +9,7 @@ change_type: enhancement
 component: k8sobjectsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support running in kubernetes leader election mode.
+note: Support running selected Kubernetes components in "leader election mode", meaning that only one replica of the Collector will react to Kubernetes events at any given point in time.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [17369]
