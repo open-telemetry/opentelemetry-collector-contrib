@@ -1,14 +1,7 @@
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 
-import "errors"
-
 // Transport is a set of constants of the transport supported by this receiver.
 type Transport string
-
-var (
-	ErrUnsupportedTransport       = errors.New("unsupported transport")
-	ErrUnsupportedPacketTransport = errors.New("unsupported Packet transport")
-)
 
 const (
 	UDP  Transport = "udp"
@@ -17,13 +10,13 @@ const (
 )
 
 // Create a Transport based on the transport string or return error if it is not supported.
-func NewTransport(ts string) (Transport, error) {
+func NewTransport(ts string) Transport {
 	trans := Transport(ts)
 	switch trans {
 	case UDP, UDP4, UDP6:
-		return trans, nil
+		return trans
 	}
-	return Transport(""), ErrUnsupportedTransport
+	return Transport("")
 }
 
 // Returns the string of this transport.

@@ -96,8 +96,8 @@ func testFreeEndpoint(t *testing.T, transport string, address string) {
 	var ln0, ln1 io.Closer
 	var err0, err1 error
 
-	trans, err := NewTransport(transport)
-	require.NoError(t, err)
+	trans := NewTransport(transport)
+	require.NotEqual(t, trans, Transport(""))
 
 	if trans.IsPacketTransport() {
 		// Endpoint should be free.

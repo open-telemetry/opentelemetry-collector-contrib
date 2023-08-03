@@ -68,14 +68,13 @@ func newReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
+	trans := transport.NewTransport(strings.ToLower(config.NetAddr.Transport))
 	// TODO: Add TCP/unix socket transport implementations
-	trans, err := transport.NewTransport(strings.ToLower(config.NetAddr.Transport))
-	switch trans {
-	case transport.UDP, transport.UDP4, transport.UDP6:
+	if trans.IsPacketTransport() {
 		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("error building server with transport %q: %w", config.NetAddr.Transport, err)
+	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
 }
 
 // Start starts a UDP server that can process StatsD messages.

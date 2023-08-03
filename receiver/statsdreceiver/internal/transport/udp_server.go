@@ -19,8 +19,12 @@ type udpServer struct {
 	transport  Transport
 }
 
-// Ensure that Server is implemented on UDP Server.
-var _ (Server) = (*udpServer)(nil)
+var (
+	// Ensure that Server is implemented on UDP Server.
+	_ (Server) = (*udpServer)(nil)
+
+	ErrUnsupportedPacketTransport = errors.New("unsupported Packet transport")
+)
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
 func NewUDPServer(transport Transport, address string) (Server, error) {
@@ -59,8 +63,11 @@ func (u *udpServer) ListenAndServe(
 			u.handlePacket(bufCopy, addr, transferChan)
 		}
 		if err != nil {
+			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v",
+				u.transport,
+				u.packetConn.LocalAddr(),
+				err)
 			var netErr net.Error
-			reporter.OnDebugf("%s Transport (%s) - ReadFrom error: %v", u.transport, u.packetConn.LocalAddr(), err)
 			if errors.As(err, &netErr) {
 				if netErr.Timeout() {
 					continue

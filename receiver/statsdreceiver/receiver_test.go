@@ -72,7 +72,7 @@ func Test_statsdreceiver_Start(t *testing.T) {
 				},
 				nextConsumer: consumertest.NewNop(),
 			},
-			wantErr: errors.New("error building server with transport \"unknown\": unsupported transport"),
+			wantErr: errors.New("unsupported transport \"unknown\""),
 		},
 	}
 	for _, tt := range tests {
@@ -80,7 +80,7 @@ func Test_statsdreceiver_Start(t *testing.T) {
 			receiver, err := newReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
 			err = receiver.Start(context.Background(), componenttest.NewNopHost())
-			assert.Equal(t, tt.wantErr.Error(), err.Error())
+			assert.Equal(t, tt.wantErr, err)
 
 			assert.NoError(t, receiver.Shutdown(context.Background()))
 		})
@@ -116,7 +116,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 		addr     string
 		configFn func() *Config
 		clientFn func(t *testing.T, addr string) *client.StatsD
-		testSkip bool
 	}{
 		{
 			name: "default_config with 4s interval",
@@ -138,10 +137,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if tt.testSkip {
-			continue
-		}
-
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := tt.configFn()
 			cfg.NetAddr.Endpoint = tt.addr
