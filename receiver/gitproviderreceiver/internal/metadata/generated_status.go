@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "prometheus_exec"
-	MetricsStability = component.StabilityLevelDeprecated
+	Type             = "gitprovider"
+	MetricsStability = component.StabilityLevelDevelopment
 )
