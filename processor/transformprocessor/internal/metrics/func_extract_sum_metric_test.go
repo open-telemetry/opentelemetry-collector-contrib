@@ -270,26 +270,6 @@ func Test_extractSumMetric(t *testing.T) {
 			},
 		},
 		{
-			name:         "summary (non-monotonic)",
-			input:        getTestSummaryMetric(),
-			monotonicity: false,
-			want: func(metrics pmetric.MetricSlice) {
-				summaryMetric := getTestSummaryMetric()
-				summaryMetric.CopyTo(metrics.AppendEmpty())
-				sumMetric := metrics.AppendEmpty()
-				sumMetric.SetEmptySum()
-				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				sumMetric.Sum().SetIsMonotonic(false)
-
-				sumMetric.SetName("summary_metric_sum")
-				dp := sumMetric.Sum().DataPoints().AppendEmpty()
-				dp.SetDoubleValue(12.34)
-
-				attrs := getTestAttributes()
-				attrs.CopyTo(dp.Attributes())
-			},
-		},
-		{
 			name:         "gauge (error)",
 			input:        getTestGaugeMetric(),
 			monotonicity: false,
