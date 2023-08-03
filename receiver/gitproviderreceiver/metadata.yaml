@@ -7,3 +7,5 @@ status:
   stability:
     development: [metrics]
   distributions: [liatrio]
+  codeowners:
+    active: [adrielp, astencel-sumo]
