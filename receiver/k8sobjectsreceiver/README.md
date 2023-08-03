@@ -40,7 +40,7 @@ The following is example configuration
   k8sobjects/leader-election:
     leader_election:
       enabled: true
-      lock_name: "k8sobjects/leader-election"
+      lock_name: "k8sobjects-leader-election"
     auth_type: serviceAccount
     objects:
       - name: pods

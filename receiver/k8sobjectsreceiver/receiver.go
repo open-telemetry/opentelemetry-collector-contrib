@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -69,8 +70,15 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		if err != nil {
 			return nil, err
 		}
+
+		// use component "type-name" as resource lock name.
 		if config.LeaderElection.LockName == "" {
-			config.LeaderElection.LockName = params.ID.String()
+			nameWithID := strings.Split(params.ID.String(), "/")
+			if len(nameWithID) > 1 {
+				config.LeaderElection.LockName = strings.Join(nameWithID, "-")
+			} else {
+				config.LeaderElection.LockName = nameWithID[0]
+			}
 		}
 	}
 
