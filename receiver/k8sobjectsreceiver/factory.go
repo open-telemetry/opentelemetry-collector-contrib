@@ -31,8 +31,7 @@ func createDefaultConfig() component.Config {
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		LeaderElection: k8sconfig.LeaderElectionConfig{
-			Enabled:          false,
-			LeaderElectionID: "e3385b9a.leader-election.opentelemetry-collector",
+			Enabled: false,
 		},
 	}
 }

@@ -10,4 +10,3 @@ k8sobjects:
       namespaces: [default]
   leader_election:
     enabled: true
-    leader_election_id: "e3385b9a.leader-election.opentelemetry-collector"

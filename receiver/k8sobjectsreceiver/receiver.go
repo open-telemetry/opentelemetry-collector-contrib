@@ -69,6 +69,9 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		if err != nil {
 			return nil, err
 		}
+		if config.LeaderElection.LockName == "" {
+			config.LeaderElection.LockName = params.ID.String()
+		}
 	}
 
 	return objReceiver, nil
@@ -92,7 +95,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		kr.stopperChanList = append(kr.stopperChanList, leaderLost)
 		kr.mu.Unlock()
 
-		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection.LeaderElectionID, kr.leaderElectionClient, runFunc,
+		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, runFunc,
 			func() {
 				kr.logger.Error("leader election lost")
 				leaderLost <- struct{}{}

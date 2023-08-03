@@ -65,13 +65,12 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 	}
-	expectedLleaerElection := k8sconfig.LeaderElectionConfig{
-		Enabled:          true,
-		LeaderElectionID: "e3385b9a.leader-election.opentelemetry-collector",
+	expectedLeaderElection := k8sconfig.LeaderElectionConfig{
+		Enabled: false,
 	}
 
 	assert.EqualValues(t, expectedObjects, cfg.Objects)
-	assert.EqualValues(t, expectedLleaerElection, cfg.LeaderElection)
+	assert.EqualValues(t, expectedLeaderElection, cfg.LeaderElection)
 
 }
 

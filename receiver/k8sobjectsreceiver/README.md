@@ -25,9 +25,22 @@ The following is example configuration
 
 ```yaml
   k8sobjects:
+    auth_type: serviceAccount
+    objects:
+      - name: pods
+        mode: pull
+        label_selector: environment in (production),tier in (frontend)
+        field_selector: status.phase=Running
+        interval: 15m
+      - name: events
+        mode: watch
+        group: events.k8s.io
+        namespaces: [default]
+
+  k8sobjects/leader-election:
     leader_election:
       enabled: true
-      leader_election_id: "my-opentelemetry-collector"
+      lock_name: "k8sobjects/leader-election"
     auth_type: serviceAccount
     objects:
       - name: pods
@@ -42,9 +55,12 @@ The following is example configuration
 ```
 
 Brief description of configuration properties:
-- `leader_election`: running in Kubernetes with leader election mode, this means that multiple instances are running, but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
+- `leader_election`: running in Kubernetes with `leader election mode`, this means that multiple instances are running, but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
   - `enabled` (default = `false`): whether run in leader election mode.
-  - `leader_election_id` (default = `e3385b9a.leader-election.opentelemetry-collector`): the identity name of holder. 
+  - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.
+  - `lease_duration` (default = `15s`): the duration that non-leader candidates will wait to force acquire leadership.
+  - `re_new_deadline` (default = `10s`): the duration that the acting master will retry refreshing leadership before giving up.
+  - `retry_period` (default = `2s`): the duration the LeaderElector clients should wait between tries of actions. 
 - `auth_type` (default = `serviceAccount`): Determines how to authenticate to
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or

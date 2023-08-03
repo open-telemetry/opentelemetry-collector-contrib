@@ -5,11 +5,11 @@ package k8sconfig // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
@@ -17,40 +17,40 @@ import (
 
 // LeaderElectionConfig is used to enable leader election
 type LeaderElectionConfig struct {
-	Enabled          bool   `mapstructure:"enabled"`
-	LeaderElectionID string `mapstructure:"leader_election_id"`
+	Enabled bool `mapstructure:"enabled"`
+	// LockName determines the name of the resource that leader election will use for holding the leader lock.
+	LockName      string        `mapstructure:"lock_name"`
+	LeaseDuration time.Duration `mapstructure:"lease_duration"`
+	RenewDeadline time.Duration `mapstructure:"re_new_deadline"`
+	RetryPeriod   time.Duration `mapstructure:"retry_period"`
 }
 
 const (
-	inClusterNamespacePath  = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
-	defaultLeaderElectionID = "opentelemetry-collector"
-	defaultNamespace        = "default"
-	defaultLeaseDuration    = 15 * time.Second
-	defaultRenewDeadline    = 10 * time.Second
-	defaultRetryPeriod      = 2 * time.Second
+	inClusterNamespacePath = "/var/run/secrets/kubernetes.io/serviceaccount/namespace"
+	defaultLeaseDuration   = 15 * time.Second
+	defaultRenewDeadline   = 10 * time.Second
+	defaultRetryPeriod     = 2 * time.Second
 )
 
-// NewResourceLock creates a new config map resource lock for use in a leader election loop
-func newResourceLock(client kubernetes.Interface, leaderElectionID string) (resourcelock.Interface, error) {
-	if leaderElectionID == "" {
-		leaderElectionID = defaultLeaderElectionID
+// NewResourceLock creates a new leases resource lock for use in a leader election loop
+func newResourceLock(client kubernetes.Interface, lockName string) (resourcelock.Interface, error) {
+	if lockName == "" {
+		return nil, errors.New("lockName must be configured")
 	}
 
 	leaderElectionNamespace, err := getInClusterNamespace()
 	if err != nil {
-		leaderElectionNamespace = defaultNamespace
+		return nil, fmt.Errorf("unable to find leader election namespace: %w", err)
 	}
 
-	// Leader id, needs to be unique
+	// Leader id, needs to be unique, use pod name in kubernetes case.
 	id, err := os.Hostname()
 	if err != nil {
 		return nil, err
 	}
-	id = id + "_" + uuid.New().String()
 
-	return resourcelock.New(resourcelock.ConfigMapsLeasesResourceLock,
-		leaderElectionNamespace,
-		leaderElectionID,
+	return resourcelock.New(resourcelock.LeasesResourceLock,
+		leaderElectionNamespace, lockName,
 		client.CoreV1(),
 		client.CoordinationV1(),
 		resourcelock.ResourceLockConfig{
@@ -77,14 +77,13 @@ func getInClusterNamespace() (string, error) {
 }
 
 // NewLeaderElector return  a leader elector object using client-go
-func NewLeaderElector(leaderElectionID string, client kubernetes.Interface, startFunc func(context.Context), stopFunc func()) (*leaderelection.LeaderElector, error) {
-	resourceLock, err := newResourceLock(client, leaderElectionID)
+func NewLeaderElector(leaderElectionCfg LeaderElectionConfig, client kubernetes.Interface, startFunc func(context.Context), stopFunc func()) (*leaderelection.LeaderElector, error) {
+	resourceLock, err := newResourceLock(client, leaderElectionCfg.LockName)
 	if err != nil {
 		return &leaderelection.LeaderElector{}, err
 	}
 
-	// TODO: make those configurable.
-	l, err := leaderelection.NewLeaderElector(leaderelection.LeaderElectionConfig{
+	leConfig := leaderelection.LeaderElectionConfig{
 		Lock:          resourceLock,
 		LeaseDuration: defaultLeaseDuration,
 		RenewDeadline: defaultRenewDeadline,
@@ -93,6 +92,19 @@ func NewLeaderElector(leaderElectionID string, client kubernetes.Interface, star
 			OnStartedLeading: startFunc,
 			OnStoppedLeading: stopFunc,
 		},
-	})
-	return l, err
+	}
+
+	if leaderElectionCfg.LeaseDuration >= 0 {
+		leConfig.LeaseDuration = leaderElectionCfg.LeaseDuration
+	}
+
+	if leaderElectionCfg.RenewDeadline >= 0 {
+		leConfig.RenewDeadline = leaderElectionCfg.RenewDeadline
+	}
+
+	if leaderElectionCfg.RetryPeriod >= 0 {
+		leConfig.RetryPeriod = leaderElectionCfg.RetryPeriod
+	}
+
+	return leaderelection.NewLeaderElector(leConfig)
 }
