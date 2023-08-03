@@ -25,7 +25,6 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		buildServerFn     func(transport Transport, addr string) (Server, error)
 		getFreeEndpointFn func(t testing.TB, transport string) string
 		buildClientFn     func(transport string, address string) (*client.StatsD, error)
-		testSkip          bool
 	}{
 		{
 			name:              "udp",
@@ -35,10 +34,6 @@ func Test_Server_ListenAndServe(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		if tt.testSkip {
-			continue
-		}
-
 		t.Run(tt.name, func(t *testing.T) {
 			trans := Transport(tt.name)
 			addr := tt.getFreeEndpointFn(t, tt.name)
