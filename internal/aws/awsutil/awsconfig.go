@@ -41,6 +41,8 @@ type AWSSessionSettings struct {
 	Profile string `mapstructure:"profile"`
 	// Change the default shared creds file location
 	SharedCredentialsFile []string `mapstructure:"shared_credentials_file"`
+	// Add a custom certificates file
+	CertificateFilePath string `mapstructure:"certificate_file_path"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {

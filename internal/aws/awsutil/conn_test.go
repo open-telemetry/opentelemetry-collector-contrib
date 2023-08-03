@@ -167,3 +167,15 @@ func TestGetSTSCreds(t *testing.T) {
 	_, err = getSTSCreds(logger, region, roleArn)
 	assert.NotNil(t, err)
 }
+
+func TestLoadAmazonCertificateFromFile(t *testing.T) {
+	certFromFile, err := loadCertPool("testdata/public_amazon_cert.pem")
+	assert.NoError(t, err)
+	assert.NotNil(t, certFromFile)
+}
+
+func TestLoadEmptyFile(t *testing.T) {
+	certFromFile, err := loadCertPool("")
+	assert.Error(t, err)
+	assert.Nil(t, certFromFile)
+}
