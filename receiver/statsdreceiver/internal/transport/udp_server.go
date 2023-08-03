@@ -28,20 +28,19 @@ var (
 
 // NewUDPServer creates a transport.Server using UDP as its transport.
 func NewUDPServer(transport Transport, address string) (Server, error) {
-	var usrv udpServer
-	var err error
-
 	if !transport.IsPacketTransport() {
 		return nil, ErrUnsupportedPacketTransport
 	}
 
-	usrv.transport = transport
-	usrv.packetConn, err = net.ListenPacket(transport.String(), address)
+	conn, err := net.ListenPacket(transport.String(), address)
 	if err != nil {
 		return nil, fmt.Errorf("starting to listen %s socket: %w", transport.String(), err)
 	}
 
-	return &usrv, nil
+	return &udpServer{
+		packetConn: conn,
+		transport:  transport,
+	}, nil
 }
 
 // ListenAndServe starts the server ready to receive metrics.
