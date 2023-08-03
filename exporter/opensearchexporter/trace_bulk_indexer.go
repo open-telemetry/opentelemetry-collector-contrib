@@ -226,7 +226,7 @@ func newOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(con
 	})
 }
 
-func forEachSpan(td ptrace.Traces, iterator func(pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
+func forEachSpan(td ptrace.Traces, visitor func(pcommon.Resource, string, pcommon.InstrumentationScope, string, ptrace.Span)) {
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
 		il := resourceSpans.At(i)
