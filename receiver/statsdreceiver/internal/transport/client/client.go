@@ -65,7 +65,10 @@ func (s *StatsD) Disconnect() error {
 // SendMetric sends the input metric to the StatsD connection.
 func (s *StatsD) SendMetric(metric Metric) error {
 	_, err := io.Copy(s.conn, strings.NewReader(metric.String()))
-	return fmt.Errorf("send metric on test client: %w", err)
+	if err != nil {
+		return fmt.Errorf("send metric on test client: %w", err)
+	}
+	return nil
 }
 
 // Metric contains the metric fields for a StatsD message.
