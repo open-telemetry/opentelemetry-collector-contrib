@@ -333,6 +333,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 
 	var dps dataPoints
 
+	//exhaustive:enforce
 	switch pmd.Type() {
 	case pmetric.MetricTypeGauge:
 		metric := pmd.Gauge()
