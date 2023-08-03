@@ -189,7 +189,7 @@ func run(folder string, checkMembers bool) error {
 		}
 
 		if !present {
-			allowed := inAllowlist(codeowner)
+			allowed := inAllowlist(codeowner) || strings.HasPrefix(codeowner, "open-telemetry/")
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
 			}
@@ -202,6 +202,9 @@ func run(folder string, checkMembers bool) error {
 	if checkMembers {
 		var list []string
 		for codeowner := range allCodeowners {
+			if strings.HasPrefix(codeowner, "open-telemetry/") {
+				continue
+			}
 			list = append(list, codeowner)
 		}
 		sort.Strings(list)

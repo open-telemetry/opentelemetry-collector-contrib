@@ -85,7 +85,6 @@ mx-psi
 mxiamxia
 nslaughter
 oded-dd
-open-telemetry/collector-approvers
 oppegard
 pavankrish123
 pavolloffay

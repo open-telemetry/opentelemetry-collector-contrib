@@ -19,9 +19,7 @@ leonsp-ai
 liqiangz
 mrsillydog
 oded-dd
-open-telemetry/collector-approvers
 pcwiese
-pxaws
 shaochengwang
 svrakitin
 thepeterstone
