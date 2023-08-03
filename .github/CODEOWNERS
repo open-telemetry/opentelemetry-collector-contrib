@@ -223,7 +223,6 @@ receiver/oracledbreceiver/                               @open-telemetry/collect
 receiver/otlpjsonfilereceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/podmanreceiver/                                 @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/prometheusexecreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 receiver/pulsarreceiver/                                 @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
