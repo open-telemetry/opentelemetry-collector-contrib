@@ -9,4 +9,4 @@ k8sobjects:
       group: events.k8s.io
       namespaces: [default]
   leader_election:
-    enabled: true
+    enabled: false
