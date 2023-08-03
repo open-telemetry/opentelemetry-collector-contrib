@@ -21,15 +21,15 @@ const (
 )
 
 // Create a Transport based on the transport string or return error if it is not supported.
-func NewTransport(ts string) (Transport, error) {
+func NewTransport(ts string) Transport {
 	trans := Transport(ts)
 	switch trans {
 	case UDP, UDP4, UDP6:
-		return trans, nil
+		return trans
 	case TCP, TCP4, TCP6:
-		return trans, nil
+		return trans
 	}
-	return Transport(""), ErrUnsupportedTransport
+	return Transport("")
 }
 
 // Returns the string of this transport.
