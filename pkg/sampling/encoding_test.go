@@ -39,32 +39,43 @@ func mustNot[T any](t T, err error) error {
 	return err
 }
 
-func TestValidProbabilityToTValue(t *testing.T) {
-	require.Equal(t, "8", must(ProbabilityToTValue(0.5)))
-	require.Equal(t, "00000000000001", must(ProbabilityToTValue(0x1p-56)))
-	require.Equal(t, "55555555555554", must(ProbabilityToTValue(1/3.)))
-	require.Equal(t, "54", must(ProbabilityToTValue(0x54p-8))) // 0x54p-8 is approximately 1/3
-	require.Equal(t, "01", must(ProbabilityToTValue(0x1p-8)))
-	require.Equal(t, "0", must(ProbabilityToTValue(0)))
+func probabilityToTValue(prob float64) (string, error) {
+	th, err := ProbabilityToThreshold(prob)
+	return string(th.TValue()), err
 }
 
-func TestInvalidProbabilityToTValue(t *testing.T) {
+func tValueToProbability(tv string) (float64, error) {
+	th, err := TValueToThreshold(tv)
+	return th.Probability(), err
+}
+
+func TestValidProbabilityToTValue(t *testing.T) {
+	require.Equal(t, "", must(probabilityToTValue(1.0)))
+	require.Equal(t, "8", must(probabilityToTValue(0.5)))
+	require.Equal(t, "00000000000001", must(probabilityToTValue(0x1p-56)))
+	require.Equal(t, "55555555555554", must(probabilityToTValue(1/3.)))
+	require.Equal(t, "54", must(probabilityToTValue(0x54p-8))) // 0x54p-8 is approximately 1/3
+	require.Equal(t, "01", must(probabilityToTValue(0x1p-8)))
+	require.Equal(t, "0", must(probabilityToTValue(0)))
+}
+
+func TestInvalidprobabilityToTValue(t *testing.T) {
 	// Too small
-	require.Error(t, mustNot(ProbabilityToTValue(0x1p-57)))
-	require.Error(t, mustNot(ProbabilityToTValue(0x1p-57)))
+	require.Error(t, mustNot(probabilityToTValue(0x1p-57)))
+	require.Error(t, mustNot(probabilityToTValue(0x1p-57)))
 
 	// Too big
-	require.Error(t, mustNot(ProbabilityToTValue(1.1)))
-	require.Error(t, mustNot(ProbabilityToTValue(1.1)))
+	require.Error(t, mustNot(probabilityToTValue(1.1)))
+	require.Error(t, mustNot(probabilityToTValue(1.1)))
 }
 
 func TestTValueToProbability(t *testing.T) {
-	require.Equal(t, 0.5, must(TValueToProbability("8")))
-	require.Equal(t, 0x444p-12, must(TValueToProbability("444")))
-	require.Equal(t, 0.0, must(TValueToProbability("0")))
+	require.Equal(t, 0.5, must(tValueToProbability("8")))
+	require.Equal(t, 0x444p-12, must(tValueToProbability("444")))
+	require.Equal(t, 0.0, must(tValueToProbability("0")))
 
 	// 0x55555554p-32 is very close to 1/3
-	require.InEpsilon(t, 1/3., must(TValueToProbability("55555554")), 1e-9)
+	require.InEpsilon(t, 1/3., must(tValueToProbability("55555554")), 1e-9)
 }
 
 func TestProbabilityToThreshold(t *testing.T) {
@@ -81,14 +92,17 @@ func TestProbabilityToThreshold(t *testing.T) {
 		Threshold{2},
 		must(ProbabilityToThreshold(0x1p-55)))
 	require.Equal(t,
-		Threshold{1 / MinSamplingProb},
+		AlwaysSampleThreshold,
 		must(ProbabilityToThreshold(1.0)))
+	require.Equal(t,
+		NeverSampleThreshold,
+		must(ProbabilityToThreshold(0)))
 
 	require.Equal(t,
-		Threshold{0x555p-12 / MinSamplingProb},
+		Threshold{0x555p-12 * MaxAdjustedCount},
 		must(TValueToThreshold("555")))
 	require.Equal(t,
-		Threshold{0x123p-20 / MinSamplingProb},
+		Threshold{0x123p-20 * MaxAdjustedCount},
 		must(TValueToThreshold("00123")))
 }
 

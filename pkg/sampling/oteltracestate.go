@@ -68,7 +68,7 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 			if otts.tt, err = TValueToThreshold(value); err == nil {
 				otts.t = value
 			} else {
-				otts.tt = Threshold{}
+				otts.tt = AlwaysSampleThreshold
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
