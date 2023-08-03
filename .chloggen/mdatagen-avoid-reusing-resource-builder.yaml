@@ -13,3 +13,5 @@ note: Avoid reusing the same ResourceBuilder instance for multiple ResourceMetri
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [24762]
+
+change_logs: [user, api]
