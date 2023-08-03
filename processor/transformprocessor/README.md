@@ -229,7 +229,7 @@ The `extract_sum_metric` function creates a new Sum metric from a Histogram, Exp
 
 `is_monotonic` is a boolean representing the monotonicity of the new metric.
 
-The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` attribute, this attribute will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
 
 The new metric that is created will be passed to all subsequent statements in the metrics statements list.
 
