@@ -1003,11 +1003,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/receiver/prometheusexecreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
     schedule:
       interval: "weekly"
@@ -1099,6 +1094,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/splunkhecreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/receiver/sqlqueryreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"
