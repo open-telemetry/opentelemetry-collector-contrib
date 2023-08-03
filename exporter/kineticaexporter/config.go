@@ -1,4 +1,7 @@
-package kineticaotelexporter // import
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter // import
 
 import (
 	"errors"
@@ -19,8 +22,6 @@ import (
 const (
 	// The value of "type" key in configuration.
 	typeStr = "kinetica"
-	// The stability level of the exporter.
-	stability = component.StabilityLevelAlpha
 
 	maxSize              = 10
 	maxBackups           = 5
@@ -29,8 +30,7 @@ const (
 )
 
 var (
-	kineticaLogger      *zap.Logger
-	logConfigFileExists bool
+	kineticaLogger *zap.Logger
 )
 
 // Config defines configuration for the Kinetica exporter.
@@ -58,9 +58,6 @@ func (cfg *Config) Validate() error {
 
 	if !fileExists(cfg.LogConfigFile) {
 		fmt.Println("WARNING : LOG config file ", cfg.LogConfigFile, " does not exist; will work with default logger ...")
-		logConfigFileExists = false
-	} else {
-		logConfigFileExists = true
 	}
 
 	fmt.Println("Password = ", string(cfg.Password))
@@ -108,11 +105,11 @@ func (cfg *Config) createLogger() *zap.Logger {
 
 	for _, path := range logConfig.OutputPaths {
 
-		if path == "stdout" || path == "stderror" {
+		switch {
+		case path == "stdout" || path == "stderror":
 			stdout = zapcore.AddSync(os.Stdout)
 			fmt.Println("Created stdout syncer ...")
-
-		} else if strings.HasPrefix(path, "lumberjack://") {
+		case strings.HasPrefix(path, "lumberjack://"):
 			var err error
 			logFilePath, err = url.Parse(path)
 			fmt.Println("LogFilePath : ", logFilePath)
@@ -136,7 +133,7 @@ func (cfg *Config) createLogger() *zap.Logger {
 					fmt.Println("Created file syncer ...")
 				}
 			}
-		} else {
+		default:
 			// Unknown output format
 			fmt.Println("Invalid output path specified in config ...")
 		}
@@ -190,11 +187,11 @@ func (cfg *Config) createDefaultLogger() *zap.Logger {
 
 	for _, path := range logConfig.OutputPaths {
 
-		if path == "stdout" || path == "stderror" {
+		switch {
+		case path == "stdout" || path == "stderror":
 			stdout = zapcore.AddSync(os.Stdout)
 			fmt.Println("Created stdout syncer ...")
-
-		} else if strings.HasPrefix(path, "lumberjack://") {
+		case strings.HasPrefix(path, "lumberjack://"):
 			var err error
 			logFilePath, err = url.Parse(path)
 			fmt.Println("LogFilePath : ", logFilePath)
@@ -218,10 +215,12 @@ func (cfg *Config) createDefaultLogger() *zap.Logger {
 					fmt.Println("Created file syncer ...")
 				}
 			}
-		} else {
+
+		default:
 			// Unknown output format
 			fmt.Println("Invalid output path specified in config ...")
 		}
+
 	}
 
 	if stdout == nil && file == nil {

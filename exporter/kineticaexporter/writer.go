@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"
@@ -58,30 +61,28 @@ type Log struct {
 
 // NewLog Constructor for Logs
 //
-//	@param LogID
-//	@param ResourceID
-//	@param ScopeID
-//	@param TraceID
-//	@param SpanID
-//	@param TimeUnixNano
-//	@param ObservedTimeUnixNano
-//	@param SeverityID
-//	@param SeverityText
-//	@param Body
-//	@param Flags
-//	@return *Logs
-func NewLog(LogID string, TraceID string, SpanID string, TimeUnixNano int64, ObservedTimeUnixNano int64, SeverityID int8, SeverityText string, Body string, Flags int) *Log {
+//	@param logID
+//	@param traceID
+//	@param spanID
+//	@param timeUnixNano
+//	@param observedTimeUnixNano
+//	@param severityID
+//	@param severityText
+//	@param body
+//	@param flags
+//	@return *Log
+func NewLog(logID string, traceID string, spanID string, timeUnixNano int64, observedTimeUnixNano int64, severityID int8, severityText string, body string, flags int) *Log {
 	o := new(Log)
 
-	o.LogID = LogID
-	o.TraceID = TraceID
-	o.SpanID = SpanID
-	o.TimeUnixNano = TimeUnixNano
-	o.ObservedTimeUnixNano = ObservedTimeUnixNano
-	o.SeverityID = SeverityID
-	o.SeverityText = SeverityText
-	o.Body = Body
-	o.Flags = Flags
+	o.LogID = logID
+	o.TraceID = traceID
+	o.SpanID = spanID
+	o.TimeUnixNano = timeUnixNano
+	o.ObservedTimeUnixNano = observedTimeUnixNano
+	o.SeverityID = severityID
+	o.SeverityText = severityText
+	o.Body = body
+	o.Flags = flags
 
 	return o
 }
@@ -151,7 +152,7 @@ type ScopeAttribute struct {
 //	@return *LogsScopeAttribute
 func NewScopeAttribute(logID string, key string, scopeName string, scopeVersion string, attributes AttributeValue) *ScopeAttribute {
 	o := new(ScopeAttribute)
-	o.LogID = uuid.New().String()
+	o.LogID = logID
 	o.Key = key
 	o.ScopeName = scopeName
 	o.ScopeVersion = scopeVersion
@@ -326,13 +327,13 @@ type TraceResourceAttribute struct {
 
 // NewTraceResourceAttribute Constructor for TraceResourceAttribute
 //
-//	@param SpanID
+//	@param spanID
 //	@param key
 //	@param attributes
 //	@return *TraceResourceAttribute
-func NewTraceResourceAttribute(SpanID string, key string, attributes AttributeValue) *TraceResourceAttribute {
+func NewTraceResourceAttribute(spanID string, key string, attributes AttributeValue) *TraceResourceAttribute {
 	o := new(TraceResourceAttribute)
-	o.SpanID = SpanID
+	o.SpanID = spanID
 	o.Key = key
 	o.AttributeValue = attributes
 	return o
@@ -351,14 +352,15 @@ type TraceScopeAttribute struct {
 
 // NewtraceScopeAttribute Constructor for TraceScopeAttribute
 //
+//	@param spanID
 //	@param key
 //	@param scopeName
 //	@param scopeVersion
 //	@param attributes
 //	@return *TraceScopeAttribute
-func NewtraceScopeAttribute(SpanID string, key string, scopeName string, scopeVersion string, attributes AttributeValue) *TraceScopeAttribute {
+func NewtraceScopeAttribute(spanID string, key string, scopeName string, scopeVersion string, attributes AttributeValue) *TraceScopeAttribute {
 	o := new(TraceScopeAttribute)
-	o.SpanID = SpanID
+	o.SpanID = spanID
 	o.Key = key
 	o.ScopeName = scopeName
 	o.ScopeVersion = scopeVersion
@@ -1265,7 +1267,7 @@ func (kiwriter *KiWriter) persistSummaryRecord(summaryRecords []kineticaSummaryR
 
 }
 
-func (kiwriter *KiWriter) doChunkedInsert(ctx context.Context, tableName string, records []any) error {
+func (kiwriter *KiWriter) doChunkedInsert(_ context.Context, tableName string, records []any) error {
 
 	// Build the final table name with the schema prepended
 	var finalTable string

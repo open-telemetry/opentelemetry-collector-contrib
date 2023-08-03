@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"encoding/json"
@@ -7,7 +10,6 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 )
 
 const (
@@ -771,17 +773,17 @@ func AttributeValueToKineticaFieldValue(value pcommon.Value) (ValueTypePair, err
 	case pcommon.ValueTypeBool:
 		return ValueTypePair{value.Bool(), pcommon.ValueTypeBool}, nil
 	case pcommon.ValueTypeMap:
-		if jsonBytes, err := json.Marshal(otlpKeyValueListToMap(value.Map())); err != nil {
+		jsonBytes, err := json.Marshal(otlpKeyValueListToMap(value.Map()))
+		if err != nil {
 			return ValueTypePair{nil, pcommon.ValueTypeEmpty}, err
-		} else {
-			return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 		}
+		return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 	case pcommon.ValueTypeSlice:
-		if jsonBytes, err := json.Marshal(otlpArrayToSlice(value.Slice())); err != nil {
+		jsonBytes, err := json.Marshal(otlpArrayToSlice(value.Slice()))
+		if err != nil {
 			return ValueTypePair{nil, pcommon.ValueTypeEmpty}, err
-		} else {
-			return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 		}
+		return ValueTypePair{string(jsonBytes), pcommon.ValueTypeStr}, nil
 	case pcommon.ValueTypeEmpty:
 		return ValueTypePair{nil, pcommon.ValueTypeEmpty}, nil
 	default:
@@ -843,42 +845,6 @@ func otlpArrayToSlice(arr pcommon.Slice) []interface{} {
 		}
 	}
 	return s
-}
-
-func convertResourceTags(resource pcommon.Resource) map[string]string {
-	tags := make(map[string]string, resource.Attributes().Len())
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
-		tags[k] = v.AsString()
-		return true
-	})
-	// TODO dropped attributes counts
-	return tags
-}
-
-func convertResourceFields(resource pcommon.Resource) map[string]interface{} {
-	fields := make(map[string]interface{}, resource.Attributes().Len())
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
-		fields[k] = v.AsRaw()
-		return true
-	})
-	// TODO dropped attributes counts
-	return fields
-}
-
-func convertScopeFields(is pcommon.InstrumentationScope) map[string]interface{} {
-	fields := make(map[string]interface{}, is.Attributes().Len()+2)
-	is.Attributes().Range(func(k string, v pcommon.Value) bool {
-		fields[k] = v.AsRaw()
-		return true
-	})
-	if name := is.Name(); name != "" {
-		fields[semconv.AttributeTelemetrySDKName] = name
-	}
-	if version := is.Version(); version != "" {
-		fields[semconv.AttributeTelemetrySDKVersion] = version
-	}
-	// TODO dropped attributes counts
-	return fields
 }
 
 // getAttributeValue
@@ -966,7 +932,7 @@ func ValidateStruct(s interface{}) (err error) {
 		isSet := field.IsValid() && !field.IsZero()
 
 		if !isSet {
-			err = errors.New(fmt.Sprintf("%v%s is not set; ", err, fieldName))
+			err = fmt.Errorf("%w%s is not set; ", err, fieldName)
 		}
 
 	}

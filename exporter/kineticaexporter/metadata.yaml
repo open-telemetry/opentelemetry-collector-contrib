@@ -1,7 +1,7 @@
 type: kinetica
+
 status:
   class: exporter
   stability:
-    alpha: [metrics]
-    development: [traces, logs]
+    development: [metrics, traces, logs]
   distributions: [contrib]

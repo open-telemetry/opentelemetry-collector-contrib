@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"
@@ -66,14 +69,12 @@ func (e *kineticaLogsExporter) start(ctx context.Context, _ component.Host) erro
 			return err
 		}
 	}
-	if err := createLogTables(ctx, e.writer); err != nil {
-		return err
-	}
-	return nil
+	err := createLogTables(ctx, e.writer)
+	return err
 }
 
 // shutdown will shut down the exporter.
-func (e *kineticaLogsExporter) shutdown(ctx context.Context) error {
+func (e *kineticaLogsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -88,7 +89,7 @@ func createLogTables(ctx context.Context, kiWriter *KiWriter) error {
 	var schema string
 	schema = strings.Trim(kiWriter.cfg.Schema, " ")
 	if len(schema) > 0 {
-		schema = schema + "."
+		schema += "."
 	} else {
 		schema = ""
 	}
@@ -146,16 +147,7 @@ func (e *kineticaLogsExporter) pushLogsData(ctx context.Context, logData plog.Lo
 	return multierr.Combine(errs...)
 }
 
-// createLogRecord //
-//
-//	@receiver e
-//	@param ctx
-//	@param resource
-//	@param instrumentationLibrary
-//	@param logRecord
-//	@return *kineticaLogRecord
-//	@return error
-func (e *kineticaLogsExporter) createLogRecord(ctx context.Context, resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, logRecord plog.LogRecord) (*kineticaLogRecord, error) {
+func (e *kineticaLogsExporter) createLogRecord(_ context.Context, resource pcommon.Resource, instrumentationLibrary pcommon.InstrumentationScope, logRecord plog.LogRecord) (*kineticaLogRecord, error) {
 	var errs []error
 	ts := logRecord.Timestamp().AsTime().UnixMilli()
 	ots := logRecord.ObservedTimestamp().AsTime().UnixMilli()
@@ -201,8 +193,6 @@ func (e *kineticaLogsExporter) createLogRecord(ctx context.Context, resource pco
 		}
 		return true
 	})
-
-	// fmt.Println("Received Log Attributes - ", logAttributes)
 
 	if droppedAttributesCount > 0 {
 		fields[common.AttributeDroppedAttributesCount] = droppedAttributesCount

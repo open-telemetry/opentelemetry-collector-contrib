@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"

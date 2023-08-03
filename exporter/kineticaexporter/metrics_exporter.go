@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"
@@ -130,7 +133,7 @@ var (
 	}
 )
 
-func newMetricsExporter(logger *zap.Logger, cfg *Config) (*kineticaMetricsExporter, error) {
+func newMetricsExporter(_ *zap.Logger, cfg *Config) (*kineticaMetricsExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -154,10 +157,8 @@ func (e *kineticaMetricsExporter) start(ctx context.Context, _ component.Host) e
 			return err
 		}
 	}
-	if err := createMetricTables(ctx, e.writer); err != nil {
-		return err
-	}
-	return nil
+	err := createMetricTables(ctx, e.writer)
+	return err
 }
 
 // createMetricTables
@@ -207,7 +208,7 @@ func createTablesForMetricType(ctx context.Context, metricTypeDDLs []string, kiW
 	var schema string
 	schema = strings.Trim(kiWriter.cfg.Schema, " ")
 	if len(schema) > 0 {
-		schema = schema + "."
+		schema += "."
 	} else {
 		schema = ""
 	}
@@ -244,17 +245,17 @@ func createSchema(ctx context.Context, kiWriter *KiWriter, config Config) error 
 }
 
 // shutdown will shut down the exporter.
-func (e *kineticaMetricsExporter) shutdown(ctx context.Context) error {
+func (e *kineticaMetricsExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
 // pushMetricsData - this method is called by the collector to feed the metrics data to the exporter
 //
 //	@receiver e
-//	@param ctx
+//	@param _ ctx unused
 //	@param md
 //	@return error
-func (e *kineticaMetricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
+func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
 	var metricType pmetric.MetricType
 	var errs []error
 
@@ -339,7 +340,7 @@ func (e *kineticaMetricsExporter) pushMetricsData(ctx context.Context, md pmetri
 				e.logger.Debug("Exp Histogram ", zap.Int("count = ", len(exponentialHistogramRecords)))
 				e.logger.Debug("Summary ", zap.Int("count = ", len(summaryRecords)))
 
-				if errs != nil && len(errs) > 0 {
+				if len(errs) > 0 {
 					e.logger.Error(multierr.Combine(errs...).Error())
 					return multierr.Combine(errs...)
 				}
@@ -386,16 +387,16 @@ func (e *kineticaMetricsExporter) pushMetricsData(ctx context.Context, md pmetri
 //
 //	@receiver e - Method aplicable to [kineticaMetricsExporter]
 //	@param resAttr - a map of key to value of resource attributes
-//	@param schemaURL
+//	@param _ schemaURL - unused
 //	@param scopeInstr - the instrumentation scope
-//	@param scopeURL
+//	@param _ scopeURL - unused
 //	@param summaryRecord - the Summary [pmetric.Summary] record
 //	@param name
 //	@param description
 //	@param unit
 //	@return *kineticaSummaryRecord
 //	@return error
-func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, schemaURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, summaryRecord pmetric.Summary, name, description, unit string) (*kineticaSummaryRecord, error) {
+func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, summaryRecord pmetric.Summary, name, description, unit string) (*kineticaSummaryRecord, error) {
 	var errs []error
 
 	kiSummaryRecord := new(kineticaSummaryRecord)
@@ -535,16 +536,16 @@ func (e *kineticaMetricsExporter) createSummaryRecord(resAttr pcommon.Map, schem
 //
 //	@receiver e
 //	@param resAttr
-//	@param schemaURL
+//	@param _ schemaURL - unused
 //	@param scopeInstr
-//	@param scopeURL
+//	@param _ scopeURL - unused
 //	@param exponentialHistogramRecord
 //	@param name
 //	@param description
 //	@param unit
 //	@return *kineticaExponentialHistogramRecord
 //	@return error
-func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcommon.Map, schemaURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, exponentialHistogramRecord pmetric.ExponentialHistogram, name, description, unit string) (*kineticaExponentialHistogramRecord, error) {
+func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, exponentialHistogramRecord pmetric.ExponentialHistogram, name, description, unit string) (*kineticaExponentialHistogramRecord, error) {
 	var errs []error
 
 	kiExpHistogramRecord := new(kineticaExponentialHistogramRecord)
@@ -754,16 +755,16 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 //
 //	@receiver e
 //	@param resAttr
-//	@param schemaURL
+//	@param _ schemaURL - unused
 //	@param scopeInstr
-//	@param scopeURL
+//	@param _ scopeURL - unused
 //	@param histogramRecord
 //	@param name
 //	@param description
 //	@param unit
 //	@return *kineticaHistogramRecord
 //	@return error
-func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, schemaURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, histogramRecord pmetric.Histogram, name, description, unit string) (*kineticaHistogramRecord, error) {
+func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, histogramRecord pmetric.Histogram, name, description, unit string) (*kineticaHistogramRecord, error) {
 
 	e.logger.Debug("In createHistogramRecord ...")
 
@@ -983,7 +984,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, sch
 //	@param unit
 //	@return *kineticaSumRecord
 //	@return error
-func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, schemaURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, sumRecord pmetric.Sum, name, description, unit string) (*kineticaSumRecord, error) {
+func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, sumRecord pmetric.Sum, name, description, unit string) (*kineticaSumRecord, error) {
 	var errs []error
 
 	kiSumRecord := new(kineticaSumRecord)
@@ -1180,16 +1181,16 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, schemaURL
 //
 //	@receiver e
 //	@param resAttr
-//	@param schemaURL
+//	@param _ schemaURL unused
 //	@param scopeInstr
-//	@param scopeURL
+//	@param _ scopeURL unused
 //	@param gaugeRecord
 //	@param name
 //	@param description
 //	@param unit
 //	@return *kineticaGaugeRecord
 //	@return error
-func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, schemaURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, gaugeRecord pmetric.Gauge, name, description, unit string) (*kineticaGaugeRecord, error) {
+func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ string, scopeInstr pcommon.InstrumentationScope, _ string, gaugeRecord pmetric.Gauge, name, description, unit string) (*kineticaGaugeRecord, error) {
 
 	var errs []error
 
@@ -1389,7 +1390,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, schemaU
 }
 
 // Utility functions
-func (e *kineticaMetricsExporter) newGaugeResourceAttributeValue(GaugeID string, key string, vtPair ValueTypePair) (*GaugeResourceAttribute, error) {
+func (e *kineticaMetricsExporter) newGaugeResourceAttributeValue(gaugeID string, key string, vtPair ValueTypePair) (*GaugeResourceAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1398,11 +1399,11 @@ func (e *kineticaMetricsExporter) newGaugeResourceAttributeValue(GaugeID string,
 		return nil, err
 	}
 
-	ra := &GaugeResourceAttribute{GaugeID, key, *av}
+	ra := &GaugeResourceAttribute{gaugeID, key, *av}
 	return ra, nil
 }
 
-func (e *kineticaMetricsExporter) newGaugeDatapointAttributeValue(GaugeID string, DatapointID string, key string, vtPair ValueTypePair) (*GaugeDatapointAttribute, error) {
+func (e *kineticaMetricsExporter) newGaugeDatapointAttributeValue(gaugeID string, datapointID string, key string, vtPair ValueTypePair) (*GaugeDatapointAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1411,7 +1412,7 @@ func (e *kineticaMetricsExporter) newGaugeDatapointAttributeValue(GaugeID string
 		return nil, err
 	}
 
-	ga := &GaugeDatapointAttribute{GaugeID, DatapointID, key, *av}
+	ga := &GaugeDatapointAttribute{gaugeID, datapointID, key, *av}
 	return ga, nil
 }
 
@@ -1428,7 +1429,7 @@ func (e *kineticaMetricsExporter) newGaugeScopeAttributeValue(gaugeID string, ke
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newSumDatapointAttributeValue(SumID string, DatapointID string, key string, vtPair ValueTypePair) (*SumDataPointAttribute, error) {
+func (e *kineticaMetricsExporter) newSumDatapointAttributeValue(sumID string, datapointID string, key string, vtPair ValueTypePair) (*SumDataPointAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1437,11 +1438,11 @@ func (e *kineticaMetricsExporter) newSumDatapointAttributeValue(SumID string, Da
 		return nil, err
 	}
 
-	ga := &SumDataPointAttribute{SumID, DatapointID, key, *av}
+	ga := &SumDataPointAttribute{sumID, datapointID, key, *av}
 	return ga, nil
 }
 
-func (e *kineticaMetricsExporter) newSumResourceAttributeValue(SumID string, key string, vtPair ValueTypePair) (*SumResourceAttribute, error) {
+func (e *kineticaMetricsExporter) newSumResourceAttributeValue(sumID string, key string, vtPair ValueTypePair) (*SumResourceAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1450,7 +1451,7 @@ func (e *kineticaMetricsExporter) newSumResourceAttributeValue(SumID string, key
 		return nil, err
 	}
 
-	ra := &SumResourceAttribute{SumID, key, *av}
+	ra := &SumResourceAttribute{sumID, key, *av}
 	return ra, nil
 }
 
@@ -1493,7 +1494,7 @@ func (e *kineticaMetricsExporter) newExponentialHistogramDatapointExemplarAttrib
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newExponentialHistogramDatapointAttributeValue(HistogramID string, DatapointID string, key string, vtPair ValueTypePair) (*ExponentialHistogramDataPointAttribute, error) {
+func (e *kineticaMetricsExporter) newExponentialHistogramDatapointAttributeValue(histogramID string, datapointID string, key string, vtPair ValueTypePair) (*ExponentialHistogramDataPointAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1502,11 +1503,11 @@ func (e *kineticaMetricsExporter) newExponentialHistogramDatapointAttributeValue
 		return nil, err
 	}
 
-	ga := &ExponentialHistogramDataPointAttribute{HistogramID, DatapointID, key, *av}
+	ga := &ExponentialHistogramDataPointAttribute{histogramID, datapointID, key, *av}
 	return ga, nil
 }
 
-func (e *kineticaMetricsExporter) newHistogramDatapointExemplarAttributeValue(HistogramID string, DatapointID string, ExemplarID string, key string, vtPair ValueTypePair) (*HistogramDataPointExemplarAttribute, error) {
+func (e *kineticaMetricsExporter) newHistogramDatapointExemplarAttributeValue(histogramID string, datapointID string, exemplarID string, key string, vtPair ValueTypePair) (*HistogramDataPointExemplarAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1515,7 +1516,7 @@ func (e *kineticaMetricsExporter) newHistogramDatapointExemplarAttributeValue(Hi
 		return nil, err
 	}
 
-	ga := &HistogramDataPointExemplarAttribute{HistogramID, DatapointID, ExemplarID, key, *av}
+	ga := &HistogramDataPointExemplarAttribute{histogramID, datapointID, exemplarID, key, *av}
 	return ga, nil
 }
 
@@ -1532,7 +1533,7 @@ func (e *kineticaMetricsExporter) newGaugeDatapointExemplarAttributeValue(gaugeI
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newHistogramResourceAttributeValue(HistogramID string, key string, vtPair ValueTypePair) (*HistogramResourceAttribute, error) {
+func (e *kineticaMetricsExporter) newHistogramResourceAttributeValue(histogramID string, key string, vtPair ValueTypePair) (*HistogramResourceAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1541,7 +1542,7 @@ func (e *kineticaMetricsExporter) newHistogramResourceAttributeValue(HistogramID
 		return nil, err
 	}
 
-	ra := &HistogramResourceAttribute{HistogramID, key, *av}
+	ra := &HistogramResourceAttribute{histogramID, key, *av}
 	return ra, nil
 }
 
@@ -1558,7 +1559,7 @@ func (e *kineticaMetricsExporter) newHistogramScopeAttributeValue(histogramID st
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newExponentialHistogramResourceAttributeValue(HistogramID string, key string, vtPair ValueTypePair) (*ExponentialHistogramResourceAttribute, error) {
+func (e *kineticaMetricsExporter) newExponentialHistogramResourceAttributeValue(histogramID string, key string, vtPair ValueTypePair) (*ExponentialHistogramResourceAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1567,7 +1568,7 @@ func (e *kineticaMetricsExporter) newExponentialHistogramResourceAttributeValue(
 		return nil, err
 	}
 
-	ra := &ExponentialHistogramResourceAttribute{HistogramID, key, *av}
+	ra := &ExponentialHistogramResourceAttribute{histogramID, key, *av}
 	return ra, nil
 }
 
@@ -1584,7 +1585,7 @@ func (e *kineticaMetricsExporter) newExponentialHistogramScopeAttributeValue(his
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newSummaryResourceAttributeValue(SummaryID string, key string, vtPair ValueTypePair) (*SummaryResourceAttribute, error) {
+func (e *kineticaMetricsExporter) newSummaryResourceAttributeValue(summaryID string, key string, vtPair ValueTypePair) (*SummaryResourceAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1593,7 +1594,7 @@ func (e *kineticaMetricsExporter) newSummaryResourceAttributeValue(SummaryID str
 		return nil, err
 	}
 
-	ra := &SummaryResourceAttribute{SummaryID, key, *av}
+	ra := &SummaryResourceAttribute{summaryID, key, *av}
 	return ra, nil
 }
 
@@ -1624,7 +1625,7 @@ func (e *kineticaMetricsExporter) newSummaryDatapointAttributeValue(summaryID st
 	return sa, nil
 }
 
-func (e *kineticaMetricsExporter) newHistogramDatapointAttributeValue(HistogramID string, DatapointID string, key string, vtPair ValueTypePair) (*HistogramDataPointAttribute, error) {
+func (e *kineticaMetricsExporter) newHistogramDatapointAttributeValue(histogramID string, datapointID string, key string, vtPair ValueTypePair) (*HistogramDataPointAttribute, error) {
 	var av *AttributeValue
 	var err error
 
@@ -1633,6 +1634,6 @@ func (e *kineticaMetricsExporter) newHistogramDatapointAttributeValue(HistogramI
 		return nil, err
 	}
 
-	ga := &HistogramDataPointAttribute{HistogramID, DatapointID, key, *av}
+	ga := &HistogramDataPointAttribute{histogramID, datapointID, key, *av}
 	return ga, nil
 }

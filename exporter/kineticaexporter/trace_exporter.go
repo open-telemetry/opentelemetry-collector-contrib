@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"
@@ -71,14 +74,12 @@ func (e *kineticaTracesExporter) start(ctx context.Context, _ component.Host) er
 			return err
 		}
 	}
-	if err := createTraceTables(ctx, e.writer); err != nil {
-		return err
-	}
-	return nil
+	err := createTraceTables(ctx, e.writer)
+	return err
 }
 
 // shutdown will shut down the exporter.
-func (e *kineticaTracesExporter) shutdown(ctx context.Context) error {
+func (e *kineticaTracesExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -93,7 +94,7 @@ func createTraceTables(ctx context.Context, kiWriter *KiWriter) error {
 	var schema string
 	schema = strings.Trim(kiWriter.cfg.Schema, " ")
 	if len(schema) > 0 {
-		schema = schema + "."
+		schema += "."
 	} else {
 		schema = ""
 	}
@@ -150,15 +151,7 @@ func (e *kineticaTracesExporter) pushTraceData(ctx context.Context, td ptrace.Tr
 	return multierr.Combine(errs...)
 }
 
-// createTraceRecord //
-//
-//	@receiver e
-//	@param ctx
-//	@param resource
-//	@param scope
-//	@param span
-//	@return error
-func (e *kineticaTracesExporter) createTraceRecord(ctx context.Context, resource pcommon.Resource, scope pcommon.InstrumentationScope, spanRecord ptrace.Span) (*kineticaTraceRecord, error) {
+func (e *kineticaTracesExporter) createTraceRecord(_ context.Context, resource pcommon.Resource, scope pcommon.InstrumentationScope, spanRecord ptrace.Span) (*kineticaTraceRecord, error) {
 	var errs []error
 
 	tags := make(map[string]string)
@@ -294,7 +287,7 @@ func (e *kineticaTracesExporter) createTraceRecord(ctx context.Context, resource
 
 	copy(kiTraceRecord.scopeAttribute, scopeAttribute)
 
-	//Insert event attributes
+	// Insert event attributes
 	var eventAttribute []EventAttribute
 	eventAttributes := make(map[string]ValueTypePair)
 	spanEvents := spanRecord.Events()
@@ -317,7 +310,7 @@ func (e *kineticaTracesExporter) createTraceRecord(ctx context.Context, resource
 
 	copy(kiTraceRecord.eventAttribute, eventAttribute)
 
-	//Insert link attributes
+	// Insert link attributes
 	var linkAttribute []LinkAttribute
 	linkAttributes := make(map[string]ValueTypePair)
 	spanLinks := spanRecord.Links()

@@ -1,4 +1,7 @@
-package kineticaotelexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package kineticaexporter
 
 import (
 	"context"
@@ -18,7 +21,7 @@ func NewFactory() exporter.Factory {
 		CreateDefaultConfig,
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelAlpha),
+		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
 	)
 }
 

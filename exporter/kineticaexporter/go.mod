@@ -1,4 +1,4 @@
-module bitbucket.org/gisfederal/opentelemetry/exporter/kineticaexporter
+module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter
 
 go 1.20
 
@@ -65,9 +65,5 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 retract v0.65.0
