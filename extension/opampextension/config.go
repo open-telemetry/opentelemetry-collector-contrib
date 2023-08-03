@@ -18,13 +18,10 @@ import (
 	"errors"
 
 	"github.com/oklog/ulid/v2"
-	"go.opentelemetry.io/collector/config"
 )
 
 // Config has the configuration for the opamp extension.
 type Config struct {
-	config.ExtensionSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
-
 	// Endpoint is the OpAMP server URL. Transport based on the scheme of the URL.
 	Endpoint string `mapstructure:"endpoint"`
 

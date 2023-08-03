@@ -21,11 +21,12 @@ import (
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 )
 
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, o.instanceId.String())
@@ -35,7 +36,7 @@ func TestNewOpampAgent(t *testing.T) {
 
 func TestCreateAgentDescription(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 
@@ -46,7 +47,7 @@ func TestCreateAgentDescription(t *testing.T) {
 
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 
@@ -62,7 +63,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 
 func TestComposeEffectiveConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, o.effectiveConfig)
@@ -73,7 +74,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 
@@ -83,7 +84,7 @@ func TestShutdown(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := componenttest.NewNopExtensionCreateSettings()
+	set := extensiontest.NewNopCreateSettings()
 	o, err := newOpampAgent(cfg.(*Config), set.Logger)
 	assert.NoError(t, err)
 

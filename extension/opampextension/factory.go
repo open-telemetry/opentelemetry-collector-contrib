@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config"
+	"go.opentelemetry.io/collector/extension"
 )
 
 const (
@@ -26,16 +26,14 @@ const (
 	typeStr = "opamp"
 )
 
-func NewFactory() component.ExtensionFactory {
-	return component.NewExtensionFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelBeta)
+func NewFactory() extension.Factory {
+	return extension.NewFactory(typeStr, createDefaultConfig, createExtension, component.StabilityLevelAlpha)
 }
 
-func createDefaultConfig() component.ExtensionConfig {
-	return &Config{
-		ExtensionSettings: config.NewExtensionSettings(component.NewID(typeStr)),
-	}
+func createDefaultConfig() component.Config {
+	return &Config{}
 }
 
-func createExtension(_ context.Context, set component.ExtensionCreateSettings, cfg component.ExtensionConfig) (component.Extension, error) {
+func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
 	return newOpampAgent(cfg.(*Config), set.Logger)
 }
