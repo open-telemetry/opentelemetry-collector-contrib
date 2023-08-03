@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(t, r1.UseStartTimeMetric, true)
 	assert.Equal(t, r1.TrimMetricSuffixes, true)
 	assert.Equal(t, r1.StartTimeMetricRegex, "^(.+_)*process_start_time_seconds$")
+	assert.True(t, r1.ReportExtraScrapeMetrics)
 
 	assert.Equal(t, "http://my-targetallocator-service", r1.TargetAllocator.Endpoint)
 	assert.Equal(t, 30*time.Second, r1.TargetAllocator.Interval)

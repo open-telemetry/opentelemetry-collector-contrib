@@ -17,8 +17,8 @@ import (
 	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, j *batchv1.Job) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, j *batchv1.Job) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	mbphase.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
@@ -32,7 +32,7 @@ func GetMetrics(set receiver.CreateSettings, j *batchv1.Job) pmetric.Metrics {
 		mbphase.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
 	}
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceName(j.Namespace)
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))

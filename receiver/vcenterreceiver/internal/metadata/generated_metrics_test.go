@@ -209,8 +209,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetVcenterClusterName("vcenter.cluster.name-val")
+			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
+			rb.SetVcenterHostName("vcenter.host.name-val")
+			rb.SetVcenterResourcePoolName("vcenter.resource_pool.name-val")
+			rb.SetVcenterVMID("vcenter.vm.id-val")
+			rb.SetVcenterVMName("vcenter.vm.name-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
