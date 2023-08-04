@@ -1,0 +1,180 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - name: load.low
+            gauge:
+              dataPoints:
+                - asDouble: 0.2
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: fake
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+          - name: load.high
+            gauge:
+              dataPoints:
+                - asDouble: 0.9
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: fake
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+          - name: load.shortterm
+            gauge:
+              dataPoints:
+                - asDouble: 0.37
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: load
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+          - name: load.midterm
+            gauge:
+              dataPoints:
+                - asDouble: 0.60999999999999999
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: load
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+          - name: load.longterm
+            gauge:
+              dataPoints:
+                - asDouble: 0.76000000000000001
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: load
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+          - name: memory.used
+            gauge:
+              dataPoints:
+                - asDouble: 1.52431e+09
+                  timeUnixNano: "1415062577496000000"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: memory
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: dsname
+                      value:
+                        stringValue: value
+          - name: df_complex.free
+            sum:
+              isMonotonic: true
+              aggregationTemporality: 0
+              dataPoints:
+                - asDouble: 1962600000.0
+                  timeUnixNano: "1415062577494999808"
+                  attributes:
+                    - key: plugin
+                      value:
+                        stringValue: df
+                    - key: plugin_instance
+                      value:
+                        stringValue: dev
+                    - key: host
+                      value:
+                        stringValue: i-b13d1e5f
+                    - key: dsname
+                      value:
+                        stringValue: value
+          - name: memory.old_gen_end
+            gauge:
+              dataPoints:
+                - asInt: 26790
+                  timeUnixNano: "1434477504484000000"
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: mwp-signalbox
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: plugin
+                      value:
+                        stringValue: tail
+                    - key: plugin_instance
+                      value:
+                        stringValue: analytics
+                    - key: k1
+                      value:
+                        stringValue: v1
+                    - key: k2
+                      value:
+                        stringValue: v2
+                    - key: a
+                      value:
+                        stringValue: b
+                    - key: f
+                      value:
+                        stringValue: x
+          - name: memory.total_heap_space
+            gauge:
+              dataPoints:
+                - asDouble: 1.03552e+06
+                  timeUnixNano: "1434477504484000000"
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: mwp-signalbox
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: plugin
+                      value:
+                        stringValue: tail
+                    - key: plugin_instance
+                      value:
+                        stringValue: analytics
+                    - key: k1
+                      value:
+                        stringValue: v1
+                    - key: k2
+                      value:
+                        stringValue: v2
+                    - key: a
+                      value:
+                        stringValue: b
+                    - key: f
+                      value:
+                        stringValue: x
+          - name: gauge.page.loadtime
+            gauge:
+              dataPoints:
+                - asDouble: 12
+                  timeUnixNano: "1434477504484000000"
+                  attributes:
+                    - key: host
+                      value:
+                        stringValue: some-host
+                    - key: dsname
+                      value:
+                        stringValue: value
+                    - key: plugin
+                      value:
+                        stringValue: dogstatsd
+                    - key: env
+                      value:
+                        stringValue: dev
+                    - key: k1
+                      value:
+                        stringValue: v1
