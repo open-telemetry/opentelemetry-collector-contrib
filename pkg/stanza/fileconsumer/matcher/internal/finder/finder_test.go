@@ -154,13 +154,13 @@ func TestFindFiles(t *testing.T) {
 		},
 		{
 			name:     "SingleLevelFilesOnly",
-			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt"},
+			files:    []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.log")},
 			include:  []string{"*"},
 			expected: []string{"a1.log", "a2.txt"},
 		},
 		{
 			name:     "MultiLevelFilesOnly",
-			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt", "b/c/c1.csv"},
+			files:    []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 			include:  []string{filepath.Join("**", "*")},
 			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 		},
@@ -168,10 +168,21 @@ func TestFindFiles(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			cwd, err := os.Getwd()
+			require.NoError(t, err)
 			require.NoError(t, os.Chdir(t.TempDir()))
+			defer func() {
+				require.NoError(t, os.Chdir(cwd))
+			}()
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
+
+				file, err := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, err)
+
+				_, err = file.WriteString(filepath.Base(f))
+				require.NoError(t, err)
+				require.NoError(t, file.Close())
 			}
 			assert.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
 		})
