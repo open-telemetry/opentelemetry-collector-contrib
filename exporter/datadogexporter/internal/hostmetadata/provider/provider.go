@@ -37,32 +37,28 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 	for i, source := range p.priorityList {
 		provider := p.providers[source]
 		replies[i] = make(chan reply)
-
+		p.logger.Debug("Trying out source provider", zap.String("provider", source))
 		go func(i int, source string) {
-			zapProvider := zap.String("provider", source)
-			p.logger.Debug("Trying out source provider", zapProvider)
-
 			src, err := provider.Source(ctx)
-			if err != nil {
-				p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
-			}
-
 			replies[i] <- reply{src: src, err: err}
 		}(i, source)
 	}
 
 	// Check provider responses in order to ensure priority
 	for i, ch := range replies {
-		reply := <-ch
-		if reply.err != nil {
-			// Provider was unavailable, error was logged on goroutine
-			continue
-		}
+		zapProvider := zap.String("provider", p.priorityList[i])
+		select {
+		case <-ctx.Done():
+			return source.Source{}, fmt.Errorf("context was cancelled: %w", ctx.Err())
+		case reply := <-ch:
+			if reply.err != nil {
+				p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(reply.err))
+				continue
+			}
 
-		p.logger.Info("Resolved source",
-			zap.String("provider", p.priorityList[i]), zap.Any("source", reply.src),
-		)
-		return reply.src, nil
+			p.logger.Info("Resolved source", zapProvider, zap.Any("source", reply.src))
+			return reply.src, nil
+		}
 	}
 
 	return source.Source{}, fmt.Errorf("no source provider was available")
