@@ -61,24 +61,22 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
+func newWAL(logger *zap.Logger, walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
 		return nil, errNilConfig
 	}
 
-	wal := prweWAL{
+	return &prweWAL{
 		exportSink: exportSink,
 		walConfig:  walConfig,
 		stopChan:   make(chan struct{}),
 		rNotify:    make(chan struct{}),
 		rWALIndex:  &atomic.Uint64{},
 		wWALIndex:  &atomic.Uint64{},
-		log:        zap.NewNop(),
-	}
-
-	return &wal, nil
+		log:        logger,
+	}, nil
 }
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
@@ -337,33 +335,31 @@ func (prwe *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 	return prwe.wal.WriteBatch(batch)
 }
 
+func (prwe *prweWAL) try(index uint64) (*prompb.WriteRequest, error) {
+	prwe.mu.Lock()
+	defer prwe.mu.Unlock()
+	prwe.log.Debug("read", zap.Uint64("index", index))
+	protoBlob, err := prwe.wal.Read(index)
+	if err != nil {
+		return nil, err
+	}
+
+	var req prompb.WriteRequest
+	if err := proto.Unmarshal(protoBlob, &req); err != nil {
+		return nil, err
+	}
+
+	prwe.rWALIndex.Add(1)
+	return &req, nil
+}
+
 // read repeatedly attempts to fetch a *prompb.WriteRequest from the WAL,
 // aborting on error.
 // prwe.mu is temporarily acquired for the individual read attempts only,
 // allowing writes to happen while waiting
 func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (*prompb.WriteRequest, error) {
-
-	if prwe == nil {
+	if prwe.wal == nil {
 		return nil, fmt.Errorf("attempt to read from closed WAL")
-	}
-
-	try := func() (*prompb.WriteRequest, error) {
-		prwe.mu.Lock()
-		defer prwe.mu.Unlock()
-
-		prwe.log.Debug("read", zap.Uint64("index", index))
-		protoBlob, err := prwe.wal.Read(index)
-		if err != nil {
-			return nil, err
-		}
-
-		var req prompb.WriteRequest
-		if err := proto.Unmarshal(protoBlob, &req); err != nil {
-			return nil, err
-		}
-
-		prwe.rWALIndex.Add(1)
-		return &req, nil
 	}
 
 	for {
@@ -375,7 +371,7 @@ func (prwe *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (*prom
 		default:
 		}
 
-		req, err := try()
+		req, err := prwe.try(index)
 		if errors.Is(err, wal.ErrNotFound) {
 			prwe.log.Debug("wal empty - waiting for write")
 

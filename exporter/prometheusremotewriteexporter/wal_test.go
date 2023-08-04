@@ -23,14 +23,14 @@ func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 
 func TestWALCreation_nilConfig(t *testing.T) {
 	config := (*WALConfig)(nil)
-	pwal, err := newWAL(config, doNothingExportSink)
+	pwal, err := newWAL(zap.NewNop(), config, doNothingExportSink)
 	require.Equal(t, err, errNilConfig)
 	require.Nil(t, pwal)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
-	pwal, err := newWAL(config, doNothingExportSink)
+	pwal, err := newWAL(zap.NewNop(), config, doNothingExportSink)
 	require.NotNil(t, pwal)
 	assert.Nil(t, err)
 	assert.NoError(t, pwal.stop())
@@ -82,7 +82,7 @@ func TestWALStopManyTimes(t *testing.T) {
 		TruncateFrequency: 60 * time.Microsecond,
 		BufferSize:        1,
 	}
-	pwal, err := newWAL(config, doNothingExportSink)
+	pwal, err := newWAL(zap.NewNop(), config, doNothingExportSink)
 	require.Nil(t, err)
 	require.NotNil(t, pwal)
 
@@ -101,7 +101,7 @@ func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
 	config := &WALConfig{Directory: t.TempDir()}
 
-	pwal, err := newWAL(config, doNothingExportSink)
+	pwal, err := newWAL(zap.NewNop(), config, doNothingExportSink)
 	require.Nil(t, err)
 	pwal.log = zap.Must(zap.NewDevelopment())
 
@@ -177,7 +177,7 @@ func TestWAL_E2E(t *testing.T) {
 		return nil
 	}
 
-	wal, err := newWAL(&WALConfig{
+	wal, err := newWAL(zap.NewNop(), &WALConfig{
 		Directory: t.TempDir(),
 	}, sink)
 	if err != nil {
@@ -188,18 +188,13 @@ func TestWAL_E2E(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	log, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
+
 	ctx = contextWithLogger(ctx, log)
 
-	if err := wal.run(ctx); err != nil {
-		panic(err)
-	}
+	require.NoError(t, wal.run(ctx))
 
-	if err := wal.persistToWAL(in); err != nil {
-		panic(err)
-	}
+	require.NoError(t, wal.persistToWAL(in))
 
 	// wait until the tail routine is no longer busy
 	wal.rNotify <- struct{}{}
