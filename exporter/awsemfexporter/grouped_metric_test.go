@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -316,8 +317,10 @@ func TestAddKubernetesWrapper(t *testing.T) {
 		inputs["NodeName"] = "hosty de la host"
 		inputs["PodId"] = "Le id de Pod"
 
-		jsonBytes, _ := json.Marshal(expectedCreatedObj)
-		addKubernetesWrapper(inputs)
+		jsonBytes, err := json.Marshal(expectedCreatedObj)
+		require.NoError(t, err)
+		err = addKubernetesWrapper(inputs)
+		require.NoError(t, err)
 		assert.Equal(t, string(jsonBytes), inputs["kubernetes"], "The created and expected objects should be the same")
 	})
 }

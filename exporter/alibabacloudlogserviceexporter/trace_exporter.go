@@ -41,8 +41,10 @@ func (s *logServiceTraceSender) pushTraceData(
 	_ context.Context,
 	td ptrace.Traces,
 ) error {
-	var err error
-	slsLogs := traceDataToLogServiceData(td)
+	slsLogs, err := traceDataToLogServiceData(td)
+	if err != nil {
+		return err
+	}
 	if len(slsLogs) > 0 {
 		err = s.client.SendLogs(slsLogs)
 	}

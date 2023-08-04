@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -29,7 +30,8 @@ func (kv logKeyValuePairs) Swap(i, j int)      { kv[i], kv[j] = kv[j], kv[i] }
 func (kv logKeyValuePairs) Less(i, j int) bool { return kv[i].Key < kv[j].Key }
 
 func TestTraceDataToLogService(t *testing.T) {
-	gotLogs := traceDataToLogServiceData(constructSpanData())
+	gotLogs, err := traceDataToLogServiceData(constructSpanData())
+	require.NoError(t, err)
 	assert.Equal(t, len(gotLogs), 2)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))

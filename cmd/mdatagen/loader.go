@@ -16,6 +16,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
+const (
+	stringType = "string"
+)
+
 type metricName string
 
 func (mn metricName) Render() (string, error) {
@@ -45,7 +49,7 @@ type ValueType struct {
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (mvt *ValueType) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
-	case "string":
+	case stringType:
 		mvt.ValueType = pcommon.ValueTypeStr
 	case "int":
 		mvt.ValueType = pcommon.ValueTypeInt
@@ -74,7 +78,7 @@ func (mvt ValueType) String() string {
 func (mvt ValueType) Primitive() string {
 	switch mvt.ValueType {
 	case pcommon.ValueTypeStr:
-		return "string"
+		return stringType
 	case pcommon.ValueTypeInt:
 		return "int64"
 	case pcommon.ValueTypeDouble:

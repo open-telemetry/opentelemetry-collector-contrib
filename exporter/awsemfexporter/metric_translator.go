@@ -139,7 +139,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 }
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
-func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Config) *cWMetrics {
+func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Config) (*cWMetrics, error) {
 	labels := groupedMetric.labels
 	fieldsLength := len(labels) + len(groupedMetric.metrics)
 
@@ -170,14 +170,18 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 	} else {
 		// If metric declarations are defined, filter grouped metric's metrics using
 		// metric declarations and translate into the corresponding list of CW Measurements
-		cWMeasurements = groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+		var err error
+		cWMeasurements, err = groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &cWMetrics{
 		measurements: cWMeasurements,
 		timestampMs:  groupedMetric.metadata.timestampMs,
 		fields:       fields,
-	}
+	}, nil
 }
 
 // groupedMetricToCWMeasurement creates a single CW Measurement from a grouped metric.
@@ -233,7 +237,7 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 
 // groupedMetricToCWMeasurementsWithFilters filters the grouped metric using the given list of metric
 // declarations and returns the corresponding list of CW Measurements.
-func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, config *Config) (cWMeasurements []cWMeasurement) {
+func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, config *Config) ([]cWMeasurement, error) {
 	labels := groupedMetric.labels
 
 	// Filter metric declarations by labels
@@ -246,7 +250,10 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 
 	// If the whole batch of metrics don't match any metric declarations, drop them
 	if len(metricDeclarations) == 0 {
-		labelsStr, _ := json.Marshal(labels)
+		labelsStr, err := json.Marshal(labels)
+		if err != nil {
+			return nil, err
+		}
 		var metricNames []string
 		for metricName := range groupedMetric.metrics {
 			metricNames = append(metricNames, metricName)
@@ -256,7 +263,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 			zap.String("Labels", string(labelsStr)),
 			zap.Strings("Metric Names", metricNames),
 		)
-		return
+		return nil, nil
 	}
 
 	// Group metrics by matched metric declarations
@@ -301,14 +308,14 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 	}
 
 	if len(metricDeclGroups) == 0 {
-		return
+		return nil, nil
 	}
 
 	// Apply single/zero dimension rollup to labels
 	rollupDimensionArray := dimensionRollup(config.DimensionRollupOption, labels)
 
 	// Translate each group into a CW Measurement
-	cWMeasurements = make([]cWMeasurement, 0, len(metricDeclGroups))
+	cWMeasurements := make([]cWMeasurement, 0, len(metricDeclGroups))
 	for _, group := range metricDeclGroups {
 		var dimensions [][]string
 		// Extract dimensions from matched metric declarations
@@ -332,7 +339,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 		}
 	}
 
-	return
+	return cWMeasurements, nil
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.

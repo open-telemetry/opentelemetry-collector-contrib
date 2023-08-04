@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -74,7 +75,8 @@ func createLogData(numberOfLogs int) plog.Logs {
 func TestLogsDataToLogService(t *testing.T) {
 	totalLogCount := 10
 	validLogCount := totalLogCount - 1
-	gotLogs := logDataToLogService(createLogData(10))
+	gotLogs, err := logDataToLogService(createLogData(10))
+	require.NoError(t, err)
 	assert.Equal(t, len(gotLogs), 9)
 
 	gotLogPairs := make([][]logKeyValuePair, 0, len(gotLogs))

@@ -17,6 +17,7 @@ import (
 	"github.com/golang/protobuf/ptypes/timestamp"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -946,8 +947,9 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 				err := decl.init(logger)
 				assert.Nil(t, err)
 			}
-			cWMetric := translateGroupedMetricToCWMetric(tc.groupedMetric, config)
+			cWMetric, err := translateGroupedMetricToCWMetric(tc.groupedMetric, config)
 			assert.NotNil(t, cWMetric)
+			require.NoError(t, err)
 			assertCWMetricsEqual(t, tc.expectedCWMetric, cWMetric)
 		})
 	}
@@ -1591,8 +1593,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				assert.Nil(t, err)
 			}
 
-			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+			cWMeasurements, err := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 			assert.NotNil(t, cWMeasurements)
+			require.NoError(t, err)
 			assert.Equal(t, len(tc.expectedMeasurements), len(cWMeasurements))
 			assertCWMeasurementSliceEqual(t, tc.expectedMeasurements, cWMeasurements)
 		})
@@ -1643,8 +1646,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			logger:                logger,
 		}
 
-		cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+		cWMeasurements, err := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 		assert.Nil(t, cWMeasurements)
+		require.NoError(t, err)
 
 		// Test output warning logs
 		expectedLog := observer.LoggedEntry{
@@ -1708,8 +1712,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			logger:                logger,
 		}
 
-		cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+		cWMeasurements, err := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 		assert.Nil(t, cWMeasurements)
+		require.NoError(t, err)
 
 		// Test output warning logs
 		expectedEntry := zapcore.Entry{Level: zap.DebugLevel, Message: "Dropped metric: no metric declaration matched metric name"}
@@ -2121,7 +2126,9 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 				logger:                zap.NewNop(),
 			}
 
-			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+			cWMeasurements, err := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
+			require.NoError(t, err)
+
 			if len(tc.expectedDims) == 0 {
 				assert.Equal(t, 0, len(cWMeasurements))
 			} else {
@@ -2272,7 +2279,9 @@ func BenchmarkTranslateGroupedMetricToCWMetric(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		translateGroupedMetricToCWMetric(groupedMetric, config)
+		result, err := translateGroupedMetricToCWMetric(groupedMetric, config)
+		require.NoError(b, err)
+		require.NotNil(b, result) // need to check the result or the compiler might skip the execution
 	}
 }
 
@@ -2314,7 +2323,9 @@ func BenchmarkTranslateGroupedMetricToCWMetricWithFiltering(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		translateGroupedMetricToCWMetric(groupedMetric, config)
+		result, err := translateGroupedMetricToCWMetric(groupedMetric, config)
+		require.NoError(b, err)
+		require.NotNil(b, result) // need to check the result or the compiler might skip the execution
 	}
 }
 

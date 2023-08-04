@@ -45,7 +45,10 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 
 			if metricType, ok := labels["Type"]; ok {
 				if (metricType == "Pod" || metricType == "Container") && config.EKSFargateContainerInsightsEnabled {
-					addKubernetesWrapper(labels)
+					err := addKubernetesWrapper(labels)
+					if err != nil {
+						return err
+					}
 				}
 			}
 
@@ -121,7 +124,7 @@ type internalPodOwnersObj struct {
 	OwnerName string `json:"owner_name,omitempty"`
 }
 
-func addKubernetesWrapper(labels map[string]string) {
+func addKubernetesWrapper(labels map[string]string) error {
 	// fill in obj
 	filledInObj := kubernetesObj{
 		ContainerName: mapGetHelper(labels, "container"),
@@ -156,8 +159,12 @@ func addKubernetesWrapper(labels map[string]string) {
 		filledInObj.PodOwners = nil
 	}
 
-	jsonBytes, _ := json.Marshal(filledInObj)
+	jsonBytes, err := json.Marshal(filledInObj)
+	if err != nil {
+		return err
+	}
 	labels["kubernetes"] = string(jsonBytes)
+	return nil
 }
 
 func mapGetHelper(labels map[string]string, key string) string {

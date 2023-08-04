@@ -151,7 +151,6 @@ linters:
     - govet
     - misspell
     - musttag
-    - nestif
     - nilerr
     - noctx
     - prealloc

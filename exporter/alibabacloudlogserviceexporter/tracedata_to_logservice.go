@@ -35,18 +35,24 @@ const (
 )
 
 // traceDataToLogService translates trace data into the LogService format.
-func traceDataToLogServiceData(td ptrace.Traces) []*sls.Log {
+func traceDataToLogServiceData(td ptrace.Traces) ([]*sls.Log, error) {
 	var slsLogs []*sls.Log
 	resourceSpansSlice := td.ResourceSpans()
 	for i := 0; i < resourceSpansSlice.Len(); i++ {
-		logs := resourceSpansToLogServiceData(resourceSpansSlice.At(i))
+		logs, err := resourceSpansToLogServiceData(resourceSpansSlice.At(i))
+		if err != nil {
+			return nil, err
+		}
 		slsLogs = append(slsLogs, logs...)
 	}
-	return slsLogs
+	return slsLogs, nil
 }
 
-func resourceSpansToLogServiceData(resourceSpans ptrace.ResourceSpans) []*sls.Log {
-	resourceContents := resourceToLogContents(resourceSpans.Resource())
+func resourceSpansToLogServiceData(resourceSpans ptrace.ResourceSpans) ([]*sls.Log, error) {
+	resourceContents, err := resourceToLogContents(resourceSpans.Resource())
+	if err != nil {
+		return nil, err
+	}
 	scopeSpansSlice := resourceSpans.ScopeSpans()
 	var slsLogs []*sls.Log
 	for i := 0; i < scopeSpansSlice.Len(); i++ {
@@ -54,15 +60,18 @@ func resourceSpansToLogServiceData(resourceSpans ptrace.ResourceSpans) []*sls.Lo
 		instrumentationLibraryContents := instrumentationScopeToLogContents(insLibSpans.Scope())
 		spans := insLibSpans.Spans()
 		for j := 0; j < spans.Len(); j++ {
-			if slsLog := spanToLogServiceData(spans.At(j), resourceContents, instrumentationLibraryContents); slsLog != nil {
+			if slsLog, err2 := spanToLogServiceData(spans.At(j), resourceContents, instrumentationLibraryContents); slsLog != nil {
+				if err2 != nil {
+					return nil, err2
+				}
 				slsLogs = append(slsLogs, slsLog)
 			}
 		}
 	}
-	return slsLogs
+	return slsLogs, nil
 }
 
-func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) *sls.Log {
+func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLibraryContents []*sls.LogContent) (*sls.Log, error) {
 	timeNano := int64(span.EndTimestamp())
 	if timeNano == 0 {
 		timeNano = time.Now().UnixNano()
@@ -101,13 +110,21 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 		Value: proto.String(span.Name()),
 	})
 
+	links, err := spanLinksToString(span.Links())
+	if err != nil {
+		return nil, err
+	}
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(linksField),
-		Value: proto.String(spanLinksToString(span.Links())),
+		Value: proto.String(links),
 	})
+	events, err := eventsToString(span.Events())
+	if err != nil {
+		return nil, err
+	}
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(logsField),
-		Value: proto.String(eventsToString(span.Events())),
+		Value: proto.String(events),
 	})
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(traceStateField),
@@ -126,7 +143,10 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 		Value: proto.String(strconv.FormatUint(uint64((span.EndTimestamp()-span.StartTimestamp())/1000), 10)),
 	})
 	attributeMap := span.Attributes().AsRaw()
-	attributeJSONBytes, _ := json.Marshal(attributeMap)
+	attributeJSONBytes, err := json.Marshal(attributeMap)
+	if err != nil {
+		return nil, err
+	}
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(attributeField),
 		Value: proto.String(string(attributeJSONBytes)),
@@ -145,7 +165,7 @@ func spanToLogServiceData(span ptrace.Span, resourceContents, instrumentationLib
 	for i := range contentsBuffer {
 		slsLog.Contents = append(slsLog.Contents, &contentsBuffer[i])
 	}
-	return &slsLog
+	return &slsLog, nil
 }
 
 func spanKindToShortString(kind ptrace.SpanKind) string {
@@ -176,7 +196,7 @@ func statusCodeToShortString(code ptrace.StatusCode) string {
 	}
 }
 
-func eventsToString(events ptrace.SpanEventSlice) string {
+func eventsToString(events ptrace.SpanEventSlice) (string, error) {
 	eventArray := make([]map[string]interface{}, 0, events.Len())
 	for i := 0; i < events.Len(); i++ {
 		spanEvent := events.At(i)
@@ -186,12 +206,12 @@ func eventsToString(events ptrace.SpanEventSlice) string {
 		event[attributeField] = spanEvent.Attributes().AsRaw()
 		eventArray = append(eventArray, event)
 	}
-	eventArrayBytes, _ := json.Marshal(&eventArray)
-	return string(eventArrayBytes)
+	eventArrayBytes, err := json.Marshal(&eventArray)
+	return string(eventArrayBytes), err
 
 }
 
-func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
+func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) (string, error) {
 	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
@@ -201,6 +221,6 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 		link[attributeField] = spanLink.Attributes().AsRaw()
 		linkArray = append(linkArray, link)
 	}
-	linkArrayBytes, _ := json.Marshal(&linkArray)
-	return string(linkArrayBytes)
+	linkArrayBytes, err := json.Marshal(&linkArray)
+	return string(linkArrayBytes), err
 }

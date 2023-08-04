@@ -32,20 +32,26 @@ const (
 	slsLogInstrumentationVersion = "otlp.version"
 )
 
-func logDataToLogService(ld plog.Logs) []*sls.Log {
+func logDataToLogService(ld plog.Logs) ([]*sls.Log, error) {
 	var slsLogs []*sls.Log
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 		sl := rl.ScopeLogs()
 		resource := rl.Resource()
-		resourceContents := resourceToLogContents(resource)
+		resourceContents, err := resourceToLogContents(resource)
+		if err != nil {
+			return nil, err
+		}
 		for j := 0; j < sl.Len(); j++ {
 			ils := sl.At(j)
 			instrumentationLibraryContents := instrumentationScopeToLogContents(ils.Scope())
 			logs := ils.LogRecords()
 			for j := 0; j < logs.Len(); j++ {
-				slsLog := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
+				slsLog, err := mapLogRecordToLogService(logs.At(j), resourceContents, instrumentationLibraryContents)
+				if err != nil {
+					return nil, err
+				}
 				if slsLog != nil {
 					slsLogs = append(slsLogs, slsLog)
 				}
@@ -53,10 +59,10 @@ func logDataToLogService(ld plog.Logs) []*sls.Log {
 		}
 	}
 
-	return slsLogs
+	return slsLogs, nil
 }
 
-func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
+func resourceToLogContents(resource pcommon.Resource) ([]*sls.LogContent, error) {
 	logContents := make([]*sls.LogContent, 3)
 	attrs := resource.Attributes()
 	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
@@ -91,13 +97,16 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 		fields[k] = v.AsString()
 		return true
 	})
-	attributeBuffer, _ := json.Marshal(fields)
+	attributeBuffer, err := json.Marshal(fields)
+	if err != nil {
+		return nil, err
+	}
 	logContents[2] = &sls.LogContent{
 		Key:   proto.String(slsLogResource),
 		Value: proto.String(string(attributeBuffer)),
 	}
 
-	return logContents
+	return logContents, nil
 }
 
 func instrumentationScopeToLogContents(instrumentationScope pcommon.InstrumentationScope) []*sls.LogContent {
@@ -115,9 +124,9 @@ func instrumentationScopeToLogContents(instrumentationScope pcommon.Instrumentat
 
 func mapLogRecordToLogService(lr plog.LogRecord,
 	resourceContents,
-	instrumentationLibraryContents []*sls.LogContent) *sls.Log {
+	instrumentationLibraryContents []*sls.LogContent) (*sls.Log, error) {
 	if lr.Body().Type() == pcommon.ValueTypeEmpty {
-		return nil
+		return nil, nil
 	}
 	var slsLog sls.Log
 
@@ -149,7 +158,10 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		fields[k] = v.AsString()
 		return true
 	})
-	attributeBuffer, _ := json.Marshal(fields)
+	attributeBuffer, err := json.Marshal(fields)
+	if err != nil {
+		return nil, err
+	}
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogAttribute),
 		Value: proto.String(string(attributeBuffer)),
@@ -186,5 +198,5 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 		slsLog.Time = proto.Uint32(uint32(time.Now().Unix()))
 	}
 
-	return &slsLog
+	return &slsLog, nil
 }

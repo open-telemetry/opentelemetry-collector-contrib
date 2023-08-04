@@ -444,7 +444,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	}
 
 	// Sort to make sure the order of merging is stable.
-	var names []string
+	var names []string //nolint: prealloc
 	for name := range config.Config.ConfigMap {
 		if name == "" {
 			// skip instance config

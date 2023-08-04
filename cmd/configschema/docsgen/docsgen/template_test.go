@@ -8,12 +8,12 @@
 package docsgen
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
@@ -31,7 +31,7 @@ func testDataField(t *testing.T) *configschema.Field {
 	jsonBytes, err := os.ReadFile(filepath.Join("testdata", "otlp-receiver.json"))
 	require.NoError(t, err)
 	field := configschema.Field{}
-	err = json.Unmarshal(jsonBytes, &field)
+	err = yaml.Unmarshal(jsonBytes, &field)
 	require.NoError(t, err)
 	return &field
 }

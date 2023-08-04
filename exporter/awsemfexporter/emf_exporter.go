@@ -101,7 +101,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 
 	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
+		cWMetric, err := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
+		if err != nil {
+			return err
+		}
 		putLogEvent := translateCWMetricToEMF(cWMetric, emf.config)
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
@@ -158,9 +161,11 @@ func (emf *emfExporter) listPushers() []cwlogs.Pusher {
 	emf.pusherMapLock.Lock()
 	defer emf.pusherMapLock.Unlock()
 
-	var pushers []cwlogs.Pusher
+	pushers := make([]cwlogs.Pusher, len(emf.pusherMap))
+	i := 0
 	for _, pusher := range emf.pusherMap {
-		pushers = append(pushers, pusher)
+		pushers[i] = pusher
+		i++
 	}
 	return pushers
 }

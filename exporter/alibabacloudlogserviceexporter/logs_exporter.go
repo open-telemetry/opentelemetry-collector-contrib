@@ -40,8 +40,10 @@ type logServiceLogsSender struct {
 func (s *logServiceLogsSender) pushLogsData(
 	_ context.Context,
 	md plog.Logs) error {
-	var err error
-	slsLogs := logDataToLogService(md)
+	slsLogs, err := logDataToLogService(md)
+	if err != nil {
+		return err
+	}
 	if len(slsLogs) > 0 {
 		err = s.client.SendLogs(slsLogs)
 	}

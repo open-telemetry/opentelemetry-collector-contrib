@@ -267,9 +267,9 @@ func TestGetLogInfo(t *testing.T) {
 		},
 	}
 
-	var rms []pmetric.ResourceMetrics
-	for _, md := range metrics {
-		rms = append(rms, internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0))
+	rms := make([]pmetric.ResourceMetrics, len(metrics))
+	for i, md := range metrics {
+		rms[i] = internaldata.OCToMetrics(md.Node, md.Resource, md.Metrics).ResourceMetrics().At(0)
 	}
 
 	testCases := []struct {
