@@ -18,7 +18,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 		{
 			name:         "convert_summary_count_val_to_sum",
 			input:        getTestSummaryMetric(),
-			temporality:  "delta",
+			temporality:  delta,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -39,7 +39,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 		{
 			name:         "convert_summary_count_val_to_sum (monotonic)",
 			input:        getTestSummaryMetric(),
-			temporality:  "delta",
+			temporality:  delta,
 			monotonicity: true,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -60,7 +60,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 		{
 			name:         "convert_summary_count_val_to_sum",
 			input:        getTestSummaryMetric(),
-			temporality:  "cumulative",
+			temporality:  cumulative,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				summaryMetric := getTestSummaryMetric()
@@ -81,7 +81,7 @@ func Test_ConvertSummaryCountValToSum(t *testing.T) {
 		{
 			name:         "convert_summary_count_val_to_sum (no op)",
 			input:        getTestGaugeMetric(),
-			temporality:  "cumulative",
+			temporality:  cumulative,
 			monotonicity: false,
 			want: func(metrics pmetric.MetricSlice) {
 				gaugeMetric := getTestGaugeMetric()

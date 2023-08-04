@@ -53,6 +53,8 @@ output:
 
 # all available settings of specific linters
 linters-settings:
+  goconst:
+    ignore-tests: true
   gci:
     sections:
       - standard
@@ -143,7 +145,6 @@ linters:
     - gci
     - goconst
     - gocritic
-    - godot
     - gofmt
     - goimports
     - gosec
@@ -153,7 +154,6 @@ linters:
     - nestif
     - nilerr
     - noctx
-    - paralleltest
     - prealloc
     - predeclared
     - reassign

@@ -35,9 +35,9 @@ func createConvertSummaryCountValToSumFunction(_ ottl.FunctionContext, oArgs ott
 func convertSummaryCountValToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
 	switch stringAggTemp {
-	case "delta":
+	case delta:
 		aggTemp = pmetric.AggregationTemporalityDelta
-	case "cumulative":
+	case cumulative:
 		aggTemp = pmetric.AggregationTemporalityCumulative
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)

@@ -13,6 +13,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
+const (
+	cumulative = "cumulative"
+	delta      = "delta"
+)
+
 type convertGaugeToSumArguments struct {
 	StringAggTemp string `ottlarg:"0"`
 	Monotonic     bool   `ottlarg:"1"`
@@ -34,10 +39,11 @@ func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Argument
 
 func convertGaugeToSum(stringAggTemp string, monotonic bool) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	var aggTemp pmetric.AggregationTemporality
+
 	switch stringAggTemp {
-	case "delta":
+	case delta:
 		aggTemp = pmetric.AggregationTemporalityDelta
-	case "cumulative":
+	case cumulative:
 		aggTemp = pmetric.AggregationTemporalityCumulative
 	default:
 		return nil, fmt.Errorf("unknown aggregation temporality: %s", stringAggTemp)

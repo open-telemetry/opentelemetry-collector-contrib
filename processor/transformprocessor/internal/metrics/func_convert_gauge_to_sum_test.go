@@ -43,7 +43,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 	}{
 		{
 			name:          "convert gauge to cumulative sum",
-			stringAggTemp: "cumulative",
+			stringAggTemp: cumulative,
 			monotonic:     false,
 			input:         gaugeInput,
 			want: func(metric pmetric.Metric) {
@@ -59,7 +59,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 		},
 		{
 			name:          "convert gauge to delta sum",
-			stringAggTemp: "delta",
+			stringAggTemp: delta,
 			monotonic:     true,
 			input:         gaugeInput,
 			want: func(metric pmetric.Metric) {
@@ -75,7 +75,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 		},
 		{
 			name:          "noop for sum",
-			stringAggTemp: "delta",
+			stringAggTemp: delta,
 			monotonic:     true,
 			input:         sumInput,
 			want: func(metric pmetric.Metric) {
@@ -84,7 +84,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 		},
 		{
 			name:          "noop for histogram",
-			stringAggTemp: "delta",
+			stringAggTemp: delta,
 			monotonic:     true,
 			input:         histogramInput,
 			want: func(metric pmetric.Metric) {
@@ -93,7 +93,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 		},
 		{
 			name:          "noop for exponential histogram",
-			stringAggTemp: "delta",
+			stringAggTemp: delta,
 			monotonic:     true,
 			input:         expoHistogramInput,
 			want: func(metric pmetric.Metric) {
@@ -102,7 +102,7 @@ func Test_convertGaugeToSum(t *testing.T) {
 		},
 		{
 			name:          "noop for summary",
-			stringAggTemp: "delta",
+			stringAggTemp: delta,
 			monotonic:     true,
 			input:         summaryInput,
 			want: func(metric pmetric.Metric) {
