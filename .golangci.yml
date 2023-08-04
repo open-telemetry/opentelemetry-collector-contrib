@@ -129,24 +129,41 @@ linters-settings:
 
 linters:
   enable:
+    - asciicheck
+    - bodyclose
+    - decorder
     - depguard
+    - durationcheck
     - errcheck
+    - errchkjson
+    - errname
     - errorlint
     - exportloopref
     - exhaustive
     - gci
+    - goconst
     - gocritic
+    - godot
     - gofmt
     - goimports
     - gosec
     - govet
     - misspell
+    - musttag
+    - nestif
+    - nilerr
+    - noctx
+    - paralleltest
+    - prealloc
+    - predeclared
+    - reassign
     - revive
     - staticcheck
     - tenv
     - unconvert
     - unparam
     - unused
+    - wastedassign
 
 issues:
   # Excluding configuration per-path, per-linter, per-text and per-source
