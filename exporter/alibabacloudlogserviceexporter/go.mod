@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibab
 go 1.19
 
 require (
-	github.com/aliyun/aliyun-log-go-sdk v0.1.50
+	github.com/aliyun/aliyun-log-go-sdk v0.1.51
 	github.com/gogo/protobuf v1.3.2
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
 	github.com/stretchr/testify v1.8.4
@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.82.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/collector/semconv v0.82.0
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.25.0
 )
 
 require (
