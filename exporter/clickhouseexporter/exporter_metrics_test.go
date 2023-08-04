@@ -44,9 +44,10 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
-	t.Run("check Resource metadata and scope metadata", func(t *testing.T) {
+	t.Run("check Resource metadata and scope metadata (2nd resource contain 2 different scope metrics)", func(t *testing.T) {
 		items := &atomic.Int32{}
 		resourceSchemaIdx := []int{1, 2, 2}
+		scopeNameIdx := []int{1, 2, 3}
 
 		itemIdxs := map[string]*atomic.Uint32{
 			"otel_metrics_exponential_histogram": {},
@@ -61,32 +62,32 @@ func TestExporter_pushMetricsData(t *testing.T) {
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
 					idx := itemIdxs["otel_metrics_exponential_histogram"]
 					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					require.Equal(t, fmt.Sprintf("Scope name %d", scopeNameIdx[idx.Load()]), values[2])
 					idx.Add(1)
-					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
 					idx := itemIdxs["otel_metrics_gauge"]
 					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					require.Equal(t, fmt.Sprintf("Scope name %d", scopeNameIdx[idx.Load()]), values[2])
 					idx.Add(1)
-					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
 					idx := itemIdxs["otel_metrics_histogram"]
 					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					require.Equal(t, fmt.Sprintf("Scope name %d", scopeNameIdx[idx.Load()]), values[2])
 					idx.Add(1)
-					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum (") {
 					idx := itemIdxs["otel_metrics_sum"]
 					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					require.Equal(t, fmt.Sprintf("Scope name %d", scopeNameIdx[idx.Load()]), values[2])
 					idx.Add(1)
-					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 				if strings.HasPrefix(query, "INSERT INTO otel_metrics_summary") {
 					idx := itemIdxs["otel_metrics_summary"]
 					require.Equal(t, fmt.Sprintf("Resource SchemaUrl %d", resourceSchemaIdx[idx.Load()]), values[1])
+					require.Equal(t, fmt.Sprintf("Scope name %d", scopeNameIdx[idx.Load()]), values[2])
 					idx.Add(1)
-					require.Equal(t, fmt.Sprintf("Scope name %d", idx.Load()), values[2])
 				}
 			}
 			return nil
