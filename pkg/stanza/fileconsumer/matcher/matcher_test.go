@@ -539,10 +539,20 @@ func TestMatcher(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			cwd, err := os.Getwd()
+			require.NoError(t, err)
 			require.NoError(t, os.Chdir(t.TempDir()))
+			defer func() {
+				require.NoError(t, os.Chdir(cwd))
+			}()
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
+				file, fErr := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, fErr)
+
+				_, fErr = file.WriteString(filepath.Base(f))
+				require.NoError(t, fErr)
+				require.NoError(t, file.Close())
 			}
 			matcher, err := New(Criteria{
 				Include:          tc.include,
