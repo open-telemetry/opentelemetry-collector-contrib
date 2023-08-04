@@ -48,6 +48,7 @@ Queries the host machine to retrieve the following resource attributes:
     * host.arch
     * host.name
     * host.id
+    * os.description
     * os.type
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
