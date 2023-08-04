@@ -183,6 +183,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitprovider
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy

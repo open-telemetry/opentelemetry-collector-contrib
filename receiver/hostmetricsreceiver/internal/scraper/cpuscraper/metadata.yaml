@@ -21,7 +21,7 @@ metrics:
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [cpu, state]
 
@@ -40,7 +40,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   system.cpu.logical.count:
     enabled: false
@@ -49,4 +49,4 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
