@@ -120,7 +120,7 @@ func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
 
 func parentPid(handle processHandle, pid int32) (int32, error) {
 	// special case for pid 0 and pid 1 in darwin
-	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
+	if pid == 0 || (pid == 1 && runtime.GOOS == darwin) {
 		return 0, nil
 	}
 

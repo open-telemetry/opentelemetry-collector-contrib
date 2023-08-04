@@ -22,6 +22,7 @@ import (
 )
 
 var (
+	allNodeSpec        = "_all"
 	errUnauthenticated = errors.New("status 401, unauthenticated")
 	errUnauthorized    = errors.New("status 403, unauthorized")
 )
@@ -111,7 +112,7 @@ func (c defaultElasticsearchClient) Nodes(ctx context.Context, nodeIds []string)
 	if len(nodeIds) > 0 {
 		nodeSpec = strings.Join(nodeIds, ",")
 	} else {
-		nodeSpec = "_all"
+		nodeSpec = allNodeSpec
 	}
 
 	nodesPath := fmt.Sprintf("_nodes/%s/%s", nodeSpec, nodesMetrics)
@@ -131,7 +132,7 @@ func (c defaultElasticsearchClient) NodeStats(ctx context.Context, nodes []strin
 	if len(nodes) > 0 {
 		nodeSpec = strings.Join(nodes, ",")
 	} else {
-		nodeSpec = "_all"
+		nodeSpec = allNodeSpec
 	}
 
 	nodeStatsMetrics := defaultNodeStatsMetrics
@@ -166,7 +167,7 @@ func (c defaultElasticsearchClient) IndexStats(ctx context.Context, indices []st
 	if len(indices) > 0 {
 		indexSpec = strings.Join(indices, ",")
 	} else {
-		indexSpec = "_all"
+		indexSpec = allNodeSpec
 	}
 
 	indexStatsPath := fmt.Sprintf("%s/_stats/%s", indexSpec, indexStatsMetrics)
@@ -201,7 +202,7 @@ func (c defaultElasticsearchClient) ClusterStats(ctx context.Context, nodes []st
 	if len(nodes) > 0 {
 		nodesSpec = strings.Join(nodes, ",")
 	} else {
-		nodesSpec = "_all"
+		nodesSpec = allNodeSpec
 	}
 
 	clusterStatsPath := fmt.Sprintf("_cluster/stats/nodes/%s", nodesSpec)

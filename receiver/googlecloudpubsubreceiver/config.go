@@ -10,6 +10,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
+const (
+	gzipEncoding = "gzip"
+)
+
 var subscriptionMatcher = regexp.MustCompile(`projects/[a-z][a-z0-9\-]*/subscriptions/`)
 
 type Config struct {
@@ -86,7 +90,7 @@ func (config *Config) validate() error {
 	}
 	switch config.Compression {
 	case "":
-	case "gzip":
+	case gzipEncoding:
 	default:
 		return fmt.Errorf("compression %v is not supported.  supported compression formats include [gzip]", config.Compression)
 	}

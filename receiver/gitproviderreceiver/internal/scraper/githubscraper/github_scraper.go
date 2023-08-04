@@ -19,7 +19,7 @@ import (
 )
 
 var (
-	errClientNotInitErr = errors.New("http client not initialized")
+	errClientNotInit = errors.New("http client not initialized")
 )
 
 type githubScraper struct {
@@ -56,7 +56,7 @@ func (ghs *githubScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	// back in subsequent PRs
 	ghs.logger.Sugar().Debug("checking if client is initialized")
 	if ghs.client == nil {
-		return pmetric.NewMetrics(), errClientNotInitErr
+		return pmetric.NewMetrics(), errClientNotInit
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())

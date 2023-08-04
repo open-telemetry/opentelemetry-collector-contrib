@@ -5,6 +5,7 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"testing"
@@ -64,7 +65,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.NoError(t, err)
 
 	require.NoError(t, traces.UnmarshalMsgDictionary(payload), "Must not error when marshaling content")
-	req, _ := http.NewRequest(http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/v0.5/traces", io.NopCloser(bytes.NewReader(payload)))
 	translated := toTraces(&pb.TracerPayload{
 		LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 		LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
@@ -98,7 +99,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	}
 	var reqBytes []byte
 	bytez, _ := apiPayload.MarshalMsg(reqBytes)
-	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
 	translated, _ := handlePayload(req)
 	span := translated.GetChunks()[0].GetSpans()[0]

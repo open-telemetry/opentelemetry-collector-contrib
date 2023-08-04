@@ -191,11 +191,14 @@ func (c *bigipClient) GetNodes(ctx context.Context) (nodes *models.Nodes, err er
 func (c *bigipClient) post(ctx context.Context, path string, respObj interface{}) error {
 	// Construct endpoint and create request
 	url := c.hostEndpoint + path
-	postBody, _ := json.Marshal(map[string]string{
+	postBody, err := json.Marshal(map[string]string{
 		"username":          c.creds.username,
 		"password":          c.creds.password,
 		"loginProviderName": "tmos",
 	})
+	if err != nil {
+		return err
+	}
 	requestBody := bytes.NewBuffer(postBody)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, requestBody)
 	if err != nil {

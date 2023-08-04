@@ -228,12 +228,12 @@ func (receiver *pubsubReceiver) detectEncoding(attributes map[string]string) (en
 	}
 
 	ceContentEncoding := attributes["content-encoding"]
-	if ceContentEncoding == "gzip" {
+	if ceContentEncoding == gzipEncoding {
 		otlpCompression = gZip
 	}
 
 	if otlpCompression == uncompressed && receiver.config.Compression != "" {
-		if receiver.config.Compression == "gzip" {
+		if receiver.config.Compression == gzipEncoding {
 			otlpCompression = gZip
 		}
 	}

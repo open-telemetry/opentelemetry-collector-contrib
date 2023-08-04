@@ -4,6 +4,7 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,6 +22,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 	cfg.Endpoint = endpoint
 
 	couchdbClient, err := newCouchDBClient(
+		context.Background(),
 		cfg,
 		componenttest.NewNopHost(),
 		componenttest.NewNopTelemetrySettings())
@@ -31,7 +33,7 @@ func defaultClient(t *testing.T, endpoint string) client {
 
 func TestNewCouchDBClient(t *testing.T) {
 	t.Run("Invalid config", func(t *testing.T) {
-		couchdbClient, err := newCouchDBClient(
+		couchdbClient, err := newCouchDBClient(context.Background(),
 			&Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: defaultEndpoint,
@@ -107,7 +109,7 @@ func TestGet(t *testing.T) {
 	})
 	t.Run("401 Unauthorized", func(t *testing.T) {
 		url := ts.URL + "/_node/_local/_stats/couchdb"
-		couchdbClient, err := newCouchDBClient(
+		couchdbClient, err := newCouchDBClient(context.Background(),
 			&Config{
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: url,
@@ -180,6 +182,7 @@ func TestGetNodeStats(t *testing.T) {
 
 func TestBuildReq(t *testing.T) {
 	couchdbClient := couchDBClient{
+		ctx:    context.Background(),
 		client: &http.Client{},
 		cfg: &Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -192,7 +195,7 @@ func TestBuildReq(t *testing.T) {
 	}
 
 	path := "/_node/_local/_stats/couchdb"
-	req, err := couchdbClient.buildReq(path)
+	req, err := couchdbClient.buildReq(context.Background(), path)
 	require.NoError(t, err)
 	require.NotNil(t, req)
 	require.Equal(t, "application/json", req.Header["Content-Type"][0])
@@ -211,6 +214,6 @@ func TestBuildBadReq(t *testing.T) {
 		logger: zap.NewNop(),
 	}
 
-	_, err := couchdbClient.buildReq(" ")
+	_, err := couchdbClient.buildReq(context.Background(), " ")
 	require.Error(t, err)
 }

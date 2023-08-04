@@ -77,6 +77,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			} else {
 				statusCode = resp.StatusCode
 			}
+			defer resp.Body.Close()
 
 			for class, intVal := range httpResponseClasses {
 				if statusCode/100 == intVal {

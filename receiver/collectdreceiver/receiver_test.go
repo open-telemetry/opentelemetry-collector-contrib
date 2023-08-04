@@ -147,7 +147,8 @@ func TestCollectDServer(t *testing.T) {
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			sink.Reset()
-			req, err := http.NewRequest(
+			req, err := http.NewRequestWithContext(
+				context.Background(),
 				"POST",
 				"http://"+endpoint+"?"+tt.queryParams,
 				bytes.NewBuffer([]byte(tt.requestBody)),

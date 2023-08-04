@@ -67,7 +67,8 @@ func TestDatadogServer(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			req, err := http.NewRequest(
+			req, err := http.NewRequestWithContext(
+				context.Background(),
 				http.MethodPost,
 				fmt.Sprintf("http://%s/v0.7/traces", cfg.Endpoint),
 				tc.op,

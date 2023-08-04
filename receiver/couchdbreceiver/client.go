@@ -4,6 +4,7 @@
 package couchdbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -23,19 +24,21 @@ type client interface {
 var _ client = (*couchDBClient)(nil)
 
 type couchDBClient struct {
+	ctx    context.Context
 	client *http.Client
 	cfg    *Config
 	logger *zap.Logger
 }
 
 // newCouchDBClient creates a new client to make requests for the CouchDB receiver.
-func newCouchDBClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+func newCouchDBClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
 	client, err := cfg.ToClient(host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
 	return &couchDBClient{
+		ctx:    ctx,
 		client: client,
 		cfg:    cfg,
 		logger: settings.Logger,
@@ -44,7 +47,7 @@ func newCouchDBClient(cfg *Config, host component.Host, settings component.Telem
 
 // Get issues an authorized Get requests to the specified url.
 func (c *couchDBClient) Get(path string) ([]byte, error) {
-	req, err := c.buildReq(path)
+	req, err := c.buildReq(c.ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +95,9 @@ func (c *couchDBClient) GetStats(nodeName string) (map[string]interface{}, error
 	return stats, nil
 }
 
-func (c *couchDBClient) buildReq(path string) (*http.Request, error) {
+func (c *couchDBClient) buildReq(ctx context.Context, path string) (*http.Request, error) {
 	url := c.cfg.Endpoint + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
