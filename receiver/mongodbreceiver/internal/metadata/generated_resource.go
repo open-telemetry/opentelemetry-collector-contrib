@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetDatabase(val string) {
 	}
 }
 
+// SetMongodbDatabaseName sets provided value as "mongodb.database.name" attribute.
+func (rb *ResourceBuilder) SetMongodbDatabaseName(val string) {
+	if rb.config.MongodbDatabaseName.Enabled {
+		rb.res.Attributes().PutStr("mongodb.database.name", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res

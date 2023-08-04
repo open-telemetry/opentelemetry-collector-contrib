@@ -4,17 +4,22 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
-	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+	"k8s.io/apimachinery/pkg/labels"
+	k8s "k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	v_one "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 )
 
 type MetadataLabel string
@@ -124,6 +129,51 @@ func (m *Metadata) getNodeUID(nodeName string) (string, error) {
 			if node.ObjectMeta.Name == nodeName {
 				return string(node.ObjectMeta.UID), nil
 			}
+		}
+	}
+	return "", nil
+}
+
+// getServiceName retrieves k8s.service.name from metadata for given pod uid,
+// returns an error if no service found in the metadata that matches the requirements.
+func (m *Metadata) getServiceName(podUID string, client k8s.Interface) (string, error) {
+	if m.PodsMetadata == nil {
+		return "", errors.New("pods metadata were not fetched")
+	}
+
+	uid := types.UID(podUID)
+	var service *corev1.Service
+	for _, pod := range m.PodsMetadata.Items {
+		if pod.UID == uid {
+			serviceList, err := client.CoreV1().Services(pod.Namespace).List(context.TODO(), v_one.ListOptions{})
+			if err != nil {
+				return "", fmt.Errorf("failed to fetch service list for POD: %w", err)
+			}
+			for _, svc := range serviceList.Items {
+				if svc.Spec.Selector != nil {
+					if labels.Set(svc.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+						service = &svc
+						return service.Name, nil
+					}
+				}
+			}
+		}
+	}
+
+	return "", nil
+}
+
+// getServiceAccountName retrieves k8s.service_account.name from metadata for given pod uid,
+// returns an error if no service account found in the metadata that matches the requirements.
+func (m *Metadata) getServiceAccountName(podUID string) (string, error) {
+	if m.PodsMetadata == nil {
+		return "", errors.New("pods metadata were not fetched")
+	}
+
+	uid := types.UID(podUID)
+	for _, pod := range m.PodsMetadata.Items {
+		if pod.UID == uid {
+			return pod.Spec.ServiceAccountName, nil
 		}
 	}
 	return "", nil

@@ -7,6 +7,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -101,7 +103,41 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),
+		metadata.WithK8sPodUID(s.PodRef.UID),
+		metadata.WithK8sPodName(s.PodRef.Name),
+		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
+		metadata.WithK8sServiceName(a.getServiceName(s.PodRef.UID)),
+		metadata.WithK8sServiceAccountName(a.getServiceAccountName(s.PodRef.UID)),
+		metadata.WithK8sClusterName("unknown"),
 	))
+}
+
+// getch k8s service name from metadata
+func (a *metricDataAccumulator) getServiceName(podUID string) string {
+	//k8sAPIClient, err := k8sconfig.MakeClient(k8sconfig.APIConfig{})
+	k8sAPIClient, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+	if err != nil {
+		return ""
+	}
+
+	name, err := a.metadata.getServiceName(podUID, k8sAPIClient)
+	if err != nil {
+		log.Println(err.Error())
+		return ""
+	}
+	return name
+}
+
+// getch k8s service account name from metadata
+func (a *metricDataAccumulator) getServiceAccountName(podUID string) string {
+	name, err := a.metadata.getServiceAccountName(podUID)
+	if err != nil {
+		log.Println(err.Error())
+		return ""
+	}
+	return name
 }
 
 func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.ContainerStats) {

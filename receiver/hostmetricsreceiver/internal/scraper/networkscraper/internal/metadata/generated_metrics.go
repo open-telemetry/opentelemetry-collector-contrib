@@ -393,7 +393,7 @@ func (m *metricSystemNetworkIoBandwidth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemNetworkIoBandwidth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, directionAttributeValue string) {
+func (m *metricSystemNetworkIoBandwidth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -401,6 +401,7 @@ func (m *metricSystemNetworkIoBandwidth) recordDataPoint(start pcommon.Timestamp
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("device", deviceAttributeValue)
 	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
@@ -641,8 +642,8 @@ func (mb *MetricsBuilder) RecordSystemNetworkIoDataPoint(ts pcommon.Timestamp, v
 }
 
 // RecordSystemNetworkIoBandwidthDataPoint adds a data point to system.network.io.bandwidth metric.
-func (mb *MetricsBuilder) RecordSystemNetworkIoBandwidthDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricSystemNetworkIoBandwidth.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemNetworkIoBandwidthDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSystemNetworkIoBandwidth.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSystemNetworkPacketsDataPoint adds a data point to system.network.packets metric.

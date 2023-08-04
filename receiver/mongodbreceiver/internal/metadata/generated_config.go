@@ -159,13 +159,17 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
-	Database ResourceAttributeConfig `mapstructure:"database"`
+	Database            ResourceAttributeConfig `mapstructure:"database"`
+	MongodbDatabaseName ResourceAttributeConfig `mapstructure:"mongodb.database.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		Database: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		MongodbDatabaseName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

@@ -4,6 +4,8 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
+	"fmt"
+	"reflect"
 	"time"
 
 	quotav1 "github.com/openshift/api/quota/v1"

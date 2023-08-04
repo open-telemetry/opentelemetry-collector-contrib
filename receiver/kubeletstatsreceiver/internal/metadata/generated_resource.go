@@ -63,6 +63,13 @@ func (rb *ResourceBuilder) SetGlusterfsPath(val string) {
 	}
 }
 
+// SetK8sClusterName sets provided value as "k8s.cluster.name" attribute.
+func (rb *ResourceBuilder) SetK8sClusterName(val string) {
+	if rb.config.K8sClusterName.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.name", val)
+	}
+}
+
 // SetK8sContainerName sets provided value as "k8s.container.name" attribute.
 func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	if rb.config.K8sContainerName.Enabled {
@@ -109,6 +116,20 @@ func (rb *ResourceBuilder) SetK8sPodName(val string) {
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.pod.uid", val)
+	}
+}
+
+// SetK8sServiceName sets provided value as "k8s.service.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceName(val string) {
+	if rb.config.K8sServiceName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.name", val)
+	}
+}
+
+// SetK8sServiceAccountName sets provided value as "k8s.service_account.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceAccountName(val string) {
+	if rb.config.K8sServiceAccountName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service_account.name", val)
 	}
 }
 

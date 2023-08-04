@@ -225,6 +225,7 @@ type ResourceAttributesConfig struct {
 	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
 	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
 	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
+	K8sClusterName               ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -232,6 +233,8 @@ type ResourceAttributesConfig struct {
 	K8sPersistentvolumeclaimName ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.name"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
 	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
+	K8sServiceName               ResourceAttributeConfig `mapstructure:"k8s.service.name"`
+	K8sServiceAccountName        ResourceAttributeConfig `mapstructure:"k8s.service_account.name"`
 	K8sVolumeName                ResourceAttributeConfig `mapstructure:"k8s.volume.name"`
 	K8sVolumeType                ResourceAttributeConfig `mapstructure:"k8s.volume.type"`
 	Partition                    ResourceAttributeConfig `mapstructure:"partition"`
@@ -257,6 +260,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		GlusterfsPath: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		K8sClusterName: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -277,6 +283,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sPodUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sServiceName: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sServiceAccountName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sVolumeName: ResourceAttributeConfig{
 			Enabled: true,

@@ -403,3 +403,4 @@ The amount of time that the server has been running.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | database | The name of a database. | Any Str | true |
+| mongodb.database.name | The name of a database (redundant). | Any Str | false |
