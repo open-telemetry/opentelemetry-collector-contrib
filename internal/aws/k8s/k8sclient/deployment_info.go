@@ -27,6 +27,7 @@ type DeploymentSpec struct {
 
 type DeploymentStatus struct {
 	Replicas            uint32
+	ReadyReplicas       uint32
 	AvailableReplicas   uint32
 	UnavailableReplicas uint32
 }

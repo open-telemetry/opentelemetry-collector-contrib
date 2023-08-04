@@ -189,6 +189,7 @@ func transformFuncReplicaSet(obj interface{}) (interface{}, error) {
 	info.Status = &ReplicaSetStatus{
 		Replicas:          uint32(replicaSet.Status.Replicas),
 		AvailableReplicas: uint32(replicaSet.Status.AvailableReplicas),
+		ReadyReplicas:     uint32(replicaSet.Status.ReadyReplicas),
 	}
 	return info, nil
 }

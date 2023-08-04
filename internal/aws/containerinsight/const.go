@@ -102,7 +102,6 @@ const (
 	StatusCurrentNumberScheduled      = "status_current_number_scheduled"
 	StatusReplicasAvailable           = "status_replicas_available"
 	StatusReplicasUnavailable         = "status_replicas_unavailable"
-	StatusReplicas                    = "status_replicas"
 	SpecReplicas                      = "spec_replicas"
 	StatusRunning                     = "status_running"
 	StatusTerminated                  = "status_terminated"
@@ -114,6 +113,8 @@ const (
 	StatusUnknown                     = "status_unknown"
 	StatusReady                       = "status_ready"
 	StatusScheduled                   = "status_scheduled"
+	ReplicasDesired                   = "replicas_desired"
+	ReplicasReady                     = "replicas_ready"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
@@ -245,7 +246,6 @@ func init() {
 		StatusConditionNetworkUnavailable: UnitCount,
 		StatusCapacityPods:                UnitCount,
 		StatusAllocatablePods:             UnitCount,
-		StatusReplicas:                    UnitCount,
 		StatusReplicasAvailable:           UnitCount,
 		StatusReplicasUnavailable:         UnitCount,
 		StatusNumberAvailable:             UnitCount,
@@ -253,6 +253,8 @@ func init() {
 		StatusDesiredNumberScheduled:      UnitCount,
 		StatusCurrentNumberScheduled:      UnitCount,
 		SpecReplicas:                      UnitCount,
+		ReplicasDesired:                   UnitCount,
+		ReplicasReady:                     UnitCount,
 
 		// kube-state-metrics equivalents
 		StatusRunning:              UnitCount,

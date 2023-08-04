@@ -39,6 +39,7 @@ var statefulSetObjects = []runtime.Object{
 		Status: appsv1.StatefulSetStatus{
 			Replicas:          5,
 			AvailableReplicas: 5,
+			ReadyReplicas:     5,
 		},
 	},
 	&appsv1.StatefulSet{
@@ -53,6 +54,7 @@ var statefulSetObjects = []runtime.Object{
 		Status: appsv1.StatefulSetStatus{
 			Replicas:          10,
 			AvailableReplicas: 10,
+			ReadyReplicas:     10,
 		},
 	},
 }
@@ -79,6 +81,7 @@ func TestStatefulSetClient(t *testing.T) {
 			Status: &StatefulSetStatus{
 				Replicas:          5,
 				AvailableReplicas: 5,
+				ReadyReplicas:     5,
 			},
 		},
 		{
@@ -90,6 +93,7 @@ func TestStatefulSetClient(t *testing.T) {
 			Status: &StatefulSetStatus{
 				Replicas:          10,
 				AvailableReplicas: 10,
+				ReadyReplicas:     10,
 			},
 		},
 	}

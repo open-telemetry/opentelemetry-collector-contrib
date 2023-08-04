@@ -39,7 +39,8 @@ var deploymentObjects = []runtime.Object{
 			Replicas: &desired,
 		},
 		Status: appsv1.DeploymentStatus{
-			Replicas:            5,
+			Replicas:            10,
+			ReadyReplicas:       5,
 			AvailableReplicas:   5,
 			UnavailableReplicas: 1,
 		},
@@ -55,7 +56,8 @@ var deploymentObjects = []runtime.Object{
 		},
 		Status: appsv1.DeploymentStatus{
 			Replicas:            15,
-			AvailableReplicas:   15,
+			ReadyReplicas:       10,
+			AvailableReplicas:   10,
 			UnavailableReplicas: 2,
 		},
 	},
@@ -81,7 +83,8 @@ func TestDeploymentClient(t *testing.T) {
 				Replicas: 20,
 			},
 			Status: &DeploymentStatus{
-				Replicas:            5,
+				Replicas:            10,
+				ReadyReplicas:       5,
 				AvailableReplicas:   5,
 				UnavailableReplicas: 1,
 			},
@@ -94,7 +97,8 @@ func TestDeploymentClient(t *testing.T) {
 			},
 			Status: &DeploymentStatus{
 				Replicas:            15,
-				AvailableReplicas:   15,
+				ReadyReplicas:       10,
+				AvailableReplicas:   10,
 				UnavailableReplicas: 2,
 			},
 		},

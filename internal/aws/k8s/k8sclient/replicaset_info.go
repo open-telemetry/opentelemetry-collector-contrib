@@ -34,4 +34,5 @@ type ReplicaSetSpec struct {
 type ReplicaSetStatus struct {
 	Replicas          uint32
 	AvailableReplicas uint32
+	ReadyReplicas     uint32
 }

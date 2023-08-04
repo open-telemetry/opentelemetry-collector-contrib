@@ -47,6 +47,7 @@ var replicaSetArray = []runtime.Object{
 		Status: appsv1.ReplicaSetStatus{
 			Replicas:          5,
 			AvailableReplicas: 5,
+			ReadyReplicas:     5,
 		},
 	},
 	&appsv1.ReplicaSet{
@@ -68,6 +69,7 @@ var replicaSetArray = []runtime.Object{
 		Status: appsv1.ReplicaSetStatus{
 			Replicas:          5,
 			AvailableReplicas: 5,
+			ReadyReplicas:     5,
 		},
 	},
 	&appsv1.ReplicaSet{
@@ -83,6 +85,7 @@ var replicaSetArray = []runtime.Object{
 		Status: appsv1.ReplicaSetStatus{
 			Replicas:          5,
 			AvailableReplicas: 5,
+			ReadyReplicas:     5,
 		},
 	},
 	&appsv1.ReplicaSet{
@@ -98,6 +101,7 @@ var replicaSetArray = []runtime.Object{
 		Status: appsv1.ReplicaSetStatus{
 			Replicas:          10,
 			AvailableReplicas: 10,
+			ReadyReplicas:     10,
 		},
 	},
 }
@@ -151,6 +155,7 @@ func TestReplicaSetClient(t *testing.T) {
 			Status: &ReplicaSetStatus{
 				Replicas:          5,
 				AvailableReplicas: 5,
+				ReadyReplicas:     5,
 			},
 		},
 		{
@@ -163,6 +168,7 @@ func TestReplicaSetClient(t *testing.T) {
 			Status: &ReplicaSetStatus{
 				Replicas:          10,
 				AvailableReplicas: 10,
+				ReadyReplicas:     10,
 			},
 		},
 	}

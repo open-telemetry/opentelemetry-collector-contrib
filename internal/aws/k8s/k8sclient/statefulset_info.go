@@ -28,4 +28,5 @@ type StatefulSetSpec struct {
 type StatefulSetStatus struct {
 	Replicas          uint32
 	AvailableReplicas uint32
+	ReadyReplicas     uint32
 }

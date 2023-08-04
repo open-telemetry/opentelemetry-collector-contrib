@@ -136,6 +136,7 @@ func transformFuncStatefulSet(obj interface{}) (interface{}, error) {
 	info.Status = &StatefulSetStatus{
 		Replicas:          uint32(statefulSet.Status.Replicas),
 		AvailableReplicas: uint32(statefulSet.Status.AvailableReplicas),
+		ReadyReplicas:     uint32(statefulSet.Status.ReadyReplicas),
 	}
 	return info, nil
 }

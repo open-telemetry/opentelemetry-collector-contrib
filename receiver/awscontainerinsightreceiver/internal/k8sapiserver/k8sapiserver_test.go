@@ -244,10 +244,11 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			Name:      "deployment1",
 			Namespace: "kube-system",
 			Spec: &k8sclient.DeploymentSpec{
-				Replicas: 10,
+				Replicas: 11,
 			},
 			Status: &k8sclient.DeploymentStatus{
 				Replicas:            11,
+				ReadyReplicas:       10,
 				AvailableReplicas:   9,
 				UnavailableReplicas: 2,
 			},
@@ -270,10 +271,11 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			Name:      "replicaset1",
 			Namespace: "kube-system",
 			Spec: &k8sclient.ReplicaSetSpec{
-				Replicas: 10,
+				Replicas: 9,
 			},
 			Status: &k8sclient.ReplicaSetStatus{
 				Replicas:          5,
+				ReadyReplicas:     4,
 				AvailableReplicas: 3,
 			},
 		},
@@ -287,6 +289,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			},
 			Status: &k8sclient.StatefulSetStatus{
 				Replicas:          3,
+				ReadyReplicas:     4,
 				AvailableReplicas: 1,
 			},
 		},
@@ -321,8 +324,10 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		tags: map[Service:service2 Timestamp:1557291396709 Type:ClusterService], fields: map[service_number_of_running_pods:1],
 		tags: map[Service:service1 Timestamp:1557291396709 Type:ClusterService], fields: map[service_number_of_running_pods:1],
 		tags: map[Namespace:default Timestamp:1557291396709 Type:ClusterNamespace], fields: map[namespace_number_of_running_pods:2],
-		tags: map[PodName:deployment1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDeployment], fields: map[deployment_spec_replicas:10 deployment_status_replicas:11 deployment_status_replicas_available:9 deployment_status_replicas_unavailable:2],
-		tags: map[PodName:daemonset1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDaemonSet], fields: map[daemonset_status_number_available:10 daemonset_status_number_unavailable:4 daemonset_status_desired_number_scheduled:7 daemonset_status_current_number_scheduled:6],
+		tags: map[PodName:deployment1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDeployment], fields: map[replicas_desired:11 replicas_ready:10 status_replicas_available:9 status_replicas_unavailable:2],
+		tags: map[PodName:daemonset1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDaemonSet], fields: map[status_replicas_available:10 status_replicas_unavailable:4 replicas_desired:7 replicas_ready:6],
+		tags: map[PodName:replicaset1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDaemonSet], fields: map[status_replicas_available:3 replicas_desired:9 replicas_ready:4],
+		tags: map[PodName:statefulset1 Namespace:kube-system Timestamp:1557291396709 Type:ClusterDaemonSet], fields: map[status_replicas_available:1 replicas_desired:10 replicas_ready:4],
 	*/
 	for _, metric := range metrics {
 		assert.Equal(t, "cluster-name", getStringAttrVal(metric, ci.ClusterNameKey))
@@ -341,31 +346,31 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 			assertMetricValueEqual(t, metric, "namespace_number_of_running_pods", int64(2))
 			assert.Equal(t, "default", getStringAttrVal(metric, ci.K8sNamespace))
 		case ci.TypeClusterDeployment:
-			assertMetricValueEqual(t, metric, "deployment_spec_replicas", int64(10))
-			assertMetricValueEqual(t, metric, "deployment_status_replicas", int64(11))
+			assertMetricValueEqual(t, metric, "replicas_desired", int64(11))
+			assertMetricValueEqual(t, metric, "replicas_ready", int64(10))
 			assertMetricValueEqual(t, metric, "status_replicas_available", int64(9))
 			assertMetricValueEqual(t, metric, "status_replicas_unavailable", int64(2))
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "deployment1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterDeployment", getStringAttrVal(metric, ci.MetricType))
 		case ci.TypeClusterDaemonSet:
-			assertMetricValueEqual(t, metric, "daemonset_status_number_available", int64(10))
-			assertMetricValueEqual(t, metric, "daemonset_status_number_unavailable", int64(4))
-			assertMetricValueEqual(t, metric, "daemonset_status_desired_number_scheduled", int64(7))
-			assertMetricValueEqual(t, metric, "daemonset_status_current_number_scheduled", int64(6))
+			assertMetricValueEqual(t, metric, "replicas_desired", int64(7))
+			assertMetricValueEqual(t, metric, "replicas_ready", int64(6))
+			assertMetricValueEqual(t, metric, "status_replicas_available", int64(10))
+			assertMetricValueEqual(t, metric, "status_replicas_unavailable", int64(4))
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "daemonset1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterDaemonSet", getStringAttrVal(metric, ci.MetricType))
 		case ci.TypeClusterReplicaSet:
-			assertMetricValueEqual(t, metric, "replicaset_spec_replicas", int64(10))
-			assertMetricValueEqual(t, metric, "replicaset_status_replicas", int64(5))
+			assertMetricValueEqual(t, metric, "replicas_desired", int64(9))
+			assertMetricValueEqual(t, metric, "replicas_ready", int64(4))
 			assertMetricValueEqual(t, metric, "status_replicas_available", int64(3))
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "replicaset1", getStringAttrVal(metric, ci.PodNameKey))
 			assert.Equal(t, "ClusterReplicaSet", getStringAttrVal(metric, ci.MetricType))
 		case ci.TypeClusterStatefulSet:
-			assertMetricValueEqual(t, metric, "statefulset_spec_replicas", int64(10))
-			assertMetricValueEqual(t, metric, "statefulset_status_replicas", int64(3))
+			assertMetricValueEqual(t, metric, "replicas_desired", int64(10))
+			assertMetricValueEqual(t, metric, "replicas_ready", int64(4))
 			assertMetricValueEqual(t, metric, "status_replicas_available", int64(1))
 			assert.Equal(t, "kube-system", getStringAttrVal(metric, ci.K8sNamespace))
 			assert.Equal(t, "statefulset1", getStringAttrVal(metric, ci.PodNameKey))
