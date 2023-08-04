@@ -64,7 +64,7 @@ func newsumologicProcessor(set processor.CreateSettings, config *Config) *sumolo
 func (processor *sumologicProcessor) start(_ context.Context, _ component.Host) error {
 	procs := processor.subprocessors
 	processor.logger.Info(
-		"Processor sumologic has started.",
+		"Sumo Logic Processor has started.",
 		zap.Bool(procs[0].ConfigPropertyName(), procs[0].isEnabled()),
 		zap.Bool(procs[1].ConfigPropertyName(), procs[1].isEnabled()),
 		zap.Bool(procs[2].ConfigPropertyName(), procs[2].isEnabled()),
@@ -76,7 +76,7 @@ func (processor *sumologicProcessor) start(_ context.Context, _ component.Host) 
 }
 
 func (processor *sumologicProcessor) shutdown(_ context.Context) error {
-	processor.logger.Info("Processor sumologic has shut down.")
+	processor.logger.Info("Sumo Logic Processor has shut down.")
 	return nil
 }
 
