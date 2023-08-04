@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkae
 go 1.19
 
 require (
-	github.com/Shopify/sarama v1.38.1
-	github.com/aws/aws-sdk-go v1.44.309
+	github.com/IBM/sarama v1.40.1
+	github.com/aws/aws-sdk-go v1.44.316
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0
@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/collector/semconv v0.82.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.25.0
 )
 
 require (
