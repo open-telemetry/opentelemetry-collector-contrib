@@ -5,9 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"sort"
 
-	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -137,8 +135,7 @@ var hostPerfMetricList = []string{
 func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 	ctx context.Context,
 	host mo.HostSystem,
-	clusterName string,
-	hostName string,
+	hostname string,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	spec := types.PerfQuerySpec{
@@ -156,7 +153,7 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(
 		errs.AddPartial(1, err)
 		return
 	}
-	v.processHostPerformance(info.results, clusterName, hostName)
+	v.processHostPerformance(info.results, hostname)
 }
 
 // vmPerfMetricList may be customizable in the future but here is the full list of Virtual Machine Performance Counters
@@ -180,8 +177,6 @@ var vmPerfMetricList = []string{
 func (v *vcenterMetricScraper) recordVMPerformance(
 	ctx context.Context,
 	vm mo.VirtualMachine,
-	vmMain *object.VirtualMachine,
-	clusterName string,
 	hostname string,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -200,16 +195,16 @@ func (v *vcenterMetricScraper) recordVMPerformance(
 		return
 	}
 
-	v.processVMPerformanceMetrics(info, vmMain, clusterName, hostname)
+	v.processVMPerformanceMetrics(info, hostname)
 }
 
-func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, vmMain *object.VirtualMachine, clusterName, hostname) {
+func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, hostname string) {
 	for _, m := range info.results {
-		for idx, val := range m.Value {
+		for _, val := range m.Value {
+			if val.Instance != hostname {
+				continue
+			}
 			for j, nestedValue := range val.Value {
-				if val.Instance != hostname {
-					continue
-				}
 				si := m.SampleInfo[j]
 				switch val.Name {
 				// Performance monitoring level 1 metrics
@@ -236,22 +231,19 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
-				if val.Instance == hostName {
-					break
-				}
 			}
 		}
 	}
 }
 
-func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric, clusterName, hostName string) {
+func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric, hostname string) {
 	for _, m := range metrics {
 		for _, val := range m.Value {
+			if val.Instance != hostname {
+				continue
+			}
 			for j, nestedValue := range val.Value {
 				si := m.SampleInfo[j]
-				if val.Instance != hostName {
-					continue
-				}
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.usage.average":
@@ -283,9 +275,6 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 				case "disk.write.average":
 					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				}
-			}
-			if val.Instance == hostName {
-				break
 			}
 		}
 	}

@@ -202,7 +202,7 @@ func (v *vcenterMetricScraper) collectHost(
 		return
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
-	v.recordHostPerformanceMetrics(ctx, hwSum, cluster.Name(), host.Name(), errs)
+	v.recordHostPerformanceMetrics(ctx, hwSum, host.Name(), errs)
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterHostName(host.Name())
 	rb.SetVcenterClusterName(cluster.Name())
@@ -293,7 +293,14 @@ func (v *vcenterMetricScraper) collectVMs(
 			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
 			continue
 		}
-		v.collectVM(ctx, colTime, moVM, hwSum, errs, vm, cluster.Name(), hostname)
+		vmUUID := moVM.Config.InstanceUuid
+		v.collectVM(ctx, colTime, moVM, hwSum, errs, hostname)
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMID(vmUUID)
+		rb.SetVcenterClusterName(cluster.Name())
+		rb.SetVcenterHostName(hostname)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
 }
@@ -304,10 +311,8 @@ func (v *vcenterMetricScraper) collectVM(
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
-	vmMain *object.VirtualMachine,
-	clusterName,
 	hostname string,
 ) {
 	v.recordVMUsages(colTime, vm, hs)
-	v.recordVMPerformance(ctx, vm, vmMain, clusterName, hostname, errs)
+	v.recordVMPerformance(ctx, vm, hostname, errs)
 }

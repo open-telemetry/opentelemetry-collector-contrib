@@ -9,7 +9,7 @@ change_type: 'bug_fix'
 component: 'vcenterreceiver'
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Added new resource attribute, vcenter.system.device.id, to more accurately reflect emission of metrics"
+note: "only record datapoints when the instance name matches the machine (host/vm) name. This allows for capturing one datapoint that represents the entity"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [23669]
@@ -19,4 +19,4 @@ issues: [23669]
 # Use pipe (|) for multiline entries.
 subtext: |
  There was previously an issue with the vcenter receiver where multiple datapoints within a timeseries contained the same timestamps.
- This was remedied by more accurately describing the metric emission by a resource attribute that differentiates the aforementioned same timestamps/datapoints.
+ This was remedied by only recording the datapoint that contains the aggregated information of all the other datapoints.

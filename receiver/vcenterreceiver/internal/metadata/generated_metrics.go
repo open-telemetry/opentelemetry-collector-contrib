@@ -2261,65 +2261,11 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-<<<<<<< HEAD
 // WithResource sets the provided resource on the emitted ResourceMetrics.
 // It's recommended to use ResourceBuilder to create the resource.
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-=======
-// WithVcenterClusterName sets provided value as "vcenter.cluster.name" attribute for current resource.
-func WithVcenterClusterName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterClusterName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.cluster.name", val)
-		}
-	}
-}
-
-// WithVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute for current resource.
-func WithVcenterDatastoreName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterDatastoreName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.datastore.name", val)
-		}
-	}
-}
-
-// WithVcenterHostName sets provided value as "vcenter.host.name" attribute for current resource.
-func WithVcenterHostName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterHostName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.host.name", val)
-		}
-	}
-}
-
-// WithVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute for current resource.
-func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterResourcePoolName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.resource_pool.name", val)
-		}
-	}
-}
-
-// WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
-func WithVcenterVMID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterVMID.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.vm.id", val)
-		}
-	}
-}
-
-// WithVcenterVMName sets provided value as "vcenter.vm.name" attribute for current resource.
-func WithVcenterVMName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterVMName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.vm.name", val)
-		}
->>>>>>> d566019df7 (Add new resource attribute)
 	}
 }
 
