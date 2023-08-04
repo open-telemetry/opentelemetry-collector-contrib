@@ -389,7 +389,7 @@ func sendToCollector(endpoint string, batch *jaegerthrift.Batch) error {
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(buf))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, bytes.NewBuffer(buf))
 	if err != nil {
 		return err
 	}

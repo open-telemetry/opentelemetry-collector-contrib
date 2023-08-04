@@ -162,13 +162,9 @@ func TestJaegerHTTP(t *testing.T) {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, fmt.Sprintf("http://%s/sampling?service=test", endpoint), nil)
 	require.NoError(t, err)
 	resp, err := http.DefaultClient.Do(req)
-	assert.NoError(t, err, "should not have failed to make request")
+	require.NoError(t, err, "should not have failed to make request")
 	defer resp.Body.Close()
-	if resp != nil {
-		assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
-		return
-	}
-	t.Fail()
+	require.Equal(t, 500, resp.StatusCode, "should have returned 200")
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {

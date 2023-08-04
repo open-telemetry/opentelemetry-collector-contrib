@@ -52,7 +52,7 @@ type eventsReceiver struct {
 }
 
 type eventRecord struct {
-	NextStartTime *time.Time `mapstructure:"next_start_time"`
+	NextStartTime *time.Time `mapstructure:"next_start_time" json:"next_start_time"`
 }
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {

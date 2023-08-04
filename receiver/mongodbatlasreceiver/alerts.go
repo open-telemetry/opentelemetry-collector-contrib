@@ -507,7 +507,7 @@ func payloadToLogs(now time.Time, payload []byte) (plog.Logs, error) {
 // can have custom marshaling
 type alertRecord struct {
 	sync.Mutex
-	LastRecordedTime *time.Time `mapstructure:"last_recorded"`
+	LastRecordedTime *time.Time `mapstructure:"last_recorded" json:"last_recorded"`
 }
 
 func (a *alertRecord) SetLastRecorded(lastUpdated *time.Time) {
@@ -523,7 +523,7 @@ func (a *alertsReceiver) syncPersistence(ctx context.Context) error {
 	cBytes, err := a.storageClient.Get(ctx, alertCacheKey)
 	if err != nil || cBytes == nil {
 		a.record = &alertRecord{}
-		return nil
+		return nil // nolint:nilerr
 	}
 
 	var cache alertRecord

@@ -303,7 +303,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	exporters map[component.ID]component.Component,
 	metadataExportersFromConfig []string,
 ) error {
-	var out []metadataConsumer
+	out := make([]metadataConsumer, 0, len(exporters))
 
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
 	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {

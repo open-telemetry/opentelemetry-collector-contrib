@@ -91,13 +91,13 @@ func (s *logsReceiver) Shutdown(_ context.Context) error {
 
 // parseHostNames parses out the hostname from the specified cluster host
 func parseHostNames(s string, logger *zap.Logger) []string {
-	var hostnames []string
-
 	if s == "" {
-		return []string{}
+		return nil
 	}
+	elts := strings.Split(s, ",")
+	hostnames := make([]string, 0, len(elts))
 
-	for _, t := range strings.Split(s, ",") {
+	for _, t := range elts {
 		// separate hostname from scheme and port
 		host, _, err := net.SplitHostPort(strings.TrimPrefix(t, "mongodb://"))
 		if err != nil {
@@ -169,7 +169,7 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 
 func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
 	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
-	whitelist := false
+	var whitelist bool
 	var clusterNameSet map[string]struct{}
 	// check to include or exclude clusters
 	switch {

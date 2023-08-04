@@ -58,14 +58,14 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 	case "deflate":
 		fw := zlib.NewWriter(&buf)
 		if _, err := fw.Write(body); err != nil {
-			return nil
+			return err
 		}
 		if err := fw.Close(); err != nil {
 			return err
 		}
 	}
 
-	req, err := http.NewRequest("POST", endpoint, &buf)
+	req, err := http.NewRequestWithContext(context.Background(), "POST", endpoint, &buf)
 	if err != nil {
 		return err
 	}
