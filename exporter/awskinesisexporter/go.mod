@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.18.30
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.29
 	github.com/aws/aws-sdk-go-v2/service/kinesis v1.17.15
-	github.com/aws/aws-sdk-go-v2/service/sts v1.20.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.21.1
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.3.0
