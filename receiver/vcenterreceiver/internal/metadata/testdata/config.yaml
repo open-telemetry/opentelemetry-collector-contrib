@@ -88,8 +88,6 @@ all_set:
       enabled: true
     vcenter.resource_pool.name:
       enabled: true
-    vcenter.system.device.id:
-      enabled: true
     vcenter.vm.id:
       enabled: true
     vcenter.vm.name:
@@ -182,8 +180,6 @@ none_set:
     vcenter.host.name:
       enabled: false
     vcenter.resource_pool.name:
-      enabled: false
-    vcenter.system.device.id:
       enabled: false
     vcenter.vm.id:
       enabled: false

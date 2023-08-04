@@ -2304,15 +2304,6 @@ func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
 	}
 }
 
-// WithVcenterSystemDeviceID sets provided value as "vcenter.system.device.id" attribute for current resource.
-func WithVcenterSystemDeviceID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterSystemDeviceID.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.system.device.id", val)
-		}
-	}
-}
-
 // WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
 func WithVcenterVMID(val string) ResourceMetricsOption {
 	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {

@@ -202,7 +202,7 @@ func (v *vcenterMetricScraper) collectHost(
 		return
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
-	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
+	v.recordHostPerformanceMetrics(ctx, hwSum, cluster.Name(), host.Name(), errs)
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterHostName(host.Name())
 	rb.SetVcenterClusterName(cluster.Name())

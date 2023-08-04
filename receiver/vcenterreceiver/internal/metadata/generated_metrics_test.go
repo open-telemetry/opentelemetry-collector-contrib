@@ -250,6 +250,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 			rb := mb.NewResourceBuilder()
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
 			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
@@ -262,6 +263,9 @@ func TestMetricsBuilder(t *testing.T) {
 =======
 			metrics := mb.Emit(WithVcenterClusterName("attr-val"), WithVcenterDatastoreName("attr-val"), WithVcenterHostName("attr-val"), WithVcenterResourcePoolName("attr-val"), WithVcenterSystemDeviceID("attr-val"), WithVcenterVMID("attr-val"), WithVcenterVMName("attr-val"))
 >>>>>>> d566019df7 (Add new resource attribute)
+=======
+			metrics := mb.Emit(WithVcenterClusterName("attr-val"), WithVcenterDatastoreName("attr-val"), WithVcenterHostName("attr-val"), WithVcenterResourcePoolName("attr-val"), WithVcenterVMID("attr-val"), WithVcenterVMName("attr-val"))
+>>>>>>> 4e9e7cc8e6 (pre-rebase)
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -303,13 +307,6 @@ func TestMetricsBuilder(t *testing.T) {
 				enabledAttrCount++
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
-			attrVal, ok = rm.Resource().Attributes().Get("vcenter.system.device.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.VcenterSystemDeviceID.Enabled, ok)
-			if mb.resourceAttributesConfig.VcenterSystemDeviceID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
 			attrVal, ok = rm.Resource().Attributes().Get("vcenter.vm.id")
 			attrCount++
 			assert.Equal(t, mb.resourceAttributesConfig.VcenterVMID.Enabled, ok)
@@ -325,7 +322,7 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.EqualValues(t, "attr-val", attrVal.Str())
 			}
 			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 7)
+			assert.Equal(t, attrCount, 6)
 
 >>>>>>> d566019df7 (Add new resource attribute)
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())

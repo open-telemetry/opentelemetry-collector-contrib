@@ -33,10 +33,6 @@ resource_attributes:
     description: The instance UUID of the virtual machine.
     enabled: true
     type: string
-  vcenter.system.device.id:
-    description: The unique identifier of the specific hardware or virtual component being utilized in the vCenter environment.
-    enabled: true
-    type: string
 
 attributes:
   disk_state:

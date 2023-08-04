@@ -200,16 +200,16 @@ func (v *vcenterMetricScraper) recordVMPerformance(
 		return
 	}
 
-	v.processVMPerformanceMetrics(info, vmMain, clusterName, hostname, vm.Config.InstanceUuid)
+	v.processVMPerformanceMetrics(info, vmMain, clusterName, hostname)
 }
 
-func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, vmMain *object.VirtualMachine, clusterName, hostname, vmUUID string) {
+func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, vmMain *object.VirtualMachine, clusterName, hostname) {
 	for _, m := range info.results {
-		sort.Slice(m.Value, func(i, j int) bool {
-			return m.Value[i].Instance < m.Value[j].Instance
-		})
 		for idx, val := range m.Value {
 			for j, nestedValue := range val.Value {
+				if val.Instance != hostname {
+					continue
+				}
 				si := m.SampleInfo[j]
 				switch val.Name {
 				// Performance monitoring level 1 metrics
@@ -236,13 +236,9 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				case "disk.maxTotalLatency.latest":
 					v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue)
 				}
-			}
-			if idx >= 1 && val.Instance != m.Value[idx-1].Instance {
-				v.mb.EmitForResource(metadata.WithVcenterClusterName(clusterName),
-					metadata.WithVcenterHostName(hostname),
-					metadata.WithVcenterVMID(vmUUID),
-					metadata.WithVcenterVMName(vmMain.Name()),
-					metadata.WithVcenterSystemDeviceID(m.Value[idx-1].Instance))
+				if val.Instance == hostName {
+					break
+				}
 			}
 		}
 	}
@@ -250,12 +246,12 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 
 func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.EntityMetric, clusterName, hostName string) {
 	for _, m := range metrics {
-		sort.Slice(m.Value, func(i, j int) bool {
-			return m.Value[i].Instance < m.Value[j].Instance
-		})
-		for idx, val := range m.Value {
+		for _, val := range m.Value {
 			for j, nestedValue := range val.Value {
 				si := m.SampleInfo[j]
+				if val.Instance != hostName {
+					continue
+				}
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.usage.average":
@@ -288,10 +284,8 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 					v.mb.RecordVcenterHostDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite)
 				}
 			}
-			if idx >= 1 && val.Instance != m.Value[idx-1].Instance {
-				v.mb.EmitForResource(metadata.WithVcenterClusterName(clusterName),
-					metadata.WithVcenterHostName(hostName),
-					metadata.WithVcenterSystemDeviceID(m.Value[idx-1].Instance))
+			if val.Instance == hostName {
+				break
 			}
 		}
 	}
