@@ -222,8 +222,23 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetAwsVolumeID("aws.volume.id-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetFsType("fs.type-val")
+			rb.SetGcePdName("gce.pd.name-val")
+			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
+			rb.SetGlusterfsPath("glusterfs.path-val")
+			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodUID("k8s.pod.uid-val")
+			rb.SetK8sVolumeName("k8s.volume.name-val")
+			rb.SetK8sVolumeType("k8s.volume.type-val")
+			rb.SetPartition("partition-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

@@ -164,7 +164,6 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.82.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.82.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.82.0
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver v0.82.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.82.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.82.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.82.0
@@ -403,7 +402,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver => ../../receiver/pulsarreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver => ../../receiver/oracledbreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver => ../../receiver/cloudflarereceiver
-  - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver => ../../receiver/prometheusexecreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver => ../../receiver/windowseventlogreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver => ../../receiver/webhookeventreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver => ../../extension/observer/ecsobserver

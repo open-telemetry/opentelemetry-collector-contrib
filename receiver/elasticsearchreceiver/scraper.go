@@ -46,7 +46,6 @@ type elasticsearchScraper struct {
 	client      elasticsearchClient
 	settings    component.TelemetrySettings
 	cfg         *Config
-	rb          *metadata.ResourceBuilder
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
@@ -59,7 +58,6 @@ func newElasticSearchScraper(
 	return &elasticsearchScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
@@ -322,14 +320,15 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			now, info.Indices.SegmentsStats.TermsMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeTerm,
 		)
 
-		r.rb.SetElasticsearchClusterName(nodeStats.ClusterName)
-		r.rb.SetElasticsearchNodeName(info.Name)
+		rb := r.mb.NewResourceBuilder()
+		rb.SetElasticsearchClusterName(nodeStats.ClusterName)
+		rb.SetElasticsearchNodeName(info.Name)
 
 		if node, ok := nodesInfo.Nodes[id]; ok {
-			r.rb.SetElasticsearchNodeVersion(node.Version)
+			rb.SetElasticsearchNodeVersion(node.Version)
 		}
 
-		r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
+		r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -341,8 +340,9 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.scrapeClusterHealthMetrics(ctx, now, errs)
 	r.scrapeClusterStatsMetrics(ctx, now, errs)
 
-	r.rb.SetElasticsearchClusterName(r.clusterName)
-	r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetElasticsearchClusterName(r.clusterName)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -677,7 +677,8 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Total.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
-	r.rb.SetElasticsearchIndexName(name)
-	r.rb.SetElasticsearchClusterName(r.clusterName)
-	r.mb.EmitForResource(metadata.WithResource(r.rb.Emit()))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetElasticsearchIndexName(name)
+	rb.SetElasticsearchClusterName(r.clusterName)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

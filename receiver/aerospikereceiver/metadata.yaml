@@ -127,7 +127,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.node.connection.open:
     enabled: true
     description: Current number of open connections to the node
@@ -138,7 +138,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.node.query.tracked:
     enabled: true
     description: Number of queries tracked by the system.
@@ -148,7 +148,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.memory.usage:
     enabled: true
     description: Memory currently used by each component of the namespace
@@ -159,7 +159,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.memory.free:
     enabled: true
     description: Percentage of the namespace's memory which is still free
@@ -185,7 +185,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.query.count:
     enabled: true
     description: Number of query operations performed on the namespace
@@ -196,7 +196,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.geojson.region_query_cells:
     enabled: true
     description: Number of cell coverings for query region queried
@@ -206,7 +206,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.geojson.region_query_false_positive:
     enabled: true
     description: Number of points outside the region.
@@ -216,7 +216,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.geojson.region_query_points:
     enabled: true
     description: Number of points within the region.
@@ -226,7 +226,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.geojson.region_query_requests:
     enabled: true
     description: Number of geojson queries on the system since the uptime of the node.
@@ -236,7 +236,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   aerospike.namespace.transaction.count:
     enabled: true
     description: Number of transactions performed on the namespace
@@ -247,4 +247,4 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative

@@ -51,7 +51,7 @@ exporter/carbonexporter/                                 @open-telemetry/collect
 exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @oded-dd @povilasv @matej-g
-exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23
+exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13 @liustanley @songy23 @mackjmr
 exporter/datasetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom @tomaz-s1
 exporter/dynatraceexporter/                              @open-telemetry/collector-contrib-approvers @dyladan @arminru @evan-bradley
 exporter/elasticsearchexporter/                          @open-telemetry/collector-contrib-approvers @JaredTan95
@@ -195,6 +195,7 @@ receiver/filereceiver/                                   @open-telemetry/collect
 receiver/filestatsreceiver/                              @open-telemetry/collector-contrib-approvers @atoulme
 receiver/flinkmetricsreceiver/                           @open-telemetry/collector-contrib-approvers @jonathanwamsley @djaglowski
 receiver/fluentforwardreceiver/                          @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/gitproviderreceiver/                            @open-telemetry/collector-contrib-approvers @adrielp @astencel-sumo
 receiver/googlecloudpubsubreceiver/                      @open-telemetry/collector-contrib-approvers @alexvanboxel
 receiver/googlecloudspannerreceiver/                     @open-telemetry/collector-contrib-approvers @architjugran @varunraiko @kiranmayib
 receiver/haproxyreceiver/                                @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
@@ -223,7 +224,6 @@ receiver/oracledbreceiver/                               @open-telemetry/collect
 receiver/otlpjsonfilereceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/podmanreceiver/                                 @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
-receiver/prometheusexecreceiver/                         @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/prometheusreceiver/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 receiver/pulsarreceiver/                                 @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure

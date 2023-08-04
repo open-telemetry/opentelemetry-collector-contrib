@@ -27,7 +27,7 @@ metrics:
     unit: "{packets}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.network.dropped:
@@ -36,7 +36,7 @@ metrics:
     unit: "{packets}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.network.errors:
@@ -45,7 +45,7 @@ metrics:
     unit: "{errors}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.network.io:
@@ -54,7 +54,7 @@ metrics:
     unit: "By"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [device, direction]
   system.network.connections:
@@ -63,7 +63,7 @@ metrics:
     unit: "{connections}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [protocol, state]
   system.network.conntrack.count:
@@ -72,7 +72,7 @@ metrics:
     unit: "{entries}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   system.network.conntrack.max:
     enabled: false
@@ -80,5 +80,5 @@ metrics:
     unit: "{entries}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
