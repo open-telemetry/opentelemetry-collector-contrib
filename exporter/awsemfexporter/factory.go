@@ -18,7 +18,7 @@ import (
 )
 
 var defaultNoRollupfg = featuregate.GlobalRegistry().MustRegister("awsemf.nodimrollupdefault", featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.82.0"),
+	featuregate.WithRegisterFromVersion("v0.83.0"),
 	featuregate.WithRegisterDescription("Changes the default AWS EMF Exporter Dimension rollup option to "+
 		"NoDimensionRollup"))
 
