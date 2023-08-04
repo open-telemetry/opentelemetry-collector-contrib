@@ -26,10 +26,13 @@ Example:
 extensions:
   bearertokenauth/array01:
     token: "..."
+  bearertokenauth/array02:
+    token: "..."
 
 receivers:
-  purefa:
-    endpoint: http://172.0.0.1:9490/metrics
+  purefa/array01:
+    fa_array_name: foobar01
+    endpoint: http://127.0.0.1:9490/metrics
     array:
       - address: array01
         auth:
@@ -58,6 +61,44 @@ receivers:
         directories: 15s
         pods: 30s
         volumes: 25s
+
+  purefa/array02:
+    fa_array_name: foobar02
+    endpoint: http://127.0.0.1:9490/metrics
+    array:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    hosts:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    directories:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    pods:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    volumes:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    env: production
+    settings:
+      reload_intervals:
+        array: 15s
+        hosts: 15s
+        directories: 15s
+        pods: 30s
+        volumes: 25s
+
+service:
+  extensions: [bearertokenauth/array01,bearertokenauth/array02]
+  pipelines:
+    metrics:
+      receivers: [purefa/array01,purefa/array02]
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
