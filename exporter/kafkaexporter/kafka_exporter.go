@@ -18,12 +18,15 @@ import (
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errSingleJaegerSpanMessageSizeOverMaxMsgByte = fmt.Errorf("one jaeger span message big then max_message_bytes settings")
+var errSingleResourcesSpansMessageSizeOverMaxMsgByte = fmt.Errorf("one resourcesSpans message big then max_message_bytes settings")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler TracesMarshaler
+	config    *Config
 	logger    *zap.Logger
 }
 
@@ -37,19 +40,21 @@ func (ke kafkaErrors) Error() string {
 }
 
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	messages, err := e.marshaler.Marshal(td, e.topic)
+	messagesSlice, err := e.marshaler.Marshal(td, e.topic, e.config)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	err = e.producer.SendMessages(messages)
-	if err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+	for _, messages := range messagesSlice {
+		err = e.producer.SendMessages(messages)
+		if err != nil {
+			var prodErr sarama.ProducerErrors
+			if errors.As(err, &prodErr) {
+				if len(prodErr) > 0 {
+					return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+				}
 			}
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -63,6 +68,7 @@ type kafkaMetricsProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler MetricsMarshaler
+	config    *Config
 	logger    *zap.Logger
 }
 
@@ -70,6 +76,14 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 	messages, err := e.marshaler.Marshal(md, e.topic)
 	if err != nil {
 		return consumererror.NewPermanent(err)
+	}
+
+	messagesByte := 0
+	for _, message := range messages {
+		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
+		if messagesByte > e.config.Producer.MaxMessageBytes {
+			return errSingleResourcesSpansMessageSizeOverMaxMsgByte
+		}
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
@@ -93,6 +107,7 @@ type kafkaLogsProducer struct {
 	producer  sarama.SyncProducer
 	topic     string
 	marshaler LogsMarshaler
+	config    *Config
 	logger    *zap.Logger
 }
 
@@ -101,6 +116,15 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
+
+	messagesByte := 0
+	for _, message := range messages {
+		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
+		if messagesByte > e.config.Producer.MaxMessageBytes {
+			return errSingleResourcesSpansMessageSizeOverMaxMsgByte
+		}
+	}
+
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		var prodErr sarama.ProducerErrors
@@ -167,10 +191,16 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 		return nil, err
 	}
 
+	err = setKafkaProtoVersion(&config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &kafkaMetricsProducer{
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
+		config:    &config,
 		logger:    set.Logger,
 	}, nil
 
@@ -186,10 +216,17 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	if err != nil {
 		return nil, err
 	}
+
+	err = setKafkaProtoVersion(&config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &kafkaTracesProducer{
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
+		config:    &config,
 		logger:    set.Logger,
 	}, nil
 }
@@ -204,11 +241,35 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 		return nil, err
 	}
 
+	err = setKafkaProtoVersion(&config)
+	if err != nil {
+		return nil, err
+	}
+
 	return &kafkaLogsProducer{
 		producer:  producer,
 		topic:     config.Topic,
 		marshaler: marshaler,
+		config:    &config,
 		logger:    set.Logger,
 	}, nil
 
+}
+
+func setKafkaProtoVersion(config *Config) error {
+	if config.ProtocolVersion == "" {
+		config.Producer.protoVersion = 2
+		return nil
+	}
+	kafkaVersion, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+	if err != nil {
+		return err
+	}
+	// default use version V2 message(v2 message big then 36 bytes and v1 message big then 26bytes)
+	protoVersion := 2
+	if !kafkaVersion.IsAtLeast(sarama.V0_11_0_0) {
+		protoVersion = 1
+	}
+	config.Producer.protoVersion = protoVersion
+	return nil
 }

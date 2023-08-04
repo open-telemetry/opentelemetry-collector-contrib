@@ -75,6 +75,9 @@ type Producer struct {
 	// broker request. Defaults to 0 for unlimited. Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
 	FlushMaxMessages int `mapstructure:"flush_max_messages"`
+
+	// Kafka protocol version,
+	protoVersion int
 }
 
 // MetadataRetry defines retry configuration for Metadata.

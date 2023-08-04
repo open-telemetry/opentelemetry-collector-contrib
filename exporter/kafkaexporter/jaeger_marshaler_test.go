@@ -41,14 +41,14 @@ func TestJaegerMarshaler(t *testing.T) {
 	tests := []struct {
 		unmarshaler TracesMarshaler
 		encoding    string
-		messages    []*sarama.ProducerMessage
+		messages    [][]*sarama.ProducerMessage
 	}{
 		{
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerProtoSpanMarshaler{},
 			},
 			encoding: "jaeger_proto",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			messages: [][]*sarama.ProducerMessage{{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}}},
 		},
 		{
 			unmarshaler: jaegerMarshaler{
@@ -57,12 +57,12 @@ func TestJaegerMarshaler(t *testing.T) {
 				},
 			},
 			encoding: "jaeger_json",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			messages: [][]*sarama.ProducerMessage{{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td, "topic")
+			messages, err := test.unmarshaler.Marshal(td, "topic", &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}})
 			require.NoError(t, err)
 			assert.Equal(t, test.messages, messages)
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())

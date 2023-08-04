@@ -43,6 +43,24 @@ func newMockMarshaler[Data data](encoding string) *mockMarshaler[Data] {
 	return &mockMarshaler[Data]{encoding: encoding}
 }
 
+type mockTraceMarshaler[Data data] struct {
+	consume  func(d Data, topic string) ([][]*sarama.ProducerMessage, error)
+	encoding string
+}
+
+func (mm *mockTraceMarshaler[Data]) Encoding() string { return mm.encoding }
+
+func (mm *mockTraceMarshaler[Data]) Marshal(d Data, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
+	if mm.consume != nil {
+		return mm.consume(d, topic)
+	}
+	return nil, errors.New("not implemented")
+}
+
+func newMockTraceMarshaler[Data data](encoding string) *mockTraceMarshaler[Data] {
+	return &mockTraceMarshaler[Data]{encoding: encoding}
+}
+
 // applyConfigOption is used to modify values of the
 // the default exporter config to make it easier to
 // use the return in a test table set up
@@ -254,7 +272,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Encoding = "custom"
 			}),
 			marshalers: []TracesMarshaler{
-				newMockMarshaler[ptrace.Traces]("custom"),
+				newMockTraceMarshaler[ptrace.Traces]("custom"),
 			},
 			err: nil,
 		},

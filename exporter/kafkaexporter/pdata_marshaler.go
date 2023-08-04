@@ -73,17 +73,21 @@ type pdataTracesMarshaler struct {
 	encoding  string
 }
 
-func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalTraces(td)
 	if err != nil {
 		return nil, err
 	}
-	return []*sarama.ProducerMessage{
-		{
-			Topic: topic,
-			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+
+	message := &sarama.ProducerMessage{
+		Topic: topic,
+		Value: sarama.ByteEncoder(bts),
+	}
+	if message.ByteSize(config.Producer.protoVersion) > config.Producer.MaxMessageBytes {
+		return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+	}
+
+	return [][]*sarama.ProducerMessage{{message}}, nil
 }
 
 func (p pdataTracesMarshaler) Encoding() string {

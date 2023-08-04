@@ -132,6 +132,7 @@ func TestTracesPusher(t *testing.T) {
 	p := kafkaTracesProducer{
 		producer:  producer,
 		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -150,6 +151,7 @@ func TestTracesPusher_err(t *testing.T) {
 		producer:  producer,
 		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -164,6 +166,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 	p := kafkaTracesProducer{
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	err := p.tracesPusher(context.Background(), td)
@@ -179,6 +182,7 @@ func TestMetricsDataPusher(t *testing.T) {
 	p := kafkaMetricsProducer{
 		producer:  producer,
 		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -197,6 +201,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 		producer:  producer,
 		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -211,6 +216,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	p := kafkaMetricsProducer{
 		marshaler: &metricsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	md := testdata.GenerateMetricsTwoMetrics()
 	err := p.metricsDataPusher(context.Background(), md)
@@ -226,6 +232,7 @@ func TestLogsDataPusher(t *testing.T) {
 	p := kafkaLogsProducer{
 		producer:  producer,
 		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -244,6 +251,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 		producer:  producer,
 		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -258,6 +266,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	p := kafkaLogsProducer{
 		marshaler: &logsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}},
 	}
 	ld := testdata.GenerateLogsOneLogRecord()
 	err := p.logsDataPusher(context.Background(), ld)
@@ -287,7 +296,7 @@ func (e metricsErrorMarshaler) Encoding() string {
 
 var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
 
-func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string) ([]*sarama.ProducerMessage, error) {
+func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string, _ *Config) ([][]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
