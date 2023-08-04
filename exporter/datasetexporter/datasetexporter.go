@@ -67,8 +67,7 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 }
 
 func (e *DatasetExporter) shutdown(context.Context) error {
-	e.client.SendAllAddEventsBuffers()
-	return nil
+	return e.client.Shutdown()
 }
 
 func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) error {

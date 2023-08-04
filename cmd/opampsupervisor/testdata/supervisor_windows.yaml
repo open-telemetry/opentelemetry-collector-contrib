@@ -6,5 +6,12 @@ server:
     insecure_skip_verify: true 
     # For more TLS settings see config/configtls.TLSClientSetting
 
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+
 agent:
   executable: ../../bin/otelcontribcol_windows_amd64.exe

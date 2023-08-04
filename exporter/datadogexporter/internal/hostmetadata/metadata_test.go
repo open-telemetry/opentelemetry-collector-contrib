@@ -65,8 +65,8 @@ func TestFillHostMetadata(t *testing.T) {
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
 	require.NoError(t, err)
 
-	metadata := &payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
-	fillHostMetadata(params, pcfg, hostProvider, metadata)
+	metadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	fillHostMetadata(params, pcfg, hostProvider, &metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
 	assert.Equal(t, metadata.Flavor, "otelcontribcol")
@@ -74,13 +74,13 @@ func TestFillHostMetadata(t *testing.T) {
 	assert.Equal(t, metadata.Meta.Hostname, "hostname")
 	assert.ElementsMatch(t, metadata.Tags.OTel, []string{"key1:tag1", "key2:tag2", "env:prod"})
 
-	metadataWithVals := &payload.HostMetadata{
+	metadataWithVals := payload.HostMetadata{
 		InternalHostname: "my-custom-hostname",
 		Meta:             &payload.Meta{Hostname: "my-custom-hostname"},
 		Tags:             &payload.HostTags{},
 	}
 
-	fillHostMetadata(params, pcfg, hostProvider, metadataWithVals)
+	fillHostMetadata(params, pcfg, hostProvider, &metadataWithVals)
 	assert.Equal(t, metadataWithVals.InternalHostname, "my-custom-hostname")
 	assert.Equal(t, metadataWithVals.Flavor, "otelcontribcol")
 	assert.Equal(t, metadataWithVals.Version, "1.0")
@@ -200,7 +200,8 @@ func TestPushMetadata(t *testing.T) {
 	defer ts.Close()
 	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
+	pusher := NewPusher(mockExporterCreateSettings, pcfg)
+	err := pusher.Push(context.Background(), mockMetadata)
 	require.NoError(t, err)
 }
 
@@ -215,7 +216,8 @@ func TestFailPushMetadata(t *testing.T) {
 	defer ts.Close()
 	pcfg.MetricsEndpoint = ts.URL
 
-	err := pushMetadata(pcfg, mockExporterCreateSettings, &mockMetadata)
+	pusher := NewPusher(mockExporterCreateSettings, pcfg)
+	err := pusher.Push(context.Background(), mockMetadata)
 	require.Error(t, err)
 }
 
@@ -240,7 +242,7 @@ func TestPusher(t *testing.T) {
 	defer server.Close()
 	pcfg.MetricsEndpoint = server.URL
 
-	go Pusher(ctx, params, pcfg, hostProvider, attrs)
+	go RunPusher(ctx, params, pcfg, hostProvider, attrs)
 
 	body := <-server.MetadataChan
 	var recvMetadata payload.HostMetadata

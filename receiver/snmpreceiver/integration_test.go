@@ -96,7 +96,6 @@ var (
 )
 
 func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
-	t.Skip("See https://github.com/testcontainers/testcontainers-go/issues/1359")
 	require.NoError(t, req.Validate())
 	container, err := testcontainers.GenericContainer(
 		context.Background(),

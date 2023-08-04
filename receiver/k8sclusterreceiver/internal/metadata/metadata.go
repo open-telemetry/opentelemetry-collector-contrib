@@ -17,6 +17,8 @@ import (
 
 // KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
+	// The type of the entity, e.g. k8s.pod
+	EntityType string
 	// resourceIDKey is the label key of UID label for the resource.
 	ResourceIDKey string
 	// resourceID is the Kubernetes UID of the resource. In case of
@@ -62,6 +64,7 @@ func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	}
 
 	return &KubernetesMetadata{
+		EntityType:    getOTelEntityTypeFromKind(rType),
 		ResourceIDKey: GetOTelUIDFromKind(rType),
 		ResourceID:    metadataPkg.ResourceID(om.UID),
 		Metadata:      metadata,
@@ -74,6 +77,10 @@ func GetOTelUIDFromKind(kind string) string {
 
 func GetOTelNameFromKind(kind string) string {
 	return fmt.Sprintf("k8s.%s.name", kind)
+}
+
+func getOTelEntityTypeFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s", kind)
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to

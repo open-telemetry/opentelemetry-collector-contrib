@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -71,14 +71,20 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	return newPod
 }
 
-func GetMetrics(set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, pod *corev1.Pod) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mbphase.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
-	metrics := mbphase.Emit(imetadataphase.WithK8sNamespaceName(pod.Namespace), imetadataphase.WithK8sNodeName(pod.Spec.NodeName), imetadataphase.WithK8sPodName(pod.Name), imetadataphase.WithK8sPodUID(string(pod.UID)), imetadataphase.WithOpencensusResourcetype("k8s"))
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb.SetK8sNamespaceName(pod.Namespace)
+	rb.SetK8sNodeName(pod.Spec.NodeName)
+	rb.SetK8sPodName(pod.Name)
+	rb.SetK8sPodUID(string(pod.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	metrics := mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
-		specMetrics := container.GetSpecMetrics(set, c, pod)
+		specMetrics := container.GetSpecMetrics(set, metricsBuilderConfig, c, pod)
 		specMetrics.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
 	}
 
@@ -136,6 +142,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		podID: {
+			EntityType:    "k8s.pod",
 			ResourceIDKey: conventions.AttributeK8SPodUID,
 			ResourceID:    podID,
 			Metadata:      meta,

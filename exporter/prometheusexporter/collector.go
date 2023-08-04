@@ -30,18 +30,20 @@ type collector struct {
 	accumulator accumulator
 	logger      *zap.Logger
 
-	sendTimestamps bool
-	namespace      string
-	constLabels    prometheus.Labels
+	sendTimestamps    bool
+	addMetricSuffixes bool
+	namespace         string
+	constLabels       prometheus.Labels
 }
 
 func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
-		accumulator:    newAccumulator(logger, config.MetricExpiration),
-		logger:         logger,
-		namespace:      prometheustranslator.CleanUpString(config.Namespace),
-		sendTimestamps: config.SendTimestamps,
-		constLabels:    config.ConstLabels,
+		accumulator:       newAccumulator(logger, config.MetricExpiration),
+		logger:            logger,
+		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		sendTimestamps:    config.SendTimestamps,
+		constLabels:       config.ConstLabels,
+		addMetricSuffixes: config.AddMetricSuffixes,
 	}
 }
 
@@ -127,7 +129,7 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, attributes pcommon.
 	}
 
 	return prometheus.NewDesc(
-		prometheustranslator.BuildPromCompliantName(metric, c.namespace),
+		prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes),
 		metric.Description(),
 		keys,
 		c.constLabels,

@@ -26,42 +26,39 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider           docker.Provider
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider docker.Provider
+	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
 	dockerProvider, err := docker.NewProvider()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating detector: %w", err)
 	}
 
-	return &Detector{provider: dockerProvider, logger: p.Logger}, nil
+	return &Detector{
+		provider: dockerProvider,
+		logger:   p.Logger,
+		rb:       metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
 	osType, err := d.provider.OSType(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
 	hostname, err := d.provider.Hostname(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS hostname: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	if d.resourceAttributes.HostName.Enabled {
-		attrs.PutStr(conventions.AttributeHostName, hostname)
-	}
-	if d.resourceAttributes.OsType.Enabled {
-		attrs.PutStr(conventions.AttributeOSType, osType)
-	}
+	d.rb.SetHostName(hostname)
+	d.rb.SetOsType(osType)
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
