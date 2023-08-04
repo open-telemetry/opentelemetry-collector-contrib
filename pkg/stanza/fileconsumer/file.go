@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -31,7 +32,7 @@ type Manager struct {
 	cancel context.CancelFunc
 
 	readerFactory readerFactory
-	finder        MatchingCriteria
+	fileMatcher   *matcher.Matcher
 	roller        roller
 	persister     operator.Persister
 
@@ -56,12 +57,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 		return fmt.Errorf("read known files from database: %w", err)
 	}
 
-	if files, err := m.finder.findFiles(); err != nil {
-		m.Warnw("error occurred while finding files", "error", err.Error())
-	} else if len(files) == 0 {
-		m.Warnw("no files match the configured include patterns",
-			"include", m.finder.Include,
-			"exclude", m.finder.Exclude)
+	if _, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnw("finding files", "error", err.Error())
 	}
 
 	// Start polling goroutine
@@ -116,7 +113,7 @@ func (m *Manager) poll(ctx context.Context) {
 	batchesProcessed := 0
 
 	// Get the list of paths on disk
-	matches, err := m.finder.findFiles()
+	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Errorf("error finding files: %s", err)
 	}
