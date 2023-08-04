@@ -105,7 +105,9 @@ func (r *Receiver) HTTPHandler(rsp http.ResponseWriter, req *http.Request) {
 	b, err := io.ReadAll(req.Body)
 	if err != nil {
 		response := &Response{Status: failing, Msg: err.Error()}
-		ResponseWithJSON(rsp, response, http.StatusBadRequest)
+		if err2 := ResponseWithJSON(rsp, response, http.StatusBadRequest); err2 != nil {
+			fmt.Printf("cannot marshal error response, %v", err2)
+		}
 		return
 	}
 	var data []*v3.SegmentObject
@@ -126,7 +128,7 @@ type Response struct {
 	Msg    string `json:"msg"`
 }
 
-func ResponseWithJSON(rsp http.ResponseWriter, response *Response, code int) {
+func ResponseWithJSON(rsp http.ResponseWriter, response *Response, code int) error {
 	rsp.WriteHeader(code)
-	_ = json.NewEncoder(rsp).Encode(response)
+	return json.NewEncoder(rsp).Encode(response)
 }

@@ -145,7 +145,7 @@ func (h *otelMetricHelper) createMetric(resourceKey string, metricName string, m
 		newMetric.Sum().SetIsMonotonic(metricCfg.Sum.Monotonic)
 
 		switch metricCfg.Sum.Aggregation {
-		case "cumulative":
+		case cumulativeType:
 			newMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		case "delta":
 			newMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
@@ -184,7 +184,7 @@ func (h *otelMetricHelper) addMetricDataPoint(resourceKey string, metricName str
 	switch data.valueType {
 	case floatVal:
 		rawValue := data.value.(float64)
-		if valueType == "double" {
+		if valueType == doubleType {
 			dp.SetDoubleValue(rawValue)
 		} else {
 			dp.SetIntValue(int64(rawValue))

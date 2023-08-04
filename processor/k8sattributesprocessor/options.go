@@ -200,8 +200,8 @@ func withExtractAnnotations(annotations ...FieldExtractConfig) option {
 }
 
 func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.FieldExtractionRule, error) {
-	var rules []kube.FieldExtractionRule
-	for _, a := range fields {
+	rules := make([]kube.FieldExtractionRule, len(fields))
+	for i, a := range fields {
 		name := a.TagName
 
 		switch a.From {
@@ -250,9 +250,9 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			}
 		}
 
-		rules = append(rules, kube.FieldExtractionRule{
+		rules[i] = kube.FieldExtractionRule{
 			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
-		})
+		}
 	}
 	return rules, nil
 }

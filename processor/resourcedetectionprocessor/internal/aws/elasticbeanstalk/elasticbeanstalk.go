@@ -55,7 +55,7 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
 		// TODO: Log a more specific message with zap
-		return pcommon.NewResource(), "", nil
+		return pcommon.NewResource(), "", nil //nolint: errnil
 	}
 
 	ebmd := &EbMetaData{}

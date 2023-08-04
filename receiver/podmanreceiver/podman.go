@@ -63,7 +63,7 @@ func (pc *ContainerScraper) loadContainerList(ctx context.Context) error {
 	}
 	jsonFilter, err := json.Marshal(runningFilter)
 	if err != nil {
-		return nil
+		return err
 	}
 	params.Add("filters", string(jsonFilter))
 

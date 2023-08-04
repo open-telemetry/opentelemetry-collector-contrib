@@ -85,9 +85,9 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 }
 
 func (c *Config) hostlist() []string {
-	var hosts []string
-	for _, ep := range c.Hosts {
-		hosts = append(hosts, ep.Endpoint)
+	hosts := make([]string, len(c.Hosts))
+	for i, ep := range c.Hosts {
+		hosts[i] = ep.Endpoint
 	}
 	return hosts
 }

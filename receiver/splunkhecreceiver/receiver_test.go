@@ -1333,6 +1333,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.server.Handler.ServeHTTP(w, tt.req)
 			resp := w.Result()
+			defer resp.Body.Close()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			var bodyStr string

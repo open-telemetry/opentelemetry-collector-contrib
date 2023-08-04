@@ -253,8 +253,17 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 
 					extractedMetrics := pmetric.NewMetricSlice()
 					extractAndRemoveMatchedMetrics(extractedMetrics, transform.MetricIncludeFilter, metrics)
-					combinedMetric := combine(transform, extractedMetrics)
-					if transformMetric(combinedMetric, transform) {
+					combinedMetric, err := combine(transform, extractedMetrics)
+					if err != nil {
+						mtp.logger.Warn(err.Error())
+						continue
+					}
+					combined, err := transformMetric(combinedMetric, transform)
+					if err != nil {
+						mtp.logger.Warn(err.Error())
+						continue
+					}
+					if combined {
 						combinedMetric.MoveTo(metrics.AppendEmpty())
 					}
 				case Insert:
@@ -270,7 +279,12 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 							newMetric = pmetric.NewMetric()
 							metric.CopyTo(newMetric)
 						}
-						if transformMetric(newMetric, transform) {
+						transformed, err := transformMetric(newMetric, transform)
+						if err != nil {
+							mtp.logger.Warn(err.Error())
+							continue
+						}
+						if transformed {
 							newMetric.MoveTo(metrics.AppendEmpty())
 						}
 					}
@@ -280,8 +294,12 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 							return false
 						}
 
+						transformed, err := transformMetric(metric, transform)
+						if err != nil {
+							mtp.logger.Warn(err.Error())
+						}
 						// Drop the metric if all the data points were dropped after transformations.
-						return !transformMetric(metric, transform)
+						return !transformed
 					})
 				}
 			}
@@ -396,7 +414,7 @@ func metricAttributeKeys(metric pmetric.Metric) map[string]struct{} {
 
 // combine combines the metrics based on the supplied filter.
 // canBeCombined must be called before.
-func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.Metric {
+func combine(transform internalTransform, metrics pmetric.MetricSlice) (pmetric.Metric, error) {
 	firstMetric := metrics.At(0)
 
 	// create combined metric with relevant name & descriptor
@@ -435,9 +453,9 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 		}
 	}
 
-	groupMetrics(metrics, transform.AggregationType, combinedMetric)
+	err := groupMetrics(metrics, transform.AggregationType, combinedMetric)
 
-	return combinedMetric
+	return combinedMetric, err
 }
 
 func copyMetricDetails(from, to pmetric.Metric) {
@@ -523,7 +541,7 @@ func countDataPoints(metric pmetric.Metric) int {
 // transformMetric updates the metric content based on operations indicated in transform and returns a flag
 // specifying whether the metric is valid after applying the translations,
 // e.g. false is returned if all the data points were removed after applying the translations.
-func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
+func transformMetric(metric pmetric.Metric, transform internalTransform) (bool, error) {
 	isMetricEmpty := countDataPoints(metric) == 0
 	canChangeMetric := transform.Action != Update || matchAllDps(metric, transform.MetricIncludeFilter)
 
@@ -541,11 +559,17 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
 		case aggregateLabels:
 			if canChangeMetric {
-				aggregateLabelsOp(metric, op)
+				err := aggregateLabelsOp(metric, op)
+				if err != nil {
+					return false, err
+				}
 			}
 		case aggregateLabelValues:
 			if canChangeMetric {
-				aggregateLabelValuesOp(metric, op)
+				err := aggregateLabelValuesOp(metric, op)
+				if err != nil {
+					return false, err
+				}
 			}
 		case toggleScalarDataType:
 			toggleScalarDataTypeOp(metric, transform.MetricIncludeFilter)
@@ -563,5 +587,5 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 	}
 
 	// Consider metric invalid if all its data points were removed after applying the operations.
-	return isMetricEmpty || countDataPoints(metric) > 0
+	return isMetricEmpty || countDataPoints(metric) > 0, nil
 }

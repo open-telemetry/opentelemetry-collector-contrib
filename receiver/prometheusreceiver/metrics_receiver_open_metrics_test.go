@@ -61,7 +61,8 @@ func TestOpenMetricsPositive(t *testing.T) {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
 	targetsMap := getOpenMetricsPositiveTestData()
-	var targets []*testData
+	targets := make([]*testData, len(targetsMap))
+	i := 0
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -71,7 +72,8 @@ func TestOpenMetricsPositive(t *testing.T) {
 			validateFunc:    verifyPositiveTarget,
 			validateScrapes: true,
 		}
-		targets = append(targets, testData)
+		targets[i] = testData
+		i++
 	}
 
 	testComponent(t, targets, false, false, "")
@@ -94,7 +96,8 @@ func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics)
 func TestOpenMetricsFail(t *testing.T) {
 
 	targetsMap := getOpenMetricsFailTestData()
-	var targets []*testData
+	targets := make([]*testData, len(targetsMap))
+	i := 0
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -104,7 +107,8 @@ func TestOpenMetricsFail(t *testing.T) {
 			validateFunc:    verifyFailTarget,
 			validateScrapes: true,
 		}
-		targets = append(targets, testData)
+		targets[i] = testData
+		i++
 	}
 
 	testComponent(t, targets, false, false, "")
@@ -129,7 +133,8 @@ func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetri
 func TestOpenMetricsInvalid(t *testing.T) {
 
 	targetsMap := getOpenMetricsInvalidTestData()
-	var targets []*testData
+	targets := make([]*testData, len(targetsMap))
+	i := 0
 	for k, v := range targetsMap {
 		testData := &testData{
 			name: k,
@@ -139,7 +144,8 @@ func TestOpenMetricsInvalid(t *testing.T) {
 			validateFunc:    verifyInvalidTarget,
 			validateScrapes: true,
 		}
-		targets = append(targets, testData)
+		targets[i] = testData
+		i++
 	}
 
 	testComponent(t, targets, false, false, "")

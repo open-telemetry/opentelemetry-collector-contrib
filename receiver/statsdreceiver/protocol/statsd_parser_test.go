@@ -462,10 +462,10 @@ func testStatsDMetric(
 }
 
 func testDescription(name string, metricType MetricType, keys []string, values []string) statsDMetricDescription {
-	var kvs []attribute.KeyValue
+	kvs := make([]attribute.KeyValue, len(keys))
 	var sortable attribute.Sortable
 	for n, k := range keys {
-		kvs = append(kvs, attribute.String(k, values[n]))
+		kvs[n] = attribute.String(k, values[n])
 	}
 	return statsDMetricDescription{
 		name:       name,

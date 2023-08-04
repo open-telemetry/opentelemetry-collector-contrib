@@ -157,7 +157,7 @@ func sendSapm(
 	if tlsEnabled {
 		url = fmt.Sprintf("https://%s%s", endpoint, sapmprotocol.TraceEndpointV2)
 	}
-	req, _ := http.NewRequest(http.MethodPost, url, bytes.NewReader(reqBytes))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewReader(reqBytes))
 	req.Header.Set(sapmprotocol.ContentTypeHeaderName, sapmprotocol.ContentTypeHeaderValue)
 
 	// set headers for gzip
@@ -339,6 +339,7 @@ func TestReception(t *testing.T) {
 			var resp *http.Response
 			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.compression, tt.args.useTLS, "")
 			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, 200, resp.StatusCode)
 			t.Log("SAPM Request Received")
 
@@ -404,6 +405,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			var resp *http.Response
 			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
+			defer resp.Body.Close()
 			assert.Equal(t, 200, resp.StatusCode)
 
 			got := sink.AllTraces()

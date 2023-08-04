@@ -36,8 +36,8 @@ type container struct {
 }
 
 type event struct {
-	ID     string
-	Status string
+	ID     string `json:"ID"`
+	Status string `json:"Status"`
 }
 
 type containerStats struct {
@@ -63,12 +63,12 @@ type containerStats struct {
 }
 
 type containerStatsReportError struct {
-	Cause    string
-	Message  string
-	Response int64
+	Cause    string `json:"Cause"`
+	Message  string `json:"Message"`
+	Response int64  `json:"Response"`
 }
 
 type containerStatsReport struct {
-	Error containerStatsReportError
-	Stats []containerStats
+	Error containerStatsReportError `json:"Error"`
+	Stats []containerStats          `json:"Stats"`
 }

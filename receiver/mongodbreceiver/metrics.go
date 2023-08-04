@@ -16,6 +16,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
+const (
+	parallelBatchWriterMode    = "ParallelBatchWriterMode"
+	replicationStateTransition = "ReplicationStateTransition"
+)
+
 var errKeyNotFound = errors.New("could not find key for metric")
 
 var operationsMap = map[string]metadata.AttributeOperation{
@@ -34,14 +39,14 @@ var documentMap = map[string]metadata.AttributeOperation{
 }
 
 var lockTypeMap = map[string]metadata.AttributeLockType{
-	"ParallelBatchWriterMode":    metadata.AttributeLockTypeParallelBatchWriteMode,
-	"ReplicationStateTransition": metadata.AttributeLockTypeReplicationStateTransition,
-	"Global":                     metadata.AttributeLockTypeGlobal,
-	"Database":                   metadata.AttributeLockTypeDatabase,
-	"Collection":                 metadata.AttributeLockTypeCollection,
-	"Mutex":                      metadata.AttributeLockTypeMutex,
-	"Metadata":                   metadata.AttributeLockTypeMetadata,
-	"oplog":                      metadata.AttributeLockTypeOplog,
+	parallelBatchWriterMode:    metadata.AttributeLockTypeParallelBatchWriteMode,
+	replicationStateTransition: metadata.AttributeLockTypeReplicationStateTransition,
+	"Global":                   metadata.AttributeLockTypeGlobal,
+	"Database":                 metadata.AttributeLockTypeDatabase,
+	"Collection":               metadata.AttributeLockTypeCollection,
+	"Mutex":                    metadata.AttributeLockTypeMutex,
+	"Metadata":                 metadata.AttributeLockTypeMetadata,
+	"oplog":                    metadata.AttributeLockTypeOplog,
 }
 
 var lockModeMap = map[string]metadata.AttributeLockMode{
@@ -360,7 +365,7 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			// Continue if the lock type is not supported by current server's MongoDB version
-			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == parallelBatchWriterMode || lockTypeKey == replicationStateTransition) {
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "acquireCount", lockModeKey}
@@ -390,7 +395,7 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			// Continue if the lock type is not supported by current server's MongoDB version
-			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == parallelBatchWriterMode || lockTypeKey == replicationStateTransition) {
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "acquireWaitCount", lockModeKey}
@@ -420,7 +425,7 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			// Continue if the lock type is not supported by current server's MongoDB version
-			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == parallelBatchWriterMode || lockTypeKey == replicationStateTransition) {
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "timeAcquiringMicros", lockModeKey}
@@ -450,7 +455,7 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 	for lockTypeKey, lockTypeAttribute := range lockTypeMap {
 		for lockModeKey, lockModeAttribute := range lockModeMap {
 			// Continue if the lock type is not supported by current server's MongoDB version
-			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == "ParallelBatchWriterMode" || lockTypeKey == "ReplicationStateTransition") {
+			if s.mongoVersion.LessThan(mongo42) && (lockTypeKey == parallelBatchWriterMode || lockTypeKey == replicationStateTransition) {
 				continue
 			}
 			metricPath := []string{"locks", lockTypeKey, "deadlockCount", lockModeKey}

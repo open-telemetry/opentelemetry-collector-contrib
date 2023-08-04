@@ -133,11 +133,13 @@ func TestRedactSummaryDebug(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, len(redacted))
+	i := 0
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
-		deleted = append(deleted, k)
+		deleted[i] = k
+		i++
 	}
 	maskedKeys, ok := attr.Get(redactedKeys)
 	assert.True(t, ok)
@@ -188,11 +190,13 @@ func TestRedactSummaryInfo(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, len(redacted))
+	i := 0
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
-		deleted = append(deleted, k)
+		deleted[i] = k
+		i++
 	}
 	_, ok := attr.Get(redactedKeys)
 	assert.False(t, ok)
@@ -299,11 +303,13 @@ func TestMultipleBlockValues(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, len(redacted))
+	i := 0
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
-		deleted = append(deleted, k)
+		deleted[i] = k
+		i++
 	}
 	maskedKeys, ok := attr.Get(redactedKeys)
 	assert.True(t, ok)

@@ -21,6 +21,9 @@ const (
 	MockUsername = "otelu"
 	// MockPassword is the correct password for authentication to the Mock Server
 	MockPassword = "otelp"
+	folder       = "Folder"
+
+	hostSystem = `HostSystem`
 )
 
 var errNotFound = errors.New("not found")
@@ -111,7 +114,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 	}
 
 	switch {
-	case content == "group-d1" && contentType == "Folder":
+	case content == "group-d1" && contentType == folder:
 		return loadResponse("datacenter.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
@@ -141,7 +144,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 	case content == "PerfMgr" && contentType == "PerformanceManager":
 		return loadResponse("perf-manager.xml")
 
-	case content == "group-h5" && contentType == "Folder":
+	case content == "group-h5" && contentType == folder:
 		if propSetArray {
 			arr := specSet["propSet"].([]interface{})
 			for _, i := range arr {
@@ -160,7 +163,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 		}
 		return loadResponse("datastore-summary.xml")
 
-	case contentType == "HostSystem":
+	case contentType == hostSystem:
 		if ps, ok := propSet["pathSet"].([]interface{}); ok {
 			for _, v := range ps {
 				if v == "summary.hardware" {
@@ -179,7 +182,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 
 		}
 
-	case content == "group-v4" && contentType == "Folder":
+	case content == "group-v4" && contentType == folder:
 		if propSetArray {
 			return loadResponse("vm-group.xml")
 		}
@@ -194,7 +197,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 		}
 		return loadResponse("vm-properties.xml")
 
-	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
+	case (content == "group-v1034" || content == "group-v1001") && contentType == folder:
 		return loadResponse("vm-empty-folder.xml")
 
 	case contentType == "ResourcePool":
@@ -217,7 +220,7 @@ func routeRetreiveProperties(t *testing.T, body map[string]interface{}) ([]byte,
 			require.True(t, ok)
 			mObj := m["obj"].(map[string](interface{}))
 			typeString := mObj["-type"]
-			if typeString == "HostSystem" {
+			if typeString == hostSystem {
 				return loadResponse("host-names.xml")
 			}
 		}
@@ -232,7 +235,7 @@ func routePerformanceQuery(t *testing.T, body map[string]interface{}) ([]byte, e
 	querySpec := queryPerf["querySpec"].(map[string]interface{})
 	entity := querySpec["entity"].(map[string]interface{})
 	switch entity["-type"] {
-	case "HostSystem":
+	case hostSystem:
 		return loadResponse("host-performance-counters.xml")
 	case "VirtualMachine":
 		return loadResponse("vm-performance-counters.xml")

@@ -102,7 +102,7 @@ func (c *libpodClient) ping(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("ping response was %d", resp.StatusCode)
 	}

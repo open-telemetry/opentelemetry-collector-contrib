@@ -77,30 +77,31 @@ type interfaceInformation struct {
 }
 
 func (s *scraper) retrieve(ctx context.Context) ([]*nodeInfo, error) {
-	var r []*nodeInfo
+
 	errs := &scrapererror.ScrapeErrors{}
 
 	tNodes, err := s.client.TransportNodes(ctx)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
 	cNodes, err := s.client.ClusterNodes(ctx)
 	if err != nil {
-		return r, err
+		return nil, err
 	}
 
 	wg := &sync.WaitGroup{}
-	for _, n := range tNodes {
-		nodeInfo := &nodeInfo{
+	r := make([]*nodeInfo, len(tNodes))
+	for i, n := range tNodes {
+		ni := &nodeInfo{
 			nodeProps: n.NodeProperties,
 			nodeType:  "transport",
 		}
 		wg.Add(2)
-		go s.retrieveInterfaces(ctx, n.NodeProperties, nodeInfo, transportClass, wg, errs)
-		go s.retrieveNodeStats(ctx, n.NodeProperties, nodeInfo, transportClass, wg, errs)
+		go s.retrieveInterfaces(ctx, n.NodeProperties, ni, transportClass, wg, errs)
+		go s.retrieveNodeStats(ctx, n.NodeProperties, ni, transportClass, wg, errs)
 
-		r = append(r, nodeInfo)
+		r[i] = ni
 	}
 
 	for _, n := range cNodes {

@@ -42,9 +42,9 @@ func (r rowsWrapper) ColumnTypes() ([]colType, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []colType
-	for _, columnType := range types {
-		out = append(out, colWrapper{columnType})
+	out := make([]colType, len(types))
+	for i, columnType := range types {
+		out[i] = colWrapper{columnType}
 	}
 	return out, nil
 }

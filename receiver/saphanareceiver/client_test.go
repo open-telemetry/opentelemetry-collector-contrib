@@ -60,8 +60,8 @@ func (m *testDBWrapper) QueryContext(_ context.Context, query string) (resultWra
 }
 
 func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err error) {
-	var nullableResult [][]sql.NullString
-	for _, row := range results {
+	nullableResult := make([][]sql.NullString, len(results))
+	for i, row := range results {
 		var nullableRow []sql.NullString
 		for _, field := range row {
 			if field == nil {
@@ -71,7 +71,7 @@ func (m *testDBWrapper) mockQueryResult(query string, results [][]*string, err e
 			}
 		}
 
-		nullableResult = append(nullableResult, nullableRow)
+		nullableResult[i] = nullableRow
 	}
 	resultWrapper := &testResultWrapper{
 		contents: nullableResult,

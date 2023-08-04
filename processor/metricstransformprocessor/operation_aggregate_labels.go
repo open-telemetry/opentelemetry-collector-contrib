@@ -19,53 +19,63 @@ type aggGroups struct {
 }
 
 // aggregateLabelsOp aggregates points that have the labels excluded in label_set
-func aggregateLabelsOp(metric pmetric.Metric, mtpOp internalOperation) {
+func aggregateLabelsOp(metric pmetric.Metric, mtpOp internalOperation) error {
 	filterAttrs(metric, mtpOp.labelSetMap)
 	newMetric := pmetric.NewMetric()
 	copyMetricDetails(metric, newMetric)
-	ag := groupDataPoints(metric, aggGroups{})
+	ag, err := groupDataPoints(metric, aggGroups{})
+	if err != nil {
+		return err
+	}
 	mergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
 	newMetric.MoveTo(metric)
+	return nil
 }
 
 // groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
 // canBeCombined must be callled before.
-func groupMetrics(metrics pmetric.MetricSlice, aggType aggregationType, to pmetric.Metric) {
+func groupMetrics(metrics pmetric.MetricSlice, aggType aggregationType, to pmetric.Metric) error {
 	var ag aggGroups
 	for i := 0; i < metrics.Len(); i++ {
-		ag = groupDataPoints(metrics.At(i), ag)
+		var err error
+		ag, err = groupDataPoints(metrics.At(i), ag)
+		if err != nil {
+			return err
+		}
 	}
 	mergeDataPoints(to, aggType, ag)
+	return nil
 }
 
-func groupDataPoints(metric pmetric.Metric, ag aggGroups) aggGroups {
+func groupDataPoints(metric pmetric.Metric, ag aggGroups) (aggGroups, error) {
+	var err error
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		if ag.gauge == nil {
 			ag.gauge = map[string]pmetric.NumberDataPointSlice{}
 		}
-		groupNumberDataPoints(metric.Gauge().DataPoints(), false, ag.gauge)
+		err = groupNumberDataPoints(metric.Gauge().DataPoints(), false, ag.gauge)
 	case pmetric.MetricTypeSum:
 		if ag.sum == nil {
 			ag.sum = map[string]pmetric.NumberDataPointSlice{}
 		}
 		groupByStartTime := metric.Sum().AggregationTemporality() == pmetric.AggregationTemporalityDelta
-		groupNumberDataPoints(metric.Sum().DataPoints(), groupByStartTime, ag.sum)
+		err = groupNumberDataPoints(metric.Sum().DataPoints(), groupByStartTime, ag.sum)
 	case pmetric.MetricTypeHistogram:
 		if ag.histogram == nil {
 			ag.histogram = map[string]pmetric.HistogramDataPointSlice{}
 		}
 		groupByStartTime := metric.Histogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta
-		groupHistogramDataPoints(metric.Histogram().DataPoints(), groupByStartTime, ag.histogram)
+		err = groupHistogramDataPoints(metric.Histogram().DataPoints(), groupByStartTime, ag.histogram)
 	case pmetric.MetricTypeExponentialHistogram:
 		if ag.expHistogram == nil {
 			ag.expHistogram = map[string]pmetric.ExponentialHistogramDataPointSlice{}
 		}
 		groupByStartTime := metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta
-		groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), groupByStartTime, ag.expHistogram)
+		err = groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), groupByStartTime, ag.expHistogram)
 	}
-	return ag
+	return ag, err
 }
 
 func mergeDataPoints(to pmetric.Metric, aggType aggregationType, ag aggGroups) {
@@ -82,22 +92,26 @@ func mergeDataPoints(to pmetric.Metric, aggType aggregationType, ag aggGroups) {
 }
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) error {
 	var keyHashParts []interface{}
 	for i := 0; i < dps.Len(); i++ {
 		if useStartTime {
 			keyHashParts = []interface{}{dps.At(i).StartTimestamp().String()}
 		}
-		key := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).Timestamp(), keyHashParts...)
+		key, err := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).Timestamp(), keyHashParts...)
+		if err != nil {
+			return err
+		}
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewNumberDataPointSlice()
 		}
 		dps.At(i).MoveTo(dpsByAttrsAndTs[key].AppendEmpty())
 	}
+	return nil
 }
 
 func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) error {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+4)
@@ -109,16 +123,20 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 		}
 
 		keyHashParts = append(keyHashParts, dp.HasMin(), dp.HasMax(), uint32(dp.Flags()))
-		key := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
+		key, err := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
+		if err != nil {
+			return err
+		}
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewHistogramDataPointSlice()
 		}
 		dp.MoveTo(dpsByAttrsAndTs[key].AppendEmpty())
 	}
+	return nil
 }
 
 func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPointSlice, useStartTime bool,
-	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) {
+	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) error {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		keyHashParts := make([]interface{}, 0, 5)
@@ -127,12 +145,16 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 		if useStartTime {
 			keyHashParts = append(keyHashParts, dp.StartTimestamp().String())
 		}
-		key := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
+		key, err := dataPointHashKey(dps.At(i).Attributes(), dp.Timestamp(), keyHashParts...)
+		if err != nil {
+			return err
+		}
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
 			dpsByAttrsAndTs[key] = pmetric.NewExponentialHistogramDataPointSlice()
 		}
 		dp.MoveTo(dpsByAttrsAndTs[key].AppendEmpty())
 	}
+	return nil
 }
 
 func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
@@ -147,10 +169,11 @@ func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
 	})
 }
 
-func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface{}) string {
+func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface{}) (string, error) {
 	hashParts := []interface{}{atts.AsRaw(), ts.String()}
-	jsonStr, _ := json.Marshal(append(hashParts, other...))
-	return string(jsonStr)
+	jsonStr, err := json.Marshal(append(hashParts, other...))
+
+	return string(jsonStr), err
 }
 
 func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg aggregationType, to pmetric.NumberDataPointSlice) {

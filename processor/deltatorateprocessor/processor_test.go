@@ -183,7 +183,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 func generateSumMetrics(tm testMetric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	now := time.Now()
-	delta := time.Duration(tm.deltaSecond)
+	delta := time.Duration(tm.deltaSecond) * time.Second
 
 	rm := md.ResourceMetrics().AppendEmpty()
 	ms := rm.ScopeMetrics().AppendEmpty().Metrics()
@@ -203,7 +203,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 			for _, value := range tm.metricValues[i] {
 				dp := m.Sum().DataPoints().AppendEmpty()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta)))
 				dp.SetDoubleValue(value)
 			}
 		}
@@ -211,7 +211,7 @@ func generateSumMetrics(tm testMetric) pmetric.Metrics {
 			for _, value := range tm.metricIntValues[i] {
 				dp := m.Sum().DataPoints().AppendEmpty()
 				dp.SetStartTimestamp(pcommon.NewTimestampFromTime(now))
-				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta * time.Second)))
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(now.Add(delta)))
 				dp.SetIntValue(value)
 			}
 		}

@@ -148,7 +148,7 @@ func TestHttpReception(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
-	req, err := http.NewRequest("POST", "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", "http://127.0.0.1:12800/v3/segments", bytes.NewBuffer(traceJSON))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -157,6 +157,7 @@ func TestHttpReception(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot send data in sync mode: %v", err)
 	}
+	defer response.Body.Close()
 	// verify
 	assert.NoError(t, err, "send skywalking segment successful.")
 	assert.NotNil(t, response)

@@ -9,7 +9,7 @@ import (
 )
 
 // aggregateLabelValuesOp aggregates points that have the label values specified in aggregated_values
-func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
+func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) error {
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		val, ok := attrs.Get(mtpOp.configOperation.Label)
 		if !ok {
@@ -24,7 +24,11 @@ func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
 
 	newMetric := pmetric.NewMetric()
 	copyMetricDetails(metric, newMetric)
-	ag := groupDataPoints(metric, aggGroups{})
+	ag, err := groupDataPoints(metric, aggGroups{})
+	if err != nil {
+		return err
+	}
 	mergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
 	newMetric.MoveTo(metric)
+	return nil
 }

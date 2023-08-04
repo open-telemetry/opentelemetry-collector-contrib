@@ -96,9 +96,9 @@ func TestHandleReq(t *testing.T) {
 			req: func() *http.Request {
 				// create gzip encoded message
 				msgStruct := struct {
-					Field1 string
-					Field2 int
-					Field3 string
+					Field1 string `json:"Field1"`
+					Field2 int    `json:"Field2"`
+					Field3 string `json:"Field3"`
 				}{
 					Field1: "hello",
 					Field2: 42,
@@ -139,6 +139,7 @@ func TestHandleReq(t *testing.T) {
 			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
 
 			response := w.Result()
+			defer response.Body.Close()
 			_, err = io.ReadAll(response.Body)
 			require.NoError(t, err, "Failed to read message body")
 
@@ -221,6 +222,7 @@ func TestFailedReq(t *testing.T) {
 			r.handleReq(w, test.req, httprouter.ParamsFromContext(context.Background()))
 
 			response := w.Result()
+			defer response.Body.Close()
 			require.Equal(t, test.status, response.StatusCode)
 		})
 	}
@@ -243,5 +245,6 @@ func TestHealthCheck(t *testing.T) {
 	r.handleHealthCheck(w, httptest.NewRequest("GET", "http://localhost/health", nil), httprouter.ParamsFromContext(context.Background()))
 
 	response := w.Result()
+	defer response.Body.Close()
 	require.Equal(t, http.StatusOK, response.StatusCode)
 }

@@ -90,7 +90,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
           }
        ]
     }`)
-	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
 
@@ -187,7 +187,7 @@ func TestMetricsGrpcGatewayCors_endToEnd(t *testing.T) {
 }
 
 func verifyCorsResp(t *testing.T, url string, origin string, wantStatus int, wantAllowed bool) {
-	req, err := http.NewRequest(http.MethodOptions, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodOptions, url, nil)
 	require.NoError(t, err, "Error creating trace OPTIONS request: %v", err)
 	req.Header.Set("Origin", origin)
 	req.Header.Set("Access-Control-Request-Method", "POST")
@@ -302,8 +302,10 @@ func TestReceiveOnUnixDomainSocket_endToEnd(t *testing.T) {
 			},
 		},
 	}
-
-	response, err := c.Post("http://unix/v1/trace", "application/json", strings.NewReader(span))
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://unix/v1/trace", strings.NewReader(span))
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	response, err := c.Do(req)
 	require.NoError(t, err)
 	defer response.Body.Close()
 

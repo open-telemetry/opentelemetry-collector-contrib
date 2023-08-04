@@ -178,8 +178,10 @@ func TestExportMultiplexing(t *testing.T) {
 		nodeToKey(node2):          append(mL2, append(mLn2a, mLn2b...)...),
 	}
 
-	gotBlob, _ := json.Marshal(resultsMapping)
-	wantBlob, _ := json.Marshal(wantContents)
+	gotBlob, err := json.Marshal(resultsMapping)
+	require.NoError(t, err)
+	wantBlob, err := json.Marshal(wantContents)
+	require.NoError(t, err)
 	if !bytes.Equal(gotBlob, wantBlob) {
 		t.Errorf("Unequal serialization results\nGot:\n\t%s\nWant:\n\t%s\n", gotBlob, wantBlob)
 	}
@@ -321,8 +323,10 @@ func TestExportProtocolConformation_metricsInFirstMessage(t *testing.T) {
 		nodeToKey(ni): mLi,
 	}
 
-	gotBlob, _ := json.Marshal(resultsMapping)
-	wantBlob, _ := json.Marshal(wantContents)
+	gotBlob, err := json.Marshal(resultsMapping)
+	require.NoError(t, err)
+	wantBlob, err := json.Marshal(wantContents)
+	require.NoError(t, err)
 	if !bytes.Equal(gotBlob, wantBlob) {
 		t.Errorf("Unequal serialization results\nGot:\n\t%s\nWant:\n\t%s\n", gotBlob, wantBlob)
 	}

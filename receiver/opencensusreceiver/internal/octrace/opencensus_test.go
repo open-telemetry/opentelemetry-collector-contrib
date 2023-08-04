@@ -187,8 +187,10 @@ func TestExportMultiplexing(t *testing.T) {
 		for _, wantSpan := range wantSpans {
 			found := false
 			for _, gotSpan := range gotSpans {
-				wantStr, _ := json.Marshal(wantSpan)
-				gotStr, _ := json.Marshal(gotSpan)
+				wantStr, err := json.Marshal(wantSpan)
+				require.NoError(t, err)
+				gotStr, err := json.Marshal(gotSpan)
+				require.NoError(t, err)
 				if bytes.Equal(wantStr, gotStr) {
 					found = true
 				}
@@ -336,8 +338,10 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 		nodeToKey(ni): sLi,
 	}
 
-	gotBlob, _ := json.Marshal(resultsMapping)
-	wantBlob, _ := json.Marshal(wantContents)
+	gotBlob, err := json.Marshal(resultsMapping)
+	require.NoError(t, err)
+	wantBlob, err := json.Marshal(wantContents)
+	require.NoError(t, err)
 	if !bytes.Equal(gotBlob, wantBlob) {
 		t.Errorf("Unequal serialization results\nGot:\n\t%s\nWant:\n\t%s\n", gotBlob, wantBlob)
 	}

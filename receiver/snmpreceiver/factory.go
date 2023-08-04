@@ -18,6 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
 )
 
+const (
+	doubleType     = "double"
+	cumulativeType = "cumulative"
+)
+
 var errConfigNotSNMP = errors.New("config was not a SNMP receiver config")
 
 // NewFactory creates a new receiver factory for SNMP
@@ -91,14 +96,14 @@ func addMissingConfigDefaults(cfg *Config) error {
 			metricCfg.Unit = "1"
 		}
 		if metricCfg.Gauge != nil && metricCfg.Gauge.ValueType == "" {
-			metricCfg.Gauge.ValueType = "double"
+			metricCfg.Gauge.ValueType = doubleType
 		}
 		if metricCfg.Sum != nil {
 			if metricCfg.Sum.ValueType == "" {
-				metricCfg.Sum.ValueType = "double"
+				metricCfg.Sum.ValueType = doubleType
 			}
 			if metricCfg.Sum.Aggregation == "" {
-				metricCfg.Sum.Aggregation = "cumulative"
+				metricCfg.Sum.Aggregation = cumulativeType
 			}
 		}
 	}
