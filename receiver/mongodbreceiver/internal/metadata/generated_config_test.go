@@ -57,7 +57,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbUptime:                 MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					Database: ResourceAttributeConfig{Enabled: true},
+					Database:            ResourceAttributeConfig{Enabled: true},
+					MongodbDatabaseName: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -97,7 +98,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbUptime:                 MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					Database: ResourceAttributeConfig{Enabled: false},
+					Database:            ResourceAttributeConfig{Enabled: false},
+					MongodbDatabaseName: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -134,13 +136,15 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				Database: ResourceAttributeConfig{Enabled: true},
+				Database:            ResourceAttributeConfig{Enabled: true},
+				MongodbDatabaseName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				Database: ResourceAttributeConfig{Enabled: false},
+				Database:            ResourceAttributeConfig{Enabled: false},
+				MongodbDatabaseName: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

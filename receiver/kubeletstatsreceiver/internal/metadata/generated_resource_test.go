@@ -19,6 +19,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetGcePdName("gce.pd.name-val")
 			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
 			rb.SetGlusterfsPath("glusterfs.path-val")
+			rb.SetK8sClusterName("k8s.cluster.name-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -26,6 +27,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
 			rb.SetK8sVolumeName("k8s.volume.name-val")
 			rb.SetK8sVolumeType("k8s.volume.type-val")
 			rb.SetPartition("partition-val")
@@ -37,7 +40,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 16, res.Attributes().Len())
+				assert.Equal(t, 19, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -75,6 +78,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "glusterfs.path-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.cluster.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
@@ -109,6 +117,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.pod.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service_account.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service_account.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.volume.name")
 			assert.True(t, ok)
