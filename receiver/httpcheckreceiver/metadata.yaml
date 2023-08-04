@@ -34,7 +34,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: 1
     attributes: [http.url, http.status_code, http.method, http.status_class]
@@ -50,7 +50,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]

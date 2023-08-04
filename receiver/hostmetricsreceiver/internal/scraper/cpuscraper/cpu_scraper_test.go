@@ -335,7 +335,7 @@ func assertDatapointValueAndStringAttributes(t *testing.T, dp pmetric.NumberData
 func assertCPUMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	expected := pmetric.NewMetric()
 	expected.SetName("system.cpu.time")
-	expected.SetDescription("Total CPU seconds broken down by different states.")
+	expected.SetDescription("Total seconds each logical CPU spent on each mode.")
 	expected.SetUnit("s")
 	expected.SetEmptySum()
 	internal.AssertDescriptorEqual(t, expected, metric)
@@ -368,7 +368,7 @@ func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Met
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	expected := pmetric.NewMetric()
 	expected.SetName("system.cpu.utilization")
-	expected.SetDescription("Percentage of CPU time broken down by different states.")
+	expected.SetDescription("Difference in system.cpu.time since the last measurement, divided by the elapsed time and number of logical CPUs.")
 	expected.SetUnit("1")
 	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, metric)

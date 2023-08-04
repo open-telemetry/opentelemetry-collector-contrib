@@ -6,7 +6,7 @@
 | Stability     | [beta]: metrics   |
 |               | [development]: logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -23,6 +23,10 @@ receiver can be used to monitor a cluster.
 
 Currently this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
+
+## Metrics
+
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml and [documentation.md](./documentation.md).
 
 ## Configuration
 
@@ -61,6 +65,8 @@ The following allocatable resource types are available.
   - memory
   - ephemeral-storage
   - storage
+- `metrics`: Allows to enable/disable metrics.
+- `resource_attributes`: Allows to enable/disable resource attributes.
 
 Example:
 
@@ -69,6 +75,12 @@ Example:
     auth_type: kubeConfig
     node_conditions_to_report: [Ready, MemoryPressure]
     allocatable_types_to_report: [cpu, memory]
+  metrics:
+    k8s.container.cpu_limit:
+      enabled: false
+  resource_attributes:
+    container.id:
+      enabled: false
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

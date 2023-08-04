@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.uber.org/zap"
 
@@ -53,7 +52,7 @@ func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator
 	}
 
 	if c.IfExpr != "" {
-		compiled, err := expr.Compile(c.IfExpr, expr.AsBool(), expr.AllowUndefinedVariables())
+		compiled, err := ExprCompileBool(c.IfExpr)
 		if err != nil {
 			return TransformerOperator{}, fmt.Errorf("failed to compile expression '%s': %w", c.IfExpr, err)
 		}

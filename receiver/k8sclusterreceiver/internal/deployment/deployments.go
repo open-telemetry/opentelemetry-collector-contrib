@@ -14,8 +14,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -32,12 +32,12 @@ func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, dep *appsv1.Deployment) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(imetadata.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, dep *appsv1.Deployment) pmetric.Metrics {
+	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))
 	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas))
-	rb := imetadata.NewResourceBuilder(imetadata.DefaultResourceAttributesConfig())
+	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sDeploymentName(dep.Name)
 	rb.SetK8sDeploymentUID(string(dep.UID))
 	rb.SetK8sNamespaceName(dep.Namespace)
