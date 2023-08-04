@@ -31,7 +31,7 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                        = "OK"
+	responseOK                        = `{"text": "Success", "code": 0}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
@@ -376,8 +376,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		_, err := resp.Write(okRespBody)
-		if err != nil {
+		if _, err := resp.Write(okRespBody); err != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
 		}
 	}

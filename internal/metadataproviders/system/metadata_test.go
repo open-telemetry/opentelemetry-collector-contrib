@@ -62,14 +62,14 @@ func TestHostID(t *testing.T) {
 			name:     "empty host.id",
 			resValue: "",
 			resError: nil,
-			err:      "failed to obtain host id",
+			err:      `failed to obtain "host.id"`,
 			expected: "",
 		},
 		{
 			name:     "error",
 			resValue: "",
 			resError: fmt.Errorf("some error"),
-			err:      "failed to obtain host id: some error",
+			err:      `failed to obtain "host.id": some error`,
 			expected: "",
 		},
 	}

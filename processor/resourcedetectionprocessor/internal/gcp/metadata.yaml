@@ -51,3 +51,11 @@ resource_attributes:
     description: The k8s.cluster.name
     type: string
     enabled: true
+  gcp.cloud_run.job.execution:
+    description: The Job execution name
+    type: string
+    enabled: true
+  gcp.cloud_run.job.task_index:
+    description: The Job execution task index
+    type: string
+    enabled: true

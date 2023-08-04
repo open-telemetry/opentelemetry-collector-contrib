@@ -537,25 +537,25 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 
 	for _, op := range transform.Operations {
 		switch op.configOperation.Action {
-		case UpdateLabel:
+		case updateLabel:
 			updateLabelOp(metric, op, transform.MetricIncludeFilter)
-		case AggregateLabels:
+		case aggregateLabels:
 			if canChangeMetric {
 				aggregateLabelsOp(metric, op)
 			}
-		case AggregateLabelValues:
+		case aggregateLabelValues:
 			if canChangeMetric {
 				aggregateLabelValuesOp(metric, op)
 			}
-		case ToggleScalarDataType:
+		case toggleScalarDataType:
 			toggleScalarDataTypeOp(metric, transform.MetricIncludeFilter)
-		case ScaleValue:
+		case scaleValue:
 			scaleValueOp(metric, op, transform.MetricIncludeFilter)
-		case AddLabel:
+		case addLabel:
 			if canChangeMetric {
 				addLabelOp(metric, op)
 			}
-		case DeleteLabelValue:
+		case deleteLabelValue:
 			if canChangeMetric {
 				deleteLabelValueOp(metric, op)
 			}

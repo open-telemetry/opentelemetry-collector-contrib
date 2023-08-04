@@ -14,8 +14,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -24,13 +24,13 @@ const (
 	cronJobKeyConcurrencyPolicy = "concurrency_policy"
 )
 
-func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, cj *batchv1.CronJob) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
@@ -38,13 +38,13 @@ func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metric
 	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
 }
 
-func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
+func GetMetricsBeta(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, cj *batchv1beta1.CronJob) pmetric.Metrics {
+	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
 	ts := pcommon.NewTimestampFromTime(time.Now())
 
 	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)

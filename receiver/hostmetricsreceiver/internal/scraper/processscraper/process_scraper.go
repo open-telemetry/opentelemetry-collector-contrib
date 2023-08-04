@@ -43,7 +43,6 @@ const (
 type scraper struct {
 	settings           receiver.CreateSettings
 	config             *Config
-	rb                 *metadata.ResourceBuilder
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
 	excludeFS          filterset.FilterSet
@@ -89,7 +88,6 @@ func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper,
 }
 
 func (s *scraper) start(context.Context, component.Host) error {
-	s.rb = metadata.NewResourceBuilder(s.config.ResourceAttributes)
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
 	return nil
 }
@@ -154,7 +152,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			errs.AddPartial(signalMetricsLen, fmt.Errorf("error reading pending signals for process %q (pid %v): %w", md.executable.name, md.pid, err))
 		}
 
-		s.mb.EmitForResource(metadata.WithResource(md.buildResource(s.rb)),
+		s.mb.EmitForResource(metadata.WithResource(md.buildResource(s.mb.NewResourceBuilder())),
 			metadata.WithStartTimeOverride(pcommon.Timestamp(md.createTime*1e6)))
 	}
 
