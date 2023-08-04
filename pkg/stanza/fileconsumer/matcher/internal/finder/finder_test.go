@@ -8,10 +8,52 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFinder(t *testing.T) {
+func TestValidate(t *testing.T) {
+	cases := []struct {
+		name        string
+		globs       []string
+		expectedErr string
+	}{
+		{
+			name:  "Empty",
+			globs: []string{},
+		},
+		{
+			name:  "Single",
+			globs: []string{"*.log"},
+		},
+		{
+			name:  "Multiple",
+			globs: []string{"*.log", "*.txt"},
+		},
+		{
+			name:        "Invalid",
+			globs:       []string{"[a-z"},
+			expectedErr: "parse glob: syntax error in pattern",
+		},
+		{
+			name:        "ValidAndInvalid",
+			globs:       []string{"*.log", "[a-z"},
+			expectedErr: "parse glob: syntax error in pattern",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Validate(tc.globs)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestFindFiles(t *testing.T) {
 	cases := []struct {
 		name     string
 		files    []string
@@ -131,7 +173,7 @@ func TestFinder(t *testing.T) {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
 				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
 			}
-			require.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
+			assert.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
 		})
 	}
 }
