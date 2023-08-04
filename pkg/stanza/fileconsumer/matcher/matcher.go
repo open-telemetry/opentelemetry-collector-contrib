@@ -72,23 +72,23 @@ func New(c Criteria) (*Matcher, error) {
 	for _, sc := range c.OrderingCriteria.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
-			s, err := filter.SortNumeric(sc.RegexKey, sc.Ascending)
+			f, err := filter.SortNumeric(sc.RegexKey, sc.Ascending)
 			if err != nil {
 				return nil, fmt.Errorf("numeric sort: %w", err)
 			}
-			filterOpts = append(filterOpts, s)
+			filterOpts = append(filterOpts, f)
 		case sortTypeAlphabetical:
-			s, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
+			f, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
 			if err != nil {
 				return nil, fmt.Errorf("alphabetical sort: %w", err)
 			}
-			filterOpts = append(filterOpts, s)
+			filterOpts = append(filterOpts, f)
 		case sortTypeTimestamp:
-			s, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
+			f, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
 			if err != nil {
 				return nil, fmt.Errorf("timestamp sort: %w", err)
 			}
-			filterOpts = append(filterOpts, s)
+			filterOpts = append(filterOpts, f)
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
