@@ -82,7 +82,7 @@ func (ti *taskInfo) refresh(ctx context.Context) {
 
 	ecsTasksInfo := ti.getTasksInfo(ctx)
 	runningTaskCount := int64(0)
-	var tasks []ECSTask
+	tasks := make([]ECSTask, 0, len(ecsTasksInfo.Tasks))
 	for _, task := range ecsTasksInfo.Tasks {
 		if task.KnownStatus != taskStatusRunning {
 			continue

@@ -109,20 +109,19 @@ func New(clusterNameProvider clusterNameProvider, logger *zap.Logger, options ..
 
 // GetMetrics returns an array of metrics
 func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
-	var result []pmetric.Metrics
 
 	// don't generate any metrics if the current collector is not the leader
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	if !k.leading {
-		return result
+		return nil
 	}
 
 	// don't emit metrics if the cluster name is not detected
 	clusterName := k.clusterNameProvider.GetClusterName()
 	if clusterName == "" {
 		k.logger.Warn("Failed to detect cluster name. Drop all metrics")
-		return result
+		return nil
 	}
 
 	k.logger.Info("collect data from K8s API Server...")
@@ -143,9 +142,14 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	}
 	attributes[ci.SourcesKey] = "[\"apiserver\"]"
 	md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-	result = append(result, md)
+	serviceToPodNum := k.epClient.ServiceToPodNum()
+	namespaceToRunningPodNum := k.podClient.NamespaceToRunningPodNum()
 
-	for service, podNum := range k.epClient.ServiceToPodNum() {
+	result := make([]pmetric.Metrics, 1+len(serviceToPodNum)+len(namespaceToRunningPodNum))
+	result[0] = md
+	i := 1
+
+	for service, podNum := range serviceToPodNum {
 		fields := map[string]interface{}{
 			"service_number_of_running_pods": podNum,
 		}
@@ -164,10 +168,11 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-		result = append(result, md)
+		result[i] = md
+		i++
 	}
 
-	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
+	for namespace, podNum := range namespaceToRunningPodNum {
 		fields := map[string]interface{}{
 			"namespace_number_of_running_pods": podNum,
 		}
@@ -184,7 +189,8 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
-		result = append(result, md)
+		result[i] = md
+		i++
 	}
 
 	return result

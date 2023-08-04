@@ -42,8 +42,8 @@ func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSe
 	}
 }
 
-func (s *sparkScraper) start(_ context.Context, host component.Host) (err error) {
-	httpClient, err := newApacheSparkClient(s.config, host, s.settings)
+func (s *sparkScraper) start(ctx context.Context, host component.Host) (err error) {
+	httpClient, err := newApacheSparkClient(ctx, s.config, host, s.settings)
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
 	}

@@ -62,7 +62,7 @@ func parseResourceAttributes(endpoint string) (string, string, error) {
 }
 
 func createMetricsReceiver(
-	_ context.Context,
+	ctx context.Context,
 	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Metrics,
@@ -73,7 +73,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	ns := newApacheScraper(params, cfg, serverName, port)
+	ns := newApacheScraper(ctx, params, cfg, serverName, port)
 	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err

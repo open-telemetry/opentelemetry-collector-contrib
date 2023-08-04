@@ -4,6 +4,7 @@
 package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,19 +34,21 @@ type client interface {
 var _ client = (*apacheSparkClient)(nil)
 
 type apacheSparkClient struct {
+	ctx    context.Context
 	client *http.Client
 	cfg    *Config
 	logger *zap.Logger
 }
 
 // newApacheSparkClient creates a new client to make requests for the Apache Spark receiver.
-func newApacheSparkClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+func newApacheSparkClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
 	client, err := cfg.ToClient(host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
 
 	return &apacheSparkClient{
+		ctx:    ctx,
 		client: client,
 		cfg:    cfg,
 		logger: settings.Logger,
@@ -54,7 +57,7 @@ func newApacheSparkClient(cfg *Config, host component.Host, settings component.T
 
 // Get issues an authorized Get requests to the specified URL.
 func (c *apacheSparkClient) Get(path string) ([]byte, error) {
-	req, err := c.buildReq(path)
+	req, err := c.buildReq(c.ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -163,9 +166,9 @@ func (c *apacheSparkClient) JobStats(appID string) ([]models.Job, error) {
 	return jobStats, nil
 }
 
-func (c *apacheSparkClient) buildReq(path string) (*http.Request, error) {
+func (c *apacheSparkClient) buildReq(ctx context.Context, path string) (*http.Request, error) {
 	url := c.cfg.Endpoint + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

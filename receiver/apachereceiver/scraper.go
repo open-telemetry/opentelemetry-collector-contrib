@@ -29,9 +29,11 @@ type apacheScraper struct {
 	mb         *metadata.MetricsBuilder
 	serverName string
 	port       string
+	ctx        context.Context
 }
 
 func newApacheScraper(
+	ctx context.Context,
 	settings receiver.CreateSettings,
 	cfg *Config,
 	serverName string,
@@ -43,6 +45,7 @@ func newApacheScraper(
 		mb:         metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		serverName: serverName,
 		port:       port,
+		ctx:        ctx,
 	}
 
 	return a
@@ -141,7 +144,11 @@ func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {
 
 // GetStats collects metric stats by making a get request at an endpoint.
 func (r *apacheScraper) GetStats() (string, error) {
-	resp, err := r.httpClient.Get(r.cfg.Endpoint)
+	req, err := http.NewRequestWithContext(r.ctx, http.MethodGet, r.cfg.Endpoint, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := r.httpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
