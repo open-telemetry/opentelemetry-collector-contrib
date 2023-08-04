@@ -27,7 +27,6 @@ type worker struct {
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
 	logger           *zap.Logger
-	serviceName      string
 	loadSize         int
 }
 
