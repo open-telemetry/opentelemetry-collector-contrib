@@ -706,7 +706,7 @@ func Test_FunctionGetter(t *testing.T) {
 		Function    FunctionGetter[any]
 	}
 	type FuncArgs struct {
-		Input StringGetter[any]
+		Input StringGetter[any] `ottlarg:"0"`
 	}
 	tests := []struct {
 		name             string
@@ -783,7 +783,7 @@ func Test_FunctionGetter(t *testing.T) {
 				Replacement: tt.getter,
 				Function:    tt.function,
 			}
-			fn, err := editorArgs.Function.Get(context.Background(), &FuncArgs{Input: editorArgs.Replacement})
+			fn, err := editorArgs.Function.Get(&FuncArgs{Input: editorArgs.Replacement})
 			if tt.valid {
 				var result interface{}
 				result, err = fn.Eval(context.Background(), nil)

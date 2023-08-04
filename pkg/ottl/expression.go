@@ -246,37 +246,48 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 	}
 }
 
-// FunctionGetter is a Getter that must return an ExprFunc.
+// FunctionGetter uses a function factory to return an instantiated function as an Expr.
 type FunctionGetter[K any] interface {
-	Get(ctx context.Context, iArgs Arguments) (Expr[K], error)
+	Get(args Arguments) (Expr[K], error)
 }
 
-// StandardFunctionGetter is a basic implementation of FunctionGetter
+// StandardFunctionGetter is a basic implementation of FunctionGetter.
 type StandardFunctionGetter[K any] struct {
 	fCtx FunctionContext
 	fact Factory[K]
 }
 
-// Get retrieves an ExprFunc value.
-// If the value is not an ExprFunc a new Error is returned.
-// If there is an error getting the value it will be returned.
-func (g StandardFunctionGetter[K]) Get(_ context.Context, iArgs Arguments) (Expr[K], error) {
+// Get takes an Arguments struct containing arguments the caller wants passed to the
+// function and instantiates the function with those arguments.
+// If there is a mismatch between the function's signature and the arguments the caller
+// wants to pass to the function, an error is returned.
+func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	if g.fact == nil {
 		return Expr[K]{}, fmt.Errorf("undefined function")
 	}
 	fArgs := g.fact.CreateDefaultArguments()
+	if reflect.TypeOf(fArgs).Kind() != reflect.Pointer {
+		return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", g.fact.Name())
+	}
+	if reflect.TypeOf(args).Kind() != reflect.Pointer {
+		return Expr[K]{}, fmt.Errorf("%q must be pointer to an Arguments value", reflect.TypeOf(args).Kind())
+	}
 	fArgsVal := reflect.ValueOf(fArgs).Elem()
-	iArgsVal := reflect.ValueOf(iArgs).Elem()
-	if fArgsVal.NumField() != iArgsVal.NumField() {
-		return Expr[K]{}, fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", fArgsVal.NumField(), iArgsVal.NumField())
+	argsVal := reflect.ValueOf(args).Elem()
+	if fArgsVal.NumField() != argsVal.NumField() {
+		return Expr[K]{}, fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", fArgsVal.NumField(), argsVal.NumField())
 	}
 	for i := 0; i < fArgsVal.NumField(); i++ {
-		field := iArgsVal.Field(i)
-		_, err := checkForArgErrors(i, fArgsVal)
+		field := argsVal.Field(i)
+		argIndex, err := getArgumentIndex(i, argsVal)
 		if err != nil {
 			return Expr[K]{}, err
 		}
-		fArgsVal.Field(i).Set(field)
+		fArgIndex, err := getArgumentIndex(argIndex, fArgsVal)
+		if err != nil {
+			return Expr[K]{}, err
+		}
+		fArgsVal.Field(fArgIndex).Set(field)
 	}
 	fn, err := g.fact.CreateFunction(g.fCtx, fArgs)
 	if err != nil {
