@@ -76,7 +76,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resource, scope, logRecord := getTestLogRecord(t, tt.index)
+			resource, scope, logRecord := getTestLogRecord(tt.index)
 			logPacker := getLogPacker()
 			envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
@@ -112,7 +112,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 	mockTransportChannel := getMockTransportChannel()
 	exporter := getLogsExporter(defaultConfig, mockTransportChannel)
 
-	logs := getTestLogs(t)
+	logs := getTestLogs()
 
 	assert.NoError(t, exporter.onLogData(context.Background(), logs))
 
@@ -121,7 +121,7 @@ func TestExporterLogDataCallback(t *testing.T) {
 
 func TestLogDataAttributesMapping(t *testing.T) {
 	logPacker := getLogPacker()
-	resource, scope, logRecord := getTestLogRecord(t, 2)
+	resource, scope, logRecord := getTestLogRecord(2)
 	logRecord.Attributes().PutInt("attribute_1", 10)
 	logRecord.Attributes().PutStr("attribute_2", "value_2")
 	logRecord.Attributes().PutBool("attribute_3", true)
@@ -137,7 +137,7 @@ func TestLogDataAttributesMapping(t *testing.T) {
 }
 
 func TestLogRecordToEnvelopeResourceAttributes(t *testing.T) {
-	resource, scope, logRecord := getTestLogRecord(t, 1)
+	resource, scope, logRecord := getTestLogRecord(1)
 	logPacker := getLogPacker()
 
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
@@ -151,7 +151,7 @@ func TestLogRecordToEnvelopeInstrumentationScope(t *testing.T) {
 	const aiInstrumentationLibraryNameConvention = "instrumentationlibrary.name"
 	const aiInstrumentationLibraryVersionConvention = "instrumentationlibrary.version"
 
-	resource, scope, logRecord := getTestLogRecord(t, 1)
+	resource, scope, logRecord := getTestLogRecord(1)
 	logPacker := getLogPacker()
 
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
@@ -165,7 +165,7 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	const aiCloudRoleConvention = "ai.cloud.role"
 	const aiCloudRoleInstanceConvention = "ai.cloud.roleInstance"
 
-	resource, scope, logRecord := getTestLogRecord(t, 1)
+	resource, scope, logRecord := getTestLogRecord(1)
 	logPacker := getLogPacker()
 
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
@@ -189,7 +189,7 @@ func getLogPacker() *logPacker {
 	return newLogPacker(zap.NewNop())
 }
 
-func getTestLogs(tb testing.TB) plog.Logs {
+func getTestLogs() plog.Logs {
 	logs := plog.NewLogs()
 
 	// add the resource
@@ -247,15 +247,14 @@ func getTestLogs(tb testing.TB) plog.Logs {
 	return logs
 }
 
-func getTestLogRecord(tb testing.TB, index int) (pcommon.Resource, pcommon.InstrumentationScope, plog.LogRecord) {
-	var logRecord plog.LogRecord
-	logs := getTestLogs(tb)
+func getTestLogRecord(index int) (pcommon.Resource, pcommon.InstrumentationScope, plog.LogRecord) {
+	logs := getTestLogs()
 	resourceLogs := logs.ResourceLogs()
 	resource := resourceLogs.At(0).Resource()
 	scopeLogs := resourceLogs.At(0).ScopeLogs()
 	scope := scopeLogs.At(0).Scope()
 	logRecords := scopeLogs.At(0).LogRecords()
-	logRecord = logRecords.At(index)
+	logRecord := logRecords.At(index)
 
 	return resource, scope, logRecord
 }
