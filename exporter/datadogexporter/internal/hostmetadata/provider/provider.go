@@ -38,10 +38,10 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 		provider := p.providers[source]
 		replies[i] = make(chan reply)
 		p.logger.Debug("Trying out source provider", zap.String("provider", source))
-		go func(i int, source string) {
+		go func(i int) {
 			src, err := provider.Source(ctx)
 			replies[i] <- reply{src: src, err: err}
-		}(i, source)
+		}(i)
 	}
 
 	// Check provider responses in order to ensure priority
