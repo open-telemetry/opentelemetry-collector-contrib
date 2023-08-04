@@ -21,7 +21,7 @@ type LeaderElectionConfig struct {
 	// LockName determines the name of the resource that leader election will use for holding the leader lock.
 	LockName      string        `mapstructure:"lock_name"`
 	LeaseDuration time.Duration `mapstructure:"lease_duration"`
-	RenewDeadline time.Duration `mapstructure:"re_new_deadline"`
+	RenewDeadline time.Duration `mapstructure:"renew_deadline"`
 	RetryPeriod   time.Duration `mapstructure:"retry_period"`
 }
 
@@ -77,8 +77,8 @@ func getInClusterNamespace() (string, error) {
 }
 
 // NewLeaderElector return  a leader elector object using client-go
-func NewLeaderElector(leaderElectionCfg LeaderElectionConfig, client kubernetes.Interface, startFunc func(context.Context), stopFunc func()) (*leaderelection.LeaderElector, error) {
-	resourceLock, err := newResourceLock(client, leaderElectionCfg.LockName)
+func NewLeaderElector(cfg LeaderElectionConfig, client kubernetes.Interface, startFunc func(context.Context), stopFunc func()) (*leaderelection.LeaderElector, error) {
+	resourceLock, err := newResourceLock(client, cfg.LockName)
 	if err != nil {
 		return &leaderelection.LeaderElector{}, err
 	}
@@ -94,16 +94,16 @@ func NewLeaderElector(leaderElectionCfg LeaderElectionConfig, client kubernetes.
 		},
 	}
 
-	if leaderElectionCfg.LeaseDuration >= 0 {
-		leConfig.LeaseDuration = leaderElectionCfg.LeaseDuration
+	if cfg.LeaseDuration != 0 {
+		leConfig.LeaseDuration = cfg.LeaseDuration
 	}
 
-	if leaderElectionCfg.RenewDeadline >= 0 {
-		leConfig.RenewDeadline = leaderElectionCfg.RenewDeadline
+	if cfg.RenewDeadline != 0 {
+		leConfig.RenewDeadline = cfg.RenewDeadline
 	}
 
-	if leaderElectionCfg.RetryPeriod >= 0 {
-		leConfig.RetryPeriod = leaderElectionCfg.RetryPeriod
+	if cfg.RetryPeriod != 0 {
+		leConfig.RetryPeriod = cfg.RetryPeriod
 	}
 
 	return leaderelection.NewLeaderElector(leConfig)

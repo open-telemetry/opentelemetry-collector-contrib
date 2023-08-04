@@ -55,11 +55,13 @@ The following is example configuration
 ```
 
 Brief description of configuration properties:
-- `leader_election`: running in Kubernetes with `leader election mode`, this means that multiple instances are running, but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
+- `leader_election`: running in Kubernetes with `leader election mode`, this means that multiple instances are running, 
+but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
+*Note*: We need to add additional permissions in RBAC to perform `leader election mode`, See below [Leader Election RBAC](#RBAC-Leader-Election) for more information.
   - `enabled` (default = `false`): whether run in leader election mode.
   - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.
   - `lease_duration` (default = `15s`): the duration that non-leader candidates will wait to force acquire leadership.
-  - `re_new_deadline` (default = `10s`): the duration that the acting master will retry refreshing leadership before giving up.
+  - `renew_deadline` (default = `10s`): the duration that the acting master will retry refreshing leadership before giving up.
   - `retry_period` (default = `2s`): the duration the LeaderElector clients should wait between tries of actions. 
 - `auth_type` (default = `serviceAccount`): Determines how to authenticate to
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
@@ -152,6 +154,46 @@ metadata:
   labels:
     app: otelcontribcol
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - events
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups: 
+  - "events.k8s.io"
+  resources:
+  - events
+  verbs:
+  - watch
+EOF
+```
+
+### RBAC-Leader-Election
+
+Use the below commands to create a `ClusterRole` with `leader election` required permissions and a
+`ClusterRoleBinding` to grant the role to the service account created above.
+
+```bash
+<<EOF | kubectl apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otelcontribcol
+  labels:
+    app: otelcontribcol
+rules:
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - create
+  - get
+  - update
 - apiGroups:
   - ""
   resources:

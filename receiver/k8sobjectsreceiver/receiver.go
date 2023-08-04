@@ -75,9 +75,9 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		if config.LeaderElection.LockName == "" {
 			nameWithID := strings.Split(params.ID.String(), "/")
 			if len(nameWithID) > 1 {
-				config.LeaderElection.LockName = strings.Join(nameWithID, "-")
+				objReceiver.leaderElection.LockName = strings.Join(nameWithID, "-")
 			} else {
-				config.LeaderElection.LockName = nameWithID[0]
+				objReceiver.leaderElection.LockName = nameWithID[0]
 			}
 		}
 	}
@@ -109,7 +109,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 				leaderLost <- struct{}{}
 			})
 		if err != nil {
-			kr.logger.Error("create leader elector failed")
+			kr.logger.Error("create leader elector failed", zap.Error(err))
 		}
 		go lr.Run(ctx)
 	} else {
