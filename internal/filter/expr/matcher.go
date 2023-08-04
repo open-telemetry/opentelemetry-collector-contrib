@@ -28,12 +28,10 @@ func Not[K any](matcher BoolExpr[K]) BoolExpr[K] {
 }
 
 // A BoolExpr wrapper that is the logical OR on a list of matches, `matchers`
-type orMatcher[K any] struct {
-	matchers []BoolExpr[K]
-}
+type orMatcher[K any] []BoolExpr[K]
 
 func (om orMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for _, matcher := range om.matchers {
+	for _, matcher := range om {
 		ret, err := matcher.Eval(ctx, tCtx)
 		if err != nil {
 			return false, err
@@ -53,17 +51,15 @@ func Or[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 	case 1:
 		return matchers[0]
 	default:
-		return orMatcher[K]{matchers: matchers}
+		return orMatcher[K](matchers)
 	}
 }
 
 // A BoolExpr wrapper that is the logical AND on a list of matches, `matchers`
-type andMatcher[K any] struct {
-	matchers []BoolExpr[K]
-}
+type andMatcher[K any] []BoolExpr[K]
 
 func (am andMatcher[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
-	for _, matcher := range am.matchers {
+	for _, matcher := range am {
 		ret, err := matcher.Eval(ctx, tCtx)
 		if err != nil {
 			return false, err
@@ -83,6 +79,6 @@ func And[K any](matchers ...BoolExpr[K]) BoolExpr[K] {
 	case 1:
 		return matchers[0]
 	default:
-		return andMatcher[K]{matchers: matchers}
+		return andMatcher[K](matchers)
 	}
 }
