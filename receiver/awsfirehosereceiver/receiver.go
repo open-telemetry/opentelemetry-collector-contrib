@@ -275,7 +275,11 @@ func (fmr *firehoseReceiver) sendResponse(w http.ResponseWriter, requestID strin
 		Timestamp:    time.Now().UnixMilli(),
 		ErrorMessage: errorMessage,
 	}
-	payload, _ := json.Marshal(body)
+	payload, err := json.Marshal(body)
+	if err != nil {
+		fmr.settings.Logger.Error("Failed to marshall body", zap.Error(err))
+		return
+	}
 	w.Header().Set(headerContentType, "application/json")
 	w.Header().Set(headerContentLength, fmt.Sprintf("%d", len(payload)))
 	w.WriteHeader(statusCode)

@@ -30,7 +30,7 @@ func TestSplitHeaderBodyWithSeparatorDoesNotExist(t *testing.T) {
 
 	_, _, err := SplitHeaderBody(buf)
 
-	var errRecv *recvErr.ErrRecoverable
+	var errRecv *recvErr.RecoverableError
 	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
 	assert.EqualError(t, err,
 		fmt.Sprintf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
@@ -40,7 +40,7 @@ func TestSplitHeaderBodyWithSeparatorDoesNotExist(t *testing.T) {
 func TestSplitHeaderBodyNilBuf(t *testing.T) {
 	_, _, err := SplitHeaderBody(nil)
 
-	var errRecv *recvErr.ErrRecoverable
+	var errRecv *recvErr.RecoverableError
 	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
 	assert.EqualError(t, err, "buffer to split is nil",
 		"expected error messages")
@@ -51,7 +51,7 @@ func TestSplitHeaderBodyNonJsonHeader(t *testing.T) {
 
 	_, _, err := SplitHeaderBody(buf)
 
-	var errRecv *recvErr.ErrRecoverable
+	var errRecv *recvErr.RecoverableError
 	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
 	assert.Contains(t, err.Error(), "invalid character 'o'")
 }
@@ -75,7 +75,7 @@ func TestSplitHeaderBodyInvalidJsonHeader(t *testing.T) {
 	_, _, err := SplitHeaderBody(buf)
 	assert.Error(t, err, "should fail because version is invalid")
 
-	var errRecv *recvErr.ErrRecoverable
+	var errRecv *recvErr.RecoverableError
 	assert.True(t, errors.As(err, &errRecv), "should return recoverable error")
 	assert.Contains(t, err.Error(),
 		fmt.Sprintf("invalid header %+v", Header{

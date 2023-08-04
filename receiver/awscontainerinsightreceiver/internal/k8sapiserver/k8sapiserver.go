@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	lockName = "otel-container-insight-clusterleader"
+	apiServer = `["apiserver"]`
+	lockName  = "otel-container-insight-clusterleader"
 )
 
 // eventBroadcaster is adpated from record.EventBroadcaster
@@ -140,7 +141,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	if k.nodeName != "" {
 		attributes["NodeName"] = k.nodeName
 	}
-	attributes[ci.SourcesKey] = "[\"apiserver\"]"
+	attributes[ci.SourcesKey] = apiServer
 	md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 	serviceToPodNum := k.epClient.ServiceToPodNum()
 	namespaceToRunningPodNum := k.podClient.NamespaceToRunningPodNum()
@@ -164,7 +165,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
-		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		attributes[ci.SourcesKey] = apiServer
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
@@ -186,7 +187,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 		if k.nodeName != "" {
 			attributes["NodeName"] = k.nodeName
 		}
-		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		attributes[ci.SourcesKey] = apiServer
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\"}", namespace)
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		result[i] = md

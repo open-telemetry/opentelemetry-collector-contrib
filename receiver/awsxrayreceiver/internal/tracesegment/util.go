@@ -22,7 +22,7 @@ const ProtocolSeparator = '\n'
 // 2. header is valid
 func SplitHeaderBody(buf []byte) (*Header, []byte, error) {
 	if buf == nil {
-		return nil, nil, &recvErr.ErrRecoverable{
+		return nil, nil, &recvErr.RecoverableError{
 			Err: errors.New("buffer to split is nil"),
 		}
 	}
@@ -30,7 +30,7 @@ func SplitHeaderBody(buf []byte) (*Header, []byte, error) {
 	var headerBytes, bodyBytes []byte
 	loc := bytes.IndexByte(buf, byte(ProtocolSeparator))
 	if loc == -1 {
-		return nil, nil, &recvErr.ErrRecoverable{
+		return nil, nil, &recvErr.RecoverableError{
 			Err: fmt.Errorf("unable to split incoming data as header and segment, incoming bytes: %v", buf),
 		}
 	}
@@ -41,9 +41,9 @@ func SplitHeaderBody(buf []byte) (*Header, []byte, error) {
 	err := json.Unmarshal(headerBytes, &header)
 	if err != nil {
 		return nil, nil, fmt.Errorf("invalid header %w",
-			&recvErr.ErrRecoverable{Err: err})
+			&recvErr.RecoverableError{Err: err})
 	} else if !header.IsValid() {
-		return nil, nil, &recvErr.ErrRecoverable{
+		return nil, nil, &recvErr.RecoverableError{
 			Err: fmt.Errorf("invalid header %+v", header),
 		}
 	}

@@ -21,16 +21,16 @@ type ecsTaskInfoProvider interface {
 }
 
 type ECSContainer struct {
-	DockerID string
+	DockerID string `json:"DockerID"`
 }
 type ECSTask struct {
-	KnownStatus string
-	ARN         string
-	Containers  []ECSContainer
+	KnownStatus string         `json:"KnownStatus"`
+	ARN         string         `json:"ARN"`
+	Containers  []ECSContainer `json:"Containers"`
 }
 
 type ECSTasksInfo struct {
-	Tasks []ECSTask
+	Tasks []ECSTask `json:"Tasks"`
 }
 
 type taskInfo struct {

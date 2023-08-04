@@ -146,19 +146,19 @@ func (p *poller) read(buf *[]byte) (int, error) {
 	var netErr net.Error
 	if errors.As(err, &netErr) {
 		if !netErr.Timeout() {
-			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrIrrecoverable{Err: netErr})
+			return -1, fmt.Errorf("read from UDP socket: %w", &recvErr.IrrecoverableError{Err: netErr})
 		}
 	}
 
-	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.ErrRecoverable{Err: err})
+	return 0, fmt.Errorf("read from UDP socket: %w", &recvErr.RecoverableError{Err: err})
 }
 
 func (p *poller) poll() {
 	defer p.wg.Done()
 	buffer := make([]byte, pollerBufferSizeKB)
 	var (
-		errRecv   *recvErr.ErrRecoverable
-		errIrrecv *recvErr.ErrIrrecoverable
+		errRecv   *recvErr.RecoverableError
+		errIrrecv *recvErr.IrrecoverableError
 	)
 
 	for {

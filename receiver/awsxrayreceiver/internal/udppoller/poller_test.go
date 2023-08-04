@@ -165,7 +165,7 @@ func TestIncompletePacketNoSeparator(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
-		var errRecv *internalErr.ErrRecoverable
+		var errRecv *internalErr.RecoverableError
 
 		return strings.Contains(lastEntry.Message, "Failed to split segment header and body") &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
@@ -218,7 +218,7 @@ func TestNonJsonHeader(t *testing.T) {
 	err = writePacket(t, addr, "nonJson\nBody")
 	assert.NoError(t, err, "can not write packet in the TestNonJsonHeader case")
 	assert.Eventuallyf(t, func() bool {
-		var errRecv *internalErr.ErrRecoverable
+		var errRecv *internalErr.RecoverableError
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 
@@ -250,7 +250,7 @@ func TestJsonInvalidHeader(t *testing.T) {
 		fmt.Sprintf(`{"format": "%s", "version": 1}`, randString.String())+"\nBody")
 	assert.NoError(t, err, "can not write packet in the TestJsonInvalidHeader case")
 	assert.Eventuallyf(t, func() bool {
-		var errRecv *internalErr.ErrRecoverable
+		var errRecv *internalErr.RecoverableError
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
 		return lastEntry.Message == "Failed to split segment header and body" &&
@@ -295,7 +295,7 @@ func TestSocketReadIrrecoverableNetError(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
-		var errIrrecv *internalErr.ErrIrrecoverable
+		var errIrrecv *internalErr.IrrecoverableError
 		return strings.Contains(lastEntry.Message, "Irrecoverable socket read error. Exiting poller") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errIrrecv) &&
@@ -332,7 +332,7 @@ func TestSocketReadTimeOutNetError(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
-		var errRecv *internalErr.ErrRecoverable
+		var errRecv *internalErr.RecoverableError
 		return strings.Contains(lastEntry.Message, "Recoverable socket read error") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
@@ -357,7 +357,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	randErrStr, _ := uuid.NewRandom()
 	p.(*poller).udpSock = &mockSocketConn{
 		expectedOutput: []byte("dontCare"),
-		expectedError: &mockGenericErr{
+		expectedError: &mockGenericError{
 			mockErrStr: randErrStr.String(),
 		},
 	}
@@ -367,7 +367,7 @@ func TestSocketGenericReadError(t *testing.T) {
 	assert.Eventuallyf(t, func() bool {
 		logs := recordedLogs.All()
 		lastEntry := logs[len(logs)-1]
-		var errRecv *internalErr.ErrRecoverable
+		var errRecv *internalErr.RecoverableError
 		return strings.Contains(lastEntry.Message, "Recoverable socket read error") &&
 			lastEntry.Context[0].Type == zapcore.ErrorType &&
 			errors.As(lastEntry.Context[0].Interface.(error), &errRecv) &&
@@ -394,11 +394,11 @@ func (m *mockNetError) Temporary() bool {
 	return false
 }
 
-type mockGenericErr struct {
+type mockGenericError struct {
 	mockErrStr string
 }
 
-func (m *mockGenericErr) Error() string {
+func (m *mockGenericError) Error() string {
 	return m.mockErrStr
 }
 

@@ -36,8 +36,8 @@ type containerInstanceInfo struct {
 }
 
 type ContainerInstance struct {
-	Cluster              string
-	ContainerInstanceArn string
+	Cluster              string `json:"Cluster"`
+	ContainerInstanceArn string `json:"ContainerInstanceArn"`
 }
 
 func newECSInstanceInfo(ctx context.Context, ecsAgentEndpointProvider hostIPProvider,
