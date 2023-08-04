@@ -42,9 +42,9 @@ func concat[K any](vals []ottl.StringLikeGetter[K], delimiter string) ottl.ExprF
 				builder.WriteString(fmt.Sprint(val))
 			} else {
 				builder.WriteString(*val)
-			}
-			if i != len(vals)-1 {
-				builder.WriteString(delimiter)
+				if i != len(vals)-1 {
+					builder.WriteString(delimiter)
+				}
 			}
 		}
 		return builder.String(), nil
