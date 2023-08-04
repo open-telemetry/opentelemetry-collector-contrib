@@ -80,6 +80,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - Actively seeking contributors to triage issues
 
 Emeritus Triagers:
