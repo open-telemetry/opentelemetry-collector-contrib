@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datad
 go 1.19
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.3.0.20230720220350-143f7b52181b
-	github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.3.0.20230720220350-143f7b52181b
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.4
+	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.6.0
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
@@ -19,16 +19,16 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3.0.20230720220350-143f7b52181b // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-beta.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-tuf v1.0.0-0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.4 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.4 // indirect
+	github.com/DataDog/go-tuf v1.0.1-0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.6.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
