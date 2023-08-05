@@ -90,7 +90,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	kr.setting.Logger.Info("Object Receiver started")
 
 	runFunc := func(_ context.Context) {
-		kr.logger.Info("leader election got")
+		kr.logger.Info("this instance of the component was selected as the current leader")
 		for _, object := range kr.objects {
 			kr.start(ctx, object)
 		}
