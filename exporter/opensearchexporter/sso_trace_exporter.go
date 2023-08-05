@@ -15,15 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	// defaultNamespace value is used as SSOTracesExporter.Namespace when component.Config.Namespace is not set.
-	defaultNamespace = "namespace"
-
-	// defaultDataset value is used as SSOTracesExporter.Dataset when component.Config.Dataset is not set.
-	defaultDataset = "default"
-)
-
-type SSOTracesExporter struct {
+type ssoTracesExporter struct {
 	client       *opensearch.Client
 	Namespace    string
 	Dataset      string
@@ -31,20 +23,20 @@ type SSOTracesExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*SSOTracesExporter, error) {
+func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	return &SSOTracesExporter{
+	return &ssoTracesExporter{
 		telemetry:    set.TelemetrySettings,
-		Namespace:    defaultIfEmpty(cfg.Namespace, defaultNamespace),
-		Dataset:      defaultIfEmpty(cfg.Dataset, defaultDataset),
+		Namespace:    cfg.Namespace,
+		Dataset:      cfg.Dataset,
 		httpSettings: cfg.HTTPClientSettings,
 	}, nil
 }
 
-func (s *SSOTracesExporter) Start(_ context.Context, host component.Host) error {
+func (s *ssoTracesExporter) Start(_ context.Context, host component.Host) error {
 	httpClient, err := s.httpSettings.ToClient(host, s.telemetry)
 	if err != nil {
 		return err
@@ -59,22 +51,15 @@ func (s *SSOTracesExporter) Start(_ context.Context, host component.Host) error 
 	return nil
 }
 
-func (s *SSOTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	indexer := newTraceBulkIndexer(s.Dataset, s.Namespace)
-	startErr := indexer.Start(s.client)
+	startErr := indexer.start(s.client)
 	if startErr != nil {
 		return startErr
 	}
-	indexer.Submit(ctx, td)
-	indexer.Close(ctx)
-	return indexer.JoinedError()
-}
-
-func defaultIfEmpty(value string, def string) string {
-	if value == "" {
-		return def
-	}
-	return value
+	indexer.submit(ctx, td)
+	indexer.close(ctx)
+	return indexer.joinedError()
 }
 
 func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.Logger) (*opensearch.Client, error) {
@@ -89,6 +74,6 @@ func newOpenSearchClient(endpoint string, httpClient *http.Client, logger *zap.L
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            (*clientLogger)(logger),
+		Logger:            newClientLogger(logger),
 	})
 }

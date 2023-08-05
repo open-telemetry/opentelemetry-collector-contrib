@@ -6,28 +6,38 @@
 package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 
 import (
+	"github.com/opensearch-project/opensearch-go/v2/opensearchtransport"
 	"net/http"
 	"time"
 
 	"go.uber.org/zap"
 )
 
-type clientLogger zap.Logger
+type clientLogger struct {
+	zapLogger *zap.Logger
+}
+
+func newClientLogger(zl *zap.Logger) opensearchtransport.Logger {
+	return &clientLogger{zl}
+}
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
 // Implementations have to check for nil values in request and response.
 func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
-	zl := (*zap.Logger)(cl)
 	switch {
 	case err == nil && resp != nil:
-		zl.Debug("Request roundtrip completed.",
+		cl.zapLogger.Debug("Request roundtrip completed.",
 			zap.String("path", requ.URL.Path),
 			zap.String("method", requ.Method),
 			zap.Duration("duration", dur),
 			zap.String("status", resp.Status))
 
 	case err != nil:
-		zl.Error("Request failed.", zap.NamedError("reason", err))
+		cl.zapLogger.Error("Request failed.",
+			zap.String("path", requ.URL.Path),
+			zap.String("method", requ.Method),
+			zap.Duration("duration", dur),
+			zap.NamedError("reason", err))
 	}
 
 	return nil

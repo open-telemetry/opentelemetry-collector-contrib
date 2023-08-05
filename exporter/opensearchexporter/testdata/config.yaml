@@ -7,6 +7,18 @@ opensearch:
   http:
     endpoint: https://opensearch.example.com:9200
 
+opensearch/empty_namespace:
+  dataset: ngnix
+  namespace: ""
+  http:
+    endpoint: https://opensearch.example.com:9200
+
+opensearch/empty_dataset:
+  dataset: ""
+  namespace: eu
+  http:
+    endpoint: https://opensearch.example.com:9200
+
 opensearch/trace:
   dataset: ngnix
   namespace: eu

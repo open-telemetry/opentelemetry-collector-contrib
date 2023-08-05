@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-type DataStream struct {
+type dataStream struct {
 	Dataset   string `json:"dataset,omitempty"`
 	Namespace string `json:"namespace,omitempty"`
 	Type      string `json:"type,omitempty"`
 }
 
-type SSOSpanEvent struct {
+type ssoSpanEvent struct {
 	Attributes             map[string]any `json:"attributes"`
 	DroppedAttributesCount uint32         `json:"droppedAttributesCount"`
 	Name                   string         `json:"name"`
@@ -21,7 +21,7 @@ type SSOSpanEvent struct {
 	Timestamp              *time.Time     `json:"@timestamp,omitempty"`
 }
 
-type SSOSpanLinks struct {
+type ssoSpanLinks struct {
 	Attributes             map[string]any `json:"attributes,omitempty"`
 	SpanID                 string         `json:"spanId,omitempty"`
 	TraceID                string         `json:"traceId,omitempty"`
@@ -29,13 +29,13 @@ type SSOSpanLinks struct {
 	DroppedAttributesCount uint32         `json:"droppedAttributesCount,omitempty"`
 }
 
-type SSOSpan struct {
+type ssoSpan struct {
 	Attributes             map[string]any `json:"attributes,omitempty"`
 	DroppedAttributesCount uint32         `json:"droppedAttributesCount"`
 	DroppedEventsCount     uint32         `json:"droppedEventsCount"`
 	DroppedLinksCount      uint32         `json:"droppedLinksCount"`
 	EndTime                time.Time      `json:"endTime"`
-	Events                 []SSOSpanEvent `json:"events,omitempty"`
+	Events                 []ssoSpanEvent `json:"events,omitempty"`
 	InstrumentationScope   struct {
 		Attributes             map[string]any `json:"attributes,omitempty"`
 		DroppedAttributesCount uint32         `json:"droppedAttributesCount"`
@@ -44,7 +44,7 @@ type SSOSpan struct {
 		Version                string         `json:"version"`
 	} `json:"instrumentationScope,omitempty"`
 	Kind         string         `json:"kind"`
-	Links        []SSOSpanLinks `json:"links,omitempty"`
+	Links        []ssoSpanLinks `json:"links,omitempty"`
 	Name         string         `json:"name"`
 	ParentSpanID string         `json:"parentSpanId"`
 	Resource     map[string]any `json:"resource,omitempty"`

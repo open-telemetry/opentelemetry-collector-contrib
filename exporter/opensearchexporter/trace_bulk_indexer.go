@@ -30,28 +30,28 @@ func newTraceBulkIndexer(dataset string, namespace string) *traceBulkIndexer {
 	return &traceBulkIndexer{dataset, namespace, nil, nil}
 }
 
-func (tbi *traceBulkIndexer) JoinedError() error {
+func (tbi *traceBulkIndexer) joinedError() error {
 	return multierr.Combine(tbi.errs...)
 }
 
-func (tbi *traceBulkIndexer) Start(client *opensearch.Client) error {
+func (tbi *traceBulkIndexer) start(client *opensearch.Client) error {
 	var startErr error
-	tbi.bulkIndexer, startErr = newOpenSearchBulkIndexer(client, tbi.OnIndexerError)
+	tbi.bulkIndexer, startErr = newOpenSearchBulkIndexer(client, tbi.onIndexerError)
 	return startErr
 }
 
-func (tbi *traceBulkIndexer) Close(ctx context.Context) {
+func (tbi *traceBulkIndexer) close(ctx context.Context) {
 	closeErr := tbi.bulkIndexer.Close(ctx)
 	if closeErr != nil {
 		tbi.errs = append(tbi.errs, closeErr)
 	}
 }
 
-func (tbi *traceBulkIndexer) HasErrors() bool {
+func (tbi *traceBulkIndexer) hasErrors() bool {
 	return len(tbi.errs) > 0
 }
 
-func (tbi *traceBulkIndexer) OnIndexerError(_ context.Context, indexerErr error) {
+func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
 		tbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
 	}
@@ -65,7 +65,7 @@ func (tbi *traceBulkIndexer) appendRetryTraceError(err error, trace ptrace.Trace
 	tbi.errs = append(tbi.errs, consumererror.NewTraces(err, trace))
 }
 
-func (tbi *traceBulkIndexer) Submit(ctx context.Context, td ptrace.Traces) {
+func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
 	forEachSpan(td, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, span ptrace.Span) {
 		payload, err := tbi.createJSON(resource, scope, scopeSchemaURL, span)
 		if err != nil {
@@ -108,7 +108,7 @@ func (tbi *traceBulkIndexer) createJSON(
 	schemaURL string,
 	span ptrace.Span,
 ) ([]byte, error) {
-	sso := SSOSpan{}
+	sso := ssoSpan{}
 	sso.Attributes = span.Attributes().AsRaw()
 	sso.DroppedAttributesCount = span.DroppedAttributesCount()
 	sso.DroppedEventsCount = span.DroppedEventsCount()
@@ -126,7 +126,7 @@ func (tbi *traceBulkIndexer) createJSON(
 	sso.TraceState = span.TraceState().AsRaw()
 
 	if span.Events().Len() > 0 {
-		sso.Events = make([]SSOSpanEvent, span.Events().Len())
+		sso.Events = make([]ssoSpanEvent, span.Events().Len())
 		for i := 0; i < span.Events().Len(); i++ {
 			e := span.Events().At(i)
 			ssoEvent := &sso.Events[i]
@@ -143,18 +143,18 @@ func (tbi *traceBulkIndexer) createJSON(
 		}
 	}
 
-	dataStream := DataStream{}
+	ds := dataStream{}
 	if tbi.dataset != "" {
-		dataStream.Dataset = tbi.dataset
+		ds.Dataset = tbi.dataset
 	}
 
 	if tbi.namespace != "" {
-		dataStream.Namespace = tbi.namespace
+		ds.Namespace = tbi.namespace
 	}
 
-	if dataStream != (DataStream{}) {
-		dataStream.Type = "span"
-		sso.Attributes["data_stream"] = dataStream
+	if ds != (dataStream{}) {
+		ds.Type = "span"
+		sso.Attributes["data_stream"] = ds
 	}
 
 	sso.InstrumentationScope.Name = scope.Name()
@@ -164,7 +164,7 @@ func (tbi *traceBulkIndexer) createJSON(
 	sso.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
 
 	if span.Links().Len() > 0 {
-		sso.Links = make([]SSOSpanLinks, span.Links().Len())
+		sso.Links = make([]ssoSpanLinks, span.Links().Len())
 		for i := 0; i < span.Links().Len(); i++ {
 			link := span.Links().At(i)
 			ssoLink := &sso.Links[i]
@@ -238,7 +238,7 @@ func forEachSpan(td ptrace.Traces, visitor func(pcommon.Resource, string, pcommo
 
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				iterator(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
+				visitor(resource, il.SchemaUrl(), scopeSpan.Scope(), scopeSpan.SchemaUrl(), span)
 			}
 		}
 	}
