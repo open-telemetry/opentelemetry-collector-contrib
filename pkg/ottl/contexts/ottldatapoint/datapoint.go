@@ -16,6 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 )
 
+const (
+	bucketCountsPath = "bucket_counts"
+)
+
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 
@@ -161,7 +165,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		return accessCount(), nil
 	case "sum":
 		return accessSum(), nil
-	case "bucket_counts":
+	case bucketCountsPath:
 		return accessBucketCounts(), nil
 	case "explicit_bounds":
 		return accessExplicitBounds(), nil
@@ -176,7 +180,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		switch path[1].Name {
 		case "offset":
 			return accessPositiveOffset(), nil
-		case "bucket_counts":
+		case bucketCountsPath:
 			return accessPositiveBucketCounts(), nil
 		}
 	case "negative":
@@ -186,7 +190,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		switch path[1].Name {
 		case "offset":
 			return accessNegativeOffset(), nil
-		case "bucket_counts":
+		case bucketCountsPath:
 			return accessNegativeBucketCounts(), nil
 		}
 	case "quantile_values":

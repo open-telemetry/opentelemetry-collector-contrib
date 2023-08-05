@@ -17,6 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const stringPath = "string"
+
 type SpanContext interface {
 	GetSpan() ptrace.Span
 }
@@ -43,14 +45,14 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		if len(path) == 1 {
 			return accessTraceID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringTraceID[K](), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
 			return accessSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringSpanID[K](), nil
 		}
 	case "trace_state":
@@ -63,16 +65,16 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		if len(path) == 1 {
 			return accessParentSpanID[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringParentSpanID[K](), nil
 		}
-	case "name":
+	case namePath:
 		return accessSpanName[K](), nil
 	case "kind":
 		if len(path) == 1 {
 			return accessKind[K](), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringKind[K](), nil
 		}
 		if path[1].Name == "deprecated_string" {
@@ -82,13 +84,13 @@ func SpanPathGetSetter[K SpanContext](path []ottl.Field) (ottl.GetSetter[K], err
 		return accessStartTimeUnixNano[K](), nil
 	case "end_time_unix_nano":
 		return accessEndTimeUnixNano[K](), nil
-	case "attributes":
+	case attributesPath:
 		mapKeys := path[0].Keys
 		if mapKeys == nil {
 			return accessAttributes[K](), nil
 		}
 		return accessAttributesKey[K](mapKeys), nil
-	case "dropped_attributes_count":
+	case droppedAttributesCountPath:
 		return accessSpanDroppedAttributesCount[K](), nil
 	case "events":
 		return accessEvents[K](), nil

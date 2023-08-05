@@ -12,6 +12,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	attributesPath             = "attributes"
+	droppedAttributesCountPath = "dropped_attributes_count"
+	namePath                   = "name"
+)
+
 type ResourceContext interface {
 	GetResource() pcommon.Resource
 }
@@ -21,13 +27,13 @@ func ResourcePathGetSetter[K ResourceContext](path []ottl.Field) (ottl.GetSetter
 		return accessResource[K](), nil
 	}
 	switch path[0].Name {
-	case "attributes":
+	case attributesPath:
 		mapKeys := path[0].Keys
 		if mapKeys == nil {
 			return accessResourceAttributes[K](), nil
 		}
 		return accessResourceAttributesKey[K](mapKeys), nil
-	case "dropped_attributes_count":
+	case droppedAttributesCountPath:
 		return accessResourceDroppedAttributesCount[K](), nil
 	}
 

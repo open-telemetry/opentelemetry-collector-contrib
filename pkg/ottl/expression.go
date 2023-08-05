@@ -427,7 +427,7 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 	case string:
 		result, err = strconv.ParseInt(v, 10, 64)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 	case float64:
 		result = int64(v)
@@ -446,7 +446,7 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 		case pcommon.ValueTypeStr:
 			result, err = strconv.ParseInt(v.Str(), 10, 64)
 			if err != nil {
-				return nil, nil
+				return nil, err
 			}
 		case pcommon.ValueTypeBool:
 			if v.Bool() {

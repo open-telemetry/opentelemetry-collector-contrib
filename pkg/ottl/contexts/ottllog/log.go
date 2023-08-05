@@ -18,6 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
+const stringPath = "string"
+
 var _ internal.ResourceContext = TransformContext{}
 var _ internal.InstrumentationScopeContext = TransformContext{}
 
@@ -160,7 +162,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 			}
 			return accessBodyKey(keys), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringBody(), nil
 		}
 	case "attributes":
@@ -177,14 +179,14 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		if len(path) == 1 {
 			return accessTraceID(), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringTraceID(), nil
 		}
 	case "span_id":
 		if len(path) == 1 {
 			return accessSpanID(), nil
 		}
-		if path[1].Name == "string" {
+		if path[1].Name == stringPath {
 			return accessStringSpanID(), nil
 		}
 	}

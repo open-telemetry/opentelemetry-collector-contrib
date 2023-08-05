@@ -22,17 +22,17 @@ func ScopePathGetSetter[K InstrumentationScopeContext](path []ottl.Field) (ottl.
 	}
 
 	switch path[0].Name {
-	case "name":
+	case namePath:
 		return accessInstrumentationScopeName[K](), nil
 	case "version":
 		return accessInstrumentationScopeVersion[K](), nil
-	case "attributes":
+	case attributesPath:
 		mapKeys := path[0].Keys
 		if mapKeys == nil {
 			return accessInstrumentationScopeAttributes[K](), nil
 		}
 		return accessInstrumentationScopeAttributesKey[K](mapKeys), nil
-	case "dropped_attributes_count":
+	case droppedAttributesCountPath:
 		return accessInstrumentationScopeDroppedAttributesCount[K](), nil
 	}
 
