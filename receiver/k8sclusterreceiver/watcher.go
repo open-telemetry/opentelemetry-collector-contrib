@@ -18,12 +18,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	appsv1 "k8s.io/api/apps/v1"
-	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
-	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/informers"
@@ -32,18 +26,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/statefulset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -56,7 +41,7 @@ type resourceWatcher struct {
 	client              kubernetes.Interface
 	osQuotaClient       quotaclientset.Interface
 	informerFactories   []sharedInformer
-	metadataStore       *metadata.Store
+	dataCollector       *collection.DataCollector
 	logger              *zap.Logger
 	sampledLogger       *zap.Logger
 	metadataConsumers   []metadataConsumer
@@ -74,7 +59,7 @@ type resourceWatcher struct {
 type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
-func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore *metadata.Store) *resourceWatcher {
+func newResourceWatcher(set receiver.CreateSettings, cfg *Config) *resourceWatcher {
 	// Create a sampled logger for error messages.
 	core := zapcore.NewSamplerWithOptions(
 		set.Logger.Core(),
@@ -87,7 +72,7 @@ func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore 
 	return &resourceWatcher{
 		logger:                   set.Logger,
 		sampledLogger:            sampledLogger,
-		metadataStore:            metadataStore,
+		dataCollector:            collection.NewDataCollector(set, cfg.MetricsBuilderConfig, cfg.NodeConditionTypesToReport, cfg.AllocatableTypesToReport),
 		initialSyncDone:          &atomic.Bool{},
 		initialSyncTimedOut:      &atomic.Bool{},
 		initialTimeout:           defaultInitialSyncTimeout,
@@ -254,22 +239,30 @@ func (rw *resourceWatcher) setupInformer(gvk schema.GroupVersionKind, informer c
 	_, err = informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    rw.onAdd,
 		UpdateFunc: rw.onUpdate,
+		DeleteFunc: rw.onDelete,
 	})
 	if err != nil {
 		rw.logger.Error("error adding event handler to informer", zap.Error(err))
 	}
-	rw.metadataStore.Setup(gvk, informer.GetStore())
+	rw.dataCollector.SetupMetadataStore(gvk, informer.GetStore())
 }
 
 func (rw *resourceWatcher) onAdd(obj interface{}) {
 	rw.waitForInitialInformerSync()
+	rw.dataCollector.SyncMetrics(obj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if !rw.hasDestination() {
 		return
 	}
 
-	rw.syncMetadataUpdate(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, rw.objMetadata(obj))
+	newMetadata := rw.dataCollector.SyncMetadata(obj)
+	rw.syncMetadataUpdate(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}, newMetadata)
+}
+
+func (rw *resourceWatcher) onDelete(obj interface{}) {
+	rw.waitForInitialInformerSync()
+	rw.dataCollector.RemoveFromMetricsStore(obj)
 }
 
 func (rw *resourceWatcher) hasDestination() bool {
@@ -278,44 +271,18 @@ func (rw *resourceWatcher) hasDestination() bool {
 
 func (rw *resourceWatcher) onUpdate(oldObj, newObj interface{}) {
 	rw.waitForInitialInformerSync()
+	// Sync metrics from the new object
+	rw.dataCollector.SyncMetrics(newObj)
 
 	// Sync metadata only if there's at least one destination for it to sent.
 	if !rw.hasDestination() {
 		return
 	}
 
-	rw.syncMetadataUpdate(rw.objMetadata(oldObj), rw.objMetadata(newObj))
-}
+	oldMetadata := rw.dataCollector.SyncMetadata(oldObj)
+	newMetadata := rw.dataCollector.SyncMetadata(newObj)
 
-// objMetadata returns the metadata for the given object.
-func (rw *resourceWatcher) objMetadata(obj interface{}) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	switch o := obj.(type) {
-	case *corev1.Pod:
-		return pod.GetMetadata(o, rw.metadataStore, rw.logger)
-	case *corev1.Node:
-		return node.GetMetadata(o)
-	case *corev1.ReplicationController:
-		return replicationcontroller.GetMetadata(o)
-	case *appsv1.Deployment:
-		return deployment.GetMetadata(o)
-	case *appsv1.ReplicaSet:
-		return replicaset.GetMetadata(o)
-	case *appsv1.DaemonSet:
-		return demonset.GetMetadata(o)
-	case *appsv1.StatefulSet:
-		return statefulset.GetMetadata(o)
-	case *batchv1.Job:
-		return jobs.GetMetadata(o)
-	case *batchv1.CronJob:
-		return cronjob.GetMetadata(o)
-	case *batchv1beta1.CronJob:
-		return cronjob.GetMetadataBeta(o)
-	case *autoscalingv2.HorizontalPodAutoscaler:
-		return hpa.GetMetadata(o)
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		return hpa.GetMetadataBeta(o)
-	}
-	return nil
+	rw.syncMetadataUpdate(oldMetadata, newMetadata)
 }
 
 func (rw *resourceWatcher) waitForInitialInformerSync() {
@@ -336,7 +303,7 @@ func (rw *resourceWatcher) setupMetadataExporters(
 	exporters map[component.ID]component.Component,
 	metadataExportersFromConfig []string,
 ) error {
-	var out []metadataConsumer
+	out := make([]metadataConsumer, 0, len(exporters))
 
 	metadataExportersSet := utils.StringSliceToMap(metadataExportersFromConfig)
 	if err := validateMetadataExporters(metadataExportersSet, exporters); err != nil {
