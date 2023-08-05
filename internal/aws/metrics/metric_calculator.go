@@ -58,7 +58,7 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 	cacheStore := rm.cache
 
 	var result interface{}
-	done := false
+	var done bool
 
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
@@ -80,10 +80,12 @@ type Key struct {
 }
 
 func NewKey(metricMetadata interface{}, labels map[string]string) Key {
-	var kvs []attribute.KeyValue
+	kvs := make([]attribute.KeyValue, len(labels))
 	var sortable attribute.Sortable
+	i := 0
 	for k, v := range labels {
-		kvs = append(kvs, attribute.String(k, v))
+		kvs[i] = attribute.String(k, v)
+		i++
 	}
 	set := attribute.NewSetWithSortable(kvs, &sortable)
 
