@@ -19,18 +19,18 @@ func toTime(t pcommon.Timestamp) time.Time {
 // Formats a Duration into the form DD.HH:MM:SS.MMMMMM
 func formatDuration(d time.Duration) string {
 	day := d / (time.Hour * 24)
-	d -= day * (time.Hour * 24)
+	d -= day * (time.Hour * 24) // nolint: durationcheck
 
 	h := d / time.Hour
-	d -= h * time.Hour
+	d -= h * time.Hour // nolint: durationcheck
 
 	m := d / time.Minute
-	d -= m * time.Minute
+	d -= m * time.Minute // nolint: durationcheck
 
 	s := d / time.Second
-	d -= s * time.Second
+	d -= s * time.Second // nolint: durationcheck
 
-	us := (d / time.Microsecond)
+	us := d / time.Microsecond
 
 	return fmt.Sprintf("%02d.%02d:%02d:%02d.%06d", day, h, m, s, us)
 }

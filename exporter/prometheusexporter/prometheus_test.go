@@ -136,8 +136,11 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = httpClient.Get("https://localhost:7777/metrics")
-		require.NoError(t, err)
+		req, err2 := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://localhost:7777/metrics", nil)
+		require.NoError(t, err2)
+		resp, err2 := httpClient.Do(req)
+		require.NoError(t, err2)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -149,8 +152,11 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-	rsp, err := httpClient.Get("https://localhost:7777/metrics")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://localhost:7777/metrics", nil)
+	require.NoError(t, err)
+	rsp, err := httpClient.Do(req)
 	require.NoError(t, err, "Failed to perform a scrape")
+	defer rsp.Body.Close()
 
 	if g, w := rsp.StatusCode, 200; g != w {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
@@ -195,8 +201,11 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		res, err1 := http.DefaultClient.Do(req)
+		require.NoError(t, err1)
+		require.NoError(t, res.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -211,8 +220,11 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8081")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "https://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		res, err1 := http.DefaultClient.Do(req)
 		require.NoError(t, err1, "Failed to perform a scrape")
+		defer res.Body.Close()
 
 		if g, w := res.StatusCode, 200; g != w {
 			t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)
@@ -245,7 +257,9 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	if g, w := res.StatusCode, 200; g != w {
@@ -277,8 +291,11 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
+		req, err2 := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+		require.NoError(t, err2)
+		resp, err2 := http.DefaultClient.Do(req)
+		require.NoError(t, err2)
+		require.NoError(t, resp.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -291,7 +308,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	for delta := 0; delta <= 20; delta += 10 {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "cpu-exporter", "localhost:8080")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		res, err1 := http.DefaultClient.Do(req)
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		if g, w := res.StatusCode, 200; g != w {
@@ -321,7 +340,9 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	if g, w := res.StatusCode, 200; g != w {
@@ -354,8 +375,11 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err)
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		r, err1 := http.DefaultClient.Do(req)
+		require.NoError(t, err1)
+		require.NoError(t, r.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -368,7 +392,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	for delta := 0; delta <= 20; delta += 10 {
 		assert.NoError(t, exp.ConsumeMetrics(context.Background(), metricBuilder(int64(delta), "metric_2_", "node-exporter", "localhost:8080")))
 
-		res, err1 := http.Get("http://localhost:7777/metrics")
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		res, err1 := http.DefaultClient.Do(req)
 		require.NoError(t, err1, "Failed to perform a scrape")
 
 		if g, w := res.StatusCode, 200; g != w {
@@ -398,7 +424,9 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	exp.(*wrapMetricsExporter).exporter.collector.accumulator.(*lastValueAccumulator).metricExpiration = 1 * time.Millisecond
 	time.Sleep(10 * time.Millisecond)
 
-	res, err := http.Get("http://localhost:7777/metrics")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+	require.NoError(t, err)
+	res, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Failed to perform a scrape")
 
 	if g, w := res.StatusCode, 200; g != w {
@@ -434,8 +462,11 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 		// trigger a get so that the server cleans up our keepalive socket
-		_, err = http.Get("http://localhost:7777/metrics")
-		require.NoError(t, err, "Failed to perform a scrape")
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+		require.NoError(t, err1)
+		res, err1 := http.DefaultClient.Do(req)
+		require.NoError(t, err1, "Failed to perform a scrape")
+		require.NoError(t, res.Body.Close())
 	})
 
 	assert.NotNil(t, exp)
@@ -446,8 +477,11 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 
 	assert.NoError(t, exp.ConsumeMetrics(context.Background(), md))
 
-	rsp, err := http.Get("http://localhost:7777/metrics")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:7777/metrics", nil)
+	require.NoError(t, err)
+	rsp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Failed to perform a scrape")
+	defer rsp.Body.Close()
 
 	if g, w := rsp.StatusCode, 200; g != w {
 		t.Errorf("Mismatched HTTP response status code: Got: %d Want: %d", g, w)

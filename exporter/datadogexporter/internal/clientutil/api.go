@@ -40,14 +40,16 @@ func ValidateAPIKey(ctx context.Context, apiKey string, logger *zap.Logger, apiC
 	logger.Info("Validating API key.")
 	authAPI := datadogV1.NewAuthenticationApi(apiClient)
 	resp, httpresp, err := authAPI.Validate(GetRequestContext(ctx, apiKey))
-	if err == nil && resp.Valid != nil && *resp.Valid {
-		logger.Info("API key validation successful.")
-		return nil
-	}
 	if err != nil {
 		logger.Warn("Error while validating API key", zap.Error(err))
 		return nil
 	}
+	defer httpresp.Body.Close()
+	if resp.Valid != nil && *resp.Valid {
+		logger.Info("API key validation successful.")
+		return nil
+	}
+
 	logger.Warn(ErrInvalidAPI.Error())
 	return WrapError(ErrInvalidAPI, httpresp)
 }

@@ -71,14 +71,14 @@ func (t *taskAnnotated) ContainerLabels(containerIndex int) map[string]string {
 	return labels
 }
 
-// errPrivateIPNotFound indicates the awsvpc private ip or EC2 instance ip is not found.
-type errPrivateIPNotFound struct {
+// privateIPNotFoundError indicates the awsvpc private ip or EC2 instance ip is not found.
+type privateIPNotFoundError struct {
 	TaskArn     string
 	NetworkMode string
 	Extra       string // extra message
 }
 
-func (e *errPrivateIPNotFound) Error() string {
+func (e *privateIPNotFoundError) Error() string {
 	m := fmt.Sprintf("private ip not found for network mode %q and task %s", e.NetworkMode, e.TaskArn)
 	if e.Extra != "" {
 		m = m + " " + e.Extra
@@ -86,11 +86,11 @@ func (e *errPrivateIPNotFound) Error() string {
 	return m
 }
 
-func (e *errPrivateIPNotFound) message() string {
+func (e *privateIPNotFoundError) message() string {
 	return "private ip not found"
 }
 
-func (e *errPrivateIPNotFound) zapFields() []zap.Field {
+func (e *privateIPNotFoundError) zapFields() []zap.Field {
 	return []zap.Field{
 		zap.String("NetworkMode", e.NetworkMode),
 		zap.String("Extra", e.Extra),
@@ -103,7 +103,7 @@ func (e *errPrivateIPNotFound) zapFields() []zap.Field {
 func (t *taskAnnotated) PrivateIP() (string, error) {
 	arn := aws.StringValue(t.Task.TaskArn)
 	mode := aws.StringValue(t.Definition.NetworkMode)
-	errNotFound := &errPrivateIPNotFound{
+	errNotFound := &privateIPNotFoundError{
 		TaskArn:     arn,
 		NetworkMode: mode,
 	}
@@ -136,27 +136,27 @@ func (t *taskAnnotated) PrivateIP() (string, error) {
 	}
 }
 
-// errMappedPortNotFound indicates the port specified in config does not exists
+// mappedPortNotFoundError indicates the port specified in config does not exists
 // or the location for mapped ports has changed on ECS side.
-type errMappedPortNotFound struct {
+type mappedPortNotFoundError struct {
 	TaskArn       string
 	NetworkMode   string
 	ContainerName string
 	ContainerPort int64
 }
 
-func (e *errMappedPortNotFound) Error() string {
+func (e *mappedPortNotFoundError) Error() string {
 	// Output the error message in this order to make searching easier as only task arn changes frequently.
 	// %q for network mode because empty string is valid for ECS EC2.
 	return fmt.Sprintf("mapped port not found for container port %d network mode %q on container %s in task %s",
 		e.ContainerPort, e.NetworkMode, e.ContainerName, e.TaskArn)
 }
 
-func (e *errMappedPortNotFound) message() string {
+func (e *mappedPortNotFoundError) message() string {
 	return "mapped port not found"
 }
 
-func (e *errMappedPortNotFound) zapFields() []zap.Field {
+func (e *mappedPortNotFoundError) zapFields() []zap.Field {
 	return []zap.Field{
 		zap.String("NetworkMode", e.NetworkMode),
 		zap.Int64("ContainerPort", e.ContainerPort),
@@ -169,7 +169,7 @@ func (t *taskAnnotated) MappedPort(def *ecs.ContainerDefinition, containerPort i
 	arn := aws.StringValue(t.Task.TaskArn)
 	mode := aws.StringValue(t.Definition.NetworkMode)
 	// the error is same for all network modes (if any)
-	errNotFound := &errMappedPortNotFound{
+	errNotFound := &mappedPortNotFoundError{
 		TaskArn:       arn,
 		NetworkMode:   mode,
 		ContainerName: aws.StringValue(def.Name),

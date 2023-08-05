@@ -72,7 +72,7 @@ func (s *jaegerThriftHTTPSender) pushTraceData(
 			return consumererror.NewPermanent(err)
 		}
 
-		req, err := http.NewRequest("POST", s.config.HTTPClientSettings.Endpoint, body)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.HTTPClientSettings.Endpoint, body)
 		if err != nil {
 			return consumererror.NewPermanent(err)
 		}

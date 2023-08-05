@@ -99,8 +99,11 @@ func TestStartAndCallAndShutdownRemote(t *testing.T) {
 			assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
 
 			// make a call
-			resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
-			assert.NoError(t, err)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://127.0.0.1:5778/sampling?service=foo", nil)
+			require.NoError(t, err)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.Equal(t, 200, resp.StatusCode)
 
 			// shut down the server

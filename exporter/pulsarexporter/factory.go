@@ -23,6 +23,7 @@ const (
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
 	defaultBroker       = "pulsar://localhost:6650"
+	otlpJSONEncoding    = "otlp_json"
 )
 
 // FactoryOption applies changes to pulsarExporterFactory.
@@ -87,7 +88,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.Encoding == otlpJSONEncoding {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newTracesExporter(oCfg, set, f.tracesMarshalers)
@@ -117,7 +118,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.Encoding == otlpJSONEncoding {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newMetricsExporter(oCfg, set, f.metricsMarshalers)
@@ -147,7 +148,7 @@ func (f *pulsarExporterFactory) createLogsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
+	if oCfg.Encoding == otlpJSONEncoding {
 		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp, err := newLogsExporter(oCfg, set, f.logsMarshalers)

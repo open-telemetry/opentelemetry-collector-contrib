@@ -99,10 +99,13 @@ type validateAPIKeyResponse struct {
 
 func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: true}
-	resJSON, _ := json.Marshal(res)
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(resJSON)
+	_, err = w.Write(resJSON)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -110,10 +113,12 @@ func validateAPIKeyEndpoint(w http.ResponseWriter, _ *http.Request) {
 
 func validateAPIKeyEndpointInvalid(w http.ResponseWriter, _ *http.Request) {
 	res := validateAPIKeyResponse{Valid: false}
-	resJSON, _ := json.Marshal(res)
-
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(resJSON)
+	_, err = w.Write(resJSON)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -125,11 +130,13 @@ type metricsResponse struct {
 
 func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
-	resJSON, _ := json.Marshal(res)
-
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		log.Fatalln(err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, err := w.Write(resJSON)
+	_, err = w.Write(resJSON)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -137,11 +144,14 @@ func metricsEndpoint(w http.ResponseWriter, _ *http.Request) {
 
 func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 	res := metricsResponse{Status: "ok"}
-	resJSON, _ := json.Marshal(res)
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		log.Fatalln(err)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	_, err := w.Write(resJSON)
+	_, err = w.Write(resJSON)
 	if err != nil {
 		log.Fatalln(err)
 	}

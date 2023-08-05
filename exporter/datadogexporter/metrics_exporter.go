@@ -160,14 +160,15 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	clientutil.SetDDHeaders(req.Header, exp.params.BuildInfo, string(exp.cfg.API.Key))
 	clientutil.SetExtraHeaders(req.Header, clientutil.ProtobufHeaders)
 	var resp *http.Response
+	var err2 error
 	if isMetricExportV2Enabled() {
-		resp, err = exp.metricsAPI.Client.Cfg.HTTPClient.Do(req)
+		resp, err2 = exp.metricsAPI.Client.Cfg.HTTPClient.Do(req) // nolint: bodyclose
 	} else {
-		resp, err = exp.client.HttpClient.Do(req)
+		resp, err2 = exp.client.HttpClient.Do(req) // nolint: bodyclose
 	}
 
-	if err != nil {
-		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err), resp)
+	if err2 != nil {
+		return clientutil.WrapError(fmt.Errorf("failed to do sketches HTTP request: %w", err2), resp)
 	}
 	defer resp.Body.Close()
 
@@ -229,6 +230,9 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 				ctx = clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
 				_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx, datadogV2.MetricPayload{Series: ms}, *clientutil.GZipSubmitMetricsOptionalParameters)
+				if merr == nil {
+					defer httpresp.Body.Close()
+				}
 				return clientutil.WrapError(merr, httpresp)
 			})
 			err = multierr.Append(err, experr)

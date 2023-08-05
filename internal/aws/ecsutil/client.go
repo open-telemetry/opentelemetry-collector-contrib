@@ -4,6 +4,7 @@
 package ecsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil"
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -108,7 +109,7 @@ func (c *clientImpl) Get(path string) ([]byte, error) {
 
 func (c *clientImpl) buildReq(path string) (*http.Request, error) {
 	url := c.baseURL.String() + path
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

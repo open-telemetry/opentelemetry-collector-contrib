@@ -315,7 +315,9 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 					require.NoError(t, ts.step(hcExt))
 				}
 
-				resp, err := client.Get(url)
+				req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
+				require.NoError(t, err)
+				resp, err := client.Do(req)
 				require.NoError(t, err)
 
 				if ts.expectedStatusCode != 0 {

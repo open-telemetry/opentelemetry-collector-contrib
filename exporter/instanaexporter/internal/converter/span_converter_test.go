@@ -194,7 +194,8 @@ func TestSpanBasics(t *testing.T) {
 	attrs := generateAttrs()
 	conv := SpanConverter{}
 	bundle := conv.ConvertSpans(attrs, spanSlice)
-	data, _ := json.MarshalIndent(bundle, "", "  ")
+	data, err := json.MarshalIndent(bundle, "", "  ")
+	require.NoError(t, err)
 
 	validateBundle(data, t, func(sp model.Span, t *testing.T) {
 		validateInstanaSpanBasics(sp, t)
@@ -229,8 +230,8 @@ func TestSpanCorrelation(t *testing.T) {
 	attrs := generateAttrs()
 	conv := SpanConverter{}
 	bundle := conv.ConvertSpans(attrs, spanSlice)
-	data, _ := json.MarshalIndent(bundle, "", "  ")
-
+	data, err := json.MarshalIndent(bundle, "", "  ")
+	require.NoError(t, err)
 	spanIDList := make(map[string]bool)
 
 	validateBundle(data, t, func(sp model.Span, t *testing.T) {
@@ -255,7 +256,8 @@ func TestSpanWithError(t *testing.T) {
 	attrs := generateAttrs()
 	conv := SpanConverter{}
 	bundle := conv.ConvertSpans(attrs, spanSlice)
-	data, _ := json.MarshalIndent(bundle, "", "  ")
+	data, err := json.MarshalIndent(bundle, "", "  ")
+	require.NoError(t, err)
 
 	validateBundle(data, t, func(sp model.Span, t *testing.T) {
 		validateInstanaSpanBasics(sp, t)

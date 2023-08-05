@@ -113,7 +113,7 @@ func Format(format string, t time.Time) (string, error) {
 func Parse(format, value string) (time.Time, error) {
 	native, err := ToNative(format)
 	if err != nil {
-		return time.Time{}, nil
+		return time.Time{}, err
 	}
 	return time.Parse(native, value)
 }

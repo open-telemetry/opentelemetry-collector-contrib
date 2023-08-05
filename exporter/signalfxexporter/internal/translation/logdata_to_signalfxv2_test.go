@@ -133,7 +133,8 @@ func TestLogDataToSignalFxEvents(t *testing.T) {
 }
 
 func mapToEventProps(m map[string]interface{}) []*sfxpb.Property {
-	var out []*sfxpb.Property
+	out := make([]*sfxpb.Property, len(m))
+	i := 0
 	for k, v := range m {
 		var pval sfxpb.PropertyValue
 
@@ -153,10 +154,11 @@ func mapToEventProps(m map[string]interface{}) []*sfxpb.Property {
 			panic(fmt.Sprintf("invalid type: %v", v))
 		}
 
-		out = append(out, &sfxpb.Property{
+		out[i] = &sfxpb.Property{
 			Key:   k,
 			Value: &pval,
-		})
+		}
+		i++
 	}
 
 	sort.Slice(out, func(i, j int) bool {

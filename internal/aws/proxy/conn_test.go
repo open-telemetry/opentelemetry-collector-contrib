@@ -401,23 +401,23 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 		"expected error message")
 }
 
-type mockAWSErr struct {
+type mockAWSError struct {
 }
 
-func (m *mockAWSErr) Error() string {
-	return "mockAWSErr"
+func (m *mockAWSError) Error() string {
+	return "mockAWSError"
 }
 
-func (m *mockAWSErr) Code() string {
+func (m *mockAWSError) Code() string {
 	return sts.ErrCodeRegionDisabledException
 }
 
-func (m *mockAWSErr) Message() string {
+func (m *mockAWSError) Message() string {
 	return ""
 }
 
-func (m *mockAWSErr) OrigErr() error {
-	return errors.New("mockAWSErr")
+func (m *mockAWSError) OrigErr() error {
+	return errors.New("mockAWSError")
 }
 
 type mockProvider struct {
@@ -443,7 +443,7 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 		expectedRegion  = "us-west-2000"
 	)
 	called := false
-	expectedErr := &mockAWSErr{}
+	expectedErr := &mockAWSError{}
 	fake := &stsCalls{
 		log: logger,
 		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {

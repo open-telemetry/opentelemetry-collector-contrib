@@ -17,9 +17,10 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 	}
 
 	var requests []*prompb.WriteRequest
-	var tsArray []prompb.TimeSeries
+	tsArray := make([]prompb.TimeSeries, len(tsMap))
 	sizeOfCurrentBatch := 0
 
+	i := 0
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
@@ -31,7 +32,8 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 			sizeOfCurrentBatch = 0
 		}
 
-		tsArray = append(tsArray, *v)
+		tsArray[i] = *v
+		i++
 		sizeOfCurrentBatch += sizeOfSeries
 	}
 

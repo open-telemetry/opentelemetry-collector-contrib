@@ -14,6 +14,10 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
+const (
+	httpScheme = "http"
+)
+
 func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{
@@ -152,7 +156,7 @@ func constructClientURL(urlParts map[string]string) string {
 
 	scheme, ok := urlParts[conventions.AttributeHTTPScheme]
 	if !ok {
-		scheme = "http"
+		scheme = httpScheme
 	}
 	port := ""
 	host, ok := urlParts[conventions.AttributeHTTPHost]
@@ -167,7 +171,7 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && !(scheme == httpScheme && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventions.AttributeHTTPTarget]
@@ -191,7 +195,7 @@ func constructServerURL(urlParts map[string]string) string {
 
 	scheme, ok := urlParts[conventions.AttributeHTTPScheme]
 	if !ok {
-		scheme = "http"
+		scheme = httpScheme
 	}
 	port := ""
 	host, ok := urlParts[conventions.AttributeHTTPHost]
@@ -209,7 +213,7 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && !(scheme == httpScheme && port == "80") && !(scheme == "https" && port == "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventions.AttributeHTTPTarget]

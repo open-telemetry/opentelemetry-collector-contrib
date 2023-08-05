@@ -340,7 +340,9 @@ func TestExporter_PushEvent(t *testing.T) {
 			for i, doc := range docs {
 				resp[i].Status = http.StatusOK
 
-				var idxInfo struct{ Idx int }
+				var idxInfo struct {
+					Idx int `json:"Idx"`
+				}
 				if err := json.Unmarshal(doc.Document, &idxInfo); err != nil {
 					panic(err)
 				}

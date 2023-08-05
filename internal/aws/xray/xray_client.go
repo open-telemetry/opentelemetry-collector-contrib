@@ -23,6 +23,7 @@ import (
 const agentPrefix = "xray-otel-exporter/"
 const execEnvPrefix = " exec-env/"
 const osPrefix = " OS/"
+const unknownVersion = "UNKNOWN"
 
 // XRayClient represents X-Ray client.
 type XRayClient interface {
@@ -49,7 +50,7 @@ func (c *xrayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (
 func getModVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
-		return "UNKNOWN"
+		return unknownVersion
 	}
 
 	for _, mod := range info.Deps {
@@ -58,7 +59,7 @@ func getModVersion() string {
 		}
 	}
 
-	return "UNKNOWN"
+	return unknownVersion
 }
 
 // NewXRayClient creates a new instance of the XRay client with an AWS configuration and session.
@@ -68,7 +69,7 @@ func NewXRayClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo componen
 
 	execEnv := os.Getenv("AWS_EXECUTION_ENV")
 	if execEnv == "" {
-		execEnv = "UNKNOWN"
+		execEnv = unknownVersion
 	}
 
 	osInformation := runtime.GOOS + "-" + runtime.GOARCH

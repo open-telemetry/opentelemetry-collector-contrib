@@ -33,9 +33,11 @@ const (
 
 // NewExporter exports to a Dynatrace Metrics v2 API
 func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter {
-	var confDefaultDims []dimensions.Dimension
+	confDefaultDims := make([]dimensions.Dimension, len(cfg.DefaultDimensions))
+	i := 0
 	for key, value := range cfg.DefaultDimensions {
-		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))
+		confDefaultDims[i] = dimensions.NewDimension(key, value)
+		i++
 	}
 
 	defaultDimensions := dimensions.MergeLists(
@@ -218,7 +220,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 	if resp.StatusCode == http.StatusBadRequest {
 		// At least some metrics were not accepted
 		if rbUnmarshalErr != nil {
-			return nil
+			return nil //nolint: nilerr
 		}
 
 		e.settings.Logger.Warn(

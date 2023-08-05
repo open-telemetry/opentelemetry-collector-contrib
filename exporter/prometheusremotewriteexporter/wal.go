@@ -227,7 +227,7 @@ func (prwe *prweWAL) continuallyPopWALThenExport(ctx context.Context, signalStar
 		}
 		reqL = append(reqL, req)
 
-		shouldExport := false
+		var shouldExport bool
 		select {
 		case <-timer.C:
 			shouldExport = true
@@ -285,7 +285,7 @@ func (prwe *prweWAL) exportThenFrontTruncateWAL(ctx context.Context, reqL []*pro
 		return nil
 	}
 	if cErr := ctx.Err(); cErr != nil {
-		return nil
+		return nil // nolint:nilerr
 	}
 
 	if errL := prwe.exportSink(ctx, reqL); errL != nil {

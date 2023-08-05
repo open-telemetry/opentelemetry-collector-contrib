@@ -26,7 +26,7 @@ func TestTaskExporter(t *testing.T) {
 			Definition: &ecs.TaskDefinition{},
 		})
 		assert.Error(t, err)
-		v := &errPrivateIPNotFound{}
+		v := &privateIPNotFoundError{}
 		assert.True(t, errors.As(err, &v))
 	})
 
@@ -117,7 +117,7 @@ func TestTaskExporter(t *testing.T) {
 		require.Error(t, err)
 		merr := multierr.Errors(err)
 		require.Len(t, merr, 1)
-		v := &errMappedPortNotFound{}
+		v := &mappedPortNotFoundError{}
 		assert.True(t, errors.As(merr[0], &v))
 		assert.Len(t, targets, 2)
 	})

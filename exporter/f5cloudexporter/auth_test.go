@@ -4,6 +4,7 @@
 package f5cloudexporter
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -63,15 +65,16 @@ func TestF5CloudAuthRoundTripper_RoundTrip(t *testing.T) {
 			defer server.Close()
 			rt, err := newF5CloudAuthRoundTripper(tt.token, source, tt.rt)
 			assert.NoError(t, err)
-			req, err := http.NewRequest("POST", server.URL, strings.NewReader(""))
-			assert.NoError(t, err)
+			req, err := http.NewRequestWithContext(context.Background(), "POST", server.URL, strings.NewReader(""))
+			require.NoError(t, err)
 			res, err := rt.RoundTrip(req)
 			if tt.shouldError {
 				assert.Nil(t, res)
 				assert.Error(t, err)
 				return
 			}
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			defer res.Body.Close()
 			assert.Equal(t, res.StatusCode, 200)
 		})
 	}

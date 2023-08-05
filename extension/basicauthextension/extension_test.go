@@ -254,7 +254,8 @@ func TestBasicAuth_ClientValid(t *testing.T) {
 	}
 
 	resp, err := c.RoundTrip(&http.Request{Header: orgHeaders})
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, expectedHeaders, resp.Header)
 
 	credential, err := ext.PerRPCCredentials()

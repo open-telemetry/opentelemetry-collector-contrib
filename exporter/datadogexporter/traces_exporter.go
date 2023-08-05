@@ -150,6 +150,9 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 		_, err = exp.retrier.DoWithRetries(ctx, func(context.Context) error {
 			ctx2 := clientutil.GetRequestContext(ctx, string(exp.cfg.API.Key))
 			_, httpresp, merr := exp.metricsAPI.SubmitMetrics(ctx2, datadogV2.MetricPayload{Series: series}, *clientutil.GZipSubmitMetricsOptionalParameters)
+			if merr == nil {
+				defer httpresp.Body.Close()
+			}
 			return clientutil.WrapError(merr, httpresp)
 		})
 	} else {

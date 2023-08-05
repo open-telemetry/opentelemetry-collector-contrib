@@ -27,12 +27,12 @@ type kafkaTracesProducer struct {
 	logger    *zap.Logger
 }
 
-type kafkaErrors struct {
+type kafkaError struct {
 	count int
 	err   string
 }
 
-func (ke kafkaErrors) Error() string {
+func (ke kafkaError) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
@@ -46,7 +46,7 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) 
 		var prodErr sarama.ProducerErrors
 		if errors.As(err, &prodErr) {
 			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+				return kafkaError{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -76,7 +76,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 		var prodErr sarama.ProducerErrors
 		if errors.As(err, &prodErr) {
 			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+				return kafkaError{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err
@@ -106,7 +106,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 		var prodErr sarama.ProducerErrors
 		if errors.As(err, &prodErr) {
 			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+				return kafkaError{len(prodErr), prodErr[0].Err.Error()}
 			}
 		}
 		return err

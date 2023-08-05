@@ -6,12 +6,14 @@ package testutil // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestDatadogLogsServer(t *testing.T) {
@@ -31,11 +33,15 @@ func TestDatadogLogsServer(t *testing.T) {
 	w := gzip.NewWriter(buf)
 	_, _ = w.Write(jsonBytes)
 	_ = w.Close()
-	resp, err := http.Post(server.URL, "application/json", buf)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, server.URL, buf)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 		return
 	}
+	defer resp.Body.Close()
 	assert.Equal(t, 202, resp.StatusCode)
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

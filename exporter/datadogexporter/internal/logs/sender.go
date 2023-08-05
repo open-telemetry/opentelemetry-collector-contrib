@@ -80,6 +80,7 @@ func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogI
 	_, r, err := s.api.SubmitLog(ctx, batch, opts)
 	if err != nil {
 		if r != nil {
+			defer r.Body.Close()
 			b := make([]byte, 1024) // 1KB message max
 			n, _ := r.Body.Read(b)  // ignore any error
 			s.logger.Error("Failed to send logs", zap.Error(err), zap.String("msg", string(b[:n])), zap.String("status_code", r.Status))
@@ -89,5 +90,5 @@ func (s *Sender) handleSubmitLog(ctx context.Context, batch []datadogV2.HTTPLogI
 		// The error will be logged by the exporter helper.
 		return consumererror.NewPermanent(err)
 	}
-	return nil
+	return r.Body.Close()
 }

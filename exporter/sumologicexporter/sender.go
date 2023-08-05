@@ -151,6 +151,7 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
 		return fmt.Errorf("error during sending data: %s", resp.Status)
 	}

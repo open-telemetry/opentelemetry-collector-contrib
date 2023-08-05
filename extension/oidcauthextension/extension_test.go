@@ -42,7 +42,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	payload, _ := json.Marshal(map[string]interface{}{
+	payload, err := json.Marshal(map[string]interface{}{
 		"sub":         "jdoe@example.com",
 		"name":        "jdoe",
 		"iss":         oidcServer.URL,
@@ -50,6 +50,7 @@ func TestOIDCAuthenticationSucceeded(t *testing.T) {
 		"exp":         time.Now().Add(time.Minute).Unix(),
 		"memberships": []string{"department-1", "department-2"},
 	})
+	require.NoError(t, err)
 	token, err := oidcServer.token(payload)
 	require.NoError(t, err)
 

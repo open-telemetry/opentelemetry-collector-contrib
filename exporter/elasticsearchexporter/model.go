@@ -63,6 +63,10 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([]byte, error) {
 	var document objmodel.Document
+	l, err := spanLinksToString(span.Links())
+	if err != nil {
+		return nil, err
+	}
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
 	document.AddTraceID("TraceId", span.TraceID())
@@ -71,7 +75,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddString("Name", span.Name())
 	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
-	document.AddString("Link", spanLinksToString(span.Links()))
+	document.AddString("Link", l)
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddEvents("Events", span.Events())
@@ -84,11 +88,11 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	}
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	err = document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
 }
 
-func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
+func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) (string, error) {
 	linkArray := make([]map[string]interface{}, 0, spanLinkSlice.Len())
 	for i := 0; i < spanLinkSlice.Len(); i++ {
 		spanLink := spanLinkSlice.At(i)
@@ -98,8 +102,8 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 		link[attributeField] = spanLink.Attributes().AsRaw()
 		linkArray = append(linkArray, link)
 	}
-	linkArrayBytes, _ := json.Marshal(&linkArray)
-	return string(linkArrayBytes)
+	linkArrayBytes, err := json.Marshal(&linkArray)
+	return string(linkArrayBytes), err
 }
 
 // DurationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,

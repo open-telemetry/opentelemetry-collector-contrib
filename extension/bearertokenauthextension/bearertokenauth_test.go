@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 )
@@ -58,7 +59,8 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 
 	request := &http.Request{Method: "Get"}
 	resp, err := c.RoundTrip(request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, cfg.BearerToken))
 
@@ -95,7 +97,8 @@ func TestBearerAuthenticator(t *testing.T) {
 	}
 
 	resp, err := roundTripper.RoundTrip(&http.Request{Header: orgHeaders})
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, expectedHeaders, resp.Header)
 	assert.Nil(t, bauth.Shutdown(context.Background()))
 }
@@ -171,7 +174,8 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 
 	request := &http.Request{Method: "Get"}
 	resp, err := rt.RoundTrip(request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	authHeaderValue := resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 
@@ -185,7 +189,8 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	// check if request is updated with the new token
 	request = &http.Request{Method: "Get"}
 	resp, err = rt.RoundTrip(request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(tokenNew)))
 
@@ -196,7 +201,8 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	// check if request is updated with the old token
 	request = &http.Request{Method: "Get"}
 	resp, err = rt.RoundTrip(request)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
 }

@@ -279,9 +279,10 @@ func TestFailContactingOAuth(t *testing.T) {
 	}
 
 	client, _ := setting.ToClient(componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings())
-	req, err := http.NewRequest("POST", setting.Endpoint, nil)
+	req, err := http.NewRequestWithContext(context.Background(), "POST", setting.Endpoint, nil)
 	assert.NoError(t, err)
-	_, err = client.Do(req)
+	r, err := client.Do(req)
 	assert.ErrorIs(t, err, errFailedToGetSecurityToken)
 	assert.Contains(t, err.Error(), serverURL.String())
+	_ = r.Body.Close()
 }

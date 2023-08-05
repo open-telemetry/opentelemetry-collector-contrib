@@ -115,10 +115,10 @@ func TestZorkianConsumeAPMStats(t *testing.T) {
 	_, _, out := c.All(0, component.BuildInfo{}, []string{})
 	require.ElementsMatch(t, out, testutil.StatsPayloads)
 	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
-	var copies []pb.ClientStatsPayload
-	for _, sp := range testutil.StatsPayloads {
+	copies := make([]pb.ClientStatsPayload, len(testutil.StatsPayloads))
+	for i, sp := range testutil.StatsPayloads {
 		sp.Tags = append(sp.Tags, "extra:key")
-		copies = append(copies, sp)
+		copies[i] = sp
 	}
 	require.ElementsMatch(t, out, copies)
 }

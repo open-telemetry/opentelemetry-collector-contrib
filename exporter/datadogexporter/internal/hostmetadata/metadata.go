@@ -91,8 +91,11 @@ func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p sourc
 
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	path := p.pcfg.MetricsEndpoint + "/intake"
-	buf, _ := json.Marshal(hm)
-	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
+	buf, err := json.Marshal(hm)
+	if err != nil {
+		return err
+	}
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, path, bytes.NewBuffer(buf))
 	clientutil.SetDDHeaders(req.Header, p.params.BuildInfo, p.pcfg.APIKey)
 	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
 

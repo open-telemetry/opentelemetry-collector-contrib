@@ -23,7 +23,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const name = "googlecloudpubsub"
+const (
+	name                = "googlecloudpubsub"
+	protobufContentType = "application/protobuf"
+)
 
 type pubsubExporter struct {
 	logger               *zap.Logger
@@ -128,13 +131,13 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 	switch encoding {
 	case otlpProtoTrace:
 		attributes["ce-type"] = "org.opentelemetry.otlp.traces.v1"
-		attributes["content-type"] = "application/protobuf"
+		attributes["content-type"] = protobufContentType
 	case otlpProtoMetric:
 		attributes["ce-type"] = "org.opentelemetry.otlp.metrics.v1"
-		attributes["content-type"] = "application/protobuf"
+		attributes["content-type"] = protobufContentType
 	case otlpProtoLog:
 		attributes["ce-type"] = "org.opentelemetry.otlp.logs.v1"
-		attributes["content-type"] = "application/protobuf"
+		attributes["content-type"] = protobufContentType
 	}
 	if ex.ceCompression == gZip {
 		attributes["content-encoding"] = "gzip"

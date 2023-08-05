@@ -40,8 +40,10 @@ func TestPerformanceProfilerExtensionUsage(t *testing.T) {
 	_, pprofPort, err := net.SplitHostPort(config.TCPAddr.Endpoint)
 	require.NoError(t, err)
 
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:"+pprofPort+"/debug/pprof", nil)
+	require.NoError(t, err)
 	client := &http.Client{}
-	resp, err := client.Get("http://localhost:" + pprofPort + "/debug/pprof")
+	resp, err := client.Do(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()
 

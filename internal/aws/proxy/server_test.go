@@ -78,6 +78,7 @@ func TestHandlerHappyCase(t *testing.T) {
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", strings.NewReader(`{"NextToken": null}`))
 	rec := httptest.NewRecorder()
 	handler(rec, req)
+	defer rec.Result().Body.Close()
 	// the security token is expected to be invalid
 	assert.Equal(t, http.StatusForbidden, rec.Result().StatusCode)
 	headers := rec.Result().Header

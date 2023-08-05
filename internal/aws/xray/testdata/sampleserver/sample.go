@@ -4,6 +4,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -32,7 +33,11 @@ func main() {
 	}()
 	time.Sleep(time.Second)
 
-	resp, err := http.Get("http://localhost:8000")
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://localhost:8000", nil)
+	if err != nil {
+		panic(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
 	}

@@ -69,19 +69,17 @@ func TestFactory_CreateExtension(t *testing.T) {
 	err = ext.Start(ctx, mh)
 	assert.NoError(t, err)
 
-	var resp *http.Response
 	require.Eventually(t, func() bool {
-		resp, err = http.Post(
-			"http://"+address+"/GetSamplingRules",
-			"application/json",
-			strings.NewReader(`{"NextToken": null}`))
-		return err == nil
+		req, err1 := http.NewRequestWithContext(context.Background(), http.MethodPost, "http://"+address+"/GetSamplingRules", strings.NewReader(`{"NextToken": null}`))
+		require.NoError(t, err1)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err1 := http.DefaultClient.Do(req)
+		require.NoError(t, err1)
+		defer resp.Body.Close()
+		return resp.StatusCode == http.StatusOK && resp.Header.Get("Test") == "Passed"
 	}, 3*time.Second, 10*time.Millisecond)
 
 	assert.NoError(t, err)
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "Passed", resp.Header.Get("Test"))
 
 	err = ext.Shutdown(ctx)
 	assert.NoError(t, err)

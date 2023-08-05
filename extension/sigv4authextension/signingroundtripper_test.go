@@ -5,6 +5,7 @@ package sigv4authextension
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -79,7 +80,7 @@ func TestRoundTrip(t *testing.T) {
 			assert.NoError(t, err)
 
 			newBody := strings.NewReader(body)
-			req, err := http.NewRequest("POST", serverURL.String(), newBody)
+			req, err := http.NewRequestWithContext(context.Background(), "POST", serverURL.String(), newBody)
 			assert.NoError(t, err)
 
 			res, err := rt.RoundTrip(req)
@@ -89,6 +90,7 @@ func TestRoundTrip(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+			defer res.Body.Close()
 			assert.Equal(t, res.StatusCode, 200)
 		})
 	}

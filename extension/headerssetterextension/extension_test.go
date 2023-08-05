@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/client"
 )
 
@@ -44,7 +45,8 @@ func TestRoundTripper(t *testing.T) {
 			assert.NotNil(t, req)
 
 			resp, err := roundTripper.RoundTrip(req)
-			assert.NoError(t, err)
+			require.NoError(t, err)
+			defer resp.Body.Close()
 			assert.NotNil(t, resp)
 			for _, header := range tt.cfg.HeadersConfig {
 				assert.Equal(

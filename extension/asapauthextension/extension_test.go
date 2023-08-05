@@ -11,6 +11,7 @@ import (
 
 	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // mockRoundTripper copies the request headers to the response.
@@ -55,7 +56,8 @@ func TestRoundTripper(t *testing.T) {
 
 	req := &http.Request{Method: "Get", Header: map[string][]string{}}
 	resp, err := roundTripper.RoundTrip(req)
-	assert.NoError(t, err)
+	require.NoError(t, err)
+	defer resp.Body.Close()
 	authHeaderValue := resp.Header.Get("Authorization")
 	tokenString := authHeaderValue[7:] // Remove prefix "Bearer "
 

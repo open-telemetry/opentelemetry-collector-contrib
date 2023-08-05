@@ -294,16 +294,16 @@ func expectedDistributionLines(
 	bounds []float64,
 	counts []uint64,
 ) []string {
-	var lines []string
+	lines := make([]string, len(tagsCombinations)*3+len(tagsCombinations)*len(bounds))
+	i := 0
 	for _, tags := range tagsCombinations {
-		lines = append(lines,
-			metricName+".count"+tags+" "+formatInt64(int64(count))+" "+timestampStr,
-			metricName+tags+" "+formatFloatForLabel(sum)+" "+timestampStr,
-			metricName+".bucket"+tags+";upper_bound=inf "+formatInt64(int64(counts[len(bounds)]))+" "+timestampStr,
-		)
-		for i, bound := range bounds {
-			lines = append(lines,
-				metricName+".bucket"+tags+";upper_bound="+formatFloatForLabel(bound)+" "+formatInt64(int64(counts[i]))+" "+timestampStr)
+		lines[i] = metricName + ".count" + tags + " " + formatInt64(int64(count)) + " " + timestampStr
+		lines[i+1] = metricName + tags + " " + formatFloatForLabel(sum) + " " + timestampStr
+		lines[i+2] = metricName + ".bucket" + tags + ";upper_bound=inf " + formatInt64(int64(counts[len(bounds)])) + " " + timestampStr
+		i += 3
+		for j, bound := range bounds {
+			lines[i] = metricName + ".bucket" + tags + ";upper_bound=" + formatFloatForLabel(bound) + " " + formatInt64(int64(counts[j])) + " " + timestampStr
+			i++
 		}
 	}
 	return lines
@@ -318,15 +318,15 @@ func expectedSummaryLines(
 	summaryQuantiles []float64,
 	summaryQuantileValues []float64,
 ) []string {
-	var lines []string
+	lines := make([]string, len(tagsCombinations)*3+len(tagsCombinations)*len(summaryQuantiles))
+	i := 0
 	for _, tags := range tagsCombinations {
-		lines = append(lines,
-			metricName+".count"+tags+" "+formatInt64(int64(count))+" "+timestampStr,
-			metricName+tags+" "+formatFloatForValue(sum)+" "+timestampStr,
-		)
-		for i := range summaryQuantiles {
-			lines = append(lines,
-				metricName+".quantile"+tags+";quantile="+formatFloatForLabel(summaryQuantiles[i])+" "+formatFloatForValue(summaryQuantileValues[i])+" "+timestampStr)
+		lines[i] = metricName + ".count" + tags + " " + formatInt64(int64(count)) + " " + timestampStr
+		lines[i+1] = metricName + tags + " " + formatFloatForValue(sum) + " " + timestampStr
+		i += 2
+		for j := range summaryQuantiles {
+			lines[i] = metricName + ".quantile" + tags + ";quantile=" + formatFloatForLabel(summaryQuantiles[j]) + " " + formatFloatForValue(summaryQuantileValues[j]) + " " + timestampStr
+			i++
 		}
 	}
 	return lines
