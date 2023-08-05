@@ -235,7 +235,8 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
-	var content []string
+	content := make([]string, len(config))
+	i := 0
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 
@@ -253,7 +254,8 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		// values for one of the available fields, we need to escape the newlines
 		safeValue := strings.ReplaceAll(v, "\\", "\\\\")
 		safeValue = strings.ReplaceAll(safeValue, "\n", "\\n")
-		content = append(content, fmt.Sprintf("%s = %s", safeKey, safeValue))
+		content[i] = fmt.Sprintf("%s = %s", safeKey, safeValue)
+		i++
 	}
 	sort.Strings(content)
 
