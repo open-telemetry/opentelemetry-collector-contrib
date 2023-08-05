@@ -60,15 +60,16 @@ func validMappingKeyCases() []severityTestCase {
 		"fatal4": entry.Fatal4,
 	}
 
-	var cases []severityTestCase
+	cases := make([]severityTestCase, len(aliasedMapping))
+	i := 0
 	for k, v := range aliasedMapping {
-		cases = append(cases,
-			severityTestCase{
-				name:     k,
-				sample:   "my_custom_value",
-				mapping:  map[string]interface{}{k: "my_custom_value"},
-				expected: v,
-			})
+		cases[i] = severityTestCase{
+			name:     k,
+			sample:   "my_custom_value",
+			mapping:  map[string]interface{}{k: "my_custom_value"},
+			expected: v,
+		}
+		i++
 	}
 
 	return cases
@@ -104,7 +105,7 @@ func otlpSevCases() []severityTestCase {
 		"fAtAl4": entry.Fatal4,
 	}
 
-	var cases []severityTestCase
+	cases := make([]severityTestCase, 0, mustParse*4)
 	for k, v := range mustParse {
 		cases = append(cases,
 			severityTestCase{

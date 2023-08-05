@@ -63,6 +63,7 @@ func (o *openshiftProvider) OpenShiftClusterVersion(ctx context.Context) (string
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 	res := ocpClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return "", err
@@ -80,6 +81,7 @@ func (o *openshiftProvider) Infrastructure(ctx context.Context) (*Infrastructure
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
@@ -108,6 +110,7 @@ func (o *openshiftProvider) K8SClusterVersion(ctx context.Context) (string, erro
 	if err != nil {
 		return "", err
 	}
+	defer resp.Body.Close()
 	res := k8sClusterVersionAPIResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
 		return "", err

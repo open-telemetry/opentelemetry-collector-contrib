@@ -35,8 +35,8 @@ var errUnexpectedAttributeType = errors.New("unexpected attribute type")
 
 func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Attribute) (AttributesMatcher, error) {
 	// Convert attribute values from mp representation to in-memory representation.
-	var rawAttributes []AttributeMatcher
-	for _, attribute := range attributes {
+	rawAttributes := make([]AttributeMatcher, len(attributes))
+	for i, attribute := range attributes {
 
 		if attribute.Key == "" {
 			return nil, errors.New("can't have empty key in the list of attributes")
@@ -77,7 +77,7 @@ func NewAttributesMatcher(config filterset.Config, attributes []filterconfig.Att
 			}
 		}
 
-		rawAttributes = append(rawAttributes, entry)
+		rawAttributes[i] = entry
 	}
 	return rawAttributes, nil
 }

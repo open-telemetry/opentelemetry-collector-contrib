@@ -56,6 +56,7 @@ const (
 	//  1  1  0  1
 	//  1  1  1  1
 	severityNumberStatement = `((severity_number == SEVERITY_NUMBER_UNSPECIFIED and %v) or (severity_number != SEVERITY_NUMBER_UNSPECIFIED and severity_number >= %d))`
+	parensList              = "(%v)"
 )
 
 func NewLogSkipExprBridge(mc *filterconfig.MatchConfig) (expr.BoolExpr[ottllog.TransformContext], error) {
@@ -144,7 +145,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	var format string
 	if c.serviceNameConditions != nil {
 		if len(c.serviceNameConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -152,7 +153,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.spanNameConditions != nil {
 		if len(c.spanNameConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -160,7 +161,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.spanKindConditions != nil {
 		if len(c.spanKindConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -168,7 +169,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.scopeNameConditions != nil {
 		if len(c.scopeNameConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -176,7 +177,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.scopeVersionConditions != nil {
 		if len(c.scopeVersionConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -190,7 +191,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.bodyConditions != nil {
 		if len(c.bodyConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -198,7 +199,7 @@ func createStatement(mp filterconfig.MatchProperties) (string, error) {
 	}
 	if c.severityTextConditions != nil {
 		if len(c.severityTextConditions) > 1 {
-			format = "(%v)"
+			format = parensList
 		} else {
 			format = "%v"
 		}
@@ -297,18 +298,18 @@ func createStatementTemplates(matchType filterset.MatchType) (statementTemplates
 }
 
 func createBasicConditions(template string, input []string) []string {
-	var conditions []string
-	for _, i := range input {
-		conditions = append(conditions, fmt.Sprintf(template, i))
+	conditions := make([]string, len(input))
+	for index, i := range input {
+		conditions[index] = fmt.Sprintf(template, i)
 	}
 	return conditions
 }
 
 func createLibraryConditions(nameTemplate string, versionTemplate string, libraries []filterconfig.InstrumentationLibrary) ([]string, []string) {
-	var scopeNameConditions []string
+	scopeNameConditions := make([]string, len(libraries))
 	var scopeVersionConditions []string
-	for _, scope := range libraries {
-		scopeNameConditions = append(scopeNameConditions, fmt.Sprintf(nameTemplate, scope.Name))
+	for i, scope := range libraries {
+		scopeNameConditions[i] = fmt.Sprintf(nameTemplate, scope.Name)
 		if scope.Version != nil {
 			scopeVersionConditions = append(scopeVersionConditions, fmt.Sprintf(versionTemplate, *scope.Version))
 		}
@@ -317,15 +318,15 @@ func createLibraryConditions(nameTemplate string, versionTemplate string, librar
 }
 
 func createAttributeConditions(template string, input []filterconfig.Attribute, matchType filterset.MatchType) []string {
-	var attributeConditions []string
-	for _, attribute := range input {
+	attributeConditions := make([]string, len(input))
+	for i, attribute := range input {
 		var value any
 		if matchType == filterset.Strict {
 			value = convertAttribute(attribute.Value)
 		} else {
 			value = attribute.Value
 		}
-		attributeConditions = append(attributeConditions, fmt.Sprintf(template, attribute.Key, value))
+		attributeConditions[i] = fmt.Sprintf(template, attribute.Key, value)
 	}
 	return attributeConditions
 }
@@ -395,7 +396,7 @@ func createMetricStatement(mp filterconfig.MetricMatchProperties) (*string, erro
 	metricNameConditions := createBasicConditions(metricNameStatement, mp.MetricNames)
 	var format string
 	if len(metricNameConditions) > 1 {
-		format = "(%v)"
+		format = parensList
 	} else {
 		format = "%v"
 	}

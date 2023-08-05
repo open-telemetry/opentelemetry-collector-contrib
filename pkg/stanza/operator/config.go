@@ -32,7 +32,7 @@ type Builder interface {
 // UnmarshalJSON will unmarshal a config from JSON.
 func (c *Config) UnmarshalJSON(bytes []byte) error {
 	var typeUnmarshaller struct {
-		Type string
+		Type string `json:"Type"`
 	}
 
 	if err := json.Unmarshal(bytes, &typeUnmarshaller); err != nil {

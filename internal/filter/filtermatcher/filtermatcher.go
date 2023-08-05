@@ -31,8 +31,8 @@ type PropertiesMatcher struct {
 
 // NewMatcher creates a span Matcher that matches based on the given MatchProperties.
 func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
-	var lm []instrumentationLibraryMatcher
-	for _, library := range mp.Libraries {
+	lm := make([]instrumentationLibraryMatcher, len(mp.Libraries))
+	for i, library := range mp.Libraries {
 		name, err := filterset.CreateFilterSet([]string{library.Name}, &mp.Config)
 		if err != nil {
 			return PropertiesMatcher{}, fmt.Errorf("error creating library name filters: %w", err)
@@ -47,7 +47,7 @@ func NewMatcher(mp *filterconfig.MatchProperties) (PropertiesMatcher, error) {
 			version = filter
 		}
 
-		lm = append(lm, instrumentationLibraryMatcher{Name: name, Version: version})
+		lm[i] = instrumentationLibraryMatcher{Name: name, Version: version}
 	}
 
 	var err error
