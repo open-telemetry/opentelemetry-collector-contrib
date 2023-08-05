@@ -5,6 +5,8 @@ package k8sobjectsreceiver
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+	"go.opentelemetry.io/collector/component"
 	"testing"
 	"time"
 
@@ -138,4 +140,27 @@ func TestWatchObject(t *testing.T) {
 	assert.Equal(t, 3, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
+}
+
+func TestGetLeaderElectionLockName(t *testing.T) {
+	testCases := []struct {
+		name             string
+		id               component.ID
+		expectedLockName string
+	}{
+		{
+			name:             "no-id",
+			id:               component.NewIDWithName(metadata.Type, ""),
+			expectedLockName: metadata.Type,
+		},
+		{
+			name:             "with-id",
+			id:               component.NewIDWithName(metadata.Type, "foo"),
+			expectedLockName: metadata.Type + "-" + "foo",
+		},
+	}
+
+	for _, tc := range testCases {
+		assert.Equal(t, tc.expectedLockName, getLeaderElectionLockName(tc.id))
+	}
 }

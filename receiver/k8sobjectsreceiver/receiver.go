@@ -72,48 +72,47 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		}
 
 		// use component "type-name" as resource lock name.
-		if config.LeaderElection.LockName == "" {
-			nameWithID := strings.Split(params.ID.String(), "/")
-			if len(nameWithID) > 1 {
-				objReceiver.leaderElection.LockName = strings.Join(nameWithID, "-")
-			} else {
-				objReceiver.leaderElection.LockName = nameWithID[0]
-			}
-		}
+		objReceiver.leaderElection.LockName = getLeaderElectionLockName(params.ID)
 	}
 
 	return objReceiver, nil
+}
+
+func (kr *k8sobjectsreceiver) startFunc(ctx context.Context) {
+	for _, object := range kr.objects {
+		kr.start(ctx, object)
+	}
+}
+
+func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
+	leaderLost := make(chan struct{})
+
+	kr.mu.Lock()
+	kr.stopperChanList = append(kr.stopperChanList, leaderLost)
+	kr.mu.Unlock()
+
+	lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, func(_ context.Context) {
+		kr.logger.Info("this instance of the component was selected as the current leader")
+		kr.startFunc(ctx)
+	},
+		func() {
+			kr.logger.Error("this instance of the component was previously the leader but was removed as such")
+			leaderLost <- struct{}{}
+		})
+	if err != nil {
+		kr.logger.Error("create leader elector failed", zap.Error(err))
+	}
+	go lr.Run(ctx)
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
 
 	kr.setting.Logger.Info("Object Receiver started")
 
-	runFunc := func(_ context.Context) {
-		kr.logger.Info("this instance of the component was selected as the current leader")
-		for _, object := range kr.objects {
-			kr.start(ctx, object)
-		}
-	}
-
 	if kr.leaderElection.Enabled && kr.leaderElectionClient != nil {
-		leaderLost := make(chan struct{})
-
-		kr.mu.Lock()
-		kr.stopperChanList = append(kr.stopperChanList, leaderLost)
-		kr.mu.Unlock()
-
-		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, runFunc,
-			func() {
-				kr.logger.Error("this instance of the component was previously the leader but was removed as such")
-				leaderLost <- struct{}{}
-			})
-		if err != nil {
-			kr.logger.Error("create leader elector failed", zap.Error(err))
-		}
-		go lr.Run(ctx)
+		kr.startInLeaderElectionMode(ctx)
 	} else {
-		runFunc(ctx)
+		kr.startFunc(ctx)
 	}
 
 	return nil
@@ -246,4 +245,9 @@ func NewTicker(repeat time.Duration) *time.Ticker {
 	}()
 	ticker.C = nc
 	return ticker
+}
+
+// getLeaderElectionLockName return string as leader election lock name parsed from component.ID
+func getLeaderElectionLockName(id component.ID) string {
+	return strings.Replace(id.String(), "/", "-", -1)
 }

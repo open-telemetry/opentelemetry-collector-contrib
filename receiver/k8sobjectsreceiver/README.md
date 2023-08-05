@@ -55,8 +55,9 @@ The following is example configuration
 ```
 
 Brief description of configuration properties:
-- `leader_election`: running in Kubernetes with `leader election mode`, this means that multiple instances are running, 
-but only one is active at a time, and if it fails, another one is elected as leader and takes its place.
+- `leader_election`: We usually run multiple instances to ensure high availability of `otel-col`, but the `k8sobjectsreceiver` collected data will be duplicated, 
+so we can use the `leader election mode` to ensure that only one instance(as leader instance) is collecting `k8sobjects` data, and the other instances are the alternative nodes.
+and if the leader instance fails, another one is elected as leader and takes its place. 
 *Note*: We need to add additional permissions in RBAC to perform `leader election mode`, See below [Leader Election RBAC](#RBAC-Leader-Election) for more information.
   - `enabled` (default = `false`): whether run in leader election mode.
   - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.

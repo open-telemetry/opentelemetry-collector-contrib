@@ -63,7 +63,7 @@ func getInClusterNamespace() (string, error) {
 	// If not, we are not running in cluster so can't guess the namespace.
 	_, err := os.Stat(inClusterNamespacePath)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("not running in-cluster, please specify leaderElectionIDspace")
+		return "", fmt.Errorf("not running in-cluster, unable to get namespace")
 	} else if err != nil {
 		return "", fmt.Errorf("error checking namespace file: %w", err)
 	}
