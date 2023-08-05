@@ -90,10 +90,6 @@ func (c *Config) Validate() error {
 			object.Interval = defaultPullInterval
 		}
 
-		if object.Mode == WatchMode && object.ResourceVersion == "" {
-			object.ResourceVersion = defaultResourceVersion
-		}
-
 		object.gvr = gvr
 	}
 	return nil

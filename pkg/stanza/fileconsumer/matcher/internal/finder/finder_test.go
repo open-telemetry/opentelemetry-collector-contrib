@@ -8,10 +8,52 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestFinder(t *testing.T) {
+func TestValidate(t *testing.T) {
+	cases := []struct {
+		name        string
+		globs       []string
+		expectedErr string
+	}{
+		{
+			name:  "Empty",
+			globs: []string{},
+		},
+		{
+			name:  "Single",
+			globs: []string{"*.log"},
+		},
+		{
+			name:  "Multiple",
+			globs: []string{"*.log", "*.txt"},
+		},
+		{
+			name:        "Invalid",
+			globs:       []string{"[a-z"},
+			expectedErr: "parse glob: syntax error in pattern",
+		},
+		{
+			name:        "ValidAndInvalid",
+			globs:       []string{"*.log", "[a-z"},
+			expectedErr: "parse glob: syntax error in pattern",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := Validate(tc.globs)
+			if tc.expectedErr != "" {
+				assert.EqualError(t, err, tc.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestFindFiles(t *testing.T) {
 	cases := []struct {
 		name     string
 		files    []string
@@ -112,13 +154,13 @@ func TestFinder(t *testing.T) {
 		},
 		{
 			name:     "SingleLevelFilesOnly",
-			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt"},
+			files:    []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.log")},
 			include:  []string{"*"},
 			expected: []string{"a1.log", "a2.txt"},
 		},
 		{
 			name:     "MultiLevelFilesOnly",
-			files:    []string{"a1.log", "a2.txt", "b/b1.log", "b/b2.txt", "b/c/c1.csv"},
+			files:    []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 			include:  []string{filepath.Join("**", "*")},
 			expected: []string{"a1.log", "a2.txt", filepath.Join("b", "b1.log"), filepath.Join("b", "b2.txt"), filepath.Join("b", "c", "c1.csv")},
 		},
@@ -126,12 +168,23 @@ func TestFinder(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			cwd, err := os.Getwd()
+			require.NoError(t, err)
 			require.NoError(t, os.Chdir(t.TempDir()))
+			defer func() {
+				require.NoError(t, os.Chdir(cwd))
+			}()
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
-				require.NoError(t, os.WriteFile(f, []byte(filepath.Base(f)), 0000))
+
+				file, err := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				require.NoError(t, err)
+
+				_, err = file.WriteString(filepath.Base(f))
+				require.NoError(t, err)
+				require.NoError(t, file.Close())
 			}
-			require.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
+			assert.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
 		})
 	}
 }

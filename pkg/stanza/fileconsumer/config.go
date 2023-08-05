@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -58,7 +58,7 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	MatchingCriteria        `mapstructure:",squash"`
+	matcher.Criteria        `mapstructure:",squash"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
@@ -140,6 +140,11 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		}
 	}
 
+	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -159,7 +164,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			encodingConfig:  c.Splitter.EncodingConfig,
 			headerConfig:    hCfg,
 		},
-		finder:          c.MatchingCriteria,
+		fileMatcher:     fileMatcher,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
@@ -179,34 +184,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
 	}
 
-	if len(c.Include) == 0 {
-		return fmt.Errorf("required argument `include` is empty")
-	}
-
-	// Ensure includes can be parsed as globs
-	for _, include := range c.Include {
-		_, err := doublestar.PathMatch(include, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse include glob: %w", err)
-		}
-	}
-
-	// Ensure excludes can be parsed as globs
-	for _, exclude := range c.Exclude {
-		_, err := doublestar.PathMatch(exclude, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse exclude glob: %w", err)
-		}
-	}
-
-	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
-		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
-	}
-
-	for _, sr := range c.OrderingCriteria.SortBy {
-		if err := sr.validate(); err != nil {
-			return err
-		}
+	if _, err := matcher.New(c.Criteria); err != nil {
+		return err
 	}
 
 	if c.MaxLogSize <= 0 {

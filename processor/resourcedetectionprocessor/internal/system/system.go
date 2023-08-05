@@ -69,6 +69,11 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
+	osDescription, err := d.provider.OSDescription(ctx)
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
+	}
+
 	for _, source := range d.cfg.HostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
@@ -83,6 +88,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 				}
 			}
 			d.rb.SetHostArch(hostArch)
+			d.rb.SetOsDescription(osDescription)
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())

@@ -5,10 +5,12 @@ package k8sobjectsreceiver
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
-	"go.opentelemetry.io/collector/component"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -41,13 +43,13 @@ func TestPullObject(t *testing.T) {
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "1"),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "2"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "3"),
 	)
 
 	rCfg := createDefaultConfig().(*Config)
@@ -86,6 +88,12 @@ func TestWatchObject(t *testing.T) {
 
 	mockClient := newMockDynamicClient()
 
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]interface{}{
+			"environment": "production",
+		}, "1"),
+	)
+
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
@@ -114,30 +122,23 @@ func TestWatchObject(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, consumer.Logs(), 0)
+	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
-			"environment": "production",
-		}),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "2"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "3"),
+		generatePod("pod4", "default", map[string]interface{}{
+			"environment": "production",
+		}, "4"),
 	)
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, consumer.Logs(), 2)
 	assert.Equal(t, 2, consumer.Count())
-
-	mockClient.createPods(
-		generatePod("pod4", "default", map[string]interface{}{
-			"environment": "production",
-		}),
-	)
-	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 3)
-	assert.Equal(t, 3, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }

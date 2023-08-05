@@ -4,34 +4,26 @@
 package replicationcontroller // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, rc *corev1.ReplicationController) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
-
+func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController, ts pcommon.Timestamp) {
 	if rc.Spec.Replicas != nil {
-		mbphase.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))
-		mbphase.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
+		mb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))
+		mb.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
 	}
 
-	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(rc.Namespace)
 	rb.SetK8sReplicationcontrollerName(rc.Name)
 	rb.SetK8sReplicationcontrollerUID(string(rc.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(rc *corev1.ReplicationController) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
