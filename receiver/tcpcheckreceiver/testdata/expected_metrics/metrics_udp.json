@@ -1,0 +1,72 @@
+{
+    "resourceMetrics": [
+       {
+        "scopeMetrics": [
+           {
+                "scope": {
+                    "name": "otelcol/tcpcheckreceiver",
+                    "version": "latest"
+                },
+                "metrics": [
+                    {
+                        "description": "Measures the duration of net connection.",
+                        "name": "tcpcheck.duration",
+                        "gauge": {
+                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "dataPoints": [
+                                {
+                                    "asInt": "0",
+                                    "attributes": [
+                                        {
+                                            "key": "net.endpoint",
+                                            "value": {
+                                                "stringValue": "localhost:44321"
+                                            }
+                                        },
+                                        {
+                                            "key": "net.transport",
+                                            "value": {
+                                                "stringValue": "udp"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "unit": "ms"
+                    },
+                    {
+                        "description": "1 if the net client successfully connected, otherwise 0.",
+                        "name": "tcpcheck.status",
+                        "sum": {
+                            "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                            "dataPoints": [
+                                {
+                                    "asInt": "1",
+                                    "startTimeUnixNano": "1651783208655196000",
+                                    "timeUnixNano": "1651783208656862000",
+                                    "attributes": [
+                                        {
+                                            "key": "net.endpoint",
+                                            "value": {
+                                                "stringValue": "localhost:44321"
+                                            }
+                                        },
+                                        {
+                                            "key": "net.transport",
+                                            "value": {
+                                                "stringValue": "udp"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "unit": "1"
+                    }
+                ]
+            }
+        ]
+       }
+    ]
+}

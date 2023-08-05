@@ -235,6 +235,7 @@ body:
       - receiver/sshcheck
       - receiver/statsd
       - receiver/syslog
+      - receiver/tcpcheck
       - receiver/tcplog
       - receiver/udplog
       - receiver/vcenter

@@ -1,0 +1,19 @@
+default:
+all_set:
+  metrics:
+    tcpcheck.duration:
+      enabled: true
+    tcpcheck.error:
+      enabled: true
+    tcpcheck.status:
+      enabled: true
+  resource_attributes:
+none_set:
+  metrics:
+    tcpcheck.duration:
+      enabled: false
+    tcpcheck.error:
+      enabled: false
+    tcpcheck.status:
+      enabled: false
+  resource_attributes:

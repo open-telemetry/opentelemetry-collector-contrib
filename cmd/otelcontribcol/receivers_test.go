@@ -440,6 +440,9 @@ func TestDefaultReceivers(t *testing.T) {
 			},
 		},
 		{
+			receiver: "tcpcheck",
+		},
+		{
 			receiver: "tcplog",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["tcplog"].CreateDefaultConfig().(*tcplogreceiver.TCPLogConfig)

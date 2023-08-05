@@ -1,0 +1,41 @@
+name: tcpcheckreceiver
+
+resource_attributes:
+
+attributes:
+  net.endpoint:
+    description: Full net endpoint
+    type: string
+  net.transport:
+    description: Transport protocol
+    type: string
+  error.message:
+    description: Error message recorded during check
+    type: string
+
+metrics:
+  tcpcheck.status:
+    description: 1 if the net client successfully connected, otherwise 0.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    unit: 1
+    attributes: [net.endpoint, net.transport]
+  tcpcheck.duration:
+    description: Measures the duration of net connection.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [net.endpoint, net.transport]
+  tcpcheck.error:
+    description: Records errors occurring during net check.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [net.endpoint, net.transport, error.message]
