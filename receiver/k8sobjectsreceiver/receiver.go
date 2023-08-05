@@ -105,7 +105,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 
 		lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, runFunc,
 			func() {
-				kr.logger.Error("leader election lost")
+				kr.logger.Error("this instance of the component was previously the leader but was removed as such")
 				leaderLost <- struct{}{}
 			})
 		if err != nil {
