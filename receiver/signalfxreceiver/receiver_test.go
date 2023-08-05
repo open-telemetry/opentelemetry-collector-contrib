@@ -344,6 +344,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
+			defer resp.Body.Close()
 			assert.NoError(t, err)
 
 			var bodyStr string
@@ -521,6 +522,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -578,7 +580,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	url := fmt.Sprintf("https://%s/v2/datapoint", addr)
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 	req.Header.Set("Content-Type", "application/x-protobuf")
 
@@ -600,6 +602,7 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoErrorf(t, err, "should not have failed when sending to signalFx receiver %v", err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	t.Log("SignalFx Request Received")
 
@@ -664,6 +667,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -742,6 +746,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
