@@ -44,7 +44,7 @@ func TestOpenSearchExporter(t *testing.T) {
 			"Round trip",
 			"testdata/traces-sample-a.yaml",
 			[]requestHandler{
-				sanityCheckAndRespond("testdata/opensearch-response-no-error.json"),
+				checkAndRespond("testdata/opensearch-response-no-error.json"),
 			},
 			func(err error) {
 				require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestOpenSearchExporter(t *testing.T) {
 			"Permanent error",
 			"testdata/traces-sample-a.yaml",
 			[]requestHandler{
-				sanityCheckAndRespond("testdata/opensearch-response-permanent-error.json"),
+				checkAndRespond("testdata/opensearch-response-permanent-error.json"),
 			},
 			func(err error) {
 				require.True(t, consumererror.IsPermanent(err))
@@ -64,8 +64,8 @@ func TestOpenSearchExporter(t *testing.T) {
 			"Retryable error",
 			"testdata/traces-sample-a.yaml",
 			[]requestHandler{
-				sanityCheckAndRespond("testdata/opensearch-response-retryable-error.json"),
-				sanityCheckAndRespond("testdata/opensearch-response-retryable-succeeded.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-error.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-succeeded.json"),
 			},
 			func(err error) {
 				require.NoError(t, err)
@@ -76,9 +76,9 @@ func TestOpenSearchExporter(t *testing.T) {
 			"Retryable error, succeeds on second try",
 			"testdata/traces-sample-a.yaml",
 			[]requestHandler{
-				sanityCheckAndRespond("testdata/opensearch-response-retryable-error.json"),
-				sanityCheckAndRespond("testdata/opensearch-response-retryable-error-2-attempt.json"),
-				sanityCheckAndRespond("testdata/opensearch-response-retryable-succeeded.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-error.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-error-2-attempt.json"),
+				checkAndRespond("testdata/opensearch-response-retryable-succeeded.json"),
 			},
 			func(err error) {
 				require.NoError(t, err)
@@ -116,8 +116,7 @@ func TestOpenSearchExporter(t *testing.T) {
 			tc.RequestHandlers[requestCount].ValidateReceivedDocuments(t, requestCount, docs)
 
 			w.WriteHeader(200)
-			var nextResponseDoc = requestCount % len(tc.RequestHandlers)
-			response, _ := os.ReadFile(tc.RequestHandlers[nextResponseDoc].ResponseJSONPath)
+			response, _ := os.ReadFile(tc.RequestHandlers[requestCount].ResponseJSONPath)
 			_, err = w.Write(response)
 			require.NoError(t, err)
 
