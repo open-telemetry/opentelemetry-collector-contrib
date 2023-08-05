@@ -26,7 +26,7 @@ func TestOpenSearchExporter(t *testing.T) {
 		ResponseJSONPath          string
 	}
 
-	sanityCheckAndRespond := func(responsePath string) requestHandler {
+	checkAndRespond := func(responsePath string) requestHandler {
 		pass := func(t *testing.T, _ int, docs []map[string]any) {
 			for _, doc := range docs {
 				require.NotEmpty(t, doc)

@@ -53,7 +53,7 @@ func (tbi *traceBulkIndexer) HasErrors() bool {
 
 func (tbi *traceBulkIndexer) OnIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
-		tbi.errs = append(tbi.errs, consumererror.NewPermanent(indexerErr))
+		tbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
 	}
 }
 
