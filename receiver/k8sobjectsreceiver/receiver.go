@@ -286,5 +286,5 @@ func NewTicker(repeat time.Duration) *time.Ticker {
 
 // getLeaderElectionLockName return string as leader election lock name parsed from component.ID
 func getLeaderElectionLockName(id component.ID) string {
-	return strings.Replace(id.String(), "/", "-", -1)
+	return strings.ReplaceAll(id.String(), "/", "-")
 }
