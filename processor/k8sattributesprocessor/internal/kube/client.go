@@ -212,13 +212,13 @@ func (c *WatchClient) handlePodAdd(obj interface{}) {
 	observability.RecordPodTableSize(int64(podTableSize))
 }
 
-func (c *WatchClient) handlePodUpdate(_, new interface{}) {
+func (c *WatchClient) handlePodUpdate(_, newPod interface{}) {
 	observability.RecordPodUpdated()
-	if pod, ok := new.(*api_v1.Pod); ok {
+	if pod, ok := newPod.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
 		c.addOrUpdatePod(pod)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", new))
+		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", newPod))
 	}
 	podTableSize := len(c.Pods)
 	observability.RecordPodTableSize(int64(podTableSize))
@@ -244,12 +244,12 @@ func (c *WatchClient) handleNamespaceAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleNamespaceUpdate(_, new interface{}) {
+func (c *WatchClient) handleNamespaceUpdate(_, newNamespace interface{}) {
 	observability.RecordNamespaceUpdated()
-	if namespace, ok := new.(*api_v1.Namespace); ok {
+	if namespace, ok := newNamespace.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
-		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", new))
+		c.logger.Error("object received was not of type api_v1.Namespace", zap.Any("received", newNamespace))
 	}
 }
 
@@ -836,12 +836,12 @@ func (c *WatchClient) handleReplicaSetAdd(obj interface{}) {
 	}
 }
 
-func (c *WatchClient) handleReplicaSetUpdate(_, new interface{}) {
+func (c *WatchClient) handleReplicaSetUpdate(_, newRS interface{}) {
 	observability.RecordReplicaSetUpdated()
-	if replicaset, ok := new.(*apps_v1.ReplicaSet); ok {
+	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
-		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", new))
+		c.logger.Error("object received was not of type apps_v1.ReplicaSet", zap.Any("received", newRS))
 	}
 }
 
