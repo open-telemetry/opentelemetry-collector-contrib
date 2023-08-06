@@ -146,13 +146,6 @@ resourceMetrics:
                   startTimeUnixNano: "1682363202250964000"
                   timeUnixNano: "1682363222253814000"
             unit: '{sessions}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes: []
-    scopeMetrics:
-      - metrics:
           - description: The total time spent performing operations.
             name: mongodb.operation.time
             sum:
@@ -202,6 +195,22 @@ resourceMetrics:
                   timeUnixNano: "1682363222253814000"
               isMonotonic: true
             unit: ms
+          - description: The number of times an index has been accessed.
+            name: mongodb.index.access.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: database
+                      value:
+                        stringValue: testdb
+                    - key: collection
+                      value:
+                        stringValue: orders
+                  startTimeUnixNano: "1682363202250964000"
+                  timeUnixNano: "1682363222253814000"
+            unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest
@@ -950,29 +959,6 @@ resourceMetrics:
                   timeUnixNano: "1682363222253814000"
               isMonotonic: true
             unit: By
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource:
-      attributes: []
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: database
-                      value:
-                        stringValue: testdb
-                    - key: collection
-                      value:
-                        stringValue: orders
-                  startTimeUnixNano: "1682363202250964000"
-                  timeUnixNano: "1682363222253814000"
-            unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver
           version: latest

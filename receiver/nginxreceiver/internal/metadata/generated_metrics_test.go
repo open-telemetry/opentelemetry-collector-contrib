@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,26 +59,25 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxConnectionsAcceptedDataPoint(ts, 1)
+			rmb.RecordNginxConnectionsAcceptedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
+			rmb.RecordNginxConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxConnectionsHandledDataPoint(ts, 1)
+			rmb.RecordNginxConnectionsHandledDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNginxRequestsDataPoint(ts, 1)
+			rmb.RecordNginxRequestsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
+			rmb.RecordTempConnectionsCurrentDataPoint(ts, 1, AttributeStateActive)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

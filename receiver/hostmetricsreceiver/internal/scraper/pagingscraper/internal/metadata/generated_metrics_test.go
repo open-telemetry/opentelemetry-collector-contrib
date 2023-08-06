@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,21 +59,20 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeTypeMajor)
+			rmb.RecordSystemPagingFaultsDataPoint(ts, 1, AttributeTypeMajor)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirectionPageIn, AttributeTypeMajor)
+			rmb.RecordSystemPagingOperationsDataPoint(ts, 1, AttributeDirectionPageIn, AttributeTypeMajor)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemPagingUsageDataPoint(ts, 1, "device-val", AttributeStateCached)
+			rmb.RecordSystemPagingUsageDataPoint(ts, 1, "device-val", AttributeStateCached)
 
 			allMetricsCount++
-			mb.RecordSystemPagingUtilizationDataPoint(ts, 1, "device-val", AttributeStateCached)
+			rmb.RecordSystemPagingUtilizationDataPoint(ts, 1, "device-val", AttributeStateCached)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

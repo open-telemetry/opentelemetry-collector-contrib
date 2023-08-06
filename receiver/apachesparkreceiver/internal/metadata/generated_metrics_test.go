@@ -48,264 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerJobActiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerJobCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatusWaiting)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverDagSchedulerStageFailedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcTypeMajor)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcTypeMajor)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocationOnHeap)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 1, AttributeLocationOnHeap)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryTypeDirect)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocationOnHeap)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusDroppedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusPostedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorDiskUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorGcTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorInputSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 1, AttributeDirectionIn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorTaskActiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResultCompleted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkExecutorTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkJobStageActiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkJobStageResultDataPoint(ts, 1, AttributeJobResultCompleted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkJobTaskActiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkJobTaskResultDataPoint(ts, 1, AttributeJobResultCompleted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirectionIn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSourceLocal)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 1, AttributeSourceLocal)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleIoWriteSizeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageStatusDataPoint(ts, 1, true, true, false, true)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageTaskActiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageTaskResultDataPoint(ts, 1, AttributeStageTaskResultCompleted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetSparkApplicationID("spark.application.id-val")
 			rb.SetSparkApplicationName("spark.application.name-val")
@@ -314,7 +56,267 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetSparkStageAttemptID(22)
 			rb.SetSparkStageID(14)
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverBlockManagerDiskUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverDagSchedulerJobActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverDagSchedulerJobCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverDagSchedulerStageCountDataPoint(ts, 1, AttributeSchedulerStatusWaiting)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverDagSchedulerStageFailedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorGcOperationsDataPoint(ts, 1, AttributeGcTypeMajor)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorGcTimeDataPoint(ts, 1, AttributeGcTypeMajor)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorMemoryExecutionDataPoint(ts, 1, AttributeLocationOnHeap)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorMemoryJvmDataPoint(ts, 1, AttributeLocationOnHeap)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorMemoryPoolDataPoint(ts, 1, AttributePoolMemoryTypeDirect)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverExecutorMemoryStorageDataPoint(ts, 1, AttributeLocationOnHeap)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverJvmCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverLiveListenerBusDroppedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverLiveListenerBusPostedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorDiskUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorGcTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorInputSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorShuffleIoSizeDataPoint(ts, 1, AttributeDirectionIn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorStorageMemoryUsageDataPoint(ts, 1, AttributeLocationOnHeap, AttributeStateUsed)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorTaskActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorTaskLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorTaskResultDataPoint(ts, 1, AttributeExecutorTaskResultCompleted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkExecutorTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkJobStageActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkJobStageResultDataPoint(ts, 1, AttributeJobResultCompleted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkJobTaskActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkJobTaskResultDataPoint(ts, 1, AttributeJobResultCompleted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageDiskSpilledDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageExecutorCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageExecutorRunTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageIoSizeDataPoint(ts, 1, AttributeDirectionIn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageJvmGcTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageMemoryPeakDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageMemorySpilledDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleBlocksFetchedDataPoint(ts, 1, AttributeSourceLocal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleFetchWaitTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleIoDiskDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleIoReadSizeDataPoint(ts, 1, AttributeSourceLocal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleIoRecordsDataPoint(ts, 1, AttributeDirectionIn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleIoWriteSizeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageShuffleWriteTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageStatusDataPoint(ts, 1, true, true, false, true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageTaskActiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageTaskResultDataPoint(ts, 1, AttributeStageTaskResultCompleted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordSparkStageTaskResultSizeDataPoint(ts, 1)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeConnectionOp specifies the a value connection_op attribute.
@@ -1070,14 +1072,25 @@ func newMetricAerospikeNodeQueryTracked(cfg MetricConfig) metricAerospikeNodeQue
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                  MetricsBuilderConfig // config of the metrics builder.
-	startTime                                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                         int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                           pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                               component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                               component.BuildInfo
+	startTime                                               pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                         int               // maximum observed number of metrics per resource.
+	resource                                                pcommon.Resource
+	missedEmits                                             int
 	metricAerospikeNamespaceDiskAvailable                   metricAerospikeNamespaceDiskAvailable
 	metricAerospikeNamespaceGeojsonRegionQueryCells         metricAerospikeNamespaceGeojsonRegionQueryCells
 	metricAerospikeNamespaceGeojsonRegionQueryFalsePositive metricAerospikeNamespaceGeojsonRegionQueryFalsePositive
@@ -1106,29 +1119,58 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                mbc,
-		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                         pmetric.NewMetrics(),
-		buildInfo:                             settings.BuildInfo,
-		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(mbc.Metrics.AerospikeNamespaceDiskAvailable),
-		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryCells),
-		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
-		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryPoints),
-		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(mbc.Metrics.AerospikeNamespaceGeojsonRegionQueryRequests),
-		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(mbc.Metrics.AerospikeNamespaceMemoryFree),
-		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(mbc.Metrics.AerospikeNamespaceMemoryUsage),
-		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(mbc.Metrics.AerospikeNamespaceQueryCount),
-		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(mbc.Metrics.AerospikeNamespaceScanCount),
-		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(mbc.Metrics.AerospikeNamespaceTransactionCount),
-		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(mbc.Metrics.AerospikeNodeConnectionCount),
-		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mbc.Metrics.AerospikeNodeConnectionOpen),
-		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mbc.Metrics.AerospikeNodeMemoryFree),
-		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mbc.Metrics.AerospikeNodeQueryTracked),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                             mb.startTime,
+		buildInfo:                             mb.buildInfo,
+		resource:                              res,
+		metricAerospikeNamespaceDiskAvailable: newMetricAerospikeNamespaceDiskAvailable(mb.config.Metrics.AerospikeNamespaceDiskAvailable),
+		metricAerospikeNamespaceGeojsonRegionQueryCells:         newMetricAerospikeNamespaceGeojsonRegionQueryCells(mb.config.Metrics.AerospikeNamespaceGeojsonRegionQueryCells),
+		metricAerospikeNamespaceGeojsonRegionQueryFalsePositive: newMetricAerospikeNamespaceGeojsonRegionQueryFalsePositive(mb.config.Metrics.AerospikeNamespaceGeojsonRegionQueryFalsePositive),
+		metricAerospikeNamespaceGeojsonRegionQueryPoints:        newMetricAerospikeNamespaceGeojsonRegionQueryPoints(mb.config.Metrics.AerospikeNamespaceGeojsonRegionQueryPoints),
+		metricAerospikeNamespaceGeojsonRegionQueryRequests:      newMetricAerospikeNamespaceGeojsonRegionQueryRequests(mb.config.Metrics.AerospikeNamespaceGeojsonRegionQueryRequests),
+		metricAerospikeNamespaceMemoryFree:                      newMetricAerospikeNamespaceMemoryFree(mb.config.Metrics.AerospikeNamespaceMemoryFree),
+		metricAerospikeNamespaceMemoryUsage:                     newMetricAerospikeNamespaceMemoryUsage(mb.config.Metrics.AerospikeNamespaceMemoryUsage),
+		metricAerospikeNamespaceQueryCount:                      newMetricAerospikeNamespaceQueryCount(mb.config.Metrics.AerospikeNamespaceQueryCount),
+		metricAerospikeNamespaceScanCount:                       newMetricAerospikeNamespaceScanCount(mb.config.Metrics.AerospikeNamespaceScanCount),
+		metricAerospikeNamespaceTransactionCount:                newMetricAerospikeNamespaceTransactionCount(mb.config.Metrics.AerospikeNamespaceTransactionCount),
+		metricAerospikeNodeConnectionCount:                      newMetricAerospikeNodeConnectionCount(mb.config.Metrics.AerospikeNodeConnectionCount),
+		metricAerospikeNodeConnectionOpen:                       newMetricAerospikeNodeConnectionOpen(mb.config.Metrics.AerospikeNodeConnectionOpen),
+		metricAerospikeNodeMemoryFree:                           newMetricAerospikeNodeMemoryFree(mb.config.Metrics.AerospikeNodeMemoryFree),
+		metricAerospikeNodeQueryTracked:                         newMetricAerospikeNodeQueryTracked(mb.config.Metrics.AerospikeNodeQueryTracked),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1137,233 +1179,206 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricAerospikeNamespaceDiskAvailable.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryCells.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryPoints.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryRequests.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceMemoryFree.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceMemoryUsage.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceQueryCount.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceScanCount.emit(sm.Metrics())
+	rmb.metricAerospikeNamespaceTransactionCount.emit(sm.Metrics())
+	rmb.metricAerospikeNodeConnectionCount.emit(sm.Metrics())
+	rmb.metricAerospikeNodeConnectionOpen.emit(sm.Metrics())
+	rmb.metricAerospikeNodeMemoryFree.emit(sm.Metrics())
+	rmb.metricAerospikeNodeQueryTracked.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/aerospikereceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricAerospikeNamespaceDiskAvailable.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceGeojsonRegionQueryCells.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceGeojsonRegionQueryPoints.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceGeojsonRegionQueryRequests.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceMemoryFree.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceMemoryUsage.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceQueryCount.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceScanCount.emit(ils.Metrics())
-	mb.metricAerospikeNamespaceTransactionCount.emit(ils.Metrics())
-	mb.metricAerospikeNodeConnectionCount.emit(ils.Metrics())
-	mb.metricAerospikeNodeConnectionOpen.emit(ils.Metrics())
-	mb.metricAerospikeNodeMemoryFree.emit(ils.Metrics())
-	mb.metricAerospikeNodeQueryTracked.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/aerospikereceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordAerospikeNamespaceDiskAvailableDataPoint adds a data point to aerospike.namespace.disk.available metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceDiskAvailableDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceDiskAvailable, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceDiskAvailable.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint adds a data point to aerospike.namespace.geojson.region_query_cells metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryCells, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceGeojsonRegionQueryCells.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryCells.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint adds a data point to aerospike.namespace.geojson.region_query_false_positive metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryFalsePositive, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryFalsePositive.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint adds a data point to aerospike.namespace.geojson.region_query_points metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryPoints, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceGeojsonRegionQueryPoints.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryPoints.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint adds a data point to aerospike.namespace.geojson.region_query_requests metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceGeojsonRegionQueryRequests, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceGeojsonRegionQueryRequests.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceGeojsonRegionQueryRequests.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceMemoryFreeDataPoint adds a data point to aerospike.namespace.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryFree, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNamespaceMemoryFree.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNamespaceMemoryUsageDataPoint adds a data point to aerospike.namespace.memory.usage metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, inputVal string, namespaceComponentAttributeValue AttributeNamespaceComponent) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceMemoryUsageDataPoint(ts pcommon.Timestamp, inputVal string, namespaceComponentAttributeValue AttributeNamespaceComponent) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceMemoryUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(mb.startTime, ts, val, namespaceComponentAttributeValue.String())
+	rmb.metricAerospikeNamespaceMemoryUsage.recordDataPoint(rmb.startTime, ts, val, namespaceComponentAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNamespaceQueryCountDataPoint adds a data point to aerospike.namespace.query.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceQueryCountDataPoint(ts pcommon.Timestamp, inputVal string, queryTypeAttributeValue AttributeQueryType, indexTypeAttributeValue AttributeIndexType, queryResultAttributeValue AttributeQueryResult) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceQueryCountDataPoint(ts pcommon.Timestamp, inputVal string, queryTypeAttributeValue AttributeQueryType, indexTypeAttributeValue AttributeIndexType, queryResultAttributeValue AttributeQueryResult) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceQueryCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceQueryCount.recordDataPoint(mb.startTime, ts, val, queryTypeAttributeValue.String(), indexTypeAttributeValue.String(), queryResultAttributeValue.String())
+	rmb.metricAerospikeNamespaceQueryCount.recordDataPoint(rmb.startTime, ts, val, queryTypeAttributeValue.String(), indexTypeAttributeValue.String(), queryResultAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNamespaceScanCountDataPoint adds a data point to aerospike.namespace.scan.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceScanCountDataPoint(ts pcommon.Timestamp, inputVal string, scanTypeAttributeValue AttributeScanType, scanResultAttributeValue AttributeScanResult) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceScanCountDataPoint(ts pcommon.Timestamp, inputVal string, scanTypeAttributeValue AttributeScanType, scanResultAttributeValue AttributeScanResult) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceScanCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceScanCount.recordDataPoint(mb.startTime, ts, val, scanTypeAttributeValue.String(), scanResultAttributeValue.String())
+	rmb.metricAerospikeNamespaceScanCount.recordDataPoint(rmb.startTime, ts, val, scanTypeAttributeValue.String(), scanResultAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNamespaceTransactionCountDataPoint adds a data point to aerospike.namespace.transaction.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNamespaceTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType, transactionResultAttributeValue AttributeTransactionResult) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNamespaceTransactionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNamespaceTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
+	rmb.metricAerospikeNamespaceTransactionCount.recordDataPoint(rmb.startTime, ts, val, transactionTypeAttributeValue.String(), transactionResultAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNodeConnectionCountDataPoint adds a data point to aerospike.node.connection.count metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNodeConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType, connectionOpAttributeValue AttributeConnectionOp) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNodeConnectionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNodeConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String(), connectionOpAttributeValue.String())
+	rmb.metricAerospikeNodeConnectionCount.recordDataPoint(rmb.startTime, ts, val, connectionTypeAttributeValue.String(), connectionOpAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNodeConnectionOpenDataPoint adds a data point to aerospike.node.connection.open metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNodeConnectionOpenDataPoint(ts pcommon.Timestamp, inputVal string, connectionTypeAttributeValue AttributeConnectionType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNodeConnectionOpen, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNodeConnectionOpen.recordDataPoint(mb.startTime, ts, val, connectionTypeAttributeValue.String())
+	rmb.metricAerospikeNodeConnectionOpen.recordDataPoint(rmb.startTime, ts, val, connectionTypeAttributeValue.String())
 	return nil
 }
 
 // RecordAerospikeNodeMemoryFreeDataPoint adds a data point to aerospike.node.memory.free metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNodeMemoryFreeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNodeMemoryFree, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNodeMemoryFree.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNodeMemoryFree.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordAerospikeNodeQueryTrackedDataPoint adds a data point to aerospike.node.query.tracked metric.
-func (mb *MetricsBuilder) RecordAerospikeNodeQueryTrackedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordAerospikeNodeQueryTrackedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for AerospikeNodeQueryTracked, value was %s: %w", inputVal, err)
 	}
-	mb.metricAerospikeNodeQueryTracked.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricAerospikeNodeQueryTracked.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

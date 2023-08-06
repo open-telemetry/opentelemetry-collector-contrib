@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,50 +59,49 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaBrokersDataPoint(ts, 1)
+			rmb.RecordKafkaBrokersDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
+			rmb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
+			rmb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
+			rmb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
+			rmb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
+			rmb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
+			rmb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
+			rmb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
+			rmb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
+			rmb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
+			rmb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

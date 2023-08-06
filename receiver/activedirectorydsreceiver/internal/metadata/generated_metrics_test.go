@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,78 +59,77 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
+			rmb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsLdapBindLastSuccessfulTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsLdapBindRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsLdapClientSessionCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsLdapSearchRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsNameCacheHitRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsNotificationQueuedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
+			rmb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
+			rmb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
+			rmb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsReplicationOperationPendingDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
+			rmb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsReplicationSyncObjectPendingDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
+			rmb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistingushedNames)
+			rmb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistingushedNames)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsSecurityDescriptorPropagationsEventQueuedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
+			rmb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
+			rmb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

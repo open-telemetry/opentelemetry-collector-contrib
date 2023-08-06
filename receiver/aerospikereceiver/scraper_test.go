@@ -66,28 +66,23 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 
-	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
 	rb.SetAerospikeNodeName("BB990C28F270008")
-	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
+	require.NoError(t, expectedMB.ResourceMetricsBuilder(rb.Emit()).RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
 
-	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
+	rb.SetAerospikeNodeName("BB990C28F270008")
 	rb.SetAerospikeNamespace("test")
-	rb.SetAerospikeNodeName("BB990C28F270008")
-	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
+	require.NoError(t, expectedMB.ResourceMetricsBuilder(rb.Emit()).RecordAerospikeNamespaceMemoryFreeDataPoint(now, "45"))
 
-	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryFreeDataPoint(now, "30"))
+	rb.SetAerospikeNodeName("BB990C28F270008")
 	rb.SetAerospikeNamespace("bar")
-	rb.SetAerospikeNodeName("BB990C28F270008")
-	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
+	require.NoError(t, expectedMB.ResourceMetricsBuilder(rb.Emit()).RecordAerospikeNamespaceMemoryFreeDataPoint(now, "30"))
 
-	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
 	rb.SetAerospikeNodeName("BB990C28F270009")
-	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
+	require.NoError(t, expectedMB.ResourceMetricsBuilder(rb.Emit()).RecordAerospikeNodeConnectionOpenDataPoint(now, "1", metadata.AttributeConnectionTypeClient))
 
-	require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
+	rb.SetAerospikeNodeName("BB990C28F270009")
 	rb.SetAerospikeNamespace("test")
-	rb.SetAerospikeNodeName("BB990C28F270009")
-	expectedMB.EmitForResource(metadata.WithResource(rb.Emit()))
+	require.NoError(t, expectedMB.ResourceMetricsBuilder(rb.Emit()).RecordAerospikeNamespaceMemoryUsageDataPoint(now, "128", metadata.AttributeNamespaceComponentData))
 
 	// require.NoError(t, expectedMB.RecordAerospikeNamespaceMemoryUsageDataPoint(now, "badval", metadata.AttributeNamespaceComponentData))
 	// expectedMB.EmitForResource(metadata.WithAerospikeNamespace("bar"), metadata.WithAerospikeNodeName("BB990C28F270009"))

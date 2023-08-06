@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeDirection specifies the a value direction attribute.
@@ -873,14 +875,25 @@ func newMetricZookeeperZnodeCount(cfg MetricConfig) metricZookeeperZnodeCount {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                            int                  // maximum observed number of metrics per resource.
-	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                  component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                  component.BuildInfo
+	startTime                                  pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                            int               // maximum observed number of metrics per resource.
+	resource                                   pcommon.Resource
+	missedEmits                                int
 	metricZookeeperConnectionActive            metricZookeeperConnectionActive
 	metricZookeeperDataTreeEphemeralNodeCount  metricZookeeperDataTreeEphemeralNodeCount
 	metricZookeeperDataTreeSize                metricZookeeperDataTreeSize
@@ -911,31 +924,60 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                          mbc,
-		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       settings.BuildInfo,
-		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(mbc.Metrics.ZookeeperConnectionActive),
-		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(mbc.Metrics.ZookeeperDataTreeEphemeralNodeCount),
-		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(mbc.Metrics.ZookeeperDataTreeSize),
-		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(mbc.Metrics.ZookeeperFileDescriptorLimit),
-		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(mbc.Metrics.ZookeeperFileDescriptorOpen),
-		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(mbc.Metrics.ZookeeperFollowerCount),
-		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(mbc.Metrics.ZookeeperFsyncExceededThresholdCount),
-		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(mbc.Metrics.ZookeeperLatencyAvg),
-		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(mbc.Metrics.ZookeeperLatencyMax),
-		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(mbc.Metrics.ZookeeperLatencyMin),
-		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(mbc.Metrics.ZookeeperPacketCount),
-		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(mbc.Metrics.ZookeeperRequestActive),
-		metricZookeeperRuok:                        newMetricZookeeperRuok(mbc.Metrics.ZookeeperRuok),
-		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mbc.Metrics.ZookeeperSyncPending),
-		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mbc.Metrics.ZookeeperWatchCount),
-		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mbc.Metrics.ZookeeperZnodeCount),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                       mb.startTime,
+		buildInfo:                       mb.buildInfo,
+		resource:                        res,
+		metricZookeeperConnectionActive: newMetricZookeeperConnectionActive(mb.config.Metrics.ZookeeperConnectionActive),
+		metricZookeeperDataTreeEphemeralNodeCount:  newMetricZookeeperDataTreeEphemeralNodeCount(mb.config.Metrics.ZookeeperDataTreeEphemeralNodeCount),
+		metricZookeeperDataTreeSize:                newMetricZookeeperDataTreeSize(mb.config.Metrics.ZookeeperDataTreeSize),
+		metricZookeeperFileDescriptorLimit:         newMetricZookeeperFileDescriptorLimit(mb.config.Metrics.ZookeeperFileDescriptorLimit),
+		metricZookeeperFileDescriptorOpen:          newMetricZookeeperFileDescriptorOpen(mb.config.Metrics.ZookeeperFileDescriptorOpen),
+		metricZookeeperFollowerCount:               newMetricZookeeperFollowerCount(mb.config.Metrics.ZookeeperFollowerCount),
+		metricZookeeperFsyncExceededThresholdCount: newMetricZookeeperFsyncExceededThresholdCount(mb.config.Metrics.ZookeeperFsyncExceededThresholdCount),
+		metricZookeeperLatencyAvg:                  newMetricZookeeperLatencyAvg(mb.config.Metrics.ZookeeperLatencyAvg),
+		metricZookeeperLatencyMax:                  newMetricZookeeperLatencyMax(mb.config.Metrics.ZookeeperLatencyMax),
+		metricZookeeperLatencyMin:                  newMetricZookeeperLatencyMin(mb.config.Metrics.ZookeeperLatencyMin),
+		metricZookeeperPacketCount:                 newMetricZookeeperPacketCount(mb.config.Metrics.ZookeeperPacketCount),
+		metricZookeeperRequestActive:               newMetricZookeeperRequestActive(mb.config.Metrics.ZookeeperRequestActive),
+		metricZookeeperRuok:                        newMetricZookeeperRuok(mb.config.Metrics.ZookeeperRuok),
+		metricZookeeperSyncPending:                 newMetricZookeeperSyncPending(mb.config.Metrics.ZookeeperSyncPending),
+		metricZookeeperWatchCount:                  newMetricZookeeperWatchCount(mb.config.Metrics.ZookeeperWatchCount),
+		metricZookeeperZnodeCount:                  newMetricZookeeperZnodeCount(mb.config.Metrics.ZookeeperZnodeCount),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -944,175 +986,148 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricZookeeperConnectionActive.emit(sm.Metrics())
+	rmb.metricZookeeperDataTreeEphemeralNodeCount.emit(sm.Metrics())
+	rmb.metricZookeeperDataTreeSize.emit(sm.Metrics())
+	rmb.metricZookeeperFileDescriptorLimit.emit(sm.Metrics())
+	rmb.metricZookeeperFileDescriptorOpen.emit(sm.Metrics())
+	rmb.metricZookeeperFollowerCount.emit(sm.Metrics())
+	rmb.metricZookeeperFsyncExceededThresholdCount.emit(sm.Metrics())
+	rmb.metricZookeeperLatencyAvg.emit(sm.Metrics())
+	rmb.metricZookeeperLatencyMax.emit(sm.Metrics())
+	rmb.metricZookeeperLatencyMin.emit(sm.Metrics())
+	rmb.metricZookeeperPacketCount.emit(sm.Metrics())
+	rmb.metricZookeeperRequestActive.emit(sm.Metrics())
+	rmb.metricZookeeperRuok.emit(sm.Metrics())
+	rmb.metricZookeeperSyncPending.emit(sm.Metrics())
+	rmb.metricZookeeperWatchCount.emit(sm.Metrics())
+	rmb.metricZookeeperZnodeCount.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/zookeeperreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricZookeeperConnectionActive.emit(ils.Metrics())
-	mb.metricZookeeperDataTreeEphemeralNodeCount.emit(ils.Metrics())
-	mb.metricZookeeperDataTreeSize.emit(ils.Metrics())
-	mb.metricZookeeperFileDescriptorLimit.emit(ils.Metrics())
-	mb.metricZookeeperFileDescriptorOpen.emit(ils.Metrics())
-	mb.metricZookeeperFollowerCount.emit(ils.Metrics())
-	mb.metricZookeeperFsyncExceededThresholdCount.emit(ils.Metrics())
-	mb.metricZookeeperLatencyAvg.emit(ils.Metrics())
-	mb.metricZookeeperLatencyMax.emit(ils.Metrics())
-	mb.metricZookeeperLatencyMin.emit(ils.Metrics())
-	mb.metricZookeeperPacketCount.emit(ils.Metrics())
-	mb.metricZookeeperRequestActive.emit(ils.Metrics())
-	mb.metricZookeeperRuok.emit(ils.Metrics())
-	mb.metricZookeeperSyncPending.emit(ils.Metrics())
-	mb.metricZookeeperWatchCount.emit(ils.Metrics())
-	mb.metricZookeeperZnodeCount.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/zookeeperreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordZookeeperConnectionActiveDataPoint adds a data point to zookeeper.connection.active metric.
-func (mb *MetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperConnectionActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperConnectionActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperConnectionActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeEphemeralNodeCountDataPoint adds a data point to zookeeper.data_tree.ephemeral_node.count metric.
-func (mb *MetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperDataTreeEphemeralNodeCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperDataTreeSizeDataPoint adds a data point to zookeeper.data_tree.size metric.
-func (mb *MetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperDataTreeSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperDataTreeSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperDataTreeSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorLimitDataPoint adds a data point to zookeeper.file_descriptor.limit metric.
-func (mb *MetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperFileDescriptorLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperFileDescriptorLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperFileDescriptorLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperFileDescriptorOpenDataPoint adds a data point to zookeeper.file_descriptor.open metric.
-func (mb *MetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperFileDescriptorOpenDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperFileDescriptorOpen.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperFollowerCountDataPoint adds a data point to zookeeper.follower.count metric.
-func (mb *MetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
-	mb.metricZookeeperFollowerCount.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordZookeeperFollowerCountDataPoint(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+	rmb.metricZookeeperFollowerCount.recordDataPoint(rmb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordZookeeperFsyncExceededThresholdCountDataPoint adds a data point to zookeeper.fsync.exceeded_threshold.count metric.
-func (mb *MetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperFsyncExceededThresholdCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperFsyncExceededThresholdCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyAvgDataPoint adds a data point to zookeeper.latency.avg metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperLatencyAvg.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperLatencyAvgDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperLatencyAvg.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMaxDataPoint adds a data point to zookeeper.latency.max metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperLatencyMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperLatencyMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperLatencyMinDataPoint adds a data point to zookeeper.latency.min metric.
-func (mb *MetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperLatencyMin.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperLatencyMinDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperLatencyMin.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperPacketCountDataPoint adds a data point to zookeeper.packet.count metric.
-func (mb *MetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricZookeeperPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordZookeeperPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricZookeeperPacketCount.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordZookeeperRequestActiveDataPoint adds a data point to zookeeper.request.active metric.
-func (mb *MetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperRequestActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperRequestActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperRequestActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperRuokDataPoint adds a data point to zookeeper.ruok metric.
-func (mb *MetricsBuilder) RecordZookeeperRuokDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperRuok.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperRuokDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperRuok.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperSyncPendingDataPoint adds a data point to zookeeper.sync.pending metric.
-func (mb *MetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperSyncPending.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperSyncPendingDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperSyncPending.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperWatchCountDataPoint adds a data point to zookeeper.watch.count metric.
-func (mb *MetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperWatchCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperWatchCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperWatchCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordZookeeperZnodeCountDataPoint adds a data point to zookeeper.znode.count metric.
-func (mb *MetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricZookeeperZnodeCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordZookeeperZnodeCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricZookeeperZnodeCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

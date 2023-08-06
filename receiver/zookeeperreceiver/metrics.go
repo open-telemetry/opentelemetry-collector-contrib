@@ -54,7 +54,7 @@ func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
 	}
 }
 
-func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Timestamp, val int64) {
+func (m *metricCreator) recordDataPointsFunc(rmb *metadata.ResourceMetricsBuilder, metric string) func(ts pcommon.Timestamp, val int64) {
 	switch metric {
 	case followersMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
@@ -63,58 +63,58 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Time
 	case syncedFollowersMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
 			m.computedMetricStore[syncedFollowersMetricKey] = val
-			m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateSynced)
+			rmb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateSynced)
 		}
 	case pendingSyncsMetricKey:
-		return m.mb.RecordZookeeperSyncPendingDataPoint
+		return rmb.RecordZookeeperSyncPendingDataPoint
 	case avgLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyAvgDataPoint
+		return rmb.RecordZookeeperLatencyAvgDataPoint
 	case maxLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyMaxDataPoint
+		return rmb.RecordZookeeperLatencyMaxDataPoint
 	case minLatencyMetricKey:
-		return m.mb.RecordZookeeperLatencyMinDataPoint
+		return rmb.RecordZookeeperLatencyMinDataPoint
 	case numAliveConnectionsMetricKey:
-		return m.mb.RecordZookeeperConnectionActiveDataPoint
+		return rmb.RecordZookeeperConnectionActiveDataPoint
 	case outstandingRequestsMetricKey:
-		return m.mb.RecordZookeeperRequestActiveDataPoint
+		return rmb.RecordZookeeperRequestActiveDataPoint
 	case zNodeCountMetricKey:
-		return m.mb.RecordZookeeperZnodeCountDataPoint
+		return rmb.RecordZookeeperZnodeCountDataPoint
 	case watchCountMetricKey:
-		return m.mb.RecordZookeeperWatchCountDataPoint
+		return rmb.RecordZookeeperWatchCountDataPoint
 	case ephemeralsCountMetricKey:
-		return m.mb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint
+		return rmb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint
 	case approximateDataSizeMetricKey:
-		return m.mb.RecordZookeeperDataTreeSizeDataPoint
+		return rmb.RecordZookeeperDataTreeSizeDataPoint
 	case openFileDescriptorCountMetricKey:
-		return m.mb.RecordZookeeperFileDescriptorOpenDataPoint
+		return rmb.RecordZookeeperFileDescriptorOpenDataPoint
 	case maxFileDescriptorCountMetricKey:
-		return m.mb.RecordZookeeperFileDescriptorLimitDataPoint
+		return rmb.RecordZookeeperFileDescriptorLimitDataPoint
 	case fSyncThresholdExceedCountMetricKey:
-		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
+		return rmb.RecordZookeeperFsyncExceededThresholdCountDataPoint
 	case ruokKey:
-		return m.mb.RecordZookeeperRuokDataPoint
+		return rmb.RecordZookeeperRuokDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)
+			rmb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)
 		}
 	case packetsSentMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
-			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionSent)
+			rmb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionSent)
 		}
 	}
 
 	return nil
 }
 
-func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, ts pcommon.Timestamp) {
+func (m *metricCreator) generateComputedMetrics(logger *zap.Logger, rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp) {
 	// not_synced Followers Count
-	if err := m.computeNotSyncedFollowersMetric(ts); err != nil {
+	if err := m.computeNotSyncedFollowersMetric(rmb, ts); err != nil {
 		logger.Debug("metric computation failed", zap.Error(err))
 	}
 
 }
 
-func (m *metricCreator) computeNotSyncedFollowersMetric(ts pcommon.Timestamp) error {
+func (m *metricCreator) computeNotSyncedFollowersMetric(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp) error {
 	followersTotal, ok := m.computedMetricStore[followersMetricKey]
 	if !ok {
 		return fmt.Errorf("could not compute not_synced follower.count, missing %s", followersMetricKey)
@@ -126,7 +126,7 @@ func (m *metricCreator) computeNotSyncedFollowersMetric(ts pcommon.Timestamp) er
 	}
 
 	val := followersTotal - syncedFollowers
-	m.mb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateUnsynced)
+	rmb.RecordZookeeperFollowerCountDataPoint(ts, val, metadata.AttributeStateUnsynced)
 
 	return nil
 }

@@ -66,30 +66,32 @@ func (r *riakScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 	var errors scrapererror.ScrapeErrors
-	// scrape node.operation.count metric
-	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodeGets, metadata.AttributeRequestGet)
-	r.mb.RecordRiakNodeOperationCountDataPoint(now, stat.NodePuts, metadata.AttributeRequestPut)
-
-	// scrape node.operation.time.mean metric
-	r.mb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodeGetFsmTimeMean, metadata.AttributeRequestGet)
-	r.mb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodePutFsmTimeMean, metadata.AttributeRequestPut)
-
-	// scrape node.read_repair.count metric
-	r.mb.RecordRiakNodeReadRepairCountDataPoint(now, stat.ReadRepairs)
-
-	// scrape node.memory.limit metric
-	r.mb.RecordRiakMemoryLimitDataPoint(now, stat.MemAllocated)
-
-	// scrape vnode.operation.count metric
-	r.mb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodeGets, metadata.AttributeRequestGet)
-	r.mb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodePuts, metadata.AttributeRequestPut)
-
-	// scrape vnode.index.operation.count metric
-	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexReads, metadata.AttributeOperationRead)
-	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
-	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
-
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRiakNodeName(stat.Node)
-	return r.mb.Emit(metadata.WithResource(rb.Emit())), errors.Combine()
+	rmb := r.mb.ResourceMetricsBuilder(rb.Emit())
+
+	// scrape node.operation.count metric
+	rmb.RecordRiakNodeOperationCountDataPoint(now, stat.NodeGets, metadata.AttributeRequestGet)
+	rmb.RecordRiakNodeOperationCountDataPoint(now, stat.NodePuts, metadata.AttributeRequestPut)
+
+	// scrape node.operation.time.mean metric
+	rmb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodeGetFsmTimeMean, metadata.AttributeRequestGet)
+	rmb.RecordRiakNodeOperationTimeMeanDataPoint(now, stat.NodePutFsmTimeMean, metadata.AttributeRequestPut)
+
+	// scrape node.read_repair.count metric
+	rmb.RecordRiakNodeReadRepairCountDataPoint(now, stat.ReadRepairs)
+
+	// scrape node.memory.limit metric
+	rmb.RecordRiakMemoryLimitDataPoint(now, stat.MemAllocated)
+
+	// scrape vnode.operation.count metric
+	rmb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodeGets, metadata.AttributeRequestGet)
+	rmb.RecordRiakVnodeOperationCountDataPoint(now, stat.VnodePuts, metadata.AttributeRequestPut)
+
+	// scrape vnode.index.operation.count metric
+	rmb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexReads, metadata.AttributeOperationRead)
+	rmb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
+	rmb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
+
+	return r.mb.Emit(), errors.Combine()
 }

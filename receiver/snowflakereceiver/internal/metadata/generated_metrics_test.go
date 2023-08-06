@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetSnowflakeAccountName("snowflake.account.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -55,130 +60,127 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "service_type-val")
+			rmb.RecordSnowflakeBillingCloudServiceTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "service_type-val")
+			rmb.RecordSnowflakeBillingTotalCreditTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "service_type-val")
+			rmb.RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts, 1, "service_type-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeDatabaseQueryCountDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "error_message-val", "reported_client_type-val", "is_success-val")
+			rmb.RecordSnowflakeLoginsTotalDataPoint(ts, 1, "error_message-val", "reported_client_type-val", "is_success-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "pipe_name-val")
+			rmb.RecordSnowflakePipeCreditsUsedTotalDataPoint(ts, 1, "pipe_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeQueryBlockedDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeQueryExecutedDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeQueryQueuedOverloadDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
+			rmb.RecordSnowflakeQueryQueuedProvisionDataPoint(ts, 1, "warehouse_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeRowsDeletedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeRowsInsertedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeRowsProducedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeRowsUnloadedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeRowsUpdatedAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "user_name-val")
+			rmb.RecordSnowflakeSessionIDCountDataPoint(ts, 1, "user_name-val")
 
 			allMetricsCount++
-			mb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
+			rmb.RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
+			rmb.RecordSnowflakeStorageStageBytesTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
+			rmb.RecordSnowflakeStorageStorageBytesTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
+			rmb.RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts, 1, "schema_name-val", "execution_status-val", "error_message-val", "query_type-val", "warehouse_name-val", "database_name-val", "warehouse_size-val")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetSnowflakeAccountName("snowflake.account.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

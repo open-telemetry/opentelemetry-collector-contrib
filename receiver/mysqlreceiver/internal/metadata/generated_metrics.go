@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeBufferPoolData specifies the a value buffer_pool_data attribute.
@@ -3267,14 +3269,25 @@ func newMetricMysqlUptime(cfg MetricConfig) metricMysqlUptime {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                             MetricsBuilderConfig // config of the metrics builder.
-	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                  // maximum observed number of metrics per resource.
-	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                          component.BuildInfo
+	startTime                          pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                    int               // maximum observed number of metrics per resource.
+	resource                           pcommon.Resource
+	missedEmits                        int
 	metricMysqlBufferPoolDataPages     metricMysqlBufferPoolDataPages
 	metricMysqlBufferPoolLimit         metricMysqlBufferPoolLimit
 	metricMysqlBufferPoolOperations    metricMysqlBufferPoolOperations
@@ -3332,58 +3345,87 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                             mbc,
-		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          settings.BuildInfo,
-		metricMysqlBufferPoolDataPages:     newMetricMysqlBufferPoolDataPages(mbc.Metrics.MysqlBufferPoolDataPages),
-		metricMysqlBufferPoolLimit:         newMetricMysqlBufferPoolLimit(mbc.Metrics.MysqlBufferPoolLimit),
-		metricMysqlBufferPoolOperations:    newMetricMysqlBufferPoolOperations(mbc.Metrics.MysqlBufferPoolOperations),
-		metricMysqlBufferPoolPageFlushes:   newMetricMysqlBufferPoolPageFlushes(mbc.Metrics.MysqlBufferPoolPageFlushes),
-		metricMysqlBufferPoolPages:         newMetricMysqlBufferPoolPages(mbc.Metrics.MysqlBufferPoolPages),
-		metricMysqlBufferPoolUsage:         newMetricMysqlBufferPoolUsage(mbc.Metrics.MysqlBufferPoolUsage),
-		metricMysqlClientNetworkIo:         newMetricMysqlClientNetworkIo(mbc.Metrics.MysqlClientNetworkIo),
-		metricMysqlCommands:                newMetricMysqlCommands(mbc.Metrics.MysqlCommands),
-		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mbc.Metrics.MysqlConnectionCount),
-		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mbc.Metrics.MysqlConnectionErrors),
-		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mbc.Metrics.MysqlDoubleWrites),
-		metricMysqlHandlers:                newMetricMysqlHandlers(mbc.Metrics.MysqlHandlers),
-		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mbc.Metrics.MysqlIndexIoWaitCount),
-		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mbc.Metrics.MysqlIndexIoWaitTime),
-		metricMysqlJoins:                   newMetricMysqlJoins(mbc.Metrics.MysqlJoins),
-		metricMysqlLocks:                   newMetricMysqlLocks(mbc.Metrics.MysqlLocks),
-		metricMysqlLogOperations:           newMetricMysqlLogOperations(mbc.Metrics.MysqlLogOperations),
-		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mbc.Metrics.MysqlMysqlxConnections),
-		metricMysqlMysqlxWorkerThreads:     newMetricMysqlMysqlxWorkerThreads(mbc.Metrics.MysqlMysqlxWorkerThreads),
-		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(mbc.Metrics.MysqlOpenedResources),
-		metricMysqlOperations:              newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
-		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
-		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
-		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
-		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
-		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
-		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
-		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
-		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
-		metricMysqlRowOperations:           newMetricMysqlRowOperations(mbc.Metrics.MysqlRowOperations),
-		metricMysqlSorts:                   newMetricMysqlSorts(mbc.Metrics.MysqlSorts),
-		metricMysqlStatementEventCount:     newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
-		metricMysqlStatementEventWaitTime:  newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
-		metricMysqlTableIoWaitCount:        newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
-		metricMysqlTableIoWaitTime:         newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
-		metricMysqlTableLockWaitReadCount:  newMetricMysqlTableLockWaitReadCount(mbc.Metrics.MysqlTableLockWaitReadCount),
-		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mbc.Metrics.MysqlTableLockWaitReadTime),
-		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
-		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
-		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
-		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
-		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
-		metricMysqlUptime:                  newMetricMysqlUptime(mbc.Metrics.MysqlUptime),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                          mb.startTime,
+		buildInfo:                          mb.buildInfo,
+		resource:                           res,
+		metricMysqlBufferPoolDataPages:     newMetricMysqlBufferPoolDataPages(mb.config.Metrics.MysqlBufferPoolDataPages),
+		metricMysqlBufferPoolLimit:         newMetricMysqlBufferPoolLimit(mb.config.Metrics.MysqlBufferPoolLimit),
+		metricMysqlBufferPoolOperations:    newMetricMysqlBufferPoolOperations(mb.config.Metrics.MysqlBufferPoolOperations),
+		metricMysqlBufferPoolPageFlushes:   newMetricMysqlBufferPoolPageFlushes(mb.config.Metrics.MysqlBufferPoolPageFlushes),
+		metricMysqlBufferPoolPages:         newMetricMysqlBufferPoolPages(mb.config.Metrics.MysqlBufferPoolPages),
+		metricMysqlBufferPoolUsage:         newMetricMysqlBufferPoolUsage(mb.config.Metrics.MysqlBufferPoolUsage),
+		metricMysqlClientNetworkIo:         newMetricMysqlClientNetworkIo(mb.config.Metrics.MysqlClientNetworkIo),
+		metricMysqlCommands:                newMetricMysqlCommands(mb.config.Metrics.MysqlCommands),
+		metricMysqlConnectionCount:         newMetricMysqlConnectionCount(mb.config.Metrics.MysqlConnectionCount),
+		metricMysqlConnectionErrors:        newMetricMysqlConnectionErrors(mb.config.Metrics.MysqlConnectionErrors),
+		metricMysqlDoubleWrites:            newMetricMysqlDoubleWrites(mb.config.Metrics.MysqlDoubleWrites),
+		metricMysqlHandlers:                newMetricMysqlHandlers(mb.config.Metrics.MysqlHandlers),
+		metricMysqlIndexIoWaitCount:        newMetricMysqlIndexIoWaitCount(mb.config.Metrics.MysqlIndexIoWaitCount),
+		metricMysqlIndexIoWaitTime:         newMetricMysqlIndexIoWaitTime(mb.config.Metrics.MysqlIndexIoWaitTime),
+		metricMysqlJoins:                   newMetricMysqlJoins(mb.config.Metrics.MysqlJoins),
+		metricMysqlLocks:                   newMetricMysqlLocks(mb.config.Metrics.MysqlLocks),
+		metricMysqlLogOperations:           newMetricMysqlLogOperations(mb.config.Metrics.MysqlLogOperations),
+		metricMysqlMysqlxConnections:       newMetricMysqlMysqlxConnections(mb.config.Metrics.MysqlMysqlxConnections),
+		metricMysqlMysqlxWorkerThreads:     newMetricMysqlMysqlxWorkerThreads(mb.config.Metrics.MysqlMysqlxWorkerThreads),
+		metricMysqlOpenedResources:         newMetricMysqlOpenedResources(mb.config.Metrics.MysqlOpenedResources),
+		metricMysqlOperations:              newMetricMysqlOperations(mb.config.Metrics.MysqlOperations),
+		metricMysqlPageOperations:          newMetricMysqlPageOperations(mb.config.Metrics.MysqlPageOperations),
+		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mb.config.Metrics.MysqlPreparedStatements),
+		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mb.config.Metrics.MysqlQueryClientCount),
+		metricMysqlQueryCount:              newMetricMysqlQueryCount(mb.config.Metrics.MysqlQueryCount),
+		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mb.config.Metrics.MysqlQuerySlowCount),
+		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mb.config.Metrics.MysqlReplicaSQLDelay),
+		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mb.config.Metrics.MysqlReplicaTimeBehindSource),
+		metricMysqlRowLocks:                newMetricMysqlRowLocks(mb.config.Metrics.MysqlRowLocks),
+		metricMysqlRowOperations:           newMetricMysqlRowOperations(mb.config.Metrics.MysqlRowOperations),
+		metricMysqlSorts:                   newMetricMysqlSorts(mb.config.Metrics.MysqlSorts),
+		metricMysqlStatementEventCount:     newMetricMysqlStatementEventCount(mb.config.Metrics.MysqlStatementEventCount),
+		metricMysqlStatementEventWaitTime:  newMetricMysqlStatementEventWaitTime(mb.config.Metrics.MysqlStatementEventWaitTime),
+		metricMysqlTableIoWaitCount:        newMetricMysqlTableIoWaitCount(mb.config.Metrics.MysqlTableIoWaitCount),
+		metricMysqlTableIoWaitTime:         newMetricMysqlTableIoWaitTime(mb.config.Metrics.MysqlTableIoWaitTime),
+		metricMysqlTableLockWaitReadCount:  newMetricMysqlTableLockWaitReadCount(mb.config.Metrics.MysqlTableLockWaitReadCount),
+		metricMysqlTableLockWaitReadTime:   newMetricMysqlTableLockWaitReadTime(mb.config.Metrics.MysqlTableLockWaitReadTime),
+		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mb.config.Metrics.MysqlTableLockWaitWriteCount),
+		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mb.config.Metrics.MysqlTableLockWaitWriteTime),
+		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mb.config.Metrics.MysqlTableOpenCache),
+		metricMysqlThreads:                 newMetricMysqlThreads(mb.config.Metrics.MysqlThreads),
+		metricMysqlTmpResources:            newMetricMysqlTmpResources(mb.config.Metrics.MysqlTmpResources),
+		metricMysqlUptime:                  newMetricMysqlUptime(mb.config.Metrics.MysqlUptime),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -3392,482 +3434,455 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricMysqlBufferPoolDataPages.emit(sm.Metrics())
+	rmb.metricMysqlBufferPoolLimit.emit(sm.Metrics())
+	rmb.metricMysqlBufferPoolOperations.emit(sm.Metrics())
+	rmb.metricMysqlBufferPoolPageFlushes.emit(sm.Metrics())
+	rmb.metricMysqlBufferPoolPages.emit(sm.Metrics())
+	rmb.metricMysqlBufferPoolUsage.emit(sm.Metrics())
+	rmb.metricMysqlClientNetworkIo.emit(sm.Metrics())
+	rmb.metricMysqlCommands.emit(sm.Metrics())
+	rmb.metricMysqlConnectionCount.emit(sm.Metrics())
+	rmb.metricMysqlConnectionErrors.emit(sm.Metrics())
+	rmb.metricMysqlDoubleWrites.emit(sm.Metrics())
+	rmb.metricMysqlHandlers.emit(sm.Metrics())
+	rmb.metricMysqlIndexIoWaitCount.emit(sm.Metrics())
+	rmb.metricMysqlIndexIoWaitTime.emit(sm.Metrics())
+	rmb.metricMysqlJoins.emit(sm.Metrics())
+	rmb.metricMysqlLocks.emit(sm.Metrics())
+	rmb.metricMysqlLogOperations.emit(sm.Metrics())
+	rmb.metricMysqlMysqlxConnections.emit(sm.Metrics())
+	rmb.metricMysqlMysqlxWorkerThreads.emit(sm.Metrics())
+	rmb.metricMysqlOpenedResources.emit(sm.Metrics())
+	rmb.metricMysqlOperations.emit(sm.Metrics())
+	rmb.metricMysqlPageOperations.emit(sm.Metrics())
+	rmb.metricMysqlPreparedStatements.emit(sm.Metrics())
+	rmb.metricMysqlQueryClientCount.emit(sm.Metrics())
+	rmb.metricMysqlQueryCount.emit(sm.Metrics())
+	rmb.metricMysqlQuerySlowCount.emit(sm.Metrics())
+	rmb.metricMysqlReplicaSQLDelay.emit(sm.Metrics())
+	rmb.metricMysqlReplicaTimeBehindSource.emit(sm.Metrics())
+	rmb.metricMysqlRowLocks.emit(sm.Metrics())
+	rmb.metricMysqlRowOperations.emit(sm.Metrics())
+	rmb.metricMysqlSorts.emit(sm.Metrics())
+	rmb.metricMysqlStatementEventCount.emit(sm.Metrics())
+	rmb.metricMysqlStatementEventWaitTime.emit(sm.Metrics())
+	rmb.metricMysqlTableIoWaitCount.emit(sm.Metrics())
+	rmb.metricMysqlTableIoWaitTime.emit(sm.Metrics())
+	rmb.metricMysqlTableLockWaitReadCount.emit(sm.Metrics())
+	rmb.metricMysqlTableLockWaitReadTime.emit(sm.Metrics())
+	rmb.metricMysqlTableLockWaitWriteCount.emit(sm.Metrics())
+	rmb.metricMysqlTableLockWaitWriteTime.emit(sm.Metrics())
+	rmb.metricMysqlTableOpenCache.emit(sm.Metrics())
+	rmb.metricMysqlThreads.emit(sm.Metrics())
+	rmb.metricMysqlTmpResources.emit(sm.Metrics())
+	rmb.metricMysqlUptime.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/mysqlreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricMysqlBufferPoolDataPages.emit(ils.Metrics())
-	mb.metricMysqlBufferPoolLimit.emit(ils.Metrics())
-	mb.metricMysqlBufferPoolOperations.emit(ils.Metrics())
-	mb.metricMysqlBufferPoolPageFlushes.emit(ils.Metrics())
-	mb.metricMysqlBufferPoolPages.emit(ils.Metrics())
-	mb.metricMysqlBufferPoolUsage.emit(ils.Metrics())
-	mb.metricMysqlClientNetworkIo.emit(ils.Metrics())
-	mb.metricMysqlCommands.emit(ils.Metrics())
-	mb.metricMysqlConnectionCount.emit(ils.Metrics())
-	mb.metricMysqlConnectionErrors.emit(ils.Metrics())
-	mb.metricMysqlDoubleWrites.emit(ils.Metrics())
-	mb.metricMysqlHandlers.emit(ils.Metrics())
-	mb.metricMysqlIndexIoWaitCount.emit(ils.Metrics())
-	mb.metricMysqlIndexIoWaitTime.emit(ils.Metrics())
-	mb.metricMysqlJoins.emit(ils.Metrics())
-	mb.metricMysqlLocks.emit(ils.Metrics())
-	mb.metricMysqlLogOperations.emit(ils.Metrics())
-	mb.metricMysqlMysqlxConnections.emit(ils.Metrics())
-	mb.metricMysqlMysqlxWorkerThreads.emit(ils.Metrics())
-	mb.metricMysqlOpenedResources.emit(ils.Metrics())
-	mb.metricMysqlOperations.emit(ils.Metrics())
-	mb.metricMysqlPageOperations.emit(ils.Metrics())
-	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
-	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
-	mb.metricMysqlQueryCount.emit(ils.Metrics())
-	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
-	mb.metricMysqlReplicaSQLDelay.emit(ils.Metrics())
-	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
-	mb.metricMysqlRowLocks.emit(ils.Metrics())
-	mb.metricMysqlRowOperations.emit(ils.Metrics())
-	mb.metricMysqlSorts.emit(ils.Metrics())
-	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
-	mb.metricMysqlStatementEventWaitTime.emit(ils.Metrics())
-	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
-	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
-	mb.metricMysqlTableLockWaitReadCount.emit(ils.Metrics())
-	mb.metricMysqlTableLockWaitReadTime.emit(ils.Metrics())
-	mb.metricMysqlTableLockWaitWriteCount.emit(ils.Metrics())
-	mb.metricMysqlTableLockWaitWriteTime.emit(ils.Metrics())
-	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
-	mb.metricMysqlThreads.emit(ils.Metrics())
-	mb.metricMysqlTmpResources.emit(ils.Metrics())
-	mb.metricMysqlUptime.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/mysqlreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordMysqlBufferPoolDataPagesDataPoint adds a data point to mysql.buffer_pool.data_pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
-	mb.metricMysqlBufferPoolDataPages.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolDataPagesDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
+	rmb.metricMysqlBufferPoolDataPages.recordDataPoint(rmb.startTime, ts, val, bufferPoolDataAttributeValue.String())
 }
 
 // RecordMysqlBufferPoolLimitDataPoint adds a data point to mysql.buffer_pool.limit metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlBufferPoolLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlBufferPoolLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolOperationsDataPoint adds a data point to mysql.buffer_pool.operations metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolOperationsAttributeValue AttributeBufferPoolOperations) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolOperationsDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolOperationsAttributeValue AttributeBufferPoolOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlBufferPoolOperations.recordDataPoint(mb.startTime, ts, val, bufferPoolOperationsAttributeValue.String())
+	rmb.metricMysqlBufferPoolOperations.recordDataPoint(rmb.startTime, ts, val, bufferPoolOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlBufferPoolPageFlushesDataPoint adds a data point to mysql.buffer_pool.page_flushes metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolPageFlushesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPageFlushes, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlBufferPoolPageFlushes.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlBufferPoolPageFlushes.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlBufferPoolPagesDataPoint adds a data point to mysql.buffer_pool.pages metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolPagesAttributeValue AttributeBufferPoolPages) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolPagesDataPoint(ts pcommon.Timestamp, inputVal string, bufferPoolPagesAttributeValue AttributeBufferPoolPages) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlBufferPoolPages, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlBufferPoolPages.recordDataPoint(mb.startTime, ts, val, bufferPoolPagesAttributeValue.String())
+	rmb.metricMysqlBufferPoolPages.recordDataPoint(rmb.startTime, ts, val, bufferPoolPagesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlBufferPoolUsageDataPoint adds a data point to mysql.buffer_pool.usage metric.
-func (mb *MetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
-	mb.metricMysqlBufferPoolUsage.recordDataPoint(mb.startTime, ts, val, bufferPoolDataAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlBufferPoolUsageDataPoint(ts pcommon.Timestamp, val int64, bufferPoolDataAttributeValue AttributeBufferPoolData) {
+	rmb.metricMysqlBufferPoolUsage.recordDataPoint(rmb.startTime, ts, val, bufferPoolDataAttributeValue.String())
 }
 
 // RecordMysqlClientNetworkIoDataPoint adds a data point to mysql.client.network.io metric.
-func (mb *MetricsBuilder) RecordMysqlClientNetworkIoDataPoint(ts pcommon.Timestamp, inputVal string, directionAttributeValue AttributeDirection) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlClientNetworkIoDataPoint(ts pcommon.Timestamp, inputVal string, directionAttributeValue AttributeDirection) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlClientNetworkIo, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlClientNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+	rmb.metricMysqlClientNetworkIo.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlCommandsDataPoint adds a data point to mysql.commands metric.
-func (mb *MetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlCommandsDataPoint(ts pcommon.Timestamp, inputVal string, commandAttributeValue AttributeCommand) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlCommands, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
+	rmb.metricMysqlCommands.recordDataPoint(rmb.startTime, ts, val, commandAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlConnectionCountDataPoint adds a data point to mysql.connection.count metric.
-func (mb *MetricsBuilder) RecordMysqlConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlConnectionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlConnectionCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlConnectionErrorsDataPoint adds a data point to mysql.connection.errors metric.
-func (mb *MetricsBuilder) RecordMysqlConnectionErrorsDataPoint(ts pcommon.Timestamp, inputVal string, connectionErrorAttributeValue AttributeConnectionError) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlConnectionErrorsDataPoint(ts pcommon.Timestamp, inputVal string, connectionErrorAttributeValue AttributeConnectionError) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlConnectionErrors, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlConnectionErrors.recordDataPoint(mb.startTime, ts, val, connectionErrorAttributeValue.String())
+	rmb.metricMysqlConnectionErrors.recordDataPoint(rmb.startTime, ts, val, connectionErrorAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlDoubleWritesDataPoint adds a data point to mysql.double_writes metric.
-func (mb *MetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, inputVal string, doubleWritesAttributeValue AttributeDoubleWrites) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlDoubleWritesDataPoint(ts pcommon.Timestamp, inputVal string, doubleWritesAttributeValue AttributeDoubleWrites) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlDoubleWrites, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlDoubleWrites.recordDataPoint(mb.startTime, ts, val, doubleWritesAttributeValue.String())
+	rmb.metricMysqlDoubleWrites.recordDataPoint(rmb.startTime, ts, val, doubleWritesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlHandlersDataPoint adds a data point to mysql.handlers metric.
-func (mb *MetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inputVal string, handlerAttributeValue AttributeHandler) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlHandlersDataPoint(ts pcommon.Timestamp, inputVal string, handlerAttributeValue AttributeHandler) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlHandlers, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlHandlers.recordDataPoint(mb.startTime, ts, val, handlerAttributeValue.String())
+	rmb.metricMysqlHandlers.recordDataPoint(rmb.startTime, ts, val, handlerAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlIndexIoWaitCountDataPoint adds a data point to mysql.index.io.wait.count metric.
-func (mb *MetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
-	mb.metricMysqlIndexIoWaitCount.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMysqlIndexIoWaitCountDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
+	rmb.metricMysqlIndexIoWaitCount.recordDataPoint(rmb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
 }
 
 // RecordMysqlIndexIoWaitTimeDataPoint adds a data point to mysql.index.io.wait.time metric.
-func (mb *MetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
-	mb.metricMysqlIndexIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMysqlIndexIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string, indexNameAttributeValue string) {
+	rmb.metricMysqlIndexIoWaitTime.recordDataPoint(rmb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue, indexNameAttributeValue)
 }
 
 // RecordMysqlJoinsDataPoint adds a data point to mysql.joins metric.
-func (mb *MetricsBuilder) RecordMysqlJoinsDataPoint(ts pcommon.Timestamp, inputVal string, joinKindAttributeValue AttributeJoinKind) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlJoinsDataPoint(ts pcommon.Timestamp, inputVal string, joinKindAttributeValue AttributeJoinKind) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlJoins, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlJoins.recordDataPoint(mb.startTime, ts, val, joinKindAttributeValue.String())
+	rmb.metricMysqlJoins.recordDataPoint(rmb.startTime, ts, val, joinKindAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLocksDataPoint adds a data point to mysql.locks metric.
-func (mb *MetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, inputVal string, locksAttributeValue AttributeLocks) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlLocksDataPoint(ts pcommon.Timestamp, inputVal string, locksAttributeValue AttributeLocks) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlLocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlLocks.recordDataPoint(mb.startTime, ts, val, locksAttributeValue.String())
+	rmb.metricMysqlLocks.recordDataPoint(rmb.startTime, ts, val, locksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlLogOperationsDataPoint adds a data point to mysql.log_operations metric.
-func (mb *MetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, inputVal string, logOperationsAttributeValue AttributeLogOperations) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlLogOperationsDataPoint(ts pcommon.Timestamp, inputVal string, logOperationsAttributeValue AttributeLogOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlLogOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlLogOperations.recordDataPoint(mb.startTime, ts, val, logOperationsAttributeValue.String())
+	rmb.metricMysqlLogOperations.recordDataPoint(rmb.startTime, ts, val, logOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlMysqlxConnectionsDataPoint adds a data point to mysql.mysqlx_connections metric.
-func (mb *MetricsBuilder) RecordMysqlMysqlxConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlMysqlxConnectionsDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlMysqlxConnections, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlMysqlxConnections.recordDataPoint(mb.startTime, ts, val, connectionStatusAttributeValue.String())
+	rmb.metricMysqlMysqlxConnections.recordDataPoint(rmb.startTime, ts, val, connectionStatusAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlMysqlxWorkerThreadsDataPoint adds a data point to mysql.mysqlx_worker_threads metric.
-func (mb *MetricsBuilder) RecordMysqlMysqlxWorkerThreadsDataPoint(ts pcommon.Timestamp, inputVal string, mysqlxThreadsAttributeValue AttributeMysqlxThreads) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlMysqlxWorkerThreadsDataPoint(ts pcommon.Timestamp, inputVal string, mysqlxThreadsAttributeValue AttributeMysqlxThreads) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlMysqlxWorkerThreads, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlMysqlxWorkerThreads.recordDataPoint(mb.startTime, ts, val, mysqlxThreadsAttributeValue.String())
+	rmb.metricMysqlMysqlxWorkerThreads.recordDataPoint(rmb.startTime, ts, val, mysqlxThreadsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlOpenedResourcesDataPoint adds a data point to mysql.opened_resources metric.
-func (mb *MetricsBuilder) RecordMysqlOpenedResourcesDataPoint(ts pcommon.Timestamp, inputVal string, openedResourcesAttributeValue AttributeOpenedResources) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlOpenedResourcesDataPoint(ts pcommon.Timestamp, inputVal string, openedResourcesAttributeValue AttributeOpenedResources) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlOpenedResources, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlOpenedResources.recordDataPoint(mb.startTime, ts, val, openedResourcesAttributeValue.String())
+	rmb.metricMysqlOpenedResources.recordDataPoint(rmb.startTime, ts, val, openedResourcesAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlOperationsDataPoint adds a data point to mysql.operations metric.
-func (mb *MetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlOperationsDataPoint(ts pcommon.Timestamp, inputVal string, operationsAttributeValue AttributeOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlOperations.recordDataPoint(mb.startTime, ts, val, operationsAttributeValue.String())
+	rmb.metricMysqlOperations.recordDataPoint(rmb.startTime, ts, val, operationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlPageOperationsDataPoint adds a data point to mysql.page_operations metric.
-func (mb *MetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, inputVal string, pageOperationsAttributeValue AttributePageOperations) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlPageOperationsDataPoint(ts pcommon.Timestamp, inputVal string, pageOperationsAttributeValue AttributePageOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlPageOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlPageOperations.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
+	rmb.metricMysqlPageOperations.recordDataPoint(rmb.startTime, ts, val, pageOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlPreparedStatementsDataPoint adds a data point to mysql.prepared_statements metric.
-func (mb *MetricsBuilder) RecordMysqlPreparedStatementsDataPoint(ts pcommon.Timestamp, inputVal string, preparedStatementsCommandAttributeValue AttributePreparedStatementsCommand) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlPreparedStatementsDataPoint(ts pcommon.Timestamp, inputVal string, preparedStatementsCommandAttributeValue AttributePreparedStatementsCommand) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlPreparedStatements, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlPreparedStatements.recordDataPoint(mb.startTime, ts, val, preparedStatementsCommandAttributeValue.String())
+	rmb.metricMysqlPreparedStatements.recordDataPoint(rmb.startTime, ts, val, preparedStatementsCommandAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlQueryClientCountDataPoint adds a data point to mysql.query.client.count metric.
-func (mb *MetricsBuilder) RecordMysqlQueryClientCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlQueryClientCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlQueryClientCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlQueryClientCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlQueryClientCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlQueryCountDataPoint adds a data point to mysql.query.count metric.
-func (mb *MetricsBuilder) RecordMysqlQueryCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlQueryCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlQueryCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlQueryCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlQueryCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlQuerySlowCountDataPoint adds a data point to mysql.query.slow.count metric.
-func (mb *MetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlQuerySlowCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlQuerySlowCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlQuerySlowCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordMysqlReplicaSQLDelayDataPoint adds a data point to mysql.replica.sql_delay metric.
-func (mb *MetricsBuilder) RecordMysqlReplicaSQLDelayDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMysqlReplicaSQLDelay.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMysqlReplicaSQLDelayDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMysqlReplicaSQLDelay.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMysqlReplicaTimeBehindSourceDataPoint adds a data point to mysql.replica.time_behind_source metric.
-func (mb *MetricsBuilder) RecordMysqlReplicaTimeBehindSourceDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMysqlReplicaTimeBehindSource.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMysqlReplicaTimeBehindSourceDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMysqlReplicaTimeBehindSource.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMysqlRowLocksDataPoint adds a data point to mysql.row_locks metric.
-func (mb *MetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, inputVal string, rowLocksAttributeValue AttributeRowLocks) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlRowLocksDataPoint(ts pcommon.Timestamp, inputVal string, rowLocksAttributeValue AttributeRowLocks) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlRowLocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlRowLocks.recordDataPoint(mb.startTime, ts, val, rowLocksAttributeValue.String())
+	rmb.metricMysqlRowLocks.recordDataPoint(rmb.startTime, ts, val, rowLocksAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlRowOperationsDataPoint adds a data point to mysql.row_operations metric.
-func (mb *MetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, inputVal string, rowOperationsAttributeValue AttributeRowOperations) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlRowOperationsDataPoint(ts pcommon.Timestamp, inputVal string, rowOperationsAttributeValue AttributeRowOperations) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlRowOperations, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlRowOperations.recordDataPoint(mb.startTime, ts, val, rowOperationsAttributeValue.String())
+	rmb.metricMysqlRowOperations.recordDataPoint(rmb.startTime, ts, val, rowOperationsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlSortsDataPoint adds a data point to mysql.sorts metric.
-func (mb *MetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, inputVal string, sortsAttributeValue AttributeSorts) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlSortsDataPoint(ts pcommon.Timestamp, inputVal string, sortsAttributeValue AttributeSorts) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlSorts, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlSorts.recordDataPoint(mb.startTime, ts, val, sortsAttributeValue.String())
+	rmb.metricMysqlSorts.recordDataPoint(rmb.startTime, ts, val, sortsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlStatementEventCountDataPoint adds a data point to mysql.statement_event.count metric.
-func (mb *MetricsBuilder) RecordMysqlStatementEventCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string, eventStateAttributeValue AttributeEventState) {
-	mb.metricMysqlStatementEventCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue, eventStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlStatementEventCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string, eventStateAttributeValue AttributeEventState) {
+	rmb.metricMysqlStatementEventCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue, eventStateAttributeValue.String())
 }
 
 // RecordMysqlStatementEventWaitTimeDataPoint adds a data point to mysql.statement_event.wait.time metric.
-func (mb *MetricsBuilder) RecordMysqlStatementEventWaitTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string) {
-	mb.metricMysqlStatementEventWaitTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMysqlStatementEventWaitTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, digestAttributeValue string, digestTextAttributeValue string) {
+	rmb.metricMysqlStatementEventWaitTime.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, digestAttributeValue, digestTextAttributeValue)
 }
 
 // RecordMysqlTableIoWaitCountDataPoint adds a data point to mysql.table.io.wait.count metric.
-func (mb *MetricsBuilder) RecordMysqlTableIoWaitCountDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
-	mb.metricMysqlTableIoWaitCount.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableIoWaitCountDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
+	rmb.metricMysqlTableIoWaitCount.recordDataPoint(rmb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
 }
 
 // RecordMysqlTableIoWaitTimeDataPoint adds a data point to mysql.table.io.wait.time metric.
-func (mb *MetricsBuilder) RecordMysqlTableIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
-	mb.metricMysqlTableIoWaitTime.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableIoWaitTimeDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
+	rmb.metricMysqlTableIoWaitTime.recordDataPoint(rmb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
 }
 
 // RecordMysqlTableLockWaitReadCountDataPoint adds a data point to mysql.table.lock_wait.read.count metric.
-func (mb *MetricsBuilder) RecordMysqlTableLockWaitReadCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue AttributeReadLockType) {
-	mb.metricMysqlTableLockWaitReadCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, readLockTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableLockWaitReadCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue AttributeReadLockType) {
+	rmb.metricMysqlTableLockWaitReadCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, readLockTypeAttributeValue.String())
 }
 
 // RecordMysqlTableLockWaitReadTimeDataPoint adds a data point to mysql.table.lock_wait.read.time metric.
-func (mb *MetricsBuilder) RecordMysqlTableLockWaitReadTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue AttributeReadLockType) {
-	mb.metricMysqlTableLockWaitReadTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, readLockTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableLockWaitReadTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, readLockTypeAttributeValue AttributeReadLockType) {
+	rmb.metricMysqlTableLockWaitReadTime.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, readLockTypeAttributeValue.String())
 }
 
 // RecordMysqlTableLockWaitWriteCountDataPoint adds a data point to mysql.table.lock_wait.write.count metric.
-func (mb *MetricsBuilder) RecordMysqlTableLockWaitWriteCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue AttributeWriteLockType) {
-	mb.metricMysqlTableLockWaitWriteCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableLockWaitWriteCountDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue AttributeWriteLockType) {
+	rmb.metricMysqlTableLockWaitWriteCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
 }
 
 // RecordMysqlTableLockWaitWriteTimeDataPoint adds a data point to mysql.table.lock_wait.write.time metric.
-func (mb *MetricsBuilder) RecordMysqlTableLockWaitWriteTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue AttributeWriteLockType) {
-	mb.metricMysqlTableLockWaitWriteTime.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableLockWaitWriteTimeDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string, tableNameAttributeValue string, writeLockTypeAttributeValue AttributeWriteLockType) {
+	rmb.metricMysqlTableLockWaitWriteTime.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, tableNameAttributeValue, writeLockTypeAttributeValue.String())
 }
 
 // RecordMysqlTableOpenCacheDataPoint adds a data point to mysql.table_open_cache metric.
-func (mb *MetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestamp, inputVal string, cacheStatusAttributeValue AttributeCacheStatus) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlTableOpenCacheDataPoint(ts pcommon.Timestamp, inputVal string, cacheStatusAttributeValue AttributeCacheStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlTableOpenCache, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlTableOpenCache.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+	rmb.metricMysqlTableOpenCache.recordDataPoint(rmb.startTime, ts, val, cacheStatusAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlThreadsDataPoint adds a data point to mysql.threads metric.
-func (mb *MetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inputVal string, threadsAttributeValue AttributeThreads) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlThreadsDataPoint(ts pcommon.Timestamp, inputVal string, threadsAttributeValue AttributeThreads) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlThreads, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlThreads.recordDataPoint(mb.startTime, ts, val, threadsAttributeValue.String())
+	rmb.metricMysqlThreads.recordDataPoint(rmb.startTime, ts, val, threadsAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlTmpResourcesDataPoint adds a data point to mysql.tmp_resources metric.
-func (mb *MetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp, inputVal string, tmpResourceAttributeValue AttributeTmpResource) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlTmpResourcesDataPoint(ts pcommon.Timestamp, inputVal string, tmpResourceAttributeValue AttributeTmpResource) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlTmpResources, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlTmpResources.recordDataPoint(mb.startTime, ts, val, tmpResourceAttributeValue.String())
+	rmb.metricMysqlTmpResources.recordDataPoint(rmb.startTime, ts, val, tmpResourceAttributeValue.String())
 	return nil
 }
 
 // RecordMysqlUptimeDataPoint adds a data point to mysql.uptime metric.
-func (mb *MetricsBuilder) RecordMysqlUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordMysqlUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlUptime, value was %s: %w", inputVal, err)
 	}
-	mb.metricMysqlUptime.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricMysqlUptime.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

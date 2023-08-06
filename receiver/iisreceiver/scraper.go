@@ -34,7 +34,6 @@ type iisReceiver struct {
 	siteWatcherRecorders    []watcherRecorder
 	appPoolWatcherRecorders []watcherRecorder
 	queueMaxAgeWatchers     []instanceWatcher
-	rb                      *metadata.ResourceBuilder
 	mb                      *metadata.MetricsBuilder
 
 	// for mocking
@@ -61,7 +60,6 @@ func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer cons
 		params:             settings.TelemetrySettings,
 		config:             cfg,
 		consumer:           consumer,
-		rb:                 metadata.NewResourceBuilder(cfg.ResourceAttributes),
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		newWatcher:         winperfcounters.NewWatcher,
 		newWatcherFromPath: winperfcounters.NewWatcherFromPath,
@@ -90,14 +88,17 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// so that we can emit all metrics for a particular instance (site or app_pool) at once,
 	// keeping them in a single resource metric.
 
-	siteToRecorders := map[string][]valRecorder{}
-	rcvr.scrapeInstanceMetrics(rcvr.siteWatcherRecorders, siteToRecorders)
-	rcvr.emitInstanceMap(now, siteToRecorders, rcvr.rb.SetIisSite)
-
-	appToRecorders := map[string][]valRecorder{}
-	rcvr.scrapeInstanceMetrics(rcvr.appPoolWatcherRecorders, appToRecorders)
-	rcvr.scrapeMaxQueueAgeMetrics(appToRecorders)
-	rcvr.emitInstanceMap(now, appToRecorders, rcvr.rb.SetIisApplicationPool)
+	rcvr.scrapeInstanceMetrics(now, rcvr.siteWatcherRecorders, func(val string) pcommon.Resource {
+		rb := rcvr.mb.NewResourceBuilder()
+		rb.SetIisSite(val)
+		return rb.Emit()
+	})
+	rcvr.scrapeInstanceMetrics(now, rcvr.appPoolWatcherRecorders, func(val string) pcommon.Resource {
+		rb := rcvr.mb.NewResourceBuilder()
+		rb.SetIisApplicationPool(val)
+		return rb.Emit()
+	})
+	rcvr.scrapeMaxQueueAgeMetrics(now)
 
 	rcvr.scrapeTotalMetrics(now)
 
@@ -105,6 +106,7 @@ func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (rcvr *iisReceiver) scrapeTotalMetrics(now pcommon.Timestamp) {
+	rmb := rcvr.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, wr := range rcvr.totalWatcherRecorders {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
@@ -115,12 +117,8 @@ func (rcvr *iisReceiver) scrapeTotalMetrics(now pcommon.Timestamp) {
 		for _, counterValue := range counterValues {
 			value += counterValue.Value
 		}
-		wr.recorder(rcvr.mb, now, value)
+		wr.recorder(rmb, now, value)
 	}
-
-	// resource for total metrics is empty
-	// this makes it so that the order that the scrape functions are called doesn't matter
-	rcvr.mb.EmitForResource()
 }
 
 type valRecorder struct {
@@ -128,7 +126,7 @@ type valRecorder struct {
 	record recordFunc
 }
 
-func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceToRecorders map[string][]valRecorder) {
+func (rcvr *iisReceiver) scrapeInstanceMetrics(ts pcommon.Timestamp, wrs []watcherRecorder, resourceBuilder func(string) pcommon.Resource) {
 	for _, wr := range wrs {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
@@ -145,11 +143,8 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 		}
 
 		for _, cv := range counterValues {
-			instanceToRecorders[cv.InstanceName] = append(instanceToRecorders[cv.InstanceName],
-				valRecorder{
-					val:    cv.Value,
-					record: wr.recorder,
-				})
+			rmb := rcvr.mb.ResourceMetricsBuilder(resourceBuilder(cv.InstanceName))
+			wr.recorder(rmb, pcommon.NewTimestampFromTime(time.Now()), cv.Value)
 		}
 	}
 
@@ -157,7 +152,7 @@ func (rcvr *iisReceiver) scrapeInstanceMetrics(wrs []watcherRecorder, instanceTo
 
 var negativeDenominatorError = "A counter with a negative denominator value was detected.\r\n"
 
-func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]valRecorder) {
+func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(ts pcommon.Timestamp) {
 	for _, wr := range rcvr.queueMaxAgeWatchers {
 		counterValues, err := wr.watcher.ScrapeData()
 
@@ -177,22 +172,10 @@ func (rcvr *iisReceiver) scrapeMaxQueueAgeMetrics(appToRecorders map[string][]va
 			value = counterValues[0].Value
 		}
 
-		appToRecorders[wr.instance] = append(appToRecorders[wr.instance],
-			valRecorder{
-				val:    value,
-				record: recordMaxQueueItemAge,
-			})
-	}
-}
-
-// emitInstanceMap records all metrics for each instance, then emits them all as a single resource metric
-func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecorders map[string][]valRecorder, resourceSetter func(string)) {
-	for instanceName, recorders := range instanceToRecorders {
-		for _, recorder := range recorders {
-			recorder.record(rcvr.mb, now, recorder.val)
-		}
-		resourceSetter(instanceName)
-		rcvr.mb.EmitForResource(metadata.WithResource(rcvr.rb.Emit()))
+		rb := rcvr.mb.NewResourceBuilder()
+		rb.SetIisApplicationPool(wr.instance)
+		rmb := rcvr.mb.ResourceMetricsBuilder(rb.Emit())
+		rmb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(value))
 	}
 }
 

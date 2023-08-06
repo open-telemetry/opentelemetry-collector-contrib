@@ -141,6 +141,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.83.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.83.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.83.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.83.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect

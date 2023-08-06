@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeHTTPMethod specifies the a value http.method attribute.
@@ -523,14 +525,25 @@ func newMetricCouchdbHttpdViews(cfg MetricConfig) metricCouchdbHttpdViews {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                          MetricsBuilderConfig // config of the metrics builder.
-	startTime                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                 int                  // maximum observed number of metrics per resource.
-	metricsBuffer                   pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                       component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                       component.BuildInfo
+	startTime                       pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                 int               // maximum observed number of metrics per resource.
+	resource                        pcommon.Resource
+	missedEmits                     int
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
@@ -553,23 +566,52 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                          mbc,
-		startTime:                       pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                   pmetric.NewMetrics(),
-		buildInfo:                       settings.BuildInfo,
-		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(mbc.Metrics.CouchdbAverageRequestTime),
-		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(mbc.Metrics.CouchdbDatabaseOpen),
-		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(mbc.Metrics.CouchdbDatabaseOperations),
-		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(mbc.Metrics.CouchdbFileDescriptorOpen),
-		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(mbc.Metrics.CouchdbHttpdBulkRequests),
-		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mbc.Metrics.CouchdbHttpdRequests),
-		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mbc.Metrics.CouchdbHttpdResponses),
-		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mbc.Metrics.CouchdbHttpdViews),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                       mb.startTime,
+		buildInfo:                       mb.buildInfo,
+		resource:                        res,
+		metricCouchdbAverageRequestTime: newMetricCouchdbAverageRequestTime(mb.config.Metrics.CouchdbAverageRequestTime),
+		metricCouchdbDatabaseOpen:       newMetricCouchdbDatabaseOpen(mb.config.Metrics.CouchdbDatabaseOpen),
+		metricCouchdbDatabaseOperations: newMetricCouchdbDatabaseOperations(mb.config.Metrics.CouchdbDatabaseOperations),
+		metricCouchdbFileDescriptorOpen: newMetricCouchdbFileDescriptorOpen(mb.config.Metrics.CouchdbFileDescriptorOpen),
+		metricCouchdbHttpdBulkRequests:  newMetricCouchdbHttpdBulkRequests(mb.config.Metrics.CouchdbHttpdBulkRequests),
+		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mb.config.Metrics.CouchdbHttpdRequests),
+		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mb.config.Metrics.CouchdbHttpdResponses),
+		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mb.config.Metrics.CouchdbHttpdViews),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -578,127 +620,100 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricCouchdbAverageRequestTime.emit(sm.Metrics())
+	rmb.metricCouchdbDatabaseOpen.emit(sm.Metrics())
+	rmb.metricCouchdbDatabaseOperations.emit(sm.Metrics())
+	rmb.metricCouchdbFileDescriptorOpen.emit(sm.Metrics())
+	rmb.metricCouchdbHttpdBulkRequests.emit(sm.Metrics())
+	rmb.metricCouchdbHttpdRequests.emit(sm.Metrics())
+	rmb.metricCouchdbHttpdResponses.emit(sm.Metrics())
+	rmb.metricCouchdbHttpdViews.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/couchdbreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricCouchdbAverageRequestTime.emit(ils.Metrics())
-	mb.metricCouchdbDatabaseOpen.emit(ils.Metrics())
-	mb.metricCouchdbDatabaseOperations.emit(ils.Metrics())
-	mb.metricCouchdbFileDescriptorOpen.emit(ils.Metrics())
-	mb.metricCouchdbHttpdBulkRequests.emit(ils.Metrics())
-	mb.metricCouchdbHttpdRequests.emit(ils.Metrics())
-	mb.metricCouchdbHttpdResponses.emit(ils.Metrics())
-	mb.metricCouchdbHttpdViews.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/couchdbreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordCouchdbAverageRequestTimeDataPoint adds a data point to couchdb.average_request_time metric.
-func (mb *MetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricCouchdbAverageRequestTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordCouchdbAverageRequestTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricCouchdbAverageRequestTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOpenDataPoint adds a data point to couchdb.database.open metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricCouchdbDatabaseOpen.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordCouchdbDatabaseOpenDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricCouchdbDatabaseOpen.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordCouchdbDatabaseOperationsDataPoint adds a data point to couchdb.database.operations metric.
-func (mb *MetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricCouchdbDatabaseOperations.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordCouchdbDatabaseOperationsDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricCouchdbDatabaseOperations.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordCouchdbFileDescriptorOpenDataPoint adds a data point to couchdb.file_descriptor.open metric.
-func (mb *MetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricCouchdbFileDescriptorOpen.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordCouchdbFileDescriptorOpenDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricCouchdbFileDescriptorOpen.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdBulkRequestsDataPoint adds a data point to couchdb.httpd.bulk_requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricCouchdbHttpdBulkRequests.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordCouchdbHttpdBulkRequestsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricCouchdbHttpdBulkRequests.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordCouchdbHttpdRequestsDataPoint adds a data point to couchdb.httpd.requests metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue AttributeHTTPMethod) {
-	mb.metricCouchdbHttpdRequests.recordDataPoint(mb.startTime, ts, val, httpMethodAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordCouchdbHttpdRequestsDataPoint(ts pcommon.Timestamp, val int64, httpMethodAttributeValue AttributeHTTPMethod) {
+	rmb.metricCouchdbHttpdRequests.recordDataPoint(rmb.startTime, ts, val, httpMethodAttributeValue.String())
 }
 
 // RecordCouchdbHttpdResponsesDataPoint adds a data point to couchdb.httpd.responses metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
-	mb.metricCouchdbHttpdResponses.recordDataPoint(mb.startTime, ts, val, httpStatusCodeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordCouchdbHttpdResponsesDataPoint(ts pcommon.Timestamp, val int64, httpStatusCodeAttributeValue string) {
+	rmb.metricCouchdbHttpdResponses.recordDataPoint(rmb.startTime, ts, val, httpStatusCodeAttributeValue)
 }
 
 // RecordCouchdbHttpdViewsDataPoint adds a data point to couchdb.httpd.views metric.
-func (mb *MetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue AttributeView) {
-	mb.metricCouchdbHttpdViews.recordDataPoint(mb.startTime, ts, val, viewAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordCouchdbHttpdViewsDataPoint(ts pcommon.Timestamp, val int64, viewAttributeValue AttributeView) {
+	rmb.metricCouchdbHttpdViews.recordDataPoint(rmb.startTime, ts, val, viewAttributeValue.String())
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

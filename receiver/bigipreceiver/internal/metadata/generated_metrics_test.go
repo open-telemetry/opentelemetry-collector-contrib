@@ -48,120 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeRequestCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipNodeSessionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatusActive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolRequestCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirectionSent)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetBigipNodeIPAddress("bigip.node.ip_address-val")
 			rb.SetBigipNodeName("bigip.node.name-val")
@@ -171,7 +57,123 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetBigipVirtualServerDestination("bigip.virtual_server.destination-val")
 			rb.SetBigipVirtualServerName("bigip.virtual_server.name-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipNodeSessionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatusActive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberRequestCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipPoolMemberSessionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerConnectionCountDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirectionSent)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

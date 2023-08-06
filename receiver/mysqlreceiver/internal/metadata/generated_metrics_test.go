@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,162 +61,159 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolDataDirty)
+			rmb.RecordMysqlBufferPoolDataPagesDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
+			rmb.RecordMysqlBufferPoolLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperationsReadAheadRnd)
+			rmb.RecordMysqlBufferPoolOperationsDataPoint(ts, "1", AttributeBufferPoolOperationsReadAheadRnd)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolPageFlushesDataPoint(ts, "1")
+			rmb.RecordMysqlBufferPoolPageFlushesDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPagesData)
+			rmb.RecordMysqlBufferPoolPagesDataPoint(ts, "1", AttributeBufferPoolPagesData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolDataDirty)
+			rmb.RecordMysqlBufferPoolUsageDataPoint(ts, 1, AttributeBufferPoolDataDirty)
 
 			allMetricsCount++
-			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirectionReceived)
+			rmb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirectionReceived)
 
 			allMetricsCount++
-			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
+			rmb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
 
 			allMetricsCount++
-			mb.RecordMysqlConnectionCountDataPoint(ts, "1")
+			rmb.RecordMysqlConnectionCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionErrorAccept)
+			rmb.RecordMysqlConnectionErrorsDataPoint(ts, "1", AttributeConnectionErrorAccept)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWritesPagesWritten)
+			rmb.RecordMysqlDoubleWritesDataPoint(ts, "1", AttributeDoubleWritesPagesWritten)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
+			rmb.RecordMysqlHandlersDataPoint(ts, "1", AttributeHandlerCommit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
+			rmb.RecordMysqlIndexIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
+			rmb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
 
 			allMetricsCount++
-			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
+			rmb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocksImmediate)
+			rmb.RecordMysqlLocksDataPoint(ts, "1", AttributeLocksImmediate)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperationsWaits)
+			rmb.RecordMysqlLogOperationsDataPoint(ts, "1", AttributeLogOperationsWaits)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
+			rmb.RecordMysqlMysqlxConnectionsDataPoint(ts, "1", AttributeConnectionStatusAccepted)
 
 			allMetricsCount++
-			mb.RecordMysqlMysqlxWorkerThreadsDataPoint(ts, "1", AttributeMysqlxThreadsAvailable)
+			rmb.RecordMysqlMysqlxWorkerThreadsDataPoint(ts, "1", AttributeMysqlxThreadsAvailable)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResourcesFile)
+			rmb.RecordMysqlOpenedResourcesDataPoint(ts, "1", AttributeOpenedResourcesFile)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperationsFsyncs)
+			rmb.RecordMysqlOperationsDataPoint(ts, "1", AttributeOperationsFsyncs)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperationsCreated)
+			rmb.RecordMysqlPageOperationsDataPoint(ts, "1", AttributePageOperationsCreated)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
+			rmb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
 
 			allMetricsCount++
-			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
+			rmb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlQueryCountDataPoint(ts, "1")
+			rmb.RecordMysqlQueryCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+			rmb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
 
 			allMetricsCount++
-			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
+			rmb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
+			rmb.RecordMysqlReplicaTimeBehindSourceDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocksWaits)
+			rmb.RecordMysqlRowLocksDataPoint(ts, "1", AttributeRowLocksWaits)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperationsDeleted)
+			rmb.RecordMysqlRowOperationsDataPoint(ts, "1", AttributeRowOperationsDeleted)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlSortsDataPoint(ts, "1", AttributeSortsMergePasses)
+			rmb.RecordMysqlSortsDataPoint(ts, "1", AttributeSortsMergePasses)
 
 			allMetricsCount++
-			mb.RecordMysqlStatementEventCountDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val", AttributeEventStateErrors)
+			rmb.RecordMysqlStatementEventCountDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val", AttributeEventStateErrors)
 
 			allMetricsCount++
-			mb.RecordMysqlStatementEventWaitTimeDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val")
+			rmb.RecordMysqlStatementEventWaitTimeDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlTableIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
+			rmb.RecordMysqlTableIoWaitCountDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlTableIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
+			rmb.RecordMysqlTableIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val")
 
 			allMetricsCount++
-			mb.RecordMysqlTableLockWaitReadCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
+			rmb.RecordMysqlTableLockWaitReadCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
 
 			allMetricsCount++
-			mb.RecordMysqlTableLockWaitReadTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
+			rmb.RecordMysqlTableLockWaitReadTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeReadLockTypeNormal)
 
 			allMetricsCount++
-			mb.RecordMysqlTableLockWaitWriteCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
+			rmb.RecordMysqlTableLockWaitWriteCountDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
 
 			allMetricsCount++
-			mb.RecordMysqlTableLockWaitWriteTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
+			rmb.RecordMysqlTableLockWaitWriteTimeDataPoint(ts, 1, "schema-val", "table_name-val", AttributeWriteLockTypeAllowWrite)
 
 			allMetricsCount++
-			mb.RecordMysqlTableOpenCacheDataPoint(ts, "1", AttributeCacheStatusHit)
+			rmb.RecordMysqlTableOpenCacheDataPoint(ts, "1", AttributeCacheStatusHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
+			rmb.RecordMysqlThreadsDataPoint(ts, "1", AttributeThreadsCached)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResourceDiskTables)
+			rmb.RecordMysqlTmpResourcesDataPoint(ts, "1", AttributeTmpResourceDiskTables)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMysqlUptimeDataPoint(ts, "1")
+			rmb.RecordMysqlUptimeDataPoint(ts, "1")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

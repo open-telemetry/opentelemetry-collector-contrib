@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricKafkaBrokers struct {
@@ -590,14 +592,25 @@ func newMetricKafkaTopicPartitions(cfg MetricConfig) metricKafkaTopicPartitions 
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                             MetricsBuilderConfig // config of the metrics builder.
-	startTime                          pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                    int                  // maximum observed number of metrics per resource.
-	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                          component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                          component.BuildInfo
+	startTime                          pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                    int               // maximum observed number of metrics per resource.
+	resource                           pcommon.Resource
+	missedEmits                        int
 	metricKafkaBrokers                 metricKafkaBrokers
 	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
 	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
@@ -623,168 +636,170 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                             mbc,
-		startTime:                          pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                      pmetric.NewMetrics(),
-		buildInfo:                          settings.BuildInfo,
-		metricKafkaBrokers:                 newMetricKafkaBrokers(mbc.Metrics.KafkaBrokers),
-		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mbc.Metrics.KafkaConsumerGroupLag),
-		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mbc.Metrics.KafkaConsumerGroupLagSum),
-		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(mbc.Metrics.KafkaConsumerGroupMembers),
-		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(mbc.Metrics.KafkaConsumerGroupOffset),
-		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(mbc.Metrics.KafkaConsumerGroupOffsetSum),
-		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(mbc.Metrics.KafkaPartitionCurrentOffset),
-		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(mbc.Metrics.KafkaPartitionOldestOffset),
-		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mbc.Metrics.KafkaPartitionReplicas),
-		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mbc.Metrics.KafkaPartitionReplicasInSync),
-		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
 }
 
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                          mb.startTime,
+		buildInfo:                          mb.buildInfo,
+		resource:                           res,
+		metricKafkaBrokers:                 newMetricKafkaBrokers(mb.config.Metrics.KafkaBrokers),
+		metricKafkaConsumerGroupLag:        newMetricKafkaConsumerGroupLag(mb.config.Metrics.KafkaConsumerGroupLag),
+		metricKafkaConsumerGroupLagSum:     newMetricKafkaConsumerGroupLagSum(mb.config.Metrics.KafkaConsumerGroupLagSum),
+		metricKafkaConsumerGroupMembers:    newMetricKafkaConsumerGroupMembers(mb.config.Metrics.KafkaConsumerGroupMembers),
+		metricKafkaConsumerGroupOffset:     newMetricKafkaConsumerGroupOffset(mb.config.Metrics.KafkaConsumerGroupOffset),
+		metricKafkaConsumerGroupOffsetSum:  newMetricKafkaConsumerGroupOffsetSum(mb.config.Metrics.KafkaConsumerGroupOffsetSum),
+		metricKafkaPartitionCurrentOffset:  newMetricKafkaPartitionCurrentOffset(mb.config.Metrics.KafkaPartitionCurrentOffset),
+		metricKafkaPartitionOldestOffset:   newMetricKafkaPartitionOldestOffset(mb.config.Metrics.KafkaPartitionOldestOffset),
+		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mb.config.Metrics.KafkaPartitionReplicas),
+		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mb.config.Metrics.KafkaPartitionReplicasInSync),
+		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mb.config.Metrics.KafkaTopicPartitions),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricKafkaBrokers.emit(sm.Metrics())
+	rmb.metricKafkaConsumerGroupLag.emit(sm.Metrics())
+	rmb.metricKafkaConsumerGroupLagSum.emit(sm.Metrics())
+	rmb.metricKafkaConsumerGroupMembers.emit(sm.Metrics())
+	rmb.metricKafkaConsumerGroupOffset.emit(sm.Metrics())
+	rmb.metricKafkaConsumerGroupOffsetSum.emit(sm.Metrics())
+	rmb.metricKafkaPartitionCurrentOffset.emit(sm.Metrics())
+	rmb.metricKafkaPartitionOldestOffset.emit(sm.Metrics())
+	rmb.metricKafkaPartitionReplicas.emit(sm.Metrics())
+	rmb.metricKafkaPartitionReplicasInSync.emit(sm.Metrics())
+	rmb.metricKafkaTopicPartitions.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/kafkametricsreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricKafkaBrokers.emit(ils.Metrics())
-	mb.metricKafkaConsumerGroupLag.emit(ils.Metrics())
-	mb.metricKafkaConsumerGroupLagSum.emit(ils.Metrics())
-	mb.metricKafkaConsumerGroupMembers.emit(ils.Metrics())
-	mb.metricKafkaConsumerGroupOffset.emit(ils.Metrics())
-	mb.metricKafkaConsumerGroupOffsetSum.emit(ils.Metrics())
-	mb.metricKafkaPartitionCurrentOffset.emit(ils.Metrics())
-	mb.metricKafkaPartitionOldestOffset.emit(ils.Metrics())
-	mb.metricKafkaPartitionReplicas.emit(ils.Metrics())
-	mb.metricKafkaPartitionReplicasInSync.emit(ils.Metrics())
-	mb.metricKafkaTopicPartitions.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/kafkametricsreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordKafkaBrokersDataPoint adds a data point to kafka.brokers metric.
-func (mb *MetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricKafkaBrokers.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricKafkaBrokers.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordKafkaConsumerGroupLagDataPoint adds a data point to kafka.consumer_group.lag metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaConsumerGroupLag.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaConsumerGroupLagDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaConsumerGroupLag.recordDataPoint(rmb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaConsumerGroupLagSumDataPoint adds a data point to kafka.consumer_group.lag_sum metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
-	mb.metricKafkaConsumerGroupLagSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaConsumerGroupLagSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
+	rmb.metricKafkaConsumerGroupLagSum.recordDataPoint(rmb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
 }
 
 // RecordKafkaConsumerGroupMembersDataPoint adds a data point to kafka.consumer_group.members metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupMembersDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string) {
-	mb.metricKafkaConsumerGroupMembers.recordDataPoint(mb.startTime, ts, val, groupAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaConsumerGroupMembersDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string) {
+	rmb.metricKafkaConsumerGroupMembers.recordDataPoint(rmb.startTime, ts, val, groupAttributeValue)
 }
 
 // RecordKafkaConsumerGroupOffsetDataPoint adds a data point to kafka.consumer_group.offset metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaConsumerGroupOffset.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaConsumerGroupOffsetDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaConsumerGroupOffset.recordDataPoint(rmb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaConsumerGroupOffsetSumDataPoint adds a data point to kafka.consumer_group.offset_sum metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
-	mb.metricKafkaConsumerGroupOffsetSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaConsumerGroupOffsetSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
+	rmb.metricKafkaConsumerGroupOffsetSum.recordDataPoint(rmb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
 }
 
 // RecordKafkaPartitionCurrentOffsetDataPoint adds a data point to kafka.partition.current_offset metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionCurrentOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaPartitionCurrentOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaPartitionCurrentOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaPartitionCurrentOffset.recordDataPoint(rmb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionOldestOffsetDataPoint adds a data point to kafka.partition.oldest_offset metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionOldestOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaPartitionOldestOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaPartitionOldestOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaPartitionOldestOffset.recordDataPoint(rmb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionReplicasDataPoint adds a data point to kafka.partition.replicas metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaPartitionReplicas.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaPartitionReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaPartitionReplicas.recordDataPoint(rmb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionReplicasInSyncDataPoint adds a data point to kafka.partition.replicas_in_sync metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionReplicasInSyncDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
-	mb.metricKafkaPartitionReplicasInSync.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaPartitionReplicasInSyncDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	rmb.metricKafkaPartitionReplicasInSync.recordDataPoint(rmb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaTopicPartitionsDataPoint adds a data point to kafka.topic.partitions metric.
-func (mb *MetricsBuilder) RecordKafkaTopicPartitionsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
-	mb.metricKafkaTopicPartitions.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordKafkaTopicPartitionsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	rmb.metricKafkaTopicPartitions.recordDataPoint(rmb.startTime, ts, val, topicAttributeValue)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

@@ -15,6 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, logger *zap.Logger) {
+func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, rmb *metadata.ResourceMetricsBuilder, logger *zap.Logger) {
 	logger.Warn("Cannot collect access and creation time for this arch")
 }

@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricK8sContainerCPULimit struct {
@@ -2084,14 +2086,25 @@ func newMetricOpenshiftClusterquotaUsed(cfg MetricConfig) metricOpenshiftCluster
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                    MetricsBuilderConfig // config of the metrics builder.
-	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                  // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                 component.BuildInfo
+	startTime                                 pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                           int               // maximum observed number of metrics per resource.
+	resource                                  pcommon.Resource
+	missedEmits                               int
 	metricK8sContainerCPULimit                metricK8sContainerCPULimit
 	metricK8sContainerCPURequest              metricK8sContainerCPURequest
 	metricK8sContainerEphemeralstorageLimit   metricK8sContainerEphemeralstorageLimit
@@ -2148,57 +2161,86 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mbc.Metrics.K8sContainerCPULimit),
-		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mbc.Metrics.K8sContainerCPURequest),
-		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mbc.Metrics.K8sContainerEphemeralstorageLimit),
-		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mbc.Metrics.K8sContainerEphemeralstorageRequest),
-		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mbc.Metrics.K8sContainerMemoryLimit),
-		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mbc.Metrics.K8sContainerMemoryRequest),
-		metricK8sContainerReady:                   newMetricK8sContainerReady(mbc.Metrics.K8sContainerReady),
-		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mbc.Metrics.K8sContainerRestarts),
-		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mbc.Metrics.K8sContainerStorageLimit),
-		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mbc.Metrics.K8sContainerStorageRequest),
-		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mbc.Metrics.K8sCronjobActiveJobs),
-		metricK8sDaemonsetCurrentScheduledNodes:   newMetricK8sDaemonsetCurrentScheduledNodes(mbc.Metrics.K8sDaemonsetCurrentScheduledNodes),
-		metricK8sDaemonsetDesiredScheduledNodes:   newMetricK8sDaemonsetDesiredScheduledNodes(mbc.Metrics.K8sDaemonsetDesiredScheduledNodes),
-		metricK8sDaemonsetMisscheduledNodes:       newMetricK8sDaemonsetMisscheduledNodes(mbc.Metrics.K8sDaemonsetMisscheduledNodes),
-		metricK8sDaemonsetReadyNodes:              newMetricK8sDaemonsetReadyNodes(mbc.Metrics.K8sDaemonsetReadyNodes),
-		metricK8sDeploymentAvailable:              newMetricK8sDeploymentAvailable(mbc.Metrics.K8sDeploymentAvailable),
-		metricK8sDeploymentDesired:                newMetricK8sDeploymentDesired(mbc.Metrics.K8sDeploymentDesired),
-		metricK8sHpaCurrentReplicas:               newMetricK8sHpaCurrentReplicas(mbc.Metrics.K8sHpaCurrentReplicas),
-		metricK8sHpaDesiredReplicas:               newMetricK8sHpaDesiredReplicas(mbc.Metrics.K8sHpaDesiredReplicas),
-		metricK8sHpaMaxReplicas:                   newMetricK8sHpaMaxReplicas(mbc.Metrics.K8sHpaMaxReplicas),
-		metricK8sHpaMinReplicas:                   newMetricK8sHpaMinReplicas(mbc.Metrics.K8sHpaMinReplicas),
-		metricK8sJobActivePods:                    newMetricK8sJobActivePods(mbc.Metrics.K8sJobActivePods),
-		metricK8sJobDesiredSuccessfulPods:         newMetricK8sJobDesiredSuccessfulPods(mbc.Metrics.K8sJobDesiredSuccessfulPods),
-		metricK8sJobFailedPods:                    newMetricK8sJobFailedPods(mbc.Metrics.K8sJobFailedPods),
-		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mbc.Metrics.K8sJobMaxParallelPods),
-		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
-		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
-		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
-		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
-		metricK8sReplicasetDesired:                newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
-		metricK8sReplicationControllerAvailable:   newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
-		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mbc.Metrics.K8sReplicationControllerDesired),
-		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mbc.Metrics.K8sResourceQuotaHardLimit),
-		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mbc.Metrics.K8sResourceQuotaUsed),
-		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mbc.Metrics.K8sStatefulsetCurrentPods),
-		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mbc.Metrics.K8sStatefulsetDesiredPods),
-		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mbc.Metrics.K8sStatefulsetReadyPods),
-		metricK8sStatefulsetUpdatedPods:           newMetricK8sStatefulsetUpdatedPods(mbc.Metrics.K8sStatefulsetUpdatedPods),
-		metricOpenshiftAppliedclusterquotaLimit:   newMetricOpenshiftAppliedclusterquotaLimit(mbc.Metrics.OpenshiftAppliedclusterquotaLimit),
-		metricOpenshiftAppliedclusterquotaUsed:    newMetricOpenshiftAppliedclusterquotaUsed(mbc.Metrics.OpenshiftAppliedclusterquotaUsed),
-		metricOpenshiftClusterquotaLimit:          newMetricOpenshiftClusterquotaLimit(mbc.Metrics.OpenshiftClusterquotaLimit),
-		metricOpenshiftClusterquotaUsed:           newMetricOpenshiftClusterquotaUsed(mbc.Metrics.OpenshiftClusterquotaUsed),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                               mb.startTime,
+		buildInfo:                               mb.buildInfo,
+		resource:                                res,
+		metricK8sContainerCPULimit:              newMetricK8sContainerCPULimit(mb.config.Metrics.K8sContainerCPULimit),
+		metricK8sContainerCPURequest:            newMetricK8sContainerCPURequest(mb.config.Metrics.K8sContainerCPURequest),
+		metricK8sContainerEphemeralstorageLimit: newMetricK8sContainerEphemeralstorageLimit(mb.config.Metrics.K8sContainerEphemeralstorageLimit),
+		metricK8sContainerEphemeralstorageRequest: newMetricK8sContainerEphemeralstorageRequest(mb.config.Metrics.K8sContainerEphemeralstorageRequest),
+		metricK8sContainerMemoryLimit:             newMetricK8sContainerMemoryLimit(mb.config.Metrics.K8sContainerMemoryLimit),
+		metricK8sContainerMemoryRequest:           newMetricK8sContainerMemoryRequest(mb.config.Metrics.K8sContainerMemoryRequest),
+		metricK8sContainerReady:                   newMetricK8sContainerReady(mb.config.Metrics.K8sContainerReady),
+		metricK8sContainerRestarts:                newMetricK8sContainerRestarts(mb.config.Metrics.K8sContainerRestarts),
+		metricK8sContainerStorageLimit:            newMetricK8sContainerStorageLimit(mb.config.Metrics.K8sContainerStorageLimit),
+		metricK8sContainerStorageRequest:          newMetricK8sContainerStorageRequest(mb.config.Metrics.K8sContainerStorageRequest),
+		metricK8sCronjobActiveJobs:                newMetricK8sCronjobActiveJobs(mb.config.Metrics.K8sCronjobActiveJobs),
+		metricK8sDaemonsetCurrentScheduledNodes:   newMetricK8sDaemonsetCurrentScheduledNodes(mb.config.Metrics.K8sDaemonsetCurrentScheduledNodes),
+		metricK8sDaemonsetDesiredScheduledNodes:   newMetricK8sDaemonsetDesiredScheduledNodes(mb.config.Metrics.K8sDaemonsetDesiredScheduledNodes),
+		metricK8sDaemonsetMisscheduledNodes:       newMetricK8sDaemonsetMisscheduledNodes(mb.config.Metrics.K8sDaemonsetMisscheduledNodes),
+		metricK8sDaemonsetReadyNodes:              newMetricK8sDaemonsetReadyNodes(mb.config.Metrics.K8sDaemonsetReadyNodes),
+		metricK8sDeploymentAvailable:              newMetricK8sDeploymentAvailable(mb.config.Metrics.K8sDeploymentAvailable),
+		metricK8sDeploymentDesired:                newMetricK8sDeploymentDesired(mb.config.Metrics.K8sDeploymentDesired),
+		metricK8sHpaCurrentReplicas:               newMetricK8sHpaCurrentReplicas(mb.config.Metrics.K8sHpaCurrentReplicas),
+		metricK8sHpaDesiredReplicas:               newMetricK8sHpaDesiredReplicas(mb.config.Metrics.K8sHpaDesiredReplicas),
+		metricK8sHpaMaxReplicas:                   newMetricK8sHpaMaxReplicas(mb.config.Metrics.K8sHpaMaxReplicas),
+		metricK8sHpaMinReplicas:                   newMetricK8sHpaMinReplicas(mb.config.Metrics.K8sHpaMinReplicas),
+		metricK8sJobActivePods:                    newMetricK8sJobActivePods(mb.config.Metrics.K8sJobActivePods),
+		metricK8sJobDesiredSuccessfulPods:         newMetricK8sJobDesiredSuccessfulPods(mb.config.Metrics.K8sJobDesiredSuccessfulPods),
+		metricK8sJobFailedPods:                    newMetricK8sJobFailedPods(mb.config.Metrics.K8sJobFailedPods),
+		metricK8sJobMaxParallelPods:               newMetricK8sJobMaxParallelPods(mb.config.Metrics.K8sJobMaxParallelPods),
+		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mb.config.Metrics.K8sJobSuccessfulPods),
+		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mb.config.Metrics.K8sNamespacePhase),
+		metricK8sPodPhase:                         newMetricK8sPodPhase(mb.config.Metrics.K8sPodPhase),
+		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mb.config.Metrics.K8sReplicasetAvailable),
+		metricK8sReplicasetDesired:                newMetricK8sReplicasetDesired(mb.config.Metrics.K8sReplicasetDesired),
+		metricK8sReplicationControllerAvailable:   newMetricK8sReplicationControllerAvailable(mb.config.Metrics.K8sReplicationControllerAvailable),
+		metricK8sReplicationControllerDesired:     newMetricK8sReplicationControllerDesired(mb.config.Metrics.K8sReplicationControllerDesired),
+		metricK8sResourceQuotaHardLimit:           newMetricK8sResourceQuotaHardLimit(mb.config.Metrics.K8sResourceQuotaHardLimit),
+		metricK8sResourceQuotaUsed:                newMetricK8sResourceQuotaUsed(mb.config.Metrics.K8sResourceQuotaUsed),
+		metricK8sStatefulsetCurrentPods:           newMetricK8sStatefulsetCurrentPods(mb.config.Metrics.K8sStatefulsetCurrentPods),
+		metricK8sStatefulsetDesiredPods:           newMetricK8sStatefulsetDesiredPods(mb.config.Metrics.K8sStatefulsetDesiredPods),
+		metricK8sStatefulsetReadyPods:             newMetricK8sStatefulsetReadyPods(mb.config.Metrics.K8sStatefulsetReadyPods),
+		metricK8sStatefulsetUpdatedPods:           newMetricK8sStatefulsetUpdatedPods(mb.config.Metrics.K8sStatefulsetUpdatedPods),
+		metricOpenshiftAppliedclusterquotaLimit:   newMetricOpenshiftAppliedclusterquotaLimit(mb.config.Metrics.OpenshiftAppliedclusterquotaLimit),
+		metricOpenshiftAppliedclusterquotaUsed:    newMetricOpenshiftAppliedclusterquotaUsed(mb.config.Metrics.OpenshiftAppliedclusterquotaUsed),
+		metricOpenshiftClusterquotaLimit:          newMetricOpenshiftClusterquotaLimit(mb.config.Metrics.OpenshiftClusterquotaLimit),
+		metricOpenshiftClusterquotaUsed:           newMetricOpenshiftClusterquotaUsed(mb.config.Metrics.OpenshiftClusterquotaUsed),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -2207,332 +2249,305 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricK8sContainerCPULimit.emit(sm.Metrics())
+	rmb.metricK8sContainerCPURequest.emit(sm.Metrics())
+	rmb.metricK8sContainerEphemeralstorageLimit.emit(sm.Metrics())
+	rmb.metricK8sContainerEphemeralstorageRequest.emit(sm.Metrics())
+	rmb.metricK8sContainerMemoryLimit.emit(sm.Metrics())
+	rmb.metricK8sContainerMemoryRequest.emit(sm.Metrics())
+	rmb.metricK8sContainerReady.emit(sm.Metrics())
+	rmb.metricK8sContainerRestarts.emit(sm.Metrics())
+	rmb.metricK8sContainerStorageLimit.emit(sm.Metrics())
+	rmb.metricK8sContainerStorageRequest.emit(sm.Metrics())
+	rmb.metricK8sCronjobActiveJobs.emit(sm.Metrics())
+	rmb.metricK8sDaemonsetCurrentScheduledNodes.emit(sm.Metrics())
+	rmb.metricK8sDaemonsetDesiredScheduledNodes.emit(sm.Metrics())
+	rmb.metricK8sDaemonsetMisscheduledNodes.emit(sm.Metrics())
+	rmb.metricK8sDaemonsetReadyNodes.emit(sm.Metrics())
+	rmb.metricK8sDeploymentAvailable.emit(sm.Metrics())
+	rmb.metricK8sDeploymentDesired.emit(sm.Metrics())
+	rmb.metricK8sHpaCurrentReplicas.emit(sm.Metrics())
+	rmb.metricK8sHpaDesiredReplicas.emit(sm.Metrics())
+	rmb.metricK8sHpaMaxReplicas.emit(sm.Metrics())
+	rmb.metricK8sHpaMinReplicas.emit(sm.Metrics())
+	rmb.metricK8sJobActivePods.emit(sm.Metrics())
+	rmb.metricK8sJobDesiredSuccessfulPods.emit(sm.Metrics())
+	rmb.metricK8sJobFailedPods.emit(sm.Metrics())
+	rmb.metricK8sJobMaxParallelPods.emit(sm.Metrics())
+	rmb.metricK8sJobSuccessfulPods.emit(sm.Metrics())
+	rmb.metricK8sNamespacePhase.emit(sm.Metrics())
+	rmb.metricK8sPodPhase.emit(sm.Metrics())
+	rmb.metricK8sReplicasetAvailable.emit(sm.Metrics())
+	rmb.metricK8sReplicasetDesired.emit(sm.Metrics())
+	rmb.metricK8sReplicationControllerAvailable.emit(sm.Metrics())
+	rmb.metricK8sReplicationControllerDesired.emit(sm.Metrics())
+	rmb.metricK8sResourceQuotaHardLimit.emit(sm.Metrics())
+	rmb.metricK8sResourceQuotaUsed.emit(sm.Metrics())
+	rmb.metricK8sStatefulsetCurrentPods.emit(sm.Metrics())
+	rmb.metricK8sStatefulsetDesiredPods.emit(sm.Metrics())
+	rmb.metricK8sStatefulsetReadyPods.emit(sm.Metrics())
+	rmb.metricK8sStatefulsetUpdatedPods.emit(sm.Metrics())
+	rmb.metricOpenshiftAppliedclusterquotaLimit.emit(sm.Metrics())
+	rmb.metricOpenshiftAppliedclusterquotaUsed.emit(sm.Metrics())
+	rmb.metricOpenshiftClusterquotaLimit.emit(sm.Metrics())
+	rmb.metricOpenshiftClusterquotaUsed.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/k8sclusterreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/k8sclusterreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricK8sContainerCPULimit.emit(ils.Metrics())
-	mb.metricK8sContainerCPURequest.emit(ils.Metrics())
-	mb.metricK8sContainerEphemeralstorageLimit.emit(ils.Metrics())
-	mb.metricK8sContainerEphemeralstorageRequest.emit(ils.Metrics())
-	mb.metricK8sContainerMemoryLimit.emit(ils.Metrics())
-	mb.metricK8sContainerMemoryRequest.emit(ils.Metrics())
-	mb.metricK8sContainerReady.emit(ils.Metrics())
-	mb.metricK8sContainerRestarts.emit(ils.Metrics())
-	mb.metricK8sContainerStorageLimit.emit(ils.Metrics())
-	mb.metricK8sContainerStorageRequest.emit(ils.Metrics())
-	mb.metricK8sCronjobActiveJobs.emit(ils.Metrics())
-	mb.metricK8sDaemonsetCurrentScheduledNodes.emit(ils.Metrics())
-	mb.metricK8sDaemonsetDesiredScheduledNodes.emit(ils.Metrics())
-	mb.metricK8sDaemonsetMisscheduledNodes.emit(ils.Metrics())
-	mb.metricK8sDaemonsetReadyNodes.emit(ils.Metrics())
-	mb.metricK8sDeploymentAvailable.emit(ils.Metrics())
-	mb.metricK8sDeploymentDesired.emit(ils.Metrics())
-	mb.metricK8sHpaCurrentReplicas.emit(ils.Metrics())
-	mb.metricK8sHpaDesiredReplicas.emit(ils.Metrics())
-	mb.metricK8sHpaMaxReplicas.emit(ils.Metrics())
-	mb.metricK8sHpaMinReplicas.emit(ils.Metrics())
-	mb.metricK8sJobActivePods.emit(ils.Metrics())
-	mb.metricK8sJobDesiredSuccessfulPods.emit(ils.Metrics())
-	mb.metricK8sJobFailedPods.emit(ils.Metrics())
-	mb.metricK8sJobMaxParallelPods.emit(ils.Metrics())
-	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
-	mb.metricK8sNamespacePhase.emit(ils.Metrics())
-	mb.metricK8sPodPhase.emit(ils.Metrics())
-	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
-	mb.metricK8sReplicasetDesired.emit(ils.Metrics())
-	mb.metricK8sReplicationControllerAvailable.emit(ils.Metrics())
-	mb.metricK8sReplicationControllerDesired.emit(ils.Metrics())
-	mb.metricK8sResourceQuotaHardLimit.emit(ils.Metrics())
-	mb.metricK8sResourceQuotaUsed.emit(ils.Metrics())
-	mb.metricK8sStatefulsetCurrentPods.emit(ils.Metrics())
-	mb.metricK8sStatefulsetDesiredPods.emit(ils.Metrics())
-	mb.metricK8sStatefulsetReadyPods.emit(ils.Metrics())
-	mb.metricK8sStatefulsetUpdatedPods.emit(ils.Metrics())
-	mb.metricOpenshiftAppliedclusterquotaLimit.emit(ils.Metrics())
-	mb.metricOpenshiftAppliedclusterquotaUsed.emit(ils.Metrics())
-	mb.metricOpenshiftClusterquotaLimit.emit(ils.Metrics())
-	mb.metricOpenshiftClusterquotaUsed.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordK8sContainerCPULimitDataPoint adds a data point to k8s.container.cpu_limit metric.
-func (mb *MetricsBuilder) RecordK8sContainerCPULimitDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sContainerCPULimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerCPULimitDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sContainerCPULimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerCPURequestDataPoint adds a data point to k8s.container.cpu_request metric.
-func (mb *MetricsBuilder) RecordK8sContainerCPURequestDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sContainerCPURequest.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerCPURequestDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sContainerCPURequest.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerEphemeralstorageLimitDataPoint adds a data point to k8s.container.ephemeralstorage_limit metric.
-func (mb *MetricsBuilder) RecordK8sContainerEphemeralstorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerEphemeralstorageLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerEphemeralstorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerEphemeralstorageLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerEphemeralstorageRequestDataPoint adds a data point to k8s.container.ephemeralstorage_request metric.
-func (mb *MetricsBuilder) RecordK8sContainerEphemeralstorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerEphemeralstorageRequest.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerEphemeralstorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerEphemeralstorageRequest.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerMemoryLimitDataPoint adds a data point to k8s.container.memory_limit metric.
-func (mb *MetricsBuilder) RecordK8sContainerMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerMemoryLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerMemoryRequestDataPoint adds a data point to k8s.container.memory_request metric.
-func (mb *MetricsBuilder) RecordK8sContainerMemoryRequestDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerMemoryRequest.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerMemoryRequestDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerMemoryRequest.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerReadyDataPoint adds a data point to k8s.container.ready metric.
-func (mb *MetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerReady.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerReadyDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerReady.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerRestartsDataPoint adds a data point to k8s.container.restarts metric.
-func (mb *MetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerRestarts.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerStorageLimitDataPoint adds a data point to k8s.container.storage_limit metric.
-func (mb *MetricsBuilder) RecordK8sContainerStorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerStorageLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerStorageLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerStorageLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sContainerStorageRequestDataPoint adds a data point to k8s.container.storage_request metric.
-func (mb *MetricsBuilder) RecordK8sContainerStorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sContainerStorageRequest.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sContainerStorageRequestDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sContainerStorageRequest.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sCronjobActiveJobsDataPoint adds a data point to k8s.cronjob.active_jobs metric.
-func (mb *MetricsBuilder) RecordK8sCronjobActiveJobsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sCronjobActiveJobs.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sCronjobActiveJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sCronjobActiveJobs.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetCurrentScheduledNodesDataPoint adds a data point to k8s.daemonset.current_scheduled_nodes metric.
-func (mb *MetricsBuilder) RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDaemonsetCurrentScheduledNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDaemonsetCurrentScheduledNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetDesiredScheduledNodesDataPoint adds a data point to k8s.daemonset.desired_scheduled_nodes metric.
-func (mb *MetricsBuilder) RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDaemonsetDesiredScheduledNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDaemonsetDesiredScheduledNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetMisscheduledNodesDataPoint adds a data point to k8s.daemonset.misscheduled_nodes metric.
-func (mb *MetricsBuilder) RecordK8sDaemonsetMisscheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDaemonsetMisscheduledNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDaemonsetMisscheduledNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDaemonsetMisscheduledNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDaemonsetReadyNodesDataPoint adds a data point to k8s.daemonset.ready_nodes metric.
-func (mb *MetricsBuilder) RecordK8sDaemonsetReadyNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDaemonsetReadyNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDaemonsetReadyNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDaemonsetReadyNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDeploymentAvailableDataPoint adds a data point to k8s.deployment.available metric.
-func (mb *MetricsBuilder) RecordK8sDeploymentAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDeploymentAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDeploymentAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDeploymentAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sDeploymentDesiredDataPoint adds a data point to k8s.deployment.desired metric.
-func (mb *MetricsBuilder) RecordK8sDeploymentDesiredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sDeploymentDesired.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sDeploymentDesiredDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sDeploymentDesired.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sHpaCurrentReplicasDataPoint adds a data point to k8s.hpa.current_replicas metric.
-func (mb *MetricsBuilder) RecordK8sHpaCurrentReplicasDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sHpaCurrentReplicas.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sHpaCurrentReplicasDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sHpaCurrentReplicas.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sHpaDesiredReplicasDataPoint adds a data point to k8s.hpa.desired_replicas metric.
-func (mb *MetricsBuilder) RecordK8sHpaDesiredReplicasDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sHpaDesiredReplicas.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sHpaDesiredReplicasDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sHpaDesiredReplicas.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sHpaMaxReplicasDataPoint adds a data point to k8s.hpa.max_replicas metric.
-func (mb *MetricsBuilder) RecordK8sHpaMaxReplicasDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sHpaMaxReplicas.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sHpaMaxReplicasDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sHpaMaxReplicas.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sHpaMinReplicasDataPoint adds a data point to k8s.hpa.min_replicas metric.
-func (mb *MetricsBuilder) RecordK8sHpaMinReplicasDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sHpaMinReplicas.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sHpaMinReplicasDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sHpaMinReplicas.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sJobActivePodsDataPoint adds a data point to k8s.job.active_pods metric.
-func (mb *MetricsBuilder) RecordK8sJobActivePodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sJobActivePods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sJobActivePodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sJobActivePods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sJobDesiredSuccessfulPodsDataPoint adds a data point to k8s.job.desired_successful_pods metric.
-func (mb *MetricsBuilder) RecordK8sJobDesiredSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sJobDesiredSuccessfulPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sJobDesiredSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sJobDesiredSuccessfulPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sJobFailedPodsDataPoint adds a data point to k8s.job.failed_pods metric.
-func (mb *MetricsBuilder) RecordK8sJobFailedPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sJobFailedPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sJobFailedPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sJobFailedPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sJobMaxParallelPodsDataPoint adds a data point to k8s.job.max_parallel_pods metric.
-func (mb *MetricsBuilder) RecordK8sJobMaxParallelPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sJobMaxParallelPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sJobMaxParallelPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sJobMaxParallelPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sJobSuccessfulPodsDataPoint adds a data point to k8s.job.successful_pods metric.
-func (mb *MetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sJobSuccessfulPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sJobSuccessfulPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sJobSuccessfulPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNamespacePhaseDataPoint adds a data point to k8s.namespace.phase metric.
-func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNamespacePhase.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNamespacePhase.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
-func (mb *MetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodPhase.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodPhase.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sReplicasetAvailableDataPoint adds a data point to k8s.replicaset.available metric.
-func (mb *MetricsBuilder) RecordK8sReplicasetAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sReplicasetAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sReplicasetAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sReplicasetAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sReplicasetDesiredDataPoint adds a data point to k8s.replicaset.desired metric.
-func (mb *MetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sReplicasetDesired.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sReplicasetDesiredDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sReplicasetDesired.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sReplicationControllerAvailableDataPoint adds a data point to k8s.replication_controller.available metric.
-func (mb *MetricsBuilder) RecordK8sReplicationControllerAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sReplicationControllerAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sReplicationControllerAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sReplicationControllerAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sReplicationControllerDesiredDataPoint adds a data point to k8s.replication_controller.desired metric.
-func (mb *MetricsBuilder) RecordK8sReplicationControllerDesiredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sReplicationControllerDesired.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sReplicationControllerDesiredDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sReplicationControllerDesired.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sResourceQuotaHardLimitDataPoint adds a data point to k8s.resource_quota.hard_limit metric.
-func (mb *MetricsBuilder) RecordK8sResourceQuotaHardLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
-	mb.metricK8sResourceQuotaHardLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordK8sResourceQuotaHardLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	rmb.metricK8sResourceQuotaHardLimit.recordDataPoint(rmb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordK8sResourceQuotaUsedDataPoint adds a data point to k8s.resource_quota.used metric.
-func (mb *MetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
-	mb.metricK8sResourceQuotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordK8sResourceQuotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	rmb.metricK8sResourceQuotaUsed.recordDataPoint(rmb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordK8sStatefulsetCurrentPodsDataPoint adds a data point to k8s.statefulset.current_pods metric.
-func (mb *MetricsBuilder) RecordK8sStatefulsetCurrentPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sStatefulsetCurrentPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sStatefulsetCurrentPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sStatefulsetCurrentPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetDesiredPodsDataPoint adds a data point to k8s.statefulset.desired_pods metric.
-func (mb *MetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sStatefulsetDesiredPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sStatefulsetDesiredPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sStatefulsetDesiredPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetReadyPodsDataPoint adds a data point to k8s.statefulset.ready_pods metric.
-func (mb *MetricsBuilder) RecordK8sStatefulsetReadyPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sStatefulsetReadyPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sStatefulsetReadyPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sStatefulsetReadyPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sStatefulsetUpdatedPodsDataPoint adds a data point to k8s.statefulset.updated_pods metric.
-func (mb *MetricsBuilder) RecordK8sStatefulsetUpdatedPodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sStatefulsetUpdatedPods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sStatefulsetUpdatedPodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sStatefulsetUpdatedPods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordOpenshiftAppliedclusterquotaLimitDataPoint adds a data point to openshift.appliedclusterquota.limit metric.
-func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
-	mb.metricOpenshiftAppliedclusterquotaLimit.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
+	rmb.metricOpenshiftAppliedclusterquotaLimit.recordDataPoint(rmb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftAppliedclusterquotaUsedDataPoint adds a data point to openshift.appliedclusterquota.used metric.
-func (mb *MetricsBuilder) RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
-	mb.metricOpenshiftAppliedclusterquotaUsed.recordDataPoint(mb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, k8sNamespaceNameAttributeValue string, resourceAttributeValue string) {
+	rmb.metricOpenshiftAppliedclusterquotaUsed.recordDataPoint(rmb.startTime, ts, val, k8sNamespaceNameAttributeValue, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaLimitDataPoint adds a data point to openshift.clusterquota.limit metric.
-func (mb *MetricsBuilder) RecordOpenshiftClusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
-	mb.metricOpenshiftClusterquotaLimit.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordOpenshiftClusterquotaLimitDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	rmb.metricOpenshiftClusterquotaLimit.recordDataPoint(rmb.startTime, ts, val, resourceAttributeValue)
 }
 
 // RecordOpenshiftClusterquotaUsedDataPoint adds a data point to openshift.clusterquota.used metric.
-func (mb *MetricsBuilder) RecordOpenshiftClusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
-	mb.metricOpenshiftClusterquotaUsed.recordDataPoint(mb.startTime, ts, val, resourceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordOpenshiftClusterquotaUsedDataPoint(ts pcommon.Timestamp, val int64, resourceAttributeValue string) {
+	rmb.metricOpenshiftClusterquotaUsed.recordDataPoint(rmb.startTime, ts, val, resourceAttributeValue)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

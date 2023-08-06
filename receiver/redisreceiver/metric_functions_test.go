@@ -21,13 +21,9 @@ func TestDataPointRecorders(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 	settings := receivertest.NewNopCreateSettings()
 	settings.Logger = logger
-	rs := &redisScraper{
-		redisSvc: newRedisSvc(newFakeClient()),
-		settings: settings.TelemetrySettings,
-		mb:       metadata.NewMetricsBuilder(Config{}.MetricsBuilderConfig, settings),
-	}
+	mb := metadata.NewMetricsBuilder(Config{}.MetricsBuilderConfig, settings)
 	metricByRecorder := map[string]string{}
-	for metric, recorder := range rs.dataPointRecorders() {
+	for metric, recorder := range dataPointRecorders(mb.ResourceMetricsBuilder(pcommon.NewResource())) {
 		switch recorder.(type) {
 		case func(pcommon.Timestamp, int64), func(pcommon.Timestamp, float64):
 			recorderName := runtime.FuncForPC(reflect.ValueOf(recorder).Pointer()).Name()

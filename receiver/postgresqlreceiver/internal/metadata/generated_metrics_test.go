@@ -48,6 +48,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
+			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlTableName("postgresql.table.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,98 +63,93 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "database-val")
+			rmb.RecordPostgresqlBackendsDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts, 1)
+			rmb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 1, AttributeBgBufferSourceBackend)
+			rmb.RecordPostgresqlBgwriterBuffersWritesDataPoint(ts, 1, AttributeBgBufferSourceBackend)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 1, AttributeBgCheckpointTypeRequested)
+			rmb.RecordPostgresqlBgwriterCheckpointCountDataPoint(ts, 1, AttributeBgCheckpointTypeRequested)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBgwriterDurationDataPoint(ts, 1, AttributeBgDurationTypeSync)
+			rmb.RecordPostgresqlBgwriterDurationDataPoint(ts, 1, AttributeBgDurationTypeSync)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(ts, 1)
+			rmb.RecordPostgresqlBgwriterMaxwrittenDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, "database-val", "table-val", AttributeSourceHeapRead)
+			rmb.RecordPostgresqlBlocksReadDataPoint(ts, 1, "database-val", "table-val", AttributeSourceHeapRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlCommitsDataPoint(ts, 1, "database-val")
+			rmb.RecordPostgresqlCommitsDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlConnectionMaxDataPoint(ts, 1)
+			rmb.RecordPostgresqlConnectionMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
+			rmb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlDbSizeDataPoint(ts, 1, "database-val")
+			rmb.RecordPostgresqlDbSizeDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlIndexScansDataPoint(ts, 1)
+			rmb.RecordPostgresqlIndexScansDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlIndexSizeDataPoint(ts, 1)
+			rmb.RecordPostgresqlIndexSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlOperationsDataPoint(ts, 1, "database-val", "table-val", AttributeOperationIns)
+			rmb.RecordPostgresqlOperationsDataPoint(ts, 1, "database-val", "table-val", AttributeOperationIns)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 1, "replication_client-val")
+			rmb.RecordPostgresqlReplicationDataDelayDataPoint(ts, 1, "replication_client-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlRollbacksDataPoint(ts, 1, "database-val")
+			rmb.RecordPostgresqlRollbacksDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlRowsDataPoint(ts, 1, "database-val", "table-val", AttributeStateDead)
+			rmb.RecordPostgresqlRowsDataPoint(ts, 1, "database-val", "table-val", AttributeStateDead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlTableCountDataPoint(ts, 1)
+			rmb.RecordPostgresqlTableCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlTableSizeDataPoint(ts, 1)
+			rmb.RecordPostgresqlTableSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1)
+			rmb.RecordPostgresqlTableVacuumCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlWalAgeDataPoint(ts, 1)
+			rmb.RecordPostgresqlWalAgeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
+			rmb.RecordPostgresqlWalLagDataPoint(ts, 1, AttributeWalOperationLagFlush, "replication_client-val")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
-			rb.SetPostgresqlIndexName("postgresql.index.name-val")
-			rb.SetPostgresqlTableName("postgresql.table.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

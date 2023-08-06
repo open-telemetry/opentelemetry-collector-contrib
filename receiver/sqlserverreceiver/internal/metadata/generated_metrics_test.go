@@ -48,6 +48,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
+			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
+			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,90 +63,85 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
+			rmb.RecordSqlserverBatchRequestRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
+			rmb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
+			rmb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
+			rmb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
+			rmb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
+			rmb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
+			rmb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
+			rmb.RecordSqlserverPageLazyWriteRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
+			rmb.RecordSqlserverPageLifeExpectancyDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperationsRead)
+			rmb.RecordSqlserverPageOperationRateDataPoint(ts, 1, AttributePageOperationsRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
+			rmb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionRateDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionWriteRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
+			rmb.RecordSqlserverTransactionLogUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
+			rmb.RecordSqlserverUserConnectionCountDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetSqlserverComputerName("sqlserver.computer.name-val")
-			rb.SetSqlserverDatabaseName("sqlserver.database.name-val")
-			rb.SetSqlserverInstanceName("sqlserver.instance.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

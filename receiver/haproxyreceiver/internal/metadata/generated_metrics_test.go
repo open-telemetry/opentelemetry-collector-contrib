@@ -48,107 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyBytesInputDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyBytesOutputDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyClientsCanceledDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyCompressionBypassDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyCompressionCountDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyCompressionInputDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyCompressionOutputDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyConnectionsErrorsDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyConnectionsRateDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyConnectionsRetriesDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyConnectionsTotalDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyDowntimeDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxyFailedChecksDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsDeniedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsErrorsDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsQueuedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsRateDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsRedispatchedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyResponsesDeniedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyResponsesErrorsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxyServerSelectedTotalDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxySessionsAverageDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxySessionsCountDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordHaproxySessionsRateDataPoint(ts, "1")
-
-			allMetricsCount++
-			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
-
 			rb := mb.NewResourceBuilder()
 			rb.SetHaproxyAddr("haproxy.addr-val")
 			rb.SetHaproxyAlgo("haproxy.algo-val")
@@ -160,7 +59,110 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetHaproxyType("haproxy.type-val")
 			rb.SetHaproxyURL("haproxy.url-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyBytesInputDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyBytesOutputDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyClientsCanceledDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyCompressionBypassDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyCompressionCountDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyCompressionInputDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyCompressionOutputDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyConnectionsErrorsDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyConnectionsRateDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyConnectionsRetriesDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyConnectionsTotalDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyDowntimeDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxyFailedChecksDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsDeniedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsErrorsDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsQueuedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsRateDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsRedispatchedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyResponsesDeniedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyResponsesErrorsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxyServerSelectedTotalDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxySessionsAverageDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxySessionsCountDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordHaproxySessionsRateDataPoint(ts, "1")
+
+			allMetricsCount++
+			rmb.RecordHaproxySessionsTotalDataPoint(ts, "1")
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

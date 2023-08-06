@@ -11,12 +11,12 @@ import (
 )
 
 func RecordMetrics(mb *imetadata.MetricsBuilder, ns *corev1.Namespace, ts pcommon.Timestamp) {
-	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceUID(string(ns.UID))
 	rb.SetK8sNamespaceName(ns.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

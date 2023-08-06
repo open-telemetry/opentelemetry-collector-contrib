@@ -136,166 +136,184 @@ func (s *bigipScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 // collectVirtualServers collects virtual server metrics
 func (s *bigipScraper) collectVirtualServers(virtualServerStats *models.VirtualServerStats, now pcommon.Timestamp) {
-	s.mb.RecordBigipVirtualServerDataTransmittedDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsideBitsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipVirtualServerDataTransmittedDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsideBitsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipVirtualServerConnectionCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsideCurConns.Value)
-	s.mb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipVirtualServerRequestCountDataPoint(now, virtualServerStats.NestedStats.Entries.TotalRequests.Value)
-
-	availability := virtualServerStats.NestedStats.Entries.AvailabilityState.Description
-	switch {
-	case strings.HasPrefix(availability, "available"):
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	case strings.HasPrefix(availability, "offline"):
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	default:
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	}
-
-	enabled := virtualServerStats.NestedStats.Entries.EnabledState.Description
-	if strings.HasPrefix(enabled, "enabled") {
-		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
-	} else {
-		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
-	}
-
 	rb := s.mb.NewResourceBuilder()
 	rb.SetBigipVirtualServerName(virtualServerStats.NestedStats.Entries.Name.Description)
 	rb.SetBigipVirtualServerDestination(virtualServerStats.NestedStats.Entries.Destination.Description)
 	rb.SetBigipPoolName(virtualServerStats.NestedStats.Entries.PoolName.Description)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordBigipVirtualServerDataTransmittedDataPoint(now, virtualServerStats.NestedStats.Entries.
+		ClientsideBitsIn.Value, metadata.AttributeDirectionReceived)
+	rmb.RecordBigipVirtualServerDataTransmittedDataPoint(now, virtualServerStats.NestedStats.Entries.
+		ClientsideBitsOut.Value, metadata.AttributeDirectionSent)
+	rmb.RecordBigipVirtualServerConnectionCountDataPoint(now, virtualServerStats.NestedStats.Entries.
+		ClientsideCurConns.Value)
+	rmb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsIn.
+		Value, metadata.AttributeDirectionReceived)
+	rmb.RecordBigipVirtualServerPacketCountDataPoint(now, virtualServerStats.NestedStats.Entries.ClientsidePktsOut.
+		Value, metadata.AttributeDirectionSent)
+	rmb.RecordBigipVirtualServerRequestCountDataPoint(now, virtualServerStats.NestedStats.Entries.TotalRequests.Value)
+
+	availability := virtualServerStats.NestedStats.Entries.AvailabilityState.Description
+	switch {
+	case strings.HasPrefix(availability, "available"):
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
+	case strings.HasPrefix(availability, "offline"):
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+	default:
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipVirtualServerAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+	}
+
+	enabled := virtualServerStats.NestedStats.Entries.EnabledState.Description
+	if strings.HasPrefix(enabled, "enabled") {
+		rmb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipVirtualServerEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
+	} else {
+		rmb.RecordBigipVirtualServerEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipVirtualServerEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
+	}
 }
 
 // collectPools collects pool metrics
 func (s *bigipScraper) collectPools(poolStats *models.PoolStats, now pcommon.Timestamp) {
-	s.mb.RecordBigipPoolDataTransmittedDataPoint(now, poolStats.NestedStats.Entries.ServersideBitsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipPoolDataTransmittedDataPoint(now, poolStats.NestedStats.Entries.ServersideBitsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipPoolConnectionCountDataPoint(now, poolStats.NestedStats.Entries.ServersideCurConns.Value)
-	s.mb.RecordBigipPoolPacketCountDataPoint(now, poolStats.NestedStats.Entries.ServersidePktsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipPoolPacketCountDataPoint(now, poolStats.NestedStats.Entries.ServersidePktsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipPoolRequestCountDataPoint(now, poolStats.NestedStats.Entries.TotalRequests.Value)
-	s.mb.RecordBigipPoolMemberCountDataPoint(now, poolStats.NestedStats.Entries.ActiveMemberCount.Value, metadata.AttributeActiveStatusActive)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordBigipPoolDataTransmittedDataPoint(now, poolStats.NestedStats.Entries.ServersideBitsIn.Value,
+		metadata.AttributeDirectionReceived)
+	rmb.RecordBigipPoolDataTransmittedDataPoint(now, poolStats.NestedStats.Entries.ServersideBitsOut.Value,
+		metadata.AttributeDirectionSent)
+	rmb.RecordBigipPoolConnectionCountDataPoint(now, poolStats.NestedStats.Entries.ServersideCurConns.Value)
+	rmb.RecordBigipPoolPacketCountDataPoint(now, poolStats.NestedStats.Entries.ServersidePktsIn.Value,
+		metadata.AttributeDirectionReceived)
+	rmb.RecordBigipPoolPacketCountDataPoint(now, poolStats.NestedStats.Entries.ServersidePktsOut.Value,
+		metadata.AttributeDirectionSent)
+	rmb.RecordBigipPoolRequestCountDataPoint(now, poolStats.NestedStats.Entries.TotalRequests.Value)
+	rmb.RecordBigipPoolMemberCountDataPoint(now, poolStats.NestedStats.Entries.ActiveMemberCount.Value,
+		metadata.AttributeActiveStatusActive)
 	inactiveCount := poolStats.NestedStats.Entries.TotalMemberCount.Value - poolStats.NestedStats.Entries.ActiveMemberCount.Value
-	s.mb.RecordBigipPoolMemberCountDataPoint(now, inactiveCount, metadata.AttributeActiveStatusInactive)
+	rmb.RecordBigipPoolMemberCountDataPoint(now, inactiveCount, metadata.AttributeActiveStatusInactive)
 
 	availability := poolStats.NestedStats.Entries.AvailabilityState.Description
 	switch {
 	case strings.HasPrefix(availability, "available"):
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
 	case strings.HasPrefix(availability, "offline"):
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	default:
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
 
 	enabled := poolStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
-		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipPoolEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
+		rmb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipPoolEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
 	} else {
-		s.mb.RecordBigipPoolEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
+		rmb.RecordBigipPoolEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipPoolEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetBigipPoolName(poolStats.NestedStats.Entries.Name.Description)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // collectPoolMembers collects pool member metrics
 func (s *bigipScraper) collectPoolMembers(poolMemberStats *models.PoolMemberStats, now pcommon.Timestamp) {
-	s.mb.RecordBigipPoolMemberDataTransmittedDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideBitsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipPoolMemberDataTransmittedDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideBitsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipPoolMemberConnectionCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideCurConns.Value)
-	s.mb.RecordBigipPoolMemberPacketCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersidePktsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipPoolMemberPacketCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersidePktsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipPoolMemberRequestCountDataPoint(now, poolMemberStats.NestedStats.Entries.TotalRequests.Value)
-	s.mb.RecordBigipPoolMemberSessionCountDataPoint(now, poolMemberStats.NestedStats.Entries.CurSessions.Value)
-
-	availability := poolMemberStats.NestedStats.Entries.AvailabilityState.Description
-	switch {
-	case strings.HasPrefix(availability, "available"):
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
-	case strings.HasPrefix(availability, "offline"):
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	default:
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
-	}
-
-	enabled := poolMemberStats.NestedStats.Entries.EnabledState.Description
-	if strings.HasPrefix(enabled, "enabled") {
-		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
-	} else {
-		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
-	}
-
 	rb := s.mb.NewResourceBuilder()
 	rb.SetBigipPoolMemberName(fmt.Sprintf("%s:%d", poolMemberStats.NestedStats.Entries.Name.Description, poolMemberStats.NestedStats.Entries.Port.Value))
 	rb.SetBigipPoolMemberIPAddress(poolMemberStats.NestedStats.Entries.IPAddress.Description)
 	rb.SetBigipPoolName(poolMemberStats.NestedStats.Entries.PoolName.Description)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordBigipPoolMemberDataTransmittedDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideBitsIn.
+		Value, metadata.AttributeDirectionReceived)
+	rmb.RecordBigipPoolMemberDataTransmittedDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideBitsOut.
+		Value, metadata.AttributeDirectionSent)
+	rmb.RecordBigipPoolMemberConnectionCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersideCurConns.Value)
+	rmb.RecordBigipPoolMemberPacketCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersidePktsIn.Value,
+		metadata.AttributeDirectionReceived)
+	rmb.RecordBigipPoolMemberPacketCountDataPoint(now, poolMemberStats.NestedStats.Entries.ServersidePktsOut.Value,
+		metadata.AttributeDirectionSent)
+	rmb.RecordBigipPoolMemberRequestCountDataPoint(now, poolMemberStats.NestedStats.Entries.TotalRequests.Value)
+	rmb.RecordBigipPoolMemberSessionCountDataPoint(now, poolMemberStats.NestedStats.Entries.CurSessions.Value)
+
+	availability := poolMemberStats.NestedStats.Entries.AvailabilityState.Description
+	switch {
+	case strings.HasPrefix(availability, "available"):
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
+	case strings.HasPrefix(availability, "offline"):
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+	default:
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipPoolMemberAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+	}
+
+	enabled := poolMemberStats.NestedStats.Entries.EnabledState.Description
+	if strings.HasPrefix(enabled, "enabled") {
+		rmb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipPoolMemberEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
+	} else {
+		rmb.RecordBigipPoolMemberEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipPoolMemberEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
+	}
 }
 
 // collectNodes collects node metrics
 func (s *bigipScraper) collectNodes(nodeStats *models.NodeStats, now pcommon.Timestamp) {
-	s.mb.RecordBigipNodeDataTransmittedDataPoint(now, nodeStats.NestedStats.Entries.ServersideBitsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipNodeDataTransmittedDataPoint(now, nodeStats.NestedStats.Entries.ServersideBitsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipNodeConnectionCountDataPoint(now, nodeStats.NestedStats.Entries.ServersideCurConns.Value)
-	s.mb.RecordBigipNodePacketCountDataPoint(now, nodeStats.NestedStats.Entries.ServersidePktsIn.Value, metadata.AttributeDirectionReceived)
-	s.mb.RecordBigipNodePacketCountDataPoint(now, nodeStats.NestedStats.Entries.ServersidePktsOut.Value, metadata.AttributeDirectionSent)
-	s.mb.RecordBigipNodeRequestCountDataPoint(now, nodeStats.NestedStats.Entries.TotalRequests.Value)
-	s.mb.RecordBigipNodeSessionCountDataPoint(now, nodeStats.NestedStats.Entries.CurSessions.Value)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
+	rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordBigipNodeDataTransmittedDataPoint(now, nodeStats.NestedStats.Entries.ServersideBitsIn.Value,
+		metadata.AttributeDirectionReceived)
+	rmb.RecordBigipNodeDataTransmittedDataPoint(now, nodeStats.NestedStats.Entries.ServersideBitsOut.Value,
+		metadata.AttributeDirectionSent)
+	rmb.RecordBigipNodeConnectionCountDataPoint(now, nodeStats.NestedStats.Entries.ServersideCurConns.Value)
+	rmb.RecordBigipNodePacketCountDataPoint(now, nodeStats.NestedStats.Entries.ServersidePktsIn.Value,
+		metadata.AttributeDirectionReceived)
+	rmb.RecordBigipNodePacketCountDataPoint(now, nodeStats.NestedStats.Entries.ServersidePktsOut.Value,
+		metadata.AttributeDirectionSent)
+	rmb.RecordBigipNodeRequestCountDataPoint(now, nodeStats.NestedStats.Entries.TotalRequests.Value)
+	rmb.RecordBigipNodeSessionCountDataPoint(now, nodeStats.NestedStats.Entries.CurSessions.Value)
 
 	availability := nodeStats.NestedStats.Entries.AvailabilityState.Description
 	switch {
 	case strings.HasPrefix(availability, "available"):
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusAvailable)
 	case strings.HasPrefix(availability, "offline"):
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	default:
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
-		s.mb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusOffline)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 1, metadata.AttributeAvailabilityStatusUnknown)
+		rmb.RecordBigipNodeAvailabilityDataPoint(now, 0, metadata.AttributeAvailabilityStatusAvailable)
 	}
 
 	enabled := nodeStats.NestedStats.Entries.EnabledState.Description
 	if strings.HasPrefix(enabled, "enabled") {
-		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipNodeEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
+		rmb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipNodeEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusEnabled)
 	} else {
-		s.mb.RecordBigipNodeEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
-		s.mb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
+		rmb.RecordBigipNodeEnabledDataPoint(now, 1, metadata.AttributeEnabledStatusDisabled)
+		rmb.RecordBigipNodeEnabledDataPoint(now, 0, metadata.AttributeEnabledStatusEnabled)
 	}
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetBigipNodeName(nodeStats.NestedStats.Entries.Name.Description)
-	rb.SetBigipNodeIPAddress(nodeStats.NestedStats.Entries.IPAddress.Description)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

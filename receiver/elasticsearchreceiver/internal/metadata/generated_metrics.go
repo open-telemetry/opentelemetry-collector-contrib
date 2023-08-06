@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeCacheName specifies the a value cache_name attribute.
@@ -5243,14 +5245,25 @@ func newMetricJvmThreadsCount(cfg MetricConfig) metricJvmThreadsCount {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                          MetricsBuilderConfig // config of the metrics builder.
-	startTime                                                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                                 int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                                   pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                                       component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                                       component.BuildInfo
+	startTime                                                       pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                                 int               // maximum observed number of metrics per resource.
+	resource                                                        pcommon.Resource
+	missedEmits                                                     int
 	metricElasticsearchBreakerMemoryEstimated                       metricElasticsearchBreakerMemoryEstimated
 	metricElasticsearchBreakerMemoryLimit                           metricElasticsearchBreakerMemoryLimit
 	metricElasticsearchBreakerTripped                               metricElasticsearchBreakerTripped
@@ -5356,106 +5369,135 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:        mbc,
-		startTime:     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer: pmetric.NewMetrics(),
-		buildInfo:     settings.BuildInfo,
-		metricElasticsearchBreakerMemoryEstimated:                       newMetricElasticsearchBreakerMemoryEstimated(mbc.Metrics.ElasticsearchBreakerMemoryEstimated),
-		metricElasticsearchBreakerMemoryLimit:                           newMetricElasticsearchBreakerMemoryLimit(mbc.Metrics.ElasticsearchBreakerMemoryLimit),
-		metricElasticsearchBreakerTripped:                               newMetricElasticsearchBreakerTripped(mbc.Metrics.ElasticsearchBreakerTripped),
-		metricElasticsearchClusterDataNodes:                             newMetricElasticsearchClusterDataNodes(mbc.Metrics.ElasticsearchClusterDataNodes),
-		metricElasticsearchClusterHealth:                                newMetricElasticsearchClusterHealth(mbc.Metrics.ElasticsearchClusterHealth),
-		metricElasticsearchClusterInFlightFetch:                         newMetricElasticsearchClusterInFlightFetch(mbc.Metrics.ElasticsearchClusterInFlightFetch),
-		metricElasticsearchClusterIndicesCacheEvictions:                 newMetricElasticsearchClusterIndicesCacheEvictions(mbc.Metrics.ElasticsearchClusterIndicesCacheEvictions),
-		metricElasticsearchClusterNodes:                                 newMetricElasticsearchClusterNodes(mbc.Metrics.ElasticsearchClusterNodes),
-		metricElasticsearchClusterPendingTasks:                          newMetricElasticsearchClusterPendingTasks(mbc.Metrics.ElasticsearchClusterPendingTasks),
-		metricElasticsearchClusterPublishedStatesDifferences:            newMetricElasticsearchClusterPublishedStatesDifferences(mbc.Metrics.ElasticsearchClusterPublishedStatesDifferences),
-		metricElasticsearchClusterPublishedStatesFull:                   newMetricElasticsearchClusterPublishedStatesFull(mbc.Metrics.ElasticsearchClusterPublishedStatesFull),
-		metricElasticsearchClusterShards:                                newMetricElasticsearchClusterShards(mbc.Metrics.ElasticsearchClusterShards),
-		metricElasticsearchClusterStateQueue:                            newMetricElasticsearchClusterStateQueue(mbc.Metrics.ElasticsearchClusterStateQueue),
-		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(mbc.Metrics.ElasticsearchClusterStateUpdateCount),
-		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(mbc.Metrics.ElasticsearchClusterStateUpdateTime),
-		metricElasticsearchIndexCacheEvictions:                          newMetricElasticsearchIndexCacheEvictions(mbc.Metrics.ElasticsearchIndexCacheEvictions),
-		metricElasticsearchIndexCacheMemoryUsage:                        newMetricElasticsearchIndexCacheMemoryUsage(mbc.Metrics.ElasticsearchIndexCacheMemoryUsage),
-		metricElasticsearchIndexCacheSize:                               newMetricElasticsearchIndexCacheSize(mbc.Metrics.ElasticsearchIndexCacheSize),
-		metricElasticsearchIndexDocuments:                               newMetricElasticsearchIndexDocuments(mbc.Metrics.ElasticsearchIndexDocuments),
-		metricElasticsearchIndexOperationsCompleted:                     newMetricElasticsearchIndexOperationsCompleted(mbc.Metrics.ElasticsearchIndexOperationsCompleted),
-		metricElasticsearchIndexOperationsMergeDocsCount:                newMetricElasticsearchIndexOperationsMergeDocsCount(mbc.Metrics.ElasticsearchIndexOperationsMergeDocsCount),
-		metricElasticsearchIndexOperationsMergeSize:                     newMetricElasticsearchIndexOperationsMergeSize(mbc.Metrics.ElasticsearchIndexOperationsMergeSize),
-		metricElasticsearchIndexOperationsTime:                          newMetricElasticsearchIndexOperationsTime(mbc.Metrics.ElasticsearchIndexOperationsTime),
-		metricElasticsearchIndexSegmentsCount:                           newMetricElasticsearchIndexSegmentsCount(mbc.Metrics.ElasticsearchIndexSegmentsCount),
-		metricElasticsearchIndexSegmentsMemory:                          newMetricElasticsearchIndexSegmentsMemory(mbc.Metrics.ElasticsearchIndexSegmentsMemory),
-		metricElasticsearchIndexSegmentsSize:                            newMetricElasticsearchIndexSegmentsSize(mbc.Metrics.ElasticsearchIndexSegmentsSize),
-		metricElasticsearchIndexShardsSize:                              newMetricElasticsearchIndexShardsSize(mbc.Metrics.ElasticsearchIndexShardsSize),
-		metricElasticsearchIndexTranslogOperations:                      newMetricElasticsearchIndexTranslogOperations(mbc.Metrics.ElasticsearchIndexTranslogOperations),
-		metricElasticsearchIndexTranslogSize:                            newMetricElasticsearchIndexTranslogSize(mbc.Metrics.ElasticsearchIndexTranslogSize),
-		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(mbc.Metrics.ElasticsearchIndexingPressureMemoryLimit),
-		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(mbc.Metrics.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
-		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(mbc.Metrics.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
-		metricElasticsearchMemoryIndexingPressure:                       newMetricElasticsearchMemoryIndexingPressure(mbc.Metrics.ElasticsearchMemoryIndexingPressure),
-		metricElasticsearchNodeCacheCount:                               newMetricElasticsearchNodeCacheCount(mbc.Metrics.ElasticsearchNodeCacheCount),
-		metricElasticsearchNodeCacheEvictions:                           newMetricElasticsearchNodeCacheEvictions(mbc.Metrics.ElasticsearchNodeCacheEvictions),
-		metricElasticsearchNodeCacheMemoryUsage:                         newMetricElasticsearchNodeCacheMemoryUsage(mbc.Metrics.ElasticsearchNodeCacheMemoryUsage),
-		metricElasticsearchNodeCacheSize:                                newMetricElasticsearchNodeCacheSize(mbc.Metrics.ElasticsearchNodeCacheSize),
-		metricElasticsearchNodeClusterConnections:                       newMetricElasticsearchNodeClusterConnections(mbc.Metrics.ElasticsearchNodeClusterConnections),
-		metricElasticsearchNodeClusterIo:                                newMetricElasticsearchNodeClusterIo(mbc.Metrics.ElasticsearchNodeClusterIo),
-		metricElasticsearchNodeDiskIoRead:                               newMetricElasticsearchNodeDiskIoRead(mbc.Metrics.ElasticsearchNodeDiskIoRead),
-		metricElasticsearchNodeDiskIoWrite:                              newMetricElasticsearchNodeDiskIoWrite(mbc.Metrics.ElasticsearchNodeDiskIoWrite),
-		metricElasticsearchNodeDocuments:                                newMetricElasticsearchNodeDocuments(mbc.Metrics.ElasticsearchNodeDocuments),
-		metricElasticsearchNodeFsDiskAvailable:                          newMetricElasticsearchNodeFsDiskAvailable(mbc.Metrics.ElasticsearchNodeFsDiskAvailable),
-		metricElasticsearchNodeFsDiskFree:                               newMetricElasticsearchNodeFsDiskFree(mbc.Metrics.ElasticsearchNodeFsDiskFree),
-		metricElasticsearchNodeFsDiskTotal:                              newMetricElasticsearchNodeFsDiskTotal(mbc.Metrics.ElasticsearchNodeFsDiskTotal),
-		metricElasticsearchNodeHTTPConnections:                          newMetricElasticsearchNodeHTTPConnections(mbc.Metrics.ElasticsearchNodeHTTPConnections),
-		metricElasticsearchNodeIngestDocuments:                          newMetricElasticsearchNodeIngestDocuments(mbc.Metrics.ElasticsearchNodeIngestDocuments),
-		metricElasticsearchNodeIngestDocumentsCurrent:                   newMetricElasticsearchNodeIngestDocumentsCurrent(mbc.Metrics.ElasticsearchNodeIngestDocumentsCurrent),
-		metricElasticsearchNodeIngestOperationsFailed:                   newMetricElasticsearchNodeIngestOperationsFailed(mbc.Metrics.ElasticsearchNodeIngestOperationsFailed),
-		metricElasticsearchNodeOpenFiles:                                newMetricElasticsearchNodeOpenFiles(mbc.Metrics.ElasticsearchNodeOpenFiles),
-		metricElasticsearchNodeOperationsCompleted:                      newMetricElasticsearchNodeOperationsCompleted(mbc.Metrics.ElasticsearchNodeOperationsCompleted),
-		metricElasticsearchNodeOperationsCurrent:                        newMetricElasticsearchNodeOperationsCurrent(mbc.Metrics.ElasticsearchNodeOperationsCurrent),
-		metricElasticsearchNodeOperationsGetCompleted:                   newMetricElasticsearchNodeOperationsGetCompleted(mbc.Metrics.ElasticsearchNodeOperationsGetCompleted),
-		metricElasticsearchNodeOperationsGetTime:                        newMetricElasticsearchNodeOperationsGetTime(mbc.Metrics.ElasticsearchNodeOperationsGetTime),
-		metricElasticsearchNodeOperationsTime:                           newMetricElasticsearchNodeOperationsTime(mbc.Metrics.ElasticsearchNodeOperationsTime),
-		metricElasticsearchNodePipelineIngestDocumentsCurrent:           newMetricElasticsearchNodePipelineIngestDocumentsCurrent(mbc.Metrics.ElasticsearchNodePipelineIngestDocumentsCurrent),
-		metricElasticsearchNodePipelineIngestDocumentsPreprocessed:      newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(mbc.Metrics.ElasticsearchNodePipelineIngestDocumentsPreprocessed),
-		metricElasticsearchNodePipelineIngestOperationsFailed:           newMetricElasticsearchNodePipelineIngestOperationsFailed(mbc.Metrics.ElasticsearchNodePipelineIngestOperationsFailed),
-		metricElasticsearchNodeScriptCacheEvictions:                     newMetricElasticsearchNodeScriptCacheEvictions(mbc.Metrics.ElasticsearchNodeScriptCacheEvictions),
-		metricElasticsearchNodeScriptCompilationLimitTriggered:          newMetricElasticsearchNodeScriptCompilationLimitTriggered(mbc.Metrics.ElasticsearchNodeScriptCompilationLimitTriggered),
-		metricElasticsearchNodeScriptCompilations:                       newMetricElasticsearchNodeScriptCompilations(mbc.Metrics.ElasticsearchNodeScriptCompilations),
-		metricElasticsearchNodeSegmentsMemory:                           newMetricElasticsearchNodeSegmentsMemory(mbc.Metrics.ElasticsearchNodeSegmentsMemory),
-		metricElasticsearchNodeShardsDataSetSize:                        newMetricElasticsearchNodeShardsDataSetSize(mbc.Metrics.ElasticsearchNodeShardsDataSetSize),
-		metricElasticsearchNodeShardsReservedSize:                       newMetricElasticsearchNodeShardsReservedSize(mbc.Metrics.ElasticsearchNodeShardsReservedSize),
-		metricElasticsearchNodeShardsSize:                               newMetricElasticsearchNodeShardsSize(mbc.Metrics.ElasticsearchNodeShardsSize),
-		metricElasticsearchNodeThreadPoolTasksFinished:                  newMetricElasticsearchNodeThreadPoolTasksFinished(mbc.Metrics.ElasticsearchNodeThreadPoolTasksFinished),
-		metricElasticsearchNodeThreadPoolTasksQueued:                    newMetricElasticsearchNodeThreadPoolTasksQueued(mbc.Metrics.ElasticsearchNodeThreadPoolTasksQueued),
-		metricElasticsearchNodeThreadPoolThreads:                        newMetricElasticsearchNodeThreadPoolThreads(mbc.Metrics.ElasticsearchNodeThreadPoolThreads),
-		metricElasticsearchNodeTranslogOperations:                       newMetricElasticsearchNodeTranslogOperations(mbc.Metrics.ElasticsearchNodeTranslogOperations),
-		metricElasticsearchNodeTranslogSize:                             newMetricElasticsearchNodeTranslogSize(mbc.Metrics.ElasticsearchNodeTranslogSize),
-		metricElasticsearchNodeTranslogUncommittedSize:                  newMetricElasticsearchNodeTranslogUncommittedSize(mbc.Metrics.ElasticsearchNodeTranslogUncommittedSize),
-		metricElasticsearchOsCPULoadAvg15m:                              newMetricElasticsearchOsCPULoadAvg15m(mbc.Metrics.ElasticsearchOsCPULoadAvg15m),
-		metricElasticsearchOsCPULoadAvg1m:                               newMetricElasticsearchOsCPULoadAvg1m(mbc.Metrics.ElasticsearchOsCPULoadAvg1m),
-		metricElasticsearchOsCPULoadAvg5m:                               newMetricElasticsearchOsCPULoadAvg5m(mbc.Metrics.ElasticsearchOsCPULoadAvg5m),
-		metricElasticsearchOsCPUUsage:                                   newMetricElasticsearchOsCPUUsage(mbc.Metrics.ElasticsearchOsCPUUsage),
-		metricElasticsearchOsMemory:                                     newMetricElasticsearchOsMemory(mbc.Metrics.ElasticsearchOsMemory),
-		metricElasticsearchProcessCPUTime:                               newMetricElasticsearchProcessCPUTime(mbc.Metrics.ElasticsearchProcessCPUTime),
-		metricElasticsearchProcessCPUUsage:                              newMetricElasticsearchProcessCPUUsage(mbc.Metrics.ElasticsearchProcessCPUUsage),
-		metricElasticsearchProcessMemoryVirtual:                         newMetricElasticsearchProcessMemoryVirtual(mbc.Metrics.ElasticsearchProcessMemoryVirtual),
-		metricJvmClassesLoaded:                                          newMetricJvmClassesLoaded(mbc.Metrics.JvmClassesLoaded),
-		metricJvmGcCollectionsCount:                                     newMetricJvmGcCollectionsCount(mbc.Metrics.JvmGcCollectionsCount),
-		metricJvmGcCollectionsElapsed:                                   newMetricJvmGcCollectionsElapsed(mbc.Metrics.JvmGcCollectionsElapsed),
-		metricJvmMemoryHeapCommitted:                                    newMetricJvmMemoryHeapCommitted(mbc.Metrics.JvmMemoryHeapCommitted),
-		metricJvmMemoryHeapMax:                                          newMetricJvmMemoryHeapMax(mbc.Metrics.JvmMemoryHeapMax),
-		metricJvmMemoryHeapUsed:                                         newMetricJvmMemoryHeapUsed(mbc.Metrics.JvmMemoryHeapUsed),
-		metricJvmMemoryHeapUtilization:                                  newMetricJvmMemoryHeapUtilization(mbc.Metrics.JvmMemoryHeapUtilization),
-		metricJvmMemoryNonheapCommitted:                                 newMetricJvmMemoryNonheapCommitted(mbc.Metrics.JvmMemoryNonheapCommitted),
-		metricJvmMemoryNonheapUsed:                                      newMetricJvmMemoryNonheapUsed(mbc.Metrics.JvmMemoryNonheapUsed),
-		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(mbc.Metrics.JvmMemoryPoolMax),
-		metricJvmMemoryPoolUsed:                                         newMetricJvmMemoryPoolUsed(mbc.Metrics.JvmMemoryPoolUsed),
-		metricJvmThreadsCount:                                           newMetricJvmThreadsCount(mbc.Metrics.JvmThreadsCount),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime: mb.startTime,
+		buildInfo: mb.buildInfo,
+		resource:  res,
+		metricElasticsearchBreakerMemoryEstimated:                       newMetricElasticsearchBreakerMemoryEstimated(mb.config.Metrics.ElasticsearchBreakerMemoryEstimated),
+		metricElasticsearchBreakerMemoryLimit:                           newMetricElasticsearchBreakerMemoryLimit(mb.config.Metrics.ElasticsearchBreakerMemoryLimit),
+		metricElasticsearchBreakerTripped:                               newMetricElasticsearchBreakerTripped(mb.config.Metrics.ElasticsearchBreakerTripped),
+		metricElasticsearchClusterDataNodes:                             newMetricElasticsearchClusterDataNodes(mb.config.Metrics.ElasticsearchClusterDataNodes),
+		metricElasticsearchClusterHealth:                                newMetricElasticsearchClusterHealth(mb.config.Metrics.ElasticsearchClusterHealth),
+		metricElasticsearchClusterInFlightFetch:                         newMetricElasticsearchClusterInFlightFetch(mb.config.Metrics.ElasticsearchClusterInFlightFetch),
+		metricElasticsearchClusterIndicesCacheEvictions:                 newMetricElasticsearchClusterIndicesCacheEvictions(mb.config.Metrics.ElasticsearchClusterIndicesCacheEvictions),
+		metricElasticsearchClusterNodes:                                 newMetricElasticsearchClusterNodes(mb.config.Metrics.ElasticsearchClusterNodes),
+		metricElasticsearchClusterPendingTasks:                          newMetricElasticsearchClusterPendingTasks(mb.config.Metrics.ElasticsearchClusterPendingTasks),
+		metricElasticsearchClusterPublishedStatesDifferences:            newMetricElasticsearchClusterPublishedStatesDifferences(mb.config.Metrics.ElasticsearchClusterPublishedStatesDifferences),
+		metricElasticsearchClusterPublishedStatesFull:                   newMetricElasticsearchClusterPublishedStatesFull(mb.config.Metrics.ElasticsearchClusterPublishedStatesFull),
+		metricElasticsearchClusterShards:                                newMetricElasticsearchClusterShards(mb.config.Metrics.ElasticsearchClusterShards),
+		metricElasticsearchClusterStateQueue:                            newMetricElasticsearchClusterStateQueue(mb.config.Metrics.ElasticsearchClusterStateQueue),
+		metricElasticsearchClusterStateUpdateCount:                      newMetricElasticsearchClusterStateUpdateCount(mb.config.Metrics.ElasticsearchClusterStateUpdateCount),
+		metricElasticsearchClusterStateUpdateTime:                       newMetricElasticsearchClusterStateUpdateTime(mb.config.Metrics.ElasticsearchClusterStateUpdateTime),
+		metricElasticsearchIndexCacheEvictions:                          newMetricElasticsearchIndexCacheEvictions(mb.config.Metrics.ElasticsearchIndexCacheEvictions),
+		metricElasticsearchIndexCacheMemoryUsage:                        newMetricElasticsearchIndexCacheMemoryUsage(mb.config.Metrics.ElasticsearchIndexCacheMemoryUsage),
+		metricElasticsearchIndexCacheSize:                               newMetricElasticsearchIndexCacheSize(mb.config.Metrics.ElasticsearchIndexCacheSize),
+		metricElasticsearchIndexDocuments:                               newMetricElasticsearchIndexDocuments(mb.config.Metrics.ElasticsearchIndexDocuments),
+		metricElasticsearchIndexOperationsCompleted:                     newMetricElasticsearchIndexOperationsCompleted(mb.config.Metrics.ElasticsearchIndexOperationsCompleted),
+		metricElasticsearchIndexOperationsMergeDocsCount:                newMetricElasticsearchIndexOperationsMergeDocsCount(mb.config.Metrics.ElasticsearchIndexOperationsMergeDocsCount),
+		metricElasticsearchIndexOperationsMergeSize:                     newMetricElasticsearchIndexOperationsMergeSize(mb.config.Metrics.ElasticsearchIndexOperationsMergeSize),
+		metricElasticsearchIndexOperationsTime:                          newMetricElasticsearchIndexOperationsTime(mb.config.Metrics.ElasticsearchIndexOperationsTime),
+		metricElasticsearchIndexSegmentsCount:                           newMetricElasticsearchIndexSegmentsCount(mb.config.Metrics.ElasticsearchIndexSegmentsCount),
+		metricElasticsearchIndexSegmentsMemory:                          newMetricElasticsearchIndexSegmentsMemory(mb.config.Metrics.ElasticsearchIndexSegmentsMemory),
+		metricElasticsearchIndexSegmentsSize:                            newMetricElasticsearchIndexSegmentsSize(mb.config.Metrics.ElasticsearchIndexSegmentsSize),
+		metricElasticsearchIndexShardsSize:                              newMetricElasticsearchIndexShardsSize(mb.config.Metrics.ElasticsearchIndexShardsSize),
+		metricElasticsearchIndexTranslogOperations:                      newMetricElasticsearchIndexTranslogOperations(mb.config.Metrics.ElasticsearchIndexTranslogOperations),
+		metricElasticsearchIndexTranslogSize:                            newMetricElasticsearchIndexTranslogSize(mb.config.Metrics.ElasticsearchIndexTranslogSize),
+		metricElasticsearchIndexingPressureMemoryLimit:                  newMetricElasticsearchIndexingPressureMemoryLimit(mb.config.Metrics.ElasticsearchIndexingPressureMemoryLimit),
+		metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections: newMetricElasticsearchIndexingPressureMemoryTotalPrimaryRejections(mb.config.Metrics.ElasticsearchIndexingPressureMemoryTotalPrimaryRejections),
+		metricElasticsearchIndexingPressureMemoryTotalReplicaRejections: newMetricElasticsearchIndexingPressureMemoryTotalReplicaRejections(mb.config.Metrics.ElasticsearchIndexingPressureMemoryTotalReplicaRejections),
+		metricElasticsearchMemoryIndexingPressure:                       newMetricElasticsearchMemoryIndexingPressure(mb.config.Metrics.ElasticsearchMemoryIndexingPressure),
+		metricElasticsearchNodeCacheCount:                               newMetricElasticsearchNodeCacheCount(mb.config.Metrics.ElasticsearchNodeCacheCount),
+		metricElasticsearchNodeCacheEvictions:                           newMetricElasticsearchNodeCacheEvictions(mb.config.Metrics.ElasticsearchNodeCacheEvictions),
+		metricElasticsearchNodeCacheMemoryUsage:                         newMetricElasticsearchNodeCacheMemoryUsage(mb.config.Metrics.ElasticsearchNodeCacheMemoryUsage),
+		metricElasticsearchNodeCacheSize:                                newMetricElasticsearchNodeCacheSize(mb.config.Metrics.ElasticsearchNodeCacheSize),
+		metricElasticsearchNodeClusterConnections:                       newMetricElasticsearchNodeClusterConnections(mb.config.Metrics.ElasticsearchNodeClusterConnections),
+		metricElasticsearchNodeClusterIo:                                newMetricElasticsearchNodeClusterIo(mb.config.Metrics.ElasticsearchNodeClusterIo),
+		metricElasticsearchNodeDiskIoRead:                               newMetricElasticsearchNodeDiskIoRead(mb.config.Metrics.ElasticsearchNodeDiskIoRead),
+		metricElasticsearchNodeDiskIoWrite:                              newMetricElasticsearchNodeDiskIoWrite(mb.config.Metrics.ElasticsearchNodeDiskIoWrite),
+		metricElasticsearchNodeDocuments:                                newMetricElasticsearchNodeDocuments(mb.config.Metrics.ElasticsearchNodeDocuments),
+		metricElasticsearchNodeFsDiskAvailable:                          newMetricElasticsearchNodeFsDiskAvailable(mb.config.Metrics.ElasticsearchNodeFsDiskAvailable),
+		metricElasticsearchNodeFsDiskFree:                               newMetricElasticsearchNodeFsDiskFree(mb.config.Metrics.ElasticsearchNodeFsDiskFree),
+		metricElasticsearchNodeFsDiskTotal:                              newMetricElasticsearchNodeFsDiskTotal(mb.config.Metrics.ElasticsearchNodeFsDiskTotal),
+		metricElasticsearchNodeHTTPConnections:                          newMetricElasticsearchNodeHTTPConnections(mb.config.Metrics.ElasticsearchNodeHTTPConnections),
+		metricElasticsearchNodeIngestDocuments:                          newMetricElasticsearchNodeIngestDocuments(mb.config.Metrics.ElasticsearchNodeIngestDocuments),
+		metricElasticsearchNodeIngestDocumentsCurrent:                   newMetricElasticsearchNodeIngestDocumentsCurrent(mb.config.Metrics.ElasticsearchNodeIngestDocumentsCurrent),
+		metricElasticsearchNodeIngestOperationsFailed:                   newMetricElasticsearchNodeIngestOperationsFailed(mb.config.Metrics.ElasticsearchNodeIngestOperationsFailed),
+		metricElasticsearchNodeOpenFiles:                                newMetricElasticsearchNodeOpenFiles(mb.config.Metrics.ElasticsearchNodeOpenFiles),
+		metricElasticsearchNodeOperationsCompleted:                      newMetricElasticsearchNodeOperationsCompleted(mb.config.Metrics.ElasticsearchNodeOperationsCompleted),
+		metricElasticsearchNodeOperationsCurrent:                        newMetricElasticsearchNodeOperationsCurrent(mb.config.Metrics.ElasticsearchNodeOperationsCurrent),
+		metricElasticsearchNodeOperationsGetCompleted:                   newMetricElasticsearchNodeOperationsGetCompleted(mb.config.Metrics.ElasticsearchNodeOperationsGetCompleted),
+		metricElasticsearchNodeOperationsGetTime:                        newMetricElasticsearchNodeOperationsGetTime(mb.config.Metrics.ElasticsearchNodeOperationsGetTime),
+		metricElasticsearchNodeOperationsTime:                           newMetricElasticsearchNodeOperationsTime(mb.config.Metrics.ElasticsearchNodeOperationsTime),
+		metricElasticsearchNodePipelineIngestDocumentsCurrent:           newMetricElasticsearchNodePipelineIngestDocumentsCurrent(mb.config.Metrics.ElasticsearchNodePipelineIngestDocumentsCurrent),
+		metricElasticsearchNodePipelineIngestDocumentsPreprocessed:      newMetricElasticsearchNodePipelineIngestDocumentsPreprocessed(mb.config.Metrics.ElasticsearchNodePipelineIngestDocumentsPreprocessed),
+		metricElasticsearchNodePipelineIngestOperationsFailed:           newMetricElasticsearchNodePipelineIngestOperationsFailed(mb.config.Metrics.ElasticsearchNodePipelineIngestOperationsFailed),
+		metricElasticsearchNodeScriptCacheEvictions:                     newMetricElasticsearchNodeScriptCacheEvictions(mb.config.Metrics.ElasticsearchNodeScriptCacheEvictions),
+		metricElasticsearchNodeScriptCompilationLimitTriggered:          newMetricElasticsearchNodeScriptCompilationLimitTriggered(mb.config.Metrics.ElasticsearchNodeScriptCompilationLimitTriggered),
+		metricElasticsearchNodeScriptCompilations:                       newMetricElasticsearchNodeScriptCompilations(mb.config.Metrics.ElasticsearchNodeScriptCompilations),
+		metricElasticsearchNodeSegmentsMemory:                           newMetricElasticsearchNodeSegmentsMemory(mb.config.Metrics.ElasticsearchNodeSegmentsMemory),
+		metricElasticsearchNodeShardsDataSetSize:                        newMetricElasticsearchNodeShardsDataSetSize(mb.config.Metrics.ElasticsearchNodeShardsDataSetSize),
+		metricElasticsearchNodeShardsReservedSize:                       newMetricElasticsearchNodeShardsReservedSize(mb.config.Metrics.ElasticsearchNodeShardsReservedSize),
+		metricElasticsearchNodeShardsSize:                               newMetricElasticsearchNodeShardsSize(mb.config.Metrics.ElasticsearchNodeShardsSize),
+		metricElasticsearchNodeThreadPoolTasksFinished:                  newMetricElasticsearchNodeThreadPoolTasksFinished(mb.config.Metrics.ElasticsearchNodeThreadPoolTasksFinished),
+		metricElasticsearchNodeThreadPoolTasksQueued:                    newMetricElasticsearchNodeThreadPoolTasksQueued(mb.config.Metrics.ElasticsearchNodeThreadPoolTasksQueued),
+		metricElasticsearchNodeThreadPoolThreads:                        newMetricElasticsearchNodeThreadPoolThreads(mb.config.Metrics.ElasticsearchNodeThreadPoolThreads),
+		metricElasticsearchNodeTranslogOperations:                       newMetricElasticsearchNodeTranslogOperations(mb.config.Metrics.ElasticsearchNodeTranslogOperations),
+		metricElasticsearchNodeTranslogSize:                             newMetricElasticsearchNodeTranslogSize(mb.config.Metrics.ElasticsearchNodeTranslogSize),
+		metricElasticsearchNodeTranslogUncommittedSize:                  newMetricElasticsearchNodeTranslogUncommittedSize(mb.config.Metrics.ElasticsearchNodeTranslogUncommittedSize),
+		metricElasticsearchOsCPULoadAvg15m:                              newMetricElasticsearchOsCPULoadAvg15m(mb.config.Metrics.ElasticsearchOsCPULoadAvg15m),
+		metricElasticsearchOsCPULoadAvg1m:                               newMetricElasticsearchOsCPULoadAvg1m(mb.config.Metrics.ElasticsearchOsCPULoadAvg1m),
+		metricElasticsearchOsCPULoadAvg5m:                               newMetricElasticsearchOsCPULoadAvg5m(mb.config.Metrics.ElasticsearchOsCPULoadAvg5m),
+		metricElasticsearchOsCPUUsage:                                   newMetricElasticsearchOsCPUUsage(mb.config.Metrics.ElasticsearchOsCPUUsage),
+		metricElasticsearchOsMemory:                                     newMetricElasticsearchOsMemory(mb.config.Metrics.ElasticsearchOsMemory),
+		metricElasticsearchProcessCPUTime:                               newMetricElasticsearchProcessCPUTime(mb.config.Metrics.ElasticsearchProcessCPUTime),
+		metricElasticsearchProcessCPUUsage:                              newMetricElasticsearchProcessCPUUsage(mb.config.Metrics.ElasticsearchProcessCPUUsage),
+		metricElasticsearchProcessMemoryVirtual:                         newMetricElasticsearchProcessMemoryVirtual(mb.config.Metrics.ElasticsearchProcessMemoryVirtual),
+		metricJvmClassesLoaded:                                          newMetricJvmClassesLoaded(mb.config.Metrics.JvmClassesLoaded),
+		metricJvmGcCollectionsCount:                                     newMetricJvmGcCollectionsCount(mb.config.Metrics.JvmGcCollectionsCount),
+		metricJvmGcCollectionsElapsed:                                   newMetricJvmGcCollectionsElapsed(mb.config.Metrics.JvmGcCollectionsElapsed),
+		metricJvmMemoryHeapCommitted:                                    newMetricJvmMemoryHeapCommitted(mb.config.Metrics.JvmMemoryHeapCommitted),
+		metricJvmMemoryHeapMax:                                          newMetricJvmMemoryHeapMax(mb.config.Metrics.JvmMemoryHeapMax),
+		metricJvmMemoryHeapUsed:                                         newMetricJvmMemoryHeapUsed(mb.config.Metrics.JvmMemoryHeapUsed),
+		metricJvmMemoryHeapUtilization:                                  newMetricJvmMemoryHeapUtilization(mb.config.Metrics.JvmMemoryHeapUtilization),
+		metricJvmMemoryNonheapCommitted:                                 newMetricJvmMemoryNonheapCommitted(mb.config.Metrics.JvmMemoryNonheapCommitted),
+		metricJvmMemoryNonheapUsed:                                      newMetricJvmMemoryNonheapUsed(mb.config.Metrics.JvmMemoryNonheapUsed),
+		metricJvmMemoryPoolMax:                                          newMetricJvmMemoryPoolMax(mb.config.Metrics.JvmMemoryPoolMax),
+		metricJvmMemoryPoolUsed:                                         newMetricJvmMemoryPoolUsed(mb.config.Metrics.JvmMemoryPoolUsed),
+		metricJvmThreadsCount:                                           newMetricJvmThreadsCount(mb.config.Metrics.JvmThreadsCount),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -5464,625 +5506,598 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricElasticsearchBreakerMemoryEstimated.emit(sm.Metrics())
+	rmb.metricElasticsearchBreakerMemoryLimit.emit(sm.Metrics())
+	rmb.metricElasticsearchBreakerTripped.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterDataNodes.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterHealth.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterInFlightFetch.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterIndicesCacheEvictions.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterNodes.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterPendingTasks.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterPublishedStatesDifferences.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterPublishedStatesFull.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterShards.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterStateQueue.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterStateUpdateCount.emit(sm.Metrics())
+	rmb.metricElasticsearchClusterStateUpdateTime.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexCacheEvictions.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexCacheMemoryUsage.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexCacheSize.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexDocuments.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexOperationsCompleted.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexOperationsMergeDocsCount.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexOperationsMergeSize.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexOperationsTime.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexSegmentsCount.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexSegmentsMemory.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexSegmentsSize.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexShardsSize.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexTranslogOperations.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexTranslogSize.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexingPressureMemoryLimit.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.emit(sm.Metrics())
+	rmb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.emit(sm.Metrics())
+	rmb.metricElasticsearchMemoryIndexingPressure.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeCacheCount.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeCacheEvictions.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeCacheMemoryUsage.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeCacheSize.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeClusterConnections.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeClusterIo.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeDiskIoRead.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeDiskIoWrite.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeDocuments.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeFsDiskAvailable.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeFsDiskFree.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeFsDiskTotal.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeHTTPConnections.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeIngestDocuments.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeIngestDocumentsCurrent.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeIngestOperationsFailed.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOpenFiles.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOperationsCompleted.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOperationsCurrent.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOperationsGetCompleted.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOperationsGetTime.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeOperationsTime.emit(sm.Metrics())
+	rmb.metricElasticsearchNodePipelineIngestDocumentsCurrent.emit(sm.Metrics())
+	rmb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.emit(sm.Metrics())
+	rmb.metricElasticsearchNodePipelineIngestOperationsFailed.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeScriptCacheEvictions.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeScriptCompilationLimitTriggered.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeScriptCompilations.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeSegmentsMemory.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeShardsDataSetSize.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeShardsReservedSize.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeShardsSize.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeThreadPoolTasksFinished.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeThreadPoolTasksQueued.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeThreadPoolThreads.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeTranslogOperations.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeTranslogSize.emit(sm.Metrics())
+	rmb.metricElasticsearchNodeTranslogUncommittedSize.emit(sm.Metrics())
+	rmb.metricElasticsearchOsCPULoadAvg15m.emit(sm.Metrics())
+	rmb.metricElasticsearchOsCPULoadAvg1m.emit(sm.Metrics())
+	rmb.metricElasticsearchOsCPULoadAvg5m.emit(sm.Metrics())
+	rmb.metricElasticsearchOsCPUUsage.emit(sm.Metrics())
+	rmb.metricElasticsearchOsMemory.emit(sm.Metrics())
+	rmb.metricElasticsearchProcessCPUTime.emit(sm.Metrics())
+	rmb.metricElasticsearchProcessCPUUsage.emit(sm.Metrics())
+	rmb.metricElasticsearchProcessMemoryVirtual.emit(sm.Metrics())
+	rmb.metricJvmClassesLoaded.emit(sm.Metrics())
+	rmb.metricJvmGcCollectionsCount.emit(sm.Metrics())
+	rmb.metricJvmGcCollectionsElapsed.emit(sm.Metrics())
+	rmb.metricJvmMemoryHeapCommitted.emit(sm.Metrics())
+	rmb.metricJvmMemoryHeapMax.emit(sm.Metrics())
+	rmb.metricJvmMemoryHeapUsed.emit(sm.Metrics())
+	rmb.metricJvmMemoryHeapUtilization.emit(sm.Metrics())
+	rmb.metricJvmMemoryNonheapCommitted.emit(sm.Metrics())
+	rmb.metricJvmMemoryNonheapUsed.emit(sm.Metrics())
+	rmb.metricJvmMemoryPoolMax.emit(sm.Metrics())
+	rmb.metricJvmMemoryPoolUsed.emit(sm.Metrics())
+	rmb.metricJvmThreadsCount.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/elasticsearchreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricElasticsearchBreakerMemoryEstimated.emit(ils.Metrics())
-	mb.metricElasticsearchBreakerMemoryLimit.emit(ils.Metrics())
-	mb.metricElasticsearchBreakerTripped.emit(ils.Metrics())
-	mb.metricElasticsearchClusterDataNodes.emit(ils.Metrics())
-	mb.metricElasticsearchClusterHealth.emit(ils.Metrics())
-	mb.metricElasticsearchClusterInFlightFetch.emit(ils.Metrics())
-	mb.metricElasticsearchClusterIndicesCacheEvictions.emit(ils.Metrics())
-	mb.metricElasticsearchClusterNodes.emit(ils.Metrics())
-	mb.metricElasticsearchClusterPendingTasks.emit(ils.Metrics())
-	mb.metricElasticsearchClusterPublishedStatesDifferences.emit(ils.Metrics())
-	mb.metricElasticsearchClusterPublishedStatesFull.emit(ils.Metrics())
-	mb.metricElasticsearchClusterShards.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateQueue.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateCount.emit(ils.Metrics())
-	mb.metricElasticsearchClusterStateUpdateTime.emit(ils.Metrics())
-	mb.metricElasticsearchIndexCacheEvictions.emit(ils.Metrics())
-	mb.metricElasticsearchIndexCacheMemoryUsage.emit(ils.Metrics())
-	mb.metricElasticsearchIndexCacheSize.emit(ils.Metrics())
-	mb.metricElasticsearchIndexDocuments.emit(ils.Metrics())
-	mb.metricElasticsearchIndexOperationsCompleted.emit(ils.Metrics())
-	mb.metricElasticsearchIndexOperationsMergeDocsCount.emit(ils.Metrics())
-	mb.metricElasticsearchIndexOperationsMergeSize.emit(ils.Metrics())
-	mb.metricElasticsearchIndexOperationsTime.emit(ils.Metrics())
-	mb.metricElasticsearchIndexSegmentsCount.emit(ils.Metrics())
-	mb.metricElasticsearchIndexSegmentsMemory.emit(ils.Metrics())
-	mb.metricElasticsearchIndexSegmentsSize.emit(ils.Metrics())
-	mb.metricElasticsearchIndexShardsSize.emit(ils.Metrics())
-	mb.metricElasticsearchIndexTranslogOperations.emit(ils.Metrics())
-	mb.metricElasticsearchIndexTranslogSize.emit(ils.Metrics())
-	mb.metricElasticsearchIndexingPressureMemoryLimit.emit(ils.Metrics())
-	mb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.emit(ils.Metrics())
-	mb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.emit(ils.Metrics())
-	mb.metricElasticsearchMemoryIndexingPressure.emit(ils.Metrics())
-	mb.metricElasticsearchNodeCacheCount.emit(ils.Metrics())
-	mb.metricElasticsearchNodeCacheEvictions.emit(ils.Metrics())
-	mb.metricElasticsearchNodeCacheMemoryUsage.emit(ils.Metrics())
-	mb.metricElasticsearchNodeCacheSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeClusterConnections.emit(ils.Metrics())
-	mb.metricElasticsearchNodeClusterIo.emit(ils.Metrics())
-	mb.metricElasticsearchNodeDiskIoRead.emit(ils.Metrics())
-	mb.metricElasticsearchNodeDiskIoWrite.emit(ils.Metrics())
-	mb.metricElasticsearchNodeDocuments.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskAvailable.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskFree.emit(ils.Metrics())
-	mb.metricElasticsearchNodeFsDiskTotal.emit(ils.Metrics())
-	mb.metricElasticsearchNodeHTTPConnections.emit(ils.Metrics())
-	mb.metricElasticsearchNodeIngestDocuments.emit(ils.Metrics())
-	mb.metricElasticsearchNodeIngestDocumentsCurrent.emit(ils.Metrics())
-	mb.metricElasticsearchNodeIngestOperationsFailed.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOpenFiles.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOperationsCompleted.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOperationsCurrent.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOperationsGetCompleted.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOperationsGetTime.emit(ils.Metrics())
-	mb.metricElasticsearchNodeOperationsTime.emit(ils.Metrics())
-	mb.metricElasticsearchNodePipelineIngestDocumentsCurrent.emit(ils.Metrics())
-	mb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.emit(ils.Metrics())
-	mb.metricElasticsearchNodePipelineIngestOperationsFailed.emit(ils.Metrics())
-	mb.metricElasticsearchNodeScriptCacheEvictions.emit(ils.Metrics())
-	mb.metricElasticsearchNodeScriptCompilationLimitTriggered.emit(ils.Metrics())
-	mb.metricElasticsearchNodeScriptCompilations.emit(ils.Metrics())
-	mb.metricElasticsearchNodeSegmentsMemory.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsDataSetSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsReservedSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeShardsSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.emit(ils.Metrics())
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.emit(ils.Metrics())
-	mb.metricElasticsearchNodeThreadPoolThreads.emit(ils.Metrics())
-	mb.metricElasticsearchNodeTranslogOperations.emit(ils.Metrics())
-	mb.metricElasticsearchNodeTranslogSize.emit(ils.Metrics())
-	mb.metricElasticsearchNodeTranslogUncommittedSize.emit(ils.Metrics())
-	mb.metricElasticsearchOsCPULoadAvg15m.emit(ils.Metrics())
-	mb.metricElasticsearchOsCPULoadAvg1m.emit(ils.Metrics())
-	mb.metricElasticsearchOsCPULoadAvg5m.emit(ils.Metrics())
-	mb.metricElasticsearchOsCPUUsage.emit(ils.Metrics())
-	mb.metricElasticsearchOsMemory.emit(ils.Metrics())
-	mb.metricElasticsearchProcessCPUTime.emit(ils.Metrics())
-	mb.metricElasticsearchProcessCPUUsage.emit(ils.Metrics())
-	mb.metricElasticsearchProcessMemoryVirtual.emit(ils.Metrics())
-	mb.metricJvmClassesLoaded.emit(ils.Metrics())
-	mb.metricJvmGcCollectionsCount.emit(ils.Metrics())
-	mb.metricJvmGcCollectionsElapsed.emit(ils.Metrics())
-	mb.metricJvmMemoryHeapCommitted.emit(ils.Metrics())
-	mb.metricJvmMemoryHeapMax.emit(ils.Metrics())
-	mb.metricJvmMemoryHeapUsed.emit(ils.Metrics())
-	mb.metricJvmMemoryHeapUtilization.emit(ils.Metrics())
-	mb.metricJvmMemoryNonheapCommitted.emit(ils.Metrics())
-	mb.metricJvmMemoryNonheapUsed.emit(ils.Metrics())
-	mb.metricJvmMemoryPoolMax.emit(ils.Metrics())
-	mb.metricJvmMemoryPoolUsed.emit(ils.Metrics())
-	mb.metricJvmThreadsCount.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/elasticsearchreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordElasticsearchBreakerMemoryEstimatedDataPoint adds a data point to elasticsearch.breaker.memory.estimated metric.
-func (mb *MetricsBuilder) RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
-	mb.metricElasticsearchBreakerMemoryEstimated.recordDataPoint(mb.startTime, ts, val, circuitBreakerNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
+	rmb.metricElasticsearchBreakerMemoryEstimated.recordDataPoint(rmb.startTime, ts, val, circuitBreakerNameAttributeValue)
 }
 
 // RecordElasticsearchBreakerMemoryLimitDataPoint adds a data point to elasticsearch.breaker.memory.limit metric.
-func (mb *MetricsBuilder) RecordElasticsearchBreakerMemoryLimitDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
-	mb.metricElasticsearchBreakerMemoryLimit.recordDataPoint(mb.startTime, ts, val, circuitBreakerNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchBreakerMemoryLimitDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
+	rmb.metricElasticsearchBreakerMemoryLimit.recordDataPoint(rmb.startTime, ts, val, circuitBreakerNameAttributeValue)
 }
 
 // RecordElasticsearchBreakerTrippedDataPoint adds a data point to elasticsearch.breaker.tripped metric.
-func (mb *MetricsBuilder) RecordElasticsearchBreakerTrippedDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
-	mb.metricElasticsearchBreakerTripped.recordDataPoint(mb.startTime, ts, val, circuitBreakerNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchBreakerTrippedDataPoint(ts pcommon.Timestamp, val int64, circuitBreakerNameAttributeValue string) {
+	rmb.metricElasticsearchBreakerTripped.recordDataPoint(rmb.startTime, ts, val, circuitBreakerNameAttributeValue)
 }
 
 // RecordElasticsearchClusterDataNodesDataPoint adds a data point to elasticsearch.cluster.data_nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchClusterDataNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterDataNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchClusterDataNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterHealthDataPoint adds a data point to elasticsearch.cluster.health metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue AttributeHealthStatus) {
-	mb.metricElasticsearchClusterHealth.recordDataPoint(mb.startTime, ts, val, healthStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterHealthDataPoint(ts pcommon.Timestamp, val int64, healthStatusAttributeValue AttributeHealthStatus) {
+	rmb.metricElasticsearchClusterHealth.recordDataPoint(rmb.startTime, ts, val, healthStatusAttributeValue.String())
 }
 
 // RecordElasticsearchClusterInFlightFetchDataPoint adds a data point to elasticsearch.cluster.in_flight_fetch metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterInFlightFetchDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchClusterInFlightFetch.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterInFlightFetchDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchClusterInFlightFetch.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterIndicesCacheEvictionsDataPoint adds a data point to elasticsearch.cluster.indices.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
-	mb.metricElasticsearchClusterIndicesCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	rmb.metricElasticsearchClusterIndicesCacheEvictions.recordDataPoint(rmb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchClusterNodesDataPoint adds a data point to elasticsearch.cluster.nodes metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchClusterNodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterNodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchClusterNodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterPendingTasksDataPoint adds a data point to elasticsearch.cluster.pending_tasks metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterPendingTasksDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchClusterPendingTasks.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterPendingTasksDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchClusterPendingTasks.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterPublishedStatesDifferencesDataPoint adds a data point to elasticsearch.cluster.published_states.differences metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts pcommon.Timestamp, val int64, clusterPublishedDifferenceStateAttributeValue AttributeClusterPublishedDifferenceState) {
-	mb.metricElasticsearchClusterPublishedStatesDifferences.recordDataPoint(mb.startTime, ts, val, clusterPublishedDifferenceStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts pcommon.Timestamp, val int64, clusterPublishedDifferenceStateAttributeValue AttributeClusterPublishedDifferenceState) {
+	rmb.metricElasticsearchClusterPublishedStatesDifferences.recordDataPoint(rmb.startTime, ts, val, clusterPublishedDifferenceStateAttributeValue.String())
 }
 
 // RecordElasticsearchClusterPublishedStatesFullDataPoint adds a data point to elasticsearch.cluster.published_states.full metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterPublishedStatesFullDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchClusterPublishedStatesFull.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterPublishedStatesFullDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchClusterPublishedStatesFull.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchClusterShardsDataPoint adds a data point to elasticsearch.cluster.shards metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue AttributeShardState) {
-	mb.metricElasticsearchClusterShards.recordDataPoint(mb.startTime, ts, val, shardStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterShardsDataPoint(ts pcommon.Timestamp, val int64, shardStateAttributeValue AttributeShardState) {
+	rmb.metricElasticsearchClusterShards.recordDataPoint(rmb.startTime, ts, val, shardStateAttributeValue.String())
 }
 
 // RecordElasticsearchClusterStateQueueDataPoint adds a data point to elasticsearch.cluster.state_queue metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateQueueDataPoint(ts pcommon.Timestamp, val int64, clusterStateQueueStateAttributeValue AttributeClusterStateQueueState) {
-	mb.metricElasticsearchClusterStateQueue.recordDataPoint(mb.startTime, ts, val, clusterStateQueueStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterStateQueueDataPoint(ts pcommon.Timestamp, val int64, clusterStateQueueStateAttributeValue AttributeClusterStateQueueState) {
+	rmb.metricElasticsearchClusterStateQueue.recordDataPoint(rmb.startTime, ts, val, clusterStateQueueStateAttributeValue.String())
 }
 
 // RecordElasticsearchClusterStateUpdateCountDataPoint adds a data point to elasticsearch.cluster.state_update.count metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateCountDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string) {
-	mb.metricElasticsearchClusterStateUpdateCount.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateStateAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterStateUpdateCountDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string) {
+	rmb.metricElasticsearchClusterStateUpdateCount.recordDataPoint(rmb.startTime, ts, val, clusterStateUpdateStateAttributeValue)
 }
 
 // RecordElasticsearchClusterStateUpdateTimeDataPoint adds a data point to elasticsearch.cluster.state_update.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchClusterStateUpdateTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
-	mb.metricElasticsearchClusterStateUpdateTime.recordDataPoint(mb.startTime, ts, val, clusterStateUpdateStateAttributeValue, clusterStateUpdateTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchClusterStateUpdateTimeDataPoint(ts pcommon.Timestamp, val int64, clusterStateUpdateStateAttributeValue string, clusterStateUpdateTypeAttributeValue AttributeClusterStateUpdateType) {
+	rmb.metricElasticsearchClusterStateUpdateTime.recordDataPoint(rmb.startTime, ts, val, clusterStateUpdateStateAttributeValue, clusterStateUpdateTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexCacheEvictionsDataPoint adds a data point to elasticsearch.index.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexCacheEvictions.recordDataPoint(rmb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexCacheMemoryUsageDataPoint adds a data point to elasticsearch.index.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexCacheMemoryUsage.recordDataPoint(rmb.startTime, ts, val, cacheNameAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexCacheSizeDataPoint adds a data point to elasticsearch.index.cache.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexCacheSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexCacheSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexCacheSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexCacheSize.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexDocumentsDataPoint adds a data point to elasticsearch.index.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexDocuments.recordDataPoint(rmb.startTime, ts, val, documentStateAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsCompletedDataPoint adds a data point to elasticsearch.index.operations.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexOperationsCompleted.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsMergeDocsCountDataPoint adds a data point to elasticsearch.index.operations.merge.docs_count metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexOperationsMergeDocsCount.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexOperationsMergeDocsCount.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsMergeSizeDataPoint adds a data point to elasticsearch.index.operations.merge.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexOperationsMergeSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexOperationsMergeSize.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexOperationsTimeDataPoint adds a data point to elasticsearch.index.operations.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexOperationsTime.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String(), indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexSegmentsCountDataPoint adds a data point to elasticsearch.index.segments.count metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexSegmentsCount.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexSegmentsCountDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexSegmentsCount.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexSegmentsMemoryDataPoint adds a data point to elasticsearch.index.segments.memory metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
-	mb.metricElasticsearchIndexSegmentsMemory.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String(), segmentsMemoryObjectTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
+	rmb.metricElasticsearchIndexSegmentsMemory.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String(), segmentsMemoryObjectTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexSegmentsSizeDataPoint adds a data point to elasticsearch.index.segments.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexSegmentsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexSegmentsSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexSegmentsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexSegmentsSize.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexShardsSizeDataPoint adds a data point to elasticsearch.index.shards.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexShardsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexShardsSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexShardsSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexShardsSize.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexTranslogOperationsDataPoint adds a data point to elasticsearch.index.translog.operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexTranslogOperationsDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexTranslogOperations.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexTranslogOperationsDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexTranslogOperations.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexTranslogSizeDataPoint adds a data point to elasticsearch.index.translog.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexTranslogSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
-	mb.metricElasticsearchIndexTranslogSize.recordDataPoint(mb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexTranslogSizeDataPoint(ts pcommon.Timestamp, val int64, indexAggregationTypeAttributeValue AttributeIndexAggregationType) {
+	rmb.metricElasticsearchIndexTranslogSize.recordDataPoint(rmb.startTime, ts, val, indexAggregationTypeAttributeValue.String())
 }
 
 // RecordElasticsearchIndexingPressureMemoryLimitDataPoint adds a data point to elasticsearch.indexing_pressure.memory.limit metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchIndexingPressureMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchIndexingPressureMemoryLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint adds a data point to elasticsearch.indexing_pressure.memory.total.primary_rejections metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchIndexingPressureMemoryTotalPrimaryRejections.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint adds a data point to elasticsearch.indexing_pressure.memory.total.replica_rejections metric.
-func (mb *MetricsBuilder) RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchIndexingPressureMemoryTotalReplicaRejections.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchMemoryIndexingPressureDataPoint adds a data point to elasticsearch.memory.indexing_pressure metric.
-func (mb *MetricsBuilder) RecordElasticsearchMemoryIndexingPressureDataPoint(ts pcommon.Timestamp, val int64, indexingPressureStageAttributeValue AttributeIndexingPressureStage) {
-	mb.metricElasticsearchMemoryIndexingPressure.recordDataPoint(mb.startTime, ts, val, indexingPressureStageAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchMemoryIndexingPressureDataPoint(ts pcommon.Timestamp, val int64, indexingPressureStageAttributeValue AttributeIndexingPressureStage) {
+	rmb.metricElasticsearchMemoryIndexingPressure.recordDataPoint(rmb.startTime, ts, val, indexingPressureStageAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheCountDataPoint adds a data point to elasticsearch.node.cache.count metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheCountDataPoint(ts pcommon.Timestamp, val int64, queryCacheCountTypeAttributeValue AttributeQueryCacheCountType) {
-	mb.metricElasticsearchNodeCacheCount.recordDataPoint(mb.startTime, ts, val, queryCacheCountTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeCacheCountDataPoint(ts pcommon.Timestamp, val int64, queryCacheCountTypeAttributeValue AttributeQueryCacheCountType) {
+	rmb.metricElasticsearchNodeCacheCount.recordDataPoint(rmb.startTime, ts, val, queryCacheCountTypeAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheEvictionsDataPoint adds a data point to elasticsearch.node.cache.evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
-	mb.metricElasticsearchNodeCacheEvictions.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	rmb.metricElasticsearchNodeCacheEvictions.recordDataPoint(rmb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheMemoryUsageDataPoint adds a data point to elasticsearch.node.cache.memory.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
-	mb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(mb.startTime, ts, val, cacheNameAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, cacheNameAttributeValue AttributeCacheName) {
+	rmb.metricElasticsearchNodeCacheMemoryUsage.recordDataPoint(rmb.startTime, ts, val, cacheNameAttributeValue.String())
 }
 
 // RecordElasticsearchNodeCacheSizeDataPoint adds a data point to elasticsearch.node.cache.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeCacheSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeCacheSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeCacheSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeCacheSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeClusterConnectionsDataPoint adds a data point to elasticsearch.node.cluster.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeClusterConnections.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeClusterConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeClusterConnections.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeClusterIoDataPoint adds a data point to elasticsearch.node.cluster.io metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricElasticsearchNodeClusterIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeClusterIoDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricElasticsearchNodeClusterIo.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordElasticsearchNodeDiskIoReadDataPoint adds a data point to elasticsearch.node.disk.io.read metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDiskIoReadDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeDiskIoRead.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeDiskIoReadDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeDiskIoRead.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeDiskIoWriteDataPoint adds a data point to elasticsearch.node.disk.io.write metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDiskIoWriteDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeDiskIoWrite.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeDiskIoWriteDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeDiskIoWrite.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeDocumentsDataPoint adds a data point to elasticsearch.node.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState) {
-	mb.metricElasticsearchNodeDocuments.recordDataPoint(mb.startTime, ts, val, documentStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeDocumentsDataPoint(ts pcommon.Timestamp, val int64, documentStateAttributeValue AttributeDocumentState) {
+	rmb.metricElasticsearchNodeDocuments.recordDataPoint(rmb.startTime, ts, val, documentStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeFsDiskAvailableDataPoint adds a data point to elasticsearch.node.fs.disk.available metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeFsDiskAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeFsDiskAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeFsDiskFreeDataPoint adds a data point to elasticsearch.node.fs.disk.free metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskFreeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskFree.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeFsDiskFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeFsDiskFree.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeFsDiskTotalDataPoint adds a data point to elasticsearch.node.fs.disk.total metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeFsDiskTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeFsDiskTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeFsDiskTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeFsDiskTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeHTTPConnectionsDataPoint adds a data point to elasticsearch.node.http.connections metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeHTTPConnections.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeHTTPConnectionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeHTTPConnections.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeIngestDocumentsDataPoint adds a data point to elasticsearch.node.ingest.documents metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeIngestDocumentsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeIngestDocuments.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeIngestDocumentsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeIngestDocuments.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeIngestDocumentsCurrentDataPoint adds a data point to elasticsearch.node.ingest.documents.current metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeIngestDocumentsCurrent.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeIngestDocumentsCurrent.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeIngestOperationsFailedDataPoint adds a data point to elasticsearch.node.ingest.operations.failed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeIngestOperationsFailed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeIngestOperationsFailed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOpenFilesDataPoint adds a data point to elasticsearch.node.open_files metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeOpenFiles.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOpenFilesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeOpenFiles.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeOperationsCompletedDataPoint adds a data point to elasticsearch.node.operations.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOperationsCompletedDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricElasticsearchNodeOperationsCompleted.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsCurrentDataPoint adds a data point to elasticsearch.node.operations.current metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsCurrentDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricElasticsearchNodeOperationsCurrent.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOperationsCurrentDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricElasticsearchNodeOperationsCurrent.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsGetCompletedDataPoint adds a data point to elasticsearch.node.operations.get.completed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
-	mb.metricElasticsearchNodeOperationsGetCompleted.recordDataPoint(mb.startTime, ts, val, getResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
+	rmb.metricElasticsearchNodeOperationsGetCompleted.recordDataPoint(rmb.startTime, ts, val, getResultAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsGetTimeDataPoint adds a data point to elasticsearch.node.operations.get.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsGetTimeDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
-	mb.metricElasticsearchNodeOperationsGetTime.recordDataPoint(mb.startTime, ts, val, getResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOperationsGetTimeDataPoint(ts pcommon.Timestamp, val int64, getResultAttributeValue AttributeGetResult) {
+	rmb.metricElasticsearchNodeOperationsGetTime.recordDataPoint(rmb.startTime, ts, val, getResultAttributeValue.String())
 }
 
 // RecordElasticsearchNodeOperationsTimeDataPoint adds a data point to elasticsearch.node.operations.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricElasticsearchNodeOperationsTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeOperationsTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricElasticsearchNodeOperationsTime.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint adds a data point to elasticsearch.node.pipeline.ingest.documents.current metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
-	mb.metricElasticsearchNodePipelineIngestDocumentsCurrent.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	rmb.metricElasticsearchNodePipelineIngestDocumentsCurrent.recordDataPoint(rmb.startTime, ts, val, ingestPipelineNameAttributeValue)
 }
 
 // RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint adds a data point to elasticsearch.node.pipeline.ingest.documents.preprocessed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
-	mb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	rmb.metricElasticsearchNodePipelineIngestDocumentsPreprocessed.recordDataPoint(rmb.startTime, ts, val, ingestPipelineNameAttributeValue)
 }
 
 // RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint adds a data point to elasticsearch.node.pipeline.ingest.operations.failed metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
-	mb.metricElasticsearchNodePipelineIngestOperationsFailed.recordDataPoint(mb.startTime, ts, val, ingestPipelineNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts pcommon.Timestamp, val int64, ingestPipelineNameAttributeValue string) {
+	rmb.metricElasticsearchNodePipelineIngestOperationsFailed.recordDataPoint(rmb.startTime, ts, val, ingestPipelineNameAttributeValue)
 }
 
 // RecordElasticsearchNodeScriptCacheEvictionsDataPoint adds a data point to elasticsearch.node.script.cache_evictions metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeScriptCacheEvictions.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeScriptCacheEvictions.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint adds a data point to elasticsearch.node.script.compilation_limit_triggered metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeScriptCompilationLimitTriggered.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeScriptCompilationLimitTriggered.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeScriptCompilationsDataPoint adds a data point to elasticsearch.node.script.compilations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeScriptCompilationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeScriptCompilations.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeScriptCompilationsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeScriptCompilations.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeSegmentsMemoryDataPoint adds a data point to elasticsearch.node.segments.memory metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
-	mb.metricElasticsearchNodeSegmentsMemory.recordDataPoint(mb.startTime, ts, val, segmentsMemoryObjectTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeSegmentsMemoryDataPoint(ts pcommon.Timestamp, val int64, segmentsMemoryObjectTypeAttributeValue AttributeSegmentsMemoryObjectType) {
+	rmb.metricElasticsearchNodeSegmentsMemory.recordDataPoint(rmb.startTime, ts, val, segmentsMemoryObjectTypeAttributeValue.String())
 }
 
 // RecordElasticsearchNodeShardsDataSetSizeDataPoint adds a data point to elasticsearch.node.shards.data_set.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsDataSetSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeShardsDataSetSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeShardsReservedSizeDataPoint adds a data point to elasticsearch.node.shards.reserved.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsReservedSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsReservedSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeShardsReservedSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeShardsReservedSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeShardsSizeDataPoint adds a data point to elasticsearch.node.shards.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeShardsSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeShardsSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeShardsSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.finished metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue AttributeTaskState) {
-	mb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, taskStateAttributeValue AttributeTaskState) {
+	rmb.metricElasticsearchNodeThreadPoolTasksFinished.recordDataPoint(rmb.startTime, ts, val, threadPoolNameAttributeValue, taskStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint adds a data point to elasticsearch.node.thread_pool.tasks.queued metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string) {
-	mb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string) {
+	rmb.metricElasticsearchNodeThreadPoolTasksQueued.recordDataPoint(rmb.startTime, ts, val, threadPoolNameAttributeValue)
 }
 
 // RecordElasticsearchNodeThreadPoolThreadsDataPoint adds a data point to elasticsearch.node.thread_pool.threads metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue AttributeThreadState) {
-	mb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(mb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts pcommon.Timestamp, val int64, threadPoolNameAttributeValue string, threadStateAttributeValue AttributeThreadState) {
+	rmb.metricElasticsearchNodeThreadPoolThreads.recordDataPoint(rmb.startTime, ts, val, threadPoolNameAttributeValue, threadStateAttributeValue.String())
 }
 
 // RecordElasticsearchNodeTranslogOperationsDataPoint adds a data point to elasticsearch.node.translog.operations metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeTranslogOperationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeTranslogOperations.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeTranslogOperationsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeTranslogOperations.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeTranslogSizeDataPoint adds a data point to elasticsearch.node.translog.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeTranslogSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeTranslogSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeTranslogSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeTranslogSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchNodeTranslogUncommittedSizeDataPoint adds a data point to elasticsearch.node.translog.uncommitted.size metric.
-func (mb *MetricsBuilder) RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchNodeTranslogUncommittedSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchNodeTranslogUncommittedSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchOsCPULoadAvg15mDataPoint adds a data point to elasticsearch.os.cpu.load_avg.15m metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsCPULoadAvg15mDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricElasticsearchOsCPULoadAvg15m.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchOsCPULoadAvg15mDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricElasticsearchOsCPULoadAvg15m.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchOsCPULoadAvg1mDataPoint adds a data point to elasticsearch.os.cpu.load_avg.1m metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsCPULoadAvg1mDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricElasticsearchOsCPULoadAvg1m.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchOsCPULoadAvg1mDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricElasticsearchOsCPULoadAvg1m.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchOsCPULoadAvg5mDataPoint adds a data point to elasticsearch.os.cpu.load_avg.5m metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsCPULoadAvg5mDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricElasticsearchOsCPULoadAvg5m.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchOsCPULoadAvg5mDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricElasticsearchOsCPULoadAvg5m.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchOsCPUUsageDataPoint adds a data point to elasticsearch.os.cpu.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchOsCPUUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchOsCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchOsCPUUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchOsMemoryDataPoint adds a data point to elasticsearch.os.memory metric.
-func (mb *MetricsBuilder) RecordElasticsearchOsMemoryDataPoint(ts pcommon.Timestamp, val int64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricElasticsearchOsMemory.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchOsMemoryDataPoint(ts pcommon.Timestamp, val int64, memoryStateAttributeValue AttributeMemoryState) {
+	rmb.metricElasticsearchOsMemory.recordDataPoint(rmb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordElasticsearchProcessCPUTimeDataPoint adds a data point to elasticsearch.process.cpu.time metric.
-func (mb *MetricsBuilder) RecordElasticsearchProcessCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchProcessCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchProcessCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchProcessCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchProcessCPUUsageDataPoint adds a data point to elasticsearch.process.cpu.usage metric.
-func (mb *MetricsBuilder) RecordElasticsearchProcessCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricElasticsearchProcessCPUUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchProcessCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricElasticsearchProcessCPUUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordElasticsearchProcessMemoryVirtualDataPoint adds a data point to elasticsearch.process.memory.virtual metric.
-func (mb *MetricsBuilder) RecordElasticsearchProcessMemoryVirtualDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricElasticsearchProcessMemoryVirtual.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordElasticsearchProcessMemoryVirtualDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricElasticsearchProcessMemoryVirtual.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmClassesLoadedDataPoint adds a data point to jvm.classes.loaded metric.
-func (mb *MetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmClassesLoaded.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmClassesLoadedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmClassesLoaded.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmGcCollectionsCountDataPoint adds a data point to jvm.gc.collections.count metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
-	mb.metricJvmGcCollectionsCount.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordJvmGcCollectionsCountDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
+	rmb.metricJvmGcCollectionsCount.recordDataPoint(rmb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmGcCollectionsElapsedDataPoint adds a data point to jvm.gc.collections.elapsed metric.
-func (mb *MetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
-	mb.metricJvmGcCollectionsElapsed.recordDataPoint(mb.startTime, ts, val, collectorNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordJvmGcCollectionsElapsedDataPoint(ts pcommon.Timestamp, val int64, collectorNameAttributeValue string) {
+	rmb.metricJvmGcCollectionsElapsed.recordDataPoint(rmb.startTime, ts, val, collectorNameAttributeValue)
 }
 
 // RecordJvmMemoryHeapCommittedDataPoint adds a data point to jvm.memory.heap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapCommitted.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryHeapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmMemoryHeapCommitted.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapMaxDataPoint adds a data point to jvm.memory.heap.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryHeapMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmMemoryHeapMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapUsedDataPoint adds a data point to jvm.memory.heap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmMemoryHeapUsed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryHeapUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmMemoryHeapUsed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryHeapUtilizationDataPoint adds a data point to jvm.memory.heap.utilization metric.
-func (mb *MetricsBuilder) RecordJvmMemoryHeapUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricJvmMemoryHeapUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryHeapUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricJvmMemoryHeapUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapCommittedDataPoint adds a data point to jvm.memory.nonheap.committed metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapCommitted.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryNonheapCommittedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmMemoryNonheapCommitted.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryNonheapUsedDataPoint adds a data point to jvm.memory.nonheap.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmMemoryNonheapUsed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryNonheapUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmMemoryNonheapUsed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordJvmMemoryPoolMaxDataPoint adds a data point to jvm.memory.pool.max metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolMax.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryPoolMaxDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	rmb.metricJvmMemoryPoolMax.recordDataPoint(rmb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmMemoryPoolUsedDataPoint adds a data point to jvm.memory.pool.used metric.
-func (mb *MetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
-	mb.metricJvmMemoryPoolUsed.recordDataPoint(mb.startTime, ts, val, memoryPoolNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordJvmMemoryPoolUsedDataPoint(ts pcommon.Timestamp, val int64, memoryPoolNameAttributeValue string) {
+	rmb.metricJvmMemoryPoolUsed.recordDataPoint(rmb.startTime, ts, val, memoryPoolNameAttributeValue)
 }
 
 // RecordJvmThreadsCountDataPoint adds a data point to jvm.threads.count metric.
-func (mb *MetricsBuilder) RecordJvmThreadsCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricJvmThreadsCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordJvmThreadsCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricJvmThreadsCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

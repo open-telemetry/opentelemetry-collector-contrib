@@ -9,9 +9,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func recordIntDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointFunc, value *uint64, currentTime pcommon.Timestamp) {
+func recordIntDataPoint(rmb *metadata.ResourceMetricsBuilder, recordDataPoint metadata.RecordIntDataPointFunc, value *uint64, currentTime pcommon.Timestamp) {
 	if value == nil {
 		return
 	}
-	recordDataPoint(mb, currentTime, int64(*value))
+	recordDataPoint(rmb, currentTime, int64(*value))
 }

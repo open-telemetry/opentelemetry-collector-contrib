@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricOracledbConsistentGets struct {
@@ -1369,14 +1371,25 @@ func newMetricOracledbUserRollbacks(cfg MetricConfig) metricOracledbUserRollback
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                              MetricsBuilderConfig // config of the metrics builder.
-	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                     int                  // maximum observed number of metrics per resource.
-	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                           component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                           component.BuildInfo
+	startTime                           pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                     int               // maximum observed number of metrics per resource.
+	resource                            pcommon.Resource
+	missedEmits                         int
 	metricOracledbConsistentGets        metricOracledbConsistentGets
 	metricOracledbCPUTime               metricOracledbCPUTime
 	metricOracledbDbBlockGets           metricOracledbDbBlockGets
@@ -1418,42 +1431,71 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                              mbc,
-		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                       pmetric.NewMetrics(),
-		buildInfo:                           settings.BuildInfo,
-		metricOracledbConsistentGets:        newMetricOracledbConsistentGets(mbc.Metrics.OracledbConsistentGets),
-		metricOracledbCPUTime:               newMetricOracledbCPUTime(mbc.Metrics.OracledbCPUTime),
-		metricOracledbDbBlockGets:           newMetricOracledbDbBlockGets(mbc.Metrics.OracledbDbBlockGets),
-		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mbc.Metrics.OracledbDmlLocksLimit),
-		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mbc.Metrics.OracledbDmlLocksUsage),
-		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mbc.Metrics.OracledbEnqueueDeadlocks),
-		metricOracledbEnqueueLocksLimit:     newMetricOracledbEnqueueLocksLimit(mbc.Metrics.OracledbEnqueueLocksLimit),
-		metricOracledbEnqueueLocksUsage:     newMetricOracledbEnqueueLocksUsage(mbc.Metrics.OracledbEnqueueLocksUsage),
-		metricOracledbEnqueueResourcesLimit: newMetricOracledbEnqueueResourcesLimit(mbc.Metrics.OracledbEnqueueResourcesLimit),
-		metricOracledbEnqueueResourcesUsage: newMetricOracledbEnqueueResourcesUsage(mbc.Metrics.OracledbEnqueueResourcesUsage),
-		metricOracledbExchangeDeadlocks:     newMetricOracledbExchangeDeadlocks(mbc.Metrics.OracledbExchangeDeadlocks),
-		metricOracledbExecutions:            newMetricOracledbExecutions(mbc.Metrics.OracledbExecutions),
-		metricOracledbHardParses:            newMetricOracledbHardParses(mbc.Metrics.OracledbHardParses),
-		metricOracledbLogicalReads:          newMetricOracledbLogicalReads(mbc.Metrics.OracledbLogicalReads),
-		metricOracledbParseCalls:            newMetricOracledbParseCalls(mbc.Metrics.OracledbParseCalls),
-		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(mbc.Metrics.OracledbPgaMemory),
-		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(mbc.Metrics.OracledbPhysicalReads),
-		metricOracledbProcessesLimit:        newMetricOracledbProcessesLimit(mbc.Metrics.OracledbProcessesLimit),
-		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(mbc.Metrics.OracledbProcessesUsage),
-		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(mbc.Metrics.OracledbSessionsLimit),
-		metricOracledbSessionsUsage:         newMetricOracledbSessionsUsage(mbc.Metrics.OracledbSessionsUsage),
-		metricOracledbTablespaceSizeLimit:   newMetricOracledbTablespaceSizeLimit(mbc.Metrics.OracledbTablespaceSizeLimit),
-		metricOracledbTablespaceSizeUsage:   newMetricOracledbTablespaceSizeUsage(mbc.Metrics.OracledbTablespaceSizeUsage),
-		metricOracledbTransactionsLimit:     newMetricOracledbTransactionsLimit(mbc.Metrics.OracledbTransactionsLimit),
-		metricOracledbTransactionsUsage:     newMetricOracledbTransactionsUsage(mbc.Metrics.OracledbTransactionsUsage),
-		metricOracledbUserCommits:           newMetricOracledbUserCommits(mbc.Metrics.OracledbUserCommits),
-		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(mbc.Metrics.OracledbUserRollbacks),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                           mb.startTime,
+		buildInfo:                           mb.buildInfo,
+		resource:                            res,
+		metricOracledbConsistentGets:        newMetricOracledbConsistentGets(mb.config.Metrics.OracledbConsistentGets),
+		metricOracledbCPUTime:               newMetricOracledbCPUTime(mb.config.Metrics.OracledbCPUTime),
+		metricOracledbDbBlockGets:           newMetricOracledbDbBlockGets(mb.config.Metrics.OracledbDbBlockGets),
+		metricOracledbDmlLocksLimit:         newMetricOracledbDmlLocksLimit(mb.config.Metrics.OracledbDmlLocksLimit),
+		metricOracledbDmlLocksUsage:         newMetricOracledbDmlLocksUsage(mb.config.Metrics.OracledbDmlLocksUsage),
+		metricOracledbEnqueueDeadlocks:      newMetricOracledbEnqueueDeadlocks(mb.config.Metrics.OracledbEnqueueDeadlocks),
+		metricOracledbEnqueueLocksLimit:     newMetricOracledbEnqueueLocksLimit(mb.config.Metrics.OracledbEnqueueLocksLimit),
+		metricOracledbEnqueueLocksUsage:     newMetricOracledbEnqueueLocksUsage(mb.config.Metrics.OracledbEnqueueLocksUsage),
+		metricOracledbEnqueueResourcesLimit: newMetricOracledbEnqueueResourcesLimit(mb.config.Metrics.OracledbEnqueueResourcesLimit),
+		metricOracledbEnqueueResourcesUsage: newMetricOracledbEnqueueResourcesUsage(mb.config.Metrics.OracledbEnqueueResourcesUsage),
+		metricOracledbExchangeDeadlocks:     newMetricOracledbExchangeDeadlocks(mb.config.Metrics.OracledbExchangeDeadlocks),
+		metricOracledbExecutions:            newMetricOracledbExecutions(mb.config.Metrics.OracledbExecutions),
+		metricOracledbHardParses:            newMetricOracledbHardParses(mb.config.Metrics.OracledbHardParses),
+		metricOracledbLogicalReads:          newMetricOracledbLogicalReads(mb.config.Metrics.OracledbLogicalReads),
+		metricOracledbParseCalls:            newMetricOracledbParseCalls(mb.config.Metrics.OracledbParseCalls),
+		metricOracledbPgaMemory:             newMetricOracledbPgaMemory(mb.config.Metrics.OracledbPgaMemory),
+		metricOracledbPhysicalReads:         newMetricOracledbPhysicalReads(mb.config.Metrics.OracledbPhysicalReads),
+		metricOracledbProcessesLimit:        newMetricOracledbProcessesLimit(mb.config.Metrics.OracledbProcessesLimit),
+		metricOracledbProcessesUsage:        newMetricOracledbProcessesUsage(mb.config.Metrics.OracledbProcessesUsage),
+		metricOracledbSessionsLimit:         newMetricOracledbSessionsLimit(mb.config.Metrics.OracledbSessionsLimit),
+		metricOracledbSessionsUsage:         newMetricOracledbSessionsUsage(mb.config.Metrics.OracledbSessionsUsage),
+		metricOracledbTablespaceSizeLimit:   newMetricOracledbTablespaceSizeLimit(mb.config.Metrics.OracledbTablespaceSizeLimit),
+		metricOracledbTablespaceSizeUsage:   newMetricOracledbTablespaceSizeUsage(mb.config.Metrics.OracledbTablespaceSizeUsage),
+		metricOracledbTransactionsLimit:     newMetricOracledbTransactionsLimit(mb.config.Metrics.OracledbTransactionsLimit),
+		metricOracledbTransactionsUsage:     newMetricOracledbTransactionsUsage(mb.config.Metrics.OracledbTransactionsUsage),
+		metricOracledbUserCommits:           newMetricOracledbUserCommits(mb.config.Metrics.OracledbUserCommits),
+		metricOracledbUserRollbacks:         newMetricOracledbUserRollbacks(mb.config.Metrics.OracledbUserRollbacks),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1462,366 +1504,339 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricOracledbConsistentGets.emit(sm.Metrics())
+	rmb.metricOracledbCPUTime.emit(sm.Metrics())
+	rmb.metricOracledbDbBlockGets.emit(sm.Metrics())
+	rmb.metricOracledbDmlLocksLimit.emit(sm.Metrics())
+	rmb.metricOracledbDmlLocksUsage.emit(sm.Metrics())
+	rmb.metricOracledbEnqueueDeadlocks.emit(sm.Metrics())
+	rmb.metricOracledbEnqueueLocksLimit.emit(sm.Metrics())
+	rmb.metricOracledbEnqueueLocksUsage.emit(sm.Metrics())
+	rmb.metricOracledbEnqueueResourcesLimit.emit(sm.Metrics())
+	rmb.metricOracledbEnqueueResourcesUsage.emit(sm.Metrics())
+	rmb.metricOracledbExchangeDeadlocks.emit(sm.Metrics())
+	rmb.metricOracledbExecutions.emit(sm.Metrics())
+	rmb.metricOracledbHardParses.emit(sm.Metrics())
+	rmb.metricOracledbLogicalReads.emit(sm.Metrics())
+	rmb.metricOracledbParseCalls.emit(sm.Metrics())
+	rmb.metricOracledbPgaMemory.emit(sm.Metrics())
+	rmb.metricOracledbPhysicalReads.emit(sm.Metrics())
+	rmb.metricOracledbProcessesLimit.emit(sm.Metrics())
+	rmb.metricOracledbProcessesUsage.emit(sm.Metrics())
+	rmb.metricOracledbSessionsLimit.emit(sm.Metrics())
+	rmb.metricOracledbSessionsUsage.emit(sm.Metrics())
+	rmb.metricOracledbTablespaceSizeLimit.emit(sm.Metrics())
+	rmb.metricOracledbTablespaceSizeUsage.emit(sm.Metrics())
+	rmb.metricOracledbTransactionsLimit.emit(sm.Metrics())
+	rmb.metricOracledbTransactionsUsage.emit(sm.Metrics())
+	rmb.metricOracledbUserCommits.emit(sm.Metrics())
+	rmb.metricOracledbUserRollbacks.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/oracledbreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricOracledbConsistentGets.emit(ils.Metrics())
-	mb.metricOracledbCPUTime.emit(ils.Metrics())
-	mb.metricOracledbDbBlockGets.emit(ils.Metrics())
-	mb.metricOracledbDmlLocksLimit.emit(ils.Metrics())
-	mb.metricOracledbDmlLocksUsage.emit(ils.Metrics())
-	mb.metricOracledbEnqueueDeadlocks.emit(ils.Metrics())
-	mb.metricOracledbEnqueueLocksLimit.emit(ils.Metrics())
-	mb.metricOracledbEnqueueLocksUsage.emit(ils.Metrics())
-	mb.metricOracledbEnqueueResourcesLimit.emit(ils.Metrics())
-	mb.metricOracledbEnqueueResourcesUsage.emit(ils.Metrics())
-	mb.metricOracledbExchangeDeadlocks.emit(ils.Metrics())
-	mb.metricOracledbExecutions.emit(ils.Metrics())
-	mb.metricOracledbHardParses.emit(ils.Metrics())
-	mb.metricOracledbLogicalReads.emit(ils.Metrics())
-	mb.metricOracledbParseCalls.emit(ils.Metrics())
-	mb.metricOracledbPgaMemory.emit(ils.Metrics())
-	mb.metricOracledbPhysicalReads.emit(ils.Metrics())
-	mb.metricOracledbProcessesLimit.emit(ils.Metrics())
-	mb.metricOracledbProcessesUsage.emit(ils.Metrics())
-	mb.metricOracledbSessionsLimit.emit(ils.Metrics())
-	mb.metricOracledbSessionsUsage.emit(ils.Metrics())
-	mb.metricOracledbTablespaceSizeLimit.emit(ils.Metrics())
-	mb.metricOracledbTablespaceSizeUsage.emit(ils.Metrics())
-	mb.metricOracledbTransactionsLimit.emit(ils.Metrics())
-	mb.metricOracledbTransactionsUsage.emit(ils.Metrics())
-	mb.metricOracledbUserCommits.emit(ils.Metrics())
-	mb.metricOracledbUserRollbacks.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/oracledbreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordOracledbConsistentGetsDataPoint adds a data point to oracledb.consistent_gets metric.
-func (mb *MetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbConsistentGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbConsistentGets, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbConsistentGets.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbConsistentGets.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbCPUTimeDataPoint adds a data point to oracledb.cpu_time metric.
-func (mb *MetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricOracledbCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordOracledbCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricOracledbCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordOracledbDbBlockGetsDataPoint adds a data point to oracledb.db_block_gets metric.
-func (mb *MetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbDbBlockGetsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDbBlockGets, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbDbBlockGets.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbDbBlockGets.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbDmlLocksLimitDataPoint adds a data point to oracledb.dml_locks.limit metric.
-func (mb *MetricsBuilder) RecordOracledbDmlLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbDmlLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDmlLocksLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbDmlLocksLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbDmlLocksLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbDmlLocksUsageDataPoint adds a data point to oracledb.dml_locks.usage metric.
-func (mb *MetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbDmlLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbDmlLocksUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbDmlLocksUsage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbDmlLocksUsage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbEnqueueDeadlocksDataPoint adds a data point to oracledb.enqueue_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbEnqueueDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueDeadlocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueDeadlocks.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbEnqueueDeadlocks.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbEnqueueLocksLimitDataPoint adds a data point to oracledb.enqueue_locks.limit metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbEnqueueLocksLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueLocksLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueLocksLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbEnqueueLocksLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbEnqueueLocksUsageDataPoint adds a data point to oracledb.enqueue_locks.usage metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbEnqueueLocksUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueLocksUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueLocksUsage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbEnqueueLocksUsage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbEnqueueResourcesLimitDataPoint adds a data point to oracledb.enqueue_resources.limit metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbEnqueueResourcesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueResourcesLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueResourcesLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbEnqueueResourcesLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbEnqueueResourcesUsageDataPoint adds a data point to oracledb.enqueue_resources.usage metric.
-func (mb *MetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbEnqueueResourcesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbEnqueueResourcesUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbEnqueueResourcesUsage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbEnqueueResourcesUsage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbExchangeDeadlocksDataPoint adds a data point to oracledb.exchange_deadlocks metric.
-func (mb *MetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbExchangeDeadlocksDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbExchangeDeadlocks, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbExchangeDeadlocks.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbExchangeDeadlocks.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbExecutionsDataPoint adds a data point to oracledb.executions metric.
-func (mb *MetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbExecutionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbExecutions, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbExecutions.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbExecutions.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbHardParsesDataPoint adds a data point to oracledb.hard_parses metric.
-func (mb *MetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbHardParsesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbHardParses, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbHardParses.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbHardParses.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbLogicalReadsDataPoint adds a data point to oracledb.logical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbLogicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbLogicalReads, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbLogicalReads.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbLogicalReads.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbParseCallsDataPoint adds a data point to oracledb.parse_calls metric.
-func (mb *MetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbParseCallsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbParseCalls, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbParseCalls.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbParseCalls.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbPgaMemoryDataPoint adds a data point to oracledb.pga_memory metric.
-func (mb *MetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbPgaMemoryDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPgaMemory, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbPgaMemory.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbPgaMemory.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbPhysicalReadsDataPoint adds a data point to oracledb.physical_reads metric.
-func (mb *MetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbPhysicalReadsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbPhysicalReads, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbPhysicalReads.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbPhysicalReads.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbProcessesLimitDataPoint adds a data point to oracledb.processes.limit metric.
-func (mb *MetricsBuilder) RecordOracledbProcessesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbProcessesLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbProcessesLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbProcessesLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbProcessesLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbProcessesUsageDataPoint adds a data point to oracledb.processes.usage metric.
-func (mb *MetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbProcessesUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbProcessesUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbProcessesUsage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbProcessesUsage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbSessionsLimitDataPoint adds a data point to oracledb.sessions.limit metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbSessionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbSessionsLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbSessionsLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbSessionsLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbSessionsUsageDataPoint adds a data point to oracledb.sessions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, inputVal string, sessionTypeAttributeValue string, sessionStatusAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbSessionsUsageDataPoint(ts pcommon.Timestamp, inputVal string, sessionTypeAttributeValue string, sessionStatusAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbSessionsUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbSessionsUsage.recordDataPoint(mb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
+	rmb.metricOracledbSessionsUsage.recordDataPoint(rmb.startTime, ts, val, sessionTypeAttributeValue, sessionStatusAttributeValue)
 	return nil
 }
 
 // RecordOracledbTablespaceSizeLimitDataPoint adds a data point to oracledb.tablespace_size.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
-	mb.metricOracledbTablespaceSizeLimit.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordOracledbTablespaceSizeLimitDataPoint(ts pcommon.Timestamp, val int64, tablespaceNameAttributeValue string) {
+	rmb.metricOracledbTablespaceSizeLimit.recordDataPoint(rmb.startTime, ts, val, tablespaceNameAttributeValue)
 }
 
 // RecordOracledbTablespaceSizeUsageDataPoint adds a data point to oracledb.tablespace_size.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, inputVal string, tablespaceNameAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbTablespaceSizeUsageDataPoint(ts pcommon.Timestamp, inputVal string, tablespaceNameAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbTablespaceSizeUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbTablespaceSizeUsage.recordDataPoint(mb.startTime, ts, val, tablespaceNameAttributeValue)
+	rmb.metricOracledbTablespaceSizeUsage.recordDataPoint(rmb.startTime, ts, val, tablespaceNameAttributeValue)
 	return nil
 }
 
 // RecordOracledbTransactionsLimitDataPoint adds a data point to oracledb.transactions.limit metric.
-func (mb *MetricsBuilder) RecordOracledbTransactionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbTransactionsLimitDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbTransactionsLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbTransactionsLimit.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbTransactionsLimit.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbTransactionsUsageDataPoint adds a data point to oracledb.transactions.usage metric.
-func (mb *MetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbTransactionsUsageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbTransactionsUsage, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbTransactionsUsage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbTransactionsUsage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbUserCommitsDataPoint adds a data point to oracledb.user_commits metric.
-func (mb *MetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbUserCommitsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbUserCommits, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbUserCommits.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbUserCommits.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordOracledbUserRollbacksDataPoint adds a data point to oracledb.user_rollbacks metric.
-func (mb *MetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordOracledbUserRollbacksDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for OracledbUserRollbacks, value was %s: %w", inputVal, err)
 	}
-	mb.metricOracledbUserRollbacks.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricOracledbUserRollbacks.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeBgBufferSource specifies the a value bg_buffer_source attribute.
@@ -1380,14 +1382,25 @@ func newMetricPostgresqlWalLag(cfg MetricConfig) metricPostgresqlWalLag {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                          int                  // maximum observed number of metrics per resource.
-	metricsBuffer                            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                component.BuildInfo
+	startTime                                pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                          int               // maximum observed number of metrics per resource.
+	resource                                 pcommon.Resource
+	missedEmits                              int
 	metricPostgresqlBackends                 metricPostgresqlBackends
 	metricPostgresqlBgwriterBuffersAllocated metricPostgresqlBgwriterBuffersAllocated
 	metricPostgresqlBgwriterBuffersWrites    metricPostgresqlBgwriterBuffersWrites
@@ -1424,37 +1437,66 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                   mbc,
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                settings.BuildInfo,
-		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mbc.Metrics.PostgresqlBackends),
-		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mbc.Metrics.PostgresqlBgwriterBuffersAllocated),
-		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mbc.Metrics.PostgresqlBgwriterBuffersWrites),
-		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mbc.Metrics.PostgresqlBgwriterCheckpointCount),
-		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mbc.Metrics.PostgresqlBgwriterDuration),
-		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
-		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
-		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
-		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
-		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
-		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
-		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
-		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mbc.Metrics.PostgresqlIndexSize),
-		metricPostgresqlOperations:               newMetricPostgresqlOperations(mbc.Metrics.PostgresqlOperations),
-		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mbc.Metrics.PostgresqlReplicationDataDelay),
-		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mbc.Metrics.PostgresqlRollbacks),
-		metricPostgresqlRows:                     newMetricPostgresqlRows(mbc.Metrics.PostgresqlRows),
-		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mbc.Metrics.PostgresqlTableCount),
-		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mbc.Metrics.PostgresqlTableSize),
-		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mbc.Metrics.PostgresqlTableVacuumCount),
-		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mbc.Metrics.PostgresqlWalAge),
-		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mbc.Metrics.PostgresqlWalLag),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                                mb.startTime,
+		buildInfo:                                mb.buildInfo,
+		resource:                                 res,
+		metricPostgresqlBackends:                 newMetricPostgresqlBackends(mb.config.Metrics.PostgresqlBackends),
+		metricPostgresqlBgwriterBuffersAllocated: newMetricPostgresqlBgwriterBuffersAllocated(mb.config.Metrics.PostgresqlBgwriterBuffersAllocated),
+		metricPostgresqlBgwriterBuffersWrites:    newMetricPostgresqlBgwriterBuffersWrites(mb.config.Metrics.PostgresqlBgwriterBuffersWrites),
+		metricPostgresqlBgwriterCheckpointCount:  newMetricPostgresqlBgwriterCheckpointCount(mb.config.Metrics.PostgresqlBgwriterCheckpointCount),
+		metricPostgresqlBgwriterDuration:         newMetricPostgresqlBgwriterDuration(mb.config.Metrics.PostgresqlBgwriterDuration),
+		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mb.config.Metrics.PostgresqlBgwriterMaxwritten),
+		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mb.config.Metrics.PostgresqlBlocksRead),
+		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mb.config.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mb.config.Metrics.PostgresqlConnectionMax),
+		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mb.config.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mb.config.Metrics.PostgresqlDbSize),
+		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mb.config.Metrics.PostgresqlIndexScans),
+		metricPostgresqlIndexSize:                newMetricPostgresqlIndexSize(mb.config.Metrics.PostgresqlIndexSize),
+		metricPostgresqlOperations:               newMetricPostgresqlOperations(mb.config.Metrics.PostgresqlOperations),
+		metricPostgresqlReplicationDataDelay:     newMetricPostgresqlReplicationDataDelay(mb.config.Metrics.PostgresqlReplicationDataDelay),
+		metricPostgresqlRollbacks:                newMetricPostgresqlRollbacks(mb.config.Metrics.PostgresqlRollbacks),
+		metricPostgresqlRows:                     newMetricPostgresqlRows(mb.config.Metrics.PostgresqlRows),
+		metricPostgresqlTableCount:               newMetricPostgresqlTableCount(mb.config.Metrics.PostgresqlTableCount),
+		metricPostgresqlTableSize:                newMetricPostgresqlTableSize(mb.config.Metrics.PostgresqlTableSize),
+		metricPostgresqlTableVacuumCount:         newMetricPostgresqlTableVacuumCount(mb.config.Metrics.PostgresqlTableVacuumCount),
+		metricPostgresqlWalAge:                   newMetricPostgresqlWalAge(mb.config.Metrics.PostgresqlWalAge),
+		metricPostgresqlWalLag:                   newMetricPostgresqlWalLag(mb.config.Metrics.PostgresqlWalLag),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1463,211 +1505,184 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricPostgresqlBackends.emit(sm.Metrics())
+	rmb.metricPostgresqlBgwriterBuffersAllocated.emit(sm.Metrics())
+	rmb.metricPostgresqlBgwriterBuffersWrites.emit(sm.Metrics())
+	rmb.metricPostgresqlBgwriterCheckpointCount.emit(sm.Metrics())
+	rmb.metricPostgresqlBgwriterDuration.emit(sm.Metrics())
+	rmb.metricPostgresqlBgwriterMaxwritten.emit(sm.Metrics())
+	rmb.metricPostgresqlBlocksRead.emit(sm.Metrics())
+	rmb.metricPostgresqlCommits.emit(sm.Metrics())
+	rmb.metricPostgresqlConnectionMax.emit(sm.Metrics())
+	rmb.metricPostgresqlDatabaseCount.emit(sm.Metrics())
+	rmb.metricPostgresqlDbSize.emit(sm.Metrics())
+	rmb.metricPostgresqlIndexScans.emit(sm.Metrics())
+	rmb.metricPostgresqlIndexSize.emit(sm.Metrics())
+	rmb.metricPostgresqlOperations.emit(sm.Metrics())
+	rmb.metricPostgresqlReplicationDataDelay.emit(sm.Metrics())
+	rmb.metricPostgresqlRollbacks.emit(sm.Metrics())
+	rmb.metricPostgresqlRows.emit(sm.Metrics())
+	rmb.metricPostgresqlTableCount.emit(sm.Metrics())
+	rmb.metricPostgresqlTableSize.emit(sm.Metrics())
+	rmb.metricPostgresqlTableVacuumCount.emit(sm.Metrics())
+	rmb.metricPostgresqlWalAge.emit(sm.Metrics())
+	rmb.metricPostgresqlWalLag.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/postgresqlreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricPostgresqlBackends.emit(ils.Metrics())
-	mb.metricPostgresqlBgwriterBuffersAllocated.emit(ils.Metrics())
-	mb.metricPostgresqlBgwriterBuffersWrites.emit(ils.Metrics())
-	mb.metricPostgresqlBgwriterCheckpointCount.emit(ils.Metrics())
-	mb.metricPostgresqlBgwriterDuration.emit(ils.Metrics())
-	mb.metricPostgresqlBgwriterMaxwritten.emit(ils.Metrics())
-	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
-	mb.metricPostgresqlCommits.emit(ils.Metrics())
-	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
-	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
-	mb.metricPostgresqlDbSize.emit(ils.Metrics())
-	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
-	mb.metricPostgresqlIndexSize.emit(ils.Metrics())
-	mb.metricPostgresqlOperations.emit(ils.Metrics())
-	mb.metricPostgresqlReplicationDataDelay.emit(ils.Metrics())
-	mb.metricPostgresqlRollbacks.emit(ils.Metrics())
-	mb.metricPostgresqlRows.emit(ils.Metrics())
-	mb.metricPostgresqlTableCount.emit(ils.Metrics())
-	mb.metricPostgresqlTableSize.emit(ils.Metrics())
-	mb.metricPostgresqlTableVacuumCount.emit(ils.Metrics())
-	mb.metricPostgresqlWalAge.emit(ils.Metrics())
-	mb.metricPostgresqlWalLag.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/postgresqlreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordPostgresqlBackendsDataPoint adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlBackends.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBackendsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricPostgresqlBackends.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlBgwriterBuffersAllocatedDataPoint adds a data point to postgresql.bgwriter.buffers.allocated metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlBgwriterBuffersAllocated.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBgwriterBuffersAllocatedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlBgwriterBuffersAllocated.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlBgwriterBuffersWritesDataPoint adds a data point to postgresql.bgwriter.buffers.writes metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterBuffersWritesDataPoint(ts pcommon.Timestamp, val int64, bgBufferSourceAttributeValue AttributeBgBufferSource) {
-	mb.metricPostgresqlBgwriterBuffersWrites.recordDataPoint(mb.startTime, ts, val, bgBufferSourceAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBgwriterBuffersWritesDataPoint(ts pcommon.Timestamp, val int64, bgBufferSourceAttributeValue AttributeBgBufferSource) {
+	rmb.metricPostgresqlBgwriterBuffersWrites.recordDataPoint(rmb.startTime, ts, val, bgBufferSourceAttributeValue.String())
 }
 
 // RecordPostgresqlBgwriterCheckpointCountDataPoint adds a data point to postgresql.bgwriter.checkpoint.count metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterCheckpointCountDataPoint(ts pcommon.Timestamp, val int64, bgCheckpointTypeAttributeValue AttributeBgCheckpointType) {
-	mb.metricPostgresqlBgwriterCheckpointCount.recordDataPoint(mb.startTime, ts, val, bgCheckpointTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBgwriterCheckpointCountDataPoint(ts pcommon.Timestamp, val int64, bgCheckpointTypeAttributeValue AttributeBgCheckpointType) {
+	rmb.metricPostgresqlBgwriterCheckpointCount.recordDataPoint(rmb.startTime, ts, val, bgCheckpointTypeAttributeValue.String())
 }
 
 // RecordPostgresqlBgwriterDurationDataPoint adds a data point to postgresql.bgwriter.duration metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue AttributeBgDurationType) {
-	mb.metricPostgresqlBgwriterDuration.recordDataPoint(mb.startTime, ts, val, bgDurationTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBgwriterDurationDataPoint(ts pcommon.Timestamp, val float64, bgDurationTypeAttributeValue AttributeBgDurationType) {
+	rmb.metricPostgresqlBgwriterDuration.recordDataPoint(rmb.startTime, ts, val, bgDurationTypeAttributeValue.String())
 }
 
 // RecordPostgresqlBgwriterMaxwrittenDataPoint adds a data point to postgresql.bgwriter.maxwritten metric.
-func (mb *MetricsBuilder) RecordPostgresqlBgwriterMaxwrittenDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlBgwriterMaxwritten.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBgwriterMaxwrittenDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlBgwriterMaxwritten.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlBlocksReadDataPoint adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue AttributeSource) {
-	mb.metricPostgresqlBlocksRead.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, sourceAttributeValue AttributeSource) {
+	rmb.metricPostgresqlBlocksRead.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, sourceAttributeValue.String())
 }
 
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
-func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricPostgresqlCommits.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlConnectionMaxDataPoint adds a data point to postgresql.connection.max metric.
-func (mb *MetricsBuilder) RecordPostgresqlConnectionMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlConnectionMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlConnectionMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlConnectionMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlDatabaseCountDataPoint adds a data point to postgresql.database.count metric.
-func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlDatabaseCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlDatabaseCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.
-func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlDbSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlDbSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricPostgresqlDbSize.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlIndexScansDataPoint adds a data point to postgresql.index.scans metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlIndexScans.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlIndexScansDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlIndexScans.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlIndexSizeDataPoint adds a data point to postgresql.index.size metric.
-func (mb *MetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlIndexSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlIndexSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlIndexSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlOperationsDataPoint adds a data point to postgresql.operations metric.
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
-	mb.metricPostgresqlOperations.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlOperationsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, operationAttributeValue AttributeOperation) {
+	rmb.metricPostgresqlOperations.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, operationAttributeValue.String())
 }
 
 // RecordPostgresqlReplicationDataDelayDataPoint adds a data point to postgresql.replication.data_delay metric.
-func (mb *MetricsBuilder) RecordPostgresqlReplicationDataDelayDataPoint(ts pcommon.Timestamp, val int64, replicationClientAttributeValue string) {
-	mb.metricPostgresqlReplicationDataDelay.recordDataPoint(mb.startTime, ts, val, replicationClientAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlReplicationDataDelayDataPoint(ts pcommon.Timestamp, val int64, replicationClientAttributeValue string) {
+	rmb.metricPostgresqlReplicationDataDelay.recordDataPoint(rmb.startTime, ts, val, replicationClientAttributeValue)
 }
 
 // RecordPostgresqlRollbacksDataPoint adds a data point to postgresql.rollbacks metric.
-func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricPostgresqlRollbacks.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlRollbacksDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricPostgresqlRollbacks.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordPostgresqlRowsDataPoint adds a data point to postgresql.rows metric.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
-	mb.metricPostgresqlRows.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlRowsDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, tableAttributeValue string, stateAttributeValue AttributeState) {
+	rmb.metricPostgresqlRows.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, tableAttributeValue, stateAttributeValue.String())
 }
 
 // RecordPostgresqlTableCountDataPoint adds a data point to postgresql.table.count metric.
-func (mb *MetricsBuilder) RecordPostgresqlTableCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlTableCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlTableCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlTableCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlTableSizeDataPoint adds a data point to postgresql.table.size metric.
-func (mb *MetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlTableSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlTableSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlTableSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlTableVacuumCountDataPoint adds a data point to postgresql.table.vacuum.count metric.
-func (mb *MetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlTableVacuumCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlTableVacuumCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlTableVacuumCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlWalAgeDataPoint adds a data point to postgresql.wal.age metric.
-func (mb *MetricsBuilder) RecordPostgresqlWalAgeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricPostgresqlWalAge.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlWalAgeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricPostgresqlWalAge.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordPostgresqlWalLagDataPoint adds a data point to postgresql.wal.lag metric.
-func (mb *MetricsBuilder) RecordPostgresqlWalLagDataPoint(ts pcommon.Timestamp, val int64, walOperationLagAttributeValue AttributeWalOperationLag, replicationClientAttributeValue string) {
-	mb.metricPostgresqlWalLag.recordDataPoint(mb.startTime, ts, val, walOperationLagAttributeValue.String(), replicationClientAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordPostgresqlWalLagDataPoint(ts pcommon.Timestamp, val int64, walOperationLagAttributeValue AttributeWalOperationLag, replicationClientAttributeValue string) {
+	rmb.metricPostgresqlWalLag.recordDataPoint(rmb.startTime, ts, val, walOperationLagAttributeValue.String(), replicationClientAttributeValue)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

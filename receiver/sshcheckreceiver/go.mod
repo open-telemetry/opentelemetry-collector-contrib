@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0
 	github.com/pkg/sftp v1.13.5
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.83.0
@@ -20,7 +21,6 @@ require (
 
 require (
 	github.com/knadh/koanf/v2 v2.0.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	go.opentelemetry.io/collector v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
 	go.opentelemetry.io/collector/exporter v0.83.0 // indirect

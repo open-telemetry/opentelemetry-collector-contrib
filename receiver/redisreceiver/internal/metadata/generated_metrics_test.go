@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetRedisVersion("redis.version-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,136 +61,133 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisClientsBlockedDataPoint(ts, 1)
+			rmb.RecordRedisClientsBlockedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisClientsConnectedDataPoint(ts, 1)
+			rmb.RecordRedisClientsConnectedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisClientsMaxInputBufferDataPoint(ts, 1)
+			rmb.RecordRedisClientsMaxInputBufferDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
+			rmb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
+			rmb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
 			allMetricsCount++
-			mb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
+			rmb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisCommandsDataPoint(ts, 1)
+			rmb.RecordRedisCommandsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisCommandsProcessedDataPoint(ts, 1)
+			rmb.RecordRedisCommandsProcessedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisConnectionsReceivedDataPoint(ts, 1)
+			rmb.RecordRedisConnectionsReceivedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisConnectionsRejectedDataPoint(ts, 1)
+			rmb.RecordRedisConnectionsRejectedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeStateSys)
+			rmb.RecordRedisCPUTimeDataPoint(ts, 1, AttributeStateSys)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbAvgTTLDataPoint(ts, 1, "db-val")
+			rmb.RecordRedisDbAvgTTLDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbExpiresDataPoint(ts, 1, "db-val")
+			rmb.RecordRedisDbExpiresDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisDbKeysDataPoint(ts, 1, "db-val")
+			rmb.RecordRedisDbKeysDataPoint(ts, 1, "db-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisKeysEvictedDataPoint(ts, 1)
+			rmb.RecordRedisKeysEvictedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisKeysExpiredDataPoint(ts, 1)
+			rmb.RecordRedisKeysExpiredDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisKeyspaceHitsDataPoint(ts, 1)
+			rmb.RecordRedisKeyspaceHitsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisKeyspaceMissesDataPoint(ts, 1)
+			rmb.RecordRedisKeyspaceMissesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisLatestForkDataPoint(ts, 1)
+			rmb.RecordRedisLatestForkDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisMaxmemoryDataPoint(ts, 1)
+			rmb.RecordRedisMaxmemoryDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisMemoryFragmentationRatioDataPoint(ts, 1)
+			rmb.RecordRedisMemoryFragmentationRatioDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisMemoryLuaDataPoint(ts, 1)
+			rmb.RecordRedisMemoryLuaDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisMemoryPeakDataPoint(ts, 1)
+			rmb.RecordRedisMemoryPeakDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisMemoryRssDataPoint(ts, 1)
+			rmb.RecordRedisMemoryRssDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
+			rmb.RecordRedisMemoryUsedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisNetInputDataPoint(ts, 1)
+			rmb.RecordRedisNetInputDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisNetOutputDataPoint(ts, 1)
+			rmb.RecordRedisNetOutputDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)
+			rmb.RecordRedisRdbChangesSinceLastSaveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts, 1)
+			rmb.RecordRedisReplicationBacklogFirstByteOffsetDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisReplicationOffsetDataPoint(ts, 1)
+			rmb.RecordRedisReplicationOffsetDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
+			rmb.RecordRedisRoleDataPoint(ts, 1, AttributeRoleReplica)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
+			rmb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRedisUptimeDataPoint(ts, 1)
+			rmb.RecordRedisUptimeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetRedisVersion("redis.version-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

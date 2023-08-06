@@ -87,9 +87,15 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 // collectQueue collects metrics
 func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestamp) {
-	r.mb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
-	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
-	r.mb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqQueueName(queue.Name)
+	rb.SetRabbitmqNodeName(queue.Node)
+	rb.SetRabbitmqVhostName(queue.VHost)
+	rmb := r.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordRabbitmqConsumerCountDataPoint(now, queue.Consumers)
+	rmb.RecordRabbitmqMessageCurrentDataPoint(now, queue.UnacknowledgedMessages, metadata.AttributeMessageStateUnacknowledged)
+	rmb.RecordRabbitmqMessageCurrentDataPoint(now, queue.ReadyMessages, metadata.AttributeMessageStateReady)
 
 	for _, messageStatMetric := range messageStatMetrics {
 		// Get metric value
@@ -110,20 +116,15 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 
 		switch messageStatMetric {
 		case deliverStat:
-			r.mb.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
+			rmb.RecordRabbitmqMessageDeliveredDataPoint(now, val64)
 		case publishStat:
-			r.mb.RecordRabbitmqMessagePublishedDataPoint(now, val64)
+			rmb.RecordRabbitmqMessagePublishedDataPoint(now, val64)
 		case ackStat:
-			r.mb.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
+			rmb.RecordRabbitmqMessageAcknowledgedDataPoint(now, val64)
 		case dropUnroutableStat:
-			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
+			rmb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
-	rb := r.mb.NewResourceBuilder()
-	rb.SetRabbitmqQueueName(queue.Name)
-	rb.SetRabbitmqNodeName(queue.Node)
-	rb.SetRabbitmqVhostName(queue.VHost)
-	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.

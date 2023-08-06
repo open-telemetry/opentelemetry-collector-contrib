@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,34 +59,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			rmb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
+			rmb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			rmb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			rmb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
+			rmb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
+			rmb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
+			rmb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

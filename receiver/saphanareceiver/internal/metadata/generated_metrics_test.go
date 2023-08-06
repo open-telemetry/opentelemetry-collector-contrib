@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetDbSystem("db.system-val")
+			rb.SetSaphanaHost("saphana.host-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,189 +62,185 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
+			rmb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaBackupLatestDataPoint(ts, "1")
+			rmb.RecordSaphanaBackupLatestDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
+			rmb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
+			rmb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
+			rmb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
+			rmb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
+			rmb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
+			rmb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
+			rmb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaInstanceCodeSizeDataPoint(ts, "1")
+			rmb.RecordSaphanaInstanceCodeSizeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
+			rmb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts, "1")
+			rmb.RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts, "1")
+			rmb.RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
+			rmb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "system-val", "product-val")
+			rmb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicensePeakDataPoint(ts, "1", "system-val", "product-val")
+			rmb.RecordSaphanaLicensePeakDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "1")
+			rmb.RecordSaphanaNetworkRequestAverageTimeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
+			rmb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
+			rmb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			rmb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			rmb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
+			rmb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
+			rmb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
+			rmb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
+			rmb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
+			rmb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
+			rmb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
+			rmb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
+			rmb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
+			rmb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
+			rmb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
+			rmb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
+			rmb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
+			rmb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaTransactionBlockedDataPoint(ts, "1")
+			rmb.RecordSaphanaTransactionBlockedDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
+			rmb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaUptimeDataPoint(ts, "1", "system-val", "database-val")
+			rmb.RecordSaphanaUptimeDataPoint(ts, "1", "system-val", "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			rmb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			rmb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
+			rmb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetDbSystem("db.system-val")
-			rb.SetSaphanaHost("saphana.host-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

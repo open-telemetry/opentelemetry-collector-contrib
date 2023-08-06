@@ -27,9 +27,8 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommon.Timestamp) {
-	if rs.Spec.Replicas != nil {
-		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
-		mb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
+	if rs.Spec.Replicas == nil {
+		return
 	}
 
 	rb := mb.NewResourceBuilder()
@@ -37,7 +36,9 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommo
 	rb.SetK8sReplicasetName(rs.Name)
 	rb.SetK8sReplicasetUID(string(rs.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
+	rmb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

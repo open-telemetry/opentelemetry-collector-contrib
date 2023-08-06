@@ -67,9 +67,11 @@ func integrationTest(name string, script []string, cfgMod func(*Config)) func(*t
 		scraperinttest.WithExpectedFile(filepath.Join("testdata", "integration", expectedFile)),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
 		),
 	).Run
 }

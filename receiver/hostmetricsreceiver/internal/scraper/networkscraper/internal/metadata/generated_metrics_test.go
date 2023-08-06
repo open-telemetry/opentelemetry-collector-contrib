@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,32 +59,31 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTcp, "state-val")
+			rmb.RecordSystemNetworkConnectionsDataPoint(ts, 1, AttributeProtocolTcp, "state-val")
 
 			allMetricsCount++
-			mb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
+			rmb.RecordSystemNetworkConntrackCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSystemNetworkConntrackMaxDataPoint(ts, 1)
+			rmb.RecordSystemNetworkConntrackMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkDroppedDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
+			rmb.RecordSystemNetworkDroppedDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkErrorsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
+			rmb.RecordSystemNetworkErrorsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkIoDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
+			rmb.RecordSystemNetworkIoDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemNetworkPacketsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
+			rmb.RecordSystemNetworkPacketsDataPoint(ts, 1, "device-val", AttributeDirectionReceive)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

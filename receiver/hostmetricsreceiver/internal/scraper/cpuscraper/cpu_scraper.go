@@ -71,13 +71,14 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-	s.mb.RecordSystemCPUPhysicalCountDataPoint(now, int64(numCPU))
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordSystemCPUPhysicalCountDataPoint(now, int64(numCPU))
 
 	numCPU, err = cpu.Counts(true)
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
-	s.mb.RecordSystemCPULogicalCountDataPoint(now, int64(numCPU))
+	rmb.RecordSystemCPULogicalCountDataPoint(now, int64(numCPU))
 
 	return s.mb.Emit(), nil
 }

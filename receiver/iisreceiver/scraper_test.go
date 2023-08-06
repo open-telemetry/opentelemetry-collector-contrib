@@ -54,7 +54,8 @@ func TestScrape(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestScrapeFailure(t *testing.T) {
@@ -77,8 +78,8 @@ func TestScrapeFailure(t *testing.T) {
 	scraper.totalWatcherRecorders = []watcherRecorder{
 		{
 			watcher: mockWatcher,
-			recorder: func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisUptimeDataPoint(ts, int64(val))
+			recorder: func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordIisUptimeDataPoint(ts, int64(val))
 			},
 		},
 	}
@@ -153,7 +154,8 @@ func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 }
 

@@ -27,17 +27,16 @@ func Transform(ds *appsv1.DaemonSet) *appsv1.DaemonSet {
 }
 
 func RecordMetrics(mb *metadata.MetricsBuilder, ds *appsv1.DaemonSet, ts pcommon.Timestamp) {
-	mb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled))
-	mb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled))
-	mb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))
-	mb.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))
-
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(ds.Namespace)
 	rb.SetK8sDaemonsetName(ds.Name)
 	rb.SetK8sDaemonsetUID(string(ds.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, int64(ds.Status.CurrentNumberScheduled))
+	rmb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, int64(ds.Status.DesiredNumberScheduled))
+	rmb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, int64(ds.Status.NumberMisscheduled))
+	rmb.RecordK8sDaemonsetReadyNodesDataPoint(ts, int64(ds.Status.NumberReady))
 }
 
 func GetMetadata(ds *appsv1.DaemonSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

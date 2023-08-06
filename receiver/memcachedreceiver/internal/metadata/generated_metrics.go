@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeCommand specifies the a value command attribute.
@@ -721,14 +723,25 @@ func newMetricMemcachedThreads(cfg MetricConfig) metricMemcachedThreads {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                            MetricsBuilderConfig // config of the metrics builder.
-	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                  // maximum observed number of metrics per resource.
-	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                         component.BuildInfo
+	startTime                         pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                   int               // maximum observed number of metrics per resource.
+	resource                          pcommon.Resource
+	missedEmits                       int
 	metricMemcachedBytes              metricMemcachedBytes
 	metricMemcachedCommands           metricMemcachedCommands
 	metricMemcachedConnectionsCurrent metricMemcachedConnectionsCurrent
@@ -754,168 +767,170 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                            mbc,
-		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         settings.BuildInfo,
-		metricMemcachedBytes:              newMetricMemcachedBytes(mbc.Metrics.MemcachedBytes),
-		metricMemcachedCommands:           newMetricMemcachedCommands(mbc.Metrics.MemcachedCommands),
-		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(mbc.Metrics.MemcachedConnectionsCurrent),
-		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(mbc.Metrics.MemcachedConnectionsTotal),
-		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(mbc.Metrics.MemcachedCPUUsage),
-		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(mbc.Metrics.MemcachedCurrentItems),
-		metricMemcachedEvictions:          newMetricMemcachedEvictions(mbc.Metrics.MemcachedEvictions),
-		metricMemcachedNetwork:            newMetricMemcachedNetwork(mbc.Metrics.MemcachedNetwork),
-		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(mbc.Metrics.MemcachedOperationHitRatio),
-		metricMemcachedOperations:         newMetricMemcachedOperations(mbc.Metrics.MemcachedOperations),
-		metricMemcachedThreads:            newMetricMemcachedThreads(mbc.Metrics.MemcachedThreads),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
 }
 
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                         mb.startTime,
+		buildInfo:                         mb.buildInfo,
+		resource:                          res,
+		metricMemcachedBytes:              newMetricMemcachedBytes(mb.config.Metrics.MemcachedBytes),
+		metricMemcachedCommands:           newMetricMemcachedCommands(mb.config.Metrics.MemcachedCommands),
+		metricMemcachedConnectionsCurrent: newMetricMemcachedConnectionsCurrent(mb.config.Metrics.MemcachedConnectionsCurrent),
+		metricMemcachedConnectionsTotal:   newMetricMemcachedConnectionsTotal(mb.config.Metrics.MemcachedConnectionsTotal),
+		metricMemcachedCPUUsage:           newMetricMemcachedCPUUsage(mb.config.Metrics.MemcachedCPUUsage),
+		metricMemcachedCurrentItems:       newMetricMemcachedCurrentItems(mb.config.Metrics.MemcachedCurrentItems),
+		metricMemcachedEvictions:          newMetricMemcachedEvictions(mb.config.Metrics.MemcachedEvictions),
+		metricMemcachedNetwork:            newMetricMemcachedNetwork(mb.config.Metrics.MemcachedNetwork),
+		metricMemcachedOperationHitRatio:  newMetricMemcachedOperationHitRatio(mb.config.Metrics.MemcachedOperationHitRatio),
+		metricMemcachedOperations:         newMetricMemcachedOperations(mb.config.Metrics.MemcachedOperations),
+		metricMemcachedThreads:            newMetricMemcachedThreads(mb.config.Metrics.MemcachedThreads),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricMemcachedBytes.emit(sm.Metrics())
+	rmb.metricMemcachedCommands.emit(sm.Metrics())
+	rmb.metricMemcachedConnectionsCurrent.emit(sm.Metrics())
+	rmb.metricMemcachedConnectionsTotal.emit(sm.Metrics())
+	rmb.metricMemcachedCPUUsage.emit(sm.Metrics())
+	rmb.metricMemcachedCurrentItems.emit(sm.Metrics())
+	rmb.metricMemcachedEvictions.emit(sm.Metrics())
+	rmb.metricMemcachedNetwork.emit(sm.Metrics())
+	rmb.metricMemcachedOperationHitRatio.emit(sm.Metrics())
+	rmb.metricMemcachedOperations.emit(sm.Metrics())
+	rmb.metricMemcachedThreads.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/memcachedreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricMemcachedBytes.emit(ils.Metrics())
-	mb.metricMemcachedCommands.emit(ils.Metrics())
-	mb.metricMemcachedConnectionsCurrent.emit(ils.Metrics())
-	mb.metricMemcachedConnectionsTotal.emit(ils.Metrics())
-	mb.metricMemcachedCPUUsage.emit(ils.Metrics())
-	mb.metricMemcachedCurrentItems.emit(ils.Metrics())
-	mb.metricMemcachedEvictions.emit(ils.Metrics())
-	mb.metricMemcachedNetwork.emit(ils.Metrics())
-	mb.metricMemcachedOperationHitRatio.emit(ils.Metrics())
-	mb.metricMemcachedOperations.emit(ils.Metrics())
-	mb.metricMemcachedThreads.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/memcachedreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordMemcachedBytesDataPoint adds a data point to memcached.bytes metric.
-func (mb *MetricsBuilder) RecordMemcachedBytesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedBytes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedBytesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedBytes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMemcachedCommandsDataPoint adds a data point to memcached.commands metric.
-func (mb *MetricsBuilder) RecordMemcachedCommandsDataPoint(ts pcommon.Timestamp, val int64, commandAttributeValue AttributeCommand) {
-	mb.metricMemcachedCommands.recordDataPoint(mb.startTime, ts, val, commandAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMemcachedCommandsDataPoint(ts pcommon.Timestamp, val int64, commandAttributeValue AttributeCommand) {
+	rmb.metricMemcachedCommands.recordDataPoint(rmb.startTime, ts, val, commandAttributeValue.String())
 }
 
 // RecordMemcachedConnectionsCurrentDataPoint adds a data point to memcached.connections.current metric.
-func (mb *MetricsBuilder) RecordMemcachedConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedConnectionsCurrent.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedConnectionsCurrentDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedConnectionsCurrent.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMemcachedConnectionsTotalDataPoint adds a data point to memcached.connections.total metric.
-func (mb *MetricsBuilder) RecordMemcachedConnectionsTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedConnectionsTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedConnectionsTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedConnectionsTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMemcachedCPUUsageDataPoint adds a data point to memcached.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMemcachedCPUUsageDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
-	mb.metricMemcachedCPUUsage.recordDataPoint(mb.startTime, ts, val, stateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMemcachedCPUUsageDataPoint(ts pcommon.Timestamp, val float64, stateAttributeValue AttributeState) {
+	rmb.metricMemcachedCPUUsage.recordDataPoint(rmb.startTime, ts, val, stateAttributeValue.String())
 }
 
 // RecordMemcachedCurrentItemsDataPoint adds a data point to memcached.current_items metric.
-func (mb *MetricsBuilder) RecordMemcachedCurrentItemsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedCurrentItems.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedCurrentItemsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedCurrentItems.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMemcachedEvictionsDataPoint adds a data point to memcached.evictions metric.
-func (mb *MetricsBuilder) RecordMemcachedEvictionsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedEvictions.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedEvictionsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedEvictions.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMemcachedNetworkDataPoint adds a data point to memcached.network metric.
-func (mb *MetricsBuilder) RecordMemcachedNetworkDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricMemcachedNetwork.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMemcachedNetworkDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricMemcachedNetwork.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMemcachedOperationHitRatioDataPoint adds a data point to memcached.operation_hit_ratio metric.
-func (mb *MetricsBuilder) RecordMemcachedOperationHitRatioDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation) {
-	mb.metricMemcachedOperationHitRatio.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMemcachedOperationHitRatioDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation) {
+	rmb.metricMemcachedOperationHitRatio.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMemcachedOperationsDataPoint adds a data point to memcached.operations metric.
-func (mb *MetricsBuilder) RecordMemcachedOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType, operationAttributeValue AttributeOperation) {
-	mb.metricMemcachedOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String(), operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMemcachedOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType, operationAttributeValue AttributeOperation) {
+	rmb.metricMemcachedOperations.recordDataPoint(rmb.startTime, ts, val, typeAttributeValue.String(), operationAttributeValue.String())
 }
 
 // RecordMemcachedThreadsDataPoint adds a data point to memcached.threads metric.
-func (mb *MetricsBuilder) RecordMemcachedThreadsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMemcachedThreads.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMemcachedThreadsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMemcachedThreads.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

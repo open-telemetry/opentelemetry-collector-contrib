@@ -17,7 +17,7 @@ const (
 	defaultObjectName = "SQLServer"
 )
 
-type recordFunc = func(*metadata.MetricsBuilder, pcommon.Timestamp, float64)
+type recordFunc = func(*metadata.ResourceMetricsBuilder, pcommon.Timestamp, float64)
 
 type perfCounterRecorderConf struct {
 	object    string
@@ -30,22 +30,22 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 	{
 		object: "General Statistics",
 		recorders: map[string]recordFunc{
-			"User Connections": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverUserConnectionCountDataPoint(ts, int64(val))
+			"User Connections": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverUserConnectionCountDataPoint(ts, int64(val))
 			},
 		},
 	},
 	{
 		object: "SQL Statistics",
 		recorders: map[string]recordFunc{
-			"Batch Requests/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverBatchRequestRateDataPoint(ts, val)
+			"Batch Requests/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverBatchRequestRateDataPoint(ts, val)
 			},
-			"SQL Compilations/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, val)
+			"SQL Compilations/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverBatchSQLCompilationRateDataPoint(ts, val)
 			},
-			"SQL Re-Compilations/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, val)
+			"SQL Re-Compilations/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, val)
 			},
 		},
 	},
@@ -53,34 +53,34 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		object:   "Locks",
 		instance: "_Total",
 		recorders: map[string]recordFunc{
-			"Lock Waits/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverLockWaitRateDataPoint(ts, val)
+			"Lock Waits/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverLockWaitRateDataPoint(ts, val)
 			},
-			"Average Wait Time (ms)": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, val)
+			"Average Wait Time (ms)": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverLockWaitTimeAvgDataPoint(ts, val)
 			},
 		},
 	},
 	{
 		object: "Buffer Manager",
 		recorders: map[string]recordFunc{
-			"Buffer cache hit ratio": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, val)
+			"Buffer cache hit ratio": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageBufferCacheHitRatioDataPoint(ts, val)
 			},
-			"Checkpoint pages/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, val)
+			"Checkpoint pages/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageCheckpointFlushRateDataPoint(ts, val)
 			},
-			"Lazy writes/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageLazyWriteRateDataPoint(ts, val)
+			"Lazy writes/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageLazyWriteRateDataPoint(ts, val)
 			},
-			"Page life expectancy": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageLifeExpectancyDataPoint(ts, int64(val))
+			"Page life expectancy": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageLifeExpectancyDataPoint(ts, int64(val))
 			},
-			"Page reads/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageOperationRateDataPoint(ts, val, metadata.AttributePageOperationsRead)
+			"Page reads/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageOperationRateDataPoint(ts, val, metadata.AttributePageOperationsRead)
 			},
-			"Page writes/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageOperationRateDataPoint(ts, val, metadata.AttributePageOperationsWrite)
+			"Page writes/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageOperationRateDataPoint(ts, val, metadata.AttributePageOperationsWrite)
 			},
 		},
 	},
@@ -88,8 +88,8 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		object:   "Access Methods",
 		instance: "_Total",
 		recorders: map[string]recordFunc{
-			"Page Splits/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverPageSplitRateDataPoint(ts, val)
+			"Page Splits/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverPageSplitRateDataPoint(ts, val)
 			},
 		},
 	},
@@ -97,29 +97,29 @@ var perfCounterRecorders = []perfCounterRecorderConf{
 		object:   "Databases",
 		instance: "*",
 		recorders: map[string]recordFunc{
-			"Log Bytes Flushed/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, val)
+			"Log Bytes Flushed/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogFlushDataRateDataPoint(ts, val)
 			},
-			"Log Flushes/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, val)
+			"Log Flushes/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogFlushRateDataPoint(ts, val)
 			},
-			"Log Flush Waits/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, val)
+			"Log Flush Waits/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts, val)
 			},
-			"Log Growths": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, int64(val))
+			"Log Growths": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogGrowthCountDataPoint(ts, int64(val))
 			},
-			"Log Shrinks": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, int64(val))
+			"Log Shrinks": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogShrinkCountDataPoint(ts, int64(val))
 			},
-			"Percent Log Used": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionLogUsageDataPoint(ts, int64(val))
+			"Percent Log Used": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionLogUsageDataPoint(ts, int64(val))
 			},
-			"Transactions/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionRateDataPoint(ts, val)
+			"Transactions/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionRateDataPoint(ts, val)
 			},
-			"Write Transactions/sec": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordSqlserverTransactionWriteRateDataPoint(ts, val)
+			"Write Transactions/sec": func(rmb *metadata.ResourceMetricsBuilder, ts pcommon.Timestamp, val float64) {
+				rmb.RecordSqlserverTransactionWriteRateDataPoint(ts, val)
 			},
 		},
 	},

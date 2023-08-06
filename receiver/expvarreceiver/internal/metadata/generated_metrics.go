@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricProcessRuntimeMemstatsBuckHashSys struct {
@@ -1333,14 +1335,25 @@ func newMetricProcessRuntimeMemstatsTotalAlloc(cfg MetricConfig) metricProcessRu
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                    MetricsBuilderConfig // config of the metrics builder.
-	startTime                                 pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                           int                  // maximum observed number of metrics per resource.
-	metricsBuffer                             pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                 component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                 component.BuildInfo
+	startTime                                 pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                           int               // maximum observed number of metrics per resource.
+	resource                                  pcommon.Resource
+	missedEmits                               int
 	metricProcessRuntimeMemstatsBuckHashSys   metricProcessRuntimeMemstatsBuckHashSys
 	metricProcessRuntimeMemstatsFrees         metricProcessRuntimeMemstatsFrees
 	metricProcessRuntimeMemstatsGcCPUFraction metricProcessRuntimeMemstatsGcCPUFraction
@@ -1381,273 +1394,275 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricProcessRuntimeMemstatsBuckHashSys: newMetricProcessRuntimeMemstatsBuckHashSys(mbc.Metrics.ProcessRuntimeMemstatsBuckHashSys),
-		metricProcessRuntimeMemstatsFrees:       newMetricProcessRuntimeMemstatsFrees(mbc.Metrics.ProcessRuntimeMemstatsFrees),
-		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(mbc.Metrics.ProcessRuntimeMemstatsGcCPUFraction),
-		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(mbc.Metrics.ProcessRuntimeMemstatsGcSys),
-		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(mbc.Metrics.ProcessRuntimeMemstatsHeapAlloc),
-		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(mbc.Metrics.ProcessRuntimeMemstatsHeapIdle),
-		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(mbc.Metrics.ProcessRuntimeMemstatsHeapInuse),
-		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(mbc.Metrics.ProcessRuntimeMemstatsHeapObjects),
-		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(mbc.Metrics.ProcessRuntimeMemstatsHeapReleased),
-		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(mbc.Metrics.ProcessRuntimeMemstatsHeapSys),
-		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(mbc.Metrics.ProcessRuntimeMemstatsLastPause),
-		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(mbc.Metrics.ProcessRuntimeMemstatsLookups),
-		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(mbc.Metrics.ProcessRuntimeMemstatsMallocs),
-		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(mbc.Metrics.ProcessRuntimeMemstatsMcacheInuse),
-		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(mbc.Metrics.ProcessRuntimeMemstatsMcacheSys),
-		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(mbc.Metrics.ProcessRuntimeMemstatsMspanInuse),
-		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(mbc.Metrics.ProcessRuntimeMemstatsMspanSys),
-		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(mbc.Metrics.ProcessRuntimeMemstatsNextGc),
-		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(mbc.Metrics.ProcessRuntimeMemstatsNumForcedGc),
-		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(mbc.Metrics.ProcessRuntimeMemstatsNumGc),
-		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(mbc.Metrics.ProcessRuntimeMemstatsOtherSys),
-		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(mbc.Metrics.ProcessRuntimeMemstatsPauseTotal),
-		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(mbc.Metrics.ProcessRuntimeMemstatsStackInuse),
-		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(mbc.Metrics.ProcessRuntimeMemstatsStackSys),
-		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(mbc.Metrics.ProcessRuntimeMemstatsSys),
-		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(mbc.Metrics.ProcessRuntimeMemstatsTotalAlloc),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
 }
 
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                               mb.startTime,
+		buildInfo:                               mb.buildInfo,
+		resource:                                res,
+		metricProcessRuntimeMemstatsBuckHashSys: newMetricProcessRuntimeMemstatsBuckHashSys(mb.config.Metrics.ProcessRuntimeMemstatsBuckHashSys),
+		metricProcessRuntimeMemstatsFrees:       newMetricProcessRuntimeMemstatsFrees(mb.config.Metrics.ProcessRuntimeMemstatsFrees),
+		metricProcessRuntimeMemstatsGcCPUFraction: newMetricProcessRuntimeMemstatsGcCPUFraction(mb.config.Metrics.ProcessRuntimeMemstatsGcCPUFraction),
+		metricProcessRuntimeMemstatsGcSys:         newMetricProcessRuntimeMemstatsGcSys(mb.config.Metrics.ProcessRuntimeMemstatsGcSys),
+		metricProcessRuntimeMemstatsHeapAlloc:     newMetricProcessRuntimeMemstatsHeapAlloc(mb.config.Metrics.ProcessRuntimeMemstatsHeapAlloc),
+		metricProcessRuntimeMemstatsHeapIdle:      newMetricProcessRuntimeMemstatsHeapIdle(mb.config.Metrics.ProcessRuntimeMemstatsHeapIdle),
+		metricProcessRuntimeMemstatsHeapInuse:     newMetricProcessRuntimeMemstatsHeapInuse(mb.config.Metrics.ProcessRuntimeMemstatsHeapInuse),
+		metricProcessRuntimeMemstatsHeapObjects:   newMetricProcessRuntimeMemstatsHeapObjects(mb.config.Metrics.ProcessRuntimeMemstatsHeapObjects),
+		metricProcessRuntimeMemstatsHeapReleased:  newMetricProcessRuntimeMemstatsHeapReleased(mb.config.Metrics.ProcessRuntimeMemstatsHeapReleased),
+		metricProcessRuntimeMemstatsHeapSys:       newMetricProcessRuntimeMemstatsHeapSys(mb.config.Metrics.ProcessRuntimeMemstatsHeapSys),
+		metricProcessRuntimeMemstatsLastPause:     newMetricProcessRuntimeMemstatsLastPause(mb.config.Metrics.ProcessRuntimeMemstatsLastPause),
+		metricProcessRuntimeMemstatsLookups:       newMetricProcessRuntimeMemstatsLookups(mb.config.Metrics.ProcessRuntimeMemstatsLookups),
+		metricProcessRuntimeMemstatsMallocs:       newMetricProcessRuntimeMemstatsMallocs(mb.config.Metrics.ProcessRuntimeMemstatsMallocs),
+		metricProcessRuntimeMemstatsMcacheInuse:   newMetricProcessRuntimeMemstatsMcacheInuse(mb.config.Metrics.ProcessRuntimeMemstatsMcacheInuse),
+		metricProcessRuntimeMemstatsMcacheSys:     newMetricProcessRuntimeMemstatsMcacheSys(mb.config.Metrics.ProcessRuntimeMemstatsMcacheSys),
+		metricProcessRuntimeMemstatsMspanInuse:    newMetricProcessRuntimeMemstatsMspanInuse(mb.config.Metrics.ProcessRuntimeMemstatsMspanInuse),
+		metricProcessRuntimeMemstatsMspanSys:      newMetricProcessRuntimeMemstatsMspanSys(mb.config.Metrics.ProcessRuntimeMemstatsMspanSys),
+		metricProcessRuntimeMemstatsNextGc:        newMetricProcessRuntimeMemstatsNextGc(mb.config.Metrics.ProcessRuntimeMemstatsNextGc),
+		metricProcessRuntimeMemstatsNumForcedGc:   newMetricProcessRuntimeMemstatsNumForcedGc(mb.config.Metrics.ProcessRuntimeMemstatsNumForcedGc),
+		metricProcessRuntimeMemstatsNumGc:         newMetricProcessRuntimeMemstatsNumGc(mb.config.Metrics.ProcessRuntimeMemstatsNumGc),
+		metricProcessRuntimeMemstatsOtherSys:      newMetricProcessRuntimeMemstatsOtherSys(mb.config.Metrics.ProcessRuntimeMemstatsOtherSys),
+		metricProcessRuntimeMemstatsPauseTotal:    newMetricProcessRuntimeMemstatsPauseTotal(mb.config.Metrics.ProcessRuntimeMemstatsPauseTotal),
+		metricProcessRuntimeMemstatsStackInuse:    newMetricProcessRuntimeMemstatsStackInuse(mb.config.Metrics.ProcessRuntimeMemstatsStackInuse),
+		metricProcessRuntimeMemstatsStackSys:      newMetricProcessRuntimeMemstatsStackSys(mb.config.Metrics.ProcessRuntimeMemstatsStackSys),
+		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(mb.config.Metrics.ProcessRuntimeMemstatsSys),
+		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(mb.config.Metrics.ProcessRuntimeMemstatsTotalAlloc),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricProcessRuntimeMemstatsBuckHashSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsFrees.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsGcCPUFraction.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsGcSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapAlloc.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapIdle.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapInuse.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapObjects.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapReleased.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsHeapSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsLastPause.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsLookups.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsMallocs.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsMcacheInuse.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsMcacheSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsMspanInuse.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsMspanSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsNextGc.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsNumForcedGc.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsNumGc.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsOtherSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsPauseTotal.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsStackInuse.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsStackSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsSys.emit(sm.Metrics())
+	rmb.metricProcessRuntimeMemstatsTotalAlloc.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/expvarreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricProcessRuntimeMemstatsBuckHashSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsFrees.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsGcCPUFraction.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsGcSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapAlloc.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapIdle.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapInuse.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapObjects.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapReleased.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsHeapSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsLastPause.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsLookups.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsMallocs.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsMcacheInuse.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsMcacheSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsMspanInuse.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsMspanSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsNextGc.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsNumForcedGc.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsNumGc.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsOtherSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsPauseTotal.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsStackInuse.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsStackSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsSys.emit(ils.Metrics())
-	mb.metricProcessRuntimeMemstatsTotalAlloc.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/expvarreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordProcessRuntimeMemstatsBuckHashSysDataPoint adds a data point to process.runtime.memstats.buck_hash_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsBuckHashSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsBuckHashSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsFreesDataPoint adds a data point to process.runtime.memstats.frees metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsFreesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsFrees.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsFreesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsFrees.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsGcCPUFractionDataPoint adds a data point to process.runtime.memstats.gc_cpu_fraction metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricProcessRuntimeMemstatsGcCPUFraction.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricProcessRuntimeMemstatsGcCPUFraction.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsGcSysDataPoint adds a data point to process.runtime.memstats.gc_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsGcSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsGcSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsGcSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsGcSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapAllocDataPoint adds a data point to process.runtime.memstats.heap_alloc metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapAlloc.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapAlloc.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapIdleDataPoint adds a data point to process.runtime.memstats.heap_idle metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapIdle.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapIdle.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapInuseDataPoint adds a data point to process.runtime.memstats.heap_inuse metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapInuse.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapInuse.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapObjectsDataPoint adds a data point to process.runtime.memstats.heap_objects metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapObjects.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapObjects.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapReleasedDataPoint adds a data point to process.runtime.memstats.heap_released metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapReleased.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapReleased.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsHeapSysDataPoint adds a data point to process.runtime.memstats.heap_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsHeapSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsHeapSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsHeapSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsHeapSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsLastPauseDataPoint adds a data point to process.runtime.memstats.last_pause metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsLastPauseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsLastPause.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsLastPauseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsLastPause.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsLookupsDataPoint adds a data point to process.runtime.memstats.lookups metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsLookupsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsLookups.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsLookupsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsLookups.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsMallocsDataPoint adds a data point to process.runtime.memstats.mallocs metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsMallocsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsMallocs.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsMallocsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsMallocs.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsMcacheInuseDataPoint adds a data point to process.runtime.memstats.mcache_inuse metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsMcacheInuse.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsMcacheInuse.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsMcacheSysDataPoint adds a data point to process.runtime.memstats.mcache_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsMcacheSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsMcacheSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsMspanInuseDataPoint adds a data point to process.runtime.memstats.mspan_inuse metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsMspanInuse.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsMspanInuse.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsMspanSysDataPoint adds a data point to process.runtime.memstats.mspan_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsMspanSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsMspanSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsMspanSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsMspanSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsNextGcDataPoint adds a data point to process.runtime.memstats.next_gc metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsNextGcDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsNextGc.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsNextGcDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsNextGc.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsNumForcedGcDataPoint adds a data point to process.runtime.memstats.num_forced_gc metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsNumForcedGc.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsNumForcedGc.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsNumGcDataPoint adds a data point to process.runtime.memstats.num_gc metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsNumGcDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsNumGc.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsNumGcDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsNumGc.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsOtherSysDataPoint adds a data point to process.runtime.memstats.other_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsOtherSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsOtherSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsOtherSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsOtherSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsPauseTotalDataPoint adds a data point to process.runtime.memstats.pause_total metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsPauseTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsPauseTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsStackInuseDataPoint adds a data point to process.runtime.memstats.stack_inuse metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsStackInuseDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsStackInuse.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsStackInuseDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsStackInuse.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsStackSysDataPoint adds a data point to process.runtime.memstats.stack_sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsStackSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsStackSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsStackSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsStackSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsSysDataPoint adds a data point to process.runtime.memstats.sys metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsSysDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsSys.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsSysDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsSys.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordProcessRuntimeMemstatsTotalAllocDataPoint adds a data point to process.runtime.memstats.total_alloc metric.
-func (mb *MetricsBuilder) RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricProcessRuntimeMemstatsTotalAlloc.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricProcessRuntimeMemstatsTotalAlloc.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

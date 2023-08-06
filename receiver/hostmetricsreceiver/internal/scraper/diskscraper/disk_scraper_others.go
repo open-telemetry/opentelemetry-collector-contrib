@@ -103,35 +103,40 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) recordDiskIOMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.ReadBytes), device, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.WriteBytes), device, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.ReadBytes), device, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskIoDataPoint(now, int64(ioCounter.WriteBytes), device, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskOperationsMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.ReadCount), device, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.WriteCount), device, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.ReadCount), device, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskOperationsDataPoint(now, int64(ioCounter.WriteCount), device, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskIOTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(ioCounter.IoTime)/1e3, device)
+		rmb.RecordSystemDiskIoTimeDataPoint(now, float64(ioCounter.IoTime)/1e3, device)
 	}
 }
 
 func (s *scraper) recordDiskOperationTimeMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.ReadTime)/1e3, device, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.WriteTime)/1e3, device, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.ReadTime)/1e3, device, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskOperationTimeDataPoint(now, float64(ioCounter.WriteTime)/1e3, device, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskPendingOperationsMetric(now pcommon.Timestamp, ioCounters map[string]disk.IOCountersStat) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for device, ioCounter := range ioCounters {
-		s.mb.RecordSystemDiskPendingOperationsDataPoint(now, int64(ioCounter.IopsInProgress), device)
+		rmb.RecordSystemDiskPendingOperationsDataPoint(now, int64(ioCounter.IopsInProgress), device)
 	}
 }
 

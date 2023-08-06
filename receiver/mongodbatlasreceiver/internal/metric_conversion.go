@@ -13,13 +13,13 @@ import (
 )
 
 func processMeasurements(
-	mb *metadata.MetricsBuilder,
+	rmb *metadata.ResourceMetricsBuilder,
 	measurements []*mongodbatlas.Measurements,
 ) error {
 	var errs error
 
 	for _, meas := range measurements {
-		err := metadata.MeasurementsToMetric(mb, meas, false)
+		err := metadata.MeasurementsToMetric(rmb, meas, false)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 		}

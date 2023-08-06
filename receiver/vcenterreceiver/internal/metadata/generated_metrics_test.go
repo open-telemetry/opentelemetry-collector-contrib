@@ -48,167 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
 			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
@@ -217,7 +56,170 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetVcenterVMID("vcenter.vm.id-val")
 			rb.SetVcenterVMName("vcenter.vm.name-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterCPUEffectiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterCPULimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterHostCountDataPoint(ts, 1, true)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterMemoryEffectiveDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterMemoryLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterDatastoreDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostDiskLatencyMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterHostNetworkUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterResourcePoolMemorySharesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMCPUUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMDiskLatencyAvgDataPoint(ts, 1, AttributeDiskDirectionRead, AttributeDiskTypeVirtual)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMDiskLatencyMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMDiskThroughputDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMDiskUsageDataPoint(ts, 1, AttributeDiskStateAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMDiskUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMMemoryBalloonedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMMemorySwappedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordVcenterVMMemoryUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMNetworkThroughputDataPoint(ts, 1, AttributeThroughputDirectionTransmitted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordVcenterVMNetworkUsageDataPoint(ts, 1)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

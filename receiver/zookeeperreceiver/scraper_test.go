@@ -325,6 +325,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}

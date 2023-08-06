@@ -15,33 +15,33 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, crq *quotav1.ClusterResourceQuota, ts pcommon.Timestamp) {
+	rb := mb.NewResourceBuilder()
+	rb.SetOpenshiftClusterquotaName(crq.Name)
+	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+
 	for k, v := range crq.Status.Total.Hard {
 		val := extractValue(k, v)
-		mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, val, string(k))
+		rmb.RecordOpenshiftClusterquotaLimitDataPoint(ts, val, string(k))
 	}
 
 	for k, v := range crq.Status.Total.Used {
 		val := extractValue(k, v)
-		mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, val, string(k))
+		rmb.RecordOpenshiftClusterquotaUsedDataPoint(ts, val, string(k))
 	}
 
 	for _, ns := range crq.Status.Namespaces {
 		for k, v := range ns.Status.Hard {
 			val := extractValue(k, v)
-			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, val, ns.Namespace, string(k))
+			rmb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, val, ns.Namespace, string(k))
 		}
 
 		for k, v := range ns.Status.Used {
 			val := extractValue(k, v)
-			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, val, ns.Namespace, string(k))
+			rmb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, val, ns.Namespace, string(k))
 		}
 	}
-
-	rb := mb.NewResourceBuilder()
-	rb.SetOpenshiftClusterquotaName(crq.Name)
-	rb.SetOpenshiftClusterquotaUID(string(crq.UID))
-	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func extractValue(k v1.ResourceName, v resource.Quantity) int64 {

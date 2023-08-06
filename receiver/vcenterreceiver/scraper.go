@@ -106,8 +106,12 @@ func (v *vcenterMetricScraper) collectCluster(
 	poweredOnVMs, poweredOffVMs int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
-	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(c.Name())
+	rmb := v.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
+	rmb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
 
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -116,15 +120,12 @@ func (v *vcenterMetricScraper) collectCluster(
 		return
 	}
 	s := moCluster.Summary.GetComputeResourceSummary()
-	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
-	v.mb.RecordVcenterClusterCPUEffectiveDataPoint(now, int64(s.EffectiveCpu))
-	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory)
-	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
-	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
-	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
-	rb := v.mb.NewResourceBuilder()
-	rb.SetVcenterClusterName(c.Name())
-	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
+	rmb.RecordVcenterClusterCPUEffectiveDataPoint(now, int64(s.EffectiveCpu))
+	rmb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory)
+	rmb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
+	rmb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
+	rmb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -158,11 +159,11 @@ func (v *vcenterMetricScraper) collectDatastore(
 		return
 	}
 
-	v.recordDatastoreProperties(now, moDS)
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterClusterName(cluster.Name())
 	rb.SetVcenterDatastoreName(moDS.Name)
-	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := v.mb.ResourceMetricsBuilder(rb.Emit())
+	v.recordDatastoreProperties(rmb, now, moDS)
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -201,12 +202,13 @@ func (v *vcenterMetricScraper) collectHost(
 		errs.AddPartial(1, err)
 		return
 	}
-	v.recordHostSystemMemoryUsage(now, hwSum)
-	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
+
 	rb := v.mb.NewResourceBuilder()
 	rb.SetVcenterHostName(host.Name())
 	rb.SetVcenterClusterName(cluster.Name())
-	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := v.mb.ResourceMetricsBuilder(rb.Emit())
+	v.recordHostSystemMemoryUsage(rmb, now, hwSum)
+	v.recordHostPerformanceMetrics(ctx, rmb, hwSum, errs)
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
@@ -230,10 +232,10 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			errs.AddPartial(1, err)
 			continue
 		}
-		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
 		rb.SetVcenterResourcePoolName(rp.Name())
-		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		rmb := v.mb.ResourceMetricsBuilder(rb.Emit())
+		v.recordResourcePool(rmb, ts, moRP)
 	}
 }
 
@@ -295,24 +297,25 @@ func (v *vcenterMetricScraper) collectVMs(
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		v.collectVM(ctx, colTime, moVM, hwSum, errs)
 		rb := v.mb.NewResourceBuilder()
 		rb.SetVcenterVMName(vm.Name())
 		rb.SetVcenterVMID(vmUUID)
 		rb.SetVcenterClusterName(cluster.Name())
 		rb.SetVcenterHostName(hostname)
-		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		rmb := v.mb.ResourceMetricsBuilder(rb.Emit())
+		v.collectVM(ctx, rmb, colTime, moVM, hwSum, errs)
 	}
 	return poweredOnVMs, poweredOffVMs
 }
 
 func (v *vcenterMetricScraper) collectVM(
 	ctx context.Context,
+	rmb *metadata.ResourceMetricsBuilder,
 	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	v.recordVMUsages(colTime, vm, hs)
-	v.recordVMPerformance(ctx, vm, errs)
+	v.recordVMUsages(rmb, colTime, vm, hs)
+	v.recordVMPerformance(ctx, rmb, vm, errs)
 }

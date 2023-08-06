@@ -48,180 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerCPULimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerCPURequestDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerMemoryLimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerMemoryRequestDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerReadyDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerRestartsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerStorageLimitDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sContainerStorageRequestDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDaemonsetReadyNodesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDeploymentAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sDeploymentDesiredDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sHpaDesiredReplicasDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sHpaMaxReplicasDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sHpaMinReplicasDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sJobActivePodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sJobFailedPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sJobMaxParallelPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sJobSuccessfulPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNamespacePhaseDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodPhaseDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sReplicationControllerDesiredDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1, "resource-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
-
 			rb := mb.NewResourceBuilder()
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
@@ -255,7 +81,183 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerCPULimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerCPURequestDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerMemoryLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerMemoryRequestDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerReadyDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerRestartsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerStorageLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sContainerStorageRequestDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sCronjobActiveJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDaemonsetCurrentScheduledNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDaemonsetDesiredScheduledNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDaemonsetMisscheduledNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDaemonsetReadyNodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDeploymentAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sDeploymentDesiredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sHpaCurrentReplicasDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sHpaDesiredReplicasDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sHpaMaxReplicasDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sHpaMinReplicasDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sJobActivePodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sJobFailedPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sJobMaxParallelPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sJobSuccessfulPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNamespacePhaseDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodPhaseDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sReplicasetDesiredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sReplicationControllerAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sReplicationControllerDesiredDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sResourceQuotaHardLimitDataPoint(ts, 1, "resource-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sResourceQuotaUsedDataPoint(ts, 1, "resource-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sStatefulsetCurrentPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sStatefulsetDesiredPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sStatefulsetReadyPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sStatefulsetUpdatedPodsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordOpenshiftAppliedclusterquotaLimitDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordOpenshiftAppliedclusterquotaUsedDataPoint(ts, 1, "k8s.namespace.name-val", "resource-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordOpenshiftClusterquotaLimitDataPoint(ts, 1, "resource-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordOpenshiftClusterquotaUsedDataPoint(ts, 1, "resource-val")
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

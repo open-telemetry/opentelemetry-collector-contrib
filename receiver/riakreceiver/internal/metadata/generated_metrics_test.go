@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetRiakNodeName("riak.node.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,32 +61,29 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakMemoryLimitDataPoint(ts, 1)
+			rmb.RecordRiakMemoryLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
+			rmb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
+			rmb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
+			rmb.RecordRiakNodeReadRepairCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
+			rmb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
+			rmb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetRiakNodeName("riak.node.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

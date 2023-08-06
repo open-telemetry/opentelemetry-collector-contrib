@@ -49,6 +49,21 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			{{ if .ResourceAttributes -}}
+			rb := mb.NewResourceBuilder()
+			{{- range $name, $attr := .ResourceAttributes }}
+			{{- if $attr.Enum }}
+			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
+			{{- else }}
+			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
+			{{- end }}
+			{{- end }}
+			res := rb.Emit()
+			{{- else }}
+			res := pcommon.NewResource()
+			{{- end }}
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			{{- range $name, $metric := .Metrics }}
 			{{- if and $metric.Enabled $metric.Warnings.IfEnabled }}
@@ -78,26 +93,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 				allMetricsCount++
-				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+				rmb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
 					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 				{{- end }})
 			{{- end }}
 
-			{{ if .ResourceAttributes }}
-			rb := mb.NewResourceBuilder()
-			{{- range $name, $attr := .ResourceAttributes }}
-			{{- if $attr.Enum }}
-			rb.Set{{ $attr.Name.Render }}{{ index $attr.Enum 0 | publicVar }}()
-			{{- else }}
-			rb.Set{{ $attr.Name.Render }}({{ $attr.TestValue }})
-			{{- end }}
-			{{- end }}
-			res := rb.Emit()
-			{{- else }}
-			res := pcommon.NewResource()
-			{{- end }}
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

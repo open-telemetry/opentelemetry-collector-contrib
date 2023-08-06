@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,14 +59,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
+			rmb.RecordSystemProcessesCountDataPoint(ts, 1, AttributeStatusBlocked)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemProcessesCreatedDataPoint(ts, 1)
+			rmb.RecordSystemProcessesCreatedDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

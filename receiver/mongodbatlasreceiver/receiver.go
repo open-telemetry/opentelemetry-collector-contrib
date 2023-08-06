@@ -148,19 +148,6 @@ func (s *receiver) extractProcessMetrics(
 	process *mongodbatlas.Process,
 	clusterName string,
 ) error {
-	if err := s.client.ProcessMetrics(
-		ctx,
-		s.mb,
-		project.ID,
-		process.Hostname,
-		process.Port,
-		time.start,
-		time.end,
-		time.resolution,
-	); err != nil {
-		return fmt.Errorf("error when polling process metrics from MongoDB Atlas: %w", err)
-	}
-
 	rb := s.mb.NewResourceBuilder()
 	rb.SetMongodbAtlasOrgName(orgName)
 	rb.SetMongodbAtlasProjectName(project.Name)
@@ -171,7 +158,19 @@ func (s *receiver) extractProcessMetrics(
 	rb.SetMongodbAtlasProcessPort(strconv.Itoa(process.Port))
 	rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 	rb.SetMongodbAtlasProcessID(process.ID)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+
+	if err := s.client.ProcessMetrics(
+		ctx,
+		s.mb.ResourceMetricsBuilder(rb.Emit()),
+		project.ID,
+		process.Hostname,
+		process.Port,
+		time.start,
+		time.end,
+		time.resolution,
+	); err != nil {
+		return fmt.Errorf("error when polling process metrics from MongoDB Atlas: %w", err)
+	}
 
 	return nil
 }
@@ -195,19 +194,6 @@ func (s *receiver) extractProcessDatabaseMetrics(
 	}
 
 	for _, db := range processDatabases {
-		if err := s.client.ProcessDatabaseMetrics(
-			ctx,
-			s.mb,
-			project.ID,
-			process.Hostname,
-			process.Port,
-			db.DatabaseName,
-			time.start,
-			time.end,
-			time.resolution,
-		); err != nil {
-			return fmt.Errorf("error when polling database metrics from MongoDB Atlas: %w", err)
-		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetMongodbAtlasOrgName(orgName)
 		rb.SetMongodbAtlasProjectName(project.Name)
@@ -219,7 +205,19 @@ func (s *receiver) extractProcessDatabaseMetrics(
 		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 		rb.SetMongodbAtlasProcessID(process.ID)
 		rb.SetMongodbAtlasDbName(db.DatabaseName)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		if err := s.client.ProcessDatabaseMetrics(
+			ctx,
+			s.mb.ResourceMetricsBuilder(rb.Emit()),
+			project.ID,
+			process.Hostname,
+			process.Port,
+			db.DatabaseName,
+			time.start,
+			time.end,
+			time.resolution,
+		); err != nil {
+			return fmt.Errorf("error when polling database metrics from MongoDB Atlas: %w", err)
+		}
 	}
 	return nil
 }
@@ -233,19 +231,6 @@ func (s *receiver) extractProcessDiskMetrics(
 	clusterName string,
 ) error {
 	for _, disk := range s.client.ProcessDisks(ctx, project.ID, process.Hostname, process.Port) {
-		if err := s.client.ProcessDiskMetrics(
-			ctx,
-			s.mb,
-			project.ID,
-			process.Hostname,
-			process.Port,
-			disk.PartitionName,
-			time.start,
-			time.end,
-			time.resolution,
-		); err != nil {
-			return fmt.Errorf("error when polling disk metrics from MongoDB Atlas: %w", err)
-		}
 		rb := s.mb.NewResourceBuilder()
 		rb.SetMongodbAtlasOrgName(orgName)
 		rb.SetMongodbAtlasProjectName(project.Name)
@@ -257,7 +242,19 @@ func (s *receiver) extractProcessDiskMetrics(
 		rb.SetMongodbAtlasProcessTypeName(process.TypeName)
 		rb.SetMongodbAtlasProcessID(process.ID)
 		rb.SetMongodbAtlasDiskPartition(disk.PartitionName)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		if err := s.client.ProcessDiskMetrics(
+			ctx,
+			s.mb.ResourceMetricsBuilder(rb.Emit()),
+			project.ID,
+			process.Hostname,
+			process.Port,
+			disk.PartitionName,
+			time.start,
+			time.end,
+			time.resolution,
+		); err != nil {
+			return fmt.Errorf("error when polling disk metrics from MongoDB Atlas: %w", err)
+		}
 	}
 	return nil
 }

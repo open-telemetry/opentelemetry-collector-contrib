@@ -48,55 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			allMetricsCount++
-			mb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchTypeInvoluntary)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem)
-
-			allMetricsCount++
-			mb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeStateSystem)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead)
-
-			allMetricsCount++
-			mb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
-
-			allMetricsCount++
-			mb.RecordProcessHandlesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessMemoryUsageDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordProcessMemoryVirtualDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor)
-
-			allMetricsCount++
-			mb.RecordProcessSignalsPendingDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordProcessThreadsDataPoint(ts, 1)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetProcessCommand("process.command-val")
 			rb.SetProcessCommandLine("process.command_line-val")
@@ -106,7 +57,58 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetProcessParentPid(18)
 			rb.SetProcessPid(11)
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			allMetricsCount++
+			rmb.RecordProcessContextSwitchesDataPoint(ts, 1, AttributeContextSwitchTypeInvoluntary)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordProcessCPUTimeDataPoint(ts, 1, AttributeStateSystem)
+
+			allMetricsCount++
+			rmb.RecordProcessCPUUtilizationDataPoint(ts, 1, AttributeStateSystem)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordProcessDiskIoDataPoint(ts, 1, AttributeDirectionRead)
+
+			allMetricsCount++
+			rmb.RecordProcessDiskOperationsDataPoint(ts, 1, AttributeDirectionRead)
+
+			allMetricsCount++
+			rmb.RecordProcessHandlesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordProcessMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordProcessMemoryUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordProcessMemoryVirtualDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordProcessOpenFileDescriptorsDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordProcessPagingFaultsDataPoint(ts, 1, AttributePagingFaultTypeMajor)
+
+			allMetricsCount++
+			rmb.RecordProcessSignalsPendingDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordProcessThreadsDataPoint(ts, 1)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

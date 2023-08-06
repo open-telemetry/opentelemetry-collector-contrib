@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeDirection specifies the a value direction attribute.
@@ -2121,14 +2123,25 @@ func newMetricK8sVolumeInodesUsed(cfg MetricConfig) metricK8sVolumeInodesUsed {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                               MetricsBuilderConfig // config of the metrics builder.
-	startTime                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                      int                  // maximum observed number of metrics per resource.
-	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                            component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                            component.BuildInfo
+	startTime                            pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                      int               // maximum observed number of metrics per resource.
+	resource                             pcommon.Resource
+	missedEmits                          int
 	metricContainerCPUTime               metricContainerCPUTime
 	metricContainerCPUUtilization        metricContainerCPUUtilization
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
@@ -2185,57 +2198,86 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                               mbc,
-		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                        pmetric.NewMetrics(),
-		buildInfo:                            settings.BuildInfo,
-		metricContainerCPUTime:               newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
-		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
-		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
-		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
-		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
-		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(mbc.Metrics.ContainerMemoryAvailable),
-		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(mbc.Metrics.ContainerMemoryMajorPageFaults),
-		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
-		metricContainerMemoryRss:             newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
-		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
-		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
-		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
-		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mbc.Metrics.K8sNodeCPUUtilization),
-		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
-		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
-		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(mbc.Metrics.K8sNodeFilesystemUsage),
-		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(mbc.Metrics.K8sNodeMemoryAvailable),
-		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(mbc.Metrics.K8sNodeMemoryMajorPageFaults),
-		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(mbc.Metrics.K8sNodeMemoryPageFaults),
-		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(mbc.Metrics.K8sNodeMemoryRss),
-		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(mbc.Metrics.K8sNodeMemoryUsage),
-		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
-		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
-		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
-		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
-		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
-		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
-		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
-		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
-		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(mbc.Metrics.K8sPodMemoryAvailable),
-		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(mbc.Metrics.K8sPodMemoryMajorPageFaults),
-		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
-		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
-		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
-		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
-		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
-		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
-		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
-		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
-		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
-		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
-		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                            mb.startTime,
+		buildInfo:                            mb.buildInfo,
+		resource:                             res,
+		metricContainerCPUTime:               newMetricContainerCPUTime(mb.config.Metrics.ContainerCPUTime),
+		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mb.config.Metrics.ContainerCPUUtilization),
+		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mb.config.Metrics.ContainerFilesystemAvailable),
+		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(mb.config.Metrics.ContainerFilesystemCapacity),
+		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(mb.config.Metrics.ContainerFilesystemUsage),
+		metricContainerMemoryAvailable:       newMetricContainerMemoryAvailable(mb.config.Metrics.ContainerMemoryAvailable),
+		metricContainerMemoryMajorPageFaults: newMetricContainerMemoryMajorPageFaults(mb.config.Metrics.ContainerMemoryMajorPageFaults),
+		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(mb.config.Metrics.ContainerMemoryPageFaults),
+		metricContainerMemoryRss:             newMetricContainerMemoryRss(mb.config.Metrics.ContainerMemoryRss),
+		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mb.config.Metrics.ContainerMemoryUsage),
+		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mb.config.Metrics.ContainerMemoryWorkingSet),
+		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mb.config.Metrics.K8sNodeCPUTime),
+		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mb.config.Metrics.K8sNodeCPUUtilization),
+		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(mb.config.Metrics.K8sNodeFilesystemAvailable),
+		metricK8sNodeFilesystemCapacity:      newMetricK8sNodeFilesystemCapacity(mb.config.Metrics.K8sNodeFilesystemCapacity),
+		metricK8sNodeFilesystemUsage:         newMetricK8sNodeFilesystemUsage(mb.config.Metrics.K8sNodeFilesystemUsage),
+		metricK8sNodeMemoryAvailable:         newMetricK8sNodeMemoryAvailable(mb.config.Metrics.K8sNodeMemoryAvailable),
+		metricK8sNodeMemoryMajorPageFaults:   newMetricK8sNodeMemoryMajorPageFaults(mb.config.Metrics.K8sNodeMemoryMajorPageFaults),
+		metricK8sNodeMemoryPageFaults:        newMetricK8sNodeMemoryPageFaults(mb.config.Metrics.K8sNodeMemoryPageFaults),
+		metricK8sNodeMemoryRss:               newMetricK8sNodeMemoryRss(mb.config.Metrics.K8sNodeMemoryRss),
+		metricK8sNodeMemoryUsage:             newMetricK8sNodeMemoryUsage(mb.config.Metrics.K8sNodeMemoryUsage),
+		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(mb.config.Metrics.K8sNodeMemoryWorkingSet),
+		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mb.config.Metrics.K8sNodeNetworkErrors),
+		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mb.config.Metrics.K8sNodeNetworkIo),
+		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mb.config.Metrics.K8sPodCPUTime),
+		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mb.config.Metrics.K8sPodCPUUtilization),
+		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mb.config.Metrics.K8sPodFilesystemAvailable),
+		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(mb.config.Metrics.K8sPodFilesystemCapacity),
+		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(mb.config.Metrics.K8sPodFilesystemUsage),
+		metricK8sPodMemoryAvailable:          newMetricK8sPodMemoryAvailable(mb.config.Metrics.K8sPodMemoryAvailable),
+		metricK8sPodMemoryMajorPageFaults:    newMetricK8sPodMemoryMajorPageFaults(mb.config.Metrics.K8sPodMemoryMajorPageFaults),
+		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(mb.config.Metrics.K8sPodMemoryPageFaults),
+		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(mb.config.Metrics.K8sPodMemoryRss),
+		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(mb.config.Metrics.K8sPodMemoryUsage),
+		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mb.config.Metrics.K8sPodMemoryWorkingSet),
+		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mb.config.Metrics.K8sPodNetworkErrors),
+		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mb.config.Metrics.K8sPodNetworkIo),
+		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(mb.config.Metrics.K8sVolumeAvailable),
+		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(mb.config.Metrics.K8sVolumeCapacity),
+		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(mb.config.Metrics.K8sVolumeInodes),
+		metricK8sVolumeInodesFree:            newMetricK8sVolumeInodesFree(mb.config.Metrics.K8sVolumeInodesFree),
+		metricK8sVolumeInodesUsed:            newMetricK8sVolumeInodesUsed(mb.config.Metrics.K8sVolumeInodesUsed),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -2244,331 +2286,304 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricContainerCPUTime.emit(sm.Metrics())
+	rmb.metricContainerCPUUtilization.emit(sm.Metrics())
+	rmb.metricContainerFilesystemAvailable.emit(sm.Metrics())
+	rmb.metricContainerFilesystemCapacity.emit(sm.Metrics())
+	rmb.metricContainerFilesystemUsage.emit(sm.Metrics())
+	rmb.metricContainerMemoryAvailable.emit(sm.Metrics())
+	rmb.metricContainerMemoryMajorPageFaults.emit(sm.Metrics())
+	rmb.metricContainerMemoryPageFaults.emit(sm.Metrics())
+	rmb.metricContainerMemoryRss.emit(sm.Metrics())
+	rmb.metricContainerMemoryUsage.emit(sm.Metrics())
+	rmb.metricContainerMemoryWorkingSet.emit(sm.Metrics())
+	rmb.metricK8sNodeCPUTime.emit(sm.Metrics())
+	rmb.metricK8sNodeCPUUtilization.emit(sm.Metrics())
+	rmb.metricK8sNodeFilesystemAvailable.emit(sm.Metrics())
+	rmb.metricK8sNodeFilesystemCapacity.emit(sm.Metrics())
+	rmb.metricK8sNodeFilesystemUsage.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryAvailable.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryMajorPageFaults.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryPageFaults.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryRss.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryUsage.emit(sm.Metrics())
+	rmb.metricK8sNodeMemoryWorkingSet.emit(sm.Metrics())
+	rmb.metricK8sNodeNetworkErrors.emit(sm.Metrics())
+	rmb.metricK8sNodeNetworkIo.emit(sm.Metrics())
+	rmb.metricK8sPodCPUTime.emit(sm.Metrics())
+	rmb.metricK8sPodCPUUtilization.emit(sm.Metrics())
+	rmb.metricK8sPodFilesystemAvailable.emit(sm.Metrics())
+	rmb.metricK8sPodFilesystemCapacity.emit(sm.Metrics())
+	rmb.metricK8sPodFilesystemUsage.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryAvailable.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryMajorPageFaults.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryPageFaults.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryRss.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryUsage.emit(sm.Metrics())
+	rmb.metricK8sPodMemoryWorkingSet.emit(sm.Metrics())
+	rmb.metricK8sPodNetworkErrors.emit(sm.Metrics())
+	rmb.metricK8sPodNetworkIo.emit(sm.Metrics())
+	rmb.metricK8sVolumeAvailable.emit(sm.Metrics())
+	rmb.metricK8sVolumeCapacity.emit(sm.Metrics())
+	rmb.metricK8sVolumeInodes.emit(sm.Metrics())
+	rmb.metricK8sVolumeInodesFree.emit(sm.Metrics())
+	rmb.metricK8sVolumeInodesUsed.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/kubeletstatsreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricContainerCPUTime.emit(ils.Metrics())
-	mb.metricContainerCPUUtilization.emit(ils.Metrics())
-	mb.metricContainerFilesystemAvailable.emit(ils.Metrics())
-	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
-	mb.metricContainerFilesystemUsage.emit(ils.Metrics())
-	mb.metricContainerMemoryAvailable.emit(ils.Metrics())
-	mb.metricContainerMemoryMajorPageFaults.emit(ils.Metrics())
-	mb.metricContainerMemoryPageFaults.emit(ils.Metrics())
-	mb.metricContainerMemoryRss.emit(ils.Metrics())
-	mb.metricContainerMemoryUsage.emit(ils.Metrics())
-	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
-	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
-	mb.metricK8sNodeCPUUtilization.emit(ils.Metrics())
-	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
-	mb.metricK8sNodeFilesystemCapacity.emit(ils.Metrics())
-	mb.metricK8sNodeFilesystemUsage.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryAvailable.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryMajorPageFaults.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryPageFaults.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryRss.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryUsage.emit(ils.Metrics())
-	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
-	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
-	mb.metricK8sPodCPUTime.emit(ils.Metrics())
-	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
-	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
-	mb.metricK8sPodFilesystemCapacity.emit(ils.Metrics())
-	mb.metricK8sPodFilesystemUsage.emit(ils.Metrics())
-	mb.metricK8sPodMemoryAvailable.emit(ils.Metrics())
-	mb.metricK8sPodMemoryMajorPageFaults.emit(ils.Metrics())
-	mb.metricK8sPodMemoryPageFaults.emit(ils.Metrics())
-	mb.metricK8sPodMemoryRss.emit(ils.Metrics())
-	mb.metricK8sPodMemoryUsage.emit(ils.Metrics())
-	mb.metricK8sPodMemoryWorkingSet.emit(ils.Metrics())
-	mb.metricK8sPodNetworkErrors.emit(ils.Metrics())
-	mb.metricK8sPodNetworkIo.emit(ils.Metrics())
-	mb.metricK8sVolumeAvailable.emit(ils.Metrics())
-	mb.metricK8sVolumeCapacity.emit(ils.Metrics())
-	mb.metricK8sVolumeInodes.emit(ils.Metrics())
-	mb.metricK8sVolumeInodesFree.emit(ils.Metrics())
-	mb.metricK8sVolumeInodesUsed.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/kubeletstatsreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordContainerCPUTimeDataPoint adds a data point to container.cpu.time metric.
-func (mb *MetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerFilesystemAvailableDataPoint adds a data point to container.filesystem.available metric.
-func (mb *MetricsBuilder) RecordContainerFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerFilesystemAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerFilesystemCapacityDataPoint adds a data point to container.filesystem.capacity metric.
-func (mb *MetricsBuilder) RecordContainerFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerFilesystemCapacity.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerFilesystemUsageDataPoint adds a data point to container.filesystem.usage metric.
-func (mb *MetricsBuilder) RecordContainerFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerFilesystemUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryAvailableDataPoint adds a data point to container.memory.available metric.
-func (mb *MetricsBuilder) RecordContainerMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryMajorPageFaultsDataPoint adds a data point to container.memory.major_page_faults metric.
-func (mb *MetricsBuilder) RecordContainerMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryMajorPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryMajorPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPageFaultsDataPoint adds a data point to container.memory.page_faults metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryRssDataPoint adds a data point to container.memory.rss metric.
-func (mb *MetricsBuilder) RecordContainerMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryRss.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryRss.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUsageDataPoint adds a data point to container.memory.usage metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryWorkingSetDataPoint adds a data point to container.memory.working_set metric.
-func (mb *MetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryWorkingSet.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeCPUTimeDataPoint adds a data point to k8s.node.cpu.time metric.
-func (mb *MetricsBuilder) RecordK8sNodeCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sNodeCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sNodeCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeCPUUtilizationDataPoint adds a data point to k8s.node.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordK8sNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sNodeCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeFilesystemAvailableDataPoint adds a data point to k8s.node.filesystem.available metric.
-func (mb *MetricsBuilder) RecordK8sNodeFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeFilesystemAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeFilesystemCapacityDataPoint adds a data point to k8s.node.filesystem.capacity metric.
-func (mb *MetricsBuilder) RecordK8sNodeFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeFilesystemCapacity.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeFilesystemUsageDataPoint adds a data point to k8s.node.filesystem.usage metric.
-func (mb *MetricsBuilder) RecordK8sNodeFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeFilesystemUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryAvailableDataPoint adds a data point to k8s.node.memory.available metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryMajorPageFaultsDataPoint adds a data point to k8s.node.memory.major_page_faults metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryMajorPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryMajorPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryPageFaultsDataPoint adds a data point to k8s.node.memory.page_faults metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryRssDataPoint adds a data point to k8s.node.memory.rss metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryRss.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryRss.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryUsageDataPoint adds a data point to k8s.node.memory.usage metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeMemoryWorkingSetDataPoint adds a data point to k8s.node.memory.working_set metric.
-func (mb *MetricsBuilder) RecordK8sNodeMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sNodeMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sNodeMemoryWorkingSet.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sNodeNetworkErrorsDataPoint adds a data point to k8s.node.network.errors metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricK8sNodeNetworkErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
+	rmb.metricK8sNodeNetworkErrors.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordK8sNodeNetworkIoDataPoint adds a data point to k8s.node.network.io metric.
-func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
+	rmb.metricK8sNodeNetworkIo.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.
-func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sPodCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodCPUUtilizationDataPoint adds a data point to k8s.pod.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordK8sPodCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sPodCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricK8sPodCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodFilesystemAvailableDataPoint adds a data point to k8s.pod.filesystem.available metric.
-func (mb *MetricsBuilder) RecordK8sPodFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodFilesystemAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodFilesystemAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodFilesystemCapacityDataPoint adds a data point to k8s.pod.filesystem.capacity metric.
-func (mb *MetricsBuilder) RecordK8sPodFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemCapacity.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodFilesystemCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodFilesystemCapacity.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodFilesystemUsageDataPoint adds a data point to k8s.pod.filesystem.usage metric.
-func (mb *MetricsBuilder) RecordK8sPodFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodFilesystemUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodFilesystemUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodFilesystemUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryAvailableDataPoint adds a data point to k8s.pod.memory.available metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryMajorPageFaultsDataPoint adds a data point to k8s.pod.memory.major_page_faults metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryMajorPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryMajorPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryMajorPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryPageFaultsDataPoint adds a data point to k8s.pod.memory.page_faults metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryPageFaults.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryPageFaultsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryPageFaults.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryRssDataPoint adds a data point to k8s.pod.memory.rss metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryRss.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryRss.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryUsageDataPoint adds a data point to k8s.pod.memory.usage metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryWorkingSetDataPoint adds a data point to k8s.pod.memory.working_set metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sPodMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sPodMemoryWorkingSetDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sPodMemoryWorkingSet.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sPodNetworkErrorsDataPoint adds a data point to k8s.pod.network.errors metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricK8sPodNetworkErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordK8sPodNetworkErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
+	rmb.metricK8sPodNetworkErrors.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordK8sPodNetworkIoDataPoint adds a data point to k8s.pod.network.io metric.
-func (mb *MetricsBuilder) RecordK8sPodNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricK8sPodNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordK8sPodNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
+	rmb.metricK8sPodNetworkIo.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
 // RecordK8sVolumeAvailableDataPoint adds a data point to k8s.volume.available metric.
-func (mb *MetricsBuilder) RecordK8sVolumeAvailableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sVolumeAvailable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sVolumeAvailableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sVolumeAvailable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sVolumeCapacityDataPoint adds a data point to k8s.volume.capacity metric.
-func (mb *MetricsBuilder) RecordK8sVolumeCapacityDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sVolumeCapacity.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sVolumeCapacityDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sVolumeCapacity.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sVolumeInodesDataPoint adds a data point to k8s.volume.inodes metric.
-func (mb *MetricsBuilder) RecordK8sVolumeInodesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sVolumeInodes.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sVolumeInodesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sVolumeInodes.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sVolumeInodesFreeDataPoint adds a data point to k8s.volume.inodes.free metric.
-func (mb *MetricsBuilder) RecordK8sVolumeInodesFreeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sVolumeInodesFree.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sVolumeInodesFreeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sVolumeInodesFree.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordK8sVolumeInodesUsedDataPoint adds a data point to k8s.volume.inodes.used metric.
-func (mb *MetricsBuilder) RecordK8sVolumeInodesUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricK8sVolumeInodesUsed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordK8sVolumeInodesUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricK8sVolumeInodesUsed.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

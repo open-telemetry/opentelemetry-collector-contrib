@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricSnowflakeBillingCloudServiceTotal struct {
@@ -1906,14 +1908,25 @@ func newMetricSnowflakeTotalElapsedTimeAvg(cfg MetricConfig) metricSnowflakeTota
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                               MetricsBuilderConfig // config of the metrics builder.
-	startTime                                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                      int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                        pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                            component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                            component.BuildInfo
+	startTime                                            pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                      int               // maximum observed number of metrics per resource.
+	resource                                             pcommon.Resource
+	missedEmits                                          int
 	metricSnowflakeBillingCloudServiceTotal              metricSnowflakeBillingCloudServiceTotal
 	metricSnowflakeBillingTotalCreditTotal               metricSnowflakeBillingTotalCreditTotal
 	metricSnowflakeBillingVirtualWarehouseTotal          metricSnowflakeBillingVirtualWarehouseTotal
@@ -1963,50 +1976,79 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricSnowflakeBillingCloudServiceTotal: newMetricSnowflakeBillingCloudServiceTotal(mbc.Metrics.SnowflakeBillingCloudServiceTotal),
-		metricSnowflakeBillingTotalCreditTotal:  newMetricSnowflakeBillingTotalCreditTotal(mbc.Metrics.SnowflakeBillingTotalCreditTotal),
-		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(mbc.Metrics.SnowflakeBillingVirtualWarehouseTotal),
-		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(mbc.Metrics.SnowflakeBillingWarehouseCloudServiceTotal),
-		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(mbc.Metrics.SnowflakeBillingWarehouseTotalCreditTotal),
-		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(mbc.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal),
-		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(mbc.Metrics.SnowflakeDatabaseBytesScannedAvg),
-		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(mbc.Metrics.SnowflakeDatabaseQueryCount),
-		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(mbc.Metrics.SnowflakeLoginsTotal),
-		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(mbc.Metrics.SnowflakePipeCreditsUsedTotal),
-		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(mbc.Metrics.SnowflakeQueryBlocked),
-		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(mbc.Metrics.SnowflakeQueryBytesDeletedAvg),
-		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(mbc.Metrics.SnowflakeQueryBytesSpilledLocalAvg),
-		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(mbc.Metrics.SnowflakeQueryBytesSpilledRemoteAvg),
-		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(mbc.Metrics.SnowflakeQueryBytesWrittenAvg),
-		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(mbc.Metrics.SnowflakeQueryCompilationTimeAvg),
-		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(mbc.Metrics.SnowflakeQueryDataScannedCacheAvg),
-		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(mbc.Metrics.SnowflakeQueryExecuted),
-		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(mbc.Metrics.SnowflakeQueryExecutionTimeAvg),
-		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(mbc.Metrics.SnowflakeQueryPartitionsScannedAvg),
-		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(mbc.Metrics.SnowflakeQueryQueuedOverload),
-		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(mbc.Metrics.SnowflakeQueryQueuedProvision),
-		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(mbc.Metrics.SnowflakeQueuedOverloadTimeAvg),
-		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(mbc.Metrics.SnowflakeQueuedProvisioningTimeAvg),
-		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(mbc.Metrics.SnowflakeQueuedRepairTimeAvg),
-		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(mbc.Metrics.SnowflakeRowsDeletedAvg),
-		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(mbc.Metrics.SnowflakeRowsInsertedAvg),
-		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(mbc.Metrics.SnowflakeRowsProducedAvg),
-		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(mbc.Metrics.SnowflakeRowsUnloadedAvg),
-		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(mbc.Metrics.SnowflakeRowsUpdatedAvg),
-		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(mbc.Metrics.SnowflakeSessionIDCount),
-		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(mbc.Metrics.SnowflakeStorageFailsafeBytesTotal),
-		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(mbc.Metrics.SnowflakeStorageStageBytesTotal),
-		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(mbc.Metrics.SnowflakeStorageStorageBytesTotal),
-		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(mbc.Metrics.SnowflakeTotalElapsedTimeAvg),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                               mb.startTime,
+		buildInfo:                               mb.buildInfo,
+		resource:                                res,
+		metricSnowflakeBillingCloudServiceTotal: newMetricSnowflakeBillingCloudServiceTotal(mb.config.Metrics.SnowflakeBillingCloudServiceTotal),
+		metricSnowflakeBillingTotalCreditTotal:  newMetricSnowflakeBillingTotalCreditTotal(mb.config.Metrics.SnowflakeBillingTotalCreditTotal),
+		metricSnowflakeBillingVirtualWarehouseTotal:          newMetricSnowflakeBillingVirtualWarehouseTotal(mb.config.Metrics.SnowflakeBillingVirtualWarehouseTotal),
+		metricSnowflakeBillingWarehouseCloudServiceTotal:     newMetricSnowflakeBillingWarehouseCloudServiceTotal(mb.config.Metrics.SnowflakeBillingWarehouseCloudServiceTotal),
+		metricSnowflakeBillingWarehouseTotalCreditTotal:      newMetricSnowflakeBillingWarehouseTotalCreditTotal(mb.config.Metrics.SnowflakeBillingWarehouseTotalCreditTotal),
+		metricSnowflakeBillingWarehouseVirtualWarehouseTotal: newMetricSnowflakeBillingWarehouseVirtualWarehouseTotal(mb.config.Metrics.SnowflakeBillingWarehouseVirtualWarehouseTotal),
+		metricSnowflakeDatabaseBytesScannedAvg:               newMetricSnowflakeDatabaseBytesScannedAvg(mb.config.Metrics.SnowflakeDatabaseBytesScannedAvg),
+		metricSnowflakeDatabaseQueryCount:                    newMetricSnowflakeDatabaseQueryCount(mb.config.Metrics.SnowflakeDatabaseQueryCount),
+		metricSnowflakeLoginsTotal:                           newMetricSnowflakeLoginsTotal(mb.config.Metrics.SnowflakeLoginsTotal),
+		metricSnowflakePipeCreditsUsedTotal:                  newMetricSnowflakePipeCreditsUsedTotal(mb.config.Metrics.SnowflakePipeCreditsUsedTotal),
+		metricSnowflakeQueryBlocked:                          newMetricSnowflakeQueryBlocked(mb.config.Metrics.SnowflakeQueryBlocked),
+		metricSnowflakeQueryBytesDeletedAvg:                  newMetricSnowflakeQueryBytesDeletedAvg(mb.config.Metrics.SnowflakeQueryBytesDeletedAvg),
+		metricSnowflakeQueryBytesSpilledLocalAvg:             newMetricSnowflakeQueryBytesSpilledLocalAvg(mb.config.Metrics.SnowflakeQueryBytesSpilledLocalAvg),
+		metricSnowflakeQueryBytesSpilledRemoteAvg:            newMetricSnowflakeQueryBytesSpilledRemoteAvg(mb.config.Metrics.SnowflakeQueryBytesSpilledRemoteAvg),
+		metricSnowflakeQueryBytesWrittenAvg:                  newMetricSnowflakeQueryBytesWrittenAvg(mb.config.Metrics.SnowflakeQueryBytesWrittenAvg),
+		metricSnowflakeQueryCompilationTimeAvg:               newMetricSnowflakeQueryCompilationTimeAvg(mb.config.Metrics.SnowflakeQueryCompilationTimeAvg),
+		metricSnowflakeQueryDataScannedCacheAvg:              newMetricSnowflakeQueryDataScannedCacheAvg(mb.config.Metrics.SnowflakeQueryDataScannedCacheAvg),
+		metricSnowflakeQueryExecuted:                         newMetricSnowflakeQueryExecuted(mb.config.Metrics.SnowflakeQueryExecuted),
+		metricSnowflakeQueryExecutionTimeAvg:                 newMetricSnowflakeQueryExecutionTimeAvg(mb.config.Metrics.SnowflakeQueryExecutionTimeAvg),
+		metricSnowflakeQueryPartitionsScannedAvg:             newMetricSnowflakeQueryPartitionsScannedAvg(mb.config.Metrics.SnowflakeQueryPartitionsScannedAvg),
+		metricSnowflakeQueryQueuedOverload:                   newMetricSnowflakeQueryQueuedOverload(mb.config.Metrics.SnowflakeQueryQueuedOverload),
+		metricSnowflakeQueryQueuedProvision:                  newMetricSnowflakeQueryQueuedProvision(mb.config.Metrics.SnowflakeQueryQueuedProvision),
+		metricSnowflakeQueuedOverloadTimeAvg:                 newMetricSnowflakeQueuedOverloadTimeAvg(mb.config.Metrics.SnowflakeQueuedOverloadTimeAvg),
+		metricSnowflakeQueuedProvisioningTimeAvg:             newMetricSnowflakeQueuedProvisioningTimeAvg(mb.config.Metrics.SnowflakeQueuedProvisioningTimeAvg),
+		metricSnowflakeQueuedRepairTimeAvg:                   newMetricSnowflakeQueuedRepairTimeAvg(mb.config.Metrics.SnowflakeQueuedRepairTimeAvg),
+		metricSnowflakeRowsDeletedAvg:                        newMetricSnowflakeRowsDeletedAvg(mb.config.Metrics.SnowflakeRowsDeletedAvg),
+		metricSnowflakeRowsInsertedAvg:                       newMetricSnowflakeRowsInsertedAvg(mb.config.Metrics.SnowflakeRowsInsertedAvg),
+		metricSnowflakeRowsProducedAvg:                       newMetricSnowflakeRowsProducedAvg(mb.config.Metrics.SnowflakeRowsProducedAvg),
+		metricSnowflakeRowsUnloadedAvg:                       newMetricSnowflakeRowsUnloadedAvg(mb.config.Metrics.SnowflakeRowsUnloadedAvg),
+		metricSnowflakeRowsUpdatedAvg:                        newMetricSnowflakeRowsUpdatedAvg(mb.config.Metrics.SnowflakeRowsUpdatedAvg),
+		metricSnowflakeSessionIDCount:                        newMetricSnowflakeSessionIDCount(mb.config.Metrics.SnowflakeSessionIDCount),
+		metricSnowflakeStorageFailsafeBytesTotal:             newMetricSnowflakeStorageFailsafeBytesTotal(mb.config.Metrics.SnowflakeStorageFailsafeBytesTotal),
+		metricSnowflakeStorageStageBytesTotal:                newMetricSnowflakeStorageStageBytesTotal(mb.config.Metrics.SnowflakeStorageStageBytesTotal),
+		metricSnowflakeStorageStorageBytesTotal:              newMetricSnowflakeStorageStorageBytesTotal(mb.config.Metrics.SnowflakeStorageStorageBytesTotal),
+		metricSnowflakeTotalElapsedTimeAvg:                   newMetricSnowflakeTotalElapsedTimeAvg(mb.config.Metrics.SnowflakeTotalElapsedTimeAvg),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -2015,289 +2057,262 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricSnowflakeBillingCloudServiceTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeBillingTotalCreditTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeBillingVirtualWarehouseTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeBillingWarehouseCloudServiceTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeBillingWarehouseTotalCreditTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeDatabaseBytesScannedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeDatabaseQueryCount.emit(sm.Metrics())
+	rmb.metricSnowflakeLoginsTotal.emit(sm.Metrics())
+	rmb.metricSnowflakePipeCreditsUsedTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryBlocked.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryBytesDeletedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryBytesSpilledLocalAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryBytesSpilledRemoteAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryBytesWrittenAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryCompilationTimeAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryDataScannedCacheAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryExecuted.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryExecutionTimeAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryPartitionsScannedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryQueuedOverload.emit(sm.Metrics())
+	rmb.metricSnowflakeQueryQueuedProvision.emit(sm.Metrics())
+	rmb.metricSnowflakeQueuedOverloadTimeAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueuedProvisioningTimeAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeQueuedRepairTimeAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeRowsDeletedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeRowsInsertedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeRowsProducedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeRowsUnloadedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeRowsUpdatedAvg.emit(sm.Metrics())
+	rmb.metricSnowflakeSessionIDCount.emit(sm.Metrics())
+	rmb.metricSnowflakeStorageFailsafeBytesTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeStorageStageBytesTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeStorageStorageBytesTotal.emit(sm.Metrics())
+	rmb.metricSnowflakeTotalElapsedTimeAvg.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/snowflakereceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSnowflakeBillingCloudServiceTotal.emit(ils.Metrics())
-	mb.metricSnowflakeBillingTotalCreditTotal.emit(ils.Metrics())
-	mb.metricSnowflakeBillingVirtualWarehouseTotal.emit(ils.Metrics())
-	mb.metricSnowflakeBillingWarehouseCloudServiceTotal.emit(ils.Metrics())
-	mb.metricSnowflakeBillingWarehouseTotalCreditTotal.emit(ils.Metrics())
-	mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.emit(ils.Metrics())
-	mb.metricSnowflakeDatabaseBytesScannedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeDatabaseQueryCount.emit(ils.Metrics())
-	mb.metricSnowflakeLoginsTotal.emit(ils.Metrics())
-	mb.metricSnowflakePipeCreditsUsedTotal.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBlocked.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesDeletedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesSpilledLocalAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesSpilledRemoteAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryBytesWrittenAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryCompilationTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryDataScannedCacheAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryExecuted.emit(ils.Metrics())
-	mb.metricSnowflakeQueryExecutionTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryPartitionsScannedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueryQueuedOverload.emit(ils.Metrics())
-	mb.metricSnowflakeQueryQueuedProvision.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedOverloadTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedProvisioningTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeQueuedRepairTimeAvg.emit(ils.Metrics())
-	mb.metricSnowflakeRowsDeletedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeRowsInsertedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeRowsProducedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeRowsUnloadedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeRowsUpdatedAvg.emit(ils.Metrics())
-	mb.metricSnowflakeSessionIDCount.emit(ils.Metrics())
-	mb.metricSnowflakeStorageFailsafeBytesTotal.emit(ils.Metrics())
-	mb.metricSnowflakeStorageStageBytesTotal.emit(ils.Metrics())
-	mb.metricSnowflakeStorageStorageBytesTotal.emit(ils.Metrics())
-	mb.metricSnowflakeTotalElapsedTimeAvg.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/snowflakereceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordSnowflakeBillingCloudServiceTotalDataPoint adds a data point to snowflake.billing.cloud_service.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingCloudServiceTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	mb.metricSnowflakeBillingCloudServiceTotal.recordDataPoint(mb.startTime, ts, val, serviceTypeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingCloudServiceTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
+	rmb.metricSnowflakeBillingCloudServiceTotal.recordDataPoint(rmb.startTime, ts, val, serviceTypeAttributeValue)
 }
 
 // RecordSnowflakeBillingTotalCreditTotalDataPoint adds a data point to snowflake.billing.total_credit.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingTotalCreditTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	mb.metricSnowflakeBillingTotalCreditTotal.recordDataPoint(mb.startTime, ts, val, serviceTypeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingTotalCreditTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
+	rmb.metricSnowflakeBillingTotalCreditTotal.recordDataPoint(rmb.startTime, ts, val, serviceTypeAttributeValue)
 }
 
 // RecordSnowflakeBillingVirtualWarehouseTotalDataPoint adds a data point to snowflake.billing.virtual_warehouse.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
-	mb.metricSnowflakeBillingVirtualWarehouseTotal.recordDataPoint(mb.startTime, ts, val, serviceTypeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingVirtualWarehouseTotalDataPoint(ts pcommon.Timestamp, val float64, serviceTypeAttributeValue string) {
+	rmb.metricSnowflakeBillingVirtualWarehouseTotal.recordDataPoint(rmb.startTime, ts, val, serviceTypeAttributeValue)
 }
 
 // RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint adds a data point to snowflake.billing.warehouse.cloud_service.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeBillingWarehouseCloudServiceTotal.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingWarehouseCloudServiceTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeBillingWarehouseCloudServiceTotal.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint adds a data point to snowflake.billing.warehouse.total_credit.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeBillingWarehouseTotalCreditTotal.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingWarehouseTotalCreditTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeBillingWarehouseTotalCreditTotal.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint adds a data point to snowflake.billing.warehouse.virtual_warehouse.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeBillingWarehouseVirtualWarehouseTotalDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeBillingWarehouseVirtualWarehouseTotal.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeDatabaseBytesScannedAvgDataPoint adds a data point to snowflake.database.bytes_scanned.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeDatabaseBytesScannedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeDatabaseBytesScannedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeDatabaseBytesScannedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeDatabaseQueryCountDataPoint adds a data point to snowflake.database.query.count metric.
-func (mb *MetricsBuilder) RecordSnowflakeDatabaseQueryCountDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeDatabaseQueryCount.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeDatabaseQueryCountDataPoint(ts pcommon.Timestamp, val int64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeDatabaseQueryCount.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeLoginsTotalDataPoint adds a data point to snowflake.logins.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeLoginsTotalDataPoint(ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue string) {
-	mb.metricSnowflakeLoginsTotal.recordDataPoint(mb.startTime, ts, val, errorMessageAttributeValue, reportedClientTypeAttributeValue, isSuccessAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeLoginsTotalDataPoint(ts pcommon.Timestamp, val int64, errorMessageAttributeValue string, reportedClientTypeAttributeValue string, isSuccessAttributeValue string) {
+	rmb.metricSnowflakeLoginsTotal.recordDataPoint(rmb.startTime, ts, val, errorMessageAttributeValue, reportedClientTypeAttributeValue, isSuccessAttributeValue)
 }
 
 // RecordSnowflakePipeCreditsUsedTotalDataPoint adds a data point to snowflake.pipe.credits_used.total metric.
-func (mb *MetricsBuilder) RecordSnowflakePipeCreditsUsedTotalDataPoint(ts pcommon.Timestamp, val float64, pipeNameAttributeValue string) {
-	mb.metricSnowflakePipeCreditsUsedTotal.recordDataPoint(mb.startTime, ts, val, pipeNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakePipeCreditsUsedTotalDataPoint(ts pcommon.Timestamp, val float64, pipeNameAttributeValue string) {
+	rmb.metricSnowflakePipeCreditsUsedTotal.recordDataPoint(rmb.startTime, ts, val, pipeNameAttributeValue)
 }
 
 // RecordSnowflakeQueryBlockedDataPoint adds a data point to snowflake.query.blocked metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBlockedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeQueryBlocked.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryBlockedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeQueryBlocked.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryBytesDeletedAvgDataPoint adds a data point to snowflake.query.bytes_deleted.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesDeletedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryBytesDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryBytesDeletedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint adds a data point to snowflake.query.bytes_spilled.local.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesSpilledLocalAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryBytesSpilledLocalAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryBytesSpilledLocalAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint adds a data point to snowflake.query.bytes_spilled.remote.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesSpilledRemoteAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryBytesSpilledRemoteAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryBytesSpilledRemoteAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryBytesWrittenAvgDataPoint adds a data point to snowflake.query.bytes_written.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryBytesWrittenAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryBytesWrittenAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryBytesWrittenAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryCompilationTimeAvgDataPoint adds a data point to snowflake.query.compilation_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryCompilationTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryCompilationTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryCompilationTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryDataScannedCacheAvgDataPoint adds a data point to snowflake.query.data_scanned_cache.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryDataScannedCacheAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryDataScannedCacheAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryDataScannedCacheAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryExecutedDataPoint adds a data point to snowflake.query.executed metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryExecutedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeQueryExecuted.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryExecutedDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeQueryExecuted.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryExecutionTimeAvgDataPoint adds a data point to snowflake.query.execution_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryExecutionTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryExecutionTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryExecutionTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryPartitionsScannedAvgDataPoint adds a data point to snowflake.query.partitions_scanned.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueryPartitionsScannedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryPartitionsScannedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueryPartitionsScannedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueryQueuedOverloadDataPoint adds a data point to snowflake.query.queued_overload metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedOverloadDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeQueryQueuedOverload.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryQueuedOverloadDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeQueryQueuedOverload.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueryQueuedProvisionDataPoint adds a data point to snowflake.query.queued_provision metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueryQueuedProvisionDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
-	mb.metricSnowflakeQueryQueuedProvision.recordDataPoint(mb.startTime, ts, val, warehouseNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueryQueuedProvisionDataPoint(ts pcommon.Timestamp, val float64, warehouseNameAttributeValue string) {
+	rmb.metricSnowflakeQueryQueuedProvision.recordDataPoint(rmb.startTime, ts, val, warehouseNameAttributeValue)
 }
 
 // RecordSnowflakeQueuedOverloadTimeAvgDataPoint adds a data point to snowflake.queued_overload_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedOverloadTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueuedOverloadTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueuedOverloadTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueuedProvisioningTimeAvgDataPoint adds a data point to snowflake.queued_provisioning_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedProvisioningTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueuedProvisioningTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueuedProvisioningTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeQueuedRepairTimeAvgDataPoint adds a data point to snowflake.queued_repair_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeQueuedRepairTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeQueuedRepairTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeQueuedRepairTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeRowsDeletedAvgDataPoint adds a data point to snowflake.rows_deleted.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsDeletedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeRowsDeletedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeRowsDeletedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeRowsInsertedAvgDataPoint adds a data point to snowflake.rows_inserted.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsInsertedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsInsertedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeRowsInsertedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeRowsInsertedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeRowsProducedAvgDataPoint adds a data point to snowflake.rows_produced.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsProducedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsProducedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeRowsProducedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeRowsProducedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeRowsUnloadedAvgDataPoint adds a data point to snowflake.rows_unloaded.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsUnloadedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsUnloadedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeRowsUnloadedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeRowsUnloadedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeRowsUpdatedAvgDataPoint adds a data point to snowflake.rows_updated.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeRowsUpdatedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeRowsUpdatedAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeRowsUpdatedAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeRowsUpdatedAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
 // RecordSnowflakeSessionIDCountDataPoint adds a data point to snowflake.session_id.count metric.
-func (mb *MetricsBuilder) RecordSnowflakeSessionIDCountDataPoint(ts pcommon.Timestamp, val int64, userNameAttributeValue string) {
-	mb.metricSnowflakeSessionIDCount.recordDataPoint(mb.startTime, ts, val, userNameAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeSessionIDCountDataPoint(ts pcommon.Timestamp, val int64, userNameAttributeValue string) {
+	rmb.metricSnowflakeSessionIDCount.recordDataPoint(rmb.startTime, ts, val, userNameAttributeValue)
 }
 
 // RecordSnowflakeStorageFailsafeBytesTotalDataPoint adds a data point to snowflake.storage.failsafe_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSnowflakeStorageFailsafeBytesTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeStorageFailsafeBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSnowflakeStorageFailsafeBytesTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSnowflakeStorageStageBytesTotalDataPoint adds a data point to snowflake.storage.stage_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageStageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSnowflakeStorageStageBytesTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeStorageStageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSnowflakeStorageStageBytesTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSnowflakeStorageStorageBytesTotalDataPoint adds a data point to snowflake.storage.storage_bytes.total metric.
-func (mb *MetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSnowflakeStorageStorageBytesTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeStorageStorageBytesTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSnowflakeStorageStorageBytesTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSnowflakeTotalElapsedTimeAvgDataPoint adds a data point to snowflake.total_elapsed_time.avg metric.
-func (mb *MetricsBuilder) RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
-	mb.metricSnowflakeTotalElapsedTimeAvg.recordDataPoint(mb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSnowflakeTotalElapsedTimeAvgDataPoint(ts pcommon.Timestamp, val float64, schemaNameAttributeValue string, executionStatusAttributeValue string, errorMessageAttributeValue string, queryTypeAttributeValue string, warehouseNameAttributeValue string, databaseNameAttributeValue string, warehouseSizeAttributeValue string) {
+	rmb.metricSnowflakeTotalElapsedTimeAvg.recordDataPoint(rmb.startTime, ts, val, schemaNameAttributeValue, executionStatusAttributeValue, errorMessageAttributeValue, queryTypeAttributeValue, warehouseNameAttributeValue, databaseNameAttributeValue, warehouseSizeAttributeValue)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

@@ -48,6 +48,13 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
+			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
+			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,34 +63,29 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
+			rmb.RecordRabbitmqConsumerCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
+			rmb.RecordRabbitmqMessageAcknowledgedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
+			rmb.RecordRabbitmqMessageCurrentDataPoint(ts, 1, AttributeMessageStateReady)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
+			rmb.RecordRabbitmqMessageDeliveredDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
+			rmb.RecordRabbitmqMessageDroppedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
+			rmb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
-			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
-			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

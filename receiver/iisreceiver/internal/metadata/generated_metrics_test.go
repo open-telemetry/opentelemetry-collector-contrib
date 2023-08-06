@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetIisApplicationPool("iis.application_pool-val")
+			rb.SetIisSite("iis.site-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,57 +62,53 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisConnectionActiveDataPoint(ts, 1)
+			rmb.RecordIisConnectionActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisConnectionAnonymousDataPoint(ts, 1)
+			rmb.RecordIisConnectionAnonymousDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisConnectionAttemptCountDataPoint(ts, 1)
+			rmb.RecordIisConnectionAttemptCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisNetworkBlockedDataPoint(ts, 1)
+			rmb.RecordIisNetworkBlockedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
+			rmb.RecordIisNetworkFileCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
+			rmb.RecordIisNetworkIoDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
+			rmb.RecordIisRequestCountDataPoint(ts, 1, AttributeRequestDelete)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisRequestQueueAgeMaxDataPoint(ts, 1)
+			rmb.RecordIisRequestQueueAgeMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisRequestQueueCountDataPoint(ts, 1)
+			rmb.RecordIisRequestQueueCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisRequestRejectedDataPoint(ts, 1)
+			rmb.RecordIisRequestRejectedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisThreadActiveDataPoint(ts, 1)
+			rmb.RecordIisThreadActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordIisUptimeDataPoint(ts, 1)
+			rmb.RecordIisUptimeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetIisApplicationPool("iis.application_pool-val")
-			rb.SetIisSite("iis.site-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

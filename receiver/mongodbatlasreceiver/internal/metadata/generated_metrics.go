@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeAssertType specifies the a value assert_type attribute.
@@ -3880,14 +3882,25 @@ func newMetricMongodbatlasSystemPagingUsageMax(cfg MetricConfig) metricMongodbat
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                      MetricsBuilderConfig // config of the metrics builder.
-	startTime                                                   pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                             int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                               pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                                   component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                                   component.BuildInfo
+	startTime                                                   pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                             int               // maximum observed number of metrics per resource.
+	resource                                                    pcommon.Resource
+	missedEmits                                                 int
 	metricMongodbatlasDbCounts                                  metricMongodbatlasDbCounts
 	metricMongodbatlasDbSize                                    metricMongodbatlasDbSize
 	metricMongodbatlasDiskPartitionIopsAverage                  metricMongodbatlasDiskPartitionIopsAverage
@@ -3964,77 +3977,106 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                     mbc,
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  settings.BuildInfo,
-		metricMongodbatlasDbCounts: newMetricMongodbatlasDbCounts(mbc.Metrics.MongodbatlasDbCounts),
-		metricMongodbatlasDbSize:   newMetricMongodbatlasDbSize(mbc.Metrics.MongodbatlasDbSize),
-		metricMongodbatlasDiskPartitionIopsAverage:                  newMetricMongodbatlasDiskPartitionIopsAverage(mbc.Metrics.MongodbatlasDiskPartitionIopsAverage),
-		metricMongodbatlasDiskPartitionIopsMax:                      newMetricMongodbatlasDiskPartitionIopsMax(mbc.Metrics.MongodbatlasDiskPartitionIopsMax),
-		metricMongodbatlasDiskPartitionLatencyAverage:               newMetricMongodbatlasDiskPartitionLatencyAverage(mbc.Metrics.MongodbatlasDiskPartitionLatencyAverage),
-		metricMongodbatlasDiskPartitionLatencyMax:                   newMetricMongodbatlasDiskPartitionLatencyMax(mbc.Metrics.MongodbatlasDiskPartitionLatencyMax),
-		metricMongodbatlasDiskPartitionSpaceAverage:                 newMetricMongodbatlasDiskPartitionSpaceAverage(mbc.Metrics.MongodbatlasDiskPartitionSpaceAverage),
-		metricMongodbatlasDiskPartitionSpaceMax:                     newMetricMongodbatlasDiskPartitionSpaceMax(mbc.Metrics.MongodbatlasDiskPartitionSpaceMax),
-		metricMongodbatlasDiskPartitionUsageAverage:                 newMetricMongodbatlasDiskPartitionUsageAverage(mbc.Metrics.MongodbatlasDiskPartitionUsageAverage),
-		metricMongodbatlasDiskPartitionUsageMax:                     newMetricMongodbatlasDiskPartitionUsageMax(mbc.Metrics.MongodbatlasDiskPartitionUsageMax),
-		metricMongodbatlasDiskPartitionUtilizationAverage:           newMetricMongodbatlasDiskPartitionUtilizationAverage(mbc.Metrics.MongodbatlasDiskPartitionUtilizationAverage),
-		metricMongodbatlasDiskPartitionUtilizationMax:               newMetricMongodbatlasDiskPartitionUtilizationMax(mbc.Metrics.MongodbatlasDiskPartitionUtilizationMax),
-		metricMongodbatlasProcessAsserts:                            newMetricMongodbatlasProcessAsserts(mbc.Metrics.MongodbatlasProcessAsserts),
-		metricMongodbatlasProcessBackgroundFlush:                    newMetricMongodbatlasProcessBackgroundFlush(mbc.Metrics.MongodbatlasProcessBackgroundFlush),
-		metricMongodbatlasProcessCacheIo:                            newMetricMongodbatlasProcessCacheIo(mbc.Metrics.MongodbatlasProcessCacheIo),
-		metricMongodbatlasProcessCacheSize:                          newMetricMongodbatlasProcessCacheSize(mbc.Metrics.MongodbatlasProcessCacheSize),
-		metricMongodbatlasProcessConnections:                        newMetricMongodbatlasProcessConnections(mbc.Metrics.MongodbatlasProcessConnections),
-		metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage:  newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(mbc.Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageAverage),
-		metricMongodbatlasProcessCPUChildrenNormalizedUsageMax:      newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(mbc.Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageMax),
-		metricMongodbatlasProcessCPUChildrenUsageAverage:            newMetricMongodbatlasProcessCPUChildrenUsageAverage(mbc.Metrics.MongodbatlasProcessCPUChildrenUsageAverage),
-		metricMongodbatlasProcessCPUChildrenUsageMax:                newMetricMongodbatlasProcessCPUChildrenUsageMax(mbc.Metrics.MongodbatlasProcessCPUChildrenUsageMax),
-		metricMongodbatlasProcessCPUNormalizedUsageAverage:          newMetricMongodbatlasProcessCPUNormalizedUsageAverage(mbc.Metrics.MongodbatlasProcessCPUNormalizedUsageAverage),
-		metricMongodbatlasProcessCPUNormalizedUsageMax:              newMetricMongodbatlasProcessCPUNormalizedUsageMax(mbc.Metrics.MongodbatlasProcessCPUNormalizedUsageMax),
-		metricMongodbatlasProcessCPUUsageAverage:                    newMetricMongodbatlasProcessCPUUsageAverage(mbc.Metrics.MongodbatlasProcessCPUUsageAverage),
-		metricMongodbatlasProcessCPUUsageMax:                        newMetricMongodbatlasProcessCPUUsageMax(mbc.Metrics.MongodbatlasProcessCPUUsageMax),
-		metricMongodbatlasProcessCursors:                            newMetricMongodbatlasProcessCursors(mbc.Metrics.MongodbatlasProcessCursors),
-		metricMongodbatlasProcessDbDocumentRate:                     newMetricMongodbatlasProcessDbDocumentRate(mbc.Metrics.MongodbatlasProcessDbDocumentRate),
-		metricMongodbatlasProcessDbOperationsRate:                   newMetricMongodbatlasProcessDbOperationsRate(mbc.Metrics.MongodbatlasProcessDbOperationsRate),
-		metricMongodbatlasProcessDbOperationsTime:                   newMetricMongodbatlasProcessDbOperationsTime(mbc.Metrics.MongodbatlasProcessDbOperationsTime),
-		metricMongodbatlasProcessDbQueryExecutorScanned:             newMetricMongodbatlasProcessDbQueryExecutorScanned(mbc.Metrics.MongodbatlasProcessDbQueryExecutorScanned),
-		metricMongodbatlasProcessDbQueryTargetingScannedPerReturned: newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(mbc.Metrics.MongodbatlasProcessDbQueryTargetingScannedPerReturned),
-		metricMongodbatlasProcessDbStorage:                          newMetricMongodbatlasProcessDbStorage(mbc.Metrics.MongodbatlasProcessDbStorage),
-		metricMongodbatlasProcessGlobalLock:                         newMetricMongodbatlasProcessGlobalLock(mbc.Metrics.MongodbatlasProcessGlobalLock),
-		metricMongodbatlasProcessIndexBtreeMissRatio:                newMetricMongodbatlasProcessIndexBtreeMissRatio(mbc.Metrics.MongodbatlasProcessIndexBtreeMissRatio),
-		metricMongodbatlasProcessIndexCounters:                      newMetricMongodbatlasProcessIndexCounters(mbc.Metrics.MongodbatlasProcessIndexCounters),
-		metricMongodbatlasProcessJournalingCommits:                  newMetricMongodbatlasProcessJournalingCommits(mbc.Metrics.MongodbatlasProcessJournalingCommits),
-		metricMongodbatlasProcessJournalingDataFiles:                newMetricMongodbatlasProcessJournalingDataFiles(mbc.Metrics.MongodbatlasProcessJournalingDataFiles),
-		metricMongodbatlasProcessJournalingWritten:                  newMetricMongodbatlasProcessJournalingWritten(mbc.Metrics.MongodbatlasProcessJournalingWritten),
-		metricMongodbatlasProcessMemoryUsage:                        newMetricMongodbatlasProcessMemoryUsage(mbc.Metrics.MongodbatlasProcessMemoryUsage),
-		metricMongodbatlasProcessNetworkIo:                          newMetricMongodbatlasProcessNetworkIo(mbc.Metrics.MongodbatlasProcessNetworkIo),
-		metricMongodbatlasProcessNetworkRequests:                    newMetricMongodbatlasProcessNetworkRequests(mbc.Metrics.MongodbatlasProcessNetworkRequests),
-		metricMongodbatlasProcessOplogRate:                          newMetricMongodbatlasProcessOplogRate(mbc.Metrics.MongodbatlasProcessOplogRate),
-		metricMongodbatlasProcessOplogTime:                          newMetricMongodbatlasProcessOplogTime(mbc.Metrics.MongodbatlasProcessOplogTime),
-		metricMongodbatlasProcessPageFaults:                         newMetricMongodbatlasProcessPageFaults(mbc.Metrics.MongodbatlasProcessPageFaults),
-		metricMongodbatlasProcessRestarts:                           newMetricMongodbatlasProcessRestarts(mbc.Metrics.MongodbatlasProcessRestarts),
-		metricMongodbatlasProcessTickets:                            newMetricMongodbatlasProcessTickets(mbc.Metrics.MongodbatlasProcessTickets),
-		metricMongodbatlasSystemCPUNormalizedUsageAverage:           newMetricMongodbatlasSystemCPUNormalizedUsageAverage(mbc.Metrics.MongodbatlasSystemCPUNormalizedUsageAverage),
-		metricMongodbatlasSystemCPUNormalizedUsageMax:               newMetricMongodbatlasSystemCPUNormalizedUsageMax(mbc.Metrics.MongodbatlasSystemCPUNormalizedUsageMax),
-		metricMongodbatlasSystemCPUUsageAverage:                     newMetricMongodbatlasSystemCPUUsageAverage(mbc.Metrics.MongodbatlasSystemCPUUsageAverage),
-		metricMongodbatlasSystemCPUUsageMax:                         newMetricMongodbatlasSystemCPUUsageMax(mbc.Metrics.MongodbatlasSystemCPUUsageMax),
-		metricMongodbatlasSystemFtsCPUNormalizedUsage:               newMetricMongodbatlasSystemFtsCPUNormalizedUsage(mbc.Metrics.MongodbatlasSystemFtsCPUNormalizedUsage),
-		metricMongodbatlasSystemFtsCPUUsage:                         newMetricMongodbatlasSystemFtsCPUUsage(mbc.Metrics.MongodbatlasSystemFtsCPUUsage),
-		metricMongodbatlasSystemFtsDiskUsed:                         newMetricMongodbatlasSystemFtsDiskUsed(mbc.Metrics.MongodbatlasSystemFtsDiskUsed),
-		metricMongodbatlasSystemFtsMemoryUsage:                      newMetricMongodbatlasSystemFtsMemoryUsage(mbc.Metrics.MongodbatlasSystemFtsMemoryUsage),
-		metricMongodbatlasSystemMemoryUsageAverage:                  newMetricMongodbatlasSystemMemoryUsageAverage(mbc.Metrics.MongodbatlasSystemMemoryUsageAverage),
-		metricMongodbatlasSystemMemoryUsageMax:                      newMetricMongodbatlasSystemMemoryUsageMax(mbc.Metrics.MongodbatlasSystemMemoryUsageMax),
-		metricMongodbatlasSystemNetworkIoAverage:                    newMetricMongodbatlasSystemNetworkIoAverage(mbc.Metrics.MongodbatlasSystemNetworkIoAverage),
-		metricMongodbatlasSystemNetworkIoMax:                        newMetricMongodbatlasSystemNetworkIoMax(mbc.Metrics.MongodbatlasSystemNetworkIoMax),
-		metricMongodbatlasSystemPagingIoAverage:                     newMetricMongodbatlasSystemPagingIoAverage(mbc.Metrics.MongodbatlasSystemPagingIoAverage),
-		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(mbc.Metrics.MongodbatlasSystemPagingIoMax),
-		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(mbc.Metrics.MongodbatlasSystemPagingUsageAverage),
-		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(mbc.Metrics.MongodbatlasSystemPagingUsageMax),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                  mb.startTime,
+		buildInfo:                  mb.buildInfo,
+		resource:                   res,
+		metricMongodbatlasDbCounts: newMetricMongodbatlasDbCounts(mb.config.Metrics.MongodbatlasDbCounts),
+		metricMongodbatlasDbSize:   newMetricMongodbatlasDbSize(mb.config.Metrics.MongodbatlasDbSize),
+		metricMongodbatlasDiskPartitionIopsAverage:                  newMetricMongodbatlasDiskPartitionIopsAverage(mb.config.Metrics.MongodbatlasDiskPartitionIopsAverage),
+		metricMongodbatlasDiskPartitionIopsMax:                      newMetricMongodbatlasDiskPartitionIopsMax(mb.config.Metrics.MongodbatlasDiskPartitionIopsMax),
+		metricMongodbatlasDiskPartitionLatencyAverage:               newMetricMongodbatlasDiskPartitionLatencyAverage(mb.config.Metrics.MongodbatlasDiskPartitionLatencyAverage),
+		metricMongodbatlasDiskPartitionLatencyMax:                   newMetricMongodbatlasDiskPartitionLatencyMax(mb.config.Metrics.MongodbatlasDiskPartitionLatencyMax),
+		metricMongodbatlasDiskPartitionSpaceAverage:                 newMetricMongodbatlasDiskPartitionSpaceAverage(mb.config.Metrics.MongodbatlasDiskPartitionSpaceAverage),
+		metricMongodbatlasDiskPartitionSpaceMax:                     newMetricMongodbatlasDiskPartitionSpaceMax(mb.config.Metrics.MongodbatlasDiskPartitionSpaceMax),
+		metricMongodbatlasDiskPartitionUsageAverage:                 newMetricMongodbatlasDiskPartitionUsageAverage(mb.config.Metrics.MongodbatlasDiskPartitionUsageAverage),
+		metricMongodbatlasDiskPartitionUsageMax:                     newMetricMongodbatlasDiskPartitionUsageMax(mb.config.Metrics.MongodbatlasDiskPartitionUsageMax),
+		metricMongodbatlasDiskPartitionUtilizationAverage:           newMetricMongodbatlasDiskPartitionUtilizationAverage(mb.config.Metrics.MongodbatlasDiskPartitionUtilizationAverage),
+		metricMongodbatlasDiskPartitionUtilizationMax:               newMetricMongodbatlasDiskPartitionUtilizationMax(mb.config.Metrics.MongodbatlasDiskPartitionUtilizationMax),
+		metricMongodbatlasProcessAsserts:                            newMetricMongodbatlasProcessAsserts(mb.config.Metrics.MongodbatlasProcessAsserts),
+		metricMongodbatlasProcessBackgroundFlush:                    newMetricMongodbatlasProcessBackgroundFlush(mb.config.Metrics.MongodbatlasProcessBackgroundFlush),
+		metricMongodbatlasProcessCacheIo:                            newMetricMongodbatlasProcessCacheIo(mb.config.Metrics.MongodbatlasProcessCacheIo),
+		metricMongodbatlasProcessCacheSize:                          newMetricMongodbatlasProcessCacheSize(mb.config.Metrics.MongodbatlasProcessCacheSize),
+		metricMongodbatlasProcessConnections:                        newMetricMongodbatlasProcessConnections(mb.config.Metrics.MongodbatlasProcessConnections),
+		metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage:  newMetricMongodbatlasProcessCPUChildrenNormalizedUsageAverage(mb.config.Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageAverage),
+		metricMongodbatlasProcessCPUChildrenNormalizedUsageMax:      newMetricMongodbatlasProcessCPUChildrenNormalizedUsageMax(mb.config.Metrics.MongodbatlasProcessCPUChildrenNormalizedUsageMax),
+		metricMongodbatlasProcessCPUChildrenUsageAverage:            newMetricMongodbatlasProcessCPUChildrenUsageAverage(mb.config.Metrics.MongodbatlasProcessCPUChildrenUsageAverage),
+		metricMongodbatlasProcessCPUChildrenUsageMax:                newMetricMongodbatlasProcessCPUChildrenUsageMax(mb.config.Metrics.MongodbatlasProcessCPUChildrenUsageMax),
+		metricMongodbatlasProcessCPUNormalizedUsageAverage:          newMetricMongodbatlasProcessCPUNormalizedUsageAverage(mb.config.Metrics.MongodbatlasProcessCPUNormalizedUsageAverage),
+		metricMongodbatlasProcessCPUNormalizedUsageMax:              newMetricMongodbatlasProcessCPUNormalizedUsageMax(mb.config.Metrics.MongodbatlasProcessCPUNormalizedUsageMax),
+		metricMongodbatlasProcessCPUUsageAverage:                    newMetricMongodbatlasProcessCPUUsageAverage(mb.config.Metrics.MongodbatlasProcessCPUUsageAverage),
+		metricMongodbatlasProcessCPUUsageMax:                        newMetricMongodbatlasProcessCPUUsageMax(mb.config.Metrics.MongodbatlasProcessCPUUsageMax),
+		metricMongodbatlasProcessCursors:                            newMetricMongodbatlasProcessCursors(mb.config.Metrics.MongodbatlasProcessCursors),
+		metricMongodbatlasProcessDbDocumentRate:                     newMetricMongodbatlasProcessDbDocumentRate(mb.config.Metrics.MongodbatlasProcessDbDocumentRate),
+		metricMongodbatlasProcessDbOperationsRate:                   newMetricMongodbatlasProcessDbOperationsRate(mb.config.Metrics.MongodbatlasProcessDbOperationsRate),
+		metricMongodbatlasProcessDbOperationsTime:                   newMetricMongodbatlasProcessDbOperationsTime(mb.config.Metrics.MongodbatlasProcessDbOperationsTime),
+		metricMongodbatlasProcessDbQueryExecutorScanned:             newMetricMongodbatlasProcessDbQueryExecutorScanned(mb.config.Metrics.MongodbatlasProcessDbQueryExecutorScanned),
+		metricMongodbatlasProcessDbQueryTargetingScannedPerReturned: newMetricMongodbatlasProcessDbQueryTargetingScannedPerReturned(mb.config.Metrics.MongodbatlasProcessDbQueryTargetingScannedPerReturned),
+		metricMongodbatlasProcessDbStorage:                          newMetricMongodbatlasProcessDbStorage(mb.config.Metrics.MongodbatlasProcessDbStorage),
+		metricMongodbatlasProcessGlobalLock:                         newMetricMongodbatlasProcessGlobalLock(mb.config.Metrics.MongodbatlasProcessGlobalLock),
+		metricMongodbatlasProcessIndexBtreeMissRatio:                newMetricMongodbatlasProcessIndexBtreeMissRatio(mb.config.Metrics.MongodbatlasProcessIndexBtreeMissRatio),
+		metricMongodbatlasProcessIndexCounters:                      newMetricMongodbatlasProcessIndexCounters(mb.config.Metrics.MongodbatlasProcessIndexCounters),
+		metricMongodbatlasProcessJournalingCommits:                  newMetricMongodbatlasProcessJournalingCommits(mb.config.Metrics.MongodbatlasProcessJournalingCommits),
+		metricMongodbatlasProcessJournalingDataFiles:                newMetricMongodbatlasProcessJournalingDataFiles(mb.config.Metrics.MongodbatlasProcessJournalingDataFiles),
+		metricMongodbatlasProcessJournalingWritten:                  newMetricMongodbatlasProcessJournalingWritten(mb.config.Metrics.MongodbatlasProcessJournalingWritten),
+		metricMongodbatlasProcessMemoryUsage:                        newMetricMongodbatlasProcessMemoryUsage(mb.config.Metrics.MongodbatlasProcessMemoryUsage),
+		metricMongodbatlasProcessNetworkIo:                          newMetricMongodbatlasProcessNetworkIo(mb.config.Metrics.MongodbatlasProcessNetworkIo),
+		metricMongodbatlasProcessNetworkRequests:                    newMetricMongodbatlasProcessNetworkRequests(mb.config.Metrics.MongodbatlasProcessNetworkRequests),
+		metricMongodbatlasProcessOplogRate:                          newMetricMongodbatlasProcessOplogRate(mb.config.Metrics.MongodbatlasProcessOplogRate),
+		metricMongodbatlasProcessOplogTime:                          newMetricMongodbatlasProcessOplogTime(mb.config.Metrics.MongodbatlasProcessOplogTime),
+		metricMongodbatlasProcessPageFaults:                         newMetricMongodbatlasProcessPageFaults(mb.config.Metrics.MongodbatlasProcessPageFaults),
+		metricMongodbatlasProcessRestarts:                           newMetricMongodbatlasProcessRestarts(mb.config.Metrics.MongodbatlasProcessRestarts),
+		metricMongodbatlasProcessTickets:                            newMetricMongodbatlasProcessTickets(mb.config.Metrics.MongodbatlasProcessTickets),
+		metricMongodbatlasSystemCPUNormalizedUsageAverage:           newMetricMongodbatlasSystemCPUNormalizedUsageAverage(mb.config.Metrics.MongodbatlasSystemCPUNormalizedUsageAverage),
+		metricMongodbatlasSystemCPUNormalizedUsageMax:               newMetricMongodbatlasSystemCPUNormalizedUsageMax(mb.config.Metrics.MongodbatlasSystemCPUNormalizedUsageMax),
+		metricMongodbatlasSystemCPUUsageAverage:                     newMetricMongodbatlasSystemCPUUsageAverage(mb.config.Metrics.MongodbatlasSystemCPUUsageAverage),
+		metricMongodbatlasSystemCPUUsageMax:                         newMetricMongodbatlasSystemCPUUsageMax(mb.config.Metrics.MongodbatlasSystemCPUUsageMax),
+		metricMongodbatlasSystemFtsCPUNormalizedUsage:               newMetricMongodbatlasSystemFtsCPUNormalizedUsage(mb.config.Metrics.MongodbatlasSystemFtsCPUNormalizedUsage),
+		metricMongodbatlasSystemFtsCPUUsage:                         newMetricMongodbatlasSystemFtsCPUUsage(mb.config.Metrics.MongodbatlasSystemFtsCPUUsage),
+		metricMongodbatlasSystemFtsDiskUsed:                         newMetricMongodbatlasSystemFtsDiskUsed(mb.config.Metrics.MongodbatlasSystemFtsDiskUsed),
+		metricMongodbatlasSystemFtsMemoryUsage:                      newMetricMongodbatlasSystemFtsMemoryUsage(mb.config.Metrics.MongodbatlasSystemFtsMemoryUsage),
+		metricMongodbatlasSystemMemoryUsageAverage:                  newMetricMongodbatlasSystemMemoryUsageAverage(mb.config.Metrics.MongodbatlasSystemMemoryUsageAverage),
+		metricMongodbatlasSystemMemoryUsageMax:                      newMetricMongodbatlasSystemMemoryUsageMax(mb.config.Metrics.MongodbatlasSystemMemoryUsageMax),
+		metricMongodbatlasSystemNetworkIoAverage:                    newMetricMongodbatlasSystemNetworkIoAverage(mb.config.Metrics.MongodbatlasSystemNetworkIoAverage),
+		metricMongodbatlasSystemNetworkIoMax:                        newMetricMongodbatlasSystemNetworkIoMax(mb.config.Metrics.MongodbatlasSystemNetworkIoMax),
+		metricMongodbatlasSystemPagingIoAverage:                     newMetricMongodbatlasSystemPagingIoAverage(mb.config.Metrics.MongodbatlasSystemPagingIoAverage),
+		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(mb.config.Metrics.MongodbatlasSystemPagingIoMax),
+		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(mb.config.Metrics.MongodbatlasSystemPagingUsageAverage),
+		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(mb.config.Metrics.MongodbatlasSystemPagingUsageMax),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -4043,451 +4085,424 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricMongodbatlasDbCounts.emit(sm.Metrics())
+	rmb.metricMongodbatlasDbSize.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionIopsAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionIopsMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionLatencyAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionLatencyMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionSpaceAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionSpaceMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionUtilizationAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasDiskPartitionUtilizationMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessAsserts.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessBackgroundFlush.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCacheIo.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCacheSize.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessConnections.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUChildrenUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUChildrenUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUNormalizedUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUNormalizedUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCPUUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessCursors.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbDocumentRate.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbOperationsRate.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbOperationsTime.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbQueryExecutorScanned.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessDbStorage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessGlobalLock.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessIndexBtreeMissRatio.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessIndexCounters.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessJournalingCommits.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessJournalingDataFiles.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessJournalingWritten.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessMemoryUsage.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessNetworkIo.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessNetworkRequests.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessOplogRate.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessOplogTime.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessPageFaults.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessRestarts.emit(sm.Metrics())
+	rmb.metricMongodbatlasProcessTickets.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemCPUNormalizedUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemCPUNormalizedUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemCPUUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemCPUUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemFtsCPUNormalizedUsage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemFtsCPUUsage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemFtsDiskUsed.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemFtsMemoryUsage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemMemoryUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemMemoryUsageMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemNetworkIoAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemNetworkIoMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemPagingIoAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemPagingIoMax.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemPagingUsageAverage.emit(sm.Metrics())
+	rmb.metricMongodbatlasSystemPagingUsageMax.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/mongodbatlasreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricMongodbatlasDbCounts.emit(ils.Metrics())
-	mb.metricMongodbatlasDbSize.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionIopsAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionIopsMax.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionLatencyAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionLatencyMax.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionSpaceAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionSpaceMax.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionUtilizationAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasDiskPartitionUtilizationMax.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessAsserts.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessBackgroundFlush.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCacheIo.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCacheSize.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessConnections.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUChildrenUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUChildrenUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUNormalizedUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCPUUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessCursors.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbDocumentRate.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbOperationsRate.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbOperationsTime.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbQueryExecutorScanned.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessDbStorage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessGlobalLock.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessIndexBtreeMissRatio.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessIndexCounters.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessJournalingCommits.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessJournalingDataFiles.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessJournalingWritten.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessMemoryUsage.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessNetworkIo.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessNetworkRequests.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessOplogRate.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessOplogTime.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessPageFaults.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessRestarts.emit(ils.Metrics())
-	mb.metricMongodbatlasProcessTickets.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemCPUNormalizedUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemCPUUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemCPUUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemFtsCPUUsage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemFtsDiskUsed.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemFtsMemoryUsage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemMemoryUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemMemoryUsageMax.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemNetworkIoAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemNetworkIoMax.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemPagingIoAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemPagingIoMax.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemPagingUsageAverage.emit(ils.Metrics())
-	mb.metricMongodbatlasSystemPagingUsageMax.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/mongodbatlasreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordMongodbatlasDbCountsDataPoint adds a data point to mongodbatlas.db.counts metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDbCountsDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
-	mb.metricMongodbatlasDbCounts.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDbCountsDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
+	rmb.metricMongodbatlasDbCounts.recordDataPoint(rmb.startTime, ts, val, objectTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasDbSizeDataPoint adds a data point to mongodbatlas.db.size metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDbSizeDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
-	mb.metricMongodbatlasDbSize.recordDataPoint(mb.startTime, ts, val, objectTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDbSizeDataPoint(ts pcommon.Timestamp, val float64, objectTypeAttributeValue AttributeObjectType) {
+	rmb.metricMongodbatlasDbSize.recordDataPoint(rmb.startTime, ts, val, objectTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionIopsAverageDataPoint adds a data point to mongodbatlas.disk.partition.iops.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricMongodbatlasDiskPartitionIopsAverage.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionIopsMaxDataPoint adds a data point to mongodbatlas.disk.partition.iops.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricMongodbatlasDiskPartitionIopsMax.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionLatencyAverageDataPoint adds a data point to mongodbatlas.disk.partition.latency.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricMongodbatlasDiskPartitionLatencyAverage.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionLatencyMaxDataPoint adds a data point to mongodbatlas.disk.partition.latency.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts pcommon.Timestamp, val float64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricMongodbatlasDiskPartitionLatencyMax.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionSpaceAverageDataPoint adds a data point to mongodbatlas.disk.partition.space.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	rmb.metricMongodbatlasDiskPartitionSpaceAverage.recordDataPoint(rmb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionSpaceMaxDataPoint adds a data point to mongodbatlas.disk.partition.space.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	rmb.metricMongodbatlasDiskPartitionSpaceMax.recordDataPoint(rmb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUsageAverageDataPoint adds a data point to mongodbatlas.disk.partition.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	rmb.metricMongodbatlasDiskPartitionUsageAverage.recordDataPoint(rmb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUsageMaxDataPoint adds a data point to mongodbatlas.disk.partition.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
-	mb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(mb.startTime, ts, val, diskStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts pcommon.Timestamp, val float64, diskStatusAttributeValue AttributeDiskStatus) {
+	rmb.metricMongodbatlasDiskPartitionUsageMax.recordDataPoint(rmb.startTime, ts, val, diskStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint adds a data point to mongodbatlas.disk.partition.utilization.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasDiskPartitionUtilizationAverage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint adds a data point to mongodbatlas.disk.partition.utilization.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasDiskPartitionUtilizationMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessAssertsDataPoint adds a data point to mongodbatlas.process.asserts metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessAssertsDataPoint(ts pcommon.Timestamp, val float64, assertTypeAttributeValue AttributeAssertType) {
-	mb.metricMongodbatlasProcessAsserts.recordDataPoint(mb.startTime, ts, val, assertTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessAssertsDataPoint(ts pcommon.Timestamp, val float64, assertTypeAttributeValue AttributeAssertType) {
+	rmb.metricMongodbatlasProcessAsserts.recordDataPoint(rmb.startTime, ts, val, assertTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessBackgroundFlushDataPoint adds a data point to mongodbatlas.process.background_flush metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessBackgroundFlushDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessBackgroundFlush.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessBackgroundFlushDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessBackgroundFlush.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessCacheIoDataPoint adds a data point to mongodbatlas.process.cache.io metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheIoDataPoint(ts pcommon.Timestamp, val float64, cacheDirectionAttributeValue AttributeCacheDirection) {
-	mb.metricMongodbatlasProcessCacheIo.recordDataPoint(mb.startTime, ts, val, cacheDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCacheIoDataPoint(ts pcommon.Timestamp, val float64, cacheDirectionAttributeValue AttributeCacheDirection) {
+	rmb.metricMongodbatlasProcessCacheIo.recordDataPoint(rmb.startTime, ts, val, cacheDirectionAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCacheSizeDataPoint adds a data point to mongodbatlas.process.cache.size metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCacheSizeDataPoint(ts pcommon.Timestamp, val float64, cacheStatusAttributeValue AttributeCacheStatus) {
-	mb.metricMongodbatlasProcessCacheSize.recordDataPoint(mb.startTime, ts, val, cacheStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCacheSizeDataPoint(ts pcommon.Timestamp, val float64, cacheStatusAttributeValue AttributeCacheStatus) {
+	rmb.metricMongodbatlasProcessCacheSize.recordDataPoint(rmb.startTime, ts, val, cacheStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessConnectionsDataPoint adds a data point to mongodbatlas.process.connections metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessConnectionsDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessConnections.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessConnectionsDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessConnections.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUChildrenNormalizedUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUChildrenNormalizedUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUChildrenUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.children.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUChildrenUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUNormalizedUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUNormalizedUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUUsageAverageDataPoint adds a data point to mongodbatlas.process.cpu.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCPUUsageMaxDataPoint adds a data point to mongodbatlas.process.cpu.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasProcessCPUUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessCursorsDataPoint adds a data point to mongodbatlas.process.cursors metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessCursorsDataPoint(ts pcommon.Timestamp, val float64, cursorStateAttributeValue AttributeCursorState) {
-	mb.metricMongodbatlasProcessCursors.recordDataPoint(mb.startTime, ts, val, cursorStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessCursorsDataPoint(ts pcommon.Timestamp, val float64, cursorStateAttributeValue AttributeCursorState) {
+	rmb.metricMongodbatlasProcessCursors.recordDataPoint(rmb.startTime, ts, val, cursorStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbDocumentRateDataPoint adds a data point to mongodbatlas.process.db.document.rate metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbDocumentRateDataPoint(ts pcommon.Timestamp, val float64, documentStatusAttributeValue AttributeDocumentStatus) {
-	mb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(mb.startTime, ts, val, documentStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbDocumentRateDataPoint(ts pcommon.Timestamp, val float64, documentStatusAttributeValue AttributeDocumentStatus) {
+	rmb.metricMongodbatlasProcessDbDocumentRate.recordDataPoint(rmb.startTime, ts, val, documentStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbOperationsRateDataPoint adds a data point to mongodbatlas.process.db.operations.rate metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsRateDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation, clusterRoleAttributeValue AttributeClusterRole) {
-	mb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String(), clusterRoleAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbOperationsRateDataPoint(ts pcommon.Timestamp, val float64, operationAttributeValue AttributeOperation, clusterRoleAttributeValue AttributeClusterRole) {
+	rmb.metricMongodbatlasProcessDbOperationsRate.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String(), clusterRoleAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbOperationsTimeDataPoint adds a data point to mongodbatlas.process.db.operations.time metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts pcommon.Timestamp, val float64, executionTypeAttributeValue AttributeExecutionType) {
-	mb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(mb.startTime, ts, val, executionTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts pcommon.Timestamp, val float64, executionTypeAttributeValue AttributeExecutionType) {
+	rmb.metricMongodbatlasProcessDbOperationsTime.recordDataPoint(rmb.startTime, ts, val, executionTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint adds a data point to mongodbatlas.process.db.query_executor.scanned metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
-	mb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
+	rmb.metricMongodbatlasProcessDbQueryExecutorScanned.recordDataPoint(rmb.startTime, ts, val, scannedTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint adds a data point to mongodbatlas.process.db.query_targeting.scanned_per_returned metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
-	mb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(mb.startTime, ts, val, scannedTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts pcommon.Timestamp, val float64, scannedTypeAttributeValue AttributeScannedType) {
+	rmb.metricMongodbatlasProcessDbQueryTargetingScannedPerReturned.recordDataPoint(rmb.startTime, ts, val, scannedTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessDbStorageDataPoint adds a data point to mongodbatlas.process.db.storage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue AttributeStorageStatus) {
-	mb.metricMongodbatlasProcessDbStorage.recordDataPoint(mb.startTime, ts, val, storageStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessDbStorageDataPoint(ts pcommon.Timestamp, val float64, storageStatusAttributeValue AttributeStorageStatus) {
+	rmb.metricMongodbatlasProcessDbStorage.recordDataPoint(rmb.startTime, ts, val, storageStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessGlobalLockDataPoint adds a data point to mongodbatlas.process.global_lock metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessGlobalLockDataPoint(ts pcommon.Timestamp, val float64, globalLockStateAttributeValue AttributeGlobalLockState) {
-	mb.metricMongodbatlasProcessGlobalLock.recordDataPoint(mb.startTime, ts, val, globalLockStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessGlobalLockDataPoint(ts pcommon.Timestamp, val float64, globalLockStateAttributeValue AttributeGlobalLockState) {
+	rmb.metricMongodbatlasProcessGlobalLock.recordDataPoint(rmb.startTime, ts, val, globalLockStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint adds a data point to mongodbatlas.process.index.btree_miss_ratio metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessIndexBtreeMissRatio.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessIndexBtreeMissRatio.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessIndexCountersDataPoint adds a data point to mongodbatlas.process.index.counters metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessIndexCountersDataPoint(ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue AttributeBtreeCounterType) {
-	mb.metricMongodbatlasProcessIndexCounters.recordDataPoint(mb.startTime, ts, val, btreeCounterTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessIndexCountersDataPoint(ts pcommon.Timestamp, val float64, btreeCounterTypeAttributeValue AttributeBtreeCounterType) {
+	rmb.metricMongodbatlasProcessIndexCounters.recordDataPoint(rmb.startTime, ts, val, btreeCounterTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessJournalingCommitsDataPoint adds a data point to mongodbatlas.process.journaling.commits metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingCommitsDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessJournalingCommits.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessJournalingCommitsDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessJournalingCommits.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessJournalingDataFilesDataPoint adds a data point to mongodbatlas.process.journaling.data_files metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessJournalingDataFiles.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessJournalingDataFiles.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessJournalingWrittenDataPoint adds a data point to mongodbatlas.process.journaling.written metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessJournalingWrittenDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessJournalingWritten.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessJournalingWrittenDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessJournalingWritten.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessMemoryUsageDataPoint adds a data point to mongodbatlas.process.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	rmb.metricMongodbatlasProcessMemoryUsage.recordDataPoint(rmb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessNetworkIoDataPoint adds a data point to mongodbatlas.process.network.io metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkIoDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricMongodbatlasProcessNetworkIo.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessNetworkIoDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	rmb.metricMongodbatlasProcessNetworkIo.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessNetworkRequestsDataPoint adds a data point to mongodbatlas.process.network.requests metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessNetworkRequestsDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessNetworkRequests.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessNetworkRequestsDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessNetworkRequests.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessOplogRateDataPoint adds a data point to mongodbatlas.process.oplog.rate metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessOplogRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessOplogRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessOplogRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessOplogTimeDataPoint adds a data point to mongodbatlas.process.oplog.time metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessOplogTimeDataPoint(ts pcommon.Timestamp, val float64, oplogTypeAttributeValue AttributeOplogType) {
-	mb.metricMongodbatlasProcessOplogTime.recordDataPoint(mb.startTime, ts, val, oplogTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessOplogTimeDataPoint(ts pcommon.Timestamp, val float64, oplogTypeAttributeValue AttributeOplogType) {
+	rmb.metricMongodbatlasProcessOplogTime.recordDataPoint(rmb.startTime, ts, val, oplogTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessPageFaultsDataPoint adds a data point to mongodbatlas.process.page_faults metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessPageFaultsDataPoint(ts pcommon.Timestamp, val float64, memoryIssueTypeAttributeValue AttributeMemoryIssueType) {
-	mb.metricMongodbatlasProcessPageFaults.recordDataPoint(mb.startTime, ts, val, memoryIssueTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessPageFaultsDataPoint(ts pcommon.Timestamp, val float64, memoryIssueTypeAttributeValue AttributeMemoryIssueType) {
+	rmb.metricMongodbatlasProcessPageFaults.recordDataPoint(rmb.startTime, ts, val, memoryIssueTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasProcessRestartsDataPoint adds a data point to mongodbatlas.process.restarts metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessRestartsDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasProcessRestarts.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessRestartsDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasProcessRestarts.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasProcessTicketsDataPoint adds a data point to mongodbatlas.process.tickets metric.
-func (mb *MetricsBuilder) RecordMongodbatlasProcessTicketsDataPoint(ts pcommon.Timestamp, val float64, ticketTypeAttributeValue AttributeTicketType) {
-	mb.metricMongodbatlasProcessTickets.recordDataPoint(mb.startTime, ts, val, ticketTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasProcessTicketsDataPoint(ts pcommon.Timestamp, val float64, ticketTypeAttributeValue AttributeTicketType) {
+	rmb.metricMongodbatlasProcessTickets.recordDataPoint(rmb.startTime, ts, val, ticketTypeAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemCPUNormalizedUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.normalized.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemCPUNormalizedUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUUsageAverageDataPoint adds a data point to mongodbatlas.system.cpu.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemCPUUsageAverage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemCPUUsageMaxDataPoint adds a data point to mongodbatlas.system.cpu.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemCPUUsageMax.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.normalized.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemFtsCPUNormalizedUsage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsCPUUsageDataPoint adds a data point to mongodbatlas.system.fts.cpu.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
-	mb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(mb.startTime, ts, val, cpuStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts pcommon.Timestamp, val float64, cpuStateAttributeValue AttributeCPUState) {
+	rmb.metricMongodbatlasSystemFtsCPUUsage.recordDataPoint(rmb.startTime, ts, val, cpuStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemFtsDiskUsedDataPoint adds a data point to mongodbatlas.system.fts.disk.used metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricMongodbatlasSystemFtsDiskUsed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricMongodbatlasSystemFtsDiskUsed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbatlasSystemFtsMemoryUsageDataPoint adds a data point to mongodbatlas.system.fts.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	rmb.metricMongodbatlasSystemFtsMemoryUsage.recordDataPoint(rmb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemMemoryUsageAverageDataPoint adds a data point to mongodbatlas.system.memory.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
-	mb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
+	rmb.metricMongodbatlasSystemMemoryUsageAverage.recordDataPoint(rmb.startTime, ts, val, memoryStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemMemoryUsageMaxDataPoint adds a data point to mongodbatlas.system.memory.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
-	mb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStatusAttributeValue AttributeMemoryStatus) {
+	rmb.metricMongodbatlasSystemMemoryUsageMax.recordDataPoint(rmb.startTime, ts, val, memoryStatusAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemNetworkIoAverageDataPoint adds a data point to mongodbatlas.system.network.io.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	rmb.metricMongodbatlasSystemNetworkIoAverage.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemNetworkIoMaxDataPoint adds a data point to mongodbatlas.system.network.io.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	rmb.metricMongodbatlasSystemNetworkIoMax.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingIoAverageDataPoint adds a data point to mongodbatlas.system.paging.io.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemPagingIoAverageDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	rmb.metricMongodbatlasSystemPagingIoAverage.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingIoMaxDataPoint adds a data point to mongodbatlas.system.paging.io.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
-	mb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemPagingIoMaxDataPoint(ts pcommon.Timestamp, val float64, directionAttributeValue AttributeDirection) {
+	rmb.metricMongodbatlasSystemPagingIoMax.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingUsageAverageDataPoint adds a data point to mongodbatlas.system.paging.usage.average metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	rmb.metricMongodbatlasSystemPagingUsageAverage.recordDataPoint(rmb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
 // RecordMongodbatlasSystemPagingUsageMaxDataPoint adds a data point to mongodbatlas.system.paging.usage.max metric.
-func (mb *MetricsBuilder) RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
-	mb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(mb.startTime, ts, val, memoryStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts pcommon.Timestamp, val float64, memoryStateAttributeValue AttributeMemoryState) {
+	rmb.metricMongodbatlasSystemPagingUsageMax.recordDataPoint(rmb.startTime, ts, val, memoryStateAttributeValue.String())
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

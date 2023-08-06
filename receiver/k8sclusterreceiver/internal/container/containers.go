@@ -30,44 +30,10 @@ const (
 // RecordSpecMetrics metricizes values from the container spec.
 // This includes values like resource requests and limits.
 func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev1.Container, pod *corev1.Pod, ts pcommon.Timestamp) {
-	for k, r := range c.Resources.Requests {
-		//exhaustive:ignore
-		switch k {
-		case corev1.ResourceCPU:
-			mb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0)
-		case corev1.ResourceMemory:
-			mb.RecordK8sContainerMemoryRequestDataPoint(ts, r.Value())
-		case corev1.ResourceStorage:
-			mb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value())
-		case corev1.ResourceEphemeralStorage:
-			mb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
-		default:
-			logger.Debug("unsupported request type", zap.Any("type", k))
-		}
-	}
-	for k, l := range c.Resources.Limits {
-		//exhaustive:ignore
-		switch k {
-		case corev1.ResourceCPU:
-			mb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0)
-		case corev1.ResourceMemory:
-			mb.RecordK8sContainerMemoryLimitDataPoint(ts, l.Value())
-		case corev1.ResourceStorage:
-			mb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value())
-		case corev1.ResourceEphemeralStorage:
-			mb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
-		default:
-			logger.Debug("unsupported request type", zap.Any("type", k))
-		}
-	}
-	var containerID string
-	var imageStr string
+	var containerStatus corev1.ContainerStatus
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.Name == c.Name {
-			containerID = cs.ContainerID
-			imageStr = cs.Image
-			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
-			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
+			containerStatus = cs
 			break
 		}
 	}
@@ -78,16 +44,51 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetOpencensusResourcetype("container")
-	rb.SetContainerID(utils.StripContainerID(containerID))
 	rb.SetK8sContainerName(c.Name)
-	image, err := docker.ParseImageName(imageStr)
+	rb.SetContainerID(utils.StripContainerID(containerStatus.ContainerID))
+	image, err := docker.ParseImageName(containerStatus.Image)
 	if err != nil {
-		docker.LogParseError(err, imageStr, logger)
+		docker.LogParseError(err, containerStatus.Image, logger)
 	} else {
 		rb.SetContainerImageName(image.Repository)
 		rb.SetContainerImageTag(image.Tag)
 	}
-	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+
+	for k, r := range c.Resources.Requests {
+		//exhaustive:ignore
+		switch k {
+		case corev1.ResourceCPU:
+			rmb.RecordK8sContainerCPURequestDataPoint(ts, float64(r.MilliValue())/1000.0)
+		case corev1.ResourceMemory:
+			rmb.RecordK8sContainerMemoryRequestDataPoint(ts, r.Value())
+		case corev1.ResourceStorage:
+			rmb.RecordK8sContainerStorageRequestDataPoint(ts, r.Value())
+		case corev1.ResourceEphemeralStorage:
+			rmb.RecordK8sContainerEphemeralstorageRequestDataPoint(ts, r.Value())
+		default:
+			logger.Debug("unsupported request type", zap.Any("type", k))
+		}
+	}
+	for k, l := range c.Resources.Limits {
+		//exhaustive:ignore
+		switch k {
+		case corev1.ResourceCPU:
+			rmb.RecordK8sContainerCPULimitDataPoint(ts, float64(l.MilliValue())/1000.0)
+		case corev1.ResourceMemory:
+			rmb.RecordK8sContainerMemoryLimitDataPoint(ts, l.Value())
+		case corev1.ResourceStorage:
+			rmb.RecordK8sContainerStorageLimitDataPoint(ts, l.Value())
+		case corev1.ResourceEphemeralStorage:
+			rmb.RecordK8sContainerEphemeralstorageLimitDataPoint(ts, l.Value())
+		default:
+			logger.Debug("unsupported request type", zap.Any("type", k))
+		}
+	}
+	if containerStatus.Name != "" {
+		rmb.RecordK8sContainerRestartsDataPoint(ts, int64(containerStatus.RestartCount))
+		rmb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(containerStatus.Ready))
+	}
 }
 
 func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {

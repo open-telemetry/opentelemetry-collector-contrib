@@ -127,7 +127,8 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 		p.collectIndexes(ctx, now, dbClient, database, &errs)
 	}
 
-	p.mb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
+	rmb := p.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordPostgresqlDatabaseCountDataPoint(now, int64(len(databases)))
 	p.collectBGWriterStats(ctx, now, listClient, &errs)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
@@ -155,20 +156,20 @@ func (p *postgreSQLScraper) retrieveDBMetrics(
 
 func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *dbRetrieval, numTables int64) {
 	dbName := databaseName(db)
-	p.mb.RecordPostgresqlTableCountDataPoint(now, numTables)
-	if activeConnections, ok := r.activityMap[dbName]; ok {
-		p.mb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
-	}
-	if size, ok := r.dbSizeMap[dbName]; ok {
-		p.mb.RecordPostgresqlDbSizeDataPointWithoutDatabase(now, size)
-	}
-	if stats, ok := r.dbStats[dbName]; ok {
-		p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
-		p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
-	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)
-	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := p.mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordPostgresqlTableCountDataPoint(now, numTables)
+	if activeConnections, ok := r.activityMap[dbName]; ok {
+		rmb.RecordPostgresqlBackendsDataPointWithoutDatabase(now, activeConnections)
+	}
+	if size, ok := r.dbSizeMap[dbName]; ok {
+		rmb.RecordPostgresqlDbSizeDataPointWithoutDatabase(now, size)
+	}
+	if stats, ok := r.dbStats[dbName]; ok {
+		rmb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
+		rmb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
+	}
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
@@ -183,30 +184,40 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 	}
 
 	for tableKey, tm := range tableMetrics {
-		p.mb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.dead, metadata.AttributeStateDead)
-		p.mb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.live, metadata.AttributeStateLive)
-		p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.inserts, metadata.AttributeOperationIns)
-		p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.del, metadata.AttributeOperationDel)
-		p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.upd, metadata.AttributeOperationUpd)
-		p.mb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
-		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
-		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
-
-		br, ok := blockReads[tableKey]
-		if ok {
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapRead, metadata.AttributeSourceHeapRead)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapHit, metadata.AttributeSourceHeapHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead, metadata.AttributeSourceIdxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit, metadata.AttributeSourceIdxHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastRead)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
-		}
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(db)
 		rb.SetPostgresqlTableName(tm.table)
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		rmb := p.mb.ResourceMetricsBuilder(rb.Emit())
+
+		rmb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.dead, metadata.AttributeStateDead)
+		rmb.RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(now, tm.live, metadata.AttributeStateLive)
+		rmb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.inserts, metadata.AttributeOperationIns)
+		rmb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.del, metadata.AttributeOperationDel)
+		rmb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.upd, metadata.AttributeOperationUpd)
+		rmb.RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(now, tm.hotUpd,
+			metadata.AttributeOperationHotUpd)
+		rmb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
+		rmb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
+
+		br, ok := blockReads[tableKey]
+		if ok {
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapRead,
+				metadata.AttributeSourceHeapRead)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.heapHit,
+				metadata.AttributeSourceHeapHit)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead,
+				metadata.AttributeSourceIdxRead)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit,
+				metadata.AttributeSourceIdxHit)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit,
+				metadata.AttributeSourceToastHit)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead,
+				metadata.AttributeSourceToastRead)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead,
+				metadata.AttributeSourceTidxRead)
+			rmb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit,
+				metadata.AttributeSourceTidxHit)
+		}
 	}
 	return int64(len(tableMetrics))
 }
@@ -225,13 +236,13 @@ func (p *postgreSQLScraper) collectIndexes(
 	}
 
 	for _, stat := range idxStats {
-		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
-		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
 		rb.SetPostgresqlTableName(stat.table)
 		rb.SetPostgresqlIndexName(stat.index)
-		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		rmb := p.mb.ResourceMetricsBuilder(rb.Emit())
+		rmb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
+		rmb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
 	}
 }
 
@@ -247,20 +258,28 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 		return
 	}
 
-	p.mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(now, bgStats.buffersAllocated)
+	rmb := p.mb.ResourceMetricsBuilder(pcommon.NewResource())
 
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bgWrites, metadata.AttributeBgBufferSourceBgwriter)
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferBackendWrites, metadata.AttributeBgBufferSourceBackend)
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferCheckpoints, metadata.AttributeBgBufferSourceCheckpoints)
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferFsyncWrites, metadata.AttributeBgBufferSourceBackendFsync)
+	rmb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(now, bgStats.buffersAllocated)
 
-	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsReq, metadata.AttributeBgCheckpointTypeRequested)
-	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsScheduled, metadata.AttributeBgCheckpointTypeScheduled)
+	rmb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bgWrites, metadata.AttributeBgBufferSourceBgwriter)
+	rmb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferBackendWrites,
+		metadata.AttributeBgBufferSourceBackend)
+	rmb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferCheckpoints,
+		metadata.AttributeBgBufferSourceCheckpoints)
+	rmb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferFsyncWrites,
+		metadata.AttributeBgBufferSourceBackendFsync)
 
-	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointSyncTime, metadata.AttributeBgDurationTypeSync)
-	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
+	rmb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsReq,
+		metadata.AttributeBgCheckpointTypeRequested)
+	rmb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsScheduled,
+		metadata.AttributeBgCheckpointTypeScheduled)
 
-	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
+	rmb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointSyncTime, metadata.AttributeBgDurationTypeSync)
+	rmb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime,
+		metadata.AttributeBgDurationTypeWrite)
+
+	rmb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
 }
 
 func (p *postgreSQLScraper) collectMaxConnections(
@@ -274,7 +293,8 @@ func (p *postgreSQLScraper) collectMaxConnections(
 		errs.addPartial(err)
 		return
 	}
-	p.mb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
+	rmb := p.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordPostgresqlConnectionMaxDataPoint(now, mc)
 }
 
 func (p *postgreSQLScraper) collectReplicationStats(
@@ -288,18 +308,20 @@ func (p *postgreSQLScraper) collectReplicationStats(
 		errs.addPartial(err)
 		return
 	}
+	rmb := p.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, rs := range rss {
 		if rs.pendingBytes >= 0 {
-			p.mb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
+			rmb.RecordPostgresqlReplicationDataDelayDataPoint(now, rs.pendingBytes, rs.clientAddr)
 		}
 		if rs.writeLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
+			rmb.RecordPostgresqlWalLagDataPoint(now, rs.writeLag, metadata.AttributeWalOperationLagWrite, rs.clientAddr)
 		}
 		if rs.replayLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay, rs.clientAddr)
+			rmb.RecordPostgresqlWalLagDataPoint(now, rs.replayLag, metadata.AttributeWalOperationLagReplay,
+				rs.clientAddr)
 		}
 		if rs.flushLag >= 0 {
-			p.mb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
+			rmb.RecordPostgresqlWalLagDataPoint(now, rs.flushLag, metadata.AttributeWalOperationLagFlush, rs.clientAddr)
 		}
 	}
 }
@@ -319,7 +341,8 @@ func (p *postgreSQLScraper) collectWalAge(
 		errs.addPartial(fmt.Errorf("unable to determine latest WAL age: %w", err))
 		return
 	}
-	p.mb.RecordPostgresqlWalAgeDataPoint(now, walAge)
+	rmb := p.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordPostgresqlWalAgeDataPoint(now, walAge)
 }
 
 func (p *postgreSQLScraper) retrieveDatabaseStats(

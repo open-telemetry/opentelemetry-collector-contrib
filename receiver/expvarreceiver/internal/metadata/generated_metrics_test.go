@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,108 +59,107 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsBuckHashSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsFreesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsGcCPUFractionDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsGcSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsGcSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapAllocDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapIdleDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapInuseDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapObjectsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapReleasedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsHeapSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsHeapSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsLastPauseDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsLastPauseDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsLookupsDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsLookupsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsMallocsDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsMallocsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsMcacheInuseDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsMcacheSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsMspanInuseDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsMspanSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsMspanSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsNextGcDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsNextGcDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsNumForcedGcDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsNumGcDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsNumGcDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsOtherSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsOtherSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsPauseTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsStackInuseDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsStackInuseDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsStackSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsStackSysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsSysDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsSysDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts, 1)
+			rmb.RecordProcessRuntimeMemstatsTotalAllocDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

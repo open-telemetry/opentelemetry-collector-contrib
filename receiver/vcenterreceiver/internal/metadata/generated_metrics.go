@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeDiskDirection specifies the a value disk_direction attribute.
@@ -2135,14 +2137,25 @@ func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsag
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                MetricsBuilderConfig // config of the metrics builder.
-	startTime                             pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                       int                  // maximum observed number of metrics per resource.
-	metricsBuffer                         pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                             component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                             component.BuildInfo
+	startTime                             pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                       int               // maximum observed number of metrics per resource.
+	resource                              pcommon.Resource
+	missedEmits                           int
 	metricVcenterClusterCPUEffective      metricVcenterClusterCPUEffective
 	metricVcenterClusterCPULimit          metricVcenterClusterCPULimit
 	metricVcenterClusterHostCount         metricVcenterClusterHostCount
@@ -2196,54 +2209,83 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                mbc,
-		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                         pmetric.NewMetrics(),
-		buildInfo:                             settings.BuildInfo,
-		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
-		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
-		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
-		metricVcenterClusterMemoryEffective:   newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
-		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
-		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(mbc.Metrics.VcenterClusterMemoryUsed),
-		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
-		metricVcenterDatastoreDiskUsage:       newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
-		metricVcenterDatastoreDiskUtilization: newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
-		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
-		metricVcenterHostCPUUtilization:       newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
-		metricVcenterHostDiskLatencyAvg:       newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
-		metricVcenterHostDiskLatencyMax:       newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
-		metricVcenterHostDiskThroughput:       newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
-		metricVcenterHostMemoryUsage:          newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
-		metricVcenterHostMemoryUtilization:    newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
-		metricVcenterHostNetworkPacketCount:   newMetricVcenterHostNetworkPacketCount(mbc.Metrics.VcenterHostNetworkPacketCount),
-		metricVcenterHostNetworkPacketErrors:  newMetricVcenterHostNetworkPacketErrors(mbc.Metrics.VcenterHostNetworkPacketErrors),
-		metricVcenterHostNetworkThroughput:    newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
-		metricVcenterHostNetworkUsage:         newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
-		metricVcenterResourcePoolCPUShares:    newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
-		metricVcenterResourcePoolCPUUsage:     newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
-		metricVcenterResourcePoolMemoryShares: newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
-		metricVcenterResourcePoolMemoryUsage:  newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
-		metricVcenterVMCPUUsage:               newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
-		metricVcenterVMCPUUtilization:         newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
-		metricVcenterVMDiskLatencyAvg:         newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
-		metricVcenterVMDiskLatencyMax:         newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
-		metricVcenterVMDiskThroughput:         newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
-		metricVcenterVMDiskUsage:              newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
-		metricVcenterVMDiskUtilization:        newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
-		metricVcenterVMMemoryBallooned:        newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
-		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
-		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
-		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
-		metricVcenterVMMemoryUtilization:      newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
-		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
-		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
-		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                             mb.startTime,
+		buildInfo:                             mb.buildInfo,
+		resource:                              res,
+		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(mb.config.Metrics.VcenterClusterCPUEffective),
+		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(mb.config.Metrics.VcenterClusterCPULimit),
+		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(mb.config.Metrics.VcenterClusterHostCount),
+		metricVcenterClusterMemoryEffective:   newMetricVcenterClusterMemoryEffective(mb.config.Metrics.VcenterClusterMemoryEffective),
+		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(mb.config.Metrics.VcenterClusterMemoryLimit),
+		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(mb.config.Metrics.VcenterClusterMemoryUsed),
+		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(mb.config.Metrics.VcenterClusterVMCount),
+		metricVcenterDatastoreDiskUsage:       newMetricVcenterDatastoreDiskUsage(mb.config.Metrics.VcenterDatastoreDiskUsage),
+		metricVcenterDatastoreDiskUtilization: newMetricVcenterDatastoreDiskUtilization(mb.config.Metrics.VcenterDatastoreDiskUtilization),
+		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(mb.config.Metrics.VcenterHostCPUUsage),
+		metricVcenterHostCPUUtilization:       newMetricVcenterHostCPUUtilization(mb.config.Metrics.VcenterHostCPUUtilization),
+		metricVcenterHostDiskLatencyAvg:       newMetricVcenterHostDiskLatencyAvg(mb.config.Metrics.VcenterHostDiskLatencyAvg),
+		metricVcenterHostDiskLatencyMax:       newMetricVcenterHostDiskLatencyMax(mb.config.Metrics.VcenterHostDiskLatencyMax),
+		metricVcenterHostDiskThroughput:       newMetricVcenterHostDiskThroughput(mb.config.Metrics.VcenterHostDiskThroughput),
+		metricVcenterHostMemoryUsage:          newMetricVcenterHostMemoryUsage(mb.config.Metrics.VcenterHostMemoryUsage),
+		metricVcenterHostMemoryUtilization:    newMetricVcenterHostMemoryUtilization(mb.config.Metrics.VcenterHostMemoryUtilization),
+		metricVcenterHostNetworkPacketCount:   newMetricVcenterHostNetworkPacketCount(mb.config.Metrics.VcenterHostNetworkPacketCount),
+		metricVcenterHostNetworkPacketErrors:  newMetricVcenterHostNetworkPacketErrors(mb.config.Metrics.VcenterHostNetworkPacketErrors),
+		metricVcenterHostNetworkThroughput:    newMetricVcenterHostNetworkThroughput(mb.config.Metrics.VcenterHostNetworkThroughput),
+		metricVcenterHostNetworkUsage:         newMetricVcenterHostNetworkUsage(mb.config.Metrics.VcenterHostNetworkUsage),
+		metricVcenterResourcePoolCPUShares:    newMetricVcenterResourcePoolCPUShares(mb.config.Metrics.VcenterResourcePoolCPUShares),
+		metricVcenterResourcePoolCPUUsage:     newMetricVcenterResourcePoolCPUUsage(mb.config.Metrics.VcenterResourcePoolCPUUsage),
+		metricVcenterResourcePoolMemoryShares: newMetricVcenterResourcePoolMemoryShares(mb.config.Metrics.VcenterResourcePoolMemoryShares),
+		metricVcenterResourcePoolMemoryUsage:  newMetricVcenterResourcePoolMemoryUsage(mb.config.Metrics.VcenterResourcePoolMemoryUsage),
+		metricVcenterVMCPUUsage:               newMetricVcenterVMCPUUsage(mb.config.Metrics.VcenterVMCPUUsage),
+		metricVcenterVMCPUUtilization:         newMetricVcenterVMCPUUtilization(mb.config.Metrics.VcenterVMCPUUtilization),
+		metricVcenterVMDiskLatencyAvg:         newMetricVcenterVMDiskLatencyAvg(mb.config.Metrics.VcenterVMDiskLatencyAvg),
+		metricVcenterVMDiskLatencyMax:         newMetricVcenterVMDiskLatencyMax(mb.config.Metrics.VcenterVMDiskLatencyMax),
+		metricVcenterVMDiskThroughput:         newMetricVcenterVMDiskThroughput(mb.config.Metrics.VcenterVMDiskThroughput),
+		metricVcenterVMDiskUsage:              newMetricVcenterVMDiskUsage(mb.config.Metrics.VcenterVMDiskUsage),
+		metricVcenterVMDiskUtilization:        newMetricVcenterVMDiskUtilization(mb.config.Metrics.VcenterVMDiskUtilization),
+		metricVcenterVMMemoryBallooned:        newMetricVcenterVMMemoryBallooned(mb.config.Metrics.VcenterVMMemoryBallooned),
+		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(mb.config.Metrics.VcenterVMMemorySwapped),
+		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(mb.config.Metrics.VcenterVMMemorySwappedSsd),
+		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(mb.config.Metrics.VcenterVMMemoryUsage),
+		metricVcenterVMMemoryUtilization:      newMetricVcenterVMMemoryUtilization(mb.config.Metrics.VcenterVMMemoryUtilization),
+		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(mb.config.Metrics.VcenterVMNetworkPacketCount),
+		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(mb.config.Metrics.VcenterVMNetworkThroughput),
+		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(mb.config.Metrics.VcenterVMNetworkUsage),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -2252,313 +2294,286 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricVcenterClusterCPUEffective.emit(sm.Metrics())
+	rmb.metricVcenterClusterCPULimit.emit(sm.Metrics())
+	rmb.metricVcenterClusterHostCount.emit(sm.Metrics())
+	rmb.metricVcenterClusterMemoryEffective.emit(sm.Metrics())
+	rmb.metricVcenterClusterMemoryLimit.emit(sm.Metrics())
+	rmb.metricVcenterClusterMemoryUsed.emit(sm.Metrics())
+	rmb.metricVcenterClusterVMCount.emit(sm.Metrics())
+	rmb.metricVcenterDatastoreDiskUsage.emit(sm.Metrics())
+	rmb.metricVcenterDatastoreDiskUtilization.emit(sm.Metrics())
+	rmb.metricVcenterHostCPUUsage.emit(sm.Metrics())
+	rmb.metricVcenterHostCPUUtilization.emit(sm.Metrics())
+	rmb.metricVcenterHostDiskLatencyAvg.emit(sm.Metrics())
+	rmb.metricVcenterHostDiskLatencyMax.emit(sm.Metrics())
+	rmb.metricVcenterHostDiskThroughput.emit(sm.Metrics())
+	rmb.metricVcenterHostMemoryUsage.emit(sm.Metrics())
+	rmb.metricVcenterHostMemoryUtilization.emit(sm.Metrics())
+	rmb.metricVcenterHostNetworkPacketCount.emit(sm.Metrics())
+	rmb.metricVcenterHostNetworkPacketErrors.emit(sm.Metrics())
+	rmb.metricVcenterHostNetworkThroughput.emit(sm.Metrics())
+	rmb.metricVcenterHostNetworkUsage.emit(sm.Metrics())
+	rmb.metricVcenterResourcePoolCPUShares.emit(sm.Metrics())
+	rmb.metricVcenterResourcePoolCPUUsage.emit(sm.Metrics())
+	rmb.metricVcenterResourcePoolMemoryShares.emit(sm.Metrics())
+	rmb.metricVcenterResourcePoolMemoryUsage.emit(sm.Metrics())
+	rmb.metricVcenterVMCPUUsage.emit(sm.Metrics())
+	rmb.metricVcenterVMCPUUtilization.emit(sm.Metrics())
+	rmb.metricVcenterVMDiskLatencyAvg.emit(sm.Metrics())
+	rmb.metricVcenterVMDiskLatencyMax.emit(sm.Metrics())
+	rmb.metricVcenterVMDiskThroughput.emit(sm.Metrics())
+	rmb.metricVcenterVMDiskUsage.emit(sm.Metrics())
+	rmb.metricVcenterVMDiskUtilization.emit(sm.Metrics())
+	rmb.metricVcenterVMMemoryBallooned.emit(sm.Metrics())
+	rmb.metricVcenterVMMemorySwapped.emit(sm.Metrics())
+	rmb.metricVcenterVMMemorySwappedSsd.emit(sm.Metrics())
+	rmb.metricVcenterVMMemoryUsage.emit(sm.Metrics())
+	rmb.metricVcenterVMMemoryUtilization.emit(sm.Metrics())
+	rmb.metricVcenterVMNetworkPacketCount.emit(sm.Metrics())
+	rmb.metricVcenterVMNetworkThroughput.emit(sm.Metrics())
+	rmb.metricVcenterVMNetworkUsage.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/vcenterreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricVcenterClusterCPUEffective.emit(ils.Metrics())
-	mb.metricVcenterClusterCPULimit.emit(ils.Metrics())
-	mb.metricVcenterClusterHostCount.emit(ils.Metrics())
-	mb.metricVcenterClusterMemoryEffective.emit(ils.Metrics())
-	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
-	mb.metricVcenterClusterMemoryUsed.emit(ils.Metrics())
-	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
-	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
-	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
-	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
-	mb.metricVcenterHostCPUUtilization.emit(ils.Metrics())
-	mb.metricVcenterHostDiskLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterHostDiskLatencyMax.emit(ils.Metrics())
-	mb.metricVcenterHostDiskThroughput.emit(ils.Metrics())
-	mb.metricVcenterHostMemoryUsage.emit(ils.Metrics())
-	mb.metricVcenterHostMemoryUtilization.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkPacketCount.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkPacketErrors.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkThroughput.emit(ils.Metrics())
-	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolCPUUsage.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolMemoryUsage.emit(ils.Metrics())
-	mb.metricVcenterVMCPUUsage.emit(ils.Metrics())
-	mb.metricVcenterVMCPUUtilization.emit(ils.Metrics())
-	mb.metricVcenterVMDiskLatencyAvg.emit(ils.Metrics())
-	mb.metricVcenterVMDiskLatencyMax.emit(ils.Metrics())
-	mb.metricVcenterVMDiskThroughput.emit(ils.Metrics())
-	mb.metricVcenterVMDiskUsage.emit(ils.Metrics())
-	mb.metricVcenterVMDiskUtilization.emit(ils.Metrics())
-	mb.metricVcenterVMMemoryBallooned.emit(ils.Metrics())
-	mb.metricVcenterVMMemorySwapped.emit(ils.Metrics())
-	mb.metricVcenterVMMemorySwappedSsd.emit(ils.Metrics())
-	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
-	mb.metricVcenterVMMemoryUtilization.emit(ils.Metrics())
-	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
-	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
-	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/vcenterreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordVcenterClusterCPUEffectiveDataPoint adds a data point to vcenter.cluster.cpu.effective metric.
-func (mb *MetricsBuilder) RecordVcenterClusterCPUEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterCPUEffective.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterCPUEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterClusterCPUEffective.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterClusterCPULimitDataPoint adds a data point to vcenter.cluster.cpu.limit metric.
-func (mb *MetricsBuilder) RecordVcenterClusterCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterCPULimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterClusterCPULimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterClusterHostCountDataPoint adds a data point to vcenter.cluster.host.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue bool) {
-	mb.metricVcenterClusterHostCount.recordDataPoint(mb.startTime, ts, val, hostEffectiveAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterHostCountDataPoint(ts pcommon.Timestamp, val int64, hostEffectiveAttributeValue bool) {
+	rmb.metricVcenterClusterHostCount.recordDataPoint(rmb.startTime, ts, val, hostEffectiveAttributeValue)
 }
 
 // RecordVcenterClusterMemoryEffectiveDataPoint adds a data point to vcenter.cluster.memory.effective metric.
-func (mb *MetricsBuilder) RecordVcenterClusterMemoryEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterMemoryEffective.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterMemoryEffectiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterClusterMemoryEffective.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterClusterMemoryLimitDataPoint adds a data point to vcenter.cluster.memory.limit metric.
-func (mb *MetricsBuilder) RecordVcenterClusterMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterClusterMemoryLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterClusterMemoryUsedDataPoint adds a data point to vcenter.cluster.memory.used metric.
-func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterMemoryUsed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterClusterMemoryUsed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.
-func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
-	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
+	rmb.metricVcenterClusterVMCount.recordDataPoint(rmb.startTime, ts, val, vmCountPowerStateAttributeValue.String())
 }
 
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.
-func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
-	mb.metricVcenterDatastoreDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterDatastoreDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	rmb.metricVcenterDatastoreDiskUsage.recordDataPoint(rmb.startTime, ts, val, diskStateAttributeValue.String())
 }
 
 // RecordVcenterDatastoreDiskUtilizationDataPoint adds a data point to vcenter.datastore.disk.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterDatastoreDiskUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterDatastoreDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterDatastoreDiskUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostCPUUsageDataPoint adds a data point to vcenter.host.cpu.usage metric.
-func (mb *MetricsBuilder) RecordVcenterHostCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostCPUUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterHostCPUUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostCPUUtilizationDataPoint adds a data point to vcenter.host.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterHostCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterHostCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterHostCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostDiskLatencyAvgDataPoint adds a data point to vcenter.host.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricVcenterHostDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricVcenterHostDiskLatencyAvg.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostDiskLatencyMaxDataPoint adds a data point to vcenter.host.disk.latency.max metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostDiskLatencyMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostDiskLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterHostDiskLatencyMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostDiskThroughputDataPoint adds a data point to vcenter.host.disk.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterHostDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
-	mb.metricVcenterHostDiskThroughput.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection) {
+	rmb.metricVcenterHostDiskThroughput.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostMemoryUsageDataPoint adds a data point to vcenter.host.memory.usage metric.
-func (mb *MetricsBuilder) RecordVcenterHostMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterHostMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostMemoryUtilizationDataPoint adds a data point to vcenter.host.memory.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterHostMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterHostMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterHostMemoryUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterHostNetworkPacketCountDataPoint adds a data point to vcenter.host.network.packet.count metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
-	mb.metricVcenterHostNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	rmb.metricVcenterHostNetworkPacketCount.recordDataPoint(rmb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkPacketErrorsDataPoint adds a data point to vcenter.host.network.packet.errors metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
-	mb.metricVcenterHostNetworkPacketErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	rmb.metricVcenterHostNetworkPacketErrors.recordDataPoint(rmb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkThroughputDataPoint adds a data point to vcenter.host.network.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
-	mb.metricVcenterHostNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	rmb.metricVcenterHostNetworkThroughput.recordDataPoint(rmb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterHostNetworkUsageDataPoint adds a data point to vcenter.host.network.usage metric.
-func (mb *MetricsBuilder) RecordVcenterHostNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterHostNetworkUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterHostNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterHostNetworkUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterResourcePoolCPUSharesDataPoint adds a data point to vcenter.resource_pool.cpu.shares metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolCPUSharesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolCPUShares.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterResourcePoolCPUSharesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterResourcePoolCPUShares.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterResourcePoolCPUUsageDataPoint adds a data point to vcenter.resource_pool.cpu.usage metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolCPUUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterResourcePoolCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterResourcePoolCPUUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterResourcePoolMemorySharesDataPoint adds a data point to vcenter.resource_pool.memory.shares metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySharesDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolMemoryShares.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterResourcePoolMemorySharesDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterResourcePoolMemoryShares.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterResourcePoolMemoryUsageDataPoint adds a data point to vcenter.resource_pool.memory.usage metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterResourcePoolMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMCPUUsageDataPoint adds a data point to vcenter.vm.cpu.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMCPUUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMCPUUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMCPUUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMCPUUtilizationDataPoint adds a data point to vcenter.vm.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterVMCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterVMCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMDiskLatencyAvgDataPoint adds a data point to vcenter.vm.disk.latency.avg metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection, diskTypeAttributeValue AttributeDiskType) {
-	mb.metricVcenterVMDiskLatencyAvg.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String(), diskTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMDiskLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection, diskTypeAttributeValue AttributeDiskType) {
+	rmb.metricVcenterVMDiskLatencyAvg.recordDataPoint(rmb.startTime, ts, val, diskDirectionAttributeValue.String(), diskTypeAttributeValue.String())
 }
 
 // RecordVcenterVMDiskLatencyMaxDataPoint adds a data point to vcenter.vm.disk.latency.max metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMDiskLatencyMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMDiskLatencyMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMDiskLatencyMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMDiskThroughputDataPoint adds a data point to vcenter.vm.disk.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMDiskThroughput.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMDiskThroughput.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMDiskUsageDataPoint adds a data point to vcenter.vm.disk.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
-	mb.metricVcenterVMDiskUsage.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMDiskUsageDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	rmb.metricVcenterVMDiskUsage.recordDataPoint(rmb.startTime, ts, val, diskStateAttributeValue.String())
 }
 
 // RecordVcenterVMDiskUtilizationDataPoint adds a data point to vcenter.vm.disk.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterVMDiskUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMDiskUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterVMDiskUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemoryBalloonedDataPoint adds a data point to vcenter.vm.memory.ballooned metric.
-func (mb *MetricsBuilder) RecordVcenterVMMemoryBalloonedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMMemoryBallooned.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMMemoryBalloonedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMMemoryBallooned.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemorySwappedDataPoint adds a data point to vcenter.vm.memory.swapped metric.
-func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMMemorySwapped.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMMemorySwappedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMMemorySwapped.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemorySwappedSsdDataPoint adds a data point to vcenter.vm.memory.swapped_ssd metric.
-func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedSsdDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMMemorySwappedSsd.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMMemorySwappedSsdDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMMemorySwappedSsd.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemoryUsageDataPoint adds a data point to vcenter.vm.memory.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMMemoryUtilizationDataPoint adds a data point to vcenter.vm.memory.utilization metric.
-func (mb *MetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricVcenterVMMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricVcenterVMMemoryUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
-	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	rmb.metricVcenterVMNetworkPacketCount.recordDataPoint(rmb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMNetworkThroughputDataPoint adds a data point to vcenter.vm.network.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
-	mb.metricVcenterVMNetworkThroughput.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection) {
+	rmb.metricVcenterVMNetworkThroughput.recordDataPoint(rmb.startTime, ts, val, throughputDirectionAttributeValue.String())
 }
 
 // RecordVcenterVMNetworkUsageDataPoint adds a data point to vcenter.vm.network.usage metric.
-func (mb *MetricsBuilder) RecordVcenterVMNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterVMNetworkUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordVcenterVMNetworkUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricVcenterVMNetworkUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

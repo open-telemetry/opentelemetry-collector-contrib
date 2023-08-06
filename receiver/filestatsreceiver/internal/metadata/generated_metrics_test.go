@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetFileName("file.name-val")
+			rb.SetFilePath("file.path-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -55,24 +61,20 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordFileAtimeDataPoint(ts, 1)
+			rmb.RecordFileAtimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
+			rmb.RecordFileCtimeDataPoint(ts, 1, "file.permissions-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFileMtimeDataPoint(ts, 1)
+			rmb.RecordFileMtimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFileSizeDataPoint(ts, 1)
+			rmb.RecordFileSizeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetFileName("file.name-val")
-			rb.SetFilePath("file.path-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -62,16 +62,18 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	errs := &scrapererror.ScrapeErrors{}
 
-	c.recordCouchdbAverageRequestTimeDataPoint(now, stats, errs)
-	c.recordCouchdbHttpdBulkRequestsDataPoint(now, stats, errs)
-	c.recordCouchdbHttpdRequestsDataPoint(now, stats, errs)
-	c.recordCouchdbHttpdResponsesDataPoint(now, stats, errs)
-	c.recordCouchdbHttpdViewsDataPoint(now, stats, errs)
-	c.recordCouchdbDatabaseOpenDataPoint(now, stats, errs)
-	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errs)
-	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
-
 	rb := c.mb.NewResourceBuilder()
 	rb.SetCouchdbNodeName(c.config.Endpoint)
-	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
+	rmb := c.mb.ResourceMetricsBuilder(rb.Emit())
+
+	c.recordCouchdbAverageRequestTimeDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbHttpdBulkRequestsDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbHttpdRequestsDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbHttpdResponsesDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbHttpdViewsDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbDatabaseOpenDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbFileDescriptorOpenDataPoint(now, rmb, stats, errs)
+	c.recordCouchdbDatabaseOperationsDataPoint(now, rmb, stats, errs)
+
+	return c.mb.Emit(), errs.Combine()
 }

@@ -47,14 +47,13 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 			continue
 		}
-		s.mb.RecordFileSizeDataPoint(now, fileinfo.Size())
-		s.mb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
-		collectStats(now, fileinfo, s.mb, s.logger)
-
 		rb := s.mb.NewResourceBuilder()
 		rb.SetFileName(fileinfo.Name())
 		rb.SetFilePath(path)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+		rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+		rmb.RecordFileSizeDataPoint(now, fileinfo.Size())
+		rmb.RecordFileMtimeDataPoint(now, fileinfo.ModTime().Unix())
+		collectStats(now, fileinfo, rmb, s.logger)
 	}
 
 	if len(scrapeErrors) > 0 {

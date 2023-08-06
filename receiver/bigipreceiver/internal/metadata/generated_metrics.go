@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeActiveStatus specifies the a value active.status attribute.
@@ -1514,14 +1516,25 @@ func newMetricBigipVirtualServerRequestCount(cfg MetricConfig) metricBigipVirtua
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                  MetricsBuilderConfig // config of the metrics builder.
-	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                         int                  // maximum observed number of metrics per resource.
-	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                               component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                               component.BuildInfo
+	startTime                               pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                         int               // maximum observed number of metrics per resource.
+	resource                                pcommon.Resource
+	missedEmits                             int
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1563,42 +1576,71 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mbc.Metrics.BigipNodeAvailability),
-		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mbc.Metrics.BigipNodeConnectionCount),
-		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mbc.Metrics.BigipNodeDataTransmitted),
-		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(mbc.Metrics.BigipNodeEnabled),
-		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(mbc.Metrics.BigipNodePacketCount),
-		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(mbc.Metrics.BigipNodeRequestCount),
-		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(mbc.Metrics.BigipNodeSessionCount),
-		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(mbc.Metrics.BigipPoolAvailability),
-		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(mbc.Metrics.BigipPoolConnectionCount),
-		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(mbc.Metrics.BigipPoolDataTransmitted),
-		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(mbc.Metrics.BigipPoolEnabled),
-		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(mbc.Metrics.BigipPoolMemberCount),
-		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(mbc.Metrics.BigipPoolPacketCount),
-		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(mbc.Metrics.BigipPoolRequestCount),
-		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(mbc.Metrics.BigipPoolMemberAvailability),
-		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(mbc.Metrics.BigipPoolMemberConnectionCount),
-		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(mbc.Metrics.BigipPoolMemberDataTransmitted),
-		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(mbc.Metrics.BigipPoolMemberEnabled),
-		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(mbc.Metrics.BigipPoolMemberPacketCount),
-		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(mbc.Metrics.BigipPoolMemberRequestCount),
-		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(mbc.Metrics.BigipPoolMemberSessionCount),
-		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(mbc.Metrics.BigipVirtualServerAvailability),
-		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(mbc.Metrics.BigipVirtualServerConnectionCount),
-		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(mbc.Metrics.BigipVirtualServerDataTransmitted),
-		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mbc.Metrics.BigipVirtualServerEnabled),
-		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mbc.Metrics.BigipVirtualServerPacketCount),
-		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mbc.Metrics.BigipVirtualServerRequestCount),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                               mb.startTime,
+		buildInfo:                               mb.buildInfo,
+		resource:                                res,
+		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mb.config.Metrics.BigipNodeAvailability),
+		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mb.config.Metrics.BigipNodeConnectionCount),
+		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mb.config.Metrics.BigipNodeDataTransmitted),
+		metricBigipNodeEnabled:                  newMetricBigipNodeEnabled(mb.config.Metrics.BigipNodeEnabled),
+		metricBigipNodePacketCount:              newMetricBigipNodePacketCount(mb.config.Metrics.BigipNodePacketCount),
+		metricBigipNodeRequestCount:             newMetricBigipNodeRequestCount(mb.config.Metrics.BigipNodeRequestCount),
+		metricBigipNodeSessionCount:             newMetricBigipNodeSessionCount(mb.config.Metrics.BigipNodeSessionCount),
+		metricBigipPoolAvailability:             newMetricBigipPoolAvailability(mb.config.Metrics.BigipPoolAvailability),
+		metricBigipPoolConnectionCount:          newMetricBigipPoolConnectionCount(mb.config.Metrics.BigipPoolConnectionCount),
+		metricBigipPoolDataTransmitted:          newMetricBigipPoolDataTransmitted(mb.config.Metrics.BigipPoolDataTransmitted),
+		metricBigipPoolEnabled:                  newMetricBigipPoolEnabled(mb.config.Metrics.BigipPoolEnabled),
+		metricBigipPoolMemberCount:              newMetricBigipPoolMemberCount(mb.config.Metrics.BigipPoolMemberCount),
+		metricBigipPoolPacketCount:              newMetricBigipPoolPacketCount(mb.config.Metrics.BigipPoolPacketCount),
+		metricBigipPoolRequestCount:             newMetricBigipPoolRequestCount(mb.config.Metrics.BigipPoolRequestCount),
+		metricBigipPoolMemberAvailability:       newMetricBigipPoolMemberAvailability(mb.config.Metrics.BigipPoolMemberAvailability),
+		metricBigipPoolMemberConnectionCount:    newMetricBigipPoolMemberConnectionCount(mb.config.Metrics.BigipPoolMemberConnectionCount),
+		metricBigipPoolMemberDataTransmitted:    newMetricBigipPoolMemberDataTransmitted(mb.config.Metrics.BigipPoolMemberDataTransmitted),
+		metricBigipPoolMemberEnabled:            newMetricBigipPoolMemberEnabled(mb.config.Metrics.BigipPoolMemberEnabled),
+		metricBigipPoolMemberPacketCount:        newMetricBigipPoolMemberPacketCount(mb.config.Metrics.BigipPoolMemberPacketCount),
+		metricBigipPoolMemberRequestCount:       newMetricBigipPoolMemberRequestCount(mb.config.Metrics.BigipPoolMemberRequestCount),
+		metricBigipPoolMemberSessionCount:       newMetricBigipPoolMemberSessionCount(mb.config.Metrics.BigipPoolMemberSessionCount),
+		metricBigipVirtualServerAvailability:    newMetricBigipVirtualServerAvailability(mb.config.Metrics.BigipVirtualServerAvailability),
+		metricBigipVirtualServerConnectionCount: newMetricBigipVirtualServerConnectionCount(mb.config.Metrics.BigipVirtualServerConnectionCount),
+		metricBigipVirtualServerDataTransmitted: newMetricBigipVirtualServerDataTransmitted(mb.config.Metrics.BigipVirtualServerDataTransmitted),
+		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mb.config.Metrics.BigipVirtualServerEnabled),
+		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mb.config.Metrics.BigipVirtualServerPacketCount),
+		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mb.config.Metrics.BigipVirtualServerRequestCount),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1607,241 +1649,214 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricBigipNodeAvailability.emit(sm.Metrics())
+	rmb.metricBigipNodeConnectionCount.emit(sm.Metrics())
+	rmb.metricBigipNodeDataTransmitted.emit(sm.Metrics())
+	rmb.metricBigipNodeEnabled.emit(sm.Metrics())
+	rmb.metricBigipNodePacketCount.emit(sm.Metrics())
+	rmb.metricBigipNodeRequestCount.emit(sm.Metrics())
+	rmb.metricBigipNodeSessionCount.emit(sm.Metrics())
+	rmb.metricBigipPoolAvailability.emit(sm.Metrics())
+	rmb.metricBigipPoolConnectionCount.emit(sm.Metrics())
+	rmb.metricBigipPoolDataTransmitted.emit(sm.Metrics())
+	rmb.metricBigipPoolEnabled.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberCount.emit(sm.Metrics())
+	rmb.metricBigipPoolPacketCount.emit(sm.Metrics())
+	rmb.metricBigipPoolRequestCount.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberAvailability.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberConnectionCount.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberDataTransmitted.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberEnabled.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberPacketCount.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberRequestCount.emit(sm.Metrics())
+	rmb.metricBigipPoolMemberSessionCount.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerAvailability.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerConnectionCount.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerDataTransmitted.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerEnabled.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerPacketCount.emit(sm.Metrics())
+	rmb.metricBigipVirtualServerRequestCount.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/bigipreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricBigipNodeAvailability.emit(ils.Metrics())
-	mb.metricBigipNodeConnectionCount.emit(ils.Metrics())
-	mb.metricBigipNodeDataTransmitted.emit(ils.Metrics())
-	mb.metricBigipNodeEnabled.emit(ils.Metrics())
-	mb.metricBigipNodePacketCount.emit(ils.Metrics())
-	mb.metricBigipNodeRequestCount.emit(ils.Metrics())
-	mb.metricBigipNodeSessionCount.emit(ils.Metrics())
-	mb.metricBigipPoolAvailability.emit(ils.Metrics())
-	mb.metricBigipPoolConnectionCount.emit(ils.Metrics())
-	mb.metricBigipPoolDataTransmitted.emit(ils.Metrics())
-	mb.metricBigipPoolEnabled.emit(ils.Metrics())
-	mb.metricBigipPoolMemberCount.emit(ils.Metrics())
-	mb.metricBigipPoolPacketCount.emit(ils.Metrics())
-	mb.metricBigipPoolRequestCount.emit(ils.Metrics())
-	mb.metricBigipPoolMemberAvailability.emit(ils.Metrics())
-	mb.metricBigipPoolMemberConnectionCount.emit(ils.Metrics())
-	mb.metricBigipPoolMemberDataTransmitted.emit(ils.Metrics())
-	mb.metricBigipPoolMemberEnabled.emit(ils.Metrics())
-	mb.metricBigipPoolMemberPacketCount.emit(ils.Metrics())
-	mb.metricBigipPoolMemberRequestCount.emit(ils.Metrics())
-	mb.metricBigipPoolMemberSessionCount.emit(ils.Metrics())
-	mb.metricBigipVirtualServerAvailability.emit(ils.Metrics())
-	mb.metricBigipVirtualServerConnectionCount.emit(ils.Metrics())
-	mb.metricBigipVirtualServerDataTransmitted.emit(ils.Metrics())
-	mb.metricBigipVirtualServerEnabled.emit(ils.Metrics())
-	mb.metricBigipVirtualServerPacketCount.emit(ils.Metrics())
-	mb.metricBigipVirtualServerRequestCount.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/bigipreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordBigipNodeAvailabilityDataPoint adds a data point to bigip.node.availability metric.
-func (mb *MetricsBuilder) RecordBigipNodeAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipNodeAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
+	rmb.metricBigipNodeAvailability.recordDataPoint(rmb.startTime, ts, val, availabilityStatusAttributeValue.String())
 }
 
 // RecordBigipNodeConnectionCountDataPoint adds a data point to bigip.node.connection.count metric.
-func (mb *MetricsBuilder) RecordBigipNodeConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipNodeConnectionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipNodeConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipNodeDataTransmittedDataPoint adds a data point to bigip.node.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipNodeDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipNodeDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipNodeDataTransmitted.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipNodeEnabledDataPoint adds a data point to bigip.node.enabled metric.
-func (mb *MetricsBuilder) RecordBigipNodeEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipNodeEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
+	rmb.metricBigipNodeEnabled.recordDataPoint(rmb.startTime, ts, val, enabledStatusAttributeValue.String())
 }
 
 // RecordBigipNodePacketCountDataPoint adds a data point to bigip.node.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipNodePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipNodePacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipNodePacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipNodePacketCount.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipNodeRequestCountDataPoint adds a data point to bigip.node.request.count metric.
-func (mb *MetricsBuilder) RecordBigipNodeRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipNodeRequestCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipNodeRequestCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipNodeSessionCountDataPoint adds a data point to bigip.node.session.count metric.
-func (mb *MetricsBuilder) RecordBigipNodeSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipNodeSessionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipNodeSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipNodeSessionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipPoolAvailabilityDataPoint adds a data point to bigip.pool.availability metric.
-func (mb *MetricsBuilder) RecordBigipPoolAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipPoolAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
+	rmb.metricBigipPoolAvailability.recordDataPoint(rmb.startTime, ts, val, availabilityStatusAttributeValue.String())
 }
 
 // RecordBigipPoolConnectionCountDataPoint adds a data point to bigip.pool.connection.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipPoolConnectionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipPoolConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipPoolDataTransmittedDataPoint adds a data point to bigip.pool.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipPoolDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipPoolDataTransmitted.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipPoolEnabledDataPoint adds a data point to bigip.pool.enabled metric.
-func (mb *MetricsBuilder) RecordBigipPoolEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipPoolEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
+	rmb.metricBigipPoolEnabled.recordDataPoint(rmb.startTime, ts, val, enabledStatusAttributeValue.String())
 }
 
 // RecordBigipPoolMemberCountDataPoint adds a data point to bigip.pool.member.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberCountDataPoint(ts pcommon.Timestamp, val int64, activeStatusAttributeValue AttributeActiveStatus) {
-	mb.metricBigipPoolMemberCount.recordDataPoint(mb.startTime, ts, val, activeStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberCountDataPoint(ts pcommon.Timestamp, val int64, activeStatusAttributeValue AttributeActiveStatus) {
+	rmb.metricBigipPoolMemberCount.recordDataPoint(rmb.startTime, ts, val, activeStatusAttributeValue.String())
 }
 
 // RecordBigipPoolPacketCountDataPoint adds a data point to bigip.pool.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipPoolPacketCount.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipPoolRequestCountDataPoint adds a data point to bigip.pool.request.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipPoolRequestCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipPoolRequestCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipPoolMemberAvailabilityDataPoint adds a data point to bigip.pool_member.availability metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipPoolMemberAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
+	rmb.metricBigipPoolMemberAvailability.recordDataPoint(rmb.startTime, ts, val, availabilityStatusAttributeValue.String())
 }
 
 // RecordBigipPoolMemberConnectionCountDataPoint adds a data point to bigip.pool_member.connection.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipPoolMemberConnectionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipPoolMemberConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipPoolMemberDataTransmittedDataPoint adds a data point to bigip.pool_member.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolMemberDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipPoolMemberDataTransmitted.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipPoolMemberEnabledDataPoint adds a data point to bigip.pool_member.enabled metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipPoolMemberEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
+	rmb.metricBigipPoolMemberEnabled.recordDataPoint(rmb.startTime, ts, val, enabledStatusAttributeValue.String())
 }
 
 // RecordBigipPoolMemberPacketCountDataPoint adds a data point to bigip.pool_member.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipPoolMemberPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipPoolMemberPacketCount.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipPoolMemberRequestCountDataPoint adds a data point to bigip.pool_member.request.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipPoolMemberRequestCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipPoolMemberRequestCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipPoolMemberSessionCountDataPoint adds a data point to bigip.pool_member.session.count metric.
-func (mb *MetricsBuilder) RecordBigipPoolMemberSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipPoolMemberSessionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipPoolMemberSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipPoolMemberSessionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipVirtualServerAvailabilityDataPoint adds a data point to bigip.virtual_server.availability metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
-	mb.metricBigipVirtualServerAvailability.recordDataPoint(mb.startTime, ts, val, availabilityStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerAvailabilityDataPoint(ts pcommon.Timestamp, val int64, availabilityStatusAttributeValue AttributeAvailabilityStatus) {
+	rmb.metricBigipVirtualServerAvailability.recordDataPoint(rmb.startTime, ts, val, availabilityStatusAttributeValue.String())
 }
 
 // RecordBigipVirtualServerConnectionCountDataPoint adds a data point to bigip.virtual_server.connection.count metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipVirtualServerConnectionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipVirtualServerConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordBigipVirtualServerDataTransmittedDataPoint adds a data point to bigip.virtual_server.data.transmitted metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipVirtualServerDataTransmitted.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerDataTransmittedDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipVirtualServerDataTransmitted.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipVirtualServerEnabledDataPoint adds a data point to bigip.virtual_server.enabled metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
-	mb.metricBigipVirtualServerEnabled.recordDataPoint(mb.startTime, ts, val, enabledStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerEnabledDataPoint(ts pcommon.Timestamp, val int64, enabledStatusAttributeValue AttributeEnabledStatus) {
+	rmb.metricBigipVirtualServerEnabled.recordDataPoint(rmb.startTime, ts, val, enabledStatusAttributeValue.String())
 }
 
 // RecordBigipVirtualServerPacketCountDataPoint adds a data point to bigip.virtual_server.packet.count metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricBigipVirtualServerPacketCount.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerPacketCountDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricBigipVirtualServerPacketCount.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordBigipVirtualServerRequestCountDataPoint adds a data point to bigip.virtual_server.request.count metric.
-func (mb *MetricsBuilder) RecordBigipVirtualServerRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricBigipVirtualServerRequestCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordBigipVirtualServerRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricBigipVirtualServerRequestCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

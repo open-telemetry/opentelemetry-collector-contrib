@@ -57,7 +57,7 @@ const (
 )
 
 // DBStats
-func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCollections(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"collections"}
 	metricName := "mongodb.collection.count"
 	val, err := collectMetric(doc, metricPath)
@@ -65,10 +65,10 @@ func (s *mongodbScraper) recordCollections(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbCollectionCountDataPoint(now, val, dbName)
+	rmb.RecordMongodbCollectionCountDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordDataSize(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"dataSize"}
 	metricName := "mongodb.data.size"
 	val, err := collectMetric(doc, metricPath)
@@ -76,10 +76,10 @@ func (s *mongodbScraper) recordDataSize(now pcommon.Timestamp, doc bson.M, dbNam
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbDataSizeDataPoint(now, val, dbName)
+	rmb.RecordMongodbDataSizeDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordStorageSize(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"storageSize"}
 	metricName := "mongodb.storage.size"
 	val, err := collectMetric(doc, metricPath)
@@ -87,10 +87,10 @@ func (s *mongodbScraper) recordStorageSize(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbStorageSizeDataPoint(now, val, dbName)
+	rmb.RecordMongodbStorageSizeDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordObjectCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"objects"}
 	metricName := "mongodb.object.count"
 	val, err := collectMetric(doc, metricPath)
@@ -98,10 +98,10 @@ func (s *mongodbScraper) recordObjectCount(now pcommon.Timestamp, doc bson.M, db
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbObjectCountDataPoint(now, val, dbName)
+	rmb.RecordMongodbObjectCountDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"indexes"}
 	metricName := "mongodb.index.count"
 	val, err := collectMetric(doc, metricPath)
@@ -109,10 +109,10 @@ func (s *mongodbScraper) recordIndexCount(now pcommon.Timestamp, doc bson.M, dbN
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbIndexCountDataPoint(now, val, dbName)
+	rmb.RecordMongodbIndexCountDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexSize(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"indexSize"}
 	metricName := "mongodb.index.size"
 	val, err := collectMetric(doc, metricPath)
@@ -120,10 +120,10 @@ func (s *mongodbScraper) recordIndexSize(now pcommon.Timestamp, doc bson.M, dbNa
 		errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 		return
 	}
-	s.mb.RecordMongodbIndexSizeDataPoint(now, val, dbName)
+	rmb.RecordMongodbIndexSizeDataPoint(now, val, dbName)
 }
 
-func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordExtentCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	// Mongo version 4.4+ no longer returns numExtents since it is part of the obsolete MMAPv1
 	// https://www.mongodb.com/docs/manual/release-notes/4.4-compatibility/#mmapv1-cleanup
 	mongo44, _ := version.NewVersion("4.4")
@@ -135,12 +135,12 @@ func (s *mongodbScraper) recordExtentCount(now pcommon.Timestamp, doc bson.M, db
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, dbName, err))
 			return
 		}
-		s.mb.RecordMongodbExtentCountDataPoint(now, val, dbName)
+		rmb.RecordMongodbExtentCountDataPoint(now, val, dbName)
 	}
 }
 
 // ServerStatus
-func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordConnections(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	for ctVal, ct := range metadata.MapAttributeConnectionType {
 		metricPath := []string{"connections", ctVal}
 		metricName := "mongodb.connection.count"
@@ -150,11 +150,11 @@ func (s *mongodbScraper) recordConnections(now pcommon.Timestamp, doc bson.M, db
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
-		s.mb.RecordMongodbConnectionCountDataPoint(now, val, dbName, ct)
+		rmb.RecordMongodbConnectionCountDataPoint(now, val, dbName, ct)
 	}
 }
 
-func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordMemoryUsage(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	for mtVal, mt := range metadata.MapAttributeMemoryType {
 		metricPath := []string{"mem", mtVal}
 		metricName := "mongodb.memory.usage"
@@ -166,11 +166,11 @@ func (s *mongodbScraper) recordMemoryUsage(now pcommon.Timestamp, doc bson.M, db
 		}
 		// convert from mebibytes to bytes
 		memUsageBytes := val * int64(1048576)
-		s.mb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, dbName, mt)
+		rmb.RecordMongodbMemoryUsageDataPoint(now, memUsageBytes, dbName, mt)
 	}
 }
 
-func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordDocumentOperations(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
 	for operationKey, metadataKey := range documentMap {
 		metricPath := []string{"metrics", "document", operationKey}
 		metricName := "mongodb.document.operation.count"
@@ -180,11 +180,11 @@ func (s *mongodbScraper) recordDocumentOperations(now pcommon.Timestamp, doc bso
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 			continue
 		}
-		s.mb.RecordMongodbDocumentOperationCountDataPoint(now, val, dbName, metadataKey)
+		rmb.RecordMongodbDocumentOperationCountDataPoint(now, val, dbName, metadataKey)
 	}
 }
 
-func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordSessionCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for session count"))
@@ -202,10 +202,10 @@ func (s *mongodbScraper) recordSessionCount(now pcommon.Timestamp, doc bson.M, e
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbSessionCountDataPoint(now, val)
+	rmb.RecordMongodbSessionCountDataPoint(now, val)
 }
 
-func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordLatencyTime(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	for operationVal, operation := range metadata.MapAttributeOperationLatency {
 		metricPath := []string{"opLatencies", operationVal + "s", "latency"}
 		metricName := "mongodb.operation.latency.time"
@@ -214,12 +214,12 @@ func (s *mongodbScraper) recordLatencyTime(now pcommon.Timestamp, doc bson.M, er
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
-		s.mb.RecordMongodbOperationLatencyTimeDataPoint(now, val, operation)
+		rmb.RecordMongodbOperationLatencyTimeDataPoint(now, val, operation)
 	}
 }
 
 // Admin Stats
-func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordOperations(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcounters", operationVal}
 		metricName := "mongodb.operation.count"
@@ -228,11 +228,11 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
-		s.mb.RecordMongodbOperationCountDataPoint(now, val, operation)
+		rmb.RecordMongodbOperationCountDataPoint(now, val, operation)
 	}
 }
 
-func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordOperationsRepl(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	for operationVal, operation := range metadata.MapAttributeOperation {
 		metricPath := []string{"opcountersRepl", operationVal}
 		metricName := "mongodb.operation.repl.count"
@@ -241,11 +241,11 @@ func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M,
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationVal, err))
 			continue
 		}
-		s.mb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
+		rmb.RecordMongodbOperationReplCountDataPoint(now, val, operation)
 	}
 }
 
-func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCacheOperations(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	storageEngine, err := dig(doc, []string{"storageEngine", "name"})
 	if err != nil {
 		errs.AddPartial(1, errors.New("failed to find storage engine for cache operations"))
@@ -263,7 +263,7 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 		errs.AddPartial(2, fmt.Errorf(collectMetricWithAttributes, metricName, "miss, hit", err))
 		return
 	}
-	s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheMissVal, metadata.AttributeTypeMiss)
+	rmb.RecordMongodbCacheOperationsDataPoint(now, cacheMissVal, metadata.AttributeTypeMiss)
 
 	cacheHitPath := []string{"wiredTiger", "cache", "pages requested from the cache"}
 	cacheHitName := "mongodb.cache.operations"
@@ -274,10 +274,10 @@ func (s *mongodbScraper) recordCacheOperations(now pcommon.Timestamp, doc bson.M
 	}
 
 	cacheHits := cacheHitVal - cacheMissVal
-	s.mb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
+	rmb.RecordMongodbCacheOperationsDataPoint(now, cacheHits, metadata.AttributeTypeHit)
 }
 
-func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordGlobalLockTime(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"globalLock", "totalTime"}
 	metricName := "mongodb.global_lock.time"
 	val, err := collectMetric(doc, metricPath)
@@ -286,10 +286,10 @@ func (s *mongodbScraper) recordGlobalLockTime(now pcommon.Timestamp, doc bson.M,
 		return
 	}
 	heldTimeMilliseconds := val / 1000
-	s.mb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
+	rmb.RecordMongodbGlobalLockTimeDataPoint(now, heldTimeMilliseconds)
 }
 
-func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCursorCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"metrics", "cursor", "open", "total"}
 	metricName := "mongodb.cursor.count"
 	val, err := collectMetric(doc, metricPath)
@@ -297,10 +297,10 @@ func (s *mongodbScraper) recordCursorCount(now pcommon.Timestamp, doc bson.M, er
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbCursorCountDataPoint(now, val)
+	rmb.RecordMongodbCursorCountDataPoint(now, val)
 }
 
-func (s *mongodbScraper) recordCursorTimeoutCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordCursorTimeoutCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"metrics", "cursor", "timedOut"}
 	metricName := "mongodb.cursor.timeout.count"
 	val, err := collectMetric(doc, metricPath)
@@ -308,14 +308,14 @@ func (s *mongodbScraper) recordCursorTimeoutCount(now pcommon.Timestamp, doc bso
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbCursorTimeoutCountDataPoint(now, val)
+	rmb.RecordMongodbCursorTimeoutCountDataPoint(now, val)
 }
 
-func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordNetworkCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	networkRecorderMap := map[string]func(pcommon.Timestamp, int64){
-		"bytesIn":     s.mb.RecordMongodbNetworkIoReceiveDataPoint,
-		"bytesOut":    s.mb.RecordMongodbNetworkIoTransmitDataPoint,
-		"numRequests": s.mb.RecordMongodbNetworkRequestCountDataPoint,
+		"bytesIn":     rmb.RecordMongodbNetworkIoReceiveDataPoint,
+		"bytesOut":    rmb.RecordMongodbNetworkIoTransmitDataPoint,
+		"numRequests": rmb.RecordMongodbNetworkRequestCountDataPoint,
 	}
 	for networkKey, recorder := range networkRecorderMap {
 		metricPath := []string{"network", networkKey}
@@ -328,7 +328,7 @@ func (s *mongodbScraper) recordNetworkCount(now pcommon.Timestamp, doc bson.M, e
 	}
 }
 
-func (s *mongodbScraper) recordUptime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordUptime(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"uptimeMillis"}
 	metricName := "mongodb.uptime"
 	val, err := collectMetric(doc, metricPath)
@@ -336,10 +336,10 @@ func (s *mongodbScraper) recordUptime(now pcommon.Timestamp, doc bson.M, errs *s
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbUptimeDataPoint(now, val)
+	rmb.RecordMongodbUptimeDataPoint(now, val)
 }
 
-func (s *mongodbScraper) recordHealth(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordHealth(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricPath := []string{"ok"}
 	metricName := "mongodb.health"
 	val, err := collectMetric(doc, metricPath)
@@ -347,11 +347,11 @@ func (s *mongodbScraper) recordHealth(now pcommon.Timestamp, doc bson.M, errs *s
 		errs.AddPartial(1, fmt.Errorf(collectMetricError, metricName, err))
 		return
 	}
-	s.mb.RecordMongodbHealthDataPoint(now, val)
+	rmb.RecordMongodbHealthDataPoint(now, val)
 }
 
 // Lock Metrics are only supported by MongoDB v3.2+
-func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordLockAcquireCounts(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
 	mongo32, _ := version.NewVersion("3.2")
 	if s.mongoVersion.LessThan(mongo32) {
 		return
@@ -376,12 +376,12 @@ func (s *mongodbScraper) recordLockAcquireCounts(now pcommon.Timestamp, doc bson
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			rmb.RecordMongodbLockAcquireCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
 
-func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordLockAcquireWaitCounts(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
 	mongo32, _ := version.NewVersion("3.2")
 	if s.mongoVersion.LessThan(mongo32) {
 		return
@@ -406,12 +406,12 @@ func (s *mongodbScraper) recordLockAcquireWaitCounts(now pcommon.Timestamp, doc 
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			rmb.RecordMongodbLockAcquireWaitCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
 
-func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordLockTimeAcquiringMicros(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
 	mongo32, _ := version.NewVersion("3.2")
 	if s.mongoVersion.LessThan(mongo32) {
 		return
@@ -436,12 +436,12 @@ func (s *mongodbScraper) recordLockTimeAcquiringMicros(now pcommon.Timestamp, do
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockAcquireTimeDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			rmb.RecordMongodbLockAcquireTimeDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
 
-func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordLockDeadlockCount(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dBName string, errs *scrapererror.ScrapeErrors) {
 	mongo32, _ := version.NewVersion("3.2")
 	if s.mongoVersion.LessThan(mongo32) {
 		return
@@ -466,13 +466,13 @@ func (s *mongodbScraper) recordLockDeadlockCount(now pcommon.Timestamp, doc bson
 				errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
 				continue
 			}
-			s.mb.RecordMongodbLockDeadlockCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
+			rmb.RecordMongodbLockDeadlockCountDataPoint(now, val, dBName, lockTypeAttribute, lockModeAttribute)
 		}
 	}
 }
 
 // Index Stats
-func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordIndexAccess(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, documents []bson.M, dbName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.index.access.count"
 	var indexAccessTotal int64
 	for _, doc := range documents {
@@ -490,11 +490,11 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 		}
 		indexAccessTotal += indexAccessValue
 	}
-	s.mb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
+	rmb.RecordMongodbIndexAccessCountDataPoint(now, indexAccessTotal, dbName, collectionName)
 }
 
 // Top Stats
-func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) recordOperationTime(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
 	metricName := "mongodb.operation.time"
 	collectionPathNames, err := digForCollectionPathNames(doc)
 	if err != nil {
@@ -514,7 +514,7 @@ func (s *mongodbScraper) recordOperationTime(now pcommon.Timestamp, doc bson.M, 
 			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, operationName, err))
 			continue
 		}
-		s.mb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
+		rmb.RecordMongodbOperationTimeDataPoint(now, operationValue, metadataOperationName)
 	}
 }
 

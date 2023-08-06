@@ -184,25 +184,31 @@ func (s *scraper) process(
 }
 
 func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.NodeProperties, i interfaceInformation) {
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeDropped)
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeErrored)
-	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, successRxPackets, metadata.AttributeDirectionReceived, metadata.AttributePacketTypeSuccess)
-
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.TxDropped, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeDropped)
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.TxErrors, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeErrored)
-	successTxPackets := i.stats.TxPackets - i.stats.TxDropped - i.stats.TxErrors
-	s.mb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, successTxPackets, metadata.AttributeDirectionTransmitted, metadata.AttributePacketTypeSuccess)
-
-	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirectionReceived)
-	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirectionTransmitted)
-
 	rb := s.mb.NewResourceBuilder()
 	rb.SetDeviceID(i.iFace.InterfaceId)
 	rb.SetNsxtNodeName(nodeProps.Name)
 	rb.SetNsxtNodeType(nodeProps.ResourceType)
 	rb.SetNsxtNodeID(nodeProps.ID)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxDropped, metadata.AttributeDirectionReceived,
+		metadata.AttributePacketTypeDropped)
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.RxErrors, metadata.AttributeDirectionReceived,
+		metadata.AttributePacketTypeErrored)
+	successRxPackets := i.stats.RxPackets - i.stats.RxDropped - i.stats.RxErrors
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, successRxPackets, metadata.AttributeDirectionReceived,
+		metadata.AttributePacketTypeSuccess)
+
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.TxDropped, metadata.AttributeDirectionTransmitted,
+		metadata.AttributePacketTypeDropped)
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, i.stats.TxErrors, metadata.AttributeDirectionTransmitted,
+		metadata.AttributePacketTypeErrored)
+	successTxPackets := i.stats.TxPackets - i.stats.TxDropped - i.stats.TxErrors
+	rmb.RecordNsxtNodeNetworkPacketCountDataPoint(colTime, successTxPackets, metadata.AttributeDirectionTransmitted,
+		metadata.AttributePacketTypeSuccess)
+
+	rmb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirectionReceived)
+	rmb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirectionTransmitted)
 }
 
 func (s *scraper) recordNode(
@@ -213,23 +219,24 @@ func (s *scraper) recordNode(
 		return
 	}
 
-	ss := info.stats.SystemStatus
-	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeClassDatapath)
-	s.mb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk, metadata.AttributeClassServices)
-	s.mb.RecordNsxtNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
-	s.mb.RecordNsxtNodeMemoryCacheUsageDataPoint(colTime, int64(ss.MemCache))
-
-	s.mb.RecordNsxtNodeFilesystemUsageDataPoint(colTime, int64(ss.DiskSpaceUsed), metadata.AttributeDiskStateUsed)
-	availableStorage := ss.DiskSpaceTotal - ss.DiskSpaceUsed
-	s.mb.RecordNsxtNodeFilesystemUsageDataPoint(colTime, int64(availableStorage), metadata.AttributeDiskStateAvailable)
-	// ensure division by zero is safeguarded
-	s.mb.RecordNsxtNodeFilesystemUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/math.Max(float64(ss.DiskSpaceTotal), 1))
-
 	rb := s.mb.NewResourceBuilder()
 	rb.SetNsxtNodeName(info.nodeProps.Name)
 	rb.SetNsxtNodeID(info.nodeProps.ID)
 	rb.SetNsxtNodeType(info.nodeType)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	ss := info.stats.SystemStatus
+	rmb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageDpdk, metadata.AttributeClassDatapath)
+	rmb.RecordNsxtNodeCPUUtilizationDataPoint(colTime, ss.CPUUsage.AvgCPUCoreUsageNonDpdk,
+		metadata.AttributeClassServices)
+	rmb.RecordNsxtNodeMemoryUsageDataPoint(colTime, int64(ss.MemUsed))
+	rmb.RecordNsxtNodeMemoryCacheUsageDataPoint(colTime, int64(ss.MemCache))
+
+	rmb.RecordNsxtNodeFilesystemUsageDataPoint(colTime, int64(ss.DiskSpaceUsed), metadata.AttributeDiskStateUsed)
+	availableStorage := ss.DiskSpaceTotal - ss.DiskSpaceUsed
+	rmb.RecordNsxtNodeFilesystemUsageDataPoint(colTime, int64(availableStorage), metadata.AttributeDiskStateAvailable)
+	// ensure division by zero is safeguarded
+	rmb.RecordNsxtNodeFilesystemUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/math.Max(float64(ss.DiskSpaceTotal), 1))
 }
 
 func clusterNodeType(node dm.ClusterNode) string {

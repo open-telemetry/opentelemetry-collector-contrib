@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeLeapStatus specifies the a value leap.status attribute.
@@ -398,14 +400,25 @@ func newMetricNtpTimeRootDelay(cfg MetricConfig) metricNtpTimeRootDelay {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity          int                  // maximum observed number of metrics per resource.
-	metricsBuffer            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                component.BuildInfo
+	startTime                pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity          int               // maximum observed number of metrics per resource.
+	resource                 pcommon.Resource
+	missedEmits              int
 	metricNtpFrequencyOffset metricNtpFrequencyOffset
 	metricNtpSkew            metricNtpSkew
 	metricNtpStratum         metricNtpStratum
@@ -427,140 +440,142 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                   mbc,
-		startTime:                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                settings.BuildInfo,
-		metricNtpFrequencyOffset: newMetricNtpFrequencyOffset(mbc.Metrics.NtpFrequencyOffset),
-		metricNtpSkew:            newMetricNtpSkew(mbc.Metrics.NtpSkew),
-		metricNtpStratum:         newMetricNtpStratum(mbc.Metrics.NtpStratum),
-		metricNtpTimeCorrection:  newMetricNtpTimeCorrection(mbc.Metrics.NtpTimeCorrection),
-		metricNtpTimeLastOffset:  newMetricNtpTimeLastOffset(mbc.Metrics.NtpTimeLastOffset),
-		metricNtpTimeRmsOffset:   newMetricNtpTimeRmsOffset(mbc.Metrics.NtpTimeRmsOffset),
-		metricNtpTimeRootDelay:   newMetricNtpTimeRootDelay(mbc.Metrics.NtpTimeRootDelay),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
 }
 
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                mb.startTime,
+		buildInfo:                mb.buildInfo,
+		resource:                 res,
+		metricNtpFrequencyOffset: newMetricNtpFrequencyOffset(mb.config.Metrics.NtpFrequencyOffset),
+		metricNtpSkew:            newMetricNtpSkew(mb.config.Metrics.NtpSkew),
+		metricNtpStratum:         newMetricNtpStratum(mb.config.Metrics.NtpStratum),
+		metricNtpTimeCorrection:  newMetricNtpTimeCorrection(mb.config.Metrics.NtpTimeCorrection),
+		metricNtpTimeLastOffset:  newMetricNtpTimeLastOffset(mb.config.Metrics.NtpTimeLastOffset),
+		metricNtpTimeRmsOffset:   newMetricNtpTimeRmsOffset(mb.config.Metrics.NtpTimeRmsOffset),
+		metricNtpTimeRootDelay:   newMetricNtpTimeRootDelay(mb.config.Metrics.NtpTimeRootDelay),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricNtpFrequencyOffset.emit(sm.Metrics())
+	rmb.metricNtpSkew.emit(sm.Metrics())
+	rmb.metricNtpStratum.emit(sm.Metrics())
+	rmb.metricNtpTimeCorrection.emit(sm.Metrics())
+	rmb.metricNtpTimeLastOffset.emit(sm.Metrics())
+	rmb.metricNtpTimeRmsOffset.emit(sm.Metrics())
+	rmb.metricNtpTimeRootDelay.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/chronyreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricNtpFrequencyOffset.emit(ils.Metrics())
-	mb.metricNtpSkew.emit(ils.Metrics())
-	mb.metricNtpStratum.emit(ils.Metrics())
-	mb.metricNtpTimeCorrection.emit(ils.Metrics())
-	mb.metricNtpTimeLastOffset.emit(ils.Metrics())
-	mb.metricNtpTimeRmsOffset.emit(ils.Metrics())
-	mb.metricNtpTimeRootDelay.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/chronyreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordNtpFrequencyOffsetDataPoint adds a data point to ntp.frequency.offset metric.
-func (mb *MetricsBuilder) RecordNtpFrequencyOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
-	mb.metricNtpFrequencyOffset.recordDataPoint(mb.startTime, ts, val, leapStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordNtpFrequencyOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
+	rmb.metricNtpFrequencyOffset.recordDataPoint(rmb.startTime, ts, val, leapStatusAttributeValue.String())
 }
 
 // RecordNtpSkewDataPoint adds a data point to ntp.skew metric.
-func (mb *MetricsBuilder) RecordNtpSkewDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricNtpSkew.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordNtpSkewDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricNtpSkew.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordNtpStratumDataPoint adds a data point to ntp.stratum metric.
-func (mb *MetricsBuilder) RecordNtpStratumDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricNtpStratum.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordNtpStratumDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricNtpStratum.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordNtpTimeCorrectionDataPoint adds a data point to ntp.time.correction metric.
-func (mb *MetricsBuilder) RecordNtpTimeCorrectionDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
-	mb.metricNtpTimeCorrection.recordDataPoint(mb.startTime, ts, val, leapStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordNtpTimeCorrectionDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
+	rmb.metricNtpTimeCorrection.recordDataPoint(rmb.startTime, ts, val, leapStatusAttributeValue.String())
 }
 
 // RecordNtpTimeLastOffsetDataPoint adds a data point to ntp.time.last_offset metric.
-func (mb *MetricsBuilder) RecordNtpTimeLastOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
-	mb.metricNtpTimeLastOffset.recordDataPoint(mb.startTime, ts, val, leapStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordNtpTimeLastOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
+	rmb.metricNtpTimeLastOffset.recordDataPoint(rmb.startTime, ts, val, leapStatusAttributeValue.String())
 }
 
 // RecordNtpTimeRmsOffsetDataPoint adds a data point to ntp.time.rms_offset metric.
-func (mb *MetricsBuilder) RecordNtpTimeRmsOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
-	mb.metricNtpTimeRmsOffset.recordDataPoint(mb.startTime, ts, val, leapStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordNtpTimeRmsOffsetDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
+	rmb.metricNtpTimeRmsOffset.recordDataPoint(rmb.startTime, ts, val, leapStatusAttributeValue.String())
 }
 
 // RecordNtpTimeRootDelayDataPoint adds a data point to ntp.time.root_delay metric.
-func (mb *MetricsBuilder) RecordNtpTimeRootDelayDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
-	mb.metricNtpTimeRootDelay.recordDataPoint(mb.startTime, ts, val, leapStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordNtpTimeRootDelayDataPoint(ts pcommon.Timestamp, val float64, leapStatusAttributeValue AttributeLeapStatus) {
+	rmb.metricNtpTimeRootDelay.recordDataPoint(rmb.startTime, ts, val, leapStatusAttributeValue.String())
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

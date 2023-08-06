@@ -613,11 +613,13 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, len(test.expectedNames), md.ResourceMetrics().Len())
-			for i, expectedName := range test.expectedNames {
+			names := make([]string, 0, len(test.expectedNames))
+			for i := 0; i < md.ResourceMetrics().Len(); i++ {
 				rm := md.ResourceMetrics().At(i)
 				name, _ := rm.Resource().Attributes().Get(conventions.AttributeProcessExecutableName)
-				assert.Equal(t, expectedName, name.Str())
+				names = append(names, name.Str())
 			}
+			assert.ElementsMatch(t, test.expectedNames, names)
 		})
 	}
 }

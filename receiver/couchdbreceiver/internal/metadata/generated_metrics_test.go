@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetCouchdbNodeName("couchdb.node.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,40 +61,37 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbAverageRequestTimeDataPoint(ts, 1)
+			rmb.RecordCouchdbAverageRequestTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbDatabaseOpenDataPoint(ts, 1)
+			rmb.RecordCouchdbDatabaseOpenDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
+			rmb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 1)
+			rmb.RecordCouchdbFileDescriptorOpenDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 1)
+			rmb.RecordCouchdbHttpdBulkRequestsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
+			rmb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
+			rmb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)
+			rmb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetCouchdbNodeName("couchdb.node.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

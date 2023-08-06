@@ -112,16 +112,6 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) error {
-	var errs error
-	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
-	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
-	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
-	r.recordNetworkMetrics(now, &containerStats.Networks)
-	r.recordPidsMetrics(now, &containerStats.PidsStats)
-	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
-		errs = multierr.Append(errs, err)
-	}
-
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
 	rb.SetContainerRuntime("docker")
@@ -144,55 +134,65 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 		}
 	}
 
-	r.mb.EmitForResource(metadata.WithResource(resource))
+	rmb := r.mb.ResourceMetricsBuilder(resource)
+	var errs error
+	r.recordCPUMetrics(now, rmb, &containerStats.CPUStats, &containerStats.PreCPUStats)
+	r.recordMemoryMetrics(now, rmb, &containerStats.MemoryStats)
+	r.recordBlkioMetrics(now, rmb, &containerStats.BlkioStats)
+	r.recordNetworkMetrics(now, rmb, &containerStats.Networks)
+	r.recordPidsMetrics(now, rmb, &containerStats.PidsStats)
+	if err := r.recordBaseMetrics(now, rmb, container.ContainerJSONBase); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 	return errs
 }
 
-func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
+func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	memoryStats *dtypes.MemoryStats) {
 	totalUsage := calculateMemUsageNoCache(memoryStats)
-	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
+	rmb.RecordContainerMemoryUsageTotalDataPoint(now, int64(totalUsage))
 
-	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
+	rmb.RecordContainerMemoryUsageLimitDataPoint(now, int64(memoryStats.Limit))
 
-	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
+	rmb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
 
-	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
+	rmb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
 
 	recorders := map[string]func(pcommon.Timestamp, int64){
-		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
-		"total_cache":               r.mb.RecordContainerMemoryTotalCacheDataPoint,
-		"rss":                       r.mb.RecordContainerMemoryRssDataPoint,
-		"total_rss":                 r.mb.RecordContainerMemoryTotalRssDataPoint,
-		"rss_huge":                  r.mb.RecordContainerMemoryRssHugeDataPoint,
-		"total_rss_huge":            r.mb.RecordContainerMemoryTotalRssHugeDataPoint,
-		"dirty":                     r.mb.RecordContainerMemoryDirtyDataPoint,
-		"total_dirty":               r.mb.RecordContainerMemoryTotalDirtyDataPoint,
-		"writeback":                 r.mb.RecordContainerMemoryWritebackDataPoint,
-		"total_writeback":           r.mb.RecordContainerMemoryTotalWritebackDataPoint,
-		"mapped_file":               r.mb.RecordContainerMemoryMappedFileDataPoint,
-		"total_mapped_file":         r.mb.RecordContainerMemoryTotalMappedFileDataPoint,
-		"pgpgin":                    r.mb.RecordContainerMemoryPgpginDataPoint,
-		"total_pgpgin":              r.mb.RecordContainerMemoryTotalPgpginDataPoint,
-		"pgpgout":                   r.mb.RecordContainerMemoryPgpgoutDataPoint,
-		"total_pgpgout":             r.mb.RecordContainerMemoryTotalPgpgoutDataPoint,
-		"pgfault":                   r.mb.RecordContainerMemoryPgfaultDataPoint,
-		"total_pgfault":             r.mb.RecordContainerMemoryTotalPgfaultDataPoint,
-		"pgmajfault":                r.mb.RecordContainerMemoryPgmajfaultDataPoint,
-		"total_pgmajfault":          r.mb.RecordContainerMemoryTotalPgmajfaultDataPoint,
-		"inactive_anon":             r.mb.RecordContainerMemoryInactiveAnonDataPoint,
-		"total_inactive_anon":       r.mb.RecordContainerMemoryTotalInactiveAnonDataPoint,
-		"active_anon":               r.mb.RecordContainerMemoryActiveAnonDataPoint,
-		"total_active_anon":         r.mb.RecordContainerMemoryTotalActiveAnonDataPoint,
-		"inactive_file":             r.mb.RecordContainerMemoryInactiveFileDataPoint,
-		"total_inactive_file":       r.mb.RecordContainerMemoryTotalInactiveFileDataPoint,
-		"active_file":               r.mb.RecordContainerMemoryActiveFileDataPoint,
-		"total_active_file":         r.mb.RecordContainerMemoryTotalActiveFileDataPoint,
-		"unevictable":               r.mb.RecordContainerMemoryUnevictableDataPoint,
-		"total_unevictable":         r.mb.RecordContainerMemoryTotalUnevictableDataPoint,
-		"hierarchical_memory_limit": r.mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
-		"hierarchical_memsw_limit":  r.mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
-		"anon":                      r.mb.RecordContainerMemoryAnonDataPoint,
-		"file":                      r.mb.RecordContainerMemoryFileDataPoint,
+		"cache":                     rmb.RecordContainerMemoryCacheDataPoint,
+		"total_cache":               rmb.RecordContainerMemoryTotalCacheDataPoint,
+		"rss":                       rmb.RecordContainerMemoryRssDataPoint,
+		"total_rss":                 rmb.RecordContainerMemoryTotalRssDataPoint,
+		"rss_huge":                  rmb.RecordContainerMemoryRssHugeDataPoint,
+		"total_rss_huge":            rmb.RecordContainerMemoryTotalRssHugeDataPoint,
+		"dirty":                     rmb.RecordContainerMemoryDirtyDataPoint,
+		"total_dirty":               rmb.RecordContainerMemoryTotalDirtyDataPoint,
+		"writeback":                 rmb.RecordContainerMemoryWritebackDataPoint,
+		"total_writeback":           rmb.RecordContainerMemoryTotalWritebackDataPoint,
+		"mapped_file":               rmb.RecordContainerMemoryMappedFileDataPoint,
+		"total_mapped_file":         rmb.RecordContainerMemoryTotalMappedFileDataPoint,
+		"pgpgin":                    rmb.RecordContainerMemoryPgpginDataPoint,
+		"total_pgpgin":              rmb.RecordContainerMemoryTotalPgpginDataPoint,
+		"pgpgout":                   rmb.RecordContainerMemoryPgpgoutDataPoint,
+		"total_pgpgout":             rmb.RecordContainerMemoryTotalPgpgoutDataPoint,
+		"pgfault":                   rmb.RecordContainerMemoryPgfaultDataPoint,
+		"total_pgfault":             rmb.RecordContainerMemoryTotalPgfaultDataPoint,
+		"pgmajfault":                rmb.RecordContainerMemoryPgmajfaultDataPoint,
+		"total_pgmajfault":          rmb.RecordContainerMemoryTotalPgmajfaultDataPoint,
+		"inactive_anon":             rmb.RecordContainerMemoryInactiveAnonDataPoint,
+		"total_inactive_anon":       rmb.RecordContainerMemoryTotalInactiveAnonDataPoint,
+		"active_anon":               rmb.RecordContainerMemoryActiveAnonDataPoint,
+		"total_active_anon":         rmb.RecordContainerMemoryTotalActiveAnonDataPoint,
+		"inactive_file":             rmb.RecordContainerMemoryInactiveFileDataPoint,
+		"total_inactive_file":       rmb.RecordContainerMemoryTotalInactiveFileDataPoint,
+		"active_file":               rmb.RecordContainerMemoryActiveFileDataPoint,
+		"total_active_file":         rmb.RecordContainerMemoryTotalActiveFileDataPoint,
+		"unevictable":               rmb.RecordContainerMemoryUnevictableDataPoint,
+		"total_unevictable":         rmb.RecordContainerMemoryTotalUnevictableDataPoint,
+		"hierarchical_memory_limit": rmb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
+		"hierarchical_memsw_limit":  rmb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
+		"anon":                      rmb.RecordContainerMemoryAnonDataPoint,
+		"file":                      rmb.RecordContainerMemoryFileDataPoint,
 	}
 
 	for name, val := range memoryStats.Stats {
@@ -204,15 +204,16 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 
 type blkioRecorder func(now pcommon.Timestamp, val int64, devMaj string, devMin string, operation string)
 
-func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, blkioStats *dtypes.BlkioStats) {
-	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, r.mb.RecordContainerBlockioIoMergedRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, r.mb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, r.mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoServiceTimeRecursive, r.mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoServicedRecursive, r.mb.RecordContainerBlockioIoServicedRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoTimeRecursive, r.mb.RecordContainerBlockioIoTimeRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.IoWaitTimeRecursive, r.mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint)
-	recordSingleBlkioStat(now, blkioStats.SectorsRecursive, r.mb.RecordContainerBlockioSectorsRecursiveDataPoint)
+func (r *receiver) recordBlkioMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	blkioStats *dtypes.BlkioStats) {
+	recordSingleBlkioStat(now, blkioStats.IoMergedRecursive, rmb.RecordContainerBlockioIoMergedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoQueuedRecursive, rmb.RecordContainerBlockioIoQueuedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceBytesRecursive, rmb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServiceTimeRecursive, rmb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoServicedRecursive, rmb.RecordContainerBlockioIoServicedRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoTimeRecursive, rmb.RecordContainerBlockioIoTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.IoWaitTimeRecursive, rmb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint)
+	recordSingleBlkioStat(now, blkioStats.SectorsRecursive, rmb.RecordContainerBlockioSectorsRecursiveDataPoint)
 }
 
 func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []dtypes.BlkioStatEntry, recorder blkioRecorder) {
@@ -226,57 +227,62 @@ func recordSingleBlkioStat(now pcommon.Timestamp, statEntries []dtypes.BlkioStat
 	}
 }
 
-func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, networks *map[string]dtypes.NetworkStats) {
+func (r *receiver) recordNetworkMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	networks *map[string]dtypes.NetworkStats) {
 	if networks == nil || *networks == nil {
 		return
 	}
 
 	for netInterface, stats := range *networks {
-		r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.RxBytes), netInterface)
-		r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.TxBytes), netInterface)
-		r.mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(now, int64(stats.RxDropped), netInterface)
-		r.mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(now, int64(stats.TxDropped), netInterface)
-		r.mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(now, int64(stats.RxPackets), netInterface)
-		r.mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(now, int64(stats.TxPackets), netInterface)
-		r.mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(now, int64(stats.RxErrors), netInterface)
-		r.mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(now, int64(stats.TxErrors), netInterface)
+		rmb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.RxBytes), netInterface)
+		rmb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.TxBytes), netInterface)
+		rmb.RecordContainerNetworkIoUsageRxDroppedDataPoint(now, int64(stats.RxDropped), netInterface)
+		rmb.RecordContainerNetworkIoUsageTxDroppedDataPoint(now, int64(stats.TxDropped), netInterface)
+		rmb.RecordContainerNetworkIoUsageRxPacketsDataPoint(now, int64(stats.RxPackets), netInterface)
+		rmb.RecordContainerNetworkIoUsageTxPacketsDataPoint(now, int64(stats.TxPackets), netInterface)
+		rmb.RecordContainerNetworkIoUsageRxErrorsDataPoint(now, int64(stats.RxErrors), netInterface)
+		rmb.RecordContainerNetworkIoUsageTxErrorsDataPoint(now, int64(stats.TxErrors), netInterface)
 	}
 }
 
-func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtypes.CPUStats, prevStats *dtypes.CPUStats) {
-	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
-	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
-	r.mb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
-	r.mb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
-	r.mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
-	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
-	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
-	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
-	r.mb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+func (r *receiver) recordCPUMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	cpuStats *dtypes.CPUStats,
+	prevStats *dtypes.CPUStats) {
+	rmb.RecordContainerCPUUsageSystemDataPoint(now, int64(cpuStats.SystemUsage))
+	rmb.RecordContainerCPUUsageTotalDataPoint(now, int64(cpuStats.CPUUsage.TotalUsage))
+	rmb.RecordContainerCPUUsageKernelmodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInKernelmode))
+	rmb.RecordContainerCPUUsageUsermodeDataPoint(now, int64(cpuStats.CPUUsage.UsageInUsermode))
+	rmb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledPeriods))
+	rmb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
+	rmb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
+	rmb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	rmb.RecordContainerCPUPercentDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
-		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
+		rmb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
 	}
 }
 
-func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.PidsStats) {
+func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	pidsStats *dtypes.PidsStats) {
 	// pidsStats are available when kernel version is >= 4.3 and pids_cgroup is supported, it is empty otherwise.
 	if pidsStats.Current != 0 {
-		r.mb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
+		rmb.RecordContainerPidsCountDataPoint(now, int64(pidsStats.Current))
 		if pidsStats.Limit != 0 {
-			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
+			rmb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
 		}
 	}
 }
 
-func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
+func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, rmb *metadata.ResourceMetricsBuilder,
+	base *types.ContainerJSONBase) error {
 	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
 	if err != nil {
 		// value not available or invalid
 		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.uptime from Container.State.StartedAt: %w", err), 1)
 	}
 	if v := now.AsTime().Sub(t); v > 0 {
-		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
+		rmb.RecordContainerUptimeDataPoint(now, v.Seconds())
 	}
 	return nil
 }

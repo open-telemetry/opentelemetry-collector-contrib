@@ -36,30 +36,31 @@ func (cs *chronyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(clock.Now(ctx))
+	rmb := cs.mb.ResourceMetricsBuilder(pcommon.NewResource())
 
-	cs.mb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
-	cs.mb.RecordNtpTimeCorrectionDataPoint(
+	rmb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
+	rmb.RecordNtpTimeCorrectionDataPoint(
 		now,
 		data.CurrentCorrection,
 		metadata.AttributeLeapStatus(data.LeapStatus+1),
 	)
-	cs.mb.RecordNtpTimeLastOffsetDataPoint(
+	rmb.RecordNtpTimeLastOffsetDataPoint(
 		now,
 		data.LastOffset,
 		metadata.AttributeLeapStatus(data.LeapStatus+1),
 	)
-	cs.mb.RecordNtpTimeRmsOffsetDataPoint(
+	rmb.RecordNtpTimeRmsOffsetDataPoint(
 		now,
 		data.RMSOffset,
 		metadata.AttributeLeapStatus(data.LeapStatus+1),
 	)
-	cs.mb.RecordNtpFrequencyOffsetDataPoint(
+	rmb.RecordNtpFrequencyOffsetDataPoint(
 		now,
 		data.FreqPPM,
 		metadata.AttributeLeapStatus(data.LeapStatus+1),
 	)
-	cs.mb.RecordNtpSkewDataPoint(now, data.SkewPPM)
-	cs.mb.RecordNtpTimeRootDelayDataPoint(
+	rmb.RecordNtpSkewDataPoint(now, data.SkewPPM)
+	rmb.RecordNtpTimeRootDelayDataPoint(
 		now,
 		data.RootDelay,
 		metadata.AttributeLeapStatus(data.LeapStatus+1),

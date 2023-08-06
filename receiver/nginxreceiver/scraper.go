@@ -31,16 +31,10 @@ func newNginxScraper(
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *nginxScraper {
-	var mb *metadata.MetricsBuilder
-	if connectorsAsSumGate.IsEnabled() {
-		mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings, metadata.WithCurrentConnectionsAsGaugeDisabled())
-	} else {
-		mb = metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings, metadata.WithCurrentConnectionsAsGauge())
-	}
 	return &nginxScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      cfg,
-		mb:       mb,
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }
 
@@ -72,21 +66,26 @@ func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	r.mb.RecordNginxRequestsDataPoint(now, stats.Requests)
-	r.mb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
-	r.mb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
+	var rmb *metadata.ResourceMetricsBuilder
+	if connectorsAsSumGate.IsEnabled() {
+		rmb = r.mb.ResourceMetricsBuilder(pcommon.NewResource(), metadata.WithCurrentConnectionsAsGaugeDisabled())
+	} else {
+		rmb = r.mb.ResourceMetricsBuilder(pcommon.NewResource(), metadata.WithCurrentConnectionsAsGauge())
+	}
+	rmb.RecordNginxRequestsDataPoint(now, stats.Requests)
+	rmb.RecordNginxConnectionsAcceptedDataPoint(now, stats.Connections.Accepted)
+	rmb.RecordNginxConnectionsHandledDataPoint(now, stats.Connections.Handled)
 
 	if connectorsAsSumGate.IsEnabled() {
-		r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
-		r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
-		r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
-		r.mb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
+		rmb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
+		rmb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
+		rmb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
+		rmb.RecordNginxConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
 	} else {
-		r.mb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
-		r.mb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
-		r.mb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
-		r.mb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
+		rmb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Active, metadata.AttributeStateActive)
+		rmb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Reading, metadata.AttributeStateReading)
+		rmb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Writing, metadata.AttributeStateWriting)
+		rmb.RecordTempConnectionsCurrentDataPoint(now, stats.Connections.Waiting, metadata.AttributeStateWaiting)
 	}
 
 	return r.mb.Emit(), nil

@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetOracledbInstanceName("oracledb.instance.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -55,115 +60,112 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordOracledbConsistentGetsDataPoint(ts, "1")
+			rmb.RecordOracledbConsistentGetsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbCPUTimeDataPoint(ts, 1)
+			rmb.RecordOracledbCPUTimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
+			rmb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
+			rmb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
+			rmb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
+			rmb.RecordOracledbEnqueueDeadlocksDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
+			rmb.RecordOracledbEnqueueLocksLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
+			rmb.RecordOracledbEnqueueLocksUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
+			rmb.RecordOracledbEnqueueResourcesLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
+			rmb.RecordOracledbEnqueueResourcesUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
+			rmb.RecordOracledbExchangeDeadlocksDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbExecutionsDataPoint(ts, "1")
+			rmb.RecordOracledbExecutionsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbHardParsesDataPoint(ts, "1")
+			rmb.RecordOracledbHardParsesDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
+			rmb.RecordOracledbLogicalReadsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbParseCallsDataPoint(ts, "1")
+			rmb.RecordOracledbParseCallsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
+			rmb.RecordOracledbPgaMemoryDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
+			rmb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbProcessesLimitDataPoint(ts, "1")
+			rmb.RecordOracledbProcessesLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
+			rmb.RecordOracledbProcessesUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
+			rmb.RecordOracledbSessionsLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
+			rmb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
+			rmb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "tablespace_name-val")
+			rmb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
+			rmb.RecordOracledbTransactionsLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
+			rmb.RecordOracledbTransactionsUsageDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbUserCommitsDataPoint(ts, "1")
+			rmb.RecordOracledbUserCommitsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
+			rmb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetOracledbInstanceName("oracledb.instance.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

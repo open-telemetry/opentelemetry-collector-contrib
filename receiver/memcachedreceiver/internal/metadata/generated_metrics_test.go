@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,50 +59,49 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedBytesDataPoint(ts, 1)
+			rmb.RecordMemcachedBytesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
+			rmb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedConnectionsCurrentDataPoint(ts, 1)
+			rmb.RecordMemcachedConnectionsCurrentDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedConnectionsTotalDataPoint(ts, 1)
+			rmb.RecordMemcachedConnectionsTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
+			rmb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedCurrentItemsDataPoint(ts, 1)
+			rmb.RecordMemcachedCurrentItemsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedEvictionsDataPoint(ts, 1)
+			rmb.RecordMemcachedEvictionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
+			rmb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
+			rmb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
+			rmb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedThreadsDataPoint(ts, 1)
+			rmb.RecordMemcachedThreadsDataPoint(ts, 1)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

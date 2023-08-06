@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetAerospikeNamespace("aerospike.namespace-val")
+			rb.SetAerospikeNodeName("aerospike.node.name-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,65 +62,61 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceDiskAvailableDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceGeojsonRegionQueryCellsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceGeojsonRegionQueryFalsePositiveDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceGeojsonRegionQueryPointsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceGeojsonRegionQueryRequestsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
+			rmb.RecordAerospikeNamespaceMemoryFreeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
+			rmb.RecordAerospikeNamespaceMemoryUsageDataPoint(ts, "1", AttributeNamespaceComponentData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
+			rmb.RecordAerospikeNamespaceQueryCountDataPoint(ts, "1", AttributeQueryTypeAggregation, AttributeIndexTypePrimary, AttributeQueryResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
+			rmb.RecordAerospikeNamespaceScanCountDataPoint(ts, "1", AttributeScanTypeAggregation, AttributeScanResultAbort)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
+			rmb.RecordAerospikeNamespaceTransactionCountDataPoint(ts, "1", AttributeTransactionTypeDelete, AttributeTransactionResultError)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
+			rmb.RecordAerospikeNodeConnectionCountDataPoint(ts, "1", AttributeConnectionTypeClient, AttributeConnectionOpClose)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
+			rmb.RecordAerospikeNodeConnectionOpenDataPoint(ts, "1", AttributeConnectionTypeClient)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
+			rmb.RecordAerospikeNodeMemoryFreeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
+			rmb.RecordAerospikeNodeQueryTrackedDataPoint(ts, "1")
 
-			rb := mb.NewResourceBuilder()
-			rb.SetAerospikeNamespace("aerospike.namespace-val")
-			rb.SetAerospikeNodeName("aerospike.node.name-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -342,7 +342,7 @@ func (s *MongoDBAtlasClient) ProcessDatabases(
 // ProcessMetrics returns a set of metrics associated with the specified running process.
 func (s *MongoDBAtlasClient) ProcessMetrics(
 	ctx context.Context,
-	mb *metadata.MetricsBuilder,
+	rmb *metadata.ResourceMetricsBuilder,
 	projectID string,
 	host string,
 	port int,
@@ -373,7 +373,7 @@ func (s *MongoDBAtlasClient) ProcessMetrics(
 			break
 		}
 	}
-	return processMeasurements(mb, allMeasurements)
+	return processMeasurements(rmb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) getProcessMeasurementsPage(
@@ -408,7 +408,7 @@ func (s *MongoDBAtlasClient) getProcessMeasurementsPage(
 // ProcessDatabaseMetrics returns metrics about a particular database running within a MongoDB Atlas process
 func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 	ctx context.Context,
-	mb *metadata.MetricsBuilder,
+	rmb *metadata.ResourceMetricsBuilder,
 	projectID string,
 	host string,
 	port int,
@@ -440,7 +440,7 @@ func (s *MongoDBAtlasClient) ProcessDatabaseMetrics(
 			break
 		}
 	}
-	return processMeasurements(mb, allMeasurements)
+	return processMeasurements(rmb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) getProcessDatabaseMeasurementsPage(
@@ -522,7 +522,7 @@ func (s *MongoDBAtlasClient) getProcessDisksPage(
 // ProcessDiskMetrics returns metrics supplied for a particular disk partition used by a MongoDB Atlas process
 func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 	ctx context.Context,
-	mb *metadata.MetricsBuilder,
+	rmb *metadata.ResourceMetricsBuilder,
 	projectID string,
 	host string,
 	port int,
@@ -554,7 +554,7 @@ func (s *MongoDBAtlasClient) ProcessDiskMetrics(
 			break
 		}
 	}
-	return processMeasurements(mb, allMeasurements)
+	return processMeasurements(rmb, allMeasurements)
 }
 
 func (s *MongoDBAtlasClient) processDiskMeasurementsPage(

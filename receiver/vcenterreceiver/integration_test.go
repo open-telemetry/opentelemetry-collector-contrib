@@ -68,6 +68,7 @@ func TestIntegration(t *testing.T) {
 				}),
 			scraperinttest.WithCompareOptions(
 				pmetrictest.IgnoreResourceAttributeValue("vcenter.host.name"),
+				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreMetricValues(),

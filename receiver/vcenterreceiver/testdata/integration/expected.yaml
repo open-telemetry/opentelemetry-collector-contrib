@@ -627,31 +627,3 @@ resourceMetrics:
         scope:
           name: otelcol/vcenterreceiver
           version: latest
-  - resource:
-      attributes:
-        - key: vcenter.resource_pool.name
-          value:
-            stringValue: Resources
-    scopeMetrics:
-      - metrics:
-          - description: The amount of shares of CPU in the resource pool.
-            name: vcenter.resource_pool.cpu.shares
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "9000"
-                  startTimeUnixNano: "1682367880520917116"
-                  timeUnixNano: "1682367880570405002"
-            unit: '{shares}'
-          - description: The amount of shares of memory in the resource pool.
-            name: vcenter.resource_pool.memory.shares
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "9000"
-                  startTimeUnixNano: "1682367880520917116"
-                  timeUnixNano: "1682367880570405002"
-            unit: '{shares}'
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest

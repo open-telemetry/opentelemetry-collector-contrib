@@ -6,12 +6,10 @@ package processscraper // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/process"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
@@ -22,12 +20,9 @@ import (
 
 type processMetadata struct {
 	pid        int32
-	parentPid  int32
 	executable *executableMetadata
-	command    *commandMetadata
-	username   string
 	handle     processHandle
-	createTime int64
+	rmb        *metadata.ResourceMetricsBuilder
 }
 
 type executableMetadata struct {
@@ -39,27 +34,6 @@ type commandMetadata struct {
 	command          string
 	commandLine      string
 	commandLineSlice []string
-}
-
-func (m *processMetadata) buildResource(rb *metadata.ResourceBuilder) pcommon.Resource {
-	rb.SetProcessPid(int64(m.pid))
-	rb.SetProcessParentPid(int64(m.parentPid))
-	rb.SetProcessExecutableName(m.executable.name)
-	rb.SetProcessExecutablePath(m.executable.path)
-	if m.command != nil {
-		rb.SetProcessCommand(m.command.command)
-		if m.command.commandLineSlice != nil {
-			// TODO insert slice here once this is supported by the data model
-			// (see https://github.com/open-telemetry/opentelemetry-collector/pull/1142)
-			rb.SetProcessCommandLine(strings.Join(m.command.commandLineSlice, " "))
-		} else {
-			rb.SetProcessCommandLine(m.command.commandLine)
-		}
-	}
-	if m.username != "" {
-		rb.SetProcessOwner(m.username)
-	}
-	return rb.Emit()
 }
 
 // processHandles provides a wrapper around []*process.Process

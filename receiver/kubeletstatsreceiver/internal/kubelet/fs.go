@@ -10,12 +10,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addFilesystemMetrics(mb *metadata.MetricsBuilder, filesystemMetrics metadata.FilesystemMetrics, s *stats.FsStats, currentTime pcommon.Timestamp) {
+func addFilesystemMetrics(rmb *metadata.ResourceMetricsBuilder, filesystemMetrics metadata.FilesystemMetrics, s *stats.FsStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	recordIntDataPoint(mb, filesystemMetrics.Available, s.AvailableBytes, currentTime)
-	recordIntDataPoint(mb, filesystemMetrics.Capacity, s.CapacityBytes, currentTime)
-	recordIntDataPoint(mb, filesystemMetrics.Usage, s.UsedBytes, currentTime)
+	recordIntDataPoint(rmb, filesystemMetrics.Available, s.AvailableBytes, currentTime)
+	recordIntDataPoint(rmb, filesystemMetrics.Capacity, s.CapacityBytes, currentTime)
+	recordIntDataPoint(rmb, filesystemMetrics.Usage, s.UsedBytes, currentTime)
 }

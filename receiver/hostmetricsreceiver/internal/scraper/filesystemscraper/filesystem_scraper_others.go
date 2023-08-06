@@ -15,18 +15,19 @@ import (
 const fileSystemStatesLen = 2
 
 func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, deviceUsage := range deviceUsages {
-		s.mb.RecordSystemFilesystemUsageDataPoint(
+		rmb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Used),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
 			metadata.AttributeStateUsed)
-		s.mb.RecordSystemFilesystemUsageDataPoint(
+		rmb.RecordSystemFilesystemUsageDataPoint(
 			now, int64(deviceUsage.usage.Free),
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype,
 			metadata.AttributeStateFree)
-		s.mb.RecordSystemFilesystemUtilizationDataPoint(
+		rmb.RecordSystemFilesystemUtilizationDataPoint(
 			now, deviceUsage.usage.UsedPercent/100.0,
 			deviceUsage.partition.Device, getMountMode(deviceUsage.partition.Opts),
 			deviceUsage.partition.Mountpoint, deviceUsage.partition.Fstype)

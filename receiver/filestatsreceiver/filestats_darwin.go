@@ -16,10 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
-func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, metricsBuilder *metadata.MetricsBuilder, _ *zap.Logger) {
+func collectStats(now pcommon.Timestamp, fileinfo os.FileInfo, rmb *metadata.ResourceMetricsBuilder, _ *zap.Logger) {
 	stat := fileinfo.Sys().(*syscall.Stat_t)
 	atime := stat.Atimespec.Sec
 	ctime := stat.Ctimespec.Sec
-	metricsBuilder.RecordFileAtimeDataPoint(now, atime)
-	metricsBuilder.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
+	rmb.RecordFileAtimeDataPoint(now, atime)
+	rmb.RecordFileCtimeDataPoint(now, ctime, fileinfo.Mode().Perm().String())
 }

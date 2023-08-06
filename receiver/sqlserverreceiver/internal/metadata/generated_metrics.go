@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributePageOperations specifies the a value page.operations attribute.
@@ -1023,14 +1025,25 @@ func newMetricSqlserverUserConnectionCount(cfg MetricConfig) metricSqlserverUser
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                            int                  // maximum observed number of metrics per resource.
-	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                  component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                  component.BuildInfo
+	startTime                                  pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                            int               // maximum observed number of metrics per resource.
+	resource                                   pcommon.Resource
+	missedEmits                                int
 	metricSqlserverBatchRequestRate            metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate     metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate   metricSqlserverBatchSQLRecompilationRate
@@ -1065,35 +1078,64 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                     mbc,
-		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                              pmetric.NewMetrics(),
-		buildInfo:                                  settings.BuildInfo,
-		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
-		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
-		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
-		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
-		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
-		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(mbc.Metrics.SqlserverPageBufferCacheHitRatio),
-		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(mbc.Metrics.SqlserverPageCheckpointFlushRate),
-		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(mbc.Metrics.SqlserverPageLazyWriteRate),
-		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(mbc.Metrics.SqlserverPageLifeExpectancy),
-		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
-		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
-		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
-		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(mbc.Metrics.SqlserverTransactionWriteRate),
-		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(mbc.Metrics.SqlserverTransactionLogFlushDataRate),
-		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(mbc.Metrics.SqlserverTransactionLogFlushRate),
-		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(mbc.Metrics.SqlserverTransactionLogFlushWaitRate),
-		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(mbc.Metrics.SqlserverTransactionLogGrowthCount),
-		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(mbc.Metrics.SqlserverTransactionLogShrinkCount),
-		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(mbc.Metrics.SqlserverTransactionLogUsage),
-		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(mbc.Metrics.SqlserverUserConnectionCount),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                                  mb.startTime,
+		buildInfo:                                  mb.buildInfo,
+		resource:                                   res,
+		metricSqlserverBatchRequestRate:            newMetricSqlserverBatchRequestRate(mb.config.Metrics.SqlserverBatchRequestRate),
+		metricSqlserverBatchSQLCompilationRate:     newMetricSqlserverBatchSQLCompilationRate(mb.config.Metrics.SqlserverBatchSQLCompilationRate),
+		metricSqlserverBatchSQLRecompilationRate:   newMetricSqlserverBatchSQLRecompilationRate(mb.config.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverLockWaitRate:                newMetricSqlserverLockWaitRate(mb.config.Metrics.SqlserverLockWaitRate),
+		metricSqlserverLockWaitTimeAvg:             newMetricSqlserverLockWaitTimeAvg(mb.config.Metrics.SqlserverLockWaitTimeAvg),
+		metricSqlserverPageBufferCacheHitRatio:     newMetricSqlserverPageBufferCacheHitRatio(mb.config.Metrics.SqlserverPageBufferCacheHitRatio),
+		metricSqlserverPageCheckpointFlushRate:     newMetricSqlserverPageCheckpointFlushRate(mb.config.Metrics.SqlserverPageCheckpointFlushRate),
+		metricSqlserverPageLazyWriteRate:           newMetricSqlserverPageLazyWriteRate(mb.config.Metrics.SqlserverPageLazyWriteRate),
+		metricSqlserverPageLifeExpectancy:          newMetricSqlserverPageLifeExpectancy(mb.config.Metrics.SqlserverPageLifeExpectancy),
+		metricSqlserverPageOperationRate:           newMetricSqlserverPageOperationRate(mb.config.Metrics.SqlserverPageOperationRate),
+		metricSqlserverPageSplitRate:               newMetricSqlserverPageSplitRate(mb.config.Metrics.SqlserverPageSplitRate),
+		metricSqlserverTransactionRate:             newMetricSqlserverTransactionRate(mb.config.Metrics.SqlserverTransactionRate),
+		metricSqlserverTransactionWriteRate:        newMetricSqlserverTransactionWriteRate(mb.config.Metrics.SqlserverTransactionWriteRate),
+		metricSqlserverTransactionLogFlushDataRate: newMetricSqlserverTransactionLogFlushDataRate(mb.config.Metrics.SqlserverTransactionLogFlushDataRate),
+		metricSqlserverTransactionLogFlushRate:     newMetricSqlserverTransactionLogFlushRate(mb.config.Metrics.SqlserverTransactionLogFlushRate),
+		metricSqlserverTransactionLogFlushWaitRate: newMetricSqlserverTransactionLogFlushWaitRate(mb.config.Metrics.SqlserverTransactionLogFlushWaitRate),
+		metricSqlserverTransactionLogGrowthCount:   newMetricSqlserverTransactionLogGrowthCount(mb.config.Metrics.SqlserverTransactionLogGrowthCount),
+		metricSqlserverTransactionLogShrinkCount:   newMetricSqlserverTransactionLogShrinkCount(mb.config.Metrics.SqlserverTransactionLogShrinkCount),
+		metricSqlserverTransactionLogUsage:         newMetricSqlserverTransactionLogUsage(mb.config.Metrics.SqlserverTransactionLogUsage),
+		metricSqlserverUserConnectionCount:         newMetricSqlserverUserConnectionCount(mb.config.Metrics.SqlserverUserConnectionCount),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1102,199 +1144,172 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricSqlserverBatchRequestRate.emit(sm.Metrics())
+	rmb.metricSqlserverBatchSQLCompilationRate.emit(sm.Metrics())
+	rmb.metricSqlserverBatchSQLRecompilationRate.emit(sm.Metrics())
+	rmb.metricSqlserverLockWaitRate.emit(sm.Metrics())
+	rmb.metricSqlserverLockWaitTimeAvg.emit(sm.Metrics())
+	rmb.metricSqlserverPageBufferCacheHitRatio.emit(sm.Metrics())
+	rmb.metricSqlserverPageCheckpointFlushRate.emit(sm.Metrics())
+	rmb.metricSqlserverPageLazyWriteRate.emit(sm.Metrics())
+	rmb.metricSqlserverPageLifeExpectancy.emit(sm.Metrics())
+	rmb.metricSqlserverPageOperationRate.emit(sm.Metrics())
+	rmb.metricSqlserverPageSplitRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionWriteRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogFlushDataRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogFlushRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogFlushWaitRate.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogGrowthCount.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogShrinkCount.emit(sm.Metrics())
+	rmb.metricSqlserverTransactionLogUsage.emit(sm.Metrics())
+	rmb.metricSqlserverUserConnectionCount.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/sqlserverreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
-	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
-	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
-	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
-	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
-	mb.metricSqlserverPageBufferCacheHitRatio.emit(ils.Metrics())
-	mb.metricSqlserverPageCheckpointFlushRate.emit(ils.Metrics())
-	mb.metricSqlserverPageLazyWriteRate.emit(ils.Metrics())
-	mb.metricSqlserverPageLifeExpectancy.emit(ils.Metrics())
-	mb.metricSqlserverPageOperationRate.emit(ils.Metrics())
-	mb.metricSqlserverPageSplitRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionWriteRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogFlushDataRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogFlushRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogFlushWaitRate.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogGrowthCount.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogShrinkCount.emit(ils.Metrics())
-	mb.metricSqlserverTransactionLogUsage.emit(ils.Metrics())
-	mb.metricSqlserverUserConnectionCount.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/sqlserverreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordSqlserverBatchRequestRateDataPoint adds a data point to sqlserver.batch.request.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverBatchRequestRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverBatchRequestRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverBatchRequestRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverBatchRequestRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverBatchSQLCompilationRateDataPoint adds a data point to sqlserver.batch.sql_compilation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverBatchSQLCompilationRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverBatchSQLCompilationRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverBatchSQLRecompilationRateDataPoint adds a data point to sqlserver.batch.sql_recompilation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverLockWaitRateDataPoint adds a data point to sqlserver.lock.wait.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverLockWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockWaitRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverLockWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverLockWaitRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverLockWaitTimeAvgDataPoint adds a data point to sqlserver.lock.wait_time.avg metric.
-func (mb *MetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverLockWaitTimeAvg.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverLockWaitTimeAvgDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverLockWaitTimeAvg.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverPageBufferCacheHitRatioDataPoint adds a data point to sqlserver.page.buffer_cache.hit_ratio metric.
-func (mb *MetricsBuilder) RecordSqlserverPageBufferCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverPageBufferCacheHitRatio.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageBufferCacheHitRatioDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverPageBufferCacheHitRatio.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverPageCheckpointFlushRateDataPoint adds a data point to sqlserver.page.checkpoint.flush.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageCheckpointFlushRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverPageCheckpointFlushRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageCheckpointFlushRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverPageCheckpointFlushRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverPageLazyWriteRateDataPoint adds a data point to sqlserver.page.lazy_write.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageLazyWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverPageLazyWriteRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageLazyWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverPageLazyWriteRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverPageLifeExpectancyDataPoint adds a data point to sqlserver.page.life_expectancy metric.
-func (mb *MetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverPageLifeExpectancy.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageLifeExpectancyDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSqlserverPageLifeExpectancy.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverPageOperationRateDataPoint adds a data point to sqlserver.page.operation.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue AttributePageOperations) {
-	mb.metricSqlserverPageOperationRate.recordDataPoint(mb.startTime, ts, val, pageOperationsAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageOperationRateDataPoint(ts pcommon.Timestamp, val float64, pageOperationsAttributeValue AttributePageOperations) {
+	rmb.metricSqlserverPageOperationRate.recordDataPoint(rmb.startTime, ts, val, pageOperationsAttributeValue.String())
 }
 
 // RecordSqlserverPageSplitRateDataPoint adds a data point to sqlserver.page.split.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverPageSplitRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverPageSplitRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverPageSplitRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverPageSplitRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionRateDataPoint adds a data point to sqlserver.transaction.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverTransactionRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverTransactionRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionWriteRateDataPoint adds a data point to sqlserver.transaction.write.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverTransactionWriteRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionWriteRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverTransactionWriteRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogFlushDataRateDataPoint adds a data point to sqlserver.transaction_log.flush.data.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushDataRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverTransactionLogFlushDataRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogFlushDataRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverTransactionLogFlushDataRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogFlushRateDataPoint adds a data point to sqlserver.transaction_log.flush.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverTransactionLogFlushRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogFlushRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverTransactionLogFlushRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogFlushWaitRateDataPoint adds a data point to sqlserver.transaction_log.flush.wait.rate metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSqlserverTransactionLogFlushWaitRate.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogFlushWaitRateDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSqlserverTransactionLogFlushWaitRate.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogGrowthCountDataPoint adds a data point to sqlserver.transaction_log.growth.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogGrowthCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverTransactionLogGrowthCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogGrowthCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSqlserverTransactionLogGrowthCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogShrinkCountDataPoint adds a data point to sqlserver.transaction_log.shrink.count metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverTransactionLogShrinkCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogShrinkCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSqlserverTransactionLogShrinkCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverTransactionLogUsageDataPoint adds a data point to sqlserver.transaction_log.usage metric.
-func (mb *MetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverTransactionLogUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverTransactionLogUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSqlserverTransactionLogUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSqlserverUserConnectionCountDataPoint adds a data point to sqlserver.user.connection.count metric.
-func (mb *MetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSqlserverUserConnectionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSqlserverUserConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSqlserverUserConnectionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

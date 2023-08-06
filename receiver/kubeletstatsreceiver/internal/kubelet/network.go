@@ -12,24 +12,24 @@ import (
 
 type getNetworkDataFunc func(s *stats.NetworkStats) (rx *uint64, tx *uint64)
 
-func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
+func addNetworkMetrics(rmb *metadata.ResourceMetricsBuilder, networkMetrics metadata.NetworkMetrics, s *stats.NetworkStats, currentTime pcommon.Timestamp) {
 	if s == nil {
 		return
 	}
 
-	recordNetworkDataPoint(mb, networkMetrics.IO, s, getNetworkIO, currentTime)
-	recordNetworkDataPoint(mb, networkMetrics.Errors, s, getNetworkErrors, currentTime)
+	recordNetworkDataPoint(rmb, networkMetrics.IO, s, getNetworkIO, currentTime)
+	recordNetworkDataPoint(rmb, networkMetrics.Errors, s, getNetworkErrors, currentTime)
 }
 
-func recordNetworkDataPoint(mb *metadata.MetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
+func recordNetworkDataPoint(rmb *metadata.ResourceMetricsBuilder, recordDataPoint metadata.RecordIntDataPointWithDirectionFunc, s *stats.NetworkStats, getData getNetworkDataFunc, currentTime pcommon.Timestamp) {
 	rx, tx := getData(s)
 
 	if rx != nil {
-		recordDataPoint(mb, currentTime, int64(*rx), s.Name, metadata.AttributeDirectionReceive)
+		recordDataPoint(rmb, currentTime, int64(*rx), s.Name, metadata.AttributeDirectionReceive)
 	}
 
 	if tx != nil {
-		recordDataPoint(mb, currentTime, int64(*tx), s.Name, metadata.AttributeDirectionTransmit)
+		recordDataPoint(rmb, currentTime, int64(*tx), s.Name, metadata.AttributeDirectionTransmit)
 	}
 }
 

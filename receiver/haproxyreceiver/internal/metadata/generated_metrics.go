@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeStatusCode specifies the a value status_code attribute.
@@ -1373,14 +1375,25 @@ func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal 
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                            MetricsBuilderConfig // config of the metrics builder.
-	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                  // maximum observed number of metrics per resource.
-	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                         component.BuildInfo
+	startTime                         pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                   int               // maximum observed number of metrics per resource.
+	resource                          pcommon.Resource
+	missedEmits                       int
 	metricHaproxyBytesInput           metricHaproxyBytesInput
 	metricHaproxyBytesOutput          metricHaproxyBytesOutput
 	metricHaproxyClientsCanceled      metricHaproxyClientsCanceled
@@ -1421,41 +1434,70 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                            mbc,
-		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                     pmetric.NewMetrics(),
-		buildInfo:                         settings.BuildInfo,
-		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
-		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
-		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
-		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(mbc.Metrics.HaproxyCompressionBypass),
-		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(mbc.Metrics.HaproxyCompressionCount),
-		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(mbc.Metrics.HaproxyCompressionInput),
-		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(mbc.Metrics.HaproxyCompressionOutput),
-		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(mbc.Metrics.HaproxyConnectionsErrors),
-		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(mbc.Metrics.HaproxyConnectionsRate),
-		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(mbc.Metrics.HaproxyConnectionsRetries),
-		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(mbc.Metrics.HaproxyConnectionsTotal),
-		metricHaproxyDowntime:             newMetricHaproxyDowntime(mbc.Metrics.HaproxyDowntime),
-		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(mbc.Metrics.HaproxyFailedChecks),
-		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(mbc.Metrics.HaproxyRequestsDenied),
-		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(mbc.Metrics.HaproxyRequestsErrors),
-		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(mbc.Metrics.HaproxyRequestsQueued),
-		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(mbc.Metrics.HaproxyRequestsRate),
-		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(mbc.Metrics.HaproxyRequestsRedispatched),
-		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(mbc.Metrics.HaproxyRequestsTotal),
-		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(mbc.Metrics.HaproxyResponsesDenied),
-		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(mbc.Metrics.HaproxyResponsesErrors),
-		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(mbc.Metrics.HaproxyServerSelectedTotal),
-		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(mbc.Metrics.HaproxySessionsAverage),
-		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
-		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
-		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                         mb.startTime,
+		buildInfo:                         mb.buildInfo,
+		resource:                          res,
+		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mb.config.Metrics.HaproxyBytesInput),
+		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mb.config.Metrics.HaproxyBytesOutput),
+		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mb.config.Metrics.HaproxyClientsCanceled),
+		metricHaproxyCompressionBypass:    newMetricHaproxyCompressionBypass(mb.config.Metrics.HaproxyCompressionBypass),
+		metricHaproxyCompressionCount:     newMetricHaproxyCompressionCount(mb.config.Metrics.HaproxyCompressionCount),
+		metricHaproxyCompressionInput:     newMetricHaproxyCompressionInput(mb.config.Metrics.HaproxyCompressionInput),
+		metricHaproxyCompressionOutput:    newMetricHaproxyCompressionOutput(mb.config.Metrics.HaproxyCompressionOutput),
+		metricHaproxyConnectionsErrors:    newMetricHaproxyConnectionsErrors(mb.config.Metrics.HaproxyConnectionsErrors),
+		metricHaproxyConnectionsRate:      newMetricHaproxyConnectionsRate(mb.config.Metrics.HaproxyConnectionsRate),
+		metricHaproxyConnectionsRetries:   newMetricHaproxyConnectionsRetries(mb.config.Metrics.HaproxyConnectionsRetries),
+		metricHaproxyConnectionsTotal:     newMetricHaproxyConnectionsTotal(mb.config.Metrics.HaproxyConnectionsTotal),
+		metricHaproxyDowntime:             newMetricHaproxyDowntime(mb.config.Metrics.HaproxyDowntime),
+		metricHaproxyFailedChecks:         newMetricHaproxyFailedChecks(mb.config.Metrics.HaproxyFailedChecks),
+		metricHaproxyRequestsDenied:       newMetricHaproxyRequestsDenied(mb.config.Metrics.HaproxyRequestsDenied),
+		metricHaproxyRequestsErrors:       newMetricHaproxyRequestsErrors(mb.config.Metrics.HaproxyRequestsErrors),
+		metricHaproxyRequestsQueued:       newMetricHaproxyRequestsQueued(mb.config.Metrics.HaproxyRequestsQueued),
+		metricHaproxyRequestsRate:         newMetricHaproxyRequestsRate(mb.config.Metrics.HaproxyRequestsRate),
+		metricHaproxyRequestsRedispatched: newMetricHaproxyRequestsRedispatched(mb.config.Metrics.HaproxyRequestsRedispatched),
+		metricHaproxyRequestsTotal:        newMetricHaproxyRequestsTotal(mb.config.Metrics.HaproxyRequestsTotal),
+		metricHaproxyResponsesDenied:      newMetricHaproxyResponsesDenied(mb.config.Metrics.HaproxyResponsesDenied),
+		metricHaproxyResponsesErrors:      newMetricHaproxyResponsesErrors(mb.config.Metrics.HaproxyResponsesErrors),
+		metricHaproxyServerSelectedTotal:  newMetricHaproxyServerSelectedTotal(mb.config.Metrics.HaproxyServerSelectedTotal),
+		metricHaproxySessionsAverage:      newMetricHaproxySessionsAverage(mb.config.Metrics.HaproxySessionsAverage),
+		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mb.config.Metrics.HaproxySessionsCount),
+		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mb.config.Metrics.HaproxySessionsRate),
+		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mb.config.Metrics.HaproxySessionsTotal),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1464,360 +1506,333 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricHaproxyBytesInput.emit(sm.Metrics())
+	rmb.metricHaproxyBytesOutput.emit(sm.Metrics())
+	rmb.metricHaproxyClientsCanceled.emit(sm.Metrics())
+	rmb.metricHaproxyCompressionBypass.emit(sm.Metrics())
+	rmb.metricHaproxyCompressionCount.emit(sm.Metrics())
+	rmb.metricHaproxyCompressionInput.emit(sm.Metrics())
+	rmb.metricHaproxyCompressionOutput.emit(sm.Metrics())
+	rmb.metricHaproxyConnectionsErrors.emit(sm.Metrics())
+	rmb.metricHaproxyConnectionsRate.emit(sm.Metrics())
+	rmb.metricHaproxyConnectionsRetries.emit(sm.Metrics())
+	rmb.metricHaproxyConnectionsTotal.emit(sm.Metrics())
+	rmb.metricHaproxyDowntime.emit(sm.Metrics())
+	rmb.metricHaproxyFailedChecks.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsDenied.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsErrors.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsQueued.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsRate.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsRedispatched.emit(sm.Metrics())
+	rmb.metricHaproxyRequestsTotal.emit(sm.Metrics())
+	rmb.metricHaproxyResponsesDenied.emit(sm.Metrics())
+	rmb.metricHaproxyResponsesErrors.emit(sm.Metrics())
+	rmb.metricHaproxyServerSelectedTotal.emit(sm.Metrics())
+	rmb.metricHaproxySessionsAverage.emit(sm.Metrics())
+	rmb.metricHaproxySessionsCount.emit(sm.Metrics())
+	rmb.metricHaproxySessionsRate.emit(sm.Metrics())
+	rmb.metricHaproxySessionsTotal.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/haproxyreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricHaproxyBytesInput.emit(ils.Metrics())
-	mb.metricHaproxyBytesOutput.emit(ils.Metrics())
-	mb.metricHaproxyClientsCanceled.emit(ils.Metrics())
-	mb.metricHaproxyCompressionBypass.emit(ils.Metrics())
-	mb.metricHaproxyCompressionCount.emit(ils.Metrics())
-	mb.metricHaproxyCompressionInput.emit(ils.Metrics())
-	mb.metricHaproxyCompressionOutput.emit(ils.Metrics())
-	mb.metricHaproxyConnectionsErrors.emit(ils.Metrics())
-	mb.metricHaproxyConnectionsRate.emit(ils.Metrics())
-	mb.metricHaproxyConnectionsRetries.emit(ils.Metrics())
-	mb.metricHaproxyConnectionsTotal.emit(ils.Metrics())
-	mb.metricHaproxyDowntime.emit(ils.Metrics())
-	mb.metricHaproxyFailedChecks.emit(ils.Metrics())
-	mb.metricHaproxyRequestsDenied.emit(ils.Metrics())
-	mb.metricHaproxyRequestsErrors.emit(ils.Metrics())
-	mb.metricHaproxyRequestsQueued.emit(ils.Metrics())
-	mb.metricHaproxyRequestsRate.emit(ils.Metrics())
-	mb.metricHaproxyRequestsRedispatched.emit(ils.Metrics())
-	mb.metricHaproxyRequestsTotal.emit(ils.Metrics())
-	mb.metricHaproxyResponsesDenied.emit(ils.Metrics())
-	mb.metricHaproxyResponsesErrors.emit(ils.Metrics())
-	mb.metricHaproxyServerSelectedTotal.emit(ils.Metrics())
-	mb.metricHaproxySessionsAverage.emit(ils.Metrics())
-	mb.metricHaproxySessionsCount.emit(ils.Metrics())
-	mb.metricHaproxySessionsRate.emit(ils.Metrics())
-	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/haproxyreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordHaproxyBytesInputDataPoint adds a data point to haproxy.bytes.input metric.
-func (mb *MetricsBuilder) RecordHaproxyBytesInputDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyBytesInputDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyBytesInput, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyBytesInput.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyBytesInput.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyBytesOutputDataPoint adds a data point to haproxy.bytes.output metric.
-func (mb *MetricsBuilder) RecordHaproxyBytesOutputDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyBytesOutputDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyBytesOutput, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyBytesOutput.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyBytesOutput.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyClientsCanceledDataPoint adds a data point to haproxy.clients.canceled metric.
-func (mb *MetricsBuilder) RecordHaproxyClientsCanceledDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyClientsCanceledDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyClientsCanceled, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyClientsCanceled.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyClientsCanceled.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyCompressionBypassDataPoint adds a data point to haproxy.compression.bypass metric.
-func (mb *MetricsBuilder) RecordHaproxyCompressionBypassDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyCompressionBypassDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyCompressionBypass, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyCompressionBypass.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyCompressionBypass.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyCompressionCountDataPoint adds a data point to haproxy.compression.count metric.
-func (mb *MetricsBuilder) RecordHaproxyCompressionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyCompressionCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyCompressionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyCompressionCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyCompressionCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyCompressionInputDataPoint adds a data point to haproxy.compression.input metric.
-func (mb *MetricsBuilder) RecordHaproxyCompressionInputDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyCompressionInputDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyCompressionInput, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyCompressionInput.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyCompressionInput.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyCompressionOutputDataPoint adds a data point to haproxy.compression.output metric.
-func (mb *MetricsBuilder) RecordHaproxyCompressionOutputDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyCompressionOutputDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyCompressionOutput, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyCompressionOutput.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyCompressionOutput.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyConnectionsErrorsDataPoint adds a data point to haproxy.connections.errors metric.
-func (mb *MetricsBuilder) RecordHaproxyConnectionsErrorsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyConnectionsErrorsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyConnectionsErrors, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyConnectionsErrors.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyConnectionsErrors.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyConnectionsRateDataPoint adds a data point to haproxy.connections.rate metric.
-func (mb *MetricsBuilder) RecordHaproxyConnectionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyConnectionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyConnectionsRate, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyConnectionsRate.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyConnectionsRate.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyConnectionsRetriesDataPoint adds a data point to haproxy.connections.retries metric.
-func (mb *MetricsBuilder) RecordHaproxyConnectionsRetriesDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyConnectionsRetriesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyConnectionsRetries, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyConnectionsRetries.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyConnectionsRetries.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyConnectionsTotalDataPoint adds a data point to haproxy.connections.total metric.
-func (mb *MetricsBuilder) RecordHaproxyConnectionsTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyConnectionsTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyConnectionsTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyConnectionsTotal.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyConnectionsTotal.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyDowntimeDataPoint adds a data point to haproxy.downtime metric.
-func (mb *MetricsBuilder) RecordHaproxyDowntimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyDowntimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyDowntime, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyDowntime.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyDowntime.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyFailedChecksDataPoint adds a data point to haproxy.failed_checks metric.
-func (mb *MetricsBuilder) RecordHaproxyFailedChecksDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyFailedChecksDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyFailedChecks, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyFailedChecks.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyFailedChecks.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsDeniedDataPoint adds a data point to haproxy.requests.denied metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsDeniedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsDeniedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyRequestsDenied, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsDenied.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyRequestsDenied.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsErrorsDataPoint adds a data point to haproxy.requests.errors metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsErrorsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsErrorsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyRequestsErrors, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsErrors.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyRequestsErrors.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsQueuedDataPoint adds a data point to haproxy.requests.queued metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsQueuedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsQueuedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyRequestsQueued, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsQueued.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyRequestsQueued.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsRateDataPoint adds a data point to haproxy.requests.rate metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for HaproxyRequestsRate, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsRate.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyRequestsRate.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsRedispatchedDataPoint adds a data point to haproxy.requests.redispatched metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsRedispatchedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsRedispatchedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyRequestsRedispatched, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsRedispatched.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyRequestsRedispatched.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyRequestsTotalDataPoint adds a data point to haproxy.requests.total metric.
-func (mb *MetricsBuilder) RecordHaproxyRequestsTotalDataPoint(ts pcommon.Timestamp, inputVal string, statusCodeAttributeValue AttributeStatusCode) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyRequestsTotalDataPoint(ts pcommon.Timestamp, inputVal string, statusCodeAttributeValue AttributeStatusCode) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyRequestsTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyRequestsTotal.recordDataPoint(mb.startTime, ts, val, statusCodeAttributeValue.String())
+	rmb.metricHaproxyRequestsTotal.recordDataPoint(rmb.startTime, ts, val, statusCodeAttributeValue.String())
 	return nil
 }
 
 // RecordHaproxyResponsesDeniedDataPoint adds a data point to haproxy.responses.denied metric.
-func (mb *MetricsBuilder) RecordHaproxyResponsesDeniedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyResponsesDeniedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyResponsesDenied, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyResponsesDenied.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyResponsesDenied.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxyResponsesErrorsDataPoint adds a data point to haproxy.responses.errors metric.
-func (mb *MetricsBuilder) RecordHaproxyResponsesErrorsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricHaproxyResponsesErrors.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordHaproxyResponsesErrorsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricHaproxyResponsesErrors.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordHaproxyServerSelectedTotalDataPoint adds a data point to haproxy.server_selected.total metric.
-func (mb *MetricsBuilder) RecordHaproxyServerSelectedTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxyServerSelectedTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxyServerSelectedTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxyServerSelectedTotal.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxyServerSelectedTotal.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxySessionsAverageDataPoint adds a data point to haproxy.sessions.average metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsAverageDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxySessionsAverageDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for HaproxySessionsAverage, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxySessionsAverage.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxySessionsAverage.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxySessionsCountDataPoint adds a data point to haproxy.sessions.count metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxySessionsCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxySessionsCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxySessionsCount.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxySessionsCount.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxySessionsRateDataPoint adds a data point to haproxy.sessions.rate metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxySessionsRateDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for HaproxySessionsRate, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxySessionsRate.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxySessionsRate.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordHaproxySessionsTotalDataPoint adds a data point to haproxy.sessions.total metric.
-func (mb *MetricsBuilder) RecordHaproxySessionsTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordHaproxySessionsTotalDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for HaproxySessionsTotal, value was %s: %w", inputVal, err)
 	}
-	mb.metricHaproxySessionsTotal.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricHaproxySessionsTotal.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

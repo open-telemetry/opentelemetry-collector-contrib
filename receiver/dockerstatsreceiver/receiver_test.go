@@ -316,6 +316,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
+			r.mb.ResourceMetricsBuilder(pcommon.NewResource()),
 			&types.ContainerJSONBase{
 				State: &types.ContainerState{
 					StartedAt: started,
@@ -333,6 +334,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
+			r.mb.ResourceMetricsBuilder(pcommon.NewResource()),
 			&types.ContainerJSONBase{
 				State: &types.ContainerState{
 					StartedAt: "bad date",

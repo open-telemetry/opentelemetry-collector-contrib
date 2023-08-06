@@ -95,14 +95,16 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLength)
 	}
 
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
+
 	if enableProcessesCount && processMetadata.countByStatus != nil {
 		for status, count := range processMetadata.countByStatus {
-			s.mb.RecordSystemProcessesCountDataPoint(now, count, status)
+			rmb.RecordSystemProcessesCountDataPoint(now, count, status)
 		}
 	}
 
 	if enableProcessesCreated && processMetadata.processesCreated != nil {
-		s.mb.RecordSystemProcessesCreatedDataPoint(now, *processMetadata.processesCreated)
+		rmb.RecordSystemProcessesCreatedDataPoint(now, *processMetadata.processesCreated)
 	}
 
 	return s.mb.Emit(), err

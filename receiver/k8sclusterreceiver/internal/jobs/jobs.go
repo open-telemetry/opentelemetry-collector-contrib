@@ -13,23 +13,23 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Timestamp) {
-	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
-	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))
-	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded))
-
-	if j.Spec.Completions != nil {
-		mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions))
-	}
-	if j.Spec.Parallelism != nil {
-		mb.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
-	}
-
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(j.Namespace)
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+
+	rmb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
+	rmb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))
+	rmb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded))
+
+	if j.Spec.Completions != nil {
+		rmb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions))
+	}
+	if j.Spec.Parallelism != nil {
+		rmb.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
+	}
 }
 
 // Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.

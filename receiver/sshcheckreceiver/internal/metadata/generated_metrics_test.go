@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetSSHEndpoint("ssh.endpoint-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,29 +61,26 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSshcheckDurationDataPoint(ts, 1)
+			rmb.RecordSshcheckDurationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
+			rmb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
 
 			allMetricsCount++
-			mb.RecordSshcheckSftpDurationDataPoint(ts, 1)
+			rmb.RecordSshcheckSftpDurationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSshcheckSftpErrorDataPoint(ts, 1, "error.message-val")
+			rmb.RecordSshcheckSftpErrorDataPoint(ts, 1, "error.message-val")
 
 			allMetricsCount++
-			mb.RecordSshcheckSftpStatusDataPoint(ts, 1)
+			rmb.RecordSshcheckSftpStatusDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSshcheckStatusDataPoint(ts, 1)
+			rmb.RecordSshcheckStatusDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetSSHEndpoint("ssh.endpoint-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -133,35 +133,40 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) recordDiskIOMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[readBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskIoDataPoint(now, logicalDiskCounter.Values[writeBytesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskOperationsMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[readsPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskOperationsDataPoint(now, logicalDiskCounter.Values[writesPerSec], logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskIOTimeMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
 		// disk active time = system boot time - disk idle time
-		s.mb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7, logicalDiskCounter.InstanceName)
+		rmb.RecordSystemDiskIoTimeDataPoint(now, float64(now-s.startTime)/1e9-float64(logicalDiskCounter.Values[idleTime])/1e7, logicalDiskCounter.InstanceName)
 	}
 }
 
 func (s *scraper) recordDiskOperationTimeMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
-		s.mb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
+		rmb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerRead])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionRead)
+		rmb.RecordSystemDiskOperationTimeDataPoint(now, float64(logicalDiskCounter.Values[avgDiskSecsPerWrite])/1e7, logicalDiskCounter.InstanceName, metadata.AttributeDirectionWrite)
 	}
 }
 
 func (s *scraper) recordDiskPendingOperationsMetric(now pcommon.Timestamp, logicalDiskCounterValues []*perfcounters.CounterValues) {
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 	for _, logicalDiskCounter := range logicalDiskCounterValues {
-		s.mb.RecordSystemDiskPendingOperationsDataPoint(now, logicalDiskCounter.Values[queueLength], logicalDiskCounter.InstanceName)
+		rmb.RecordSystemDiskPendingOperationsDataPoint(now, logicalDiskCounter.Values[queueLength], logicalDiskCounter.InstanceName)
 	}
 }

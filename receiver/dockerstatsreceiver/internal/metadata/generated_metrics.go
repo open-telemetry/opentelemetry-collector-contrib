@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 type metricContainerBlockioIoMergedRecursive struct {
@@ -3471,14 +3473,25 @@ func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                           MetricsBuilderConfig // config of the metrics builder.
-	startTime                                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                  int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                    pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                        component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                        component.BuildInfo
+	startTime                                        pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                  int               // maximum observed number of metrics per resource.
+	resource                                         pcommon.Resource
+	missedEmits                                      int
 	metricContainerBlockioIoMergedRecursive          metricContainerBlockioIoMergedRecursive
 	metricContainerBlockioIoQueuedRecursive          metricContainerBlockioIoQueuedRecursive
 	metricContainerBlockioIoServiceBytesRecursive    metricContainerBlockioIoServiceBytesRecursive
@@ -3566,82 +3579,111 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `container.cpu.utilization`: This metric will be enabled by default in v0.82.0.")
 	}
 	mb := &MetricsBuilder{
-		config:                                  mbc,
-		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                           pmetric.NewMetrics(),
-		buildInfo:                               settings.BuildInfo,
-		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(mbc.Metrics.ContainerBlockioIoMergedRecursive),
-		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(mbc.Metrics.ContainerBlockioIoQueuedRecursive),
-		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(mbc.Metrics.ContainerBlockioIoServiceBytesRecursive),
-		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(mbc.Metrics.ContainerBlockioIoServiceTimeRecursive),
-		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(mbc.Metrics.ContainerBlockioIoServicedRecursive),
-		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mbc.Metrics.ContainerBlockioIoTimeRecursive),
-		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mbc.Metrics.ContainerBlockioIoWaitTimeRecursive),
-		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mbc.Metrics.ContainerBlockioSectorsRecursive),
-		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mbc.Metrics.ContainerCPUPercent),
-		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mbc.Metrics.ContainerCPUThrottlingDataPeriods),
-		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mbc.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
-		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mbc.Metrics.ContainerCPUThrottlingDataThrottledTime),
-		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mbc.Metrics.ContainerCPUUsageKernelmode),
-		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mbc.Metrics.ContainerCPUUsagePercpu),
-		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mbc.Metrics.ContainerCPUUsageSystem),
-		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mbc.Metrics.ContainerCPUUsageTotal),
-		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mbc.Metrics.ContainerCPUUsageUsermode),
-		metricContainerCPUUtilization:                    newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
-		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mbc.Metrics.ContainerMemoryActiveAnon),
-		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mbc.Metrics.ContainerMemoryActiveFile),
-		metricContainerMemoryAnon:                        newMetricContainerMemoryAnon(mbc.Metrics.ContainerMemoryAnon),
-		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mbc.Metrics.ContainerMemoryCache),
-		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mbc.Metrics.ContainerMemoryDirty),
-		metricContainerMemoryFile:                        newMetricContainerMemoryFile(mbc.Metrics.ContainerMemoryFile),
-		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mbc.Metrics.ContainerMemoryHierarchicalMemoryLimit),
-		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mbc.Metrics.ContainerMemoryHierarchicalMemswLimit),
-		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mbc.Metrics.ContainerMemoryInactiveAnon),
-		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mbc.Metrics.ContainerMemoryInactiveFile),
-		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mbc.Metrics.ContainerMemoryMappedFile),
-		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mbc.Metrics.ContainerMemoryPercent),
-		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mbc.Metrics.ContainerMemoryPgfault),
-		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mbc.Metrics.ContainerMemoryPgmajfault),
-		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(mbc.Metrics.ContainerMemoryPgpgin),
-		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mbc.Metrics.ContainerMemoryPgpgout),
-		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
-		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mbc.Metrics.ContainerMemoryRssHuge),
-		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mbc.Metrics.ContainerMemoryTotalActiveAnon),
-		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mbc.Metrics.ContainerMemoryTotalActiveFile),
-		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mbc.Metrics.ContainerMemoryTotalCache),
-		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(mbc.Metrics.ContainerMemoryTotalDirty),
-		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(mbc.Metrics.ContainerMemoryTotalInactiveAnon),
-		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(mbc.Metrics.ContainerMemoryTotalInactiveFile),
-		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(mbc.Metrics.ContainerMemoryTotalMappedFile),
-		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(mbc.Metrics.ContainerMemoryTotalPgfault),
-		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(mbc.Metrics.ContainerMemoryTotalPgmajfault),
-		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(mbc.Metrics.ContainerMemoryTotalPgpgin),
-		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mbc.Metrics.ContainerMemoryTotalPgpgout),
-		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mbc.Metrics.ContainerMemoryTotalRss),
-		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mbc.Metrics.ContainerMemoryTotalRssHuge),
-		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mbc.Metrics.ContainerMemoryTotalUnevictable),
-		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mbc.Metrics.ContainerMemoryTotalWriteback),
-		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mbc.Metrics.ContainerMemoryUnevictable),
-		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mbc.Metrics.ContainerMemoryUsageLimit),
-		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mbc.Metrics.ContainerMemoryUsageMax),
-		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mbc.Metrics.ContainerMemoryUsageTotal),
-		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mbc.Metrics.ContainerMemoryWriteback),
-		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mbc.Metrics.ContainerNetworkIoUsageRxBytes),
-		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(mbc.Metrics.ContainerNetworkIoUsageRxDropped),
-		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(mbc.Metrics.ContainerNetworkIoUsageRxErrors),
-		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(mbc.Metrics.ContainerNetworkIoUsageRxPackets),
-		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(mbc.Metrics.ContainerNetworkIoUsageTxBytes),
-		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mbc.Metrics.ContainerNetworkIoUsageTxDropped),
-		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mbc.Metrics.ContainerNetworkIoUsageTxErrors),
-		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mbc.Metrics.ContainerNetworkIoUsageTxPackets),
-		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
-		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
-		metricContainerUptime:                            newMetricContainerUptime(mbc.Metrics.ContainerUptime),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                               mb.startTime,
+		buildInfo:                               mb.buildInfo,
+		resource:                                res,
+		metricContainerBlockioIoMergedRecursive: newMetricContainerBlockioIoMergedRecursive(mb.config.Metrics.ContainerBlockioIoMergedRecursive),
+		metricContainerBlockioIoQueuedRecursive: newMetricContainerBlockioIoQueuedRecursive(mb.config.Metrics.ContainerBlockioIoQueuedRecursive),
+		metricContainerBlockioIoServiceBytesRecursive:    newMetricContainerBlockioIoServiceBytesRecursive(mb.config.Metrics.ContainerBlockioIoServiceBytesRecursive),
+		metricContainerBlockioIoServiceTimeRecursive:     newMetricContainerBlockioIoServiceTimeRecursive(mb.config.Metrics.ContainerBlockioIoServiceTimeRecursive),
+		metricContainerBlockioIoServicedRecursive:        newMetricContainerBlockioIoServicedRecursive(mb.config.Metrics.ContainerBlockioIoServicedRecursive),
+		metricContainerBlockioIoTimeRecursive:            newMetricContainerBlockioIoTimeRecursive(mb.config.Metrics.ContainerBlockioIoTimeRecursive),
+		metricContainerBlockioIoWaitTimeRecursive:        newMetricContainerBlockioIoWaitTimeRecursive(mb.config.Metrics.ContainerBlockioIoWaitTimeRecursive),
+		metricContainerBlockioSectorsRecursive:           newMetricContainerBlockioSectorsRecursive(mb.config.Metrics.ContainerBlockioSectorsRecursive),
+		metricContainerCPUPercent:                        newMetricContainerCPUPercent(mb.config.Metrics.ContainerCPUPercent),
+		metricContainerCPUThrottlingDataPeriods:          newMetricContainerCPUThrottlingDataPeriods(mb.config.Metrics.ContainerCPUThrottlingDataPeriods),
+		metricContainerCPUThrottlingDataThrottledPeriods: newMetricContainerCPUThrottlingDataThrottledPeriods(mb.config.Metrics.ContainerCPUThrottlingDataThrottledPeriods),
+		metricContainerCPUThrottlingDataThrottledTime:    newMetricContainerCPUThrottlingDataThrottledTime(mb.config.Metrics.ContainerCPUThrottlingDataThrottledTime),
+		metricContainerCPUUsageKernelmode:                newMetricContainerCPUUsageKernelmode(mb.config.Metrics.ContainerCPUUsageKernelmode),
+		metricContainerCPUUsagePercpu:                    newMetricContainerCPUUsagePercpu(mb.config.Metrics.ContainerCPUUsagePercpu),
+		metricContainerCPUUsageSystem:                    newMetricContainerCPUUsageSystem(mb.config.Metrics.ContainerCPUUsageSystem),
+		metricContainerCPUUsageTotal:                     newMetricContainerCPUUsageTotal(mb.config.Metrics.ContainerCPUUsageTotal),
+		metricContainerCPUUsageUsermode:                  newMetricContainerCPUUsageUsermode(mb.config.Metrics.ContainerCPUUsageUsermode),
+		metricContainerCPUUtilization:                    newMetricContainerCPUUtilization(mb.config.Metrics.ContainerCPUUtilization),
+		metricContainerMemoryActiveAnon:                  newMetricContainerMemoryActiveAnon(mb.config.Metrics.ContainerMemoryActiveAnon),
+		metricContainerMemoryActiveFile:                  newMetricContainerMemoryActiveFile(mb.config.Metrics.ContainerMemoryActiveFile),
+		metricContainerMemoryAnon:                        newMetricContainerMemoryAnon(mb.config.Metrics.ContainerMemoryAnon),
+		metricContainerMemoryCache:                       newMetricContainerMemoryCache(mb.config.Metrics.ContainerMemoryCache),
+		metricContainerMemoryDirty:                       newMetricContainerMemoryDirty(mb.config.Metrics.ContainerMemoryDirty),
+		metricContainerMemoryFile:                        newMetricContainerMemoryFile(mb.config.Metrics.ContainerMemoryFile),
+		metricContainerMemoryHierarchicalMemoryLimit:     newMetricContainerMemoryHierarchicalMemoryLimit(mb.config.Metrics.ContainerMemoryHierarchicalMemoryLimit),
+		metricContainerMemoryHierarchicalMemswLimit:      newMetricContainerMemoryHierarchicalMemswLimit(mb.config.Metrics.ContainerMemoryHierarchicalMemswLimit),
+		metricContainerMemoryInactiveAnon:                newMetricContainerMemoryInactiveAnon(mb.config.Metrics.ContainerMemoryInactiveAnon),
+		metricContainerMemoryInactiveFile:                newMetricContainerMemoryInactiveFile(mb.config.Metrics.ContainerMemoryInactiveFile),
+		metricContainerMemoryMappedFile:                  newMetricContainerMemoryMappedFile(mb.config.Metrics.ContainerMemoryMappedFile),
+		metricContainerMemoryPercent:                     newMetricContainerMemoryPercent(mb.config.Metrics.ContainerMemoryPercent),
+		metricContainerMemoryPgfault:                     newMetricContainerMemoryPgfault(mb.config.Metrics.ContainerMemoryPgfault),
+		metricContainerMemoryPgmajfault:                  newMetricContainerMemoryPgmajfault(mb.config.Metrics.ContainerMemoryPgmajfault),
+		metricContainerMemoryPgpgin:                      newMetricContainerMemoryPgpgin(mb.config.Metrics.ContainerMemoryPgpgin),
+		metricContainerMemoryPgpgout:                     newMetricContainerMemoryPgpgout(mb.config.Metrics.ContainerMemoryPgpgout),
+		metricContainerMemoryRss:                         newMetricContainerMemoryRss(mb.config.Metrics.ContainerMemoryRss),
+		metricContainerMemoryRssHuge:                     newMetricContainerMemoryRssHuge(mb.config.Metrics.ContainerMemoryRssHuge),
+		metricContainerMemoryTotalActiveAnon:             newMetricContainerMemoryTotalActiveAnon(mb.config.Metrics.ContainerMemoryTotalActiveAnon),
+		metricContainerMemoryTotalActiveFile:             newMetricContainerMemoryTotalActiveFile(mb.config.Metrics.ContainerMemoryTotalActiveFile),
+		metricContainerMemoryTotalCache:                  newMetricContainerMemoryTotalCache(mb.config.Metrics.ContainerMemoryTotalCache),
+		metricContainerMemoryTotalDirty:                  newMetricContainerMemoryTotalDirty(mb.config.Metrics.ContainerMemoryTotalDirty),
+		metricContainerMemoryTotalInactiveAnon:           newMetricContainerMemoryTotalInactiveAnon(mb.config.Metrics.ContainerMemoryTotalInactiveAnon),
+		metricContainerMemoryTotalInactiveFile:           newMetricContainerMemoryTotalInactiveFile(mb.config.Metrics.ContainerMemoryTotalInactiveFile),
+		metricContainerMemoryTotalMappedFile:             newMetricContainerMemoryTotalMappedFile(mb.config.Metrics.ContainerMemoryTotalMappedFile),
+		metricContainerMemoryTotalPgfault:                newMetricContainerMemoryTotalPgfault(mb.config.Metrics.ContainerMemoryTotalPgfault),
+		metricContainerMemoryTotalPgmajfault:             newMetricContainerMemoryTotalPgmajfault(mb.config.Metrics.ContainerMemoryTotalPgmajfault),
+		metricContainerMemoryTotalPgpgin:                 newMetricContainerMemoryTotalPgpgin(mb.config.Metrics.ContainerMemoryTotalPgpgin),
+		metricContainerMemoryTotalPgpgout:                newMetricContainerMemoryTotalPgpgout(mb.config.Metrics.ContainerMemoryTotalPgpgout),
+		metricContainerMemoryTotalRss:                    newMetricContainerMemoryTotalRss(mb.config.Metrics.ContainerMemoryTotalRss),
+		metricContainerMemoryTotalRssHuge:                newMetricContainerMemoryTotalRssHuge(mb.config.Metrics.ContainerMemoryTotalRssHuge),
+		metricContainerMemoryTotalUnevictable:            newMetricContainerMemoryTotalUnevictable(mb.config.Metrics.ContainerMemoryTotalUnevictable),
+		metricContainerMemoryTotalWriteback:              newMetricContainerMemoryTotalWriteback(mb.config.Metrics.ContainerMemoryTotalWriteback),
+		metricContainerMemoryUnevictable:                 newMetricContainerMemoryUnevictable(mb.config.Metrics.ContainerMemoryUnevictable),
+		metricContainerMemoryUsageLimit:                  newMetricContainerMemoryUsageLimit(mb.config.Metrics.ContainerMemoryUsageLimit),
+		metricContainerMemoryUsageMax:                    newMetricContainerMemoryUsageMax(mb.config.Metrics.ContainerMemoryUsageMax),
+		metricContainerMemoryUsageTotal:                  newMetricContainerMemoryUsageTotal(mb.config.Metrics.ContainerMemoryUsageTotal),
+		metricContainerMemoryWriteback:                   newMetricContainerMemoryWriteback(mb.config.Metrics.ContainerMemoryWriteback),
+		metricContainerNetworkIoUsageRxBytes:             newMetricContainerNetworkIoUsageRxBytes(mb.config.Metrics.ContainerNetworkIoUsageRxBytes),
+		metricContainerNetworkIoUsageRxDropped:           newMetricContainerNetworkIoUsageRxDropped(mb.config.Metrics.ContainerNetworkIoUsageRxDropped),
+		metricContainerNetworkIoUsageRxErrors:            newMetricContainerNetworkIoUsageRxErrors(mb.config.Metrics.ContainerNetworkIoUsageRxErrors),
+		metricContainerNetworkIoUsageRxPackets:           newMetricContainerNetworkIoUsageRxPackets(mb.config.Metrics.ContainerNetworkIoUsageRxPackets),
+		metricContainerNetworkIoUsageTxBytes:             newMetricContainerNetworkIoUsageTxBytes(mb.config.Metrics.ContainerNetworkIoUsageTxBytes),
+		metricContainerNetworkIoUsageTxDropped:           newMetricContainerNetworkIoUsageTxDropped(mb.config.Metrics.ContainerNetworkIoUsageTxDropped),
+		metricContainerNetworkIoUsageTxErrors:            newMetricContainerNetworkIoUsageTxErrors(mb.config.Metrics.ContainerNetworkIoUsageTxErrors),
+		metricContainerNetworkIoUsageTxPackets:           newMetricContainerNetworkIoUsageTxPackets(mb.config.Metrics.ContainerNetworkIoUsageTxPackets),
+		metricContainerPidsCount:                         newMetricContainerPidsCount(mb.config.Metrics.ContainerPidsCount),
+		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mb.config.Metrics.ContainerPidsLimit),
+		metricContainerUptime:                            newMetricContainerUptime(mb.config.Metrics.ContainerUptime),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -3650,482 +3692,455 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricContainerBlockioIoMergedRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoQueuedRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoServiceBytesRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoServiceTimeRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoServicedRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoTimeRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioIoWaitTimeRecursive.emit(sm.Metrics())
+	rmb.metricContainerBlockioSectorsRecursive.emit(sm.Metrics())
+	rmb.metricContainerCPUPercent.emit(sm.Metrics())
+	rmb.metricContainerCPUThrottlingDataPeriods.emit(sm.Metrics())
+	rmb.metricContainerCPUThrottlingDataThrottledPeriods.emit(sm.Metrics())
+	rmb.metricContainerCPUThrottlingDataThrottledTime.emit(sm.Metrics())
+	rmb.metricContainerCPUUsageKernelmode.emit(sm.Metrics())
+	rmb.metricContainerCPUUsagePercpu.emit(sm.Metrics())
+	rmb.metricContainerCPUUsageSystem.emit(sm.Metrics())
+	rmb.metricContainerCPUUsageTotal.emit(sm.Metrics())
+	rmb.metricContainerCPUUsageUsermode.emit(sm.Metrics())
+	rmb.metricContainerCPUUtilization.emit(sm.Metrics())
+	rmb.metricContainerMemoryActiveAnon.emit(sm.Metrics())
+	rmb.metricContainerMemoryActiveFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryAnon.emit(sm.Metrics())
+	rmb.metricContainerMemoryCache.emit(sm.Metrics())
+	rmb.metricContainerMemoryDirty.emit(sm.Metrics())
+	rmb.metricContainerMemoryFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryHierarchicalMemoryLimit.emit(sm.Metrics())
+	rmb.metricContainerMemoryHierarchicalMemswLimit.emit(sm.Metrics())
+	rmb.metricContainerMemoryInactiveAnon.emit(sm.Metrics())
+	rmb.metricContainerMemoryInactiveFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryMappedFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryPercent.emit(sm.Metrics())
+	rmb.metricContainerMemoryPgfault.emit(sm.Metrics())
+	rmb.metricContainerMemoryPgmajfault.emit(sm.Metrics())
+	rmb.metricContainerMemoryPgpgin.emit(sm.Metrics())
+	rmb.metricContainerMemoryPgpgout.emit(sm.Metrics())
+	rmb.metricContainerMemoryRss.emit(sm.Metrics())
+	rmb.metricContainerMemoryRssHuge.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalActiveAnon.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalActiveFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalCache.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalDirty.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalInactiveAnon.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalInactiveFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalMappedFile.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalPgfault.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalPgmajfault.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalPgpgin.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalPgpgout.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalRss.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalRssHuge.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalUnevictable.emit(sm.Metrics())
+	rmb.metricContainerMemoryTotalWriteback.emit(sm.Metrics())
+	rmb.metricContainerMemoryUnevictable.emit(sm.Metrics())
+	rmb.metricContainerMemoryUsageLimit.emit(sm.Metrics())
+	rmb.metricContainerMemoryUsageMax.emit(sm.Metrics())
+	rmb.metricContainerMemoryUsageTotal.emit(sm.Metrics())
+	rmb.metricContainerMemoryWriteback.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageRxBytes.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageRxDropped.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageRxErrors.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageRxPackets.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageTxBytes.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageTxDropped.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageTxErrors.emit(sm.Metrics())
+	rmb.metricContainerNetworkIoUsageTxPackets.emit(sm.Metrics())
+	rmb.metricContainerPidsCount.emit(sm.Metrics())
+	rmb.metricContainerPidsLimit.emit(sm.Metrics())
+	rmb.metricContainerUptime.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/dockerstatsreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/dockerstatsreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricContainerBlockioIoMergedRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoQueuedRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServiceBytesRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServiceTimeRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoServicedRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoTimeRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioIoWaitTimeRecursive.emit(ils.Metrics())
-	mb.metricContainerBlockioSectorsRecursive.emit(ils.Metrics())
-	mb.metricContainerCPUPercent.emit(ils.Metrics())
-	mb.metricContainerCPUThrottlingDataPeriods.emit(ils.Metrics())
-	mb.metricContainerCPUThrottlingDataThrottledPeriods.emit(ils.Metrics())
-	mb.metricContainerCPUThrottlingDataThrottledTime.emit(ils.Metrics())
-	mb.metricContainerCPUUsageKernelmode.emit(ils.Metrics())
-	mb.metricContainerCPUUsagePercpu.emit(ils.Metrics())
-	mb.metricContainerCPUUsageSystem.emit(ils.Metrics())
-	mb.metricContainerCPUUsageTotal.emit(ils.Metrics())
-	mb.metricContainerCPUUsageUsermode.emit(ils.Metrics())
-	mb.metricContainerCPUUtilization.emit(ils.Metrics())
-	mb.metricContainerMemoryActiveAnon.emit(ils.Metrics())
-	mb.metricContainerMemoryActiveFile.emit(ils.Metrics())
-	mb.metricContainerMemoryAnon.emit(ils.Metrics())
-	mb.metricContainerMemoryCache.emit(ils.Metrics())
-	mb.metricContainerMemoryDirty.emit(ils.Metrics())
-	mb.metricContainerMemoryFile.emit(ils.Metrics())
-	mb.metricContainerMemoryHierarchicalMemoryLimit.emit(ils.Metrics())
-	mb.metricContainerMemoryHierarchicalMemswLimit.emit(ils.Metrics())
-	mb.metricContainerMemoryInactiveAnon.emit(ils.Metrics())
-	mb.metricContainerMemoryInactiveFile.emit(ils.Metrics())
-	mb.metricContainerMemoryMappedFile.emit(ils.Metrics())
-	mb.metricContainerMemoryPercent.emit(ils.Metrics())
-	mb.metricContainerMemoryPgfault.emit(ils.Metrics())
-	mb.metricContainerMemoryPgmajfault.emit(ils.Metrics())
-	mb.metricContainerMemoryPgpgin.emit(ils.Metrics())
-	mb.metricContainerMemoryPgpgout.emit(ils.Metrics())
-	mb.metricContainerMemoryRss.emit(ils.Metrics())
-	mb.metricContainerMemoryRssHuge.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalActiveAnon.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalActiveFile.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalCache.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalDirty.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalInactiveAnon.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalInactiveFile.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalMappedFile.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalPgfault.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalPgmajfault.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalPgpgin.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalPgpgout.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalRss.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalRssHuge.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalUnevictable.emit(ils.Metrics())
-	mb.metricContainerMemoryTotalWriteback.emit(ils.Metrics())
-	mb.metricContainerMemoryUnevictable.emit(ils.Metrics())
-	mb.metricContainerMemoryUsageLimit.emit(ils.Metrics())
-	mb.metricContainerMemoryUsageMax.emit(ils.Metrics())
-	mb.metricContainerMemoryUsageTotal.emit(ils.Metrics())
-	mb.metricContainerMemoryWriteback.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageRxBytes.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageRxDropped.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageRxErrors.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageRxPackets.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageTxBytes.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageTxDropped.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageTxErrors.emit(ils.Metrics())
-	mb.metricContainerNetworkIoUsageTxPackets.emit(ils.Metrics())
-	mb.metricContainerPidsCount.emit(ils.Metrics())
-	mb.metricContainerPidsLimit.emit(ils.Metrics())
-	mb.metricContainerUptime.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordContainerBlockioIoMergedRecursiveDataPoint adds a data point to container.blockio.io_merged_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoMergedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoMergedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoMergedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoMergedRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoQueuedRecursiveDataPoint adds a data point to container.blockio.io_queued_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoQueuedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoQueuedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoQueuedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoQueuedRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoServiceBytesRecursiveDataPoint adds a data point to container.blockio.io_service_bytes_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServiceBytesRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoServiceBytesRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoServiceTimeRecursiveDataPoint adds a data point to container.blockio.io_service_time_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServiceTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoServiceTimeRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoServicedRecursiveDataPoint adds a data point to container.blockio.io_serviced_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoServicedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoServicedRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoServicedRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoServicedRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoTimeRecursiveDataPoint adds a data point to container.blockio.io_time_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoTimeRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioIoWaitTimeRecursiveDataPoint adds a data point to container.blockio.io_wait_time_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioIoWaitTimeRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioIoWaitTimeRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerBlockioSectorsRecursiveDataPoint adds a data point to container.blockio.sectors_recursive metric.
-func (mb *MetricsBuilder) RecordContainerBlockioSectorsRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
-	mb.metricContainerBlockioSectorsRecursive.recordDataPoint(mb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerBlockioSectorsRecursiveDataPoint(ts pcommon.Timestamp, val int64, deviceMajorAttributeValue string, deviceMinorAttributeValue string, operationAttributeValue string) {
+	rmb.metricContainerBlockioSectorsRecursive.recordDataPoint(rmb.startTime, ts, val, deviceMajorAttributeValue, deviceMinorAttributeValue, operationAttributeValue)
 }
 
 // RecordContainerCPUPercentDataPoint adds a data point to container.cpu.percent metric.
-func (mb *MetricsBuilder) RecordContainerCPUPercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUPercent.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUPercentDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerCPUPercent.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUThrottlingDataPeriodsDataPoint adds a data point to container.cpu.throttling_data.periods metric.
-func (mb *MetricsBuilder) RecordContainerCPUThrottlingDataPeriodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUThrottlingDataPeriods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUThrottlingDataPeriodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUThrottlingDataPeriods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint adds a data point to container.cpu.throttling_data.throttled_periods metric.
-func (mb *MetricsBuilder) RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUThrottlingDataThrottledPeriods.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUThrottlingDataThrottledPeriods.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUThrottlingDataThrottledTimeDataPoint adds a data point to container.cpu.throttling_data.throttled_time metric.
-func (mb *MetricsBuilder) RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUThrottlingDataThrottledTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUThrottlingDataThrottledTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUsageKernelmodeDataPoint adds a data point to container.cpu.usage.kernelmode metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsageKernelmodeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUUsageKernelmode.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUsageKernelmodeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUUsageKernelmode.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUsagePercpuDataPoint adds a data point to container.cpu.usage.percpu metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsagePercpuDataPoint(ts pcommon.Timestamp, val int64, coreAttributeValue string) {
-	mb.metricContainerCPUUsagePercpu.recordDataPoint(mb.startTime, ts, val, coreAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUsagePercpuDataPoint(ts pcommon.Timestamp, val int64, coreAttributeValue string) {
+	rmb.metricContainerCPUUsagePercpu.recordDataPoint(rmb.startTime, ts, val, coreAttributeValue)
 }
 
 // RecordContainerCPUUsageSystemDataPoint adds a data point to container.cpu.usage.system metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsageSystemDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUUsageSystem.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUsageSystemDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUUsageSystem.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUsageTotalDataPoint adds a data point to container.cpu.usage.total metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUUsageTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUUsageTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUsageUsermodeDataPoint adds a data point to container.cpu.usage.usermode metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsageUsermodeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerCPUUsageUsermode.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUsageUsermodeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerCPUUsageUsermode.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
-func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerCPUUtilization.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryActiveAnonDataPoint adds a data point to container.memory.active_anon metric.
-func (mb *MetricsBuilder) RecordContainerMemoryActiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryActiveAnon.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryActiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryActiveAnon.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryActiveFileDataPoint adds a data point to container.memory.active_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryActiveFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryActiveFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryActiveFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryActiveFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryAnonDataPoint adds a data point to container.memory.anon metric.
-func (mb *MetricsBuilder) RecordContainerMemoryAnonDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryAnon.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryAnon.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryCacheDataPoint adds a data point to container.memory.cache metric.
-func (mb *MetricsBuilder) RecordContainerMemoryCacheDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryCache.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryCacheDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryCache.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryDirtyDataPoint adds a data point to container.memory.dirty metric.
-func (mb *MetricsBuilder) RecordContainerMemoryDirtyDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryDirty.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryDirtyDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryDirty.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryFileDataPoint adds a data point to container.memory.file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryHierarchicalMemoryLimitDataPoint adds a data point to container.memory.hierarchical_memory_limit metric.
-func (mb *MetricsBuilder) RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryHierarchicalMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryHierarchicalMemoryLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryHierarchicalMemswLimitDataPoint adds a data point to container.memory.hierarchical_memsw_limit metric.
-func (mb *MetricsBuilder) RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryHierarchicalMemswLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryHierarchicalMemswLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryInactiveAnonDataPoint adds a data point to container.memory.inactive_anon metric.
-func (mb *MetricsBuilder) RecordContainerMemoryInactiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryInactiveAnon.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryInactiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryInactiveAnon.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryInactiveFileDataPoint adds a data point to container.memory.inactive_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryInactiveFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryInactiveFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryInactiveFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryInactiveFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryMappedFileDataPoint adds a data point to container.memory.mapped_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryMappedFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryMappedFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryMappedFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryMappedFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPercentDataPoint adds a data point to container.memory.percent metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerMemoryPercent.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPercentDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerMemoryPercent.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPgfaultDataPoint adds a data point to container.memory.pgfault metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPgfaultDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPgfault.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPgfaultDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryPgfault.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPgmajfaultDataPoint adds a data point to container.memory.pgmajfault metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPgmajfaultDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPgmajfault.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPgmajfaultDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryPgmajfault.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPgpginDataPoint adds a data point to container.memory.pgpgin metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPgpginDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPgpgin.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPgpginDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryPgpgin.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryPgpgoutDataPoint adds a data point to container.memory.pgpgout metric.
-func (mb *MetricsBuilder) RecordContainerMemoryPgpgoutDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryPgpgout.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryPgpgoutDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryPgpgout.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryRssDataPoint adds a data point to container.memory.rss metric.
-func (mb *MetricsBuilder) RecordContainerMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryRss.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryRssDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryRss.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryRssHugeDataPoint adds a data point to container.memory.rss_huge metric.
-func (mb *MetricsBuilder) RecordContainerMemoryRssHugeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryRssHuge.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryRssHugeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryRssHuge.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalActiveAnonDataPoint adds a data point to container.memory.total_active_anon metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalActiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalActiveAnon.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalActiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalActiveAnon.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalActiveFileDataPoint adds a data point to container.memory.total_active_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalActiveFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalActiveFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalActiveFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalActiveFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalCacheDataPoint adds a data point to container.memory.total_cache metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalCacheDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalCache.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalCacheDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalCache.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalDirtyDataPoint adds a data point to container.memory.total_dirty metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalDirtyDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalDirty.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalDirtyDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalDirty.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalInactiveAnonDataPoint adds a data point to container.memory.total_inactive_anon metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalInactiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalInactiveAnon.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalInactiveAnonDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalInactiveAnon.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalInactiveFileDataPoint adds a data point to container.memory.total_inactive_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalInactiveFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalInactiveFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalInactiveFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalInactiveFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalMappedFileDataPoint adds a data point to container.memory.total_mapped_file metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalMappedFileDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalMappedFile.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalMappedFileDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalMappedFile.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalPgfaultDataPoint adds a data point to container.memory.total_pgfault metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalPgfaultDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalPgfault.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalPgfaultDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalPgfault.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalPgmajfaultDataPoint adds a data point to container.memory.total_pgmajfault metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalPgmajfaultDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalPgmajfault.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalPgmajfaultDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalPgmajfault.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalPgpginDataPoint adds a data point to container.memory.total_pgpgin metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalPgpginDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalPgpgin.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalPgpginDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalPgpgin.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalPgpgoutDataPoint adds a data point to container.memory.total_pgpgout metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalPgpgoutDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalPgpgout.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalPgpgoutDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalPgpgout.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalRssDataPoint adds a data point to container.memory.total_rss metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalRssDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalRss.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalRssDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalRss.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalRssHugeDataPoint adds a data point to container.memory.total_rss_huge metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalRssHugeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalRssHuge.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalRssHugeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalRssHuge.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalUnevictableDataPoint adds a data point to container.memory.total_unevictable metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalUnevictableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalUnevictable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalUnevictableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalUnevictable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryTotalWritebackDataPoint adds a data point to container.memory.total_writeback metric.
-func (mb *MetricsBuilder) RecordContainerMemoryTotalWritebackDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryTotalWriteback.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryTotalWritebackDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryTotalWriteback.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUnevictableDataPoint adds a data point to container.memory.unevictable metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUnevictableDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUnevictable.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryUnevictableDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryUnevictable.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUsageLimitDataPoint adds a data point to container.memory.usage.limit metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUsageLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsageLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryUsageLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryUsageLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUsageMaxDataPoint adds a data point to container.memory.usage.max metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsageMax.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryUsageMaxDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryUsageMax.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryUsageTotalDataPoint adds a data point to container.memory.usage.total metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryUsageTotal.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryUsageTotalDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryUsageTotal.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerMemoryWritebackDataPoint adds a data point to container.memory.writeback metric.
-func (mb *MetricsBuilder) RecordContainerMemoryWritebackDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerMemoryWriteback.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerMemoryWritebackDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerMemoryWriteback.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerNetworkIoUsageRxBytesDataPoint adds a data point to container.network.io.usage.rx_bytes metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageRxBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageRxBytes.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageRxBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageRxBytes.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageRxDroppedDataPoint adds a data point to container.network.io.usage.rx_dropped metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageRxDroppedDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageRxDropped.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageRxDroppedDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageRxDropped.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageRxErrorsDataPoint adds a data point to container.network.io.usage.rx_errors metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageRxErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageRxErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageRxErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageRxErrors.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageRxPacketsDataPoint adds a data point to container.network.io.usage.rx_packets metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageRxPacketsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageRxPackets.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageRxPacketsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageRxPackets.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageTxBytesDataPoint adds a data point to container.network.io.usage.tx_bytes metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageTxBytes.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageTxBytesDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageTxBytes.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageTxDroppedDataPoint adds a data point to container.network.io.usage.tx_dropped metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxDroppedDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageTxDropped.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageTxDroppedDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageTxDropped.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageTxErrorsDataPoint adds a data point to container.network.io.usage.tx_errors metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageTxErrors.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageTxErrorsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageTxErrors.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerNetworkIoUsageTxPacketsDataPoint adds a data point to container.network.io.usage.tx_packets metric.
-func (mb *MetricsBuilder) RecordContainerNetworkIoUsageTxPacketsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
-	mb.metricContainerNetworkIoUsageTxPackets.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordContainerNetworkIoUsageTxPacketsDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string) {
+	rmb.metricContainerNetworkIoUsageTxPackets.recordDataPoint(rmb.startTime, ts, val, interfaceAttributeValue)
 }
 
 // RecordContainerPidsCountDataPoint adds a data point to container.pids.count metric.
-func (mb *MetricsBuilder) RecordContainerPidsCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerPidsCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerPidsCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerPidsCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerPidsLimitDataPoint adds a data point to container.pids.limit metric.
-func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricContainerPidsLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricContainerPidsLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.
-func (mb *MetricsBuilder) RecordContainerUptimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerUptime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordContainerUptimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricContainerUptime.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

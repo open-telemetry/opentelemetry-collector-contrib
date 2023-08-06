@@ -48,6 +48,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetDeviceID("device.id-val")
+			rb.SetNsxtNodeID("nsxt.node.id-val")
+			rb.SetNsxtNodeName("nsxt.node.name-val")
+			rb.SetNsxtNodeType("nsxt.node.type-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,39 +64,33 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
+			rmb.RecordNsxtNodeCPUUtilizationDataPoint(ts, 1, AttributeClassDatapath)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
+			rmb.RecordNsxtNodeFilesystemUsageDataPoint(ts, 1, AttributeDiskStateUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeFilesystemUtilizationDataPoint(ts, 1)
+			rmb.RecordNsxtNodeFilesystemUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeMemoryCacheUsageDataPoint(ts, 1)
+			rmb.RecordNsxtNodeMemoryCacheUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeMemoryUsageDataPoint(ts, 1)
+			rmb.RecordNsxtNodeMemoryUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
+			rmb.RecordNsxtNodeNetworkIoDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
+			rmb.RecordNsxtNodeNetworkPacketCountDataPoint(ts, 1, AttributeDirectionReceived, AttributePacketTypeDropped)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetDeviceID("device.id-val")
-			rb.SetNsxtNodeID("nsxt.node.id-val")
-			rb.SetNsxtNodeName("nsxt.node.name-val")
-			rb.SetNsxtNodeType("nsxt.node.type-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

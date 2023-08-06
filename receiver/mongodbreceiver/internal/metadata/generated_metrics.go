@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeConnectionType specifies the a value connection_type attribute.
@@ -1827,14 +1829,25 @@ func newMetricMongodbUptime(cfg MetricConfig) metricMongodbUptime {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                              MetricsBuilderConfig // config of the metrics builder.
-	startTime                           pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                     int                  // maximum observed number of metrics per resource.
-	metricsBuffer                       pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                           component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                           component.BuildInfo
+	startTime                           pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                     int               // maximum observed number of metrics per resource.
+	resource                            pcommon.Resource
+	missedEmits                         int
 	metricMongodbCacheOperations        metricMongodbCacheOperations
 	metricMongodbCollectionCount        metricMongodbCollectionCount
 	metricMongodbConnectionCount        metricMongodbConnectionCount
@@ -1879,45 +1892,74 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                              mbc,
-		startTime:                           pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                       pmetric.NewMetrics(),
-		buildInfo:                           settings.BuildInfo,
-		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(mbc.Metrics.MongodbCacheOperations),
-		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(mbc.Metrics.MongodbCollectionCount),
-		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(mbc.Metrics.MongodbConnectionCount),
-		metricMongodbCursorCount:            newMetricMongodbCursorCount(mbc.Metrics.MongodbCursorCount),
-		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(mbc.Metrics.MongodbCursorTimeoutCount),
-		metricMongodbDataSize:               newMetricMongodbDataSize(mbc.Metrics.MongodbDataSize),
-		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mbc.Metrics.MongodbDatabaseCount),
-		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mbc.Metrics.MongodbDocumentOperationCount),
-		metricMongodbExtentCount:            newMetricMongodbExtentCount(mbc.Metrics.MongodbExtentCount),
-		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mbc.Metrics.MongodbGlobalLockTime),
-		metricMongodbHealth:                 newMetricMongodbHealth(mbc.Metrics.MongodbHealth),
-		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mbc.Metrics.MongodbIndexAccessCount),
-		metricMongodbIndexCount:             newMetricMongodbIndexCount(mbc.Metrics.MongodbIndexCount),
-		metricMongodbIndexSize:              newMetricMongodbIndexSize(mbc.Metrics.MongodbIndexSize),
-		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(mbc.Metrics.MongodbLockAcquireCount),
-		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(mbc.Metrics.MongodbLockAcquireTime),
-		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(mbc.Metrics.MongodbLockAcquireWaitCount),
-		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(mbc.Metrics.MongodbLockDeadlockCount),
-		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(mbc.Metrics.MongodbMemoryUsage),
-		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(mbc.Metrics.MongodbNetworkIoReceive),
-		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(mbc.Metrics.MongodbNetworkIoTransmit),
-		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(mbc.Metrics.MongodbNetworkRequestCount),
-		metricMongodbObjectCount:            newMetricMongodbObjectCount(mbc.Metrics.MongodbObjectCount),
-		metricMongodbOperationCount:         newMetricMongodbOperationCount(mbc.Metrics.MongodbOperationCount),
-		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(mbc.Metrics.MongodbOperationLatencyTime),
-		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(mbc.Metrics.MongodbOperationReplCount),
-		metricMongodbOperationTime:          newMetricMongodbOperationTime(mbc.Metrics.MongodbOperationTime),
-		metricMongodbSessionCount:           newMetricMongodbSessionCount(mbc.Metrics.MongodbSessionCount),
-		metricMongodbStorageSize:            newMetricMongodbStorageSize(mbc.Metrics.MongodbStorageSize),
-		metricMongodbUptime:                 newMetricMongodbUptime(mbc.Metrics.MongodbUptime),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                           mb.startTime,
+		buildInfo:                           mb.buildInfo,
+		resource:                            res,
+		metricMongodbCacheOperations:        newMetricMongodbCacheOperations(mb.config.Metrics.MongodbCacheOperations),
+		metricMongodbCollectionCount:        newMetricMongodbCollectionCount(mb.config.Metrics.MongodbCollectionCount),
+		metricMongodbConnectionCount:        newMetricMongodbConnectionCount(mb.config.Metrics.MongodbConnectionCount),
+		metricMongodbCursorCount:            newMetricMongodbCursorCount(mb.config.Metrics.MongodbCursorCount),
+		metricMongodbCursorTimeoutCount:     newMetricMongodbCursorTimeoutCount(mb.config.Metrics.MongodbCursorTimeoutCount),
+		metricMongodbDataSize:               newMetricMongodbDataSize(mb.config.Metrics.MongodbDataSize),
+		metricMongodbDatabaseCount:          newMetricMongodbDatabaseCount(mb.config.Metrics.MongodbDatabaseCount),
+		metricMongodbDocumentOperationCount: newMetricMongodbDocumentOperationCount(mb.config.Metrics.MongodbDocumentOperationCount),
+		metricMongodbExtentCount:            newMetricMongodbExtentCount(mb.config.Metrics.MongodbExtentCount),
+		metricMongodbGlobalLockTime:         newMetricMongodbGlobalLockTime(mb.config.Metrics.MongodbGlobalLockTime),
+		metricMongodbHealth:                 newMetricMongodbHealth(mb.config.Metrics.MongodbHealth),
+		metricMongodbIndexAccessCount:       newMetricMongodbIndexAccessCount(mb.config.Metrics.MongodbIndexAccessCount),
+		metricMongodbIndexCount:             newMetricMongodbIndexCount(mb.config.Metrics.MongodbIndexCount),
+		metricMongodbIndexSize:              newMetricMongodbIndexSize(mb.config.Metrics.MongodbIndexSize),
+		metricMongodbLockAcquireCount:       newMetricMongodbLockAcquireCount(mb.config.Metrics.MongodbLockAcquireCount),
+		metricMongodbLockAcquireTime:        newMetricMongodbLockAcquireTime(mb.config.Metrics.MongodbLockAcquireTime),
+		metricMongodbLockAcquireWaitCount:   newMetricMongodbLockAcquireWaitCount(mb.config.Metrics.MongodbLockAcquireWaitCount),
+		metricMongodbLockDeadlockCount:      newMetricMongodbLockDeadlockCount(mb.config.Metrics.MongodbLockDeadlockCount),
+		metricMongodbMemoryUsage:            newMetricMongodbMemoryUsage(mb.config.Metrics.MongodbMemoryUsage),
+		metricMongodbNetworkIoReceive:       newMetricMongodbNetworkIoReceive(mb.config.Metrics.MongodbNetworkIoReceive),
+		metricMongodbNetworkIoTransmit:      newMetricMongodbNetworkIoTransmit(mb.config.Metrics.MongodbNetworkIoTransmit),
+		metricMongodbNetworkRequestCount:    newMetricMongodbNetworkRequestCount(mb.config.Metrics.MongodbNetworkRequestCount),
+		metricMongodbObjectCount:            newMetricMongodbObjectCount(mb.config.Metrics.MongodbObjectCount),
+		metricMongodbOperationCount:         newMetricMongodbOperationCount(mb.config.Metrics.MongodbOperationCount),
+		metricMongodbOperationLatencyTime:   newMetricMongodbOperationLatencyTime(mb.config.Metrics.MongodbOperationLatencyTime),
+		metricMongodbOperationReplCount:     newMetricMongodbOperationReplCount(mb.config.Metrics.MongodbOperationReplCount),
+		metricMongodbOperationTime:          newMetricMongodbOperationTime(mb.config.Metrics.MongodbOperationTime),
+		metricMongodbSessionCount:           newMetricMongodbSessionCount(mb.config.Metrics.MongodbSessionCount),
+		metricMongodbStorageSize:            newMetricMongodbStorageSize(mb.config.Metrics.MongodbStorageSize),
+		metricMongodbUptime:                 newMetricMongodbUptime(mb.config.Metrics.MongodbUptime),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -1926,259 +1968,232 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricMongodbCacheOperations.emit(sm.Metrics())
+	rmb.metricMongodbCollectionCount.emit(sm.Metrics())
+	rmb.metricMongodbConnectionCount.emit(sm.Metrics())
+	rmb.metricMongodbCursorCount.emit(sm.Metrics())
+	rmb.metricMongodbCursorTimeoutCount.emit(sm.Metrics())
+	rmb.metricMongodbDataSize.emit(sm.Metrics())
+	rmb.metricMongodbDatabaseCount.emit(sm.Metrics())
+	rmb.metricMongodbDocumentOperationCount.emit(sm.Metrics())
+	rmb.metricMongodbExtentCount.emit(sm.Metrics())
+	rmb.metricMongodbGlobalLockTime.emit(sm.Metrics())
+	rmb.metricMongodbHealth.emit(sm.Metrics())
+	rmb.metricMongodbIndexAccessCount.emit(sm.Metrics())
+	rmb.metricMongodbIndexCount.emit(sm.Metrics())
+	rmb.metricMongodbIndexSize.emit(sm.Metrics())
+	rmb.metricMongodbLockAcquireCount.emit(sm.Metrics())
+	rmb.metricMongodbLockAcquireTime.emit(sm.Metrics())
+	rmb.metricMongodbLockAcquireWaitCount.emit(sm.Metrics())
+	rmb.metricMongodbLockDeadlockCount.emit(sm.Metrics())
+	rmb.metricMongodbMemoryUsage.emit(sm.Metrics())
+	rmb.metricMongodbNetworkIoReceive.emit(sm.Metrics())
+	rmb.metricMongodbNetworkIoTransmit.emit(sm.Metrics())
+	rmb.metricMongodbNetworkRequestCount.emit(sm.Metrics())
+	rmb.metricMongodbObjectCount.emit(sm.Metrics())
+	rmb.metricMongodbOperationCount.emit(sm.Metrics())
+	rmb.metricMongodbOperationLatencyTime.emit(sm.Metrics())
+	rmb.metricMongodbOperationReplCount.emit(sm.Metrics())
+	rmb.metricMongodbOperationTime.emit(sm.Metrics())
+	rmb.metricMongodbSessionCount.emit(sm.Metrics())
+	rmb.metricMongodbStorageSize.emit(sm.Metrics())
+	rmb.metricMongodbUptime.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/mongodbreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricMongodbCacheOperations.emit(ils.Metrics())
-	mb.metricMongodbCollectionCount.emit(ils.Metrics())
-	mb.metricMongodbConnectionCount.emit(ils.Metrics())
-	mb.metricMongodbCursorCount.emit(ils.Metrics())
-	mb.metricMongodbCursorTimeoutCount.emit(ils.Metrics())
-	mb.metricMongodbDataSize.emit(ils.Metrics())
-	mb.metricMongodbDatabaseCount.emit(ils.Metrics())
-	mb.metricMongodbDocumentOperationCount.emit(ils.Metrics())
-	mb.metricMongodbExtentCount.emit(ils.Metrics())
-	mb.metricMongodbGlobalLockTime.emit(ils.Metrics())
-	mb.metricMongodbHealth.emit(ils.Metrics())
-	mb.metricMongodbIndexAccessCount.emit(ils.Metrics())
-	mb.metricMongodbIndexCount.emit(ils.Metrics())
-	mb.metricMongodbIndexSize.emit(ils.Metrics())
-	mb.metricMongodbLockAcquireCount.emit(ils.Metrics())
-	mb.metricMongodbLockAcquireTime.emit(ils.Metrics())
-	mb.metricMongodbLockAcquireWaitCount.emit(ils.Metrics())
-	mb.metricMongodbLockDeadlockCount.emit(ils.Metrics())
-	mb.metricMongodbMemoryUsage.emit(ils.Metrics())
-	mb.metricMongodbNetworkIoReceive.emit(ils.Metrics())
-	mb.metricMongodbNetworkIoTransmit.emit(ils.Metrics())
-	mb.metricMongodbNetworkRequestCount.emit(ils.Metrics())
-	mb.metricMongodbObjectCount.emit(ils.Metrics())
-	mb.metricMongodbOperationCount.emit(ils.Metrics())
-	mb.metricMongodbOperationLatencyTime.emit(ils.Metrics())
-	mb.metricMongodbOperationReplCount.emit(ils.Metrics())
-	mb.metricMongodbOperationTime.emit(ils.Metrics())
-	mb.metricMongodbSessionCount.emit(ils.Metrics())
-	mb.metricMongodbStorageSize.emit(ils.Metrics())
-	mb.metricMongodbUptime.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/mongodbreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordMongodbCacheOperationsDataPoint adds a data point to mongodb.cache.operations metric.
-func (mb *MetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
-	mb.metricMongodbCacheOperations.recordDataPoint(mb.startTime, ts, val, typeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbCacheOperationsDataPoint(ts pcommon.Timestamp, val int64, typeAttributeValue AttributeType) {
+	rmb.metricMongodbCacheOperations.recordDataPoint(rmb.startTime, ts, val, typeAttributeValue.String())
 }
 
 // RecordMongodbCollectionCountDataPoint adds a data point to mongodb.collection.count metric.
-func (mb *MetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbCollectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbCollectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbCollectionCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbConnectionCountDataPoint adds a data point to mongodb.connection.count metric.
-func (mb *MetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue AttributeConnectionType) {
-	mb.metricMongodbConnectionCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, connectionTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbConnectionCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, connectionTypeAttributeValue AttributeConnectionType) {
+	rmb.metricMongodbConnectionCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, connectionTypeAttributeValue.String())
 }
 
 // RecordMongodbCursorCountDataPoint adds a data point to mongodb.cursor.count metric.
-func (mb *MetricsBuilder) RecordMongodbCursorCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbCursorCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbCursorCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbCursorCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbCursorTimeoutCountDataPoint adds a data point to mongodb.cursor.timeout.count metric.
-func (mb *MetricsBuilder) RecordMongodbCursorTimeoutCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbCursorTimeoutCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbCursorTimeoutCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbCursorTimeoutCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbDataSizeDataPoint adds a data point to mongodb.data.size metric.
-func (mb *MetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbDataSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbDataSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbDataSize.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbDatabaseCountDataPoint adds a data point to mongodb.database.count metric.
-func (mb *MetricsBuilder) RecordMongodbDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbDatabaseCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbDatabaseCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbDocumentOperationCountDataPoint adds a data point to mongodb.document.operation.count metric.
-func (mb *MetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbDocumentOperationCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbDocumentOperationCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, operationAttributeValue AttributeOperation) {
+	rmb.metricMongodbDocumentOperationCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, operationAttributeValue.String())
 }
 
 // RecordMongodbExtentCountDataPoint adds a data point to mongodb.extent.count metric.
-func (mb *MetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbExtentCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbExtentCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbExtentCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbGlobalLockTimeDataPoint adds a data point to mongodb.global_lock.time metric.
-func (mb *MetricsBuilder) RecordMongodbGlobalLockTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbGlobalLockTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbGlobalLockTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbGlobalLockTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbHealthDataPoint adds a data point to mongodb.health metric.
-func (mb *MetricsBuilder) RecordMongodbHealthDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbHealth.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbHealthDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbHealth.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbIndexAccessCountDataPoint adds a data point to mongodb.index.access.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, collectionAttributeValue string) {
-	mb.metricMongodbIndexAccessCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, collectionAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbIndexAccessCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, collectionAttributeValue string) {
+	rmb.metricMongodbIndexAccessCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, collectionAttributeValue)
 }
 
 // RecordMongodbIndexCountDataPoint adds a data point to mongodb.index.count metric.
-func (mb *MetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbIndexCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbIndexCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbIndexCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbIndexSizeDataPoint adds a data point to mongodb.index.size metric.
-func (mb *MetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbIndexSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbIndexSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbIndexSize.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbLockAcquireCountDataPoint adds a data point to mongodb.lock.acquire.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbLockAcquireCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	rmb.metricMongodbLockAcquireCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockAcquireTimeDataPoint adds a data point to mongodb.lock.acquire.time metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireTime.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbLockAcquireTimeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	rmb.metricMongodbLockAcquireTime.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockAcquireWaitCountDataPoint adds a data point to mongodb.lock.acquire.wait_count metric.
-func (mb *MetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockAcquireWaitCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbLockAcquireWaitCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	rmb.metricMongodbLockAcquireWaitCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbLockDeadlockCountDataPoint adds a data point to mongodb.lock.deadlock.count metric.
-func (mb *MetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
-	mb.metricMongodbLockDeadlockCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbLockDeadlockCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, lockTypeAttributeValue AttributeLockType, lockModeAttributeValue AttributeLockMode) {
+	rmb.metricMongodbLockDeadlockCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, lockTypeAttributeValue.String(), lockModeAttributeValue.String())
 }
 
 // RecordMongodbMemoryUsageDataPoint adds a data point to mongodb.memory.usage metric.
-func (mb *MetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue AttributeMemoryType) {
-	mb.metricMongodbMemoryUsage.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue, memoryTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string, memoryTypeAttributeValue AttributeMemoryType) {
+	rmb.metricMongodbMemoryUsage.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue, memoryTypeAttributeValue.String())
 }
 
 // RecordMongodbNetworkIoReceiveDataPoint adds a data point to mongodb.network.io.receive metric.
-func (mb *MetricsBuilder) RecordMongodbNetworkIoReceiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbNetworkIoReceive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbNetworkIoReceiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbNetworkIoReceive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbNetworkIoTransmitDataPoint adds a data point to mongodb.network.io.transmit metric.
-func (mb *MetricsBuilder) RecordMongodbNetworkIoTransmitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbNetworkIoTransmit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbNetworkIoTransmitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbNetworkIoTransmit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbNetworkRequestCountDataPoint adds a data point to mongodb.network.request.count metric.
-func (mb *MetricsBuilder) RecordMongodbNetworkRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbNetworkRequestCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbNetworkRequestCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbNetworkRequestCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbObjectCountDataPoint adds a data point to mongodb.object.count metric.
-func (mb *MetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbObjectCount.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbObjectCountDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbObjectCount.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbOperationCountDataPoint adds a data point to mongodb.operation.count metric.
-func (mb *MetricsBuilder) RecordMongodbOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbOperationCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbOperationCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricMongodbOperationCount.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMongodbOperationLatencyTimeDataPoint adds a data point to mongodb.operation.latency.time metric.
-func (mb *MetricsBuilder) RecordMongodbOperationLatencyTimeDataPoint(ts pcommon.Timestamp, val int64, operationLatencyAttributeValue AttributeOperationLatency) {
-	mb.metricMongodbOperationLatencyTime.recordDataPoint(mb.startTime, ts, val, operationLatencyAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbOperationLatencyTimeDataPoint(ts pcommon.Timestamp, val int64, operationLatencyAttributeValue AttributeOperationLatency) {
+	rmb.metricMongodbOperationLatencyTime.recordDataPoint(rmb.startTime, ts, val, operationLatencyAttributeValue.String())
 }
 
 // RecordMongodbOperationReplCountDataPoint adds a data point to mongodb.operation.repl.count metric.
-func (mb *MetricsBuilder) RecordMongodbOperationReplCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbOperationReplCount.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbOperationReplCountDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricMongodbOperationReplCount.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMongodbOperationTimeDataPoint adds a data point to mongodb.operation.time metric.
-func (mb *MetricsBuilder) RecordMongodbOperationTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
-	mb.metricMongodbOperationTime.recordDataPoint(mb.startTime, ts, val, operationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordMongodbOperationTimeDataPoint(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+	rmb.metricMongodbOperationTime.recordDataPoint(rmb.startTime, ts, val, operationAttributeValue.String())
 }
 
 // RecordMongodbSessionCountDataPoint adds a data point to mongodb.session.count metric.
-func (mb *MetricsBuilder) RecordMongodbSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbSessionCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbSessionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbSessionCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordMongodbStorageSizeDataPoint adds a data point to mongodb.storage.size metric.
-func (mb *MetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
-	mb.metricMongodbStorageSize.recordDataPoint(mb.startTime, ts, val, databaseAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordMongodbStorageSizeDataPoint(ts pcommon.Timestamp, val int64, databaseAttributeValue string) {
+	rmb.metricMongodbStorageSize.recordDataPoint(rmb.startTime, ts, val, databaseAttributeValue)
 }
 
 // RecordMongodbUptimeDataPoint adds a data point to mongodb.uptime metric.
-func (mb *MetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricMongodbUptime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordMongodbUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricMongodbUptime.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

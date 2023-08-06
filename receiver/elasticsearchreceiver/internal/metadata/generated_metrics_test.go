@@ -48,6 +48,14 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
+			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
+			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
+			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,354 +64,348 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
+			rmb.RecordElasticsearchBreakerMemoryEstimatedDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
+			rmb.RecordElasticsearchBreakerMemoryLimitDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
+			rmb.RecordElasticsearchBreakerTrippedDataPoint(ts, 1, "circuit_breaker_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
+			rmb.RecordElasticsearchClusterDataNodesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
+			rmb.RecordElasticsearchClusterHealthDataPoint(ts, 1, AttributeHealthStatusGreen)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
+			rmb.RecordElasticsearchClusterInFlightFetchDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
+			rmb.RecordElasticsearchClusterIndicesCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
+			rmb.RecordElasticsearchClusterNodesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
+			rmb.RecordElasticsearchClusterPendingTasksDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
+			rmb.RecordElasticsearchClusterPublishedStatesDifferencesDataPoint(ts, 1, AttributeClusterPublishedDifferenceStateIncompatible)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
+			rmb.RecordElasticsearchClusterPublishedStatesFullDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
+			rmb.RecordElasticsearchClusterShardsDataPoint(ts, 1, AttributeShardStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
+			rmb.RecordElasticsearchClusterStateQueueDataPoint(ts, 1, AttributeClusterStateQueueStatePending)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
+			rmb.RecordElasticsearchClusterStateUpdateCountDataPoint(ts, 1, "cluster_state_update_state-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
+			rmb.RecordElasticsearchClusterStateUpdateTimeDataPoint(ts, 1, "cluster_state_update_state-val", AttributeClusterStateUpdateTypeComputation)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexCacheSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexDocumentsDataPoint(ts, 1, AttributeDocumentStateActive, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexOperationsMergeDocsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexOperationsMergeSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexOperationsTimeDataPoint(ts, 1, AttributeOperationIndex, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexSegmentsCountDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards, AttributeSegmentsMemoryObjectTypeTerm)
+			rmb.RecordElasticsearchIndexSegmentsMemoryDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards, AttributeSegmentsMemoryObjectTypeTerm)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexSegmentsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexShardsSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexTranslogOperationsDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			allMetricsCount++
-			mb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
+			rmb.RecordElasticsearchIndexTranslogSizeDataPoint(ts, 1, AttributeIndexAggregationTypePrimaryShards)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
+			rmb.RecordElasticsearchIndexingPressureMemoryLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
+			rmb.RecordElasticsearchIndexingPressureMemoryTotalPrimaryRejectionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
+			rmb.RecordElasticsearchIndexingPressureMemoryTotalReplicaRejectionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
+			rmb.RecordElasticsearchMemoryIndexingPressureDataPoint(ts, 1, AttributeIndexingPressureStageCoordinating)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
+			rmb.RecordElasticsearchNodeCacheCountDataPoint(ts, 1, AttributeQueryCacheCountTypeHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
+			rmb.RecordElasticsearchNodeCacheEvictionsDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
+			rmb.RecordElasticsearchNodeCacheMemoryUsageDataPoint(ts, 1, AttributeCacheNameFielddata)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeCacheSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeClusterConnectionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
+			rmb.RecordElasticsearchNodeClusterIoDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeDiskIoReadDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeDiskIoWriteDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
+			rmb.RecordElasticsearchNodeDocumentsDataPoint(ts, 1, AttributeDocumentStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeFsDiskAvailableDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeFsDiskFreeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeFsDiskTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeHTTPConnectionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeIngestDocumentsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeIngestDocumentsCurrentDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeIngestOperationsFailedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeOpenFilesDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
+			rmb.RecordElasticsearchNodeOperationsCompletedDataPoint(ts, 1, AttributeOperationIndex)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperationIndex)
+			rmb.RecordElasticsearchNodeOperationsCurrentDataPoint(ts, 1, AttributeOperationIndex)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResultHit)
+			rmb.RecordElasticsearchNodeOperationsGetCompletedDataPoint(ts, 1, AttributeGetResultHit)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResultHit)
+			rmb.RecordElasticsearchNodeOperationsGetTimeDataPoint(ts, 1, AttributeGetResultHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
+			rmb.RecordElasticsearchNodeOperationsTimeDataPoint(ts, 1, AttributeOperationIndex)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
+			rmb.RecordElasticsearchNodePipelineIngestDocumentsCurrentDataPoint(ts, 1, "ingest_pipeline_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
+			rmb.RecordElasticsearchNodePipelineIngestDocumentsPreprocessedDataPoint(ts, 1, "ingest_pipeline_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
+			rmb.RecordElasticsearchNodePipelineIngestOperationsFailedDataPoint(ts, 1, "ingest_pipeline_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeScriptCacheEvictionsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeScriptCompilationLimitTriggeredDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeScriptCompilationsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectTypeTerm)
+			rmb.RecordElasticsearchNodeSegmentsMemoryDataPoint(ts, 1, AttributeSegmentsMemoryObjectTypeTerm)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeShardsDataSetSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeShardsReservedSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeShardsSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
+			rmb.RecordElasticsearchNodeThreadPoolTasksFinishedDataPoint(ts, 1, "thread_pool_name-val", AttributeTaskStateRejected)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
+			rmb.RecordElasticsearchNodeThreadPoolTasksQueuedDataPoint(ts, 1, "thread_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
+			rmb.RecordElasticsearchNodeThreadPoolThreadsDataPoint(ts, 1, "thread_pool_name-val", AttributeThreadStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeTranslogOperationsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeTranslogSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
+			rmb.RecordElasticsearchNodeTranslogUncommittedSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
+			rmb.RecordElasticsearchOsCPULoadAvg15mDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
+			rmb.RecordElasticsearchOsCPULoadAvg1mDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
+			rmb.RecordElasticsearchOsCPULoadAvg5mDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
+			rmb.RecordElasticsearchOsCPUUsageDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
+			rmb.RecordElasticsearchOsMemoryDataPoint(ts, 1, AttributeMemoryStateFree)
 
 			allMetricsCount++
-			mb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
+			rmb.RecordElasticsearchProcessCPUTimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
+			rmb.RecordElasticsearchProcessCPUUsageDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
+			rmb.RecordElasticsearchProcessMemoryVirtualDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmClassesLoadedDataPoint(ts, 1)
+			rmb.RecordJvmClassesLoadedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
+			rmb.RecordJvmGcCollectionsCountDataPoint(ts, 1, "collector_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
+			rmb.RecordJvmGcCollectionsElapsedDataPoint(ts, 1, "collector_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
+			rmb.RecordJvmMemoryHeapCommittedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
+			rmb.RecordJvmMemoryHeapMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
+			rmb.RecordJvmMemoryHeapUsedDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
+			rmb.RecordJvmMemoryHeapUtilizationDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
+			rmb.RecordJvmMemoryNonheapCommittedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
+			rmb.RecordJvmMemoryNonheapUsedDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
+			rmb.RecordJvmMemoryPoolMaxDataPoint(ts, 1, "memory_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
+			rmb.RecordJvmMemoryPoolUsedDataPoint(ts, 1, "memory_pool_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordJvmThreadsCountDataPoint(ts, 1)
+			rmb.RecordJvmThreadsCountDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetElasticsearchClusterName("elasticsearch.cluster.name-val")
-			rb.SetElasticsearchIndexName("elasticsearch.index.name-val")
-			rb.SetElasticsearchNodeName("elasticsearch.node.name-val")
-			rb.SetElasticsearchNodeVersion("elasticsearch.node.version-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

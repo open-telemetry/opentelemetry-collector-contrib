@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -55,31 +58,30 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			rmb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpSkewDataPoint(ts, 1)
+			rmb.RecordNtpSkewDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordNtpStratumDataPoint(ts, 1)
+			rmb.RecordNtpStratumDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
+			rmb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			rmb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
+			rmb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
+			rmb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

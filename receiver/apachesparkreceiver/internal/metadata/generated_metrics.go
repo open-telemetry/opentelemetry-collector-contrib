@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeDirection specifies the a value direction attribute.
@@ -3527,14 +3529,25 @@ func newMetricSparkStageTaskResultSize(cfg MetricConfig) metricSparkStageTaskRes
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                                   MetricsBuilderConfig // config of the metrics builder.
-	startTime                                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                                          int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                            pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                                component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                                component.BuildInfo
+	startTime                                                pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                                          int               // maximum observed number of metrics per resource.
+	resource                                                 pcommon.Resource
+	missedEmits                                              int
 	metricSparkDriverBlockManagerDiskUsage                   metricSparkDriverBlockManagerDiskUsage
 	metricSparkDriverBlockManagerMemoryUsage                 metricSparkDriverBlockManagerMemoryUsage
 	metricSparkDriverCodeGeneratorCompilationAverageTime     metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -3612,78 +3625,107 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                   mbc,
-		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                            pmetric.NewMetrics(),
-		buildInfo:                                settings.BuildInfo,
-		metricSparkDriverBlockManagerDiskUsage:   newMetricSparkDriverBlockManagerDiskUsage(mbc.Metrics.SparkDriverBlockManagerDiskUsage),
-		metricSparkDriverBlockManagerMemoryUsage: newMetricSparkDriverBlockManagerMemoryUsage(mbc.Metrics.SparkDriverBlockManagerMemoryUsage),
-		metricSparkDriverCodeGeneratorCompilationAverageTime:     newMetricSparkDriverCodeGeneratorCompilationAverageTime(mbc.Metrics.SparkDriverCodeGeneratorCompilationAverageTime),
-		metricSparkDriverCodeGeneratorCompilationCount:           newMetricSparkDriverCodeGeneratorCompilationCount(mbc.Metrics.SparkDriverCodeGeneratorCompilationCount),
-		metricSparkDriverCodeGeneratorGeneratedClassAverageSize:  newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(mbc.Metrics.SparkDriverCodeGeneratorGeneratedClassAverageSize),
-		metricSparkDriverCodeGeneratorGeneratedClassCount:        newMetricSparkDriverCodeGeneratorGeneratedClassCount(mbc.Metrics.SparkDriverCodeGeneratorGeneratedClassCount),
-		metricSparkDriverCodeGeneratorGeneratedMethodAverageSize: newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(mbc.Metrics.SparkDriverCodeGeneratorGeneratedMethodAverageSize),
-		metricSparkDriverCodeGeneratorGeneratedMethodCount:       newMetricSparkDriverCodeGeneratorGeneratedMethodCount(mbc.Metrics.SparkDriverCodeGeneratorGeneratedMethodCount),
-		metricSparkDriverCodeGeneratorSourceCodeAverageSize:      newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(mbc.Metrics.SparkDriverCodeGeneratorSourceCodeAverageSize),
-		metricSparkDriverCodeGeneratorSourceCodeOperations:       newMetricSparkDriverCodeGeneratorSourceCodeOperations(mbc.Metrics.SparkDriverCodeGeneratorSourceCodeOperations),
-		metricSparkDriverDagSchedulerJobActive:                   newMetricSparkDriverDagSchedulerJobActive(mbc.Metrics.SparkDriverDagSchedulerJobActive),
-		metricSparkDriverDagSchedulerJobCount:                    newMetricSparkDriverDagSchedulerJobCount(mbc.Metrics.SparkDriverDagSchedulerJobCount),
-		metricSparkDriverDagSchedulerStageCount:                  newMetricSparkDriverDagSchedulerStageCount(mbc.Metrics.SparkDriverDagSchedulerStageCount),
-		metricSparkDriverDagSchedulerStageFailed:                 newMetricSparkDriverDagSchedulerStageFailed(mbc.Metrics.SparkDriverDagSchedulerStageFailed),
-		metricSparkDriverExecutorGcOperations:                    newMetricSparkDriverExecutorGcOperations(mbc.Metrics.SparkDriverExecutorGcOperations),
-		metricSparkDriverExecutorGcTime:                          newMetricSparkDriverExecutorGcTime(mbc.Metrics.SparkDriverExecutorGcTime),
-		metricSparkDriverExecutorMemoryExecution:                 newMetricSparkDriverExecutorMemoryExecution(mbc.Metrics.SparkDriverExecutorMemoryExecution),
-		metricSparkDriverExecutorMemoryJvm:                       newMetricSparkDriverExecutorMemoryJvm(mbc.Metrics.SparkDriverExecutorMemoryJvm),
-		metricSparkDriverExecutorMemoryPool:                      newMetricSparkDriverExecutorMemoryPool(mbc.Metrics.SparkDriverExecutorMemoryPool),
-		metricSparkDriverExecutorMemoryStorage:                   newMetricSparkDriverExecutorMemoryStorage(mbc.Metrics.SparkDriverExecutorMemoryStorage),
-		metricSparkDriverHiveExternalCatalogFileCacheHits:        newMetricSparkDriverHiveExternalCatalogFileCacheHits(mbc.Metrics.SparkDriverHiveExternalCatalogFileCacheHits),
-		metricSparkDriverHiveExternalCatalogFilesDiscovered:      newMetricSparkDriverHiveExternalCatalogFilesDiscovered(mbc.Metrics.SparkDriverHiveExternalCatalogFilesDiscovered),
-		metricSparkDriverHiveExternalCatalogHiveClientCalls:      newMetricSparkDriverHiveExternalCatalogHiveClientCalls(mbc.Metrics.SparkDriverHiveExternalCatalogHiveClientCalls),
-		metricSparkDriverHiveExternalCatalogParallelListingJobs:  newMetricSparkDriverHiveExternalCatalogParallelListingJobs(mbc.Metrics.SparkDriverHiveExternalCatalogParallelListingJobs),
-		metricSparkDriverHiveExternalCatalogPartitionsFetched:    newMetricSparkDriverHiveExternalCatalogPartitionsFetched(mbc.Metrics.SparkDriverHiveExternalCatalogPartitionsFetched),
-		metricSparkDriverJvmCPUTime:                              newMetricSparkDriverJvmCPUTime(mbc.Metrics.SparkDriverJvmCPUTime),
-		metricSparkDriverLiveListenerBusDropped:                  newMetricSparkDriverLiveListenerBusDropped(mbc.Metrics.SparkDriverLiveListenerBusDropped),
-		metricSparkDriverLiveListenerBusPosted:                   newMetricSparkDriverLiveListenerBusPosted(mbc.Metrics.SparkDriverLiveListenerBusPosted),
-		metricSparkDriverLiveListenerBusProcessingTimeAverage:    newMetricSparkDriverLiveListenerBusProcessingTimeAverage(mbc.Metrics.SparkDriverLiveListenerBusProcessingTimeAverage),
-		metricSparkDriverLiveListenerBusQueueSize:                newMetricSparkDriverLiveListenerBusQueueSize(mbc.Metrics.SparkDriverLiveListenerBusQueueSize),
-		metricSparkExecutorDiskUsage:                             newMetricSparkExecutorDiskUsage(mbc.Metrics.SparkExecutorDiskUsage),
-		metricSparkExecutorGcTime:                                newMetricSparkExecutorGcTime(mbc.Metrics.SparkExecutorGcTime),
-		metricSparkExecutorInputSize:                             newMetricSparkExecutorInputSize(mbc.Metrics.SparkExecutorInputSize),
-		metricSparkExecutorMemoryUsage:                           newMetricSparkExecutorMemoryUsage(mbc.Metrics.SparkExecutorMemoryUsage),
-		metricSparkExecutorShuffleIoSize:                         newMetricSparkExecutorShuffleIoSize(mbc.Metrics.SparkExecutorShuffleIoSize),
-		metricSparkExecutorStorageMemoryUsage:                    newMetricSparkExecutorStorageMemoryUsage(mbc.Metrics.SparkExecutorStorageMemoryUsage),
-		metricSparkExecutorTaskActive:                            newMetricSparkExecutorTaskActive(mbc.Metrics.SparkExecutorTaskActive),
-		metricSparkExecutorTaskLimit:                             newMetricSparkExecutorTaskLimit(mbc.Metrics.SparkExecutorTaskLimit),
-		metricSparkExecutorTaskResult:                            newMetricSparkExecutorTaskResult(mbc.Metrics.SparkExecutorTaskResult),
-		metricSparkExecutorTime:                                  newMetricSparkExecutorTime(mbc.Metrics.SparkExecutorTime),
-		metricSparkJobStageActive:                                newMetricSparkJobStageActive(mbc.Metrics.SparkJobStageActive),
-		metricSparkJobStageResult:                                newMetricSparkJobStageResult(mbc.Metrics.SparkJobStageResult),
-		metricSparkJobTaskActive:                                 newMetricSparkJobTaskActive(mbc.Metrics.SparkJobTaskActive),
-		metricSparkJobTaskResult:                                 newMetricSparkJobTaskResult(mbc.Metrics.SparkJobTaskResult),
-		metricSparkStageDiskSpilled:                              newMetricSparkStageDiskSpilled(mbc.Metrics.SparkStageDiskSpilled),
-		metricSparkStageExecutorCPUTime:                          newMetricSparkStageExecutorCPUTime(mbc.Metrics.SparkStageExecutorCPUTime),
-		metricSparkStageExecutorRunTime:                          newMetricSparkStageExecutorRunTime(mbc.Metrics.SparkStageExecutorRunTime),
-		metricSparkStageIoRecords:                                newMetricSparkStageIoRecords(mbc.Metrics.SparkStageIoRecords),
-		metricSparkStageIoSize:                                   newMetricSparkStageIoSize(mbc.Metrics.SparkStageIoSize),
-		metricSparkStageJvmGcTime:                                newMetricSparkStageJvmGcTime(mbc.Metrics.SparkStageJvmGcTime),
-		metricSparkStageMemoryPeak:                               newMetricSparkStageMemoryPeak(mbc.Metrics.SparkStageMemoryPeak),
-		metricSparkStageMemorySpilled:                            newMetricSparkStageMemorySpilled(mbc.Metrics.SparkStageMemorySpilled),
-		metricSparkStageShuffleBlocksFetched:                     newMetricSparkStageShuffleBlocksFetched(mbc.Metrics.SparkStageShuffleBlocksFetched),
-		metricSparkStageShuffleFetchWaitTime:                     newMetricSparkStageShuffleFetchWaitTime(mbc.Metrics.SparkStageShuffleFetchWaitTime),
-		metricSparkStageShuffleIoDisk:                            newMetricSparkStageShuffleIoDisk(mbc.Metrics.SparkStageShuffleIoDisk),
-		metricSparkStageShuffleIoReadSize:                        newMetricSparkStageShuffleIoReadSize(mbc.Metrics.SparkStageShuffleIoReadSize),
-		metricSparkStageShuffleIoRecords:                         newMetricSparkStageShuffleIoRecords(mbc.Metrics.SparkStageShuffleIoRecords),
-		metricSparkStageShuffleIoWriteSize:                       newMetricSparkStageShuffleIoWriteSize(mbc.Metrics.SparkStageShuffleIoWriteSize),
-		metricSparkStageShuffleWriteTime:                         newMetricSparkStageShuffleWriteTime(mbc.Metrics.SparkStageShuffleWriteTime),
-		metricSparkStageStatus:                                   newMetricSparkStageStatus(mbc.Metrics.SparkStageStatus),
-		metricSparkStageTaskActive:                               newMetricSparkStageTaskActive(mbc.Metrics.SparkStageTaskActive),
-		metricSparkStageTaskResult:                               newMetricSparkStageTaskResult(mbc.Metrics.SparkStageTaskResult),
-		metricSparkStageTaskResultSize:                           newMetricSparkStageTaskResultSize(mbc.Metrics.SparkStageTaskResultSize),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                                mb.startTime,
+		buildInfo:                                mb.buildInfo,
+		resource:                                 res,
+		metricSparkDriverBlockManagerDiskUsage:   newMetricSparkDriverBlockManagerDiskUsage(mb.config.Metrics.SparkDriverBlockManagerDiskUsage),
+		metricSparkDriverBlockManagerMemoryUsage: newMetricSparkDriverBlockManagerMemoryUsage(mb.config.Metrics.SparkDriverBlockManagerMemoryUsage),
+		metricSparkDriverCodeGeneratorCompilationAverageTime:     newMetricSparkDriverCodeGeneratorCompilationAverageTime(mb.config.Metrics.SparkDriverCodeGeneratorCompilationAverageTime),
+		metricSparkDriverCodeGeneratorCompilationCount:           newMetricSparkDriverCodeGeneratorCompilationCount(mb.config.Metrics.SparkDriverCodeGeneratorCompilationCount),
+		metricSparkDriverCodeGeneratorGeneratedClassAverageSize:  newMetricSparkDriverCodeGeneratorGeneratedClassAverageSize(mb.config.Metrics.SparkDriverCodeGeneratorGeneratedClassAverageSize),
+		metricSparkDriverCodeGeneratorGeneratedClassCount:        newMetricSparkDriverCodeGeneratorGeneratedClassCount(mb.config.Metrics.SparkDriverCodeGeneratorGeneratedClassCount),
+		metricSparkDriverCodeGeneratorGeneratedMethodAverageSize: newMetricSparkDriverCodeGeneratorGeneratedMethodAverageSize(mb.config.Metrics.SparkDriverCodeGeneratorGeneratedMethodAverageSize),
+		metricSparkDriverCodeGeneratorGeneratedMethodCount:       newMetricSparkDriverCodeGeneratorGeneratedMethodCount(mb.config.Metrics.SparkDriverCodeGeneratorGeneratedMethodCount),
+		metricSparkDriverCodeGeneratorSourceCodeAverageSize:      newMetricSparkDriverCodeGeneratorSourceCodeAverageSize(mb.config.Metrics.SparkDriverCodeGeneratorSourceCodeAverageSize),
+		metricSparkDriverCodeGeneratorSourceCodeOperations:       newMetricSparkDriverCodeGeneratorSourceCodeOperations(mb.config.Metrics.SparkDriverCodeGeneratorSourceCodeOperations),
+		metricSparkDriverDagSchedulerJobActive:                   newMetricSparkDriverDagSchedulerJobActive(mb.config.Metrics.SparkDriverDagSchedulerJobActive),
+		metricSparkDriverDagSchedulerJobCount:                    newMetricSparkDriverDagSchedulerJobCount(mb.config.Metrics.SparkDriverDagSchedulerJobCount),
+		metricSparkDriverDagSchedulerStageCount:                  newMetricSparkDriverDagSchedulerStageCount(mb.config.Metrics.SparkDriverDagSchedulerStageCount),
+		metricSparkDriverDagSchedulerStageFailed:                 newMetricSparkDriverDagSchedulerStageFailed(mb.config.Metrics.SparkDriverDagSchedulerStageFailed),
+		metricSparkDriverExecutorGcOperations:                    newMetricSparkDriverExecutorGcOperations(mb.config.Metrics.SparkDriverExecutorGcOperations),
+		metricSparkDriverExecutorGcTime:                          newMetricSparkDriverExecutorGcTime(mb.config.Metrics.SparkDriverExecutorGcTime),
+		metricSparkDriverExecutorMemoryExecution:                 newMetricSparkDriverExecutorMemoryExecution(mb.config.Metrics.SparkDriverExecutorMemoryExecution),
+		metricSparkDriverExecutorMemoryJvm:                       newMetricSparkDriverExecutorMemoryJvm(mb.config.Metrics.SparkDriverExecutorMemoryJvm),
+		metricSparkDriverExecutorMemoryPool:                      newMetricSparkDriverExecutorMemoryPool(mb.config.Metrics.SparkDriverExecutorMemoryPool),
+		metricSparkDriverExecutorMemoryStorage:                   newMetricSparkDriverExecutorMemoryStorage(mb.config.Metrics.SparkDriverExecutorMemoryStorage),
+		metricSparkDriverHiveExternalCatalogFileCacheHits:        newMetricSparkDriverHiveExternalCatalogFileCacheHits(mb.config.Metrics.SparkDriverHiveExternalCatalogFileCacheHits),
+		metricSparkDriverHiveExternalCatalogFilesDiscovered:      newMetricSparkDriverHiveExternalCatalogFilesDiscovered(mb.config.Metrics.SparkDriverHiveExternalCatalogFilesDiscovered),
+		metricSparkDriverHiveExternalCatalogHiveClientCalls:      newMetricSparkDriverHiveExternalCatalogHiveClientCalls(mb.config.Metrics.SparkDriverHiveExternalCatalogHiveClientCalls),
+		metricSparkDriverHiveExternalCatalogParallelListingJobs:  newMetricSparkDriverHiveExternalCatalogParallelListingJobs(mb.config.Metrics.SparkDriverHiveExternalCatalogParallelListingJobs),
+		metricSparkDriverHiveExternalCatalogPartitionsFetched:    newMetricSparkDriverHiveExternalCatalogPartitionsFetched(mb.config.Metrics.SparkDriverHiveExternalCatalogPartitionsFetched),
+		metricSparkDriverJvmCPUTime:                              newMetricSparkDriverJvmCPUTime(mb.config.Metrics.SparkDriverJvmCPUTime),
+		metricSparkDriverLiveListenerBusDropped:                  newMetricSparkDriverLiveListenerBusDropped(mb.config.Metrics.SparkDriverLiveListenerBusDropped),
+		metricSparkDriverLiveListenerBusPosted:                   newMetricSparkDriverLiveListenerBusPosted(mb.config.Metrics.SparkDriverLiveListenerBusPosted),
+		metricSparkDriverLiveListenerBusProcessingTimeAverage:    newMetricSparkDriverLiveListenerBusProcessingTimeAverage(mb.config.Metrics.SparkDriverLiveListenerBusProcessingTimeAverage),
+		metricSparkDriverLiveListenerBusQueueSize:                newMetricSparkDriverLiveListenerBusQueueSize(mb.config.Metrics.SparkDriverLiveListenerBusQueueSize),
+		metricSparkExecutorDiskUsage:                             newMetricSparkExecutorDiskUsage(mb.config.Metrics.SparkExecutorDiskUsage),
+		metricSparkExecutorGcTime:                                newMetricSparkExecutorGcTime(mb.config.Metrics.SparkExecutorGcTime),
+		metricSparkExecutorInputSize:                             newMetricSparkExecutorInputSize(mb.config.Metrics.SparkExecutorInputSize),
+		metricSparkExecutorMemoryUsage:                           newMetricSparkExecutorMemoryUsage(mb.config.Metrics.SparkExecutorMemoryUsage),
+		metricSparkExecutorShuffleIoSize:                         newMetricSparkExecutorShuffleIoSize(mb.config.Metrics.SparkExecutorShuffleIoSize),
+		metricSparkExecutorStorageMemoryUsage:                    newMetricSparkExecutorStorageMemoryUsage(mb.config.Metrics.SparkExecutorStorageMemoryUsage),
+		metricSparkExecutorTaskActive:                            newMetricSparkExecutorTaskActive(mb.config.Metrics.SparkExecutorTaskActive),
+		metricSparkExecutorTaskLimit:                             newMetricSparkExecutorTaskLimit(mb.config.Metrics.SparkExecutorTaskLimit),
+		metricSparkExecutorTaskResult:                            newMetricSparkExecutorTaskResult(mb.config.Metrics.SparkExecutorTaskResult),
+		metricSparkExecutorTime:                                  newMetricSparkExecutorTime(mb.config.Metrics.SparkExecutorTime),
+		metricSparkJobStageActive:                                newMetricSparkJobStageActive(mb.config.Metrics.SparkJobStageActive),
+		metricSparkJobStageResult:                                newMetricSparkJobStageResult(mb.config.Metrics.SparkJobStageResult),
+		metricSparkJobTaskActive:                                 newMetricSparkJobTaskActive(mb.config.Metrics.SparkJobTaskActive),
+		metricSparkJobTaskResult:                                 newMetricSparkJobTaskResult(mb.config.Metrics.SparkJobTaskResult),
+		metricSparkStageDiskSpilled:                              newMetricSparkStageDiskSpilled(mb.config.Metrics.SparkStageDiskSpilled),
+		metricSparkStageExecutorCPUTime:                          newMetricSparkStageExecutorCPUTime(mb.config.Metrics.SparkStageExecutorCPUTime),
+		metricSparkStageExecutorRunTime:                          newMetricSparkStageExecutorRunTime(mb.config.Metrics.SparkStageExecutorRunTime),
+		metricSparkStageIoRecords:                                newMetricSparkStageIoRecords(mb.config.Metrics.SparkStageIoRecords),
+		metricSparkStageIoSize:                                   newMetricSparkStageIoSize(mb.config.Metrics.SparkStageIoSize),
+		metricSparkStageJvmGcTime:                                newMetricSparkStageJvmGcTime(mb.config.Metrics.SparkStageJvmGcTime),
+		metricSparkStageMemoryPeak:                               newMetricSparkStageMemoryPeak(mb.config.Metrics.SparkStageMemoryPeak),
+		metricSparkStageMemorySpilled:                            newMetricSparkStageMemorySpilled(mb.config.Metrics.SparkStageMemorySpilled),
+		metricSparkStageShuffleBlocksFetched:                     newMetricSparkStageShuffleBlocksFetched(mb.config.Metrics.SparkStageShuffleBlocksFetched),
+		metricSparkStageShuffleFetchWaitTime:                     newMetricSparkStageShuffleFetchWaitTime(mb.config.Metrics.SparkStageShuffleFetchWaitTime),
+		metricSparkStageShuffleIoDisk:                            newMetricSparkStageShuffleIoDisk(mb.config.Metrics.SparkStageShuffleIoDisk),
+		metricSparkStageShuffleIoReadSize:                        newMetricSparkStageShuffleIoReadSize(mb.config.Metrics.SparkStageShuffleIoReadSize),
+		metricSparkStageShuffleIoRecords:                         newMetricSparkStageShuffleIoRecords(mb.config.Metrics.SparkStageShuffleIoRecords),
+		metricSparkStageShuffleIoWriteSize:                       newMetricSparkStageShuffleIoWriteSize(mb.config.Metrics.SparkStageShuffleIoWriteSize),
+		metricSparkStageShuffleWriteTime:                         newMetricSparkStageShuffleWriteTime(mb.config.Metrics.SparkStageShuffleWriteTime),
+		metricSparkStageStatus:                                   newMetricSparkStageStatus(mb.config.Metrics.SparkStageStatus),
+		metricSparkStageTaskActive:                               newMetricSparkStageTaskActive(mb.config.Metrics.SparkStageTaskActive),
+		metricSparkStageTaskResult:                               newMetricSparkStageTaskResult(mb.config.Metrics.SparkStageTaskResult),
+		metricSparkStageTaskResultSize:                           newMetricSparkStageTaskResultSize(mb.config.Metrics.SparkStageTaskResultSize),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -3692,457 +3734,430 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricSparkDriverBlockManagerDiskUsage.emit(sm.Metrics())
+	rmb.metricSparkDriverBlockManagerMemoryUsage.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorCompilationAverageTime.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorCompilationCount.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorGeneratedClassCount.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorGeneratedMethodCount.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.emit(sm.Metrics())
+	rmb.metricSparkDriverCodeGeneratorSourceCodeOperations.emit(sm.Metrics())
+	rmb.metricSparkDriverDagSchedulerJobActive.emit(sm.Metrics())
+	rmb.metricSparkDriverDagSchedulerJobCount.emit(sm.Metrics())
+	rmb.metricSparkDriverDagSchedulerStageCount.emit(sm.Metrics())
+	rmb.metricSparkDriverDagSchedulerStageFailed.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorGcOperations.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorGcTime.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorMemoryExecution.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorMemoryJvm.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorMemoryPool.emit(sm.Metrics())
+	rmb.metricSparkDriverExecutorMemoryStorage.emit(sm.Metrics())
+	rmb.metricSparkDriverHiveExternalCatalogFileCacheHits.emit(sm.Metrics())
+	rmb.metricSparkDriverHiveExternalCatalogFilesDiscovered.emit(sm.Metrics())
+	rmb.metricSparkDriverHiveExternalCatalogHiveClientCalls.emit(sm.Metrics())
+	rmb.metricSparkDriverHiveExternalCatalogParallelListingJobs.emit(sm.Metrics())
+	rmb.metricSparkDriverHiveExternalCatalogPartitionsFetched.emit(sm.Metrics())
+	rmb.metricSparkDriverJvmCPUTime.emit(sm.Metrics())
+	rmb.metricSparkDriverLiveListenerBusDropped.emit(sm.Metrics())
+	rmb.metricSparkDriverLiveListenerBusPosted.emit(sm.Metrics())
+	rmb.metricSparkDriverLiveListenerBusProcessingTimeAverage.emit(sm.Metrics())
+	rmb.metricSparkDriverLiveListenerBusQueueSize.emit(sm.Metrics())
+	rmb.metricSparkExecutorDiskUsage.emit(sm.Metrics())
+	rmb.metricSparkExecutorGcTime.emit(sm.Metrics())
+	rmb.metricSparkExecutorInputSize.emit(sm.Metrics())
+	rmb.metricSparkExecutorMemoryUsage.emit(sm.Metrics())
+	rmb.metricSparkExecutorShuffleIoSize.emit(sm.Metrics())
+	rmb.metricSparkExecutorStorageMemoryUsage.emit(sm.Metrics())
+	rmb.metricSparkExecutorTaskActive.emit(sm.Metrics())
+	rmb.metricSparkExecutorTaskLimit.emit(sm.Metrics())
+	rmb.metricSparkExecutorTaskResult.emit(sm.Metrics())
+	rmb.metricSparkExecutorTime.emit(sm.Metrics())
+	rmb.metricSparkJobStageActive.emit(sm.Metrics())
+	rmb.metricSparkJobStageResult.emit(sm.Metrics())
+	rmb.metricSparkJobTaskActive.emit(sm.Metrics())
+	rmb.metricSparkJobTaskResult.emit(sm.Metrics())
+	rmb.metricSparkStageDiskSpilled.emit(sm.Metrics())
+	rmb.metricSparkStageExecutorCPUTime.emit(sm.Metrics())
+	rmb.metricSparkStageExecutorRunTime.emit(sm.Metrics())
+	rmb.metricSparkStageIoRecords.emit(sm.Metrics())
+	rmb.metricSparkStageIoSize.emit(sm.Metrics())
+	rmb.metricSparkStageJvmGcTime.emit(sm.Metrics())
+	rmb.metricSparkStageMemoryPeak.emit(sm.Metrics())
+	rmb.metricSparkStageMemorySpilled.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleBlocksFetched.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleFetchWaitTime.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleIoDisk.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleIoReadSize.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleIoRecords.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleIoWriteSize.emit(sm.Metrics())
+	rmb.metricSparkStageShuffleWriteTime.emit(sm.Metrics())
+	rmb.metricSparkStageStatus.emit(sm.Metrics())
+	rmb.metricSparkStageTaskActive.emit(sm.Metrics())
+	rmb.metricSparkStageTaskResult.emit(sm.Metrics())
+	rmb.metricSparkStageTaskResultSize.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/apachesparkreceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSparkDriverBlockManagerDiskUsage.emit(ils.Metrics())
-	mb.metricSparkDriverBlockManagerMemoryUsage.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorCompilationAverageTime.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorCompilationCount.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorGeneratedClassCount.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodCount.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.emit(ils.Metrics())
-	mb.metricSparkDriverCodeGeneratorSourceCodeOperations.emit(ils.Metrics())
-	mb.metricSparkDriverDagSchedulerJobActive.emit(ils.Metrics())
-	mb.metricSparkDriverDagSchedulerJobCount.emit(ils.Metrics())
-	mb.metricSparkDriverDagSchedulerStageCount.emit(ils.Metrics())
-	mb.metricSparkDriverDagSchedulerStageFailed.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorGcOperations.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorGcTime.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorMemoryExecution.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorMemoryJvm.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorMemoryPool.emit(ils.Metrics())
-	mb.metricSparkDriverExecutorMemoryStorage.emit(ils.Metrics())
-	mb.metricSparkDriverHiveExternalCatalogFileCacheHits.emit(ils.Metrics())
-	mb.metricSparkDriverHiveExternalCatalogFilesDiscovered.emit(ils.Metrics())
-	mb.metricSparkDriverHiveExternalCatalogHiveClientCalls.emit(ils.Metrics())
-	mb.metricSparkDriverHiveExternalCatalogParallelListingJobs.emit(ils.Metrics())
-	mb.metricSparkDriverHiveExternalCatalogPartitionsFetched.emit(ils.Metrics())
-	mb.metricSparkDriverJvmCPUTime.emit(ils.Metrics())
-	mb.metricSparkDriverLiveListenerBusDropped.emit(ils.Metrics())
-	mb.metricSparkDriverLiveListenerBusPosted.emit(ils.Metrics())
-	mb.metricSparkDriverLiveListenerBusProcessingTimeAverage.emit(ils.Metrics())
-	mb.metricSparkDriverLiveListenerBusQueueSize.emit(ils.Metrics())
-	mb.metricSparkExecutorDiskUsage.emit(ils.Metrics())
-	mb.metricSparkExecutorGcTime.emit(ils.Metrics())
-	mb.metricSparkExecutorInputSize.emit(ils.Metrics())
-	mb.metricSparkExecutorMemoryUsage.emit(ils.Metrics())
-	mb.metricSparkExecutorShuffleIoSize.emit(ils.Metrics())
-	mb.metricSparkExecutorStorageMemoryUsage.emit(ils.Metrics())
-	mb.metricSparkExecutorTaskActive.emit(ils.Metrics())
-	mb.metricSparkExecutorTaskLimit.emit(ils.Metrics())
-	mb.metricSparkExecutorTaskResult.emit(ils.Metrics())
-	mb.metricSparkExecutorTime.emit(ils.Metrics())
-	mb.metricSparkJobStageActive.emit(ils.Metrics())
-	mb.metricSparkJobStageResult.emit(ils.Metrics())
-	mb.metricSparkJobTaskActive.emit(ils.Metrics())
-	mb.metricSparkJobTaskResult.emit(ils.Metrics())
-	mb.metricSparkStageDiskSpilled.emit(ils.Metrics())
-	mb.metricSparkStageExecutorCPUTime.emit(ils.Metrics())
-	mb.metricSparkStageExecutorRunTime.emit(ils.Metrics())
-	mb.metricSparkStageIoRecords.emit(ils.Metrics())
-	mb.metricSparkStageIoSize.emit(ils.Metrics())
-	mb.metricSparkStageJvmGcTime.emit(ils.Metrics())
-	mb.metricSparkStageMemoryPeak.emit(ils.Metrics())
-	mb.metricSparkStageMemorySpilled.emit(ils.Metrics())
-	mb.metricSparkStageShuffleBlocksFetched.emit(ils.Metrics())
-	mb.metricSparkStageShuffleFetchWaitTime.emit(ils.Metrics())
-	mb.metricSparkStageShuffleIoDisk.emit(ils.Metrics())
-	mb.metricSparkStageShuffleIoReadSize.emit(ils.Metrics())
-	mb.metricSparkStageShuffleIoRecords.emit(ils.Metrics())
-	mb.metricSparkStageShuffleIoWriteSize.emit(ils.Metrics())
-	mb.metricSparkStageShuffleWriteTime.emit(ils.Metrics())
-	mb.metricSparkStageStatus.emit(ils.Metrics())
-	mb.metricSparkStageTaskActive.emit(ils.Metrics())
-	mb.metricSparkStageTaskResult.emit(ils.Metrics())
-	mb.metricSparkStageTaskResultSize.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/apachesparkreceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordSparkDriverBlockManagerDiskUsageDataPoint adds a data point to spark.driver.block_manager.disk.usage metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerDiskUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverBlockManagerDiskUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverBlockManagerDiskUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverBlockManagerDiskUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverBlockManagerMemoryUsageDataPoint adds a data point to spark.driver.block_manager.memory.usage metric.
-func (mb *MetricsBuilder) RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation, stateAttributeValue AttributeState) {
-	mb.metricSparkDriverBlockManagerMemoryUsage.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String(), stateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverBlockManagerMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation, stateAttributeValue AttributeState) {
+	rmb.metricSparkDriverBlockManagerMemoryUsage.recordDataPoint(rmb.startTime, ts, val, locationAttributeValue.String(), stateAttributeValue.String())
 }
 
 // RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint adds a data point to spark.driver.code_generator.compilation.average_time metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSparkDriverCodeGeneratorCompilationAverageTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorCompilationAverageTimeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSparkDriverCodeGeneratorCompilationAverageTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorCompilationCountDataPoint adds a data point to spark.driver.code_generator.compilation.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverCodeGeneratorCompilationCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorCompilationCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverCodeGeneratorCompilationCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint adds a data point to spark.driver.code_generator.generated_class.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSparkDriverCodeGeneratorGeneratedClassAverageSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint adds a data point to spark.driver.code_generator.generated_class.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverCodeGeneratorGeneratedClassCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedClassCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverCodeGeneratorGeneratedClassCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint adds a data point to spark.driver.code_generator.generated_method.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSparkDriverCodeGeneratorGeneratedMethodAverageSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint adds a data point to spark.driver.code_generator.generated_method.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverCodeGeneratorGeneratedMethodCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorGeneratedMethodCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverCodeGeneratorGeneratedMethodCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint adds a data point to spark.driver.code_generator.source_code.average_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeAverageSizeDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSparkDriverCodeGeneratorSourceCodeAverageSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint adds a data point to spark.driver.code_generator.source_code.operations metric.
-func (mb *MetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverCodeGeneratorSourceCodeOperations.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverCodeGeneratorSourceCodeOperationsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverCodeGeneratorSourceCodeOperations.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverDagSchedulerJobActiveDataPoint adds a data point to spark.driver.dag_scheduler.job.active metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverDagSchedulerJobActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverDagSchedulerJobActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverDagSchedulerJobActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverDagSchedulerJobCountDataPoint adds a data point to spark.driver.dag_scheduler.job.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverDagSchedulerJobCount.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverDagSchedulerJobCountDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverDagSchedulerJobCount.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverDagSchedulerStageCountDataPoint adds a data point to spark.driver.dag_scheduler.stage.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue AttributeSchedulerStatus) {
-	mb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(mb.startTime, ts, val, schedulerStatusAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue AttributeSchedulerStatus) {
+	rmb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(rmb.startTime, ts, val, schedulerStatusAttributeValue.String())
 }
 
 // RecordSparkDriverDagSchedulerStageFailedDataPoint adds a data point to spark.driver.dag_scheduler.stage.failed metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageFailedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverDagSchedulerStageFailed.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverDagSchedulerStageFailedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverDagSchedulerStageFailed.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverExecutorGcOperationsDataPoint adds a data point to spark.driver.executor.gc.operations metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorGcOperationsDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
-	mb.metricSparkDriverExecutorGcOperations.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorGcOperationsDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
+	rmb.metricSparkDriverExecutorGcOperations.recordDataPoint(rmb.startTime, ts, val, gcTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorGcTimeDataPoint adds a data point to spark.driver.executor.gc.time metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
-	mb.metricSparkDriverExecutorGcTime.recordDataPoint(mb.startTime, ts, val, gcTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64, gcTypeAttributeValue AttributeGcType) {
+	rmb.metricSparkDriverExecutorGcTime.recordDataPoint(rmb.startTime, ts, val, gcTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMemoryExecutionDataPoint adds a data point to spark.driver.executor.memory.execution metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMemoryExecutionDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMemoryExecution.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorMemoryExecutionDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	rmb.metricSparkDriverExecutorMemoryExecution.recordDataPoint(rmb.startTime, ts, val, locationAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMemoryJvmDataPoint adds a data point to spark.driver.executor.memory.jvm metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMemoryJvmDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMemoryJvm.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorMemoryJvmDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	rmb.metricSparkDriverExecutorMemoryJvm.recordDataPoint(rmb.startTime, ts, val, locationAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMemoryPoolDataPoint adds a data point to spark.driver.executor.memory.pool metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMemoryPoolDataPoint(ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
-	mb.metricSparkDriverExecutorMemoryPool.recordDataPoint(mb.startTime, ts, val, poolMemoryTypeAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorMemoryPoolDataPoint(ts pcommon.Timestamp, val int64, poolMemoryTypeAttributeValue AttributePoolMemoryType) {
+	rmb.metricSparkDriverExecutorMemoryPool.recordDataPoint(rmb.startTime, ts, val, poolMemoryTypeAttributeValue.String())
 }
 
 // RecordSparkDriverExecutorMemoryStorageDataPoint adds a data point to spark.driver.executor.memory.storage metric.
-func (mb *MetricsBuilder) RecordSparkDriverExecutorMemoryStorageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
-	mb.metricSparkDriverExecutorMemoryStorage.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverExecutorMemoryStorageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation) {
+	rmb.metricSparkDriverExecutorMemoryStorage.recordDataPoint(rmb.startTime, ts, val, locationAttributeValue.String())
 }
 
 // RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint adds a data point to spark.driver.hive_external_catalog.file_cache_hits metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverHiveExternalCatalogFileCacheHits.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverHiveExternalCatalogFileCacheHitsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverHiveExternalCatalogFileCacheHits.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint adds a data point to spark.driver.hive_external_catalog.files_discovered metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverHiveExternalCatalogFilesDiscovered.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverHiveExternalCatalogFilesDiscoveredDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverHiveExternalCatalogFilesDiscovered.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint adds a data point to spark.driver.hive_external_catalog.hive_client_calls metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverHiveExternalCatalogHiveClientCalls.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverHiveExternalCatalogHiveClientCallsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverHiveExternalCatalogHiveClientCalls.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint adds a data point to spark.driver.hive_external_catalog.parallel_listing_jobs metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverHiveExternalCatalogParallelListingJobs.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverHiveExternalCatalogParallelListingJobsDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverHiveExternalCatalogParallelListingJobs.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint adds a data point to spark.driver.hive_external_catalog.partitions_fetched metric.
-func (mb *MetricsBuilder) RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverHiveExternalCatalogPartitionsFetched.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverHiveExternalCatalogPartitionsFetchedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverHiveExternalCatalogPartitionsFetched.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverJvmCPUTimeDataPoint adds a data point to spark.driver.jvm_cpu_time metric.
-func (mb *MetricsBuilder) RecordSparkDriverJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverJvmCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverJvmCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverJvmCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverLiveListenerBusDroppedDataPoint adds a data point to spark.driver.live_listener_bus.dropped metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusDroppedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverLiveListenerBusDropped.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverLiveListenerBusDroppedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverLiveListenerBusDropped.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverLiveListenerBusPostedDataPoint adds a data point to spark.driver.live_listener_bus.posted metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusPostedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverLiveListenerBusPosted.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverLiveListenerBusPostedDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverLiveListenerBusPosted.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint adds a data point to spark.driver.live_listener_bus.processing_time.average metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricSparkDriverLiveListenerBusProcessingTimeAverage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverLiveListenerBusProcessingTimeAverageDataPoint(ts pcommon.Timestamp, val float64) {
+	rmb.metricSparkDriverLiveListenerBusProcessingTimeAverage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkDriverLiveListenerBusQueueSizeDataPoint adds a data point to spark.driver.live_listener_bus.queue_size metric.
-func (mb *MetricsBuilder) RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkDriverLiveListenerBusQueueSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkDriverLiveListenerBusQueueSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkDriverLiveListenerBusQueueSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorDiskUsageDataPoint adds a data point to spark.executor.disk.usage metric.
-func (mb *MetricsBuilder) RecordSparkExecutorDiskUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorDiskUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorDiskUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorDiskUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorGcTimeDataPoint adds a data point to spark.executor.gc_time metric.
-func (mb *MetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorGcTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorGcTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorGcTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorInputSizeDataPoint adds a data point to spark.executor.input_size metric.
-func (mb *MetricsBuilder) RecordSparkExecutorInputSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorInputSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorInputSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorInputSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorMemoryUsageDataPoint adds a data point to spark.executor.memory.usage metric.
-func (mb *MetricsBuilder) RecordSparkExecutorMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorMemoryUsage.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorShuffleIoSizeDataPoint adds a data point to spark.executor.shuffle.io.size metric.
-func (mb *MetricsBuilder) RecordSparkExecutorShuffleIoSizeDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricSparkExecutorShuffleIoSize.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorShuffleIoSizeDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricSparkExecutorShuffleIoSize.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSparkExecutorStorageMemoryUsageDataPoint adds a data point to spark.executor.storage_memory.usage metric.
-func (mb *MetricsBuilder) RecordSparkExecutorStorageMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation, stateAttributeValue AttributeState) {
-	mb.metricSparkExecutorStorageMemoryUsage.recordDataPoint(mb.startTime, ts, val, locationAttributeValue.String(), stateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorStorageMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, locationAttributeValue AttributeLocation, stateAttributeValue AttributeState) {
+	rmb.metricSparkExecutorStorageMemoryUsage.recordDataPoint(rmb.startTime, ts, val, locationAttributeValue.String(), stateAttributeValue.String())
 }
 
 // RecordSparkExecutorTaskActiveDataPoint adds a data point to spark.executor.task.active metric.
-func (mb *MetricsBuilder) RecordSparkExecutorTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorTaskActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorTaskActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorTaskLimitDataPoint adds a data point to spark.executor.task.limit metric.
-func (mb *MetricsBuilder) RecordSparkExecutorTaskLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorTaskLimit.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorTaskLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorTaskLimit.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkExecutorTaskResultDataPoint adds a data point to spark.executor.task.result metric.
-func (mb *MetricsBuilder) RecordSparkExecutorTaskResultDataPoint(ts pcommon.Timestamp, val int64, executorTaskResultAttributeValue AttributeExecutorTaskResult) {
-	mb.metricSparkExecutorTaskResult.recordDataPoint(mb.startTime, ts, val, executorTaskResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorTaskResultDataPoint(ts pcommon.Timestamp, val int64, executorTaskResultAttributeValue AttributeExecutorTaskResult) {
+	rmb.metricSparkExecutorTaskResult.recordDataPoint(rmb.startTime, ts, val, executorTaskResultAttributeValue.String())
 }
 
 // RecordSparkExecutorTimeDataPoint adds a data point to spark.executor.time metric.
-func (mb *MetricsBuilder) RecordSparkExecutorTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkExecutorTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkExecutorTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkExecutorTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkJobStageActiveDataPoint adds a data point to spark.job.stage.active metric.
-func (mb *MetricsBuilder) RecordSparkJobStageActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkJobStageActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkJobStageActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkJobStageActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkJobStageResultDataPoint adds a data point to spark.job.stage.result metric.
-func (mb *MetricsBuilder) RecordSparkJobStageResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
-	mb.metricSparkJobStageResult.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkJobStageResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
+	rmb.metricSparkJobStageResult.recordDataPoint(rmb.startTime, ts, val, jobResultAttributeValue.String())
 }
 
 // RecordSparkJobTaskActiveDataPoint adds a data point to spark.job.task.active metric.
-func (mb *MetricsBuilder) RecordSparkJobTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkJobTaskActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkJobTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkJobTaskActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkJobTaskResultDataPoint adds a data point to spark.job.task.result metric.
-func (mb *MetricsBuilder) RecordSparkJobTaskResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
-	mb.metricSparkJobTaskResult.recordDataPoint(mb.startTime, ts, val, jobResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkJobTaskResultDataPoint(ts pcommon.Timestamp, val int64, jobResultAttributeValue AttributeJobResult) {
+	rmb.metricSparkJobTaskResult.recordDataPoint(rmb.startTime, ts, val, jobResultAttributeValue.String())
 }
 
 // RecordSparkStageDiskSpilledDataPoint adds a data point to spark.stage.disk.spilled metric.
-func (mb *MetricsBuilder) RecordSparkStageDiskSpilledDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageDiskSpilled.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageDiskSpilledDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageDiskSpilled.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageExecutorCPUTimeDataPoint adds a data point to spark.stage.executor.cpu_time metric.
-func (mb *MetricsBuilder) RecordSparkStageExecutorCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageExecutorCPUTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageExecutorCPUTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageExecutorCPUTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageExecutorRunTimeDataPoint adds a data point to spark.stage.executor.run_time metric.
-func (mb *MetricsBuilder) RecordSparkStageExecutorRunTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageExecutorRunTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageExecutorRunTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageExecutorRunTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageIoRecordsDataPoint adds a data point to spark.stage.io.records metric.
-func (mb *MetricsBuilder) RecordSparkStageIoRecordsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricSparkStageIoRecords.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageIoRecordsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricSparkStageIoRecords.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSparkStageIoSizeDataPoint adds a data point to spark.stage.io.size metric.
-func (mb *MetricsBuilder) RecordSparkStageIoSizeDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricSparkStageIoSize.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageIoSizeDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricSparkStageIoSize.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSparkStageJvmGcTimeDataPoint adds a data point to spark.stage.jvm_gc_time metric.
-func (mb *MetricsBuilder) RecordSparkStageJvmGcTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageJvmGcTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageJvmGcTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageJvmGcTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageMemoryPeakDataPoint adds a data point to spark.stage.memory.peak metric.
-func (mb *MetricsBuilder) RecordSparkStageMemoryPeakDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageMemoryPeak.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageMemoryPeakDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageMemoryPeak.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageMemorySpilledDataPoint adds a data point to spark.stage.memory.spilled metric.
-func (mb *MetricsBuilder) RecordSparkStageMemorySpilledDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageMemorySpilled.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageMemorySpilledDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageMemorySpilled.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageShuffleBlocksFetchedDataPoint adds a data point to spark.stage.shuffle.blocks_fetched metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleBlocksFetchedDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
-	mb.metricSparkStageShuffleBlocksFetched.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleBlocksFetchedDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
+	rmb.metricSparkStageShuffleBlocksFetched.recordDataPoint(rmb.startTime, ts, val, sourceAttributeValue.String())
 }
 
 // RecordSparkStageShuffleFetchWaitTimeDataPoint adds a data point to spark.stage.shuffle.fetch_wait_time metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleFetchWaitTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageShuffleFetchWaitTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleFetchWaitTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageShuffleFetchWaitTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageShuffleIoDiskDataPoint adds a data point to spark.stage.shuffle.io.disk metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleIoDiskDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageShuffleIoDisk.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleIoDiskDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageShuffleIoDisk.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageShuffleIoReadSizeDataPoint adds a data point to spark.stage.shuffle.io.read.size metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleIoReadSizeDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
-	mb.metricSparkStageShuffleIoReadSize.recordDataPoint(mb.startTime, ts, val, sourceAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleIoReadSizeDataPoint(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
+	rmb.metricSparkStageShuffleIoReadSize.recordDataPoint(rmb.startTime, ts, val, sourceAttributeValue.String())
 }
 
 // RecordSparkStageShuffleIoRecordsDataPoint adds a data point to spark.stage.shuffle.io.records metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleIoRecordsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
-	mb.metricSparkStageShuffleIoRecords.recordDataPoint(mb.startTime, ts, val, directionAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleIoRecordsDataPoint(ts pcommon.Timestamp, val int64, directionAttributeValue AttributeDirection) {
+	rmb.metricSparkStageShuffleIoRecords.recordDataPoint(rmb.startTime, ts, val, directionAttributeValue.String())
 }
 
 // RecordSparkStageShuffleIoWriteSizeDataPoint adds a data point to spark.stage.shuffle.io.write.size metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleIoWriteSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageShuffleIoWriteSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleIoWriteSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageShuffleIoWriteSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageShuffleWriteTimeDataPoint adds a data point to spark.stage.shuffle.write_time metric.
-func (mb *MetricsBuilder) RecordSparkStageShuffleWriteTimeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageShuffleWriteTime.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageShuffleWriteTimeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageShuffleWriteTime.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageStatusDataPoint adds a data point to spark.stage.status metric.
-func (mb *MetricsBuilder) RecordSparkStageStatusDataPoint(ts pcommon.Timestamp, val int64, stageActiveAttributeValue bool, stageCompleteAttributeValue bool, stagePendingAttributeValue bool, stageFailedAttributeValue bool) {
-	mb.metricSparkStageStatus.recordDataPoint(mb.startTime, ts, val, stageActiveAttributeValue, stageCompleteAttributeValue, stagePendingAttributeValue, stageFailedAttributeValue)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageStatusDataPoint(ts pcommon.Timestamp, val int64, stageActiveAttributeValue bool, stageCompleteAttributeValue bool, stagePendingAttributeValue bool, stageFailedAttributeValue bool) {
+	rmb.metricSparkStageStatus.recordDataPoint(rmb.startTime, ts, val, stageActiveAttributeValue, stageCompleteAttributeValue, stagePendingAttributeValue, stageFailedAttributeValue)
 }
 
 // RecordSparkStageTaskActiveDataPoint adds a data point to spark.stage.task.active metric.
-func (mb *MetricsBuilder) RecordSparkStageTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageTaskActive.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageTaskActiveDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageTaskActive.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordSparkStageTaskResultDataPoint adds a data point to spark.stage.task.result metric.
-func (mb *MetricsBuilder) RecordSparkStageTaskResultDataPoint(ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue AttributeStageTaskResult) {
-	mb.metricSparkStageTaskResult.recordDataPoint(mb.startTime, ts, val, stageTaskResultAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordSparkStageTaskResultDataPoint(ts pcommon.Timestamp, val int64, stageTaskResultAttributeValue AttributeStageTaskResult) {
+	rmb.metricSparkStageTaskResult.recordDataPoint(rmb.startTime, ts, val, stageTaskResultAttributeValue.String())
 }
 
 // RecordSparkStageTaskResultSizeDataPoint adds a data point to spark.stage.task.result_size metric.
-func (mb *MetricsBuilder) RecordSparkStageTaskResultSizeDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSparkStageTaskResultSize.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordSparkStageTaskResultSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricSparkStageTaskResultSize.recordDataPoint(rmb.startTime, ts, val)
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

@@ -48,6 +48,17 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetContainerCommandLine("container.command_line-val")
+			rb.SetContainerHostname("container.hostname-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetContainerImageID("container.image.id-val")
+			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerName("container.name-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			if test.configSet == testSetDefault || test.configSet == testSetAll {
 				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be enabled: This metric will be disabled in v0.82.0 and removed in v0.85.0.", observedLogs.All()[expectedWarnings].Message)
@@ -63,230 +74,221 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+			rmb.RecordContainerBlockioIoMergedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			allMetricsCount++
-			mb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			allMetricsCount++
-			mb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			allMetricsCount++
-			mb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			allMetricsCount++
-			mb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			allMetricsCount++
-			mb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
-
-			allMetricsCount++
-			mb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+			rmb.RecordContainerBlockioIoQueuedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerCPUPercentDataPoint(ts, 1)
+			rmb.RecordContainerBlockioIoServiceBytesRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			allMetricsCount++
-			mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
+			rmb.RecordContainerBlockioIoServiceTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			allMetricsCount++
-			mb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
+			rmb.RecordContainerBlockioIoServicedRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			allMetricsCount++
-			mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
+			rmb.RecordContainerBlockioIoTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			rmb.RecordContainerBlockioIoWaitTimeRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
+
+			allMetricsCount++
+			rmb.RecordContainerBlockioSectorsRecursiveDataPoint(ts, 1, "device_major-val", "device_minor-val", "operation-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
+			rmb.RecordContainerCPUPercentDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
+			rmb.RecordContainerCPUThrottlingDataPeriodsDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
+			rmb.RecordContainerCPUThrottlingDataThrottledPeriodsDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
+			rmb.RecordContainerCPUUsageKernelmodeDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerCPUUsagePercpuDataPoint(ts, 1, "core-val")
+
+			allMetricsCount++
+			rmb.RecordContainerCPUUsageSystemDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryAnonDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryCacheDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryDirtyDataPoint(ts, 1)
+			rmb.RecordContainerCPUUsageTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerMemoryFileDataPoint(ts, 1)
+			rmb.RecordContainerCPUUsageUsermodeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
+			rmb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
+			rmb.RecordContainerMemoryActiveAnonDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
+			rmb.RecordContainerMemoryActiveFileDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
+			rmb.RecordContainerMemoryAnonDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
+			rmb.RecordContainerMemoryCacheDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryDirtyDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerMemoryPercentDataPoint(ts, 1)
+			rmb.RecordContainerMemoryFileDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
+			rmb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
+			rmb.RecordContainerMemoryHierarchicalMemswLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryPgpginDataPoint(ts, 1)
+			rmb.RecordContainerMemoryInactiveAnonDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
+			rmb.RecordContainerMemoryInactiveFileDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryRssDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
+			rmb.RecordContainerMemoryMappedFileDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
+			rmb.RecordContainerMemoryPercentDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
+			rmb.RecordContainerMemoryPgfaultDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
+			rmb.RecordContainerMemoryPgmajfaultDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
+			rmb.RecordContainerMemoryPgpginDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
+			rmb.RecordContainerMemoryPgpgoutDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+			rmb.RecordContainerMemoryRssDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
+			rmb.RecordContainerMemoryRssHugeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
+			rmb.RecordContainerMemoryTotalActiveAnonDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
-
-			allMetricsCount++
-			mb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
+			rmb.RecordContainerMemoryTotalActiveFileDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
+			rmb.RecordContainerMemoryTotalCacheDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
+			rmb.RecordContainerMemoryTotalDirtyDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalInactiveAnonDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalInactiveFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalMappedFileDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalPgfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalPgmajfaultDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalPgpginDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalPgpgoutDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalRssDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalRssHugeDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalUnevictableDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryTotalWritebackDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryUnevictableDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+			rmb.RecordContainerMemoryUsageLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerMemoryWritebackDataPoint(ts, 1)
+			rmb.RecordContainerMemoryUsageMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerMemoryUsageTotalDataPoint(ts, 1)
+
+			allMetricsCount++
+			rmb.RecordContainerMemoryWritebackDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
-
-			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "interface-val")
-
-			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerNetworkIoUsageRxBytesDataPoint(ts, 1, "interface-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerNetworkIoUsageRxDroppedDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			rmb.RecordContainerNetworkIoUsageRxErrorsDataPoint(ts, 1, "interface-val")
+
+			allMetricsCount++
+			rmb.RecordContainerNetworkIoUsageRxPacketsDataPoint(ts, 1, "interface-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerNetworkIoUsageTxBytesDataPoint(ts, 1, "interface-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerNetworkIoUsageTxDroppedDataPoint(ts, 1, "interface-val")
 
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerNetworkIoUsageTxErrorsDataPoint(ts, 1, "interface-val")
 
 			allMetricsCount++
-			mb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "interface-val")
+			rmb.RecordContainerNetworkIoUsageTxPacketsDataPoint(ts, 1, "interface-val")
 
 			allMetricsCount++
-			mb.RecordContainerPidsCountDataPoint(ts, 1)
+			rmb.RecordContainerPidsCountDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerPidsLimitDataPoint(ts, 1)
+			rmb.RecordContainerPidsLimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordContainerUptimeDataPoint(ts, 1)
+			rmb.RecordContainerUptimeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetContainerCommandLine("container.command_line-val")
-			rb.SetContainerHostname("container.hostname-val")
-			rb.SetContainerID("container.id-val")
-			rb.SetContainerImageID("container.image.id-val")
-			rb.SetContainerImageName("container.image.name-val")
-			rb.SetContainerName("container.name-val")
-			rb.SetContainerRuntime("container.runtime-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

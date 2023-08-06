@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,17 +59,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
+			rmb.RecordSystemFilesystemInodesUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
+			rmb.RecordSystemFilesystemUsageDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val", AttributeStateFree)
 
 			allMetricsCount++
-			mb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
+			rmb.RecordSystemFilesystemUtilizationDataPoint(ts, 1, "device-val", "mode-val", "mountpoint-val", "type-val")
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

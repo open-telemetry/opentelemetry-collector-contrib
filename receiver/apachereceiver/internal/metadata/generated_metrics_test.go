@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetApacheServerName("apache.server.name-val")
+			rb.SetApacheServerPort("apache.server.port-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,57 +62,53 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheCPULoadDataPoint(ts, "1")
+			rmb.RecordApacheCPULoadDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
+			rmb.RecordApacheCPUTimeDataPoint(ts, "1", AttributeCPULevelSelf, AttributeCPUModeSystem)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
+			rmb.RecordApacheCurrentConnectionsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheLoad1DataPoint(ts, "1")
+			rmb.RecordApacheLoad1DataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheLoad15DataPoint(ts, "1")
+			rmb.RecordApacheLoad15DataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheLoad5DataPoint(ts, "1")
+			rmb.RecordApacheLoad5DataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheRequestTimeDataPoint(ts, "1")
+			rmb.RecordApacheRequestTimeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheRequestsDataPoint(ts, "1")
+			rmb.RecordApacheRequestsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
+			rmb.RecordApacheScoreboardDataPoint(ts, 1, AttributeScoreboardStateOpen)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheTrafficDataPoint(ts, 1)
+			rmb.RecordApacheTrafficDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheUptimeDataPoint(ts, "1")
+			rmb.RecordApacheUptimeDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
+			rmb.RecordApacheWorkersDataPoint(ts, "1", AttributeWorkersStateBusy)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetApacheServerName("apache.server.name-val")
-			rb.SetApacheServerPort("apache.server.port-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -68,69 +68,71 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
+	rb := r.mb.NewResourceBuilder()
+	rb.SetApacheServerName(r.serverName)
+	rb.SetApacheServerPort(r.port)
+	rmb := r.mb.ResourceMetricsBuilder(rb.Emit())
+
 	errs := &scrapererror.ScrapeErrors{}
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for metricKey, metricValue := range parseStats(stats) {
 		switch metricKey {
 		case "ServerUptimeSeconds":
-			addPartialIfError(errs, r.mb.RecordApacheUptimeDataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheUptimeDataPoint(now, metricValue))
 		case "ConnsTotal":
-			addPartialIfError(errs, r.mb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheCurrentConnectionsDataPoint(now, metricValue))
 		case "BusyWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
+			addPartialIfError(errs, rmb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateBusy))
 		case "IdleWorkers":
-			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
+			addPartialIfError(errs, rmb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
-			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheRequestsDataPoint(now, metricValue))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				errs.AddPartial(1, err)
 			} else {
-				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i))
+				rmb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i))
 			}
 		case "CPUChildrenSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
+				rmb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUChildrenUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
+				rmb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelChildren, metadata.AttributeCPUModeUser),
 			)
 		case "CPUSystem":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
+				rmb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeSystem),
 			)
 		case "CPUUser":
 			addPartialIfError(
 				errs,
-				r.mb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
+				rmb.RecordApacheCPUTimeDataPoint(now, metricValue, metadata.AttributeCPULevelSelf, metadata.AttributeCPUModeUser),
 			)
 		case "CPULoad":
-			addPartialIfError(errs, r.mb.RecordApacheCPULoadDataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheCPULoadDataPoint(now, metricValue))
 		case "Load1":
-			addPartialIfError(errs, r.mb.RecordApacheLoad1DataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheLoad1DataPoint(now, metricValue))
 		case "Load5":
-			addPartialIfError(errs, r.mb.RecordApacheLoad5DataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheLoad5DataPoint(now, metricValue))
 		case "Load15":
-			addPartialIfError(errs, r.mb.RecordApacheLoad15DataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheLoad15DataPoint(now, metricValue))
 		case "Total Duration":
-			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue))
+			addPartialIfError(errs, rmb.RecordApacheRequestTimeDataPoint(now, metricValue))
 		case "Scoreboard":
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
-				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
+				rmb.RecordApacheScoreboardDataPoint(now, score, state)
 			}
 		}
 	}
 
-	rb := r.mb.NewResourceBuilder()
-	rb.SetApacheServerName(r.serverName)
-	rb.SetApacheServerPort(r.port)
-	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
+	return r.mb.Emit(), errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

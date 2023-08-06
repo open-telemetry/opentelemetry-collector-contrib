@@ -99,9 +99,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		avgLoadValues.Load15 /= divisor
 	}
 
-	s.mb.RecordSystemCPULoadAverage1mDataPoint(now, avgLoadValues.Load1)
-	s.mb.RecordSystemCPULoadAverage5mDataPoint(now, avgLoadValues.Load5)
-	s.mb.RecordSystemCPULoadAverage15mDataPoint(now, avgLoadValues.Load15)
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordSystemCPULoadAverage1mDataPoint(now, avgLoadValues.Load1)
+	rmb.RecordSystemCPULoadAverage5mDataPoint(now, avgLoadValues.Load5)
+	rmb.RecordSystemCPULoadAverage15mDataPoint(now, avgLoadValues.Load15)
 
 	return s.mb.Emit(), nil
 }

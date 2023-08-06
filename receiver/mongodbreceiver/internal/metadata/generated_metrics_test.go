@@ -48,6 +48,11 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetDatabase("database-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,120 +61,117 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
+			rmb.RecordMongodbCacheOperationsDataPoint(ts, 1, AttributeTypeHit)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCollectionCountDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbCollectionCountDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbConnectionCountDataPoint(ts, 1, "database-val", AttributeConnectionTypeActive)
+			rmb.RecordMongodbConnectionCountDataPoint(ts, 1, "database-val", AttributeConnectionTypeActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCursorCountDataPoint(ts, 1)
+			rmb.RecordMongodbCursorCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbCursorTimeoutCountDataPoint(ts, 1)
+			rmb.RecordMongodbCursorTimeoutCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDataSizeDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbDataSizeDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDatabaseCountDataPoint(ts, 1)
+			rmb.RecordMongodbDatabaseCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, "database-val", AttributeOperationInsert)
+			rmb.RecordMongodbDocumentOperationCountDataPoint(ts, 1, "database-val", AttributeOperationInsert)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbExtentCountDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbExtentCountDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
+			rmb.RecordMongodbGlobalLockTimeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordMongodbHealthDataPoint(ts, 1)
+			rmb.RecordMongodbHealthDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "database-val", "collection-val")
+			rmb.RecordMongodbIndexAccessCountDataPoint(ts, 1, "database-val", "collection-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexCountDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbIndexCountDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbIndexSizeDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbIndexSizeDataPoint(ts, 1, "database-val")
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			rmb.RecordMongodbLockAcquireCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			rmb.RecordMongodbLockAcquireTimeDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			rmb.RecordMongodbLockAcquireWaitCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			allMetricsCount++
-			mb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
+			rmb.RecordMongodbLockDeadlockCountDataPoint(ts, 1, "database-val", AttributeLockTypeParallelBatchWriteMode, AttributeLockModeShared)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbMemoryUsageDataPoint(ts, 1, "database-val", AttributeMemoryTypeResident)
+			rmb.RecordMongodbMemoryUsageDataPoint(ts, 1, "database-val", AttributeMemoryTypeResident)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbNetworkIoReceiveDataPoint(ts, 1)
+			rmb.RecordMongodbNetworkIoReceiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbNetworkIoTransmitDataPoint(ts, 1)
+			rmb.RecordMongodbNetworkIoTransmitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
+			rmb.RecordMongodbNetworkRequestCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbObjectCountDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbObjectCountDataPoint(ts, 1, "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
+			rmb.RecordMongodbOperationCountDataPoint(ts, 1, AttributeOperationInsert)
 
 			allMetricsCount++
-			mb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
+			rmb.RecordMongodbOperationLatencyTimeDataPoint(ts, 1, AttributeOperationLatencyRead)
 
 			allMetricsCount++
-			mb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperationInsert)
+			rmb.RecordMongodbOperationReplCountDataPoint(ts, 1, AttributeOperationInsert)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
+			rmb.RecordMongodbOperationTimeDataPoint(ts, 1, AttributeOperationInsert)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbSessionCountDataPoint(ts, 1)
+			rmb.RecordMongodbSessionCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMongodbStorageSizeDataPoint(ts, 1, "database-val")
+			rmb.RecordMongodbStorageSizeDataPoint(ts, 1, "database-val")
 
 			allMetricsCount++
-			mb.RecordMongodbUptimeDataPoint(ts, 1)
+			rmb.RecordMongodbUptimeDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetDatabase("database-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeActivePendingRequestState specifies the a value active_pending_request_state attribute.
@@ -2918,14 +2920,25 @@ func newMetricSaphanaVolumeOperationTime(cfg MetricConfig) metricSaphanaVolumeOp
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                        MetricsBuilderConfig // config of the metrics builder.
-	startTime                                     pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                               int                  // maximum observed number of metrics per resource.
-	metricsBuffer                                 pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                                     component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                                     component.BuildInfo
+	startTime                                     pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                               int               // maximum observed number of metrics per resource.
+	resource                                      pcommon.Resource
+	missedEmits                                   int
 	metricSaphanaAlertCount                       metricSaphanaAlertCount
 	metricSaphanaBackupLatest                     metricSaphanaBackupLatest
 	metricSaphanaColumnMemoryUsed                 metricSaphanaColumnMemoryUsed
@@ -2985,60 +2998,89 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                        mbc,
-		startTime:                                     pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                                 pmetric.NewMetrics(),
-		buildInfo:                                     settings.BuildInfo,
-		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(mbc.Metrics.SaphanaAlertCount),
-		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(mbc.Metrics.SaphanaBackupLatest),
-		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(mbc.Metrics.SaphanaColumnMemoryUsed),
-		metricSaphanaComponentMemoryUsed:              newMetricSaphanaComponentMemoryUsed(mbc.Metrics.SaphanaComponentMemoryUsed),
-		metricSaphanaConnectionCount:                  newMetricSaphanaConnectionCount(mbc.Metrics.SaphanaConnectionCount),
-		metricSaphanaCPUUsed:                          newMetricSaphanaCPUUsed(mbc.Metrics.SaphanaCPUUsed),
-		metricSaphanaDiskSizeCurrent:                  newMetricSaphanaDiskSizeCurrent(mbc.Metrics.SaphanaDiskSizeCurrent),
-		metricSaphanaHostMemoryCurrent:                newMetricSaphanaHostMemoryCurrent(mbc.Metrics.SaphanaHostMemoryCurrent),
-		metricSaphanaHostSwapCurrent:                  newMetricSaphanaHostSwapCurrent(mbc.Metrics.SaphanaHostSwapCurrent),
-		metricSaphanaInstanceCodeSize:                 newMetricSaphanaInstanceCodeSize(mbc.Metrics.SaphanaInstanceCodeSize),
-		metricSaphanaInstanceMemoryCurrent:            newMetricSaphanaInstanceMemoryCurrent(mbc.Metrics.SaphanaInstanceMemoryCurrent),
-		metricSaphanaInstanceMemorySharedAllocated:    newMetricSaphanaInstanceMemorySharedAllocated(mbc.Metrics.SaphanaInstanceMemorySharedAllocated),
-		metricSaphanaInstanceMemoryUsedPeak:           newMetricSaphanaInstanceMemoryUsedPeak(mbc.Metrics.SaphanaInstanceMemoryUsedPeak),
-		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(mbc.Metrics.SaphanaLicenseExpirationTime),
-		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(mbc.Metrics.SaphanaLicenseLimit),
-		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(mbc.Metrics.SaphanaLicensePeak),
-		metricSaphanaNetworkRequestAverageTime:        newMetricSaphanaNetworkRequestAverageTime(mbc.Metrics.SaphanaNetworkRequestAverageTime),
-		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(mbc.Metrics.SaphanaNetworkRequestCount),
-		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(mbc.Metrics.SaphanaNetworkRequestFinishedCount),
-		metricSaphanaReplicationAverageTime:           newMetricSaphanaReplicationAverageTime(mbc.Metrics.SaphanaReplicationAverageTime),
-		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(mbc.Metrics.SaphanaReplicationBacklogSize),
-		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(mbc.Metrics.SaphanaReplicationBacklogTime),
-		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(mbc.Metrics.SaphanaRowStoreMemoryUsed),
-		metricSaphanaSchemaMemoryUsedCurrent:          newMetricSaphanaSchemaMemoryUsedCurrent(mbc.Metrics.SaphanaSchemaMemoryUsedCurrent),
-		metricSaphanaSchemaMemoryUsedMax:              newMetricSaphanaSchemaMemoryUsedMax(mbc.Metrics.SaphanaSchemaMemoryUsedMax),
-		metricSaphanaSchemaOperationCount:             newMetricSaphanaSchemaOperationCount(mbc.Metrics.SaphanaSchemaOperationCount),
-		metricSaphanaSchemaRecordCompressedCount:      newMetricSaphanaSchemaRecordCompressedCount(mbc.Metrics.SaphanaSchemaRecordCompressedCount),
-		metricSaphanaSchemaRecordCount:                newMetricSaphanaSchemaRecordCount(mbc.Metrics.SaphanaSchemaRecordCount),
-		metricSaphanaServiceCodeSize:                  newMetricSaphanaServiceCodeSize(mbc.Metrics.SaphanaServiceCodeSize),
-		metricSaphanaServiceCount:                     newMetricSaphanaServiceCount(mbc.Metrics.SaphanaServiceCount),
-		metricSaphanaServiceMemoryCompactorsAllocated: newMetricSaphanaServiceMemoryCompactorsAllocated(mbc.Metrics.SaphanaServiceMemoryCompactorsAllocated),
-		metricSaphanaServiceMemoryCompactorsFreeable:  newMetricSaphanaServiceMemoryCompactorsFreeable(mbc.Metrics.SaphanaServiceMemoryCompactorsFreeable),
-		metricSaphanaServiceMemoryEffectiveLimit:      newMetricSaphanaServiceMemoryEffectiveLimit(mbc.Metrics.SaphanaServiceMemoryEffectiveLimit),
-		metricSaphanaServiceMemoryHeapCurrent:         newMetricSaphanaServiceMemoryHeapCurrent(mbc.Metrics.SaphanaServiceMemoryHeapCurrent),
-		metricSaphanaServiceMemoryLimit:               newMetricSaphanaServiceMemoryLimit(mbc.Metrics.SaphanaServiceMemoryLimit),
-		metricSaphanaServiceMemorySharedCurrent:       newMetricSaphanaServiceMemorySharedCurrent(mbc.Metrics.SaphanaServiceMemorySharedCurrent),
-		metricSaphanaServiceMemoryUsed:                newMetricSaphanaServiceMemoryUsed(mbc.Metrics.SaphanaServiceMemoryUsed),
-		metricSaphanaServiceStackSize:                 newMetricSaphanaServiceStackSize(mbc.Metrics.SaphanaServiceStackSize),
-		metricSaphanaServiceThreadCount:               newMetricSaphanaServiceThreadCount(mbc.Metrics.SaphanaServiceThreadCount),
-		metricSaphanaTransactionBlocked:               newMetricSaphanaTransactionBlocked(mbc.Metrics.SaphanaTransactionBlocked),
-		metricSaphanaTransactionCount:                 newMetricSaphanaTransactionCount(mbc.Metrics.SaphanaTransactionCount),
-		metricSaphanaUptime:                           newMetricSaphanaUptime(mbc.Metrics.SaphanaUptime),
-		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(mbc.Metrics.SaphanaVolumeOperationCount),
-		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(mbc.Metrics.SaphanaVolumeOperationSize),
-		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(mbc.Metrics.SaphanaVolumeOperationTime),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                                     mb.startTime,
+		buildInfo:                                     mb.buildInfo,
+		resource:                                      res,
+		metricSaphanaAlertCount:                       newMetricSaphanaAlertCount(mb.config.Metrics.SaphanaAlertCount),
+		metricSaphanaBackupLatest:                     newMetricSaphanaBackupLatest(mb.config.Metrics.SaphanaBackupLatest),
+		metricSaphanaColumnMemoryUsed:                 newMetricSaphanaColumnMemoryUsed(mb.config.Metrics.SaphanaColumnMemoryUsed),
+		metricSaphanaComponentMemoryUsed:              newMetricSaphanaComponentMemoryUsed(mb.config.Metrics.SaphanaComponentMemoryUsed),
+		metricSaphanaConnectionCount:                  newMetricSaphanaConnectionCount(mb.config.Metrics.SaphanaConnectionCount),
+		metricSaphanaCPUUsed:                          newMetricSaphanaCPUUsed(mb.config.Metrics.SaphanaCPUUsed),
+		metricSaphanaDiskSizeCurrent:                  newMetricSaphanaDiskSizeCurrent(mb.config.Metrics.SaphanaDiskSizeCurrent),
+		metricSaphanaHostMemoryCurrent:                newMetricSaphanaHostMemoryCurrent(mb.config.Metrics.SaphanaHostMemoryCurrent),
+		metricSaphanaHostSwapCurrent:                  newMetricSaphanaHostSwapCurrent(mb.config.Metrics.SaphanaHostSwapCurrent),
+		metricSaphanaInstanceCodeSize:                 newMetricSaphanaInstanceCodeSize(mb.config.Metrics.SaphanaInstanceCodeSize),
+		metricSaphanaInstanceMemoryCurrent:            newMetricSaphanaInstanceMemoryCurrent(mb.config.Metrics.SaphanaInstanceMemoryCurrent),
+		metricSaphanaInstanceMemorySharedAllocated:    newMetricSaphanaInstanceMemorySharedAllocated(mb.config.Metrics.SaphanaInstanceMemorySharedAllocated),
+		metricSaphanaInstanceMemoryUsedPeak:           newMetricSaphanaInstanceMemoryUsedPeak(mb.config.Metrics.SaphanaInstanceMemoryUsedPeak),
+		metricSaphanaLicenseExpirationTime:            newMetricSaphanaLicenseExpirationTime(mb.config.Metrics.SaphanaLicenseExpirationTime),
+		metricSaphanaLicenseLimit:                     newMetricSaphanaLicenseLimit(mb.config.Metrics.SaphanaLicenseLimit),
+		metricSaphanaLicensePeak:                      newMetricSaphanaLicensePeak(mb.config.Metrics.SaphanaLicensePeak),
+		metricSaphanaNetworkRequestAverageTime:        newMetricSaphanaNetworkRequestAverageTime(mb.config.Metrics.SaphanaNetworkRequestAverageTime),
+		metricSaphanaNetworkRequestCount:              newMetricSaphanaNetworkRequestCount(mb.config.Metrics.SaphanaNetworkRequestCount),
+		metricSaphanaNetworkRequestFinishedCount:      newMetricSaphanaNetworkRequestFinishedCount(mb.config.Metrics.SaphanaNetworkRequestFinishedCount),
+		metricSaphanaReplicationAverageTime:           newMetricSaphanaReplicationAverageTime(mb.config.Metrics.SaphanaReplicationAverageTime),
+		metricSaphanaReplicationBacklogSize:           newMetricSaphanaReplicationBacklogSize(mb.config.Metrics.SaphanaReplicationBacklogSize),
+		metricSaphanaReplicationBacklogTime:           newMetricSaphanaReplicationBacklogTime(mb.config.Metrics.SaphanaReplicationBacklogTime),
+		metricSaphanaRowStoreMemoryUsed:               newMetricSaphanaRowStoreMemoryUsed(mb.config.Metrics.SaphanaRowStoreMemoryUsed),
+		metricSaphanaSchemaMemoryUsedCurrent:          newMetricSaphanaSchemaMemoryUsedCurrent(mb.config.Metrics.SaphanaSchemaMemoryUsedCurrent),
+		metricSaphanaSchemaMemoryUsedMax:              newMetricSaphanaSchemaMemoryUsedMax(mb.config.Metrics.SaphanaSchemaMemoryUsedMax),
+		metricSaphanaSchemaOperationCount:             newMetricSaphanaSchemaOperationCount(mb.config.Metrics.SaphanaSchemaOperationCount),
+		metricSaphanaSchemaRecordCompressedCount:      newMetricSaphanaSchemaRecordCompressedCount(mb.config.Metrics.SaphanaSchemaRecordCompressedCount),
+		metricSaphanaSchemaRecordCount:                newMetricSaphanaSchemaRecordCount(mb.config.Metrics.SaphanaSchemaRecordCount),
+		metricSaphanaServiceCodeSize:                  newMetricSaphanaServiceCodeSize(mb.config.Metrics.SaphanaServiceCodeSize),
+		metricSaphanaServiceCount:                     newMetricSaphanaServiceCount(mb.config.Metrics.SaphanaServiceCount),
+		metricSaphanaServiceMemoryCompactorsAllocated: newMetricSaphanaServiceMemoryCompactorsAllocated(mb.config.Metrics.SaphanaServiceMemoryCompactorsAllocated),
+		metricSaphanaServiceMemoryCompactorsFreeable:  newMetricSaphanaServiceMemoryCompactorsFreeable(mb.config.Metrics.SaphanaServiceMemoryCompactorsFreeable),
+		metricSaphanaServiceMemoryEffectiveLimit:      newMetricSaphanaServiceMemoryEffectiveLimit(mb.config.Metrics.SaphanaServiceMemoryEffectiveLimit),
+		metricSaphanaServiceMemoryHeapCurrent:         newMetricSaphanaServiceMemoryHeapCurrent(mb.config.Metrics.SaphanaServiceMemoryHeapCurrent),
+		metricSaphanaServiceMemoryLimit:               newMetricSaphanaServiceMemoryLimit(mb.config.Metrics.SaphanaServiceMemoryLimit),
+		metricSaphanaServiceMemorySharedCurrent:       newMetricSaphanaServiceMemorySharedCurrent(mb.config.Metrics.SaphanaServiceMemorySharedCurrent),
+		metricSaphanaServiceMemoryUsed:                newMetricSaphanaServiceMemoryUsed(mb.config.Metrics.SaphanaServiceMemoryUsed),
+		metricSaphanaServiceStackSize:                 newMetricSaphanaServiceStackSize(mb.config.Metrics.SaphanaServiceStackSize),
+		metricSaphanaServiceThreadCount:               newMetricSaphanaServiceThreadCount(mb.config.Metrics.SaphanaServiceThreadCount),
+		metricSaphanaTransactionBlocked:               newMetricSaphanaTransactionBlocked(mb.config.Metrics.SaphanaTransactionBlocked),
+		metricSaphanaTransactionCount:                 newMetricSaphanaTransactionCount(mb.config.Metrics.SaphanaTransactionCount),
+		metricSaphanaUptime:                           newMetricSaphanaUptime(mb.config.Metrics.SaphanaUptime),
+		metricSaphanaVolumeOperationCount:             newMetricSaphanaVolumeOperationCount(mb.config.Metrics.SaphanaVolumeOperationCount),
+		metricSaphanaVolumeOperationSize:              newMetricSaphanaVolumeOperationSize(mb.config.Metrics.SaphanaVolumeOperationSize),
+		metricSaphanaVolumeOperationTime:              newMetricSaphanaVolumeOperationTime(mb.config.Metrics.SaphanaVolumeOperationTime),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -3047,574 +3089,547 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricSaphanaAlertCount.emit(sm.Metrics())
+	rmb.metricSaphanaBackupLatest.emit(sm.Metrics())
+	rmb.metricSaphanaColumnMemoryUsed.emit(sm.Metrics())
+	rmb.metricSaphanaComponentMemoryUsed.emit(sm.Metrics())
+	rmb.metricSaphanaConnectionCount.emit(sm.Metrics())
+	rmb.metricSaphanaCPUUsed.emit(sm.Metrics())
+	rmb.metricSaphanaDiskSizeCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaHostMemoryCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaHostSwapCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaInstanceCodeSize.emit(sm.Metrics())
+	rmb.metricSaphanaInstanceMemoryCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaInstanceMemorySharedAllocated.emit(sm.Metrics())
+	rmb.metricSaphanaInstanceMemoryUsedPeak.emit(sm.Metrics())
+	rmb.metricSaphanaLicenseExpirationTime.emit(sm.Metrics())
+	rmb.metricSaphanaLicenseLimit.emit(sm.Metrics())
+	rmb.metricSaphanaLicensePeak.emit(sm.Metrics())
+	rmb.metricSaphanaNetworkRequestAverageTime.emit(sm.Metrics())
+	rmb.metricSaphanaNetworkRequestCount.emit(sm.Metrics())
+	rmb.metricSaphanaNetworkRequestFinishedCount.emit(sm.Metrics())
+	rmb.metricSaphanaReplicationAverageTime.emit(sm.Metrics())
+	rmb.metricSaphanaReplicationBacklogSize.emit(sm.Metrics())
+	rmb.metricSaphanaReplicationBacklogTime.emit(sm.Metrics())
+	rmb.metricSaphanaRowStoreMemoryUsed.emit(sm.Metrics())
+	rmb.metricSaphanaSchemaMemoryUsedCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaSchemaMemoryUsedMax.emit(sm.Metrics())
+	rmb.metricSaphanaSchemaOperationCount.emit(sm.Metrics())
+	rmb.metricSaphanaSchemaRecordCompressedCount.emit(sm.Metrics())
+	rmb.metricSaphanaSchemaRecordCount.emit(sm.Metrics())
+	rmb.metricSaphanaServiceCodeSize.emit(sm.Metrics())
+	rmb.metricSaphanaServiceCount.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryCompactorsAllocated.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryCompactorsFreeable.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryEffectiveLimit.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryHeapCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryLimit.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemorySharedCurrent.emit(sm.Metrics())
+	rmb.metricSaphanaServiceMemoryUsed.emit(sm.Metrics())
+	rmb.metricSaphanaServiceStackSize.emit(sm.Metrics())
+	rmb.metricSaphanaServiceThreadCount.emit(sm.Metrics())
+	rmb.metricSaphanaTransactionBlocked.emit(sm.Metrics())
+	rmb.metricSaphanaTransactionCount.emit(sm.Metrics())
+	rmb.metricSaphanaUptime.emit(sm.Metrics())
+	rmb.metricSaphanaVolumeOperationCount.emit(sm.Metrics())
+	rmb.metricSaphanaVolumeOperationSize.emit(sm.Metrics())
+	rmb.metricSaphanaVolumeOperationTime.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/saphanareceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSaphanaAlertCount.emit(ils.Metrics())
-	mb.metricSaphanaBackupLatest.emit(ils.Metrics())
-	mb.metricSaphanaColumnMemoryUsed.emit(ils.Metrics())
-	mb.metricSaphanaComponentMemoryUsed.emit(ils.Metrics())
-	mb.metricSaphanaConnectionCount.emit(ils.Metrics())
-	mb.metricSaphanaCPUUsed.emit(ils.Metrics())
-	mb.metricSaphanaDiskSizeCurrent.emit(ils.Metrics())
-	mb.metricSaphanaHostMemoryCurrent.emit(ils.Metrics())
-	mb.metricSaphanaHostSwapCurrent.emit(ils.Metrics())
-	mb.metricSaphanaInstanceCodeSize.emit(ils.Metrics())
-	mb.metricSaphanaInstanceMemoryCurrent.emit(ils.Metrics())
-	mb.metricSaphanaInstanceMemorySharedAllocated.emit(ils.Metrics())
-	mb.metricSaphanaInstanceMemoryUsedPeak.emit(ils.Metrics())
-	mb.metricSaphanaLicenseExpirationTime.emit(ils.Metrics())
-	mb.metricSaphanaLicenseLimit.emit(ils.Metrics())
-	mb.metricSaphanaLicensePeak.emit(ils.Metrics())
-	mb.metricSaphanaNetworkRequestAverageTime.emit(ils.Metrics())
-	mb.metricSaphanaNetworkRequestCount.emit(ils.Metrics())
-	mb.metricSaphanaNetworkRequestFinishedCount.emit(ils.Metrics())
-	mb.metricSaphanaReplicationAverageTime.emit(ils.Metrics())
-	mb.metricSaphanaReplicationBacklogSize.emit(ils.Metrics())
-	mb.metricSaphanaReplicationBacklogTime.emit(ils.Metrics())
-	mb.metricSaphanaRowStoreMemoryUsed.emit(ils.Metrics())
-	mb.metricSaphanaSchemaMemoryUsedCurrent.emit(ils.Metrics())
-	mb.metricSaphanaSchemaMemoryUsedMax.emit(ils.Metrics())
-	mb.metricSaphanaSchemaOperationCount.emit(ils.Metrics())
-	mb.metricSaphanaSchemaRecordCompressedCount.emit(ils.Metrics())
-	mb.metricSaphanaSchemaRecordCount.emit(ils.Metrics())
-	mb.metricSaphanaServiceCodeSize.emit(ils.Metrics())
-	mb.metricSaphanaServiceCount.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryCompactorsAllocated.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryCompactorsFreeable.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryEffectiveLimit.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryHeapCurrent.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryLimit.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemorySharedCurrent.emit(ils.Metrics())
-	mb.metricSaphanaServiceMemoryUsed.emit(ils.Metrics())
-	mb.metricSaphanaServiceStackSize.emit(ils.Metrics())
-	mb.metricSaphanaServiceThreadCount.emit(ils.Metrics())
-	mb.metricSaphanaTransactionBlocked.emit(ils.Metrics())
-	mb.metricSaphanaTransactionCount.emit(ils.Metrics())
-	mb.metricSaphanaUptime.emit(ils.Metrics())
-	mb.metricSaphanaVolumeOperationCount.emit(ils.Metrics())
-	mb.metricSaphanaVolumeOperationSize.emit(ils.Metrics())
-	mb.metricSaphanaVolumeOperationTime.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/saphanareceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordSaphanaAlertCountDataPoint adds a data point to saphana.alert.count metric.
-func (mb *MetricsBuilder) RecordSaphanaAlertCountDataPoint(ts pcommon.Timestamp, inputVal string, alertRatingAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaAlertCountDataPoint(ts pcommon.Timestamp, inputVal string, alertRatingAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaAlertCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaAlertCount.recordDataPoint(mb.startTime, ts, val, alertRatingAttributeValue)
+	rmb.metricSaphanaAlertCount.recordDataPoint(rmb.startTime, ts, val, alertRatingAttributeValue)
 	return nil
 }
 
 // RecordSaphanaBackupLatestDataPoint adds a data point to saphana.backup.latest metric.
-func (mb *MetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaBackupLatestDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaBackupLatest, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaBackupLatest.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaBackupLatest.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaColumnMemoryUsedDataPoint adds a data point to saphana.column.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaColumnMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, columnMemoryTypeAttributeValue AttributeColumnMemoryType, columnMemorySubtypeAttributeValue AttributeColumnMemorySubtype) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaColumnMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, columnMemoryTypeAttributeValue AttributeColumnMemoryType, columnMemorySubtypeAttributeValue AttributeColumnMemorySubtype) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaColumnMemoryUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaColumnMemoryUsed.recordDataPoint(mb.startTime, ts, val, columnMemoryTypeAttributeValue.String(), columnMemorySubtypeAttributeValue.String())
+	rmb.metricSaphanaColumnMemoryUsed.recordDataPoint(rmb.startTime, ts, val, columnMemoryTypeAttributeValue.String(), columnMemorySubtypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaComponentMemoryUsedDataPoint adds a data point to saphana.component.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaComponentMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, componentAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaComponentMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, componentAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaComponentMemoryUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaComponentMemoryUsed.recordDataPoint(mb.startTime, ts, val, componentAttributeValue)
+	rmb.metricSaphanaComponentMemoryUsed.recordDataPoint(rmb.startTime, ts, val, componentAttributeValue)
 	return nil
 }
 
 // RecordSaphanaConnectionCountDataPoint adds a data point to saphana.connection.count metric.
-func (mb *MetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaConnectionCountDataPoint(ts pcommon.Timestamp, inputVal string, connectionStatusAttributeValue AttributeConnectionStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaConnectionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaConnectionCount.recordDataPoint(mb.startTime, ts, val, connectionStatusAttributeValue.String())
+	rmb.metricSaphanaConnectionCount.recordDataPoint(rmb.startTime, ts, val, connectionStatusAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaCPUUsedDataPoint adds a data point to saphana.cpu.used metric.
-func (mb *MetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pcommon.Timestamp, inputVal string, cpuTypeAttributeValue AttributeCPUType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaCPUUsedDataPoint(ts pcommon.Timestamp, inputVal string, cpuTypeAttributeValue AttributeCPUType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaCPUUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaCPUUsed.recordDataPoint(mb.startTime, ts, val, cpuTypeAttributeValue.String())
+	rmb.metricSaphanaCPUUsed.recordDataPoint(rmb.startTime, ts, val, cpuTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaDiskSizeCurrentDataPoint adds a data point to saphana.disk.size.current metric.
-func (mb *MetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue AttributeDiskStateUsedFree) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaDiskSizeCurrentDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, diskStateUsedFreeAttributeValue AttributeDiskStateUsedFree) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaDiskSizeCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaDiskSizeCurrent.recordDataPoint(mb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, diskStateUsedFreeAttributeValue.String())
+	rmb.metricSaphanaDiskSizeCurrent.recordDataPoint(rmb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, diskStateUsedFreeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaHostMemoryCurrentDataPoint adds a data point to saphana.host.memory.current metric.
-func (mb *MetricsBuilder) RecordSaphanaHostMemoryCurrentDataPoint(ts pcommon.Timestamp, inputVal string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaHostMemoryCurrentDataPoint(ts pcommon.Timestamp, inputVal string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaHostMemoryCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaHostMemoryCurrent.recordDataPoint(mb.startTime, ts, val, memoryStateUsedFreeAttributeValue.String())
+	rmb.metricSaphanaHostMemoryCurrent.recordDataPoint(rmb.startTime, ts, val, memoryStateUsedFreeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaHostSwapCurrentDataPoint adds a data point to saphana.host.swap.current metric.
-func (mb *MetricsBuilder) RecordSaphanaHostSwapCurrentDataPoint(ts pcommon.Timestamp, inputVal string, hostSwapStateAttributeValue AttributeHostSwapState) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaHostSwapCurrentDataPoint(ts pcommon.Timestamp, inputVal string, hostSwapStateAttributeValue AttributeHostSwapState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaHostSwapCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaHostSwapCurrent.recordDataPoint(mb.startTime, ts, val, hostSwapStateAttributeValue.String())
+	rmb.metricSaphanaHostSwapCurrent.recordDataPoint(rmb.startTime, ts, val, hostSwapStateAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaInstanceCodeSizeDataPoint adds a data point to saphana.instance.code_size metric.
-func (mb *MetricsBuilder) RecordSaphanaInstanceCodeSizeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaInstanceCodeSizeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaInstanceCodeSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaInstanceCodeSize.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaInstanceCodeSize.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaInstanceMemoryCurrentDataPoint adds a data point to saphana.instance.memory.current metric.
-func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryCurrentDataPoint(ts pcommon.Timestamp, inputVal string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaInstanceMemoryCurrentDataPoint(ts pcommon.Timestamp, inputVal string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaInstanceMemoryCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaInstanceMemoryCurrent.recordDataPoint(mb.startTime, ts, val, memoryStateUsedFreeAttributeValue.String())
+	rmb.metricSaphanaInstanceMemoryCurrent.recordDataPoint(rmb.startTime, ts, val, memoryStateUsedFreeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaInstanceMemorySharedAllocatedDataPoint adds a data point to saphana.instance.memory.shared.allocated metric.
-func (mb *MetricsBuilder) RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaInstanceMemorySharedAllocatedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaInstanceMemorySharedAllocated, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaInstanceMemorySharedAllocated.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaInstanceMemorySharedAllocated.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaInstanceMemoryUsedPeakDataPoint adds a data point to saphana.instance.memory.used.peak metric.
-func (mb *MetricsBuilder) RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaInstanceMemoryUsedPeakDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaInstanceMemoryUsedPeak, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaInstanceMemoryUsedPeak.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaInstanceMemoryUsedPeak.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaLicenseExpirationTimeDataPoint adds a data point to saphana.license.expiration.time metric.
-func (mb *MetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaLicenseExpirationTimeDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaLicenseExpirationTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaLicenseExpirationTime.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
+	rmb.metricSaphanaLicenseExpirationTime.recordDataPoint(rmb.startTime, ts, val, systemAttributeValue, productAttributeValue)
 	return nil
 }
 
 // RecordSaphanaLicenseLimitDataPoint adds a data point to saphana.license.limit metric.
-func (mb *MetricsBuilder) RecordSaphanaLicenseLimitDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaLicenseLimitDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaLicenseLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaLicenseLimit.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
+	rmb.metricSaphanaLicenseLimit.recordDataPoint(rmb.startTime, ts, val, systemAttributeValue, productAttributeValue)
 	return nil
 }
 
 // RecordSaphanaLicensePeakDataPoint adds a data point to saphana.license.peak metric.
-func (mb *MetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaLicensePeakDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, productAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaLicensePeak, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaLicensePeak.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, productAttributeValue)
+	rmb.metricSaphanaLicensePeak.recordDataPoint(rmb.startTime, ts, val, systemAttributeValue, productAttributeValue)
 	return nil
 }
 
 // RecordSaphanaNetworkRequestAverageTimeDataPoint adds a data point to saphana.network.request.average_time metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaNetworkRequestAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for SaphanaNetworkRequestAverageTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaNetworkRequestAverageTime.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaNetworkRequestAverageTime.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaNetworkRequestCountDataPoint adds a data point to saphana.network.request.count metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestCountDataPoint(ts pcommon.Timestamp, inputVal string, activePendingRequestStateAttributeValue AttributeActivePendingRequestState) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaNetworkRequestCountDataPoint(ts pcommon.Timestamp, inputVal string, activePendingRequestStateAttributeValue AttributeActivePendingRequestState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaNetworkRequestCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaNetworkRequestCount.recordDataPoint(mb.startTime, ts, val, activePendingRequestStateAttributeValue.String())
+	rmb.metricSaphanaNetworkRequestCount.recordDataPoint(rmb.startTime, ts, val, activePendingRequestStateAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaNetworkRequestFinishedCountDataPoint adds a data point to saphana.network.request.finished.count metric.
-func (mb *MetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts pcommon.Timestamp, inputVal string, internalExternalRequestTypeAttributeValue AttributeInternalExternalRequestType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaNetworkRequestFinishedCountDataPoint(ts pcommon.Timestamp, inputVal string, internalExternalRequestTypeAttributeValue AttributeInternalExternalRequestType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaNetworkRequestFinishedCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaNetworkRequestFinishedCount.recordDataPoint(mb.startTime, ts, val, internalExternalRequestTypeAttributeValue.String())
+	rmb.metricSaphanaNetworkRequestFinishedCount.recordDataPoint(rmb.startTime, ts, val, internalExternalRequestTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaReplicationAverageTimeDataPoint adds a data point to saphana.replication.average_time metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaReplicationAverageTimeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for SaphanaReplicationAverageTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaReplicationAverageTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
+	rmb.metricSaphanaReplicationAverageTime.recordDataPoint(rmb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 	return nil
 }
 
 // RecordSaphanaReplicationBacklogSizeDataPoint adds a data point to saphana.replication.backlog.size metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogSizeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaReplicationBacklogSizeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaReplicationBacklogSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaReplicationBacklogSize.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
+	rmb.metricSaphanaReplicationBacklogSize.recordDataPoint(rmb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 	return nil
 }
 
 // RecordSaphanaReplicationBacklogTimeDataPoint adds a data point to saphana.replication.backlog.time metric.
-func (mb *MetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaReplicationBacklogTimeDataPoint(ts pcommon.Timestamp, inputVal string, primaryHostAttributeValue string, secondaryHostAttributeValue string, portAttributeValue string, replicationModeAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaReplicationBacklogTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaReplicationBacklogTime.recordDataPoint(mb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
+	rmb.metricSaphanaReplicationBacklogTime.recordDataPoint(rmb.startTime, ts, val, primaryHostAttributeValue, secondaryHostAttributeValue, portAttributeValue, replicationModeAttributeValue)
 	return nil
 }
 
 // RecordSaphanaRowStoreMemoryUsedDataPoint adds a data point to saphana.row_store.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaRowStoreMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, rowMemoryTypeAttributeValue AttributeRowMemoryType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaRowStoreMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, rowMemoryTypeAttributeValue AttributeRowMemoryType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaRowStoreMemoryUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaRowStoreMemoryUsed.recordDataPoint(mb.startTime, ts, val, rowMemoryTypeAttributeValue.String())
+	rmb.metricSaphanaRowStoreMemoryUsed.recordDataPoint(rmb.startTime, ts, val, rowMemoryTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaSchemaMemoryUsedCurrentDataPoint adds a data point to saphana.schema.memory.used.current metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaMemoryTypeAttributeValue AttributeSchemaMemoryType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaMemoryTypeAttributeValue AttributeSchemaMemoryType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaSchemaMemoryUsedCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaSchemaMemoryUsedCurrent.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, schemaMemoryTypeAttributeValue.String())
+	rmb.metricSaphanaSchemaMemoryUsedCurrent.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, schemaMemoryTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaSchemaMemoryUsedMaxDataPoint adds a data point to saphana.schema.memory.used.max metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaSchemaMemoryUsedMax, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaSchemaMemoryUsedMax.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+	rmb.metricSaphanaSchemaMemoryUsedMax.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue)
 	return nil
 }
 
 // RecordSaphanaSchemaOperationCountDataPoint adds a data point to saphana.schema.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaOperationTypeAttributeValue AttributeSchemaOperationType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaSchemaOperationCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaOperationTypeAttributeValue AttributeSchemaOperationType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaSchemaOperationCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaSchemaOperationCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, schemaOperationTypeAttributeValue.String())
+	rmb.metricSaphanaSchemaOperationCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, schemaOperationTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaSchemaRecordCompressedCountDataPoint adds a data point to saphana.schema.record.compressed.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCompressedCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaSchemaRecordCompressedCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaSchemaRecordCompressedCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaSchemaRecordCompressedCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+	rmb.metricSaphanaSchemaRecordCompressedCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue)
 	return nil
 }
 
 // RecordSaphanaSchemaRecordCountDataPoint adds a data point to saphana.schema.record.count metric.
-func (mb *MetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaRecordTypeAttributeValue AttributeSchemaRecordType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaSchemaRecordCountDataPoint(ts pcommon.Timestamp, inputVal string, schemaAttributeValue string, schemaRecordTypeAttributeValue AttributeSchemaRecordType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaSchemaRecordCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaSchemaRecordCount.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue, schemaRecordTypeAttributeValue.String())
+	rmb.metricSaphanaSchemaRecordCount.recordDataPoint(rmb.startTime, ts, val, schemaAttributeValue, schemaRecordTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaServiceCodeSizeDataPoint adds a data point to saphana.service.code_size metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceCodeSizeDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceCodeSizeDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceCodeSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceCodeSize.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceCodeSize.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceCountDataPoint adds a data point to saphana.service.count metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceCountDataPoint(ts pcommon.Timestamp, inputVal string, serviceStatusAttributeValue AttributeServiceStatus) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceCountDataPoint(ts pcommon.Timestamp, inputVal string, serviceStatusAttributeValue AttributeServiceStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceCount.recordDataPoint(mb.startTime, ts, val, serviceStatusAttributeValue.String())
+	rmb.metricSaphanaServiceCount.recordDataPoint(rmb.startTime, ts, val, serviceStatusAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint adds a data point to saphana.service.memory.compactors.allocated metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryCompactorsAllocated, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryCompactorsAllocated.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceMemoryCompactorsAllocated.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceMemoryCompactorsFreeableDataPoint adds a data point to saphana.service.memory.compactors.freeable metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryCompactorsFreeable, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryCompactorsFreeable.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceMemoryCompactorsFreeable.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceMemoryEffectiveLimitDataPoint adds a data point to saphana.service.memory.effective_limit metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryEffectiveLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryEffectiveLimit.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceMemoryEffectiveLimit.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceMemoryHeapCurrentDataPoint adds a data point to saphana.service.memory.heap.current metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryHeapCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryHeapCurrent.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
+	rmb.metricSaphanaServiceMemoryHeapCurrent.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaServiceMemoryLimitDataPoint adds a data point to saphana.service.memory.limit metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryLimitDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryLimitDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryLimit, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryLimit.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceMemoryLimit.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceMemorySharedCurrentDataPoint adds a data point to saphana.service.memory.shared.current metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemorySharedCurrentDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemorySharedCurrentDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, memoryStateUsedFreeAttributeValue AttributeMemoryStateUsedFree) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemorySharedCurrent, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemorySharedCurrent.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
+	rmb.metricSaphanaServiceMemorySharedCurrent.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue, memoryStateUsedFreeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaServiceMemoryUsedDataPoint adds a data point to saphana.service.memory.used metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, serviceMemoryUsedTypeAttributeValue AttributeServiceMemoryUsedType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceMemoryUsedDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string, serviceMemoryUsedTypeAttributeValue AttributeServiceMemoryUsedType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceMemoryUsed, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceMemoryUsed.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue, serviceMemoryUsedTypeAttributeValue.String())
+	rmb.metricSaphanaServiceMemoryUsed.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue, serviceMemoryUsedTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaServiceStackSizeDataPoint adds a data point to saphana.service.stack_size metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceStackSizeDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceStackSizeDataPoint(ts pcommon.Timestamp, inputVal string, serviceAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceStackSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceStackSize.recordDataPoint(mb.startTime, ts, val, serviceAttributeValue)
+	rmb.metricSaphanaServiceStackSize.recordDataPoint(rmb.startTime, ts, val, serviceAttributeValue)
 	return nil
 }
 
 // RecordSaphanaServiceThreadCountDataPoint adds a data point to saphana.service.thread.count metric.
-func (mb *MetricsBuilder) RecordSaphanaServiceThreadCountDataPoint(ts pcommon.Timestamp, inputVal string, threadStatusAttributeValue AttributeThreadStatus) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaServiceThreadCountDataPoint(ts pcommon.Timestamp, inputVal string, threadStatusAttributeValue AttributeThreadStatus) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaServiceThreadCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaServiceThreadCount.recordDataPoint(mb.startTime, ts, val, threadStatusAttributeValue.String())
+	rmb.metricSaphanaServiceThreadCount.recordDataPoint(rmb.startTime, ts, val, threadStatusAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaTransactionBlockedDataPoint adds a data point to saphana.transaction.blocked metric.
-func (mb *MetricsBuilder) RecordSaphanaTransactionBlockedDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaTransactionBlockedDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaTransactionBlocked, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaTransactionBlocked.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricSaphanaTransactionBlocked.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordSaphanaTransactionCountDataPoint adds a data point to saphana.transaction.count metric.
-func (mb *MetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaTransactionCountDataPoint(ts pcommon.Timestamp, inputVal string, transactionTypeAttributeValue AttributeTransactionType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaTransactionCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaTransactionCount.recordDataPoint(mb.startTime, ts, val, transactionTypeAttributeValue.String())
+	rmb.metricSaphanaTransactionCount.recordDataPoint(rmb.startTime, ts, val, transactionTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaUptimeDataPoint adds a data point to saphana.uptime metric.
-func (mb *MetricsBuilder) RecordSaphanaUptimeDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, databaseAttributeValue string) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaUptimeDataPoint(ts pcommon.Timestamp, inputVal string, systemAttributeValue string, databaseAttributeValue string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaUptime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaUptime.recordDataPoint(mb.startTime, ts, val, systemAttributeValue, databaseAttributeValue)
+	rmb.metricSaphanaUptime.recordDataPoint(rmb.startTime, ts, val, systemAttributeValue, databaseAttributeValue)
 	return nil
 }
 
 // RecordSaphanaVolumeOperationCountDataPoint adds a data point to saphana.volume.operation.count metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaVolumeOperationCountDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaVolumeOperationCount, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaVolumeOperationCount.recordDataPoint(mb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
+	rmb.metricSaphanaVolumeOperationCount.recordDataPoint(rmb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaVolumeOperationSizeDataPoint adds a data point to saphana.volume.operation.size metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaVolumeOperationSizeDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaVolumeOperationSize, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaVolumeOperationSize.recordDataPoint(mb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
+	rmb.metricSaphanaVolumeOperationSize.recordDataPoint(rmb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	return nil
 }
 
 // RecordSaphanaVolumeOperationTimeDataPoint adds a data point to saphana.volume.operation.time metric.
-func (mb *MetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
+func (rmb *ResourceMetricsBuilder) RecordSaphanaVolumeOperationTimeDataPoint(ts pcommon.Timestamp, inputVal string, pathAttributeValue string, diskUsageTypeAttributeValue string, volumeOperationTypeAttributeValue AttributeVolumeOperationType) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for SaphanaVolumeOperationTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricSaphanaVolumeOperationTime.recordDataPoint(mb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
+	rmb.metricSaphanaVolumeOperationTime.recordDataPoint(rmb.startTime, ts, val, pathAttributeValue, diskUsageTypeAttributeValue, volumeOperationTypeAttributeValue.String())
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

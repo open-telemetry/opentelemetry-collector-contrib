@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // AttributeCPULevel specifies the a value cpu_level attribute.
@@ -768,14 +770,25 @@ func newMetricApacheWorkers(cfg MetricConfig) metricApacheWorkers {
 	return m
 }
 
+// missedEmitsToDropRMB is number of missed emits after which resource builder will be dropped from MetricsBuilder.rmbMap.
+// Potentially, this value can be made configurable through a MetricsBuilder option.
+const missedEmitsToDropRMB = 5
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                         MetricsBuilderConfig // config of the metrics builder.
-	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                int                  // maximum observed number of metrics per resource.
-	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                      component.BuildInfo  // contains version information.
+	config    MetricsBuilderConfig                 // config of the metrics builder.
+	buildInfo component.BuildInfo                  // contains version information
+	startTime pcommon.Timestamp                    // start time that will be applied to all recorded data points.
+	rmbMap    map[[16]byte]*ResourceMetricsBuilder // map of resource builders by resource hash.
+}
+
+type ResourceMetricsBuilder struct {
+	buildInfo                      component.BuildInfo
+	startTime                      pcommon.Timestamp // start time that will be applied to all recorded data points.
+	metricsCapacity                int               // maximum observed number of metrics per resource.
+	resource                       pcommon.Resource
+	missedEmits                    int
 	metricApacheCPULoad            metricApacheCPULoad
 	metricApacheCPUTime            metricApacheCPUTime
 	metricApacheCurrentConnections metricApacheCurrentConnections
@@ -802,27 +815,56 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                         mbc,
-		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                  pmetric.NewMetrics(),
-		buildInfo:                      settings.BuildInfo,
-		metricApacheCPULoad:            newMetricApacheCPULoad(mbc.Metrics.ApacheCPULoad),
-		metricApacheCPUTime:            newMetricApacheCPUTime(mbc.Metrics.ApacheCPUTime),
-		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mbc.Metrics.ApacheCurrentConnections),
-		metricApacheLoad1:              newMetricApacheLoad1(mbc.Metrics.ApacheLoad1),
-		metricApacheLoad15:             newMetricApacheLoad15(mbc.Metrics.ApacheLoad15),
-		metricApacheLoad5:              newMetricApacheLoad5(mbc.Metrics.ApacheLoad5),
-		metricApacheRequestTime:        newMetricApacheRequestTime(mbc.Metrics.ApacheRequestTime),
-		metricApacheRequests:           newMetricApacheRequests(mbc.Metrics.ApacheRequests),
-		metricApacheScoreboard:         newMetricApacheScoreboard(mbc.Metrics.ApacheScoreboard),
-		metricApacheTraffic:            newMetricApacheTraffic(mbc.Metrics.ApacheTraffic),
-		metricApacheUptime:             newMetricApacheUptime(mbc.Metrics.ApacheUptime),
-		metricApacheWorkers:            newMetricApacheWorkers(mbc.Metrics.ApacheWorkers),
+		config:    mbc,
+		startTime: pcommon.NewTimestampFromTime(time.Now()),
+		buildInfo: settings.BuildInfo,
+		rmbMap:    make(map[[16]byte]*ResourceMetricsBuilder),
 	}
-	for _, op := range options {
-		op(mb)
+	for _, opt := range options {
+		opt(mb)
 	}
 	return mb
+}
+
+// resourceMetricsBuilderOption applies changes to provided resource metrics.
+type resourceMetricsBuilderOption func(*ResourceMetricsBuilder)
+
+// WithStartTimeOverride sets start time for all the resource metrics data points.
+func WithStartTimeOverride(start pcommon.Timestamp) resourceMetricsBuilderOption {
+	return func(rmb *ResourceMetricsBuilder) {
+		rmb.startTime = start
+	}
+}
+
+// ResourceMetricsBuilder returns a ResourceMetricsBuilder that can be used to record metrics for a specific resource.
+// It requires Resource to be provided which should be built with ResourceBuilder.
+func (mb *MetricsBuilder) ResourceMetricsBuilder(res pcommon.Resource, options ...resourceMetricsBuilderOption) *ResourceMetricsBuilder {
+	hash := pdatautil.MapHash(res.Attributes())
+	if rmb, ok := mb.rmbMap[hash]; ok {
+		return rmb
+	}
+	rmb := &ResourceMetricsBuilder{
+		startTime:                      mb.startTime,
+		buildInfo:                      mb.buildInfo,
+		resource:                       res,
+		metricApacheCPULoad:            newMetricApacheCPULoad(mb.config.Metrics.ApacheCPULoad),
+		metricApacheCPUTime:            newMetricApacheCPUTime(mb.config.Metrics.ApacheCPUTime),
+		metricApacheCurrentConnections: newMetricApacheCurrentConnections(mb.config.Metrics.ApacheCurrentConnections),
+		metricApacheLoad1:              newMetricApacheLoad1(mb.config.Metrics.ApacheLoad1),
+		metricApacheLoad15:             newMetricApacheLoad15(mb.config.Metrics.ApacheLoad15),
+		metricApacheLoad5:              newMetricApacheLoad5(mb.config.Metrics.ApacheLoad5),
+		metricApacheRequestTime:        newMetricApacheRequestTime(mb.config.Metrics.ApacheRequestTime),
+		metricApacheRequests:           newMetricApacheRequests(mb.config.Metrics.ApacheRequests),
+		metricApacheScoreboard:         newMetricApacheScoreboard(mb.config.Metrics.ApacheScoreboard),
+		metricApacheTraffic:            newMetricApacheTraffic(mb.config.Metrics.ApacheTraffic),
+		metricApacheUptime:             newMetricApacheUptime(mb.config.Metrics.ApacheUptime),
+		metricApacheWorkers:            newMetricApacheWorkers(mb.config.Metrics.ApacheWorkers),
+	}
+	for _, op := range options {
+		op(rmb)
+	}
+	mb.rmbMap[hash] = rmb
+	return rmb
 }
 
 // NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
@@ -831,201 +873,174 @@ func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
-func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
-	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
-		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
+func (rmb *ResourceMetricsBuilder) updateCapacity(ms pmetric.MetricSlice) {
+	if rmb.metricsCapacity < ms.Len() {
+		rmb.metricsCapacity = ms.Len()
 	}
 }
 
-// ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(pmetric.ResourceMetrics)
-
-// WithResource sets the provided resource on the emitted ResourceMetrics.
-// It's recommended to use ResourceBuilder to create the resource.
-func WithResource(res pcommon.Resource) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		res.CopyTo(rm.Resource())
+// emit emits all the metrics accumulated by the ResourceMetricsBuilder and updates the internal state to be ready for
+// recording another set of metrics. It returns true if any metrics were emitted.
+func (rmb *ResourceMetricsBuilder) emit(m pmetric.Metrics) bool {
+	sm := pmetric.NewScopeMetrics()
+	sm.Metrics().EnsureCapacity(rmb.metricsCapacity)
+	rmb.metricApacheCPULoad.emit(sm.Metrics())
+	rmb.metricApacheCPUTime.emit(sm.Metrics())
+	rmb.metricApacheCurrentConnections.emit(sm.Metrics())
+	rmb.metricApacheLoad1.emit(sm.Metrics())
+	rmb.metricApacheLoad15.emit(sm.Metrics())
+	rmb.metricApacheLoad5.emit(sm.Metrics())
+	rmb.metricApacheRequestTime.emit(sm.Metrics())
+	rmb.metricApacheRequests.emit(sm.Metrics())
+	rmb.metricApacheScoreboard.emit(sm.Metrics())
+	rmb.metricApacheTraffic.emit(sm.Metrics())
+	rmb.metricApacheUptime.emit(sm.Metrics())
+	rmb.metricApacheWorkers.emit(sm.Metrics())
+	if sm.Metrics().Len() == 0 {
+		return false
 	}
-}
-
-// WithStartTimeOverride overrides start time for all the resource metrics data points.
-// This option should be only used if different start time has to be set on metrics coming from different resources.
-func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		var dps pmetric.NumberDataPointSlice
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for i := 0; i < metrics.Len(); i++ {
-			switch metrics.At(i).Type() {
-			case pmetric.MetricTypeGauge:
-				dps = metrics.At(i).Gauge().DataPoints()
-			case pmetric.MetricTypeSum:
-				dps = metrics.At(i).Sum().DataPoints()
-			}
-			for j := 0; j < dps.Len(); j++ {
-				dps.At(j).SetStartTimestamp(start)
-			}
-		}
-	}
-}
-
-// EmitForResource saves all the generated metrics under a new resource and updates the internal state to be ready for
-// recording another set of data points as part of another resource. This function can be helpful when one scraper
-// needs to emit metrics from several resources. Otherwise calling this function is not required,
-// just `Emit` function can be called instead.
-// Resource attributes should be provided as ResourceMetricsOption arguments.
-func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
-	rm := pmetric.NewResourceMetrics()
-	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/apachereceiver")
-	ils.Scope().SetVersion(mb.buildInfo.Version)
-	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricApacheCPULoad.emit(ils.Metrics())
-	mb.metricApacheCPUTime.emit(ils.Metrics())
-	mb.metricApacheCurrentConnections.emit(ils.Metrics())
-	mb.metricApacheLoad1.emit(ils.Metrics())
-	mb.metricApacheLoad15.emit(ils.Metrics())
-	mb.metricApacheLoad5.emit(ils.Metrics())
-	mb.metricApacheRequestTime.emit(ils.Metrics())
-	mb.metricApacheRequests.emit(ils.Metrics())
-	mb.metricApacheScoreboard.emit(ils.Metrics())
-	mb.metricApacheTraffic.emit(ils.Metrics())
-	mb.metricApacheUptime.emit(ils.Metrics())
-	mb.metricApacheWorkers.emit(ils.Metrics())
-
-	for _, op := range rmo {
-		op(rm)
-	}
-	if ils.Metrics().Len() > 0 {
-		mb.updateCapacity(rm)
-		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
-	}
+	rmb.updateCapacity(sm.Metrics())
+	sm.Scope().SetName("otelcol/apachereceiver")
+	sm.Scope().SetVersion(rmb.buildInfo.Version)
+	rm := m.ResourceMetrics().AppendEmpty()
+	rmb.resource.CopyTo(rm.Resource())
+	sm.MoveTo(rm.ScopeMetrics().AppendEmpty())
+	return true
 }
 
 // Emit returns all the metrics accumulated by the metrics builder and updates the internal state to be ready for
 // recording another set of metrics. This function will be responsible for applying all the transformations required to
 // produce metric representation defined in metadata and user config, e.g. delta or cumulative.
-func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
-	mb.EmitForResource(rmo...)
-	metrics := mb.metricsBuffer
-	mb.metricsBuffer = pmetric.NewMetrics()
-	return metrics
+func (mb *MetricsBuilder) Emit() pmetric.Metrics {
+	m := pmetric.NewMetrics()
+	for _, rmb := range mb.rmbMap {
+		if ok := rmb.emit(m); !ok {
+			rmb.missedEmits++
+		}
+	}
+	for k, rmb := range mb.rmbMap {
+		if rmb.missedEmits >= missedEmitsToDropRMB {
+			delete(mb.rmbMap, k)
+		}
+	}
+	return m
 }
 
 // RecordApacheCPULoadDataPoint adds a data point to apache.cpu.load metric.
-func (mb *MetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheCPULoadDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPULoad, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPULoad.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheCPULoad.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheCPUTimeDataPoint adds a data point to apache.cpu.time metric.
-func (mb *MetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheCPUTimeDataPoint(ts pcommon.Timestamp, inputVal string, cpuLevelAttributeValue AttributeCPULevel, cpuModeAttributeValue AttributeCPUMode) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheCPUTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCPUTime.recordDataPoint(mb.startTime, ts, val, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
+	rmb.metricApacheCPUTime.recordDataPoint(rmb.startTime, ts, val, cpuLevelAttributeValue.String(), cpuModeAttributeValue.String())
 	return nil
 }
 
 // RecordApacheCurrentConnectionsDataPoint adds a data point to apache.current_connections metric.
-func (mb *MetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheCurrentConnectionsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheCurrentConnections, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheCurrentConnections.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheCurrentConnections.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheLoad1DataPoint adds a data point to apache.load.1 metric.
-func (mb *MetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheLoad1DataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad1, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad1.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheLoad1.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheLoad15DataPoint adds a data point to apache.load.15 metric.
-func (mb *MetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheLoad15DataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad15, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad15.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheLoad15.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheLoad5DataPoint adds a data point to apache.load.5 metric.
-func (mb *MetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheLoad5DataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseFloat(inputVal, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse float64 for ApacheLoad5, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheLoad5.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheLoad5.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheRequestTimeDataPoint adds a data point to apache.request.time metric.
-func (mb *MetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheRequestTimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequestTime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheRequestTime.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheRequestTime.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheRequestsDataPoint adds a data point to apache.requests metric.
-func (mb *MetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheRequestsDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheRequests, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheRequests.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheRequests.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheScoreboardDataPoint adds a data point to apache.scoreboard metric.
-func (mb *MetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, val int64, scoreboardStateAttributeValue AttributeScoreboardState) {
-	mb.metricApacheScoreboard.recordDataPoint(mb.startTime, ts, val, scoreboardStateAttributeValue.String())
+func (rmb *ResourceMetricsBuilder) RecordApacheScoreboardDataPoint(ts pcommon.Timestamp, val int64, scoreboardStateAttributeValue AttributeScoreboardState) {
+	rmb.metricApacheScoreboard.recordDataPoint(rmb.startTime, ts, val, scoreboardStateAttributeValue.String())
 }
 
 // RecordApacheTrafficDataPoint adds a data point to apache.traffic metric.
-func (mb *MetricsBuilder) RecordApacheTrafficDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricApacheTraffic.recordDataPoint(mb.startTime, ts, val)
+func (rmb *ResourceMetricsBuilder) RecordApacheTrafficDataPoint(ts pcommon.Timestamp, val int64) {
+	rmb.metricApacheTraffic.recordDataPoint(rmb.startTime, ts, val)
 }
 
 // RecordApacheUptimeDataPoint adds a data point to apache.uptime metric.
-func (mb *MetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheUptimeDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheUptime, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheUptime.recordDataPoint(mb.startTime, ts, val)
+	rmb.metricApacheUptime.recordDataPoint(rmb.startTime, ts, val)
 	return nil
 }
 
 // RecordApacheWorkersDataPoint adds a data point to apache.workers metric.
-func (mb *MetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, inputVal string, workersStateAttributeValue AttributeWorkersState) error {
+func (rmb *ResourceMetricsBuilder) RecordApacheWorkersDataPoint(ts pcommon.Timestamp, inputVal string, workersStateAttributeValue AttributeWorkersState) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for ApacheWorkers, value was %s: %w", inputVal, err)
 	}
-	mb.metricApacheWorkers.recordDataPoint(mb.startTime, ts, val, workersStateAttributeValue.String())
+	rmb.metricApacheWorkers.recordDataPoint(rmb.startTime, ts, val, workersStateAttributeValue.String())
 	return nil
 }
 
-// Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,
-// and metrics builder should update its startTime and reset it's internal state accordingly.
-func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
-	mb.startTime = pcommon.NewTimestampFromTime(time.Now())
+// Reset resets the ResourceMetricsBuilder to its initial state. It should be used when external metrics source is
+// restarted, and the ResourceMetricsBuilder should update its startTime and reset it's internal state accordingly.
+func (rmb *ResourceMetricsBuilder) Reset(options ...resourceMetricsBuilderOption) {
+	rmb.startTime = pcommon.NewTimestampFromTime(time.Now())
 	for _, op := range options {
-		op(mb)
+		op(rmb)
 	}
 }

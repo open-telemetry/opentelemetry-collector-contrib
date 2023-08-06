@@ -6,7 +6,7 @@ package metadata // import "github.com/open-telemetry/opentelemetry-collector-co
 import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // RecordPostgresqlDbSizeDataPointWithoutDatabase adds a data point to postgresql.db_size metric without a database metric attribute
-func (mb *MetricsBuilder) RecordPostgresqlDbSizeDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlDbSizeDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlDbSize.recordDatapointWithoutDatabase(mb.startTime, ts, val)
 }
 
@@ -21,7 +21,7 @@ func (m *metricPostgresqlDbSize) recordDatapointWithoutDatabase(start pcommon.Ti
 }
 
 // RecordPostgresqlBackendsDataPointWithoutDatabase adds a data point to postgresql.backends metric.
-func (mb *MetricsBuilder) RecordPostgresqlBackendsDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlBackendsDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlBackends.recordDatapointWithoutDatabase(mb.startTime, ts, val)
 }
 
@@ -36,7 +36,8 @@ func (m *metricPostgresqlBackends) recordDatapointWithoutDatabase(start pcommon.
 }
 
 // RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable adds a data point to postgresql.blocks_read metric.
-func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp, val int64, sourceAttributeValue AttributeSource) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp,
+	val int64, sourceAttributeValue AttributeSource) {
 	mb.metricPostgresqlBlocksRead.recordDatapointWithoutDatabaseAndTable(mb.startTime, ts, val, sourceAttributeValue.String())
 }
 
@@ -52,7 +53,7 @@ func (m *metricPostgresqlBlocksRead) recordDatapointWithoutDatabaseAndTable(star
 }
 
 // RecordPostgresqlCommitsDataPointWithoutDatabase adds a data point to postgresql.commits metric without the database metric attribute
-func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlCommitsDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlCommits.recordDatapointWithoutDatabase(mb.startTime, ts, val)
 }
 
@@ -67,7 +68,7 @@ func (m *metricPostgresqlCommits) recordDatapointWithoutDatabase(start pcommon.T
 }
 
 // RecordPostgresqlRollbacksDataPointWithoutDatabase adds a data point to postgresql.commits metric without the database metric attribute
-func (mb *MetricsBuilder) RecordPostgresqlRollbacksDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlRollbacksDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlRollbacks.recordDatapointWithoutDatabase(mb.startTime, ts, val)
 }
 
@@ -82,7 +83,8 @@ func (m *metricPostgresqlRollbacks) recordDatapointWithoutDatabase(start pcommon
 }
 
 // RecordPostgresqlRowsDataPointWithoutDatabaseAndTable adds a data point to postgresql.rows metric without the database or table metric attribute.
-func (mb *MetricsBuilder) RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp, val int64,
+	stateAttributeValue AttributeState) {
 	mb.metricPostgresqlRows.recordDatapointWithoutDatabaseAndTable(mb.startTime, ts, val, stateAttributeValue.String())
 }
 
@@ -98,7 +100,8 @@ func (m *metricPostgresqlRows) recordDatapointWithoutDatabaseAndTable(start pcom
 }
 
 // RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable adds a data point to postgresql.operations metric without the database or table metric attribute
-func (mb *MetricsBuilder) RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp, val int64, operationAttributeValue AttributeOperation) {
+func (mb *ResourceMetricsBuilder) RecordPostgresqlOperationsDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp,
+	val int64, operationAttributeValue AttributeOperation) {
 	mb.metricPostgresqlOperations.recordDatapointWithoutDatabaseAndTable(mb.startTime, ts, val, operationAttributeValue.String())
 }
 

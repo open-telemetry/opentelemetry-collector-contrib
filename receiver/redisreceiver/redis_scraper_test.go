@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -28,7 +29,7 @@ func TestRedisRunnable(t *testing.T) {
 	require.NoError(t, err)
 	// + 6 because there are two keyspace entries each of which has three metrics
 	// -1 because maxmemory is by default disabled, so recorder is there, but there won't be data point
-	assert.Equal(t, len(rs.dataPointRecorders())+6-1, md.DataPointCount())
+	assert.Equal(t, len(dataPointRecorders(rs.mb.ResourceMetricsBuilder(pcommon.NewResource())))+6-1, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()

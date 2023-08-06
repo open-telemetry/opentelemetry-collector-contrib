@@ -40,7 +40,8 @@ func (s *scraper) recordNetworkConntrackMetrics() error {
 	if err != nil {
 		return fmt.Errorf("failed to read conntrack info: %w", err)
 	}
-	s.mb.RecordSystemNetworkConntrackCountDataPoint(now, conntrack[0].ConnTrackCount)
-	s.mb.RecordSystemNetworkConntrackMaxDataPoint(now, conntrack[0].ConnTrackMax)
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordSystemNetworkConntrackCountDataPoint(now, conntrack[0].ConnTrackCount)
+	rmb.RecordSystemNetworkConntrackMaxDataPoint(now, conntrack[0].ConnTrackMax)
 	return nil
 }

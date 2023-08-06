@@ -51,92 +51,97 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, record := range records {
-		err = s.mb.RecordHaproxySessionsCountDataPoint(now, record["scur"])
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHaproxyProxyName(record["pxname"])
+		rb.SetHaproxyServiceName(record["svname"])
+		rb.SetHaproxyAddr(s.endpoint)
+		rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+		err = rmb.RecordHaproxySessionsCountDataPoint(now, record["scur"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		if record["conn_rate"] != "" {
-			err = s.mb.RecordHaproxyConnectionsRateDataPoint(now, record["conn_rate"])
+			err = rmb.RecordHaproxyConnectionsRateDataPoint(now, record["conn_rate"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["conn_tot"] != "" {
-			err = s.mb.RecordHaproxyConnectionsTotalDataPoint(now, record["conn_tot"])
+			err = rmb.RecordHaproxyConnectionsTotalDataPoint(now, record["conn_tot"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["lbtot"] != "" {
-			err = s.mb.RecordHaproxyServerSelectedTotalDataPoint(now, record["lbtot"])
+			err = rmb.RecordHaproxyServerSelectedTotalDataPoint(now, record["lbtot"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
-		err = s.mb.RecordHaproxyBytesInputDataPoint(now, record["bin"])
+		err = rmb.RecordHaproxyBytesInputDataPoint(now, record["bin"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyBytesOutputDataPoint(now, record["bout"])
+		err = rmb.RecordHaproxyBytesOutputDataPoint(now, record["bout"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		if record["cli_abrt"] != "" {
-			err = s.mb.RecordHaproxyClientsCanceledDataPoint(now, record["cli_abrt"])
+			err = rmb.RecordHaproxyClientsCanceledDataPoint(now, record["cli_abrt"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["comp_byp"] != "" {
-			err = s.mb.RecordHaproxyCompressionBypassDataPoint(now, record["comp_byp"])
+			err = rmb.RecordHaproxyCompressionBypassDataPoint(now, record["comp_byp"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["comp_in"] != "" {
-			err = s.mb.RecordHaproxyCompressionInputDataPoint(now, record["comp_in"])
+			err = rmb.RecordHaproxyCompressionInputDataPoint(now, record["comp_in"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["comp_out"] != "" {
-			err = s.mb.RecordHaproxyCompressionOutputDataPoint(now, record["comp_out"])
+			err = rmb.RecordHaproxyCompressionOutputDataPoint(now, record["comp_out"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["comp_rsp"] != "" {
-			err = s.mb.RecordHaproxyCompressionCountDataPoint(now, record["comp_rsp"])
+			err = rmb.RecordHaproxyCompressionCountDataPoint(now, record["comp_rsp"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["dreq"] != "" {
-			err = s.mb.RecordHaproxyRequestsDeniedDataPoint(now, record["dreq"])
+			err = rmb.RecordHaproxyRequestsDeniedDataPoint(now, record["dreq"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["dresp"] != "" {
-			err = s.mb.RecordHaproxyResponsesDeniedDataPoint(now, record["dresp"])
+			err = rmb.RecordHaproxyResponsesDeniedDataPoint(now, record["dresp"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["downtime"] != "" {
-			err = s.mb.RecordHaproxyDowntimeDataPoint(now, record["downtime"])
+			err = rmb.RecordHaproxyDowntimeDataPoint(now, record["downtime"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["econ"] != "" {
-			err = s.mb.RecordHaproxyConnectionsErrorsDataPoint(now, record["econ"])
+			err = rmb.RecordHaproxyConnectionsErrorsDataPoint(now, record["econ"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["ereq"] != "" {
-			err = s.mb.RecordHaproxyRequestsErrorsDataPoint(now, record["ereq"])
+			err = rmb.RecordHaproxyRequestsErrorsDataPoint(now, record["ereq"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
@@ -152,81 +157,76 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			if err2 != nil {
 				scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for HaproxyResponsesErrors, value was %s: %w", eresp, err2))
 			}
-			s.mb.RecordHaproxyResponsesErrorsDataPoint(now, abortsVal+erespVal)
+			rmb.RecordHaproxyResponsesErrorsDataPoint(now, abortsVal+erespVal)
 		}
 		if record["chkfail"] != "" {
-			err = s.mb.RecordHaproxyFailedChecksDataPoint(now, record["chkfail"])
+			err = rmb.RecordHaproxyFailedChecksDataPoint(now, record["chkfail"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["wredis"] != "" {
-			err = s.mb.RecordHaproxyRequestsRedispatchedDataPoint(now, record["wredis"])
+			err = rmb.RecordHaproxyRequestsRedispatchedDataPoint(now, record["wredis"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_1xx"], metadata.AttributeStatusCode1xx)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_1xx"], metadata.AttributeStatusCode1xx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_2xx"], metadata.AttributeStatusCode2xx)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_2xx"], metadata.AttributeStatusCode2xx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_3xx"], metadata.AttributeStatusCode3xx)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_3xx"], metadata.AttributeStatusCode3xx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_4xx"], metadata.AttributeStatusCode4xx)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_4xx"], metadata.AttributeStatusCode4xx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_5xx"], metadata.AttributeStatusCode5xx)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_5xx"], metadata.AttributeStatusCode5xx)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		err = s.mb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_other"], metadata.AttributeStatusCodeOther)
+		err = rmb.RecordHaproxyRequestsTotalDataPoint(now, record["hrsp_other"], metadata.AttributeStatusCodeOther)
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		if record["wretr"] != "" {
-			err = s.mb.RecordHaproxyConnectionsRetriesDataPoint(now, record["wretr"])
+			err = rmb.RecordHaproxyConnectionsRetriesDataPoint(now, record["wretr"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
-		err = s.mb.RecordHaproxySessionsTotalDataPoint(now, record["stot"])
+		err = rmb.RecordHaproxySessionsTotalDataPoint(now, record["stot"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		if record["qcur"] != "" {
-			err = s.mb.RecordHaproxyRequestsQueuedDataPoint(now, record["qcur"])
+			err = rmb.RecordHaproxyRequestsQueuedDataPoint(now, record["qcur"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["req_rate"] != "" {
-			err = s.mb.RecordHaproxyRequestsRateDataPoint(now, record["req_rate"])
+			err = rmb.RecordHaproxyRequestsRateDataPoint(now, record["req_rate"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
 		if record["ttime"] != "" {
-			err = s.mb.RecordHaproxySessionsAverageDataPoint(now, record["ttime"])
+			err = rmb.RecordHaproxySessionsAverageDataPoint(now, record["ttime"])
 			if err != nil {
 				scrapeErrors = append(scrapeErrors, err)
 			}
 		}
-		err = s.mb.RecordHaproxySessionsRateDataPoint(now, record["rate"])
+		err = rmb.RecordHaproxySessionsRateDataPoint(now, record["rate"])
 		if err != nil {
 			scrapeErrors = append(scrapeErrors, err)
 		}
-		rb := s.mb.NewResourceBuilder()
-		rb.SetHaproxyProxyName(record["pxname"])
-		rb.SetHaproxyServiceName(record["svname"])
-		rb.SetHaproxyAddr(s.endpoint)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
 	if len(scrapeErrors) > 0 {

@@ -48,6 +48,15 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
+			rb.SetOptionalResourceAttr("optional.resource.attr-val")
+			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
+			rb.SetStringEnumResourceAttrOne()
+			rb.SetStringResourceAttr("string.resource.attr-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			if test.configSet == testSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `default.metric`: This metric will be disabled by default soon.", observedLogs.All()[expectedWarnings].Message)
@@ -68,23 +77,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
+			rmb.RecordDefaultMetricDataPoint(ts, 1, "string_attr-val", 19, AttributeEnumAttrRed, []any{"slice_attr-item1", "slice_attr-item2"}, map[string]any{"key1": "map_attr-val1", "key2": "map_attr-val2"})
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
+			rmb.RecordDefaultMetricToBeRemovedDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
+			rmb.RecordOptionalMetricDataPoint(ts, 1, "string_attr-val", true)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetMapResourceAttr(map[string]any{"key1": "map.resource.attr-val1", "key2": "map.resource.attr-val2"})
-			rb.SetOptionalResourceAttr("optional.resource.attr-val")
-			rb.SetSliceResourceAttr([]any{"slice.resource.attr-item1", "slice.resource.attr-item2"})
-			rb.SetStringEnumResourceAttrOne()
-			rb.SetStringResourceAttr("string.resource.attr-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

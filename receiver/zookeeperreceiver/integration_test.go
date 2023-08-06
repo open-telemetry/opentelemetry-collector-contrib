@@ -51,6 +51,7 @@ func integrationTest(name string, image string, standalone bool) func(*testing.T
 			pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
 		),
 	).Run
 }

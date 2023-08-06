@@ -48,6 +48,9 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			res := pcommon.NewResource()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,18 +59,17 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
+			rmb.RecordHttpcheckDurationDataPoint(ts, 1, "http.url-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHttpcheckErrorDataPoint(ts, 1, "http.url-val", "error.message-val")
+			rmb.RecordHttpcheckErrorDataPoint(ts, 1, "http.url-val", "error.message-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
+			rmb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
 
-			res := pcommon.NewResource()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

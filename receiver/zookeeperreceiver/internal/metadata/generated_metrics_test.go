@@ -48,6 +48,12 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
+			rb := mb.NewResourceBuilder()
+			rb.SetServerState("server.state-val")
+			rb.SetZkVersion("zk.version-val")
+			res := rb.Emit()
+			rmb := mb.ResourceMetricsBuilder(res)
+
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -56,73 +62,69 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperConnectionActiveDataPoint(ts, 1)
+			rmb.RecordZookeeperConnectionActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts, 1)
+			rmb.RecordZookeeperDataTreeEphemeralNodeCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperDataTreeSizeDataPoint(ts, 1)
+			rmb.RecordZookeeperDataTreeSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperFileDescriptorLimitDataPoint(ts, 1)
+			rmb.RecordZookeeperFileDescriptorLimitDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperFileDescriptorOpenDataPoint(ts, 1)
+			rmb.RecordZookeeperFileDescriptorOpenDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeStateSynced)
+			rmb.RecordZookeeperFollowerCountDataPoint(ts, 1, AttributeStateSynced)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperFsyncExceededThresholdCountDataPoint(ts, 1)
+			rmb.RecordZookeeperFsyncExceededThresholdCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperLatencyAvgDataPoint(ts, 1)
+			rmb.RecordZookeeperLatencyAvgDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperLatencyMaxDataPoint(ts, 1)
+			rmb.RecordZookeeperLatencyMaxDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperLatencyMinDataPoint(ts, 1)
+			rmb.RecordZookeeperLatencyMinDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirectionReceived)
+			rmb.RecordZookeeperPacketCountDataPoint(ts, 1, AttributeDirectionReceived)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperRequestActiveDataPoint(ts, 1)
+			rmb.RecordZookeeperRequestActiveDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperRuokDataPoint(ts, 1)
+			rmb.RecordZookeeperRuokDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperSyncPendingDataPoint(ts, 1)
+			rmb.RecordZookeeperSyncPendingDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperWatchCountDataPoint(ts, 1)
+			rmb.RecordZookeeperWatchCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordZookeeperZnodeCountDataPoint(ts, 1)
+			rmb.RecordZookeeperZnodeCountDataPoint(ts, 1)
 
-			rb := mb.NewResourceBuilder()
-			rb.SetServerState("server.state-val")
-			rb.SetZkVersion("zk.version-val")
-			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

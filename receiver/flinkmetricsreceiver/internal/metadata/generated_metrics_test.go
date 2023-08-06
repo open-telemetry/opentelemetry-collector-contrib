@@ -48,128 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpointCompleted)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJobCheckpointInProgressDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJobLastCheckpointSizeDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJobRestartCountDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmClassLoaderClassesLoadedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmCPULoadDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmCPUTimeDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryDirectTotalCapacityDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryDirectUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryHeapCommittedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryHeapMaxDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryHeapUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryMappedTotalCapacityDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryMappedUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryMetaspaceUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryNonheapMaxDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmMemoryNonheapUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkJvmThreadsCountDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkMemoryManagedTotalDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkMemoryManagedUsedDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "operator_name-val", AttributeRecordIn)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "operator_name-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetFlinkJobName("flink.job.name-val")
 			rb.SetFlinkResourceTypeJobmanager()
@@ -178,7 +56,131 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetFlinkTaskmanagerID("flink.taskmanager.id-val")
 			rb.SetHostName("host.name-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpointCompleted)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJobCheckpointInProgressDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJobLastCheckpointSizeDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJobLastCheckpointTimeDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJobRestartCountDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmClassLoaderClassesLoadedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmCPULoadDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmCPUTimeDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryDirectTotalCapacityDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryDirectUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryHeapCommittedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryHeapMaxDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryHeapUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryMappedTotalCapacityDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryMappedUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryMetaspaceCommittedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryMetaspaceMaxDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryMetaspaceUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryNonheapCommittedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryNonheapMaxDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmMemoryNonheapUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkJvmThreadsCountDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkMemoryManagedTotalDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkMemoryManagedUsedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "operator_name-val", AttributeRecordIn)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "operator_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

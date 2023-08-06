@@ -13,9 +13,8 @@ import (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController, ts pcommon.Timestamp) {
-	if rc.Spec.Replicas != nil {
-		mb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))
-		mb.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
+	if rc.Spec.Replicas == nil {
+		return
 	}
 
 	rb := mb.NewResourceBuilder()
@@ -23,7 +22,9 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController
 	rb.SetK8sReplicationcontrollerName(rc.Name)
 	rb.SetK8sReplicationcontrollerUID(string(rc.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))
+	rmb.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
 }
 
 func GetMetadata(rc *corev1.ReplicationController) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

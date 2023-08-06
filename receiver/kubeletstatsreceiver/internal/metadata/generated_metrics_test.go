@@ -48,180 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerCPUTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerFilesystemUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryRssDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryRssDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sVolumeCapacityDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sVolumeInodesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
@@ -239,7 +65,183 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sVolumeType("k8s.volume.type-val")
 			rb.SetPartition("partition-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodCPUTimeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodFilesystemAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodFilesystemCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodFilesystemUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryMajorPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryPageFaultsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryRssDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryUsageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodMemoryWorkingSetDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodNetworkErrorsDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sVolumeAvailableDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sVolumeCapacityDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sVolumeInodesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sVolumeInodesFreeDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

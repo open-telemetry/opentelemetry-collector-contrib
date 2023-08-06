@@ -48,260 +48,6 @@ func TestMetricsBuilder(t *testing.T) {
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
-			expectedWarnings := 0
-			assert.Equal(t, expectedWarnings, observedLogs.Len())
-
-			defaultMetricsCount := 0
-			allMetricsCount := 0
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
-
 			rb := mb.NewResourceBuilder()
 			rb.SetMongodbAtlasClusterName("mongodb_atlas.cluster.name-val")
 			rb.SetMongodbAtlasDbName("mongodb_atlas.db.name-val")
@@ -315,7 +61,263 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetMongodbAtlasProjectName("mongodb_atlas.project.name-val")
 			rb.SetMongodbAtlasUserAlias("mongodb_atlas.user.alias-val")
 			res := rb.Emit()
-			metrics := mb.Emit(WithResource(res))
+			rmb := mb.ResourceMetricsBuilder(res)
+
+			expectedWarnings := 0
+			assert.Equal(t, expectedWarnings, observedLogs.Len())
+
+			defaultMetricsCount := 0
+			allMetricsCount := 0
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDbCountsDataPoint(ts, 1, AttributeObjectTypeCollection)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDbSizeDataPoint(ts, 1, AttributeObjectTypeCollection)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionIopsAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionIopsMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionLatencyAverageDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionLatencyMaxDataPoint(ts, 1, AttributeDiskDirectionRead)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionSpaceAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionSpaceMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionUsageAverageDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionUsageMaxDataPoint(ts, 1, AttributeDiskStatusFree)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionUtilizationAverageDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasDiskPartitionUtilizationMaxDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessAssertsDataPoint(ts, 1, AttributeAssertTypeRegular)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessBackgroundFlushDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCacheIoDataPoint(ts, 1, AttributeCacheDirectionReadInto)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCacheSizeDataPoint(ts, 1, AttributeCacheStatusDirty)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessConnectionsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUChildrenNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUChildrenUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUChildrenUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessCursorsDataPoint(ts, 1, AttributeCursorStateTimedOut)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbDocumentRateDataPoint(ts, 1, AttributeDocumentStatusReturned)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbOperationsRateDataPoint(ts, 1, AttributeOperationCmd, AttributeClusterRolePrimary)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbOperationsTimeDataPoint(ts, 1, AttributeExecutionTypeReads)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbQueryExecutorScannedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbQueryTargetingScannedPerReturnedDataPoint(ts, 1, AttributeScannedTypeIndexItems)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessDbStorageDataPoint(ts, 1, AttributeStorageStatusTotal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessGlobalLockDataPoint(ts, 1, AttributeGlobalLockStateCurrentQueueTotal)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessIndexBtreeMissRatioDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessIndexCountersDataPoint(ts, 1, AttributeBtreeCounterTypeAccesses)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessJournalingCommitsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessJournalingDataFilesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessJournalingWrittenDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessNetworkIoDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessNetworkRequestsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessOplogRateDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessOplogTimeDataPoint(ts, 1, AttributeOplogTypeSlaveLagMasterTime)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessPageFaultsDataPoint(ts, 1, AttributeMemoryIssueTypeExtraInfo)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessRestartsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasProcessTicketsDataPoint(ts, 1, AttributeTicketTypeAvailableReads)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemCPUNormalizedUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemCPUNormalizedUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemCPUUsageAverageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemCPUUsageMaxDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemFtsCPUNormalizedUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemFtsCPUUsageDataPoint(ts, 1, AttributeCPUStateKernel)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemFtsDiskUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemFtsMemoryUsageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemMemoryUsageAverageDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemMemoryUsageMaxDataPoint(ts, 1, AttributeMemoryStatusAvailable)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemNetworkIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemNetworkIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemPagingIoAverageDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemPagingIoMaxDataPoint(ts, 1, AttributeDirectionReceive)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemPagingUsageAverageDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			rmb.RecordMongodbatlasSystemPagingUsageMaxDataPoint(ts, 1, AttributeMemoryStateResident)
+
+			metrics := mb.Emit()
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())

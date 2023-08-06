@@ -37,7 +37,7 @@ func (s *sshcheckScraper) start(_ context.Context, host component.Host) error {
 	return err
 }
 
-func (s *sshcheckScraper) scrapeSSH(now pcommon.Timestamp) error {
+func (s *sshcheckScraper) scrapeSSH(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp) error {
 	var success int64
 
 	start := time.Now()
@@ -45,12 +45,12 @@ func (s *sshcheckScraper) scrapeSSH(now pcommon.Timestamp) error {
 	if err == nil {
 		success = 1
 	}
-	s.mb.RecordSshcheckDurationDataPoint(now, time.Since(start).Milliseconds())
-	s.mb.RecordSshcheckStatusDataPoint(now, success)
+	rmb.RecordSshcheckDurationDataPoint(now, time.Since(start).Milliseconds())
+	rmb.RecordSshcheckStatusDataPoint(now, success)
 	return err
 }
 
-func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
+func (s *sshcheckScraper) scrapeSFTP(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp) error {
 	var success int64
 
 	start := time.Now()
@@ -62,8 +62,8 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 			success = 1
 		}
 	}
-	s.mb.RecordSshcheckSftpDurationDataPoint(now, time.Since(start).Milliseconds())
-	s.mb.RecordSshcheckSftpStatusDataPoint(now, success)
+	rmb.RecordSshcheckSftpDurationDataPoint(now, time.Since(start).Milliseconds())
+	rmb.RecordSshcheckSftpStatusDataPoint(now, success)
 	return err
 }
 
@@ -109,8 +109,12 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
-	if err = s.scrapeSSH(now); err != nil {
-		s.mb.RecordSshcheckErrorDataPoint(now, int64(1), err.Error())
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
+
+	if err = s.scrapeSSH(rmb, now); err != nil {
+		rmb.RecordSshcheckErrorDataPoint(now, int64(1), err.Error())
 	} else {
 		go func() {
 			<-ctx.Done()
@@ -119,14 +123,12 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	if s.SFTPEnabled() {
-		if err := s.scrapeSFTP(now); err != nil {
-			s.mb.RecordSshcheckSftpErrorDataPoint(now, int64(1), err.Error())
+		if err := s.scrapeSFTP(rmb, now); err != nil {
+			rmb.RecordSshcheckSftpErrorDataPoint(now, int64(1), err.Error())
 		}
 	}
 
-	rb := s.mb.NewResourceBuilder()
-	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
+	return s.mb.Emit(), nil
 }
 
 func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper {

@@ -73,22 +73,10 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
 func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
-
-	for dbName, recorders := range recordersByDatabase {
-		s.emitMetricGroup(recorders, dbName)
-	}
-
-	return s.mb.Emit(), errs
-}
-
-// recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
-// a map of database name to curriedRecorder that includes the recorded value in its closure.
-func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curriedRecorder, error) {
 	var errs error
+	now := pcommon.NewTimestampFromTime(time.Now())
 
-	dbToRecorders := make(map[string][]curriedRecorder)
-	for _, wr := range watcherRecorders {
+	for _, wr := range s.watcherRecorders {
 		counterValues, err := wr.watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
@@ -96,31 +84,15 @@ func recordersPerDatabase(watcherRecorders []watcherRecorder) (map[string][]curr
 		}
 
 		for _, counterValue := range counterValues {
-			dbName := counterValue.InstanceName
-
-			// it's important to initialize new values for the closure.
-			val := counterValue.Value
-			recorder := wr.recorder
-
-			if _, ok := dbToRecorders[dbName]; !ok {
-				dbToRecorders[dbName] = []curriedRecorder{}
-			}
-			dbToRecorders[dbName] = append(dbToRecorders[dbName], func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp) {
-				recorder(mb, ts, val)
-			})
+			rmb := s.resourceMetricsBuilder(counterValue.InstanceName)
+			wr.recorder(rmb, now, counterValue.Value)
 		}
 	}
 
-	return dbToRecorders, errs
+	return s.mb.Emit(), errs
 }
 
-func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, databaseName string) {
-	now := pcommon.NewTimestampFromTime(time.Now())
-
-	for _, recorder := range recorders {
-		recorder(s.mb, now)
-	}
-
+func (s *sqlServerScraper) resourceMetricsBuilder(databaseName string) *metadata.ResourceMetricsBuilder {
 	rb := s.mb.NewResourceBuilder()
 	if databaseName != "" {
 		rb.SetSqlserverDatabaseName(databaseName)
@@ -129,7 +101,7 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 		rb.SetSqlserverComputerName(s.config.ComputerName)
 		rb.SetSqlserverInstanceName(s.config.InstanceName)
 	}
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	return s.mb.ResourceMetricsBuilder(rb.Emit())
 }
 
 // shutdown stops all of the watchers for the scraper.

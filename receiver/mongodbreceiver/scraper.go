@@ -83,9 +83,10 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
-	s.collectAdminDatabase(ctx, now, errs)
-	s.collectTopStats(ctx, now, errs)
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
+	rmb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
+	s.collectAdminDatabase(ctx, rmb, now, errs)
+	s.collectTopStats(ctx, rmb, now, errs)
 
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
@@ -103,10 +104,13 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 
 func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timestamp, databaseName string, errs *scrapererror.ScrapeErrors) {
 	dbStats, err := s.client.DBStats(ctx, databaseName)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetDatabase(databaseName)
+	rmb := s.mb.ResourceMetricsBuilder(rb.Emit())
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch database stats metrics: %w", err))
 	} else {
-		s.recordDBStats(now, dbStats, databaseName, errs)
+		s.recordDBStats(rmb, now, dbStats, databaseName, errs)
 	}
 
 	serverStatus, err := s.client.ServerStatus(ctx, databaseName)
@@ -114,31 +118,25 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		errs.AddPartial(1, fmt.Errorf("failed to fetch server status metrics: %w", err))
 		return
 	}
-	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	s.recordNormalServerStats(rmb, now, serverStatus, databaseName, errs)
 }
 
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	serverStatus, err := s.client.ServerStatus(ctx, "admin")
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch admin server status metrics: %w", err))
 		return
 	}
-	s.recordAdminStats(now, serverStatus, errs)
-	s.mb.EmitForResource()
+	s.recordAdminStats(rmb, now, serverStatus, errs)
 }
 
-func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *mongodbScraper) collectTopStats(ctx context.Context, rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	topStats, err := s.client.TopStats(ctx)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to fetch top stats metrics: %w", err))
 		return
 	}
-	s.recordOperationTime(now, topStats, errs)
-	s.mb.EmitForResource()
+	s.recordOperationTime(rmb, now, topStats, errs)
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -150,44 +148,43 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 		errs.AddPartial(1, fmt.Errorf("failed to fetch index stats metrics: %w", err))
 		return
 	}
-	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
-	s.mb.EmitForResource()
+	s.recordIndexStats(s.mb.ResourceMetricsBuilder(pcommon.NewResource()), now, indexStats, databaseName, collectionName, errs)
 }
 
-func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	s.recordCollections(now, doc, dbName, errs)
-	s.recordDataSize(now, doc, dbName, errs)
-	s.recordExtentCount(now, doc, dbName, errs)
-	s.recordIndexSize(now, doc, dbName, errs)
-	s.recordIndexCount(now, doc, dbName, errs)
-	s.recordObjectCount(now, doc, dbName, errs)
-	s.recordStorageSize(now, doc, dbName, errs)
+func (s *mongodbScraper) recordDBStats(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordCollections(rmb, now, doc, dbName, errs)
+	s.recordDataSize(rmb, now, doc, dbName, errs)
+	s.recordExtentCount(rmb, now, doc, dbName, errs)
+	s.recordIndexSize(rmb, now, doc, dbName, errs)
+	s.recordIndexCount(rmb, now, doc, dbName, errs)
+	s.recordObjectCount(rmb, now, doc, dbName, errs)
+	s.recordStorageSize(rmb, now, doc, dbName, errs)
 }
 
-func (s *mongodbScraper) recordNormalServerStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
-	s.recordConnections(now, doc, dbName, errs)
-	s.recordDocumentOperations(now, doc, dbName, errs)
-	s.recordMemoryUsage(now, doc, dbName, errs)
-	s.recordLockAcquireCounts(now, doc, dbName, errs)
-	s.recordLockAcquireWaitCounts(now, doc, dbName, errs)
-	s.recordLockTimeAcquiringMicros(now, doc, dbName, errs)
-	s.recordLockDeadlockCount(now, doc, dbName, errs)
+func (s *mongodbScraper) recordNormalServerStats(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {
+	s.recordConnections(rmb, now, doc, dbName, errs)
+	s.recordDocumentOperations(rmb, now, doc, dbName, errs)
+	s.recordMemoryUsage(rmb, now, doc, dbName, errs)
+	s.recordLockAcquireCounts(rmb, now, doc, dbName, errs)
+	s.recordLockAcquireWaitCounts(rmb, now, doc, dbName, errs)
+	s.recordLockTimeAcquiringMicros(rmb, now, doc, dbName, errs)
+	s.recordLockDeadlockCount(rmb, now, doc, dbName, errs)
 }
 
-func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
-	s.recordCacheOperations(now, document, errs)
-	s.recordCursorCount(now, document, errs)
-	s.recordCursorTimeoutCount(now, document, errs)
-	s.recordGlobalLockTime(now, document, errs)
-	s.recordNetworkCount(now, document, errs)
-	s.recordOperations(now, document, errs)
-	s.recordOperationsRepl(now, document, errs)
-	s.recordSessionCount(now, document, errs)
-	s.recordLatencyTime(now, document, errs)
-	s.recordUptime(now, document, errs)
-	s.recordHealth(now, document, errs)
+func (s *mongodbScraper) recordAdminStats(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, document bson.M, errs *scrapererror.ScrapeErrors) {
+	s.recordCacheOperations(rmb, now, document, errs)
+	s.recordCursorCount(rmb, now, document, errs)
+	s.recordCursorTimeoutCount(rmb, now, document, errs)
+	s.recordGlobalLockTime(rmb, now, document, errs)
+	s.recordNetworkCount(rmb, now, document, errs)
+	s.recordOperations(rmb, now, document, errs)
+	s.recordOperationsRepl(rmb, now, document, errs)
+	s.recordSessionCount(rmb, now, document, errs)
+	s.recordLatencyTime(rmb, now, document, errs)
+	s.recordUptime(rmb, now, document, errs)
+	s.recordHealth(rmb, now, document, errs)
 }
 
-func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
-	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
+func (s *mongodbScraper) recordIndexStats(rmb *metadata.ResourceMetricsBuilder, now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
+	s.recordIndexAccess(rmb, now, indexStats, databaseName, collectionName, errs)
 }

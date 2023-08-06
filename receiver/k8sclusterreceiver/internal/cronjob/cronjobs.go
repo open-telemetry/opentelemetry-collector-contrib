@@ -20,24 +20,23 @@ const (
 )
 
 func RecordMetrics(mb *metadata.MetricsBuilder, cj *batchv1.CronJob, ts pcommon.Timestamp) {
-	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
-
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 }
 
 func RecordMetricsBeta(mb *metadata.MetricsBuilder, cj *batchv1beta1.CronJob, ts pcommon.Timestamp) {
-	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	rmb := mb.ResourceMetricsBuilder(rb.Emit())
+	rmb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 }
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

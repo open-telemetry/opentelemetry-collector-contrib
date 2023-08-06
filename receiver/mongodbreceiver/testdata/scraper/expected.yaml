@@ -238,12 +238,6 @@ resourceMetrics:
                   timeUnixNano: "1670987956180933000"
               isMonotonic: true
             unit: ms
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
           - description: The total time spent performing operations.
             name: mongodb.operation.time
             sum:
@@ -293,12 +287,6 @@ resourceMetrics:
                   timeUnixNano: "1659372940162165000"
               isMonotonic: true
             unit: ms
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
           - description: The number of times an index has been accessed.
             name: mongodb.index.access.count
             sum:
@@ -314,18 +302,6 @@ resourceMetrics:
                         stringValue: fakedatabase
                   startTimeUnixNano: "1659372940162070000"
                   timeUnixNano: "1659372940162165000"
-            unit: '{accesses}'
-        scope:
-          name: otelcol/mongodbreceiver
-          version: latest
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - description: The number of times an index has been accessed.
-            name: mongodb.index.access.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asInt: "2"
                   attributes:
                     - key: collection
@@ -334,8 +310,6 @@ resourceMetrics:
                     - key: database
                       value:
                         stringValue: fakedatabase
-                  startTimeUnixNano: "1659372940162070000"
-                  timeUnixNano: "1659372940162165000"
             unit: '{accesses}'
         scope:
           name: otelcol/mongodbreceiver

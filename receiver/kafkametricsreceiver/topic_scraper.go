@@ -64,6 +64,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	var scrapeErrors = scrapererror.ScrapeErrors{}
 
 	now := pcommon.NewTimestampFromTime(time.Now())
+	rmb := s.mb.ResourceMetricsBuilder(pcommon.NewResource())
 
 	for _, topic := range topics {
 		if !s.topicFilter.MatchString(topic) {
@@ -75,31 +76,31 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			continue
 		}
 
-		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
+		rmb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
 		for _, partition := range partitions {
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition))
+				rmb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition))
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, int64(partition))
+				rmb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, int64(partition))
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, int64(partition))
+				rmb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, int64(partition))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, int64(partition))
+				rmb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, int64(partition))
 			}
 		}
 	}
