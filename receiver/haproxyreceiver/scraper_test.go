@@ -51,6 +51,7 @@ func Test_scraper_readStats(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, m)
 	require.Equal(t, 6, m.ResourceMetrics().Len())
+	require.NotEqual(t, m.ResourceMetrics().At(0).Resource(), m.ResourceMetrics().At(1).Resource())
 	require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
 	require.Equal(t, 10, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
 	metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
