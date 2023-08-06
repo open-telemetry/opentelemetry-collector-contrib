@@ -73,9 +73,9 @@ func regroup(batches []*model.Batch) []*model.Batch {
 		}
 	}
 
-	result := make([]*model.Batch, len(registry))
-	for i, v := range registry {
-		result[i] = v
+	result := make([]*model.Batch, 0, len(registry))
+	for _, v := range registry {
+		result = append(result, v)
 	}
 
 	return result
