@@ -43,7 +43,7 @@ func TestValidate(t *testing.T) {
 			desc: "missing endpoint",
 			cfg: &Config{
 				NetAddr: confignet.NetAddr{
-					Transport: "udp",
+					Transport: "tcp",
 				},
 			},
 			expectedErr: multierr.Combine(errMissingEndpoint),

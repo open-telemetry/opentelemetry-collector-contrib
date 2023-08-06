@@ -45,16 +45,6 @@ func TestScraper(t *testing.T) {
 				Transport: "tcp",
 			},
 		},
-		/*
-			{
-				name:     "udp up",
-				filename: "metrics_udp.json",
-				addr: &confignet.NetAddr{
-					Endpoint: 	"localhost:44123",
-					Transport: 	"udp",
-				},
-			},
-		*/
 		{
 			name:     "unix up",
 			filename: "metrics_unix.json",
@@ -66,7 +56,6 @@ func TestScraper(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		t.Run(tc.name, func(t *testing.T) {
 			// *** server
 			l, err := tc.addr.Listen()
@@ -113,7 +102,8 @@ func TestScraper(t *testing.T) {
 				pmetrictest.CompareMetrics(
 					expectedMetrics,
 					actualMetrics,
-					pmetrictest.IgnoreMetricValues(),
+					pmetrictest.IgnoreTimestamp(),
+					pmetrictest.IgnoreStartTimestamp(),
 					pmetrictest.IgnoreMetricAttributeValue("net.endpoint"),
 				),
 			)

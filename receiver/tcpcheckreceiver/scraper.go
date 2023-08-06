@@ -35,7 +35,7 @@ type tcpcheckScraper struct {
 }
 
 // start starts the scraper by creating a new net Client on the scraper
-func (s *tcpcheckScraper) start(_ context.Context, host component.Host) error {
+func (s *tcpcheckScraper) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -73,7 +73,7 @@ func (s *tcpcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 		} else {
 			success = 1
 			defer func() {
-				err = s.Conn.Close()
+				_ = s.Close()
 			}()
 		}
 		s.mb.RecordTcpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), s.Endpoint, s.Transport)
