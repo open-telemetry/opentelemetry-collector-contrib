@@ -274,10 +274,10 @@ type dpsBuilder struct {
 	pos     int
 }
 
-func newDpsBuilder(cap int) dpsBuilder {
+func newDpsBuilder(capacity int) dpsBuilder {
 	return dpsBuilder{
-		baseOut: make([]sfxpb.DataPoint, cap),
-		out:     make([]*sfxpb.DataPoint, 0, cap),
+		baseOut: make([]sfxpb.DataPoint, capacity),
+		out:     make([]*sfxpb.DataPoint, 0, capacity),
 	}
 }
 
