@@ -35,46 +35,61 @@ func TestScraper(t *testing.T) {
 	testCases := []struct {
 		name     string
 		filename string
+		state    bool
 		addr     *confignet.NetAddr
 	}{
 		{
 			name:     "tcp up",
 			filename: "metrics_tcp.json",
+			state:    true,
 			addr: &confignet.NetAddr{
-				Endpoint:  "localhost:44123",
+				Endpoint:  "localhost:44321",
 				Transport: "tcp",
 			},
 		},
 		{
 			name:     "unix up",
+			state:    true,
 			filename: "metrics_unix.json",
 			addr: &confignet.NetAddr{
-				Endpoint:  "localhost:44123",
+				Endpoint:  "localhost:44321",
 				Transport: "unix",
+			},
+		},
+		{
+			name:     "tcp down",
+			filename: "metrics_tcp_down.json",
+			state:    false,
+			addr: &confignet.NetAddr{
+				Endpoint:  "localhost:44321",
+				Transport: "tcp",
 			},
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			// *** server
-			l, err := tc.addr.Listen()
-			require.NoError(t, err, "creating listener")
-			defer l.Close()
+			// *** setup server and accepting connections
+			// use state variable to don't listen on connection to simulate a failure case
+			if tc.state {
+				l, err := tc.addr.Listen()
+				require.NoError(t, err, "creating listener")
+				defer l.Close()
 
-			go func() {
-				for {
-					conn, tErr := l.Accept()
-					if tErr != nil {
-						break
-					}
+				go func() {
+					for {
+						conn, tErr := l.Accept()
+						if tErr != nil {
+							break
+						}
 
-					_, tErr = io.Copy(io.Discard, conn)
-					if tErr != nil {
-						break
+						_, tErr = io.Copy(io.Discard, conn)
+						if tErr != nil {
+							break
+						}
 					}
-				}
-			}()
+				}()
+			}
 			// *** end server
 
 			expectedFile := filepath.Join("testdata", "expected_metrics", tc.filename)
@@ -83,10 +98,10 @@ func TestScraper(t *testing.T) {
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-			cfg.NetAddr.Endpoint = tc.addr.Endpoint
-			if len(cfg.NetAddr.Transport) > 0 {
-				cfg.NetAddr.Transport = tc.addr.Transport
+			cfg.CollectionInterval = 100 * time.Millisecond
+			cfg.Endpoint = tc.addr.Endpoint
+			if len(cfg.Transport) > 0 {
+				cfg.Transport = tc.addr.Transport
 			}
 
 			settings := receivertest.NewNopCreateSettings()
@@ -94,8 +109,10 @@ func TestScraper(t *testing.T) {
 			scrpr := newScraper(cfg, settings)
 			require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
 
-			actualMetrics, err := scrpr.scrape(context.Background())
+			ctx, done := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			actualMetrics, err := scrpr.scrape(ctx)
 			require.NoError(t, err, "failed scrape")
+			done()
 
 			require.NoError(
 				t,
@@ -104,7 +121,6 @@ func TestScraper(t *testing.T) {
 					actualMetrics,
 					pmetrictest.IgnoreTimestamp(),
 					pmetrictest.IgnoreStartTimestamp(),
-					pmetrictest.IgnoreMetricAttributeValue("net.endpoint"),
 				),
 			)
 		})

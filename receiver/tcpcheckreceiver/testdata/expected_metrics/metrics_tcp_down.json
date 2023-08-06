@@ -15,7 +15,7 @@
                 "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
                 "dataPoints": [
                   {
-                    "asInt": "100",
+                    "asInt": "0",
                     "attributes": [
                       {
                         "key": "net.endpoint",
@@ -34,6 +34,39 @@
                 ]
               },
               "unit": "ms"
+            },
+            {
+              "description": "Records errors occurring during net check.",
+              "name": "tcpcheck.error",
+              "sum": {
+                "aggregationTemporality": "AGGREGATION_TEMPORALITY_CUMULATIVE",
+                "dataPoints": [
+                  {
+                    "asInt": "1",
+                    "attributes": [
+                      {
+                        "key": "net.endpoint",
+                        "value": {
+                          "stringValue": "localhost:44321"
+                        }
+                      },
+                      {
+                        "key": "net.transport",
+                        "value": {
+                          "stringValue": "tcp"
+                        }
+                      },
+                      {
+                        "key": "error.message",
+                        "value": {
+                          "stringValue": "dial tcp [::1]:44321: connect: connection refused"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "unit": "{error}"
             },
             {
               "description": "1 if the net client successfully connected, otherwise 0.",

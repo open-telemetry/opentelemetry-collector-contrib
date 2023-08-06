@@ -76,9 +76,10 @@ func (s *tcpcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 				_ = s.Close()
 			}()
 		}
-		s.mb.RecordTcpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), s.Endpoint, s.Transport)
-		s.mb.RecordTcpcheckStatusDataPoint(now, success, s.Endpoint, s.Transport)
 	}
+
+	s.mb.RecordTcpcheckDurationDataPoint(now, time.Since(start).Milliseconds(), s.Endpoint, s.Transport)
+	s.mb.RecordTcpcheckStatusDataPoint(now, success, s.Endpoint, s.Transport)
 
 	return s.mb.Emit(), nil
 }
