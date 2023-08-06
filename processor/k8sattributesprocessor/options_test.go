@@ -81,7 +81,7 @@ func TestWithExtractAnnotations(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			nil,
+			[]kube.FieldExtractionRule{},
 			"",
 		},
 		{
@@ -200,7 +200,7 @@ func TestWithExtractLabels(t *testing.T) {
 		{
 			"empty",
 			[]FieldExtractConfig{},
-			nil,
+			[]kube.FieldExtractionRule{},
 			"",
 		},
 		{
