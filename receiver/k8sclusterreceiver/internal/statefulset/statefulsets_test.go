@@ -5,27 +5,32 @@ package statefulset
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestStatefulsetMetrics(t *testing.T) {
-	ss := newStatefulset("1")
+	ss := testutils.NewStatefulset("1")
 
-	actualResourceMetrics := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), ss)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, ss, ts)
+	m := mb.Emit()
 
-	require.Equal(t, 1, actualResourceMetrics.ResourceMetrics().Len())
-	require.Equal(t, 4, actualResourceMetrics.MetricCount())
+	require.Equal(t, 1, m.ResourceMetrics().Len())
+	require.Equal(t, 4, m.MetricCount())
 
-	rm := actualResourceMetrics.ResourceMetrics().At(0)
+	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
 		map[string]interface{}{
 			"k8s.statefulset.uid":     "test-statefulset-1-uid",
@@ -48,7 +53,7 @@ func TestStatefulsetMetrics(t *testing.T) {
 }
 
 func TestStatefulsetMetadata(t *testing.T) {
-	ss := newStatefulset("1")
+	ss := testutils.NewStatefulset("1")
 
 	actualMetadata := GetMetadata(ss)
 
@@ -71,31 +76,6 @@ func TestStatefulsetMetadata(t *testing.T) {
 		},
 		*actualMetadata["test-statefulset-1-uid"],
 	)
-}
-
-func newStatefulset(id string) *appsv1.StatefulSet {
-	desired := int32(10)
-	return &appsv1.StatefulSet{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-statefulset-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-statefulset-" + id + "-uid"),
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Spec: appsv1.StatefulSetSpec{
-			Replicas: &desired,
-		},
-		Status: appsv1.StatefulSetStatus{
-			ReadyReplicas:   7,
-			CurrentReplicas: 5,
-			UpdatedReplicas: 3,
-			CurrentRevision: "current_revision",
-			UpdateRevision:  "update_revision",
-		},
-	}
 }
 
 func TestTransform(t *testing.T) {

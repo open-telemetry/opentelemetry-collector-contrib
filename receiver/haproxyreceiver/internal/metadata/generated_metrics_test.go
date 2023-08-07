@@ -149,8 +149,17 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
 
-			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
+			rb := mb.NewResourceBuilder()
+			rb.SetHaproxyAddr("haproxy.addr-val")
+			rb.SetHaproxyAlgo("haproxy.algo-val")
+			rb.SetHaproxyIid("haproxy.iid-val")
+			rb.SetHaproxyPid("haproxy.pid-val")
+			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServiceName("haproxy.service_name-val")
+			rb.SetHaproxySid("haproxy.sid-val")
+			rb.SetHaproxyType("haproxy.type-val")
+			rb.SetHaproxyURL("haproxy.url-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

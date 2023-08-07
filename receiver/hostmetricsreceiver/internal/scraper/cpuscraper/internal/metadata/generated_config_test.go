@@ -26,8 +26,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUTime:        MetricConfig{Enabled: true},
-					SystemCPUUtilization: MetricConfig{Enabled: true},
+					SystemCPULogicalCount:  MetricConfig{Enabled: true},
+					SystemCPUPhysicalCount: MetricConfig{Enabled: true},
+					SystemCPUTime:          MetricConfig{Enabled: true},
+					SystemCPUUtilization:   MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -35,8 +37,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemCPUTime:        MetricConfig{Enabled: false},
-					SystemCPUUtilization: MetricConfig{Enabled: false},
+					SystemCPULogicalCount:  MetricConfig{Enabled: false},
+					SystemCPUPhysicalCount: MetricConfig{Enabled: false},
+					SystemCPUTime:          MetricConfig{Enabled: false},
+					SystemCPUUtilization:   MetricConfig{Enabled: false},
 				},
 			},
 		},

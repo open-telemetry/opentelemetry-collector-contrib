@@ -68,7 +68,7 @@ func (m *metric{{ $name.Render }}) init() {
 	m.data.{{ $metric.Data.Type }}().SetIsMonotonic({{ $metric.Data.Monotonic }})
 	{{- end }}
 	{{- if $metric.Data.HasAggregated }}
-	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.Aggregated }})
+	m.data.{{ $metric.Data.Type }}().SetAggregationTemporality(pmetric.AggregationTemporality{{ $metric.Data.AggregationTemporality }})
 	{{- end }}
 	{{- if $metric.Attributes }}
 	m.data.{{ $metric.Data.Type }}().DataPoints().EnsureCapacity(m.capacity)
@@ -127,10 +127,11 @@ func newMetric{{ $name.Render }}(cfg MetricConfig) metric{{ $name.Render }} {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime       pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity int                 // maximum observed number of metrics per resource.
-	metricsBuffer   pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo       component.BuildInfo // contains version information
+	config          MetricsBuilderConfig // config of the metrics builder.
+	startTime       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity int                  // maximum observed number of metrics per resource.
+	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo       component.BuildInfo  // contains version information.
 	{{- range $name, $metric := .Metrics }}
 	metric{{ $name.Render }} metric{{ $name.Render }}
 	{{- end }}
@@ -165,6 +166,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	{{- end }}
 	{{- end }}
 	mb := &MetricsBuilder{
+		config:        mbc,
 		startTime:     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer: pmetric.NewMetrics(),
 		buildInfo:     settings.BuildInfo,
@@ -177,6 +179,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	return mb
 }
+
+{{- if .ResourceAttributes }}
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
+}
+{{- end }}
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
