@@ -7,7 +7,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.18.0
 	github.com/aws/aws-sdk-go v1.44.316
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/consul/api v1.23.0
+	github.com/hashicorp/consul/api v1.24.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.82.0
 	github.com/stretchr/testify v1.8.4
@@ -97,7 +97,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
-	golang.org/x/net v0.12.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
