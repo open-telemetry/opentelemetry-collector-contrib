@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.82.0
-	github.com/shirou/gopsutil/v3 v3.23.6
+	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/config/confighttp v0.82.0
