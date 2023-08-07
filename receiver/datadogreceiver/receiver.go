@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
