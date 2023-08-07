@@ -518,6 +518,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.82.0 // indirect
@@ -781,6 +782,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../../receiver/udplogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
 
