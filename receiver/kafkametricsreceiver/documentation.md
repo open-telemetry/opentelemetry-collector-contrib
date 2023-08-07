@@ -180,6 +180,20 @@ metrics:
     enabled: true
 ```
 
+### messaging.kafka.broker.consumer_fetch_count
+
+Count of consumer fetches
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fetches} | Sum | Double | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
 ### messaging.kafka.broker.consumer_fetch_rate
 
 Average consumer fetch Rate
@@ -188,13 +202,11 @@ Average consumer fetch Rate
 | ---- | ----------- | ---------- |
 | {fetches}/s | Gauge | Double |
 
-
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
-
 
 ### messaging.kafka.broker.count
 
@@ -204,11 +216,9 @@ Number of brokers in the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {brokers} | Sum | Int | Cumulative | false |
 
-
 ### messaging.kafka.broker.incoming_byte_rate
 
-Average Bytes received per second
-
+Average tncoming Byte Rate in bytes/second
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -220,11 +230,9 @@ Average Bytes received per second
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-
 ### messaging.kafka.broker.outgoing_byte_rate
 
-Average Bytes sent per second
-
+Average outgoing Byte Rate in bytes/second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -244,13 +252,11 @@ Average request latency in ms
 | ---- | ----------- | ---------- |
 | ms | Gauge | Double |
 
-
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
-
 
 ### messaging.kafka.broker.request_rate
 
@@ -260,16 +266,13 @@ Average request rate per second.
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
 
-
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-
 ### messaging.kafka.broker.request_size
-
 
 Average request size in bytes
 
@@ -283,9 +286,7 @@ Average request size in bytes
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-
 ### messaging.kafka.broker.requests_in_flight
-
 
 Requests in flight
 
@@ -299,15 +300,13 @@ Requests in flight
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
+### messaging.kafka.broker.response_rate
 
-### messaging.kafka.broker.response_count
+Average response rate per second
 
-Number of responses from the broker
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {response} | Sum | Double | Cumulative | false |
-
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {response}/s | Gauge | Double |
 
 #### Attributes
 
@@ -315,9 +314,7 @@ Number of responses from the broker
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-
 ### messaging.kafka.broker.response_size
-
 
 Average response size in bytes
 

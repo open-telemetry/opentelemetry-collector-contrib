@@ -32,7 +32,7 @@ metrics:
     gauge:
       value_type: int
     warnings:
-      if_enabled: The metric is deprecated and will be removed. Use `messaging.kafka.brokers.count`
+      if_enabled: The metric is deprecated and will be removed. Use `messaging.kafka.broker.count`
 
   messaging.kafka.broker.count:
     enabled: false
@@ -41,7 +41,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
   messaging.kafka.broker.consumer_fetch_rate:
@@ -125,9 +125,6 @@ metrics:
     attributes: [broker]
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
-      aggregation_temporality: cumulative
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
   messaging.kafka.broker.consumer_fetch_count:
     enabled: false
     description: Count of consumer fetches
@@ -135,81 +132,6 @@ metrics:
     sum:
       value_type: double
       aggregation_temporality: cumulative
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.incoming_byte_rate:
-    enabled: false
-    description: Average Bytes received per second
-    unit: 1
-    gauge:
-      value_type: double
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.outgoing_byte_rate:
-    enabled: false
-    description: Average Bytes sent per second 
-    unit: 1
-    gauge:
-      value_type: double
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.request_latency:
-    enabled: false
-    description: Average request latency in ms
-    unit: "ms"
-    gauge:
-      value_type: double
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.response_count:
-    enabled: false
-    description: Number of responses from the broker
-    unit: "{response}"
-    sum:
-      value_type: double
-      aggregation_temporality: cumulative
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.response_size:
-    enabled: false
-    description: Average response size in bytes
-    unit: "By"
-    gauge:
-      value_type: double
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.request_count:
-    enabled: false
-    description: Number of requests in the broker
-    unit: "{requests}"
-    sum:
-      value_type: double
-
-      aggregation_temporality: cumulative
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.request_size:
-    enabled: false
-    description: Average request size in bytes
-    unit: "By"
-    gauge:
-      value_type: double
-    attributes: [broker]
-    warnings:
-      if_enabled_not_set: This metric will be enabled by default in the next versions.
-  messaging.kafka.broker.requests_in_flight:
-    enabled: false
-    description: Requests in flight
-    unit: "{requests}"
-    gauge:
-      value_type: int
     attributes: [broker]
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.

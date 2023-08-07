@@ -34,7 +34,6 @@ var nrMetricsPrefix = [...]string{
 	"outgoing-byte-rate-for-broker-",
 	"request-rate-for-broker-",
 	"response-rate-for-broker-",
-
 	"response-size-for-broker-",
 	"request-size-for-broker-",
 	"requests-in-flight-for-broker-",
@@ -64,39 +63,39 @@ func (s *brokerScraper) scrapeMetric(now pcommon.Timestamp, allMetrics saramaMet
 		switch prefix {
 		case "consumer-fetch-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersConsumerFetchRateDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerConsumerFetchRateDataPoint(now, v, brokerID)
 			}
 		case "incoming-byte-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersIncomingByteRateDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerIncomingByteRateDataPoint(now, v, brokerID)
 			}
 		case "outgoing-byte-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersOutgoingByteRateDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerOutgoingByteRateDataPoint(now, v, brokerID)
 			}
 		case "request-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersRequestRateDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerRequestRateDataPoint(now, v, brokerID)
 			}
 		case "response-rate-for-broker-":
 			if v, ok := metric["mean.rate"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersResponseRateDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerResponseRateDataPoint(now, v, brokerID)
 			}
 		case "response-size-for-broker-":
 			if v, ok := metric["mean"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersResponseSizeDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerResponseSizeDataPoint(now, v, brokerID)
 			}
 		case "request-size-for-broker-":
 			if v, ok := metric["mean"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersRequestSizeDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerRequestSizeDataPoint(now, v, brokerID)
 			}
 		case "requests-in-flight-for-broker-":
 			if v, ok := metric["count"].(int64); ok {
-				s.mb.RecordMessagingKafkaBrokersRequestsInFlightDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerRequestsInFlightDataPoint(now, v, brokerID)
 			}
 		case "request-latency-in-ms-for-broker-":
 			if v, ok := metric["mean"].(float64); ok {
-				s.mb.RecordMessagingKafkaBrokersRequestLatencyDataPoint(now, v, brokerID)
+				s.mb.RecordMessagingKafkaBrokerRequestLatencyDataPoint(now, v, brokerID)
 			}
 		default:
 			fmt.Printf("undefined for prefix %s\n", prefix)
@@ -135,7 +134,6 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	// messaging.kafka.broker.count should replace kafka.brokers.
 	s.mb.RecordMessagingKafkaBrokerCountDataPoint(now, brokerCount)
-
 
 	return s.mb.Emit(), nil
 }

@@ -23,6 +23,8 @@ all_set:
       enabled: true
     kafka.topic.partitions:
       enabled: true
+    messaging.kafka.broker.consumer_fetch_count:
+      enabled: true
     messaging.kafka.broker.consumer_fetch_rate:
       enabled: true
     messaging.kafka.broker.count:
@@ -66,6 +68,8 @@ none_set:
     kafka.partition.replicas_in_sync:
       enabled: false
     kafka.topic.partitions:
+      enabled: false
+    messaging.kafka.broker.consumer_fetch_count:
       enabled: false
     messaging.kafka.broker.consumer_fetch_rate:
       enabled: false
