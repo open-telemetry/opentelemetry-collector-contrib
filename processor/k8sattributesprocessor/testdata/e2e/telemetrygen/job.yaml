@@ -17,8 +17,8 @@ spec:
         - {{ .DataType }}
         - --otlp-insecure
         - --otlp-endpoint={{ .OTLPEndpoint }}
-        - --{{ .DataType }}=60
         - --rate=1
+        - --duration=36000s
         - --otlp-attributes=service.name="test-{{ .DataType }}-job"
         - --otlp-attributes=k8s.container.name="telemetrygen"
         image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest

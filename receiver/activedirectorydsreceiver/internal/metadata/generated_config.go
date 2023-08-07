@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for activedirectorydsreceiver metrics.
+// MetricsConfig provides config for active_directory_ds metrics.
 type MetricsConfig struct {
 	ActiveDirectoryDsBindRate                                  MetricConfig `mapstructure:"active_directory.ds.bind.rate"`
 	ActiveDirectoryDsLdapBindLastSuccessfulTime                MetricConfig `mapstructure:"active_directory.ds.ldap.bind.last_successful.time"`
@@ -104,7 +104,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for activedirectorydsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for active_directory_ds metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

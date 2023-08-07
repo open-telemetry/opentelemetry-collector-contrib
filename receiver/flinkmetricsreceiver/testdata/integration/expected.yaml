@@ -37,48 +37,6 @@ resourceMetrics:
                   timeUnixNano: "1656013053528397000"
               isMonotonic: true
             unit: ns
-          - description: The total number of collections that have occurred.
-            name: flink.jvm.gc.collections.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: PS_MarkSweep
-                  startTimeUnixNano: "1656013053428227000"
-                  timeUnixNano: "1656013053528397000"
-                - asInt: "2"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: PS_Scavenge
-                  startTimeUnixNano: "1656013053428227000"
-                  timeUnixNano: "1656013053528397000"
-              isMonotonic: true
-            unit: '{collections}'
-          - description: The total time spent performing garbage collection.
-            name: flink.jvm.gc.collections.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "117"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: PS_MarkSweep
-                  startTimeUnixNano: "1656013053428227000"
-                  timeUnixNano: "1656013053528397000"
-                - asInt: "30"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: PS_Scavenge
-                  startTimeUnixNano: "1656013053428227000"
-                  timeUnixNano: "1656013053528397000"
-              isMonotonic: true
-            unit: ms
           - description: The total capacity of all buffers in the direct buffer pool.
             name: flink.jvm.memory.direct.total_capacity
             sum:

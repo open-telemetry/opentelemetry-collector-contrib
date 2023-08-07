@@ -4,4 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: ["dmitryax"]
+    emeritus:

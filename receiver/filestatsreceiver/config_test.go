@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestatsreceiver
 
@@ -19,6 +8,9 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
 func Test_Config_Validate(t *testing.T) {
@@ -28,13 +20,19 @@ func Test_Config_Validate(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "valid",
-			cfg:     &Config{Include: "/var/log/*.log"},
+			name: "valid",
+			cfg: &Config{
+				Include:                   "/var/log/*.log",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
 			wantErr: nil,
 		},
 		{
-			name:    "missing include pattern",
-			cfg:     &Config{Include: ""},
+			name: "missing include pattern",
+			cfg: &Config{
+				Include:                   "",
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
 			wantErr: errors.New("include must not be empty"),
 		},
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package provider contains the cluster name provider
 package provider // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/provider"
@@ -33,15 +22,47 @@ type chainProvider struct {
 }
 
 func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
-	for _, source := range p.priorityList {
-		zapProvider := zap.String("provider", source)
+	// Auxiliary type for storing source provider replies
+	type reply struct {
+		src source.Source
+		err error
+	}
+
+	// Cancel all providers when exiting
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Run all providers in parallel
+	replies := make([]chan reply, len(p.priorityList))
+	for i, source := range p.priorityList {
 		provider := p.providers[source]
-		src, err := provider.Source(ctx)
-		if err == nil {
-			p.logger.Info("Resolved source", zapProvider, zap.Any("source", src))
-			return src, nil
+		replies[i] = make(chan reply)
+
+		go func(i int, source string) {
+			zapProvider := zap.String("provider", source)
+			p.logger.Debug("Trying out source provider", zapProvider)
+
+			src, err := provider.Source(ctx)
+			if err != nil {
+				p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
+			}
+
+			replies[i] <- reply{src: src, err: err}
+		}(i, source)
+	}
+
+	// Check provider responses in order to ensure priority
+	for i, ch := range replies {
+		reply := <-ch
+		if reply.err != nil {
+			// Provider was unavailable, error was logged on goroutine
+			continue
 		}
-		p.logger.Debug("Unavailable source provider", zapProvider, zap.Error(err))
+
+		p.logger.Info("Resolved source",
+			zap.String("provider", p.priorityList[i]), zap.Any("source", reply.src),
+		)
+		return reply.src, nil
 	}
 
 	return source.Source{}, fmt.Errorf("no source provider was available")

@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for postgresqlreceiver metrics.
+// MetricsConfig provides config for postgresql metrics.
 type MetricsConfig struct {
 	PostgresqlBackends                 MetricConfig `mapstructure:"postgresql.backends"`
 	PostgresqlBgwriterBuffersAllocated MetricConfig `mapstructure:"postgresql.bgwriter.buffers.allocated"`
@@ -125,7 +125,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for postgresqlreceiver resource attributes.
+// ResourceAttributesConfig provides config for postgresql resource attributes.
 type ResourceAttributesConfig struct {
 	PostgresqlDatabaseName ResourceAttributeConfig `mapstructure:"postgresql.database.name"`
 	PostgresqlIndexName    ResourceAttributeConfig `mapstructure:"postgresql.index.name"`
@@ -146,7 +146,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for postgresqlreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for postgresql metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

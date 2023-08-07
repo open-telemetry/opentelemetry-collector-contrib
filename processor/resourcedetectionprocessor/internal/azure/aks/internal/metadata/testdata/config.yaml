@@ -1,0 +1,13 @@
+default:
+all_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: true
+    cloud.provider:
+      enabled: true
+none_set:
+  resource_attributes:
+    cloud.platform:
+      enabled: false
+    cloud.provider:
+      enabled: false

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package sqlqueryreceiver
 
@@ -32,7 +21,7 @@ func TestDBSQLClient_SingleRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 1)
 	assert.EqualValues(t, map[string]string{
@@ -53,7 +42,7 @@ func TestDBSQLClient_MultiRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	require.NoError(t, err)
 	assert.Len(t, rows, 2)
 	assert.EqualValues(t, map[string]string{
@@ -80,7 +69,7 @@ func TestDBSQLClient_Nulls(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	assert.Error(t, err)
 	assert.True(t, errors.Is(err, errNullValueWarning))
 	assert.Len(t, rows, 1)
@@ -99,7 +88,7 @@ func TestDBSQLClient_Nulls_MultiRow(t *testing.T) {
 		logger: zap.NewNop(),
 		sql:    "",
 	}
-	rows, err := cl.metricRows(context.Background())
+	rows, err := cl.queryRows(context.Background())
 	assert.Error(t, err)
 	errs := multierr.Errors(err)
 	for _, err := range errs {
@@ -163,7 +152,7 @@ type fakeDBClient struct {
 	err            error
 }
 
-func (c *fakeDBClient) metricRows(context.Context) ([]stringMap, error) {
+func (c *fakeDBClient) queryRows(context.Context, ...any) ([]stringMap, error) {
 	if c.err != nil {
 		return nil, c.err
 	}

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kubeletstatsreceiver
 
@@ -47,10 +36,11 @@ func TestLoadConfig(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "default"),
+			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -66,10 +56,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "1.2.3.4:5555",
@@ -94,10 +85,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "sa"),
+			id: component.NewIDWithName(metadata.Type, "sa"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -114,10 +106,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata"),
+			id: component.NewIDWithName(metadata.Type, "metadata"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -137,10 +130,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metric_groups"),
+			id: component.NewIDWithName(metadata.Type, "metric_groups"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 20 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -156,10 +150,11 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "metadata_with_k8s_api"),
+			id: component.NewIDWithName(metadata.Type, "metadata_with_k8s_api"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: duration,
+					InitialDelay:       time.Second,
 				},
 				ClientConfig: kube.ClientConfig{
 					APIConfig: k8sconfig.APIConfig{
@@ -263,6 +258,7 @@ func TestGetReceiverOptions(t *testing.T) {
 			cfg := &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 10 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				ExtraMetadataLabels:   tt.fields.extraMetadataLabels,
 				MetricGroupsToCollect: tt.fields.metricGroupsToCollect,

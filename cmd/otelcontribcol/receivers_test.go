@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
 //go:build !windows
@@ -40,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
@@ -49,6 +39,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 )
 
 func TestDefaultReceivers(t *testing.T) {
@@ -58,9 +49,9 @@ func TestDefaultReceivers(t *testing.T) {
 	rcvrFactories := allFactories.Receivers
 
 	tests := []struct {
+		getConfigFn  getReceiverConfigFn
 		receiver     component.Type
 		skipLifecyle bool
-		getConfigFn  getReceiverConfigFn
 	}{
 		{
 			receiver:     "active_directory_ds",
@@ -71,6 +62,9 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "apache",
+		},
+		{
+			receiver: "apachespark",
 		},
 		{
 			receiver: "awscloudwatch",
@@ -141,6 +135,10 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Panics after test have completed, requires a wait group
 		},
 		{
+			receiver:     "cloudflare",
+			skipLifecyle: true,
+		},
+		{
 			receiver:     "cloudfoundry",
 			skipLifecyle: true, // Requires UAA (auth) endpoint to run
 		},
@@ -160,6 +158,11 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "datadog",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["datadog"].CreateDefaultConfig().(*datadogreceiver.Config)
+				cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+				return cfg
+			},
 		},
 		{
 			receiver:     "docker_stats",
@@ -182,6 +185,10 @@ func TestDefaultReceivers(t *testing.T) {
 				cfg.InputConfig.Include = []string{filepath.Join(t.TempDir(), "*")}
 				return cfg
 			},
+		},
+		{
+			receiver:     "file",
+			skipLifecyle: true, // Requires an existing JSONL file
 		},
 		{
 			receiver: "filestats",
@@ -262,7 +269,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "memcached",
 		},
 		{
-			receiver: "mongodb",
+			receiver:     "mongodb",
+			skipLifecyle: true, // Causes tests to timeout
 		},
 		{
 			receiver: "mongodbatlas",
@@ -400,6 +408,14 @@ func TestDefaultReceivers(t *testing.T) {
 			skipLifecyle: true, // Depends on carbon receiver to be running correctly
 		},
 		{
+			receiver: "webhookevent",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["webhookevent"].CreateDefaultConfig().(*webhookeventreceiver.Config)
+				cfg.Endpoint = "127.0.0.1:8088"
+				return cfg
+			},
+		},
+		{
 			receiver:     "windowseventlog",
 			skipLifecyle: true, // Requires a running windows process
 		},
@@ -455,16 +471,22 @@ func TestDefaultReceivers(t *testing.T) {
 			// not part of the distro, skipping.
 			continue
 		}
+		tt := tt
 		receiverCount++
 		t.Run(string(tt.receiver), func(t *testing.T) {
 			factory := rcvrFactories[tt.receiver]
 			assert.Equal(t, tt.receiver, factory.Type())
 
-			verifyReceiverShutdown(t, factory, tt.getConfigFn)
-
-			if !tt.skipLifecyle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyReceiverShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecyle {
+					t.SkipNow()
+				}
 				verifyReceiverLifecycle(t, factory, tt.getConfigFn)
-			}
+			})
+
 		})
 	}
 	assert.Len(t, rcvrFactories, receiverCount, "All receivers must be added to the lifecycle suite")

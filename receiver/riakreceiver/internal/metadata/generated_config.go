@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for riakreceiver metrics.
+// MetricsConfig provides config for riak metrics.
 type MetricsConfig struct {
 	RiakMemoryLimit              MetricConfig `mapstructure:"riak.memory.limit"`
 	RiakNodeOperationCount       MetricConfig `mapstructure:"riak.node.operation.count"`
@@ -61,7 +61,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for riakreceiver resource attributes.
+// ResourceAttributesConfig provides config for riak resource attributes.
 type ResourceAttributesConfig struct {
 	RiakNodeName ResourceAttributeConfig `mapstructure:"riak.node.name"`
 }
@@ -74,7 +74,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for riakreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for riak metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

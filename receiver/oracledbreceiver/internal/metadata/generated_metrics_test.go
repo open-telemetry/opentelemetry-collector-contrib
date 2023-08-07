@@ -54,9 +54,15 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			allMetricsCount++
+			mb.RecordOracledbConsistentGetsDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbCPUTimeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -128,15 +134,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "attr-val", "attr-val")
+			mb.RecordOracledbSessionsUsageDataPoint(ts, "1", "session_type-val", "session_status-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "attr-val")
+			mb.RecordOracledbTablespaceSizeLimitDataPoint(ts, 1, "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "attr-val")
+			mb.RecordOracledbTablespaceSizeUsageDataPoint(ts, "1", "tablespace_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -154,7 +160,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
-			metrics := mb.Emit(WithOracledbInstanceName("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -163,18 +171,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("oracledb.instance.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.OracledbInstanceName.Enabled, ok)
-			if mb.resourceAttributesConfig.OracledbInstanceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -186,6 +183,20 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "oracledb.consistent_gets":
+					assert.False(t, validatedMetrics["oracledb.consistent_gets"], "Found a duplicate in the metrics slice: oracledb.consistent_gets")
+					validatedMetrics["oracledb.consistent_gets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a consistent read was requested for a block from the buffer cache.", ms.At(i).Description())
+					assert.Equal(t, "{gets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.cpu_time":
 					assert.False(t, validatedMetrics["oracledb.cpu_time"], "Found a duplicate in the metrics slice: oracledb.cpu_time")
 					validatedMetrics["oracledb.cpu_time"] = true
@@ -200,6 +211,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "oracledb.db_block_gets":
+					assert.False(t, validatedMetrics["oracledb.db_block_gets"], "Found a duplicate in the metrics slice: oracledb.db_block_gets")
+					validatedMetrics["oracledb.db_block_gets"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times a current block was requested from the buffer cache.", ms.At(i).Description())
+					assert.Equal(t, "{gets}", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.dml_locks.limit":
 					assert.False(t, validatedMetrics["oracledb.dml_locks.limit"], "Found a duplicate in the metrics slice: oracledb.dml_locks.limit")
 					validatedMetrics["oracledb.dml_locks.limit"] = true
@@ -434,10 +459,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("session_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "session_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("session_status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "session_status-val", attrVal.Str())
 				case "oracledb.tablespace_size.limit":
 					assert.False(t, validatedMetrics["oracledb.tablespace_size.limit"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.limit")
 					validatedMetrics["oracledb.tablespace_size.limit"] = true
@@ -452,7 +477,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("tablespace_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "tablespace_name-val", attrVal.Str())
 				case "oracledb.tablespace_size.usage":
 					assert.False(t, validatedMetrics["oracledb.tablespace_size.usage"], "Found a duplicate in the metrics slice: oracledb.tablespace_size.usage")
 					validatedMetrics["oracledb.tablespace_size.usage"] = true
@@ -467,7 +492,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("tablespace_name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "tablespace_name-val", attrVal.Str())
 				case "oracledb.transactions.limit":
 					assert.False(t, validatedMetrics["oracledb.transactions.limit"], "Found a duplicate in the metrics slice: oracledb.transactions.limit")
 					validatedMetrics["oracledb.transactions.limit"] = true

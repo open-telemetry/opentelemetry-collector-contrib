@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
@@ -28,22 +17,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "postgresql"
-)
-
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings: cfg,
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:5432",
 			Transport: "tcp",
@@ -65,7 +51,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape)
 	if err != nil {
 		return nil, err
 	}

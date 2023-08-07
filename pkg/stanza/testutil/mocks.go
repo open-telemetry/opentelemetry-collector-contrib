@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package testutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 
@@ -69,10 +58,10 @@ func (f *FakeOutput) Outputs() []operator.Operator { return nil }
 func (f *FakeOutput) GetOutputIDs() []string { return nil }
 
 // SetOutputs immediately returns nil for a fake output
-func (f *FakeOutput) SetOutputs(outputs []operator.Operator) error { return nil }
+func (f *FakeOutput) SetOutputs(_ []operator.Operator) error { return nil }
 
 // SetOutputIDs immediately returns nil for a fake output
-func (f *FakeOutput) SetOutputIDs(s []string) {}
+func (f *FakeOutput) SetOutputIDs(_ []string) {}
 
 // Start immediately returns nil for a fake output
 func (f *FakeOutput) Start(_ operator.Persister) error { return nil }
@@ -84,7 +73,7 @@ func (f *FakeOutput) Stop() error { return nil }
 func (f *FakeOutput) Type() string { return "fake_output" }
 
 // Process will place all incoming entries on the Received channel of a fake output
-func (f *FakeOutput) Process(ctx context.Context, entry *entry.Entry) error {
+func (f *FakeOutput) Process(_ context.Context, entry *entry.Entry) error {
 	f.Received <- entry
 	return nil
 }

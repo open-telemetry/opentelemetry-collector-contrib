@@ -1,7 +1,17 @@
-type: zipkinreceiver
+type: zipkin
 
 status:
   class: receiver
   stability:
     beta: [traces]
-  distributions: [core, contrib]
+  distributions:
+  - core
+  - contrib
+  - aws
+  - grafana
+  - observiq
+  - redhat
+  - splunk
+  - sumo
+  codeowners:
+    active: [MovieStoreGuy, astencel-sumo, crobert-1]

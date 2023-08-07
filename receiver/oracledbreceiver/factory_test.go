@@ -1,21 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oracledbreceiver
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +32,71 @@ func TestNewFactory(t *testing.T) {
 	)
 	require.NoError(t, err)
 }
+
 func TestGetInstanceName(t *testing.T) {
-	instanceName := getInstanceName("oracle://example.com:1521/mydb")
+	instanceName, err := getInstanceName("oracle://example.com:1521/mydb")
+	assert.NoError(t, err)
 	assert.Equal(t, "example.com:1521/mydb", instanceName)
+
+	// Should fail on non-encoded special characters
+	_, err = getInstanceName("oracle://username1:p@ssw%rd@example1.com:1521/mydb")
+	assert.ErrorContains(t, err, "invalid URL escape")
+
+	// Should succeed when special characters are encoded
+	instanceName, err = getInstanceName("oracle://username1:p@ssword%25-_1@example1.com:1521/mydb")
+	assert.NoError(t, err)
+	assert.Equal(t, "example1.com:1521/mydb", instanceName)
+}
+
+func TestGetDataSource(t *testing.T) {
+	endpoint := "example1.com:1521"
+	password := "p@ssword%-_1"
+	service := "mydb1"
+	username := "username1"
+	nonDefaultDataSource := "oracle://username1:p@ssword%25-_1@example1.com:1521/mydb1"
+	defaultDataSource := "oracle://username:password@example.com:1521/mydb"
+
+	testCases := []struct {
+		name     string
+		config   *Config
+		expected string
+	}{
+		{
+			name: "Default data source",
+			config: &Config{
+				DataSource: defaultDataSource,
+			},
+			expected: defaultDataSource,
+		},
+		{
+			name: "Default data source takes priority over other config options",
+			config: &Config{
+				DataSource: defaultDataSource,
+				Endpoint:   endpoint,
+				Password:   password,
+				Service:    service,
+				Username:   username,
+			},
+			expected: defaultDataSource,
+		},
+		{
+			name: "Individual config options properly render data source",
+			config: &Config{
+				Endpoint: endpoint,
+				Password: password,
+				Service:  service,
+				Username: username,
+			},
+			expected: nonDefaultDataSource,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			dataSource := getDataSource(*tc.config)
+			require.Equal(t, dataSource, tc.expected)
+			_, err := url.PathUnescape(dataSource)
+			require.NoError(t, err)
+		})
+	}
 }

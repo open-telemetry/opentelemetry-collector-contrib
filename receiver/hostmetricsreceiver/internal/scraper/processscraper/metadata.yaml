@@ -1,5 +1,7 @@
 type: hostmetricsreceiver/process
 
+parent: hostmetrics
+
 sem_conv_version: 1.9.0
 
 resource_attributes:
@@ -159,6 +161,16 @@ metrics:
     enabled: false
     description: Number of file descriptors in use by the process.
     extended_documentation: This metric is only available on Linux.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation: cumulative
+      monotonic: false
+
+  process.handles:
+    enabled: false
+    description: Number of handles held by the process.
+    extended_documentation: This metric is only available on Windows.
     unit: '{count}'
     sum:
       value_type: int

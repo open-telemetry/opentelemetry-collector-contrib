@@ -1,7 +1,9 @@
-type: azureeventhubreceiver
+type: azureeventhub
 
 status:
   class: receiver
   stability:
     alpha: [metrics, logs]
-  distributions: [contrib]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [atoulme, djaglowski]

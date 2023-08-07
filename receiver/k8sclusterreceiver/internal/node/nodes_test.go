@@ -1,89 +1,56 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package node
 
 import (
+	"path/filepath"
 	"testing"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
-
-	actualResourceMetrics := GetMetrics(n, []string{"Ready", "MemoryPressure"}, []string{"cpu", "memory", "ephemeral-storage", "storage"}, zap.NewNop())
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 5, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.node.uid":  "test-node-1-uid",
-			"k8s.node.name": "test-node-1",
+	m := GetMetrics(receivertest.NewNopCreateSettings(), n,
+		[]string{
+			"Ready",
+			"MemoryPressure",
+			"DiskPressure",
+			"NetworkUnavailable",
+			"PIDPressure",
+			"OutOfDisk",
+		},
+		[]string{
+			"cpu",
+			"memory",
+			"ephemeral-storage",
+			"storage",
+			"pods",
+			"hugepages-1Gi",
+			"hugepages-2Mi",
+			"not-present",
 		},
 	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.node.condition_ready",
-		metricspb.MetricDescriptor_GAUGE_INT64, 1)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[1], "k8s.node.condition_memory_pressure",
-		metricspb.MetricDescriptor_GAUGE_INT64, 0)
-
-	testutils.AssertMetricsDouble(t, actualResourceMetrics[0].Metrics[2], "k8s.node.allocatable_cpu",
-		metricspb.MetricDescriptor_GAUGE_DOUBLE, 0.123)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[3], "k8s.node.allocatable_memory",
-		metricspb.MetricDescriptor_GAUGE_INT64, 456)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[4], "k8s.node.allocatable_ephemeral_storage",
-		metricspb.MetricDescriptor_GAUGE_INT64, 1234)
-}
-
-func TestGetNodeConditionMetric(t *testing.T) {
-	tests := []struct {
-		name                   string
-		nodeConditionTypeValue string
-		want                   string
-	}{
-		{"Metric for Node condition Ready",
-			"Ready",
-			"k8s.node.condition_ready",
-		},
-		{"Metric for Node condition MemoryPressure",
-			"MemoryPressure",
-			"k8s.node.condition_memory_pressure",
-		},
-		{"Metric for Node condition DiskPressure",
-			"DiskPressure",
-			"k8s.node.condition_disk_pressure",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := getNodeConditionMetric(tt.nodeConditionTypeValue); got != tt.want {
-				t.Errorf("getNodeConditionMetric() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
 }
 
 func TestNodeConditionValue(t *testing.T) {
@@ -150,4 +117,64 @@ func TestNodeConditionValue(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestTransform(t *testing.T) {
+	originalNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-node",
+			UID:  "my-node-uid",
+			Labels: map[string]string{
+				"node-role": "worker",
+			},
+		},
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+			Capacity: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("8"),
+				corev1.ResourceMemory: resource.MustParse("16Gi"),
+			},
+			Allocatable: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4"),
+				corev1.ResourceMemory: resource.MustParse("8Gi"),
+			},
+			Addresses: []corev1.NodeAddress{
+				{
+					Type:    corev1.NodeHostName,
+					Address: "my-node-hostname",
+				},
+				{
+					Type:    corev1.NodeInternalIP,
+					Address: "192.168.1.100",
+				},
+			},
+		},
+	}
+	wantNode := &corev1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-node",
+			UID:  "my-node-uid",
+			Labels: map[string]string{
+				"node-role": "worker",
+			},
+		},
+		Status: corev1.NodeStatus{
+			Conditions: []corev1.NodeCondition{
+				{
+					Type:   corev1.NodeReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
+			Allocatable: corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("4"),
+				corev1.ResourceMemory: resource.MustParse("8Gi"),
+			},
+		},
+	}
+	assert.Equal(t, wantNode, Transform(originalNode))
 }

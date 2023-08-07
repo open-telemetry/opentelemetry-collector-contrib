@@ -24,7 +24,7 @@ const (
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name       string
+		name      string
 		configSet testConfigCollection
 	}{
 		{
@@ -80,18 +80,13 @@ func TestMetricsBuilder(t *testing.T) {
 				allMetricsCount++
 				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
 				{{- range $metric.Attributes -}}
-					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}(1){{ else }}{{ (attributeInfo .).Type.TestValue }}{{ end }}
+					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 				{{- end }})
 			{{- end }}
 
-			metrics := mb.Emit(
-			{{- $sep := "" }}
-			{{- range $name, $info := .ResourceAttributes -}}
-				{{- $sep }}With{{ $name.Render }}
-				{{- if $info.Enum }}{{ index $info.Enum 0 | publicVar }}{{ else }}({{- $info.Type.TestValue }}){{ end }}
-				{{- $sep = ", " }}
-			{{- end -}}
-			)
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -100,29 +95,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			{{- $assignSign := ":=" }}
-			attrCount := 0
-			enabledAttrCount := 0
-			{{- range $name, $info := .ResourceAttributes }}
-				attrVal, ok {{ $assignSign }} rm.Resource().Attributes().Get("{{ $name }}")
-				attrCount++
-				assert.Equal(t, mb.resourceAttributesConfig.{{ $name.Render }}.Enabled, ok)
-				if mb.resourceAttributesConfig.{{ $name.Render }}.Enabled {
-					enabledAttrCount++
-					{{- if $info.Enum }}
-						assert.Equal(t, "{{ index $info.Enum 0 }}", attrVal.Str())
-					{{- else if or (eq $info.Type.String "Slice") (eq $info.Type.String "Map") }}
-						assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}().AsRaw())
-					{{- else }}
-						assert.EqualValues(t, {{ $info.Type.TestValue }}, attrVal.{{ $info.Type }}())
-					{{- end }}
-				}
-
-				{{- $assignSign = "=" }}
-			{{- end }}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, {{ len .ResourceAttributes }})
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -155,15 +128,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
 
 					{{- range $i, $attr := $metric.Attributes }}
-					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ attributeName $attr }}")
+					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")
 					assert.True(t, ok)
-					{{- if (attributeInfo $attr).Enum }}
-					assert.Equal(t, "{{ index (attributeInfo $attr).Enum 0 }}", attrVal.Str())
-					{{- else if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}
-					assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}().AsRaw())
-					{{- else }}
-					assert.EqualValues(t, {{ (attributeInfo $attr).Type.TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}())
-					{{- end }}
+					assert.EqualValues(t, {{ (attributeInfo $attr).TestValue }}, attrVal.{{ (attributeInfo $attr).Type }}()
+					{{- if or (eq (attributeInfo $attr).Type.String "Slice") (eq (attributeInfo $attr).Type.String "Map")}}.AsRaw(){{ end }})
 					{{- end }}
 				{{- end }}
 				}

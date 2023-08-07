@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for apachereceiver metrics.
+// MetricsConfig provides config for apache metrics.
 type MetricsConfig struct {
 	ApacheCPULoad            MetricConfig `mapstructure:"apache.cpu.load"`
 	ApacheCPUTime            MetricConfig `mapstructure:"apache.cpu.time"`
@@ -85,7 +85,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for apachereceiver resource attributes.
+// ResourceAttributesConfig provides config for apache resource attributes.
 type ResourceAttributesConfig struct {
 	ApacheServerName ResourceAttributeConfig `mapstructure:"apache.server.name"`
 	ApacheServerPort ResourceAttributeConfig `mapstructure:"apache.server.port"`
@@ -102,7 +102,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for apachereceiver metrics builder.
+// MetricsBuilderConfig is a configuration for apache metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

@@ -1,0 +1,9 @@
+type: windowsperfcounters
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [dashpole]

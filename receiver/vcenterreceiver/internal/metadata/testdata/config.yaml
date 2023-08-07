@@ -71,6 +71,8 @@ all_set:
       enabled: true
     vcenter.vm.memory.usage:
       enabled: true
+    vcenter.vm.memory.utilization:
+      enabled: true
     vcenter.vm.network.packet.count:
       enabled: true
     vcenter.vm.network.throughput:
@@ -161,6 +163,8 @@ none_set:
     vcenter.vm.memory.swapped_ssd:
       enabled: false
     vcenter.vm.memory.usage:
+      enabled: false
+    vcenter.vm.memory.utilization:
       enabled: false
     vcenter.vm.network.packet.count:
       enabled: false

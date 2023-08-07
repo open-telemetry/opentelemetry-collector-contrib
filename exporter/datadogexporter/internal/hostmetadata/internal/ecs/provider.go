@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 // Package ecs contains the ECS Fargate hostname provider
 package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/ecs"
@@ -38,7 +27,7 @@ type Provider struct {
 }
 
 // OnECSFargate determines if the application is running on ECS Fargate.
-func (p *Provider) OnECSFargate(ctx context.Context) (bool, error) {
+func (p *Provider) OnECSFargate(_ context.Context) (bool, error) {
 	if p.missingEndpoint {
 		// No ECS metadata endpoint, therefore not on ECS Fargate
 		return false, nil

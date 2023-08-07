@@ -1929,6 +1929,55 @@ func newMetricVcenterVMMemoryUsage(cfg MetricConfig) metricVcenterVMMemoryUsage 
 	return m
 }
 
+type metricVcenterVMMemoryUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.memory.utilization metric with initial data.
+func (m *metricVcenterVMMemoryUtilization) init() {
+	m.data.SetName("vcenter.vm.memory.utilization")
+	m.data.SetDescription("The memory utilization of the VM.")
+	m.data.SetUnit("%")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricVcenterVMMemoryUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMMemoryUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMMemoryUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMMemoryUtilization(cfg MetricConfig) metricVcenterVMMemoryUtilization {
+	m := metricVcenterVMMemoryUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMNetworkPacketCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2091,10 +2140,8 @@ func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsag
 type MetricsBuilder struct {
 	startTime                             pcommon.Timestamp   // start time that will be applied to all recorded data points.
 	metricsCapacity                       int                 // maximum observed number of metrics per resource.
-	resourceCapacity                      int                 // maximum observed number of resource attributes.
 	metricsBuffer                         pmetric.Metrics     // accumulates metrics data before emitting.
 	buildInfo                             component.BuildInfo // contains version information
-	resourceAttributesConfig              ResourceAttributesConfig
 	metricVcenterClusterCPUEffective      metricVcenterClusterCPUEffective
 	metricVcenterClusterCPULimit          metricVcenterClusterCPULimit
 	metricVcenterClusterHostCount         metricVcenterClusterHostCount
@@ -2130,6 +2177,7 @@ type MetricsBuilder struct {
 	metricVcenterVMMemorySwapped          metricVcenterVMMemorySwapped
 	metricVcenterVMMemorySwappedSsd       metricVcenterVMMemorySwappedSsd
 	metricVcenterVMMemoryUsage            metricVcenterVMMemoryUsage
+	metricVcenterVMMemoryUtilization      metricVcenterVMMemoryUtilization
 	metricVcenterVMNetworkPacketCount     metricVcenterVMNetworkPacketCount
 	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage           metricVcenterVMNetworkUsage
@@ -2150,7 +2198,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                         pmetric.NewMetrics(),
 		buildInfo:                             settings.BuildInfo,
-		resourceAttributesConfig:              mbc.ResourceAttributes,
 		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
 		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
 		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
@@ -2186,6 +2233,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
 		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
 		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
+		metricVcenterVMMemoryUtilization:      newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
 		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
 		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
@@ -2201,72 +2249,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithVcenterClusterName sets provided value as "vcenter.cluster.name" attribute for current resource.
-func WithVcenterClusterName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterClusterName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.cluster.name", val)
-		}
-	}
-}
-
-// WithVcenterDatastoreName sets provided value as "vcenter.datastore.name" attribute for current resource.
-func WithVcenterDatastoreName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterDatastoreName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.datastore.name", val)
-		}
-	}
-}
-
-// WithVcenterHostName sets provided value as "vcenter.host.name" attribute for current resource.
-func WithVcenterHostName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterHostName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.host.name", val)
-		}
-	}
-}
-
-// WithVcenterResourcePoolName sets provided value as "vcenter.resource_pool.name" attribute for current resource.
-func WithVcenterResourcePoolName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterResourcePoolName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.resource_pool.name", val)
-		}
-	}
-}
-
-// WithVcenterVMID sets provided value as "vcenter.vm.id" attribute for current resource.
-func WithVcenterVMID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterVMID.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.vm.id", val)
-		}
-	}
-}
-
-// WithVcenterVMName sets provided value as "vcenter.vm.name" attribute for current resource.
-func WithVcenterVMName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.VcenterVMName.Enabled {
-			rm.Resource().Attributes().PutStr("vcenter.vm.name", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -2290,7 +2289,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/vcenterreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -2330,12 +2328,13 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMMemorySwapped.emit(ils.Metrics())
 	mb.metricVcenterVMMemorySwappedSsd.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
+	mb.metricVcenterVMMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -2526,6 +2525,11 @@ func (mb *MetricsBuilder) RecordVcenterVMMemorySwappedSsdDataPoint(ts pcommon.Ti
 // RecordVcenterVMMemoryUsageDataPoint adds a data point to vcenter.vm.memory.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterVMMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterVMMemoryUtilizationDataPoint adds a data point to vcenter.vm.memory.utilization metric.
+func (mb *MetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricVcenterVMMemoryUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.

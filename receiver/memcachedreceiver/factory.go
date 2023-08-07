@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package memcachedreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/memcachedreceiver"
 
@@ -28,7 +17,6 @@ import (
 )
 
 const (
-	typeStr                   = "memcached"
 	defaultEndpoint           = "localhost:11211"
 	defaultTimeout            = 10 * time.Second
 	defaultCollectionInterval = 10 * time.Second
@@ -37,17 +25,18 @@ const (
 // NewFactory creates a factory for memcached receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
-		Timeout: defaultTimeout,
+		ScraperControllerSettings: cfg,
+		Timeout:                   defaultTimeout,
 		NetAddr: confignet.NetAddr{
 			Endpoint: defaultEndpoint,
 		},
@@ -65,7 +54,7 @@ func createMetricsReceiver(
 
 	ms := newMemcachedScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(typeStr, ms.scrape)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ms.scrape)
 	if err != nil {
 		return nil, err
 	}

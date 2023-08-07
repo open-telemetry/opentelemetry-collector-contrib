@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaAlertCountDataPoint(ts, "1", "alert_rating-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -64,31 +64,31 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryType(1), AttributeColumnMemorySubtype(1))
+			mb.RecordSaphanaColumnMemoryUsedDataPoint(ts, "1", AttributeColumnMemoryTypeMain, AttributeColumnMemorySubtypeData)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaComponentMemoryUsedDataPoint(ts, "1", "component-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatus(1))
+			mb.RecordSaphanaConnectionCountDataPoint(ts, "1", AttributeConnectionStatusRunning)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUType(1))
+			mb.RecordSaphanaCPUUsedDataPoint(ts, "1", AttributeCPUTypeUser)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "attr-val", "attr-val", AttributeDiskStateUsedFree(1))
+			mb.RecordSaphanaDiskSizeCurrentDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeDiskStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFree(1))
+			mb.RecordSaphanaHostMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapState(1))
+			mb.RecordSaphanaHostSwapCurrentDataPoint(ts, "1", AttributeHostSwapStateUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -96,7 +96,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFree(1))
+			mb.RecordSaphanaInstanceMemoryCurrentDataPoint(ts, "1", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,15 +108,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "attr-val", "attr-val")
+			mb.RecordSaphanaLicenseExpirationTimeDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "attr-val", "attr-val")
+			mb.RecordSaphanaLicenseLimitDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaLicensePeakDataPoint(ts, "1", "attr-val", "attr-val")
+			mb.RecordSaphanaLicensePeakDataPoint(ts, "1", "system-val", "product-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -124,91 +124,91 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestState(1))
+			mb.RecordSaphanaNetworkRequestCountDataPoint(ts, "1", AttributeActivePendingRequestStateActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestType(1))
+			mb.RecordSaphanaNetworkRequestFinishedCountDataPoint(ts, "1", AttributeInternalExternalRequestTypeInternal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSaphanaReplicationAverageTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSaphanaReplicationBacklogSizeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "attr-val", "attr-val", "attr-val", "attr-val")
+			mb.RecordSaphanaReplicationBacklogTimeDataPoint(ts, "1", "primary_host-val", "secondary_host-val", "port-val", "replication_mode-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryType(1))
+			mb.RecordSaphanaRowStoreMemoryUsedDataPoint(ts, "1", AttributeRowMemoryTypeFixed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "attr-val", AttributeSchemaMemoryType(1))
+			mb.RecordSaphanaSchemaMemoryUsedCurrentDataPoint(ts, "1", "schema-val", AttributeSchemaMemoryTypeMain)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaSchemaMemoryUsedMaxDataPoint(ts, "1", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "attr-val", AttributeSchemaOperationType(1))
+			mb.RecordSaphanaSchemaOperationCountDataPoint(ts, "1", "schema-val", AttributeSchemaOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaSchemaRecordCompressedCountDataPoint(ts, "1", "schema-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "attr-val", AttributeSchemaRecordType(1))
+			mb.RecordSaphanaSchemaRecordCountDataPoint(ts, "1", "schema-val", AttributeSchemaRecordTypeMain)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceCodeSizeDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatus(1))
+			mb.RecordSaphanaServiceCountDataPoint(ts, "1", AttributeServiceStatusActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceMemoryCompactorsAllocatedDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceMemoryCompactorsFreeableDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceMemoryEffectiveLimitDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "attr-val", AttributeMemoryStateUsedFree(1))
+			mb.RecordSaphanaServiceMemoryHeapCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceMemoryLimitDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "attr-val", AttributeMemoryStateUsedFree(1))
+			mb.RecordSaphanaServiceMemorySharedCurrentDataPoint(ts, "1", "service-val", AttributeMemoryStateUsedFreeUsed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "attr-val", AttributeServiceMemoryUsedType(1))
+			mb.RecordSaphanaServiceMemoryUsedDataPoint(ts, "1", "service-val", AttributeServiceMemoryUsedTypeLogical)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "attr-val")
+			mb.RecordSaphanaServiceStackSizeDataPoint(ts, "1", "service-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatus(1))
+			mb.RecordSaphanaServiceThreadCountDataPoint(ts, "1", AttributeThreadStatusActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -216,25 +216,27 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionType(1))
+			mb.RecordSaphanaTransactionCountDataPoint(ts, "1", AttributeTransactionTypeUpdate)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaUptimeDataPoint(ts, "1", "attr-val", "attr-val")
+			mb.RecordSaphanaUptimeDataPoint(ts, "1", "system-val", "database-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "attr-val", "attr-val", AttributeVolumeOperationType(1))
+			mb.RecordSaphanaVolumeOperationCountDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "attr-val", "attr-val", AttributeVolumeOperationType(1))
+			mb.RecordSaphanaVolumeOperationSizeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "attr-val", "attr-val", AttributeVolumeOperationType(1))
+			mb.RecordSaphanaVolumeOperationTimeDataPoint(ts, "1", "path-val", "disk_usage_type-val", AttributeVolumeOperationTypeRead)
 
-			metrics := mb.Emit(WithDbSystem("attr-val"), WithSaphanaHost("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -243,25 +245,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("db.system")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.DbSystem.Enabled, ok)
-			if mb.resourceAttributesConfig.DbSystem.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("saphana.host")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SaphanaHost.Enabled, ok)
-			if mb.resourceAttributesConfig.SaphanaHost.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 2)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -289,7 +273,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("rating")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "alert_rating-val", attrVal.Str())
 				case "saphana.backup.latest":
 					assert.False(t, validatedMetrics["saphana.backup.latest"], "Found a duplicate in the metrics slice: saphana.backup.latest")
 					validatedMetrics["saphana.backup.latest"] = true
@@ -318,10 +302,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
+					assert.EqualValues(t, "main", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("subtype")
 					assert.True(t, ok)
-					assert.Equal(t, "data", attrVal.Str())
+					assert.EqualValues(t, "data", attrVal.Str())
 				case "saphana.component.memory.used":
 					assert.False(t, validatedMetrics["saphana.component.memory.used"], "Found a duplicate in the metrics slice: saphana.component.memory.used")
 					validatedMetrics["saphana.component.memory.used"] = true
@@ -338,7 +322,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("component")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "component-val", attrVal.Str())
 				case "saphana.connection.count":
 					assert.False(t, validatedMetrics["saphana.connection.count"], "Found a duplicate in the metrics slice: saphana.connection.count")
 					validatedMetrics["saphana.connection.count"] = true
@@ -355,7 +339,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "running", attrVal.Str())
+					assert.EqualValues(t, "running", attrVal.Str())
 				case "saphana.cpu.used":
 					assert.False(t, validatedMetrics["saphana.cpu.used"], "Found a duplicate in the metrics slice: saphana.cpu.used")
 					validatedMetrics["saphana.cpu.used"] = true
@@ -372,7 +356,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "user", attrVal.Str())
+					assert.EqualValues(t, "user", attrVal.Str())
 				case "saphana.disk.size.current":
 					assert.False(t, validatedMetrics["saphana.disk.size.current"], "Found a duplicate in the metrics slice: saphana.disk.size.current")
 					validatedMetrics["saphana.disk.size.current"] = true
@@ -389,13 +373,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("path")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "path-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("usage_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "disk_usage_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.host.memory.current":
 					assert.False(t, validatedMetrics["saphana.host.memory.current"], "Found a duplicate in the metrics slice: saphana.host.memory.current")
 					validatedMetrics["saphana.host.memory.current"] = true
@@ -412,7 +396,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.host.swap.current":
 					assert.False(t, validatedMetrics["saphana.host.swap.current"], "Found a duplicate in the metrics slice: saphana.host.swap.current")
 					validatedMetrics["saphana.host.swap.current"] = true
@@ -429,7 +413,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.instance.code_size":
 					assert.False(t, validatedMetrics["saphana.instance.code_size"], "Found a duplicate in the metrics slice: saphana.instance.code_size")
 					validatedMetrics["saphana.instance.code_size"] = true
@@ -460,7 +444,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.instance.memory.shared.allocated":
 					assert.False(t, validatedMetrics["saphana.instance.memory.shared.allocated"], "Found a duplicate in the metrics slice: saphana.instance.memory.shared.allocated")
 					validatedMetrics["saphana.instance.memory.shared.allocated"] = true
@@ -503,10 +487,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("system")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "system-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("product")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "product-val", attrVal.Str())
 				case "saphana.license.limit":
 					assert.False(t, validatedMetrics["saphana.license.limit"], "Found a duplicate in the metrics slice: saphana.license.limit")
 					validatedMetrics["saphana.license.limit"] = true
@@ -523,10 +507,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("system")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "system-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("product")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "product-val", attrVal.Str())
 				case "saphana.license.peak":
 					assert.False(t, validatedMetrics["saphana.license.peak"], "Found a duplicate in the metrics slice: saphana.license.peak")
 					validatedMetrics["saphana.license.peak"] = true
@@ -543,10 +527,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("system")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "system-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("product")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "product-val", attrVal.Str())
 				case "saphana.network.request.average_time":
 					assert.False(t, validatedMetrics["saphana.network.request.average_time"], "Found a duplicate in the metrics slice: saphana.network.request.average_time")
 					validatedMetrics["saphana.network.request.average_time"] = true
@@ -575,7 +559,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "saphana.network.request.finished.count":
 					assert.False(t, validatedMetrics["saphana.network.request.finished.count"], "Found a duplicate in the metrics slice: saphana.network.request.finished.count")
 					validatedMetrics["saphana.network.request.finished.count"] = true
@@ -592,7 +576,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "internal", attrVal.Str())
+					assert.EqualValues(t, "internal", attrVal.Str())
 				case "saphana.replication.average_time":
 					assert.False(t, validatedMetrics["saphana.replication.average_time"], "Found a duplicate in the metrics slice: saphana.replication.average_time")
 					validatedMetrics["saphana.replication.average_time"] = true
@@ -607,16 +591,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("primary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "primary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("secondary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "secondary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("port")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "port-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "replication_mode-val", attrVal.Str())
 				case "saphana.replication.backlog.size":
 					assert.False(t, validatedMetrics["saphana.replication.backlog.size"], "Found a duplicate in the metrics slice: saphana.replication.backlog.size")
 					validatedMetrics["saphana.replication.backlog.size"] = true
@@ -633,16 +617,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("primary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "primary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("secondary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "secondary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("port")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "port-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "replication_mode-val", attrVal.Str())
 				case "saphana.replication.backlog.time":
 					assert.False(t, validatedMetrics["saphana.replication.backlog.time"], "Found a duplicate in the metrics slice: saphana.replication.backlog.time")
 					validatedMetrics["saphana.replication.backlog.time"] = true
@@ -659,16 +643,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("primary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "primary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("secondary")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "secondary_host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("port")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "port-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "replication_mode-val", attrVal.Str())
 				case "saphana.row_store.memory.used":
 					assert.False(t, validatedMetrics["saphana.row_store.memory.used"], "Found a duplicate in the metrics slice: saphana.row_store.memory.used")
 					validatedMetrics["saphana.row_store.memory.used"] = true
@@ -685,7 +669,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "fixed", attrVal.Str())
+					assert.EqualValues(t, "fixed", attrVal.Str())
 				case "saphana.schema.memory.used.current":
 					assert.False(t, validatedMetrics["saphana.schema.memory.used.current"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.current")
 					validatedMetrics["saphana.schema.memory.used.current"] = true
@@ -702,10 +686,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
+					assert.EqualValues(t, "main", attrVal.Str())
 				case "saphana.schema.memory.used.max":
 					assert.False(t, validatedMetrics["saphana.schema.memory.used.max"], "Found a duplicate in the metrics slice: saphana.schema.memory.used.max")
 					validatedMetrics["saphana.schema.memory.used.max"] = true
@@ -722,7 +706,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "saphana.schema.operation.count":
 					assert.False(t, validatedMetrics["saphana.schema.operation.count"], "Found a duplicate in the metrics slice: saphana.schema.operation.count")
 					validatedMetrics["saphana.schema.operation.count"] = true
@@ -739,10 +723,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "saphana.schema.record.compressed.count":
 					assert.False(t, validatedMetrics["saphana.schema.record.compressed.count"], "Found a duplicate in the metrics slice: saphana.schema.record.compressed.count")
 					validatedMetrics["saphana.schema.record.compressed.count"] = true
@@ -759,7 +743,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "saphana.schema.record.count":
 					assert.False(t, validatedMetrics["saphana.schema.record.count"], "Found a duplicate in the metrics slice: saphana.schema.record.count")
 					validatedMetrics["saphana.schema.record.count"] = true
@@ -776,10 +760,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("schema")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "schema-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "main", attrVal.Str())
+					assert.EqualValues(t, "main", attrVal.Str())
 				case "saphana.service.code_size":
 					assert.False(t, validatedMetrics["saphana.service.code_size"], "Found a duplicate in the metrics slice: saphana.service.code_size")
 					validatedMetrics["saphana.service.code_size"] = true
@@ -796,7 +780,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.count":
 					assert.False(t, validatedMetrics["saphana.service.count"], "Found a duplicate in the metrics slice: saphana.service.count")
 					validatedMetrics["saphana.service.count"] = true
@@ -813,7 +797,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "saphana.service.memory.compactors.allocated":
 					assert.False(t, validatedMetrics["saphana.service.memory.compactors.allocated"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.allocated")
 					validatedMetrics["saphana.service.memory.compactors.allocated"] = true
@@ -830,7 +814,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.memory.compactors.freeable":
 					assert.False(t, validatedMetrics["saphana.service.memory.compactors.freeable"], "Found a duplicate in the metrics slice: saphana.service.memory.compactors.freeable")
 					validatedMetrics["saphana.service.memory.compactors.freeable"] = true
@@ -847,7 +831,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.memory.effective_limit":
 					assert.False(t, validatedMetrics["saphana.service.memory.effective_limit"], "Found a duplicate in the metrics slice: saphana.service.memory.effective_limit")
 					validatedMetrics["saphana.service.memory.effective_limit"] = true
@@ -864,7 +848,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.memory.heap.current":
 					assert.False(t, validatedMetrics["saphana.service.memory.heap.current"], "Found a duplicate in the metrics slice: saphana.service.memory.heap.current")
 					validatedMetrics["saphana.service.memory.heap.current"] = true
@@ -881,10 +865,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.service.memory.limit":
 					assert.False(t, validatedMetrics["saphana.service.memory.limit"], "Found a duplicate in the metrics slice: saphana.service.memory.limit")
 					validatedMetrics["saphana.service.memory.limit"] = true
@@ -901,7 +885,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.memory.shared.current":
 					assert.False(t, validatedMetrics["saphana.service.memory.shared.current"], "Found a duplicate in the metrics slice: saphana.service.memory.shared.current")
 					validatedMetrics["saphana.service.memory.shared.current"] = true
@@ -918,10 +902,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "used", attrVal.Str())
+					assert.EqualValues(t, "used", attrVal.Str())
 				case "saphana.service.memory.used":
 					assert.False(t, validatedMetrics["saphana.service.memory.used"], "Found a duplicate in the metrics slice: saphana.service.memory.used")
 					validatedMetrics["saphana.service.memory.used"] = true
@@ -938,10 +922,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "logical", attrVal.Str())
+					assert.EqualValues(t, "logical", attrVal.Str())
 				case "saphana.service.stack_size":
 					assert.False(t, validatedMetrics["saphana.service.stack_size"], "Found a duplicate in the metrics slice: saphana.service.stack_size")
 					validatedMetrics["saphana.service.stack_size"] = true
@@ -958,7 +942,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("service")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "service-val", attrVal.Str())
 				case "saphana.service.thread.count":
 					assert.False(t, validatedMetrics["saphana.service.thread.count"], "Found a duplicate in the metrics slice: saphana.service.thread.count")
 					validatedMetrics["saphana.service.thread.count"] = true
@@ -975,7 +959,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "saphana.transaction.blocked":
 					assert.False(t, validatedMetrics["saphana.transaction.blocked"], "Found a duplicate in the metrics slice: saphana.transaction.blocked")
 					validatedMetrics["saphana.transaction.blocked"] = true
@@ -1006,7 +990,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "update", attrVal.Str())
+					assert.EqualValues(t, "update", attrVal.Str())
 				case "saphana.uptime":
 					assert.False(t, validatedMetrics["saphana.uptime"], "Found a duplicate in the metrics slice: saphana.uptime")
 					validatedMetrics["saphana.uptime"] = true
@@ -1023,10 +1007,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("system")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "system-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("database")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "saphana.volume.operation.count":
 					assert.False(t, validatedMetrics["saphana.volume.operation.count"], "Found a duplicate in the metrics slice: saphana.volume.operation.count")
 					validatedMetrics["saphana.volume.operation.count"] = true
@@ -1043,13 +1027,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("path")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "path-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("usage_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "disk_usage_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "saphana.volume.operation.size":
 					assert.False(t, validatedMetrics["saphana.volume.operation.size"], "Found a duplicate in the metrics slice: saphana.volume.operation.size")
 					validatedMetrics["saphana.volume.operation.size"] = true
@@ -1066,13 +1050,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("path")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "path-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("usage_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "disk_usage_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "saphana.volume.operation.time":
 					assert.False(t, validatedMetrics["saphana.volume.operation.time"], "Found a duplicate in the metrics slice: saphana.volume.operation.time")
 					validatedMetrics["saphana.volume.operation.time"] = true
@@ -1089,13 +1073,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("path")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "path-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("usage_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "disk_usage_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				}
 			}
 		})

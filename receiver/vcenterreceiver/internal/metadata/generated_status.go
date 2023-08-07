@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "vcenterreceiver"
+	Type             = "vcenter"
 	MetricsStability = component.StabilityLevelAlpha
 )

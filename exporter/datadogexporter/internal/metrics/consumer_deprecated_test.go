@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics
 
@@ -53,7 +42,8 @@ func TestZorkianRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	_, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
@@ -97,7 +87,8 @@ func TestZorkianTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	_, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
 	var runningTags []string

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package googlecloudspannerreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 
@@ -31,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 )
 
-//go:embed "internal/metadataconfig/metadata.yaml"
+//go:embed "internal/metadataconfig/metrics.yaml"
 var metadataYaml []byte
 
 var _ receiver.Metrics = (*googleCloudSpannerReceiver)(nil)
@@ -115,6 +104,7 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 		BackfillEnabled:                   r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
 		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
+		TruncateText:                      r.config.TruncateText,
 	}
 
 	for _, project := range r.config.Projects {

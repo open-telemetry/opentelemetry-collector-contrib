@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 
@@ -25,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
 func TestDetect(t *testing.T) {
@@ -139,6 +129,28 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Cloud Run Job",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "2",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+				"gcp.cloud_run.job.execution":       "my-service-ajg89",
+				"gcp.cloud_run.job.task_index":      "2",
+			},
+		},
+		{
 			desc: "Cloud Functions",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
@@ -241,6 +253,7 @@ func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
 	return &detector{
 		logger:   zap.NewNop(),
 		detector: gcpDetector,
+		rb:       localMetadata.NewResourceBuilder(localMetadata.DefaultResourceAttributesConfig()),
 	}
 }
 
@@ -268,6 +281,8 @@ type fakeGCPDetector struct {
 	gceHostID                 string
 	gceHostName               string
 	gceHostNameErr            error
+	gcpCloudRunJobExecution   string
+	gcpCloudRunJobTaskIndex   string
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -401,4 +416,18 @@ func (f *fakeGCPDetector) GCEHostName() (string, error) {
 		return "", f.err
 	}
 	return f.gceHostName, f.gceHostNameErr
+}
+
+func (f *fakeGCPDetector) CloudRunJobTaskIndex() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobTaskIndex, nil
+}
+
+func (f *fakeGCPDetector) CloudRunJobExecution() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobExecution, nil
 }

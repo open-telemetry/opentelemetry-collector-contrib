@@ -39,7 +39,7 @@ ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS
 
 # find -exec dirname cannot be used to process multiple matching patterns
 FIND_INTEGRATION_TEST_MODS={ find . -type f -name "*integration_test.go" & find . -type f -name "*e2e_test.go" -not -path "./testbed/*"; }
-INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | uniq | xargs $(TO_MOD_DIR) )
+INTEGRATION_MODS := $(shell $(FIND_INTEGRATION_TEST_MODS) | xargs $(TO_MOD_DIR) | uniq)
 
 ifeq ($(GOOS),windows)
 	EXTENSION := .exe
@@ -73,15 +73,13 @@ all-common:
 e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
-.PHONY: unit-tests-with-cover
-unit-tests-with-cover:
-	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-unit-tests-with-cover"
+.PHONY: integration-test
+integration-test:
+	@$(MAKE) for-integration-target TARGET="mod-integration-test"
 
-TARGET="do-integration-tests-with-cover"
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover: $(INTEGRATION_MODS)
+integration-tests-with-cover:
+	@$(MAKE) for-integration-target TARGET="do-integration-tests-with-cover"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -100,6 +98,11 @@ gomoddownload:
 .PHONY: gotest
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
+
+.PHONY: gotest-with-cover
+gotest-with-cover:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
+	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
 
 .PHONY: gofmt
 gofmt:
@@ -206,6 +209,9 @@ for-pkg-target: $(PKG_MODS)
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
 
+.PHONY: for-integration-target
+for-integration-target: $(INTEGRATION_MODS)
+
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -246,6 +252,13 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) install .
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
+
+.PHONY: gengithub
+gengithub:
+	$(GOCMD) run cmd/githubgen/main.go .
+
+.PHONY: update-codeowners
+update-codeowners: gengithub generate
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
@@ -332,8 +345,13 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKDOC)
-	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
+
+# Verify existence of metadata.yaml for components specified as default components in the collector.
+.PHONY: checkmetadata
+checkmetadata: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -385,6 +403,7 @@ clean:
 	@echo "Removing coverage files"
 	find . -type f -name 'coverage.txt' -delete
 	find . -type f -name 'coverage.html' -delete
+	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
 

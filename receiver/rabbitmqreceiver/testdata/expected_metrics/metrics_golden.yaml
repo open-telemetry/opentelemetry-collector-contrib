@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: rabbitmq.queue.name
-          value:
-            stringValue: test2
         - key: rabbitmq.node.name
           value:
             stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: test2
         - key: rabbitmq.vhost.name
           value:
             stringValue: dev
@@ -30,14 +30,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: unacknowledged
+                        stringValue: ready
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: ready
+                        stringValue: unacknowledged
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
             unit: '{messages}'
@@ -46,12 +46,12 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: rabbitmq.queue.name
-          value:
-            stringValue: webq1
         - key: rabbitmq.node.name
           value:
             stringValue: rabbit@66a063ecff83
+        - key: rabbitmq.queue.name
+          value:
+            stringValue: webq1
         - key: rabbitmq.vhost.name
           value:
             stringValue: dev
@@ -85,14 +85,14 @@ resourceMetrics:
                   attributes:
                     - key: state
                       value:
-                        stringValue: unacknowledged
+                        stringValue: ready
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
                 - asInt: "1"
                   attributes:
                     - key: state
                       value:
-                        stringValue: ready
+                        stringValue: unacknowledged
                   startTimeUnixNano: "1656512143898318000"
                   timeUnixNano: "1656512143899572000"
             unit: '{messages}'

@@ -1,12 +1,12 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: zk.version
-          value:
-            stringValue: 3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf
         - key: server.state
           value:
             stringValue: standalone
+        - key: zk.version
+          value:
+            stringValue: 3.4.14-4c25d480e66aadd371de8bd2fd8da255ac140bcf
     scopeMetrics:
       - metrics:
           - description: Number of active clients connected to a ZooKeeper server.
@@ -117,6 +117,14 @@ resourceMetrics:
                   startTimeUnixNano: "1642685966444471000"
                   timeUnixNano: "1642685966444739000"
             unit: '{requests}'
+          - description: Response from zookeeper ruok command
+            name: zookeeper.ruok
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '1'
           - description: Number of watches placed on Z-Nodes on a ZooKeeper server.
             name: zookeeper.watch.count
             sum:

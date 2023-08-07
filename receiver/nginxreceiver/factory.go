@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package nginxreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver"
 
@@ -21,6 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -28,22 +18,31 @@ import (
 )
 
 const (
-	typeStr = "nginx"
+	connectionsAsSum = "receiver.nginx.emitConnectionsCurrentAsSum"
+)
+
+var connectorsAsSumGate = featuregate.GlobalRegistry().MustRegister(
+	connectionsAsSum,
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge."),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326"),
+	featuregate.WithRegisterFromVersion("v0.78.0"),
 )
 
 // NewFactory creates a factory for nginx receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
+		ScraperControllerSettings: cfg,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: "http://localhost:80/status",
 			Timeout:  10 * time.Second,
@@ -61,7 +60,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newNginxScraper(params, cfg)
-	scraper, err := scraperhelper.NewScraper(typeStr, ns.scrape, scraperhelper.WithStart(ns.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape, scraperhelper.WithStart(ns.start))
 	if err != nil {
 		return nil, err
 	}

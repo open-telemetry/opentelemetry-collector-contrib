@@ -64,7 +64,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordCouchdbDatabaseOperationsDataPoint(ts, 1, AttributeOperationWrites)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,17 +76,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethod(1))
+			mb.RecordCouchdbHttpdRequestsDataPoint(ts, 1, AttributeHTTPMethodCOPY)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "attr-val")
+			mb.RecordCouchdbHttpdResponsesDataPoint(ts, 1, "http.status_code-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeView(1))
+			mb.RecordCouchdbHttpdViewsDataPoint(ts, 1, AttributeViewTemporaryViewReads)
 
-			metrics := mb.Emit(WithCouchdbNodeName("attr-val"))
+			res := pcommon.NewResource()
+			res.Attributes().PutStr("k1", "v1")
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -95,18 +97,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("couchdb.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.CouchdbNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.CouchdbNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -160,7 +151,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "writes", attrVal.Str())
+					assert.EqualValues(t, "writes", attrVal.Str())
 				case "couchdb.file_descriptor.open":
 					assert.False(t, validatedMetrics["couchdb.file_descriptor.open"], "Found a duplicate in the metrics slice: couchdb.file_descriptor.open")
 					validatedMetrics["couchdb.file_descriptor.open"] = true
@@ -205,7 +196,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.method")
 					assert.True(t, ok)
-					assert.Equal(t, "COPY", attrVal.Str())
+					assert.EqualValues(t, "COPY", attrVal.Str())
 				case "couchdb.httpd.responses":
 					assert.False(t, validatedMetrics["couchdb.httpd.responses"], "Found a duplicate in the metrics slice: couchdb.httpd.responses")
 					validatedMetrics["couchdb.httpd.responses"] = true
@@ -222,7 +213,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("http.status_code")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "http.status_code-val", attrVal.Str())
 				case "couchdb.httpd.views":
 					assert.False(t, validatedMetrics["couchdb.httpd.views"], "Found a duplicate in the metrics slice: couchdb.httpd.views")
 					validatedMetrics["couchdb.httpd.views"] = true
@@ -239,7 +230,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("view")
 					assert.True(t, ok)
-					assert.Equal(t, "temporary_view_reads", attrVal.Str())
+					assert.EqualValues(t, "temporary_view_reads", attrVal.Str())
 				}
 			}
 		})

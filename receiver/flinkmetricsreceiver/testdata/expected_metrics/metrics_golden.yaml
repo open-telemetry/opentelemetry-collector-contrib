@@ -1,12 +1,152 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: flink.job.name
+          value:
+            stringValue: mock-job-name
         - key: host.name
           value:
             stringValue: mock-host
+    scopeMetrics:
+      - metrics:
+          - description: The number of checkpoints completed or failed.
+            name: flink.job.checkpoint.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: checkpoint
+                      value:
+                        stringValue: completed
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+                - asInt: "0"
+                  attributes:
+                    - key: checkpoint
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+              isMonotonic: true
+            unit: '{checkpoints}'
+          - description: The number of checkpoints in progress.
+            name: flink.job.checkpoint.in_progress
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            unit: '{checkpoints}'
+          - description: The total size of the last checkpoint.
+            name: flink.job.last_checkpoint.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            unit: By
+          - description: The end to end duration of the last checkpoint.
+            gauge:
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            name: flink.job.last_checkpoint.time
+            unit: ms
+          - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
+            name: flink.job.restart.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+              isMonotonic: true
+            unit: '{restarts}'
+        scope:
+          name: otelcol/flinkmetricsreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: flink.job.name
+          value:
+            stringValue: mock-job-name2
+        - key: host.name
+          value:
+            stringValue: mock-host2
+    scopeMetrics:
+      - metrics:
+          - description: The number of checkpoints completed or failed.
+            name: flink.job.checkpoint.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: checkpoint
+                      value:
+                        stringValue: completed
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+                - asInt: "0"
+                  attributes:
+                    - key: checkpoint
+                      value:
+                        stringValue: failed
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+              isMonotonic: true
+            unit: '{checkpoints}'
+          - description: The number of checkpoints in progress.
+            name: flink.job.checkpoint.in_progress
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            unit: '{checkpoints}'
+          - description: The total size of the last checkpoint.
+            name: flink.job.last_checkpoint.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            unit: By
+          - description: The end to end duration of the last checkpoint.
+            gauge:
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+            name: flink.job.last_checkpoint.time
+            unit: ms
+          - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
+            name: flink.job.restart.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+              isMonotonic: true
+            unit: '{restarts}'
+        scope:
+          name: otelcol/flinkmetricsreceiver
+          version: latest
+  - resource:
+      attributes:
         - key: flink.resource.type
           value:
             stringValue: jobmanager
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -228,15 +368,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id
         - key: flink.resource.type
           value:
             stringValue: taskmanager
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -272,18 +412,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: G1_Young_Generation
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
                 - asInt: "19"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+                - asInt: "6"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: G1_Young_Generation
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
               isMonotonic: true
@@ -458,15 +598,15 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
+        - key: flink.resource.type
           value:
-            stringValue: mock-host2
+            stringValue: taskmanager
         - key: flink.taskmanager.id
           value:
             stringValue: mock-taskmanager-id2
-        - key: flink.resource.type
+        - key: host.name
           value:
-            stringValue: taskmanager
+            stringValue: mock-host2
     scopeMetrics:
       - metrics:
           - description: The total number of classes loaded since the start of the JVM.
@@ -502,18 +642,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "6"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: G1_Young_Generation
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
                 - asInt: "19"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+                - asInt: "6"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: G1_Young_Generation
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
               isMonotonic: true
@@ -688,161 +828,21 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
         - key: flink.job.name
           value:
             stringValue: mock-job-name
-    scopeMetrics:
-      - metrics:
-          - description: The number of checkpoints completed or failed.
-            name: flink.job.checkpoint.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: checkpoint
-                      value:
-                        stringValue: failed
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-                - asInt: "3"
-                  attributes:
-                    - key: checkpoint
-                      value:
-                        stringValue: completed
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-              isMonotonic: true
-            unit: '{checkpoints}'
-          - description: The number of checkpoints in progress.
-            name: flink.job.checkpoint.in_progress
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            unit: '{checkpoints}'
-          - description: The total size of the last checkpoint.
-            name: flink.job.last_checkpoint.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            unit: By
-          - description: The end to end duration of the last checkpoint.
-            gauge:
-              dataPoints:
-                - asInt: "4"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            name: flink.job.last_checkpoint.time
-            unit: ms
-          - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
-            name: flink.job.restart.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "5"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-              isMonotonic: true
-            unit: '{restarts}'
-        scope:
-          name: otelcol/flinkmetricsreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host2
-        - key: flink.job.name
-          value:
-            stringValue: mock-job-name2
-    scopeMetrics:
-      - metrics:
-          - description: The number of checkpoints completed or failed.
-            name: flink.job.checkpoint.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: checkpoint
-                      value:
-                        stringValue: failed
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-                - asInt: "3"
-                  attributes:
-                    - key: checkpoint
-                      value:
-                        stringValue: completed
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-              isMonotonic: true
-            unit: '{checkpoints}'
-          - description: The number of checkpoints in progress.
-            name: flink.job.checkpoint.in_progress
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "2"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            unit: '{checkpoints}'
-          - description: The total size of the last checkpoint.
-            name: flink.job.last_checkpoint.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "1"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            unit: By
-          - description: The end to end duration of the last checkpoint.
-            gauge:
-              dataPoints:
-                - asInt: "4"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-            name: flink.job.last_checkpoint.time
-            unit: ms
-          - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
-            name: flink.job.restart.count
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "5"
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
-              isMonotonic: true
-            unit: '{restarts}'
-        scope:
-          name: otelcol/flinkmetricsreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: host.name
-          value:
-            stringValue: mock-host
-        - key: flink.taskmanager.id
-          value:
-            stringValue: mock-taskmanager-id
-        - key: flink.job.name
-          value:
-            stringValue: mock-job-name
-        - key: flink.task.name
-          value:
-            stringValue: mock-task-name
         - key: flink.subtask.index
           value:
             stringValue: mock-subtask-index
+        - key: flink.task.name
+          value:
+            stringValue: mock-task-name
+        - key: flink.taskmanager.id
+          value:
+            stringValue: mock-taskmanager-id
+        - key: host.name
+          value:
+            stringValue: mock-host
     scopeMetrics:
       - metrics:
           - description: The number of records an operator has.
@@ -850,14 +850,14 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "6"
                   attributes:
                     - key: name
                       value:
                         stringValue: Source__Custom_Source
                     - key: record
                       value:
-                        stringValue: out
+                        stringValue: dropped
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
                 - asInt: "5"
@@ -870,14 +870,14 @@ resourceMetrics:
                         stringValue: in
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
-                - asInt: "6"
+                - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: Source__Custom_Source
                     - key: record
                       value:
-                        stringValue: dropped
+                        stringValue: out
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
               isMonotonic: true
@@ -900,13 +900,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1"
-                  attributes:
-                    - key: record
-                      value:
-                        stringValue: out
-                  startTimeUnixNano: "1656013018050954000"
-                  timeUnixNano: "1656013018050996000"
                 - asInt: "2"
                   attributes:
                     - key: record
@@ -919,6 +912,13 @@ resourceMetrics:
                     - key: record
                       value:
                         stringValue: in
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
+                - asInt: "1"
+                  attributes:
+                    - key: record
+                      value:
+                        stringValue: out
                   startTimeUnixNano: "1656013018050954000"
                   timeUnixNano: "1656013018050996000"
               isMonotonic: true
