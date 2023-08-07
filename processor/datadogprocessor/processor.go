@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type datadogProcessor struct {
@@ -28,7 +30,7 @@ type datadogProcessor struct {
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
-	agent ingester
+	agent datadog.Ingester
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
@@ -52,7 +54,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
-		agent:        newAgent(ctx, in),
+		agent:        datadog.NewAgent(ctx, in),
 		translator:   trans,
 		in:           in,
 		cfg:          cfg,
