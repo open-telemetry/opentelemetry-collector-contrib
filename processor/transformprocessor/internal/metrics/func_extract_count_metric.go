@@ -33,20 +33,11 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 
 func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (interface{}, error) {
-		var aggTemp pmetric.AggregationTemporality
 		metric := tCtx.GetMetric()
 		invalidMetricTypeError := fmt.Errorf("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got %s", metric.Type())
 
-		switch metric.Type() {
-		case pmetric.MetricTypeHistogram:
-			aggTemp = metric.Histogram().AggregationTemporality()
-		case pmetric.MetricTypeExponentialHistogram:
-			aggTemp = metric.ExponentialHistogram().AggregationTemporality()
-		case pmetric.MetricTypeSummary:
-			// Summaries don't have an aggregation temporality, but they *should* be cumulative based on the Openmetrics spec.
-			// This should become an optional argument once those are available in OTTL.
-			aggTemp = pmetric.AggregationTemporalityCumulative
-		default:
+		aggTemp := getAggregationTemporality(metric)
+		if aggTemp == pmetric.AggregationTemporalityUnspecified {
 			return nil, invalidMetricTypeError
 		}
 
