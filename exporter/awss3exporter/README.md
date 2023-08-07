@@ -28,8 +28,16 @@ The following exporter configuration parameters are supported.
 | `s3_prefix`    | prefix for the S3 key (root directory inside bucket).                                                |             |
 | `s3_partition` | time granularity of S3 key: hour or minute                                                           | "minute"    |
 | `file_prefix`  | file prefix defined by user                                                                          |             |
-| `marshaler`    | marshaler used to produce output data otlp_json                                                      |             |
+| `marshaler`    | marshaler used to produce output data                                                                | `otlp_json` |
 | `endpoint`     | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket` |             |
+
+### Marshaler
+
+Marshaler determines the format of data sent to AWS S3. Currently, the following marshalers are implemented:
+
+- `otlp_json` (default): the [OpenTelemetry Protocol format](https://github.com/open-telemetry/opentelemetry-proto), represented as json.
+- `sumo_ic`: the [Sumo Logic Installed Collector Archive format](https://help.sumologic.com/docs/manage/data-archiving/archive/).
+  **This format is supported only for logs.**
 
 # Example Configuration
 
