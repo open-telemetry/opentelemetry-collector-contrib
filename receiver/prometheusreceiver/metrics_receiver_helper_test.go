@@ -117,11 +117,11 @@ type testData struct {
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
-	var metricPaths []string
-	for _, t := range tds {
+	metricPaths := make([]string, len(tds))
+	for i, t := range tds {
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
-		metricPaths = append(metricPaths, metricPath)
+		metricPaths[i] = metricPath
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
