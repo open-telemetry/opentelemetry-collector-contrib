@@ -126,11 +126,9 @@ type valuesError struct {
 
 func (e *valuesError) Error() string {
 	// NOTE: in order to have a consistent output, we sort the keys
-	keys := make([]string, len(e.values))
-	i := 0
+	keys := make([]string, 0, len(e.values))
 	for k := range e.values {
-		keys[i] = k
-		i++
+		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
