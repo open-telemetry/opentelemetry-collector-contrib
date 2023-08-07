@@ -162,14 +162,12 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func mapToSpanTags(tags map[string]string) []senders.SpanTag {
-	spanTags := make([]senders.SpanTag, len(tags))
-	i := 0
+	spanTags := make([]senders.SpanTag, 0, len(tags))
 	for k, v := range tags {
-		spanTags[i] = senders.SpanTag{
+		spanTags = append(spanTags, senders.SpanTag{
 			Key:   k,
 			Value: v,
-		}
-		i++
+		})
 	}
 	return spanTags
 }
