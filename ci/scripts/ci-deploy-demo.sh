@@ -12,6 +12,7 @@ set -x
 install_collector() {
   # Set the namespace and release name
   release_name="opentelemetry-collector"
+  release_name_deployment="opentelemetry-collector-deployment"
   namespace="otel"
 
   # if repo already exists, helm 3+ will skip
@@ -22,6 +23,11 @@ install_collector() {
     -f ./ci/values.yaml \
     --set-string image.tag="otelcolcontrib-v$CI_COMMIT_SHORT_SHA"
 
+  # --install collector that fetches jmx metrics. The jmx receiver cannot be used in the daemonset deployment
+  # as this would lead to duplicate metrics.
+  helm --debug upgrade "${release_name_deployment}" -n "${namespace}" open-telemetry/opentelemetry-collector --install \
+    -f ./ci/values-jmx.yaml \
+    --set-string image.tag="otelcolcontrib-v$CI_COMMIT_SHORT_SHA"
 }
 
 ###########################################################################################################

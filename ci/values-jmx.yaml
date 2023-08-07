@@ -1,0 +1,60 @@
+mode: deployment
+image:
+  repository: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  tag: ""
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+extraEnvs:
+  - name: HOST_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: OTEL_COLLECTOR_NAME
+    value: $(HOST_IP)
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: http://$(OTEL_COLLECTOR_NAME):4317
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: kafka_source=jmxreceiver
+config:
+  receivers:
+    jmx:
+      jar_path: /opt/opentelemetry-jmx-metrics.jar
+      endpoint: "opentelemetry-demo-kafka:1099"
+      target_system: kafka
+      log_level: trace
+    jmx/jvm:
+      jar_path: /opt/opentelemetry-jmx-metrics.jar
+      endpoint: "opentelemetry-demo-kafka:1099"
+      target_system: jvm
+      log_level: trace
+    jmx/consumer:
+      jar_path: /opt/opentelemetry-jmx-metrics.jar
+      endpoint: "opentelemetry-demo-frauddetectionservice:1098"
+      target_system: kafka-consumer
+      log_level: trace
+    jmx/producer:
+      jar_path: /opt/opentelemetry-jmx-metrics.jar
+      endpoint: "opentelemetry-demo-orderproducer:1097"
+      target_system: kafka-producer
+      log_level: trace
+    zookeeper:
+      endpoint: "opentelemetry-demo-zookeeper:2181"
+      collection_interval: 20s
+      initial_delay: 1s
+  exporters:
+    otlp:
+      endpoint: ${env:OTEL_EXPORTER_OTLP_ENDPOINT}
+      tls:
+        insecure: true
+  processors:
+    batch:
+      send_batch_max_size: 1000
+      send_batch_size: 100
+      timeout: 10s
+  service:
+    pipelines:
+      metrics:
+        receivers: [jmx, jmx/jvm, jmx/consumer, jmx/producer, zookeeper]
+        processors: [batch]
+        exporters: [otlp]

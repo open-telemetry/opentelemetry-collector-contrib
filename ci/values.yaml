@@ -20,7 +20,7 @@ securityContext:
 resources:
   limits:
     cpu: 256m
-    memory: 1Gi
+    memory: 2Gi
 presets:
   logsCollection:
     enabled: true
@@ -109,10 +109,13 @@ config:
         http:
           endpoint: 0.0.0.0:4318
   exporters:
+    logging:
+      verbosity: detailed
     datadog:
       host_metadata:
         tags: ['env:otel']
       metrics:
+        resource_attributes_as_tags: true
         histograms:
           mode: counters
           send_count_sum_metrics: true
@@ -123,6 +126,33 @@ config:
       api:
         key: "$DD_API_KEY"
   processors:
+    attributes:
+      actions:
+      - key: log.file.path
+        pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<service_name>.*?)-.*
+        action: extract
+      - key: log.file.path
+        pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<source>.*?)-.*
+        action: extract
+      - key: service
+        from_attribute: service_name
+        action: upsert
+    attributes/kafkasrc:
+      include:
+        match_type: regexp
+        attributes:
+          - {key: "source", value: 'kafka|frauddetectionservice|orderproducer'}
+      actions:
+      # this makes sure the source for logs that come from kafka|frauddetectionservice|orderproducer is
+      # set to kafka. The OOTB box kafka dashboard filters logs on source:kafka. This will still not work
+      # as it will be a log attribute and can only be searched by @source:kafka. We would need to support
+      # attributes_as_tags or find another solution for this to work.
+      - key: source
+        action: update
+        value: "kafka"
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 500
     resourcedetection:
       # ensures host.name and other important resource tags
       # get picked up
@@ -201,5 +231,5 @@ config:
         processors: [resourcedetection, k8sattributes, batch]
         exporters: [datadog]
       logs:
-        processors: [resourcedetection, k8sattributes, batch]
+        processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, batch]
         exporters: [datadog]
