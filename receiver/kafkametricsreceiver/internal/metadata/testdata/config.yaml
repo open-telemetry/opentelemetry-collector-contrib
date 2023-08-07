@@ -23,7 +23,7 @@ all_set:
       enabled: true
     kafka.topic.partitions:
       enabled: true
-    messaging.kafka.broker.consumer_fetch_count:
+    messaging.kafka.broker.consumer_fetch_rate:
       enabled: true
     messaging.kafka.broker.count:
       enabled: true
@@ -31,15 +31,15 @@ all_set:
       enabled: true
     messaging.kafka.broker.outgoing_byte_rate:
       enabled: true
-    messaging.kafka.broker.request_count:
-      enabled: true
     messaging.kafka.broker.request_latency:
+      enabled: true
+    messaging.kafka.broker.request_rate:
       enabled: true
     messaging.kafka.broker.request_size:
       enabled: true
     messaging.kafka.broker.requests_in_flight:
       enabled: true
-    messaging.kafka.broker.response_count:
+    messaging.kafka.broker.response_rate:
       enabled: true
     messaging.kafka.broker.response_size:
       enabled: true
@@ -67,7 +67,7 @@ none_set:
       enabled: false
     kafka.topic.partitions:
       enabled: false
-    messaging.kafka.broker.consumer_fetch_count:
+    messaging.kafka.broker.consumer_fetch_rate:
       enabled: false
     messaging.kafka.broker.count:
       enabled: false
@@ -75,15 +75,15 @@ none_set:
       enabled: false
     messaging.kafka.broker.outgoing_byte_rate:
       enabled: false
-    messaging.kafka.broker.request_count:
-      enabled: false
     messaging.kafka.broker.request_latency:
+      enabled: false
+    messaging.kafka.broker.request_rate:
       enabled: false
     messaging.kafka.broker.request_size:
       enabled: false
     messaging.kafka.broker.requests_in_flight:
       enabled: false
-    messaging.kafka.broker.response_count:
+    messaging.kafka.broker.response_rate:
       enabled: false
     messaging.kafka.broker.response_size:
       enabled: false

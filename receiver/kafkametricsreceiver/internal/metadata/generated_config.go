@@ -36,16 +36,17 @@ type MetricsConfig struct {
 	KafkaPartitionReplicas                 MetricConfig `mapstructure:"kafka.partition.replicas"`
 	KafkaPartitionReplicasInSync           MetricConfig `mapstructure:"kafka.partition.replicas_in_sync"`
 	KafkaTopicPartitions                   MetricConfig `mapstructure:"kafka.topic.partitions"`
-	MessagingKafkaBrokerConsumerFetchCount MetricConfig `mapstructure:"messaging.kafka.broker.consumer_fetch_count"`
-	MessagingKafkaBrokerCount              MetricConfig `mapstructure:"messaging.kafka.broker.count"`
-	MessagingKafkaBrokerIncomingByteRate   MetricConfig `mapstructure:"messaging.kafka.broker.incoming_byte_rate"`
-	MessagingKafkaBrokerOutgoingByteRate   MetricConfig `mapstructure:"messaging.kafka.broker.outgoing_byte_rate"`
-	MessagingKafkaBrokerRequestCount       MetricConfig `mapstructure:"messaging.kafka.broker.request_count"`
-	MessagingKafkaBrokerRequestLatency     MetricConfig `mapstructure:"messaging.kafka.broker.request_latency"`
-	MessagingKafkaBrokerRequestSize        MetricConfig `mapstructure:"messaging.kafka.broker.request_size"`
-	MessagingKafkaBrokerRequestsInFlight   MetricConfig `mapstructure:"messaging.kafka.broker.requests_in_flight"`
-	MessagingKafkaBrokerResponseCount      MetricConfig `mapstructure:"messaging.kafka.broker.response_count"`
-	MessagingKafkaBrokerResponseSize       MetricConfig `mapstructure:"messaging.kafka.broker.response_size"`
+	MessagingKafkaBrokerConsumerFetchRate MetricConfig `mapstructure:"messaging.kafka.brokers.consumer_fetch_rate"`
+	MessagingKafkaBrokerCount             MetricConfig `mapstructure:"messaging.kafka.brokers.count"`
+	MessagingKafkaBrokerIncomingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.incoming_byte_rate"`
+	MessagingKafkaBrokerOutgoingByteRate  MetricConfig `mapstructure:"messaging.kafka.brokers.outgoing_byte_rate"`
+	MessagingKafkaBrokerRequestLatency    MetricConfig `mapstructure:"messaging.kafka.brokers.request_latency"`
+	MessagingKafkaBrokerRequestRate       MetricConfig `mapstructure:"messaging.kafka.brokers.request_rate"`
+	MessagingKafkaBrokerRequestSize       MetricConfig `mapstructure:"messaging.kafka.brokers.request_size"`
+	MessagingKafkaBrokerRequestsInFlight  MetricConfig `mapstructure:"messaging.kafka.brokers.requests_in_flight"`
+	MessagingKafkaBrokerResponseRate      MetricConfig `mapstructure:"messaging.kafka.brokers.response_rate"`
+	MessagingKafkaBrokerResponseSize      MetricConfig `mapstructure:"messaging.kafka.brokers.response_size"`
+
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -83,7 +84,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		KafkaTopicPartitions: MetricConfig{
 			Enabled: true,
 		},
-		MessagingKafkaBrokerConsumerFetchCount: MetricConfig{
+		MessagingKafkaBrokerConsumerFetchRate: MetricConfig{
 			Enabled: false,
 		},
 		MessagingKafkaBrokerCount: MetricConfig{
@@ -95,10 +96,10 @@ func DefaultMetricsConfig() MetricsConfig {
 		MessagingKafkaBrokerOutgoingByteRate: MetricConfig{
 			Enabled: false,
 		},
-		MessagingKafkaBrokerRequestCount: MetricConfig{
+		MessagingKafkaBrokerRequestLatency: MetricConfig{
 			Enabled: false,
 		},
-		MessagingKafkaBrokerRequestLatency: MetricConfig{
+		MessagingKafkaBrokerRequestRate: MetricConfig{
 			Enabled: false,
 		},
 		MessagingKafkaBrokerRequestSize: MetricConfig{
@@ -107,10 +108,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		MessagingKafkaBrokerRequestsInFlight: MetricConfig{
 			Enabled: false,
 		},
-		MessagingKafkaBrokerResponseCount: MetricConfig{
+		MessagingKafkaBrokerResponseRate: MetricConfig{
 			Enabled: false,
 		},
 		MessagingKafkaBrokerResponseSize: MetricConfig{
+
 			Enabled: false,
 		},
 	}

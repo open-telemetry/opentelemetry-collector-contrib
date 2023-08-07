@@ -33,6 +33,7 @@ metrics:
       value_type: int
     warnings:
       if_enabled: The metric is deprecated and will be removed. Use `messaging.kafka.brokers.count`
+
   messaging.kafka.broker.count:
     enabled: false
     description: Number of brokers in the cluster.
@@ -40,6 +41,90 @@ metrics:
     sum:
       monotonic: false
       value_type: int
+      aggregation: cumulative
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.consumer_fetch_rate:
+    enabled: false
+    description: Average consumer fetch Rate
+    unit: "{fetches}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.incoming_byte_rate:
+    enabled: false
+    description: Average tncoming Byte Rate in bytes/second
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.outgoing_byte_rate:
+    enabled: false
+    description: Average outgoing Byte Rate in bytes/second.
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.request_latency:
+    enabled: false
+    description: Average request latency in ms
+    unit: "ms"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.response_rate:
+    enabled: false
+    description: Average response rate per second
+    unit: "{response}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.response_size:
+    enabled: false
+    description: Average response size in bytes
+    unit: "By"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.request_rate:
+    enabled: false
+    description: Average request rate per second.
+    unit: "{requests}/s"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.request_size:
+    enabled: false
+    description: Average request size in bytes
+    unit: "By"
+    gauge:
+      value_type: double
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
+  messaging.kafka.broker.requests_in_flight:
+    enabled: false
+    description: Requests in flight
+    unit: "{requests}"
+    gauge:
+      value_type: int
+    attributes: [broker]
+    warnings:
+      if_enabled_not_set: This metric will be enabled by default in the next versions.
       aggregation_temporality: cumulative
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
