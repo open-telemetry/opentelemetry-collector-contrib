@@ -523,6 +523,7 @@ kubectl apply -f config.yaml
 | node_status_condition_memory_pressure     | Count        |
 | node_status_condition_disk_pressure       | Count        |
 | node_status_condition_network_unavailable | Count        |
+| node_status_condition_unknown             | Count        |
 | node_status_capacity_pods                 | Count        |
 | node_status_allocatable_pods              | Count        |
 

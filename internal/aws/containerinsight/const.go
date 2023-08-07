@@ -94,6 +94,7 @@ const (
 	StatusConditionMemoryPressure     = "status_condition_memory_pressure"
 	StatusConditionPIDPressure        = "status_condition_pid_pressure"
 	StatusConditionNetworkUnavailable = "status_condition_network_unavailable"
+	StatusConditionUnknown            = "status_condition_unknown"
 	StatusCapacityPods                = "status_capacity_pods"
 	StatusAllocatablePods             = "status_allocatable_pods"
 	StatusNumberAvailable             = "status_number_available"
@@ -241,6 +242,7 @@ func init() {
 		StatusConditionMemoryPressure:     UnitCount,
 		StatusConditionPIDPressure:        UnitCount,
 		StatusConditionNetworkUnavailable: UnitCount,
+		StatusConditionUnknown:            UnitCount,
 		StatusCapacityPods:                UnitCount,
 		StatusAllocatablePods:             UnitCount,
 		StatusReplicas:                    UnitCount,

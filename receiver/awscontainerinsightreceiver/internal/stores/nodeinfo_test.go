@@ -136,3 +136,20 @@ func TestGetNodeStatusCondition(t *testing.T) {
 	assert.False(t, valid)
 	assert.Equal(t, uint64(0), nodeStatusCondition)
 }
+
+func TestGetNodeConditionUnknown(t *testing.T) {
+	nodeInfo := newNodeInfo("testNode1", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid := nodeInfo.getNodeConditionUnknown()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(1), nodeStatusCondition)
+
+	nodeInfo = newNodeInfo("testNode2", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid = nodeInfo.getNodeConditionUnknown()
+	assert.True(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+
+	nodeInfo = newNodeInfo("testNodeNonExistent", &mockNodeInfoProvider{}, zap.NewNop())
+	nodeStatusCondition, valid = nodeInfo.getNodeStatusCondition(v1.NodeReady)
+	assert.False(t, valid)
+	assert.Equal(t, uint64(0), nodeStatusCondition)
+}

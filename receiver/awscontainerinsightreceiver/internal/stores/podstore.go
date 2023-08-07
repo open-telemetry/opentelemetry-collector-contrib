@@ -369,6 +369,9 @@ func (p *PodStore) decorateNode(metric CIMetric) {
 		if nodeStatusConditionNetworkUnavailable, ok := p.nodeInfo.getNodeStatusCondition(corev1.NodeNetworkUnavailable); ok {
 			metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionNetworkUnavailable), nodeStatusConditionNetworkUnavailable)
 		}
+		if nodeStatusConditionUnknown, ok := p.nodeInfo.getNodeConditionUnknown(); ok {
+			metric.AddField(ci.MetricName(ci.TypeNode, ci.StatusConditionUnknown), nodeStatusConditionUnknown)
+		}
 	}
 }
 

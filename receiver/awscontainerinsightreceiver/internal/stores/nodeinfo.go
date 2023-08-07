@@ -116,12 +116,24 @@ func (n *nodeInfo) getNodeStatusAllocatablePods() (uint64, bool) {
 
 func (n *nodeInfo) getNodeStatusCondition(conditionType v1.NodeConditionType) (uint64, bool) {
 	if nodeConditions, ok := n.provider.NodeToConditionsMap()[n.nodeName]; ok {
-		if conditionType, ok := nodeConditions[conditionType]; ok {
-			if conditionType == v1.ConditionTrue {
+		if conditionStatus, ok := nodeConditions[conditionType]; ok {
+			if conditionStatus == v1.ConditionTrue {
 				return 1, true
 			}
 			return 0, true // v1.ConditionFalse or v1.ConditionUnknown
 		}
+	}
+	return 0, false
+}
+
+func (n *nodeInfo) getNodeConditionUnknown() (uint64, bool) {
+	if nodeConditions, ok := n.provider.NodeToConditionsMap()[n.nodeName]; ok {
+		for _, conditionStatus := range nodeConditions {
+			if conditionStatus == v1.ConditionUnknown {
+				return 1, true
+			}
+		}
+		return 0, true
 	}
 	return 0, false
 }
