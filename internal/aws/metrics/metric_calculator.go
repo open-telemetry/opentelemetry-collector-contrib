@@ -36,8 +36,6 @@ func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{
 
 // MetricCalculator is a calculator used to adjust metric values based on its previous record.
 type MetricCalculator struct {
-	// lock on write
-	lock sync.Mutex
 	// cache stores data with expiry time. The expiry is not supported at the moment.
 	cache *MapWithExpiry
 	// calculateFunc is the delegation for data processing
@@ -61,8 +59,8 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 	var result interface{}
 	done := false
 
-	rm.lock.Lock()
-	defer rm.lock.Unlock()
+	rm.cache.Lock()
+	defer rm.cache.Unlock()
 
 	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
@@ -127,7 +125,9 @@ func (m *MapWithExpiry) sweep(ctx context.Context, removeFunc func(time2 time.Ti
 	for {
 		select {
 		case currentTime := <-ticker.C:
+			m.lock.Lock()
 			removeFunc(currentTime)
+			m.lock.Unlock()
 		case <-ctx.Done():
 			ticker.Stop()
 			return
