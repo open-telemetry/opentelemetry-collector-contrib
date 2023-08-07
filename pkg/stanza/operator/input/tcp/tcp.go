@@ -28,6 +28,7 @@ import (
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -108,13 +109,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	encoding, err := c.Encoding.Build()
+	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
+	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +130,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		address:       c.ListenAddress,
 		MaxLogSize:    int(c.MaxLogSize),
 		addAttributes: c.AddAttributes,
-		encoding:      encoding,
+		encoding:      enc,
 		splitFunc:     splitFunc,
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
@@ -160,7 +161,7 @@ type Input struct {
 	tls      *tls.Config
 	backoff  backoff.Backoff
 
-	encoding  helper.Encoding
+	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 }
@@ -253,11 +254,11 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		buf := make([]byte, 0, t.MaxLogSize)
 		scanner := bufio.NewScanner(conn)
 		scanner.Buffer(buf, t.MaxLogSize)
-
 		scanner.Split(t.splitFunc)
+		decoder := helper.NewEncoding(t.encoding)
 
 		for scanner.Scan() {
-			decoded, err := t.encoding.Decode(scanner.Bytes())
+			decoded, err := decoder.Decode(scanner.Bytes())
 			if err != nil {
 				t.Errorw("Failed to decode data", zap.Error(err))
 				continue

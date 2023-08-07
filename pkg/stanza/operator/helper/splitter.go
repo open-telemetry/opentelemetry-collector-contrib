@@ -36,19 +36,19 @@ func NewSplitterConfig() SplitterConfig {
 
 // Build builds Splitter struct
 func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
-	enc, err := c.EncodingConfig.Build()
+	enc, err := LookupEncoding(c.EncodingConfig.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
+	splitFunc, err := c.Multiline.Build(enc, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Splitter{
-		Encoding:  enc,
+		Encoding:  NewEncoding(enc),
 		Flusher:   flusher,
 		SplitFunc: splitFunc,
 	}, nil

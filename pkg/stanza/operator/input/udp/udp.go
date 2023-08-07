@@ -24,6 +24,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -91,13 +92,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	encoding, err := c.Encoding.Build()
+	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		address:       address,
 		buffer:        make([]byte, MaxUDPSize),
 		addAttributes: c.AddAttributes,
-		encoding:      encoding,
+		encoding:      enc,
 		splitFunc:     splitFunc,
 		resolver:      resolver,
 	}
@@ -130,7 +131,7 @@ type Input struct {
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
 
-	encoding  helper.Encoding
+	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 }
@@ -158,6 +159,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 		defer u.wg.Done()
 
 		buf := make([]byte, 0, MaxUDPSize)
+		decoder := helper.NewEncoding(u.encoding)
 		for {
 			message, remoteAddr, err := u.readMessage()
 			if err != nil {
@@ -172,11 +174,10 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 
 			scanner := bufio.NewScanner(bytes.NewReader(message))
 			scanner.Buffer(buf, MaxUDPSize)
-
 			scanner.Split(u.splitFunc)
 
 			for scanner.Scan() {
-				decoded, err := u.encoding.Decode(scanner.Bytes())
+				decoded, err := decoder.Decode(scanner.Bytes())
 				if err != nil {
 					u.Errorw("Failed to decode data", zap.Error(err))
 					continue

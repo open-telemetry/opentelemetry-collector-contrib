@@ -130,11 +130,11 @@ func (b *readerBuilder) build() (r *Reader, err error) {
 		r.splitFunc = r.lineSplitFunc
 	}
 
-	enc, err := b.encodingConfig.Build()
+	enc, err := helper.LookupEncoding(b.encodingConfig.Encoding)
 	if err != nil {
 		return
 	}
-	r.encoding = enc
+	r.encoding = helper.NewEncoding(enc)
 
 	if b.file != nil {
 		r.file = b.file

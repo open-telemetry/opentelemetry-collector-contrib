@@ -38,12 +38,12 @@ func newMultilineSplitterFactory(splitter helper.SplitterConfig) *multilineSplit
 
 // Build builds Multiline Splitter struct
 func (factory *multilineSplitterFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	enc, err := factory.EncodingConfig.Build()
+	enc, err := helper.LookupEncoding(factory.EncodingConfig.Encoding)
 	if err != nil {
 		return nil, err
 	}
 	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(enc.Encoding, false, factory.PreserveLeadingWhitespaces, factory.PreserveTrailingWhitespaces, flusher, maxLogSize)
+	splitter, err := factory.Multiline.Build(enc, false, factory.PreserveLeadingWhitespaces, factory.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}

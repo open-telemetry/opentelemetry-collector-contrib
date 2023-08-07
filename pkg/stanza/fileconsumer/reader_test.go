@@ -182,12 +182,13 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 		},
 	}
 
-	enc, err := helper.EncodingConfig{
+	cfg := helper.EncodingConfig{
 		Encoding: "utf-8",
-	}.Build()
+	}
+	enc, err := helper.LookupEncoding(cfg.Encoding)
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	h, err := headerConf.buildHeaderSettings(enc)
 	require.NoError(t, err)
 	f.headerSettings = h
 

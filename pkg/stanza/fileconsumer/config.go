@@ -140,12 +140,12 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 
 	var hs *headerSettings
 	if c.Header != nil {
-		enc, err := c.Splitter.EncodingConfig.Build()
+		enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		hs, err = c.Header.buildHeaderSettings(enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -222,7 +222,7 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	_, err := c.Splitter.EncodingConfig.Build()
+	_, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
 	if err != nil {
 		return err
 	}
