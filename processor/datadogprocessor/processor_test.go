@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 func TestProcessorStart(t *testing.T) {
@@ -252,7 +254,7 @@ type mockTracesExporter struct {
 	mockTracesConsumer
 }
 
-var _ ingester = (*mockIngester)(nil)
+var _ datadog.Ingester = (*mockIngester)(nil)
 
 // mockIngester implements ingester.
 type mockIngester struct {

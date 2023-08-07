@@ -35,7 +35,7 @@ func (cs *chronyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	now := pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())
+	now := pcommon.NewTimestampFromTime(clock.Now(ctx))
 
 	cs.mb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
 	cs.mb.RecordNtpTimeCorrectionDataPoint(
