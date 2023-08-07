@@ -3,6 +3,8 @@ receivers:
 
 exporters:
   awss3:
+    s3uploader:
+      s3_bucket: "foo"
     marshaler: sumo_ic
 
 processors:

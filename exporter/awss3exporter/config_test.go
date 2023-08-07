@@ -143,6 +143,7 @@ func TestMarshallerName(t *testing.T) {
 		&Config{
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
+				S3Bucket:    "foo",
 				S3Partition: "minute",
 			},
 			MarshalerName: "sumo_ic",
