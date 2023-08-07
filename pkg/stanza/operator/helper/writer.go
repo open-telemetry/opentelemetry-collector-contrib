@@ -74,7 +74,7 @@ func (w *WriterOperator) GetOutputIDs() []string {
 
 // SetOutputs will set the outputs of the operator.
 func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
-	outputOperators := make([]operator.Operator, len(operators))
+	outputOperators := make([]operator.Operator, len(w.OutputIDs))
 
 	for i, operatorID := range w.OutputIDs {
 		operator, ok := w.findOperator(operators, operatorID)
