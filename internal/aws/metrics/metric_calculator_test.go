@@ -109,11 +109,15 @@ func TestMapWithExpiryAdd(t *testing.T) {
 	defer cancel()
 	store := NewMapWithExpiry(ctx, time.Second)
 	value1 := rand.Float64()
+	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1})
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
+	store.Unlock()
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue)
 
+	store.Lock()
+	defer store.Unlock()
 	val, ok = store.Get(Key{MetricMetadata: "key2"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
@@ -124,25 +128,32 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	defer cancel()
 	store := NewMapWithExpiry(ctx, time.Second)
 	value1 := rand.Float64()
+	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
 
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
+
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue.(float64))
 	assert.Equal(t, 1, store.Size())
+	store.Unlock()
 
 	time.Sleep(time.Second)
+	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 	assert.Equal(t, 0, store.Size())
+	store.Unlock()
 }
 
 func TestMapWithExpiryConcurrency(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	store := NewMapWithExpiry(ctx, time.Second)
+	store.Lock()
 	store.Set(Key{MetricMetadata: "sum"}, MetricValue{RawValue: 0})
+	store.Unlock()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -245,7 +256,8 @@ func TestSweep(t *testing.T) {
 	}
 
 	mwe := &MapWithExpiry{
-		ttl: 1 * time.Millisecond,
+		ttl:  1 * time.Millisecond,
+		lock: &sync.Mutex{},
 	}
 
 	start := time.Now()
