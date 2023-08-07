@@ -55,8 +55,8 @@ github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1 h1:Htxj/RE55AeDZ+OE6+x
 github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1/go.mod h1:O3WwGRPZxs4BpB2ccUvIIPprhscWBRpudJT6mC+7sr8=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1 h1:We9Y6+kwCnSOQilk2koeADjbZgMHFDl6iHBaobU5nAw=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1/go.mod h1:5Q39ZOIOwZMnFyRadp+5gH1bFdjmb+Pgxe+j5XOwaTg=
-github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1 h1:usLCrmPm2wuNedbcuArxN37E/e7UaCJ66i1tuEq7E/M=
-github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1/go.mod h1:kxBOu4ZSem1E0JdhxjeI2jAQ7nxeRxuhjU4r9LKnRkU=
+github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.7 h1:ShV2R0eZ90FAgVKSKfn+dVXijvlkmESdJ7OxllbvhUI=
+github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.7/go.mod h1:De0YDYQLhW8Y+ztmNbVs8UxbVEf1nDlYnLmuzypNDPs=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1 h1:9iyw6jSwJwsFe8TooU8mqMhMfFiW6N/05OnNMg91kBY=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1/go.mod h1:TmxM8Pe+1QBWfM1JisS3xjvX1/kk655XY/IjqA36g6s=
 github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-beta.1 h1:k4tcg077NsPJRxtuGdYEm9kge+zq5QO5x6Yv3R5BwpE=
@@ -117,8 +117,8 @@ github.com/armon/go-metrics v0.4.1/go.mod h1:E6amYzXo6aW1tqzoZGT755KkbgrJsSdpwZ+
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
-github.com/aws/aws-sdk-go v1.44.316 h1:UC3alCEyzj2XU13ZFGIOHW3yjCNLGTIGVauyetl9fwE=
-github.com/aws/aws-sdk-go v1.44.316/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.44.317 h1:+8XWrLmGMwPPXSRSLPzhgcGnzJ2mYkgkrcB9C/GnSOU=
+github.com/aws/aws-sdk-go v1.44.317/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/aws/aws-sdk-go-v2 v1.9.2/go.mod h1:cK/D0BBs0b/oWPIcX/Z/obahJK1TT7IPVjy53i/mX/4=
 github.com/aws/aws-sdk-go-v2/config v1.8.3/go.mod h1:4AEiLtAb8kLs7vgw2ZV3p2VZ1+hBavOc84hqxVNpCyw=
 github.com/aws/aws-sdk-go-v2/credentials v1.4.3/go.mod h1:FNNC6nQZQUuyhq5aE5c7ata8o9e4ECGmS4lAXC7o1mQ=
