@@ -72,6 +72,11 @@ func (trie *Trie) Delete(key []byte) bool {
 			return false
 		}
 	}
+
+	// someonce called Delete() on the node which is not end of current path
+	if !node.isEnd {
+		return false
+	}
 	node.isEnd = false
 	// if leaf, remove it from its parent's children map. Repeat for ancestor path.
 	if node.isLeaf() {
