@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 // Config defines configuration for StatsD receiver.
