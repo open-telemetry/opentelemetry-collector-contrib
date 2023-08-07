@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadog"
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func TestTraceAgentConfig(t *testing.T) {
 	require.NotZero(t, cfg.ReceiverPort)
 
 	out := make(chan pb.StatsPayload)
-	agnt := newAgentWithConfig(context.Background(), cfg, out)
+	agnt := NewAgentWithConfig(context.Background(), cfg, out)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
 	require.Equal(t, metrics.UnsetHostnamePlaceholder, cfg.Hostname)
@@ -33,7 +33,7 @@ func TestTraceAgent(t *testing.T) {
 	cfg.BucketInterval = 50 * time.Millisecond
 	out := make(chan pb.StatsPayload, 10)
 	ctx := context.Background()
-	a := newAgentWithConfig(ctx, cfg, out)
+	a := NewAgentWithConfig(ctx, cfg, out)
 	a.Start()
 	defer a.Stop()
 

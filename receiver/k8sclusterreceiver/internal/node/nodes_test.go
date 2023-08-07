@@ -6,9 +6,12 @@ package node
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -22,7 +25,8 @@ import (
 
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), n,
+	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -41,7 +45,11 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 			"hugepages-2Mi",
 			"not-present",
 		},
+		pcommon.Timestamp(time.Now().UnixNano()),
 	)
+	m := pmetric.NewMetrics()
+	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
+
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,

@@ -4,8 +4,9 @@ go 1.19
 
 require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2
 	github.com/DataDog/sketches-go v1.4.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.82.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/consumer v0.82.0
@@ -26,8 +27,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
 	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.1 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.1 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
@@ -90,6 +91,8 @@ require (
 
 // It appears that the v0.2.0 tag was modified.  Replacing with v0.2.1
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 retract (
 	v0.76.2
