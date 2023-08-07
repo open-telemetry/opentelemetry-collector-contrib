@@ -5,20 +5,14 @@ package resourcequota // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, rq *corev1.ResourceQuota) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
-
+func RecordMetrics(mb *metadata.MetricsBuilder, rq *corev1.ResourceQuota, ts pcommon.Timestamp) {
 	for k, v := range rq.Status.Hard {
 		val := v.Value()
 		if strings.HasSuffix(string(k), ".cpu") {
@@ -35,10 +29,10 @@ func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.Metr
 		mb.RecordK8sResourceQuotaUsedDataPoint(ts, val, string(k))
 	}
 
-	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sResourcequotaUID(string(rq.UID))
 	rb.SetK8sResourcequotaName(rq.Name)
 	rb.SetK8sNamespaceName(rq.Namespace)
 	rb.SetOpencensusResourcetype("k8s")
-	return mb.Emit(imetadata.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

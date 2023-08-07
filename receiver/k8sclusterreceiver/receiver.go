@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
@@ -25,6 +26,7 @@ const (
 var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 
 type kubernetesReceiver struct {
+	dataCollector   *collection.DataCollector
 	resourceWatcher *resourceWatcher
 
 	config          *Config
@@ -102,8 +104,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 		return
 	}
 
-	now := time.Now()
-	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
+	mds := kr.dataCollector.CollectMetricData(time.Now())
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
@@ -163,8 +164,11 @@ func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.C
 	if err != nil {
 		return nil, err
 	}
+	ms := metadata.NewStore()
 	return &kubernetesReceiver{
-		resourceWatcher: newResourceWatcher(set, rCfg),
+		dataCollector: collection.NewDataCollector(set, ms, rCfg.MetricsBuilderConfig,
+			rCfg.NodeConditionTypesToReport, rCfg.AllocatableTypesToReport),
+		resourceWatcher: newResourceWatcher(set, rCfg, ms),
 		settings:        set,
 		config:          rCfg,
 		obsrecv:         obsrecv,

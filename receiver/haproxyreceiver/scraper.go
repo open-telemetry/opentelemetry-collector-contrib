@@ -223,8 +223,8 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			scrapeErrors = append(scrapeErrors, err)
 		}
 		rb := s.mb.NewResourceBuilder()
-		rb.SetProxyName(record["pxname"])
-		rb.SetServiceName(record["svname"])
+		rb.SetHaproxyProxyName(record["pxname"])
+		rb.SetHaproxyServiceName(record["svname"])
 		rb.SetHaproxyAddr(s.endpoint)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

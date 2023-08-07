@@ -1,15 +1,15 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadog"
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/require"
@@ -20,8 +20,8 @@ func TestTraceAgentConfig(t *testing.T) {
 	cfg := traceconfig.New()
 	require.NotZero(t, cfg.ReceiverPort)
 
-	out := make(chan pb.StatsPayload)
-	agnt := newAgentWithConfig(context.Background(), cfg, out)
+	out := make(chan *pb.StatsPayload)
+	agnt := NewAgentWithConfig(context.Background(), cfg, out)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
 	require.Equal(t, metrics.UnsetHostnamePlaceholder, cfg.Hostname)
@@ -31,9 +31,9 @@ func TestTraceAgentConfig(t *testing.T) {
 func TestTraceAgent(t *testing.T) {
 	cfg := traceconfig.New()
 	cfg.BucketInterval = 50 * time.Millisecond
-	out := make(chan pb.StatsPayload, 10)
+	out := make(chan *pb.StatsPayload, 10)
 	ctx := context.Background()
-	a := newAgentWithConfig(ctx, cfg, out)
+	a := NewAgentWithConfig(ctx, cfg, out)
 	a.Start()
 	defer a.Stop()
 
@@ -60,7 +60,7 @@ func TestTraceAgent(t *testing.T) {
 	}).Traces()
 
 	a.Ingest(ctx, traces)
-	var stats pb.StatsPayload
+	var stats *pb.StatsPayload
 	timeout := time.After(500 * time.Millisecond)
 loop:
 	for {
