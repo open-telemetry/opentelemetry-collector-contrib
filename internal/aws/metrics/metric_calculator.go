@@ -4,6 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -19,8 +20,8 @@ const (
 // as parameters. Returns true if the calculation is executed successfully.
 type CalculateFunc func(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool)
 
-func NewFloat64DeltaCalculator() MetricCalculator {
-	return NewMetricCalculator(calculateDelta)
+func NewFloat64DeltaCalculator(ctx context.Context) MetricCalculator {
+	return NewMetricCalculator(ctx, calculateDelta)
 }
 
 func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
@@ -43,9 +44,9 @@ type MetricCalculator struct {
 	calculateFunc CalculateFunc
 }
 
-func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
+func NewMetricCalculator(ctx context.Context, calculateFunc CalculateFunc) MetricCalculator {
 	return MetricCalculator{
-		cache:         NewMapWithExpiry(cleanInterval),
+		cache:         NewMapWithExpiry(ctx, cleanInterval),
 		calculateFunc: calculateFunc,
 	}
 }
@@ -106,8 +107,10 @@ type MapWithExpiry struct {
 	entries map[interface{}]*MetricValue
 }
 
-func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	return &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue)}
+func NewMapWithExpiry(ctx context.Context, ttl time.Duration) *MapWithExpiry {
+	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue)}
+	go m.sweep(ctx, m.CleanUp)
+	return m
 }
 
 func (m *MapWithExpiry) Get(key Key) (*MetricValue, bool) {
@@ -117,6 +120,19 @@ func (m *MapWithExpiry) Get(key Key) (*MetricValue, bool) {
 
 func (m *MapWithExpiry) Set(key Key, value MetricValue) {
 	m.entries[key] = &value
+}
+
+func (m *MapWithExpiry) sweep(ctx context.Context, removeFunc func(time2 time.Time)) {
+	ticker := time.NewTicker(m.ttl)
+	for {
+		select {
+		case currentTime := <-ticker.C:
+			removeFunc(currentTime)
+		case <-ctx.Done():
+			ticker.Stop()
+			return
+		}
+	}
 }
 
 func (m *MapWithExpiry) CleanUp(now time.Time) {
