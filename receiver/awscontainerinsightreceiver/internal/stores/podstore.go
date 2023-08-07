@@ -59,6 +59,8 @@ type mapWithExpiry struct {
 }
 
 func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
 		return val.RawValue, ok
 	}
@@ -67,6 +69,8 @@ func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
 }
 
 func (m *mapWithExpiry) Set(key string, content interface{}) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	val := awsmetrics.MetricValue{
 		RawValue:  content,
 		Timestamp: time.Now(),
@@ -74,9 +78,9 @@ func (m *mapWithExpiry) Set(key string, content interface{}) {
 	m.MapWithExpiry.Set(awsmetrics.NewKey(key, nil), val)
 }
 
-func newMapWithExpiry(ttl time.Duration) *mapWithExpiry {
+func newMapWithExpiry(ctx context.Context, ttl time.Duration) *mapWithExpiry {
 	return &mapWithExpiry{
-		MapWithExpiry: awsmetrics.NewMapWithExpiry(ttl),
+		MapWithExpiry: awsmetrics.NewMapWithExpiry(ctx, ttl),
 	}
 }
 
@@ -89,19 +93,20 @@ type podClient interface {
 }
 
 type PodStore struct {
-	cache            *mapWithExpiry
-	prevMeasurements map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
-	podClient        podClient
-	k8sClient        replicaSetInfoProvider
-	lastRefreshed    time.Time
-	nodeInfo         *nodeInfo
-	prefFullPodName  bool
-	logger           *zap.Logger
+	cache             *mapWithExpiry
+	prevMeasurements  map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
+	preMeasMapContext context.Context
+	podClient         podClient
+	k8sClient         replicaSetInfoProvider
+	lastRefreshed     time.Time
+	nodeInfo          *nodeInfo
+	prefFullPodName   bool
+	logger            *zap.Logger
 	sync.Mutex
 	addFullPodNameMetricLabel bool
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
@@ -118,8 +123,9 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 	}
 
 	podStore := &PodStore{
-		cache:                     newMapWithExpiry(podsExpiry),
+		cache:                     newMapWithExpiry(ctx, podsExpiry),
 		prevMeasurements:          make(map[string]*mapWithExpiry),
+		preMeasMapContext:         ctx,
 		podClient:                 podClient,
 		nodeInfo:                  newNodeInfo(logger),
 		prefFullPodName:           prefFullPodName,
@@ -149,7 +155,7 @@ func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}
 func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content interface{}) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
-		prevMeasurement = newMapWithExpiry(measurementsExpiry)
+		prevMeasurement = newMapWithExpiry(p.preMeasMapContext, measurementsExpiry)
 		p.prevMeasurements[metricType] = prevMeasurement
 	}
 	prevMeasurement.Set(metricKey, content)
@@ -164,8 +170,6 @@ func (p *PodStore) RefreshTick(ctx context.Context) {
 	now := time.Now()
 	if now.Sub(p.lastRefreshed) >= refreshInterval {
 		p.refresh(ctx, now)
-		// call cleanup every refresh cycle
-		p.cleanup(now)
 		p.lastRefreshed = now
 	}
 }
@@ -237,16 +241,6 @@ func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 	}
 	refreshWithTimeout(ctx, doRefresh, refreshInterval)
 	p.refreshInternal(now, podList)
-}
-
-func (p *PodStore) cleanup(now time.Time) {
-	for _, prevMeasurement := range p.prevMeasurements {
-		prevMeasurement.CleanUp(now)
-	}
-
-	p.Lock()
-	defer p.Unlock()
-	p.cache.CleanUp(now)
 }
 
 func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {

@@ -4,6 +4,7 @@
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -68,10 +69,10 @@ func devName(dStats cInfo.PerDiskStats) string {
 	return devName
 }
 
-func NewDiskIOMetricExtractor(logger *zap.Logger) *DiskIOMetricExtractor {
+func NewDiskIOMetricExtractor(ctx context.Context, logger *zap.Logger) *DiskIOMetricExtractor {
 	return &DiskIOMetricExtractor{
 		logger:         logger,
-		rateCalculator: newFloat64RateCalculator(),
+		rateCalculator: newFloat64RateCalculator(ctx),
 	}
 }
 

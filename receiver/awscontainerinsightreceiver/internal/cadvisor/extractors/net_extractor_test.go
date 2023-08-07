@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +18,9 @@ func TestNetStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
 
 	containerType := ci.TypeNode
-	extractor := NewNetMetricExtractor(nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	extractor := NewNetMetricExtractor(ctx, nil)
 	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)

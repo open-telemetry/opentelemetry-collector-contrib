@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"context"
 	"testing"
 
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -18,7 +19,9 @@ func TestCPUStats(t *testing.T) {
 
 	// test container type
 	containerType := TypeContainer
-	extractor := NewCPUMetricExtractor(nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	extractor := NewCPUMetricExtractor(ctx, nil)
 
 	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
@@ -36,7 +39,7 @@ func TestCPUStats(t *testing.T) {
 
 	// test node type
 	containerType = TypeNode
-	extractor = NewCPUMetricExtractor(nil)
+	extractor = NewCPUMetricExtractor(ctx, nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], MockCPUMemInfo, containerType)
@@ -54,7 +57,7 @@ func TestCPUStats(t *testing.T) {
 
 	// test instance type
 	containerType = TypeInstance
-	extractor = NewCPUMetricExtractor(nil)
+	extractor = NewCPUMetricExtractor(ctx, nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], MockCPUMemInfo, containerType)

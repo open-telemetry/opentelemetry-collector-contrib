@@ -4,6 +4,7 @@
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -113,8 +114,8 @@ func (c *CAdvisorMetric) Merge(src *CAdvisorMetric) {
 	}
 }
 
-func newFloat64RateCalculator() awsmetrics.MetricCalculator {
-	return awsmetrics.NewMetricCalculator(func(prev *awsmetrics.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+func newFloat64RateCalculator(ctx context.Context) awsmetrics.MetricCalculator {
+	return awsmetrics.NewMetricCalculator(ctx, func(prev *awsmetrics.MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
 		if prev != nil {
 			deltaNs := timestamp.Sub(prev.Timestamp)
 			deltaValue := val.(float64) - prev.RawValue.(float64)

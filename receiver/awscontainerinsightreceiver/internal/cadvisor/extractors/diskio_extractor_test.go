@@ -4,6 +4,7 @@
 package extractors
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +19,9 @@ func TestDiskIOStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 	// for eks node-level metrics
 	containerType := TypeNode
-	extractor := NewDiskIOMetricExtractor(nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	extractor := NewDiskIOMetricExtractor(ctx, nil)
 
 	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
@@ -52,7 +55,7 @@ func TestDiskIOStats(t *testing.T) {
 
 	// for ecs node-level metrics
 	containerType = TypeInstance
-	extractor = NewDiskIOMetricExtractor(nil)
+	extractor = NewDiskIOMetricExtractor(ctx, nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
@@ -85,7 +88,7 @@ func TestDiskIOStats(t *testing.T) {
 
 	// for non supported type
 	containerType = TypeContainerDiskIO
-	extractor = NewDiskIOMetricExtractor(nil)
+	extractor = NewDiskIOMetricExtractor(ctx, nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)

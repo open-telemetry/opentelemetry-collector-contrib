@@ -4,6 +4,8 @@
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
+	"context"
+
 	cInfo "github.com/google/cadvisor/info/v1"
 	"go.uber.org/zap"
 
@@ -53,9 +55,9 @@ func (c *CPUMetricExtractor) GetValue(info *cInfo.ContainerInfo, mInfo CPUMemInf
 	return metrics
 }
 
-func NewCPUMetricExtractor(logger *zap.Logger) *CPUMetricExtractor {
+func NewCPUMetricExtractor(ctx context.Context, logger *zap.Logger) *CPUMetricExtractor {
 	return &CPUMetricExtractor{
 		logger:         logger,
-		rateCalculator: newFloat64RateCalculator(),
+		rateCalculator: newFloat64RateCalculator(ctx),
 	}
 }

@@ -4,6 +4,7 @@
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
 import (
+	"context"
 	"time"
 
 	cinfo "github.com/google/cadvisor/info/v1"
@@ -91,10 +92,10 @@ func (n *NetMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoPro
 	return metrics
 }
 
-func NewNetMetricExtractor(logger *zap.Logger) *NetMetricExtractor {
+func NewNetMetricExtractor(ctx context.Context, logger *zap.Logger) *NetMetricExtractor {
 	return &NetMetricExtractor{
 		logger:         logger,
-		rateCalculator: newFloat64RateCalculator(),
+		rateCalculator: newFloat64RateCalculator(ctx),
 	}
 }
 

@@ -185,15 +185,16 @@ func getBaseTestPodInfo() *corev1.Pod {
 	return &pods.Items[0]
 }
 
-func getPodStore() *PodStore {
+func getPodStore(ctx context.Context) *PodStore {
 	nodeInfo := newNodeInfo(zap.NewNop())
 	nodeInfo.setCPUCapacity(4000)
 	nodeInfo.setMemCapacity(400 * 1024 * 1024)
 	return &PodStore{
-		cache:            newMapWithExpiry(time.Minute),
-		nodeInfo:         nodeInfo,
-		prevMeasurements: make(map[string]*mapWithExpiry),
-		logger:           zap.NewNop(),
+		cache:             newMapWithExpiry(ctx, time.Minute),
+		preMeasMapContext: ctx,
+		nodeInfo:          nodeInfo,
+		prevMeasurements:  make(map[string]*mapWithExpiry),
+		logger:            zap.NewNop(),
 	}
 }
 
@@ -205,7 +206,9 @@ func generateMetric(fields map[string]interface{}, tags map[string]string) CIMet
 }
 
 func TestPodStore_decorateCpu(t *testing.T) {
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 
 	pod := getBaseTestPodInfo()
 
@@ -234,7 +237,9 @@ func TestPodStore_decorateCpu(t *testing.T) {
 }
 
 func TestPodStore_decorateMem(t *testing.T) {
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 	pod := getBaseTestPodInfo()
 
 	tags := map[string]string{ci.MetricType: ci.TypePod}
@@ -284,7 +289,9 @@ func TestPodStore_addStatus(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	tags := map[string]string{ci.MetricType: ci.TypePod, ci.K8sNamespace: "default", ci.K8sPodNameKey: "cpu-limit"}
 	fields := map[string]interface{}{ci.MetricName(ci.TypePod, ci.CPUTotal): float64(1)}
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 	metric := generateMetric(fields, tags)
 
 	podStore.addStatus(metric, pod)
@@ -575,8 +582,9 @@ func (m *mockPodClient) ListPods() ([]corev1.Pod, error) {
 }
 
 func TestPodStore_RefreshTick(t *testing.T) {
-
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 	podStore.podClient = &mockPodClient{}
 	podStore.lastRefreshed = time.Now().Add(-time.Minute)
 	podStore.RefreshTick(context.Background())
@@ -591,8 +599,9 @@ func TestPodStore_RefreshTick(t *testing.T) {
 func TestPodStore_decorateNode(t *testing.T) {
 	pod := getBaseTestPodInfo()
 	podList := []corev1.Pod{*pod}
-
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 	podStore.refreshInternal(time.Now(), podList)
 
 	tags := map[string]string{ci.MetricType: ci.TypeNode}
@@ -626,11 +635,11 @@ func TestPodStore_Decorate(t *testing.T) {
 	metric := &mockCIMetric{
 		tags: tags,
 	}
-
-	podStore := getPodStore()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	podStore := getPodStore(ctx)
 	podStore.podClient = &mockPodClient{}
 	kubernetesBlob := map[string]interface{}{}
-	ctx := context.Background()
 	ok := podStore.Decorate(ctx, metric, kubernetesBlob)
 	assert.True(t, ok)
 
