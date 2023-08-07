@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.82.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.82.0
 	golang.org/x/mod v0.12.0
-	golang.org/x/text v0.11.0
+	golang.org/x/text v0.12.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
@@ -36,7 +36,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter v0.82.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.82.0 // indirect
@@ -96,7 +95,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/attributesprocessor v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor v0.82.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor v0.82.0 // indirect
@@ -488,6 +486,7 @@ require (
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter v0.82.0 // indirect
@@ -514,6 +513,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/lokireceiver v0.82.0 // indirect
