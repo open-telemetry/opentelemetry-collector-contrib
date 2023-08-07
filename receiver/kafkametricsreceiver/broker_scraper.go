@@ -34,6 +34,7 @@ var nrMetricsPrefix = [...]string{
 	"outgoing-byte-rate-for-broker-",
 	"request-rate-for-broker-",
 	"response-rate-for-broker-",
+
 	"response-size-for-broker-",
 	"request-size-for-broker-",
 	"requests-in-flight-for-broker-",
@@ -132,8 +133,9 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// kafka.brokers is deprecated. This should be removed in a future release.
 	s.mb.RecordKafkaBrokersDataPoint(now, brokerCount)
 
-	// messaging.kafka.brokers.count should replace kafka.brokers.
-	s.mb.RecordMessagingKafkaBrokersCountDataPoint(now, brokerCount)
+	// messaging.kafka.broker.count should replace kafka.brokers.
+	s.mb.RecordMessagingKafkaBrokerCountDataPoint(now, brokerCount)
+
 
 	return s.mb.Emit(), nil
 }
