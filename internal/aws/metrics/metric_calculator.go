@@ -4,7 +4,7 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 
 import (
-	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -20,8 +20,8 @@ const (
 // as parameters. Returns true if the calculation is executed successfully.
 type CalculateFunc func(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool)
 
-func NewFloat64DeltaCalculator(ctx context.Context) MetricCalculator {
-	return NewMetricCalculator(ctx, calculateDelta)
+func NewFloat64DeltaCalculator() MetricCalculator {
+	return NewMetricCalculator(calculateDelta)
 }
 
 func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
@@ -36,15 +36,17 @@ func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{
 
 // MetricCalculator is a calculator used to adjust metric values based on its previous record.
 type MetricCalculator struct {
+	// lock on write
+	lock sync.Mutex
 	// cache stores data with expiry time. The expiry is not supported at the moment.
 	cache *MapWithExpiry
 	// calculateFunc is the delegation for data processing
 	calculateFunc CalculateFunc
 }
 
-func NewMetricCalculator(ctx context.Context, calculateFunc CalculateFunc) MetricCalculator {
+func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	return MetricCalculator{
-		cache:         NewMapWithExpiry(ctx, cleanInterval),
+		cache:         NewMapWithExpiry(cleanInterval),
 		calculateFunc: calculateFunc,
 	}
 }
@@ -59,8 +61,8 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 	var result interface{}
 	done := false
 
-	rm.cache.Lock()
-	defer rm.cache.Unlock()
+	rm.lock.Lock()
+	defer rm.lock.Unlock()
 
 	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
@@ -71,6 +73,10 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 		})
 	}
 	return result, done
+}
+
+func (rm *MetricCalculator) Shutdown() error {
+	return rm.cache.Shutdown()
 }
 
 type Key struct {
@@ -100,14 +106,15 @@ type MetricValue struct {
 
 // MapWithExpiry act like a map which provide a method to clean up expired entries
 type MapWithExpiry struct {
-	lock    *sync.Mutex
-	ttl     time.Duration
-	entries map[interface{}]*MetricValue
+	lock     *sync.Mutex
+	ttl      time.Duration
+	entries  map[interface{}]*MetricValue
+	doneChan chan struct{}
 }
 
-func NewMapWithExpiry(ctx context.Context, ttl time.Duration) *MapWithExpiry {
-	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue)}
-	go m.sweep(ctx, m.CleanUp)
+func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
+	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue), doneChan: make(chan struct{})}
+	go m.sweep(m.CleanUp)
 	return m
 }
 
@@ -120,7 +127,7 @@ func (m *MapWithExpiry) Set(key Key, value MetricValue) {
 	m.entries[key] = &value
 }
 
-func (m *MapWithExpiry) sweep(ctx context.Context, removeFunc func(time2 time.Time)) {
+func (m *MapWithExpiry) sweep(removeFunc func(time2 time.Time)) {
 	ticker := time.NewTicker(m.ttl)
 	for {
 		select {
@@ -128,11 +135,23 @@ func (m *MapWithExpiry) sweep(ctx context.Context, removeFunc func(time2 time.Ti
 			m.lock.Lock()
 			removeFunc(currentTime)
 			m.lock.Unlock()
-		case <-ctx.Done():
+		case <-m.doneChan:
 			ticker.Stop()
 			return
 		}
 	}
+}
+
+// check if this is capatailized D
+func (m *MapWithExpiry) Shutdown() error {
+	select {
+	case <-m.doneChan:
+		return errors.New("closed already")
+	default:
+		close(m.doneChan)
+
+	}
+	return nil
 }
 
 func (m *MapWithExpiry) CleanUp(now time.Time) {

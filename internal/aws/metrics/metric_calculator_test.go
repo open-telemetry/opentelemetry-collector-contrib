@@ -4,7 +4,6 @@
 package metrics
 
 import (
-	"context"
 	"math/rand"
 	"sync"
 	"sync/atomic"
@@ -16,11 +15,9 @@ import (
 )
 
 func TestFloat64RateCalculator(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	mKey := NewKey("rate", nil)
 	initTime := time.Now()
-	c := newFloat64RateCalculator(ctx)
+	c := newFloat64RateCalculator()
 	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
@@ -29,14 +26,13 @@ func TestFloat64RateCalculator(t *testing.T) {
 	r, ok = c.Calculate(mKey, float64(100), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 0.5, r, 0.1)
+	require.NoError(t, c.Shutdown())
 }
 
 func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
 	mKey := NewKey("rate", nil)
 	initTime := time.Now()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	c := newFloat64RateCalculator(ctx)
+	c := newFloat64RateCalculator()
 	r, ok := c.Calculate(mKey, float64(50), initTime)
 	assert.False(t, ok)
 	assert.Equal(t, float64(0), r)
@@ -53,10 +49,11 @@ func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
 	r, ok = c.Calculate(mKey, float64(105), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 1, r, 0.1)
+	require.NoError(t, c.Shutdown())
 }
 
-func newFloat64RateCalculator(ctx context.Context) MetricCalculator {
-	return NewMetricCalculator(ctx, func(prev *MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
+func newFloat64RateCalculator() MetricCalculator {
+	return NewMetricCalculator(func(prev *MetricValue, val interface{}, timestampMs time.Time) (interface{}, bool) {
 		if prev != nil {
 			deltaTimestampMs := timestampMs.Sub(prev.Timestamp).Milliseconds()
 			deltaValue := val.(float64) - prev.RawValue.(float64)
@@ -71,9 +68,7 @@ func newFloat64RateCalculator(ctx context.Context) MetricCalculator {
 func TestFloat64DeltaCalculator(t *testing.T) {
 	mKey := NewKey("delta", nil)
 	initTime := time.Now()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	c := NewFloat64DeltaCalculator(ctx)
+	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{0.1, 0.1, 0.5, 1.3, 1.9, 2.5, 5, 24.2, 103}
 	for i, f := range testCases {
@@ -85,14 +80,13 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 			assert.InDelta(t, f-testCases[i-1], r, f/10)
 		}
 	}
+	require.NoError(t, c.Shutdown())
 }
 
 func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 	mKey := NewKey("delta", nil)
 	initTime := time.Now()
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	c := NewFloat64DeltaCalculator(ctx)
+	c := NewFloat64DeltaCalculator()
 
 	testCases := []float64{108, 106, 56.2, 28.8, 10, 10, 3, -1, -100}
 	for i, f := range testCases {
@@ -102,12 +96,11 @@ func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 			assert.Equal(t, testCases[i]-testCases[i-1], r)
 		}
 	}
+	require.NoError(t, c.Shutdown())
 }
 
 func TestMapWithExpiryAdd(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	store := NewMapWithExpiry(ctx, time.Second)
+	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
 	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1})
@@ -121,12 +114,11 @@ func TestMapWithExpiryAdd(t *testing.T) {
 	val, ok = store.Get(Key{MetricMetadata: "key2"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
+	require.NoError(t, store.Shutdown())
 }
 
 func TestMapWithExpiryCleanup(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	store := NewMapWithExpiry(ctx, time.Second)
+	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
 	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
@@ -138,19 +130,18 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second + time.Millisecond)
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 	assert.Equal(t, 0, store.Size())
 	store.Unlock()
+	require.NoError(t, store.Shutdown())
 }
 
 func TestMapWithExpiryConcurrency(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	store := NewMapWithExpiry(ctx, time.Second)
+	store := NewMapWithExpiry(time.Second)
 	store.Lock()
 	store.Set(Key{MetricMetadata: "sum"}, MetricValue{RawValue: 0})
 	store.Unlock()
@@ -185,6 +176,7 @@ func TestMapWithExpiryConcurrency(t *testing.T) {
 	wg.Wait()
 	sum, _ := store.Get(Key{MetricMetadata: "sum"})
 	assert.Equal(t, 0, sum.RawValue.(int))
+	require.NoError(t, store.Shutdown())
 }
 
 type mockKey struct {
@@ -247,7 +239,6 @@ func TestMapKeyNotEqualOnName(t *testing.T) {
 }
 
 func TestSweep(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
 	sweepEvent := make(chan time.Time)
 	closed := &atomic.Bool{}
 
@@ -256,13 +247,14 @@ func TestSweep(t *testing.T) {
 	}
 
 	mwe := &MapWithExpiry{
-		ttl:  1 * time.Millisecond,
-		lock: &sync.Mutex{},
+		ttl:      1 * time.Millisecond,
+		lock:     &sync.Mutex{},
+		doneChan: make(chan struct{}),
 	}
 
 	start := time.Now()
 	go func() {
-		mwe.sweep(ctx, onSweep)
+		mwe.sweep(onSweep)
 		closed.Store(true)
 		close(sweepEvent)
 	}()
@@ -274,7 +266,7 @@ func TestSweep(t *testing.T) {
 		assert.LessOrEqual(t, mwe.ttl, tickTime)
 		assert.LessOrEqual(t, time.Since(sweepTime), mwe.ttl)
 	}
-	cancel()
+	require.NoError(t, mwe.Shutdown())
 	for range sweepEvent { // nolint
 	}
 	if !closed.Load() {
