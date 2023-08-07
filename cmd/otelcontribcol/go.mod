@@ -250,24 +250,25 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.0.0 // indirect
 	github.com/ClickHouse/ch-go v0.52.1 // indirect
-	github.com/ClickHouse/clickhouse-go/v2 v2.12.0 // indirect
+	github.com/ClickHouse/clickhouse-go/v2 v2.12.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.89 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/pointer v0.47.0-rc.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.47.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/pointer v0.48.0-beta.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.48.0-beta.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.14.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.1.1 // indirect
-	github.com/DataDog/go-tuf v0.3.0--fix-localmeta-fork // indirect
+	github.com/DataDog/go-tuf v1.0.1-0.5.2 // indirect
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.5.2 // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.5.2 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.6.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.6.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.6.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.6.0 // indirect
+	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.6.0 // indirect
 	github.com/DataDog/sketches-go v1.4.2 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -298,7 +299,7 @@ require (
 	github.com/aws/aws-sdk-go v1.44.316 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.20.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.18.30 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.18.32 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.31 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.7 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59 // indirect
@@ -518,6 +519,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.82.0 // indirect
@@ -542,7 +544,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
-	github.com/opencontainers/runtime-spec v1.0.3-0.20220909204839-494a5a6aca78 // indirect
+	github.com/opencontainers/runtime-spec v1.1.0-rc.3 // indirect
 	github.com/opencontainers/selinux v1.10.1 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
@@ -576,7 +578,7 @@ require (
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.15 // indirect
 	github.com/scalyr/dataset-go v0.12.1 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
-	github.com/secure-systems-lab/go-securesystemslib v0.5.0 // indirect
+	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.6 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -586,7 +588,7 @@ require (
 	github.com/signalfx/golib/v3 v3.3.47 // indirect
 	github.com/signalfx/sapm-proto v0.13.0 // indirect
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1 // indirect
-	github.com/sijms/go-ora/v2 v2.7.10 // indirect
+	github.com/sijms/go-ora/v2 v2.7.11 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/snowflakedb/gosnowflake v1.6.23 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -600,7 +602,7 @@ require (
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.711 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.715 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	github.com/tidwall/gjson v1.10.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -664,7 +666,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
+	go.uber.org/zap v1.25.0 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
 	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
 	golang.org/x/mod v0.12.0 // indirect
@@ -781,6 +783,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassa
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver => ../../receiver/udplogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk => ../../internal/splunk
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver => ../../receiver/podmanreceiver
 

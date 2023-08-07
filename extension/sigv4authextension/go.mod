@@ -4,15 +4,15 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.20.0
-	github.com/aws/aws-sdk-go-v2/config v1.18.30
-	github.com/aws/aws-sdk-go-v2/credentials v1.13.29
-	github.com/aws/aws-sdk-go-v2/service/sts v1.20.1
+	github.com/aws/aws-sdk-go-v2/config v1.18.32
+	github.com/aws/aws-sdk-go-v2/credentials v1.13.31
+	github.com/aws/aws-sdk-go-v2/service/sts v1.21.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/confmap v0.82.0
 	go.opentelemetry.io/collector/extension v0.82.0
 	go.opentelemetry.io/collector/extension/auth v0.82.0
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.25.0
 	google.golang.org/grpc v1.57.0
 )
 
@@ -40,7 +40,6 @@ require (
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
-	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.12.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect

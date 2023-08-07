@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
@@ -102,7 +102,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		expectedSeries        map[string]interface{}
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []pb.ClientStatsPayload
+		expectedStats         []*pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -430,7 +430,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		expectedSeries        map[string]interface{}
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
-		expectedStats         []pb.ClientStatsPayload
+		expectedStats         []*pb.ClientStatsPayload
 	}{
 		{
 			metrics: createTestMetrics(attrs),
@@ -756,7 +756,7 @@ func createTestMetricsWithStats() pmetric.Metrics {
 		panic(err)
 	}
 	src := trans.
-		StatsPayloadToMetrics(pb.StatsPayload{Stats: testutil.StatsPayloads}).
+		StatsPayloadToMetrics(&pb.StatsPayload{Stats: testutil.StatsPayloads}).
 		ResourceMetrics()
 	src.MoveAndAppendTo(dest)
 	return md

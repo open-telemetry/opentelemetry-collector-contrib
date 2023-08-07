@@ -124,3 +124,29 @@ func TestConfig_Validate(t *testing.T) {
 		})
 	}
 }
+
+func TestMarshallerName(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "marshaler.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "foo",
+				S3Partition: "minute",
+			},
+			MarshalerName: "sumo_ic",
+		},
+	)
+}

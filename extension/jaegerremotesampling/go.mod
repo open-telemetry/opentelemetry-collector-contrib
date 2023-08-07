@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.82.0
 	go.opentelemetry.io/collector/confmap v0.82.0
 	go.opentelemetry.io/collector/extension v0.82.0
-	go.uber.org/zap v1.24.0
+	go.uber.org/zap v1.25.0
 	google.golang.org/grpc v1.57.0
 )
 
