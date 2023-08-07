@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
-	github.com/Azure/azure-event-hubs-go/v3 v3.6.0
+	github.com/Azure/azure-event-hubs-go/v3 v3.6.1
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.82.0
