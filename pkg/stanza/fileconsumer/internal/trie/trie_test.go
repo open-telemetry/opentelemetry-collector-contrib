@@ -216,64 +216,334 @@ func TestTrieOpSequences(t *testing.T) {
 					"Found:ABCDEF": opTree{ // Next poll finds ABCDEF
 						ops: []testOp{
 							has("ABCDEF", true, "recognize ABC w/ DEF appended"),
+							put("ABCDEF"),
+							has("ABC", true, "should not have effect on ABCDEF"),
+						},
+
+						continuations: map[string]opTree{
+							"DeleteAs:ABC": opTree{ // Done reading the file, remove it as ABC
+								ops: []testOp{
+									del("ABC", true, "should be deleted"),
+									has("ABCDEF", true, "should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"DeleteAs:ABCDEF": opTree{ // Also remove it as ABCDEF
+										ops: []testOp{
+											del("ABCDEF", true, "just confirmed it exists"), // TODO this fails to delete
+										},
+									},
+								},
+							},
+							"DeleteAs:ABCDEF": opTree{ // Done reading the file, remove it as ABC
+								ops: []testOp{
+									del("ABCDEF", true, "trying to delete ABC should not affect ABCDEF"),
+									has("ABC", true, "should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"DeleteAs:ABC": opTree{ // Also remove it as ABC
+										ops: []testOp{
+											del("ABC", true, "just confirmed it exists"), // TODO this fails to delete
+										},
+									},
+								},
+							},
 						},
 					},
 				},
 			},
-			"Found:ABC,ABCD": opTree{ // First poll finds ABCD and ABC.
+			"Found:ABC,ABCDEF": opTree{ // First poll finds ABCDEF and ABC.
 				ops: []testOp{
 					// In order to avoid overwriting ABC with ABCDEF, we need to add ABCDEF first.
 					// TODO Should poll results be sorted by decreasing length before adding to trie?
-					put("ABCD"),
+					put("ABCDEF"),
 					put("ABC"),
 					has("ABCDEF", true, "adding ABC after ABCDEF shouldn't affect ABCDEF"),
 				},
 				continuations: map[string]opTree{
-					"Found:ABCxyz,ABCDxyz": opTree{ // Finish reading ABC and remove from trie
+					"Done:ABC": opTree{ // Finish reading ABC and remove from trie
 						ops: []testOp{
-							has("ABCxyz", true, "recognize ABC w/ xyz appended"),
-							has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+							del("ABC", true, "just confirmed ABC exists"),
+							has("ABCDEF", true, "ABCDEF should not have been deleted"),
 						},
 						continuations: map[string]opTree{
-							"Done:ABC": opTree{ // Finish reading ABC and remove from trie
+							"Done:ABCDEF": opTree{ // Finish reading ABCDEF and remove from trie
 								ops: []testOp{
-									del("ABC", true, "just confirmed ABC exists"),
-									has("ABCD", true, "deleting ABC shouldn't effect ABCD"),
-								},
-							},
-							"Done:ABCD": opTree{ // Finish reading ABCD and remove from trie
-								ops: []testOp{
-									del("ABCD", true, "just confirmed ABCD exists"),
-									has("ABC", true, "deleting ABCD shouldn't effect ABC"),
+									del("ABCDEF", true, "just confirmed ABCDEF exists"),
 								},
 							},
 						},
 					},
-				},
-			},
-			"Found:ABC,XYZ": opTree{ // First poll finds ABC and XYZ.
-				ops: []testOp{
-					put("ABC"),
-					put("XYZ"),
-					has("ABC", true, "adding XYZ after ABC shouldn't affect ABC"),
-				},
-				continuations: map[string]opTree{
-					"Found:ABCxyz,XYZhij": opTree{ // Finish reading ABC and remove from trie
+					"Done:ABCDEF": opTree{ // Finish reading ABCDEF and remove from trie
 						ops: []testOp{
-							has("ABCxyz", true, "recognize ABC w/ xyz appended"),
-							has("XYZhij", true, "recognize XYZ w/ hij appended"),
+							del("ABCDEF", true, "just confirmed ABCDEF exists"),
+							has("ABC", true, "should not have been deleted"),
 						},
 						continuations: map[string]opTree{
 							"Done:ABC": opTree{ // Finish reading ABC and remove from trie
 								ops: []testOp{
 									del("ABC", true, "just confirmed ABC exists"),
-									has("XYZ", true, "deleting XYZ shouldn't effect ABC"),
 								},
 							},
-							"Done:XYZ": opTree{ // Finish reading XYZ and remove from trie
+						},
+					},
+					"Found:ABCxyz,ABCDEF": opTree{ // Next poll finds ABCxyz and ABCDEF
+						ops: []testOp{
+							has("ABCxyz", true, "recognize ABC w/ xyz appended"),
+							put("ABCxyz"), // TODO how do we know we need to call this?
+							has("ABC", true, "ABCxyz should not have effect on ABC"),
+							has("ABCDEF", true, "ABCDEF should not have been affected"),
+						},
+						continuations: map[string]opTree{
+							"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
 								ops: []testOp{
-									del("XYZ", true, "just confirmed XYZ exists"),
-									has("ABC", true, "deleting XYZ shouldn't effect ABC"),
+									del("ABCxyz", true, "just confirmed ABCxyz exists"),
+									has("ABC", true, "should be present"),
+									has("ABCDEF", true, "ABCDEF should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCDEF": opTree{ // Finish reading ABCDEF and remove from trie
+										ops: []testOp{
+											del("ABCDEF", true, "just confirmed ABCDEF exists"),
+										},
+									},
+									"Found:ABCDEFxyz": opTree{ // Next poll finds ABCDEFxyz
+										ops: []testOp{
+											has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+											put("ABCDEFxyz"),
+										},
+										continuations: map[string]opTree{
+											"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+												ops: []testOp{
+													del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+													has("ABCDEF", true, "ABCDEF should not have been deleted"),
+												},
+											},
+										},
+									},
+								},
+							},
+							"Done:ABC": opTree{ // Finish reading ABC and remove from trie
+								ops: []testOp{
+									del("ABC", true, "just confirmed ABCxyz exists"),
+									has("ABCxyz", true, "ABCxyz should be present"),
+									has("ABCDEF", true, "ABCDEF should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCDEF": opTree{ // Finish reading ABCDEF and remove from trie
+										ops: []testOp{
+											del("ABCDEF", true, "just confirmed ABCDEF exists"),
+										},
+									},
+									"Found:ABCDEFxyz": opTree{ // Next poll finds ABCDEFxyz
+										ops: []testOp{
+											has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+											put("ABCDEFxyz"), // TODO how do we know we need to call this?
+										},
+										continuations: map[string]opTree{
+											"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+												ops: []testOp{
+													del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+												},
+											},
+										},
+									},
+								},
+							},
+							"Done:ABCDEF": opTree{ // Finish reading ABC and remove from trie
+								ops: []testOp{
+									del("ABCDEF", true, "just confirmed ABCDEF exists"),
+									has("ABCxyz", true, "should be present"),
+									has("ABC", true, "ABC should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABC": opTree{ // Finish reading ABCDEF and remove from trie
+										ops: []testOp{
+											del("ABC", true, "just confirmed ABCDEF exists"),
+											has("ABCxyz", true, "ABCxyz should be present"),
+										},
+									},
+									"Done:ABCxyz": opTree{
+										ops: []testOp{
+											del("ABCxyz", true, "just confirmed ABCxyz exists"),
+											has("ABC", true, "ABC should be present"),
+										},
+									},
+									"Found:ABCDEFxyz": opTree{ // Next poll finds ABCDEFxyz
+										ops: []testOp{
+											has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+											put("ABCDEFxyz"), // TODO how do we know we need to call this?
+										},
+										continuations: map[string]opTree{
+											"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+												ops: []testOp{
+													del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+													has("ABCDEF", true, "ABCDEF should be present"),
+												},
+											},
+										},
+									},
+								},
+							},
+							"Found:ABCxyz,ABCDEFxyz": opTree{ // Next poll finds ABCxyz and ABCDEFxyz
+								ops: []testOp{
+									has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+									put("ABCDEFxyz"), // TODO how do we know we need to call this?
+									has("ABCxyz", true, "ABCxyz should not have been affected"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+										ops: []testOp{
+											del("ABCxyz", true, "just confirmed ABCxyz exists"),
+											has("ABCDEFxyz", true, "ABCDEFxyz should not have been deleted"),
+										},
+										continuations: map[string]opTree{
+											"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+												ops: []testOp{
+													del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+												},
+											},
+										},
+									},
+									"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+										ops: []testOp{
+											del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+											has("ABCxyz", true, "ABCxyz should not have been deleted"),
+										},
+										continuations: map[string]opTree{
+											"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+												ops: []testOp{
+													del("ABCxyz", true, "just confirmed ABCxyz exists"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					"Found:ABC,ABCDEFxyz": opTree{ // Next poll finds ABC and ABCDEFxyz
+						ops: []testOp{
+							has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+							put("ABCDEFxyz"), // TODO how do we know we need to call this?
+							has("ABCDEF", true, "ABCDEF should be present"),
+							has("ABC", true, "ABC should not have been affected"),
+						},
+						continuations: map[string]opTree{
+							"Done:ABC": opTree{ // Finish reading ABC and remove from trie
+								ops: []testOp{
+									del("ABC", true, "just confirmed ABC exists"),
+									has("ABCDEFxyz", true, "ABCDEFxyz should not have been deleted"),
+									has("ABCDEF", true, "ABCDEF should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+										ops: []testOp{
+											del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+											has("ABCDEF", true, "ABCDEF should not have been deleted"),
+										},
+									},
+								},
+							},
+							"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+								ops: []testOp{
+									del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+									has("ABC", true, "ABC should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABC": opTree{ // Finish reading ABC and remove from trie
+										ops: []testOp{
+											del("ABC", true, "just confirmed ABC exists"),
+										},
+									},
+									"Found:ABCxyz": opTree{ // Next poll finds ABCxyz
+										ops: []testOp{
+											has("ABCxyz", true, "recognize ABC w/ xyz appended"),
+											put("ABCxyz"), // TODO how do we know we need to call this?
+										},
+										continuations: map[string]opTree{
+											"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+												ops: []testOp{
+													del("ABCxyz", true, "just confirmed ABCxyz exists"),
+												},
+											},
+										},
+									},
+								},
+							},
+							"Found:ABCxyz,ABCDEFxyz": opTree{ // Next poll finds ABCxyz and ABCDEFxyz
+								ops: []testOp{
+									has("ABCxyz", true, "recognize ABC w/ xyz appended"),
+									put("ABCxyz"), // TODO how do we know we need to call this?
+									has("ABCDEFxyz", true, "ABCDEFxyz should not have been affected"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+										ops: []testOp{
+											del("ABCxyz", true, "just confirmed ABCxyz exists"),
+											has("ABCDEFxyz", true, "ABCDEFxyz should not have been deleted"),
+										},
+										continuations: map[string]opTree{
+											"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+												ops: []testOp{
+													del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+												},
+											},
+										},
+									},
+									"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+										ops: []testOp{
+											del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+											has("ABCxyz", true, "ABCxyz should not have been deleted"),
+										},
+										continuations: map[string]opTree{
+											"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+												ops: []testOp{
+													del("ABCxyz", true, "just confirmed ABCxyz exists"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					"Found:ABCxyz,ABCDEFxyz": opTree{ // Next poll finds ABCxyz and ABCDEFxyz
+						ops: []testOp{
+							// Inserting longer string first
+							has("ABCDEFxyz", true, "recognize ABCDEF w/ xyz appended"),
+							put("ABCDEFxyz"),
+							has("ABCDEF", true, "ABCDEF should be present"),
+							has("ABC", true, "ABC should not have been affected"),
+
+							has("ABCxyz", true, "recognize ABC w/ xyz appended"),
+							put("ABCxyz"),
+							has("ABC", true, "ABC should be present"),
+						},
+						continuations: map[string]opTree{
+							"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+								ops: []testOp{
+									del("ABCxyz", true, "just confirmed ABCxyz exists"),
+									has("ABCDEFxyz", true, "ABCDEFxyz should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+										ops: []testOp{
+											del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+										},
+									},
+								},
+							},
+							"Done:ABCDEFxyz": opTree{ // Finish reading ABCDEFxyz and remove from trie
+								ops: []testOp{
+									del("ABCDEFxyz", true, "just confirmed ABCDEFxyz exists"),
+									has("ABCxyz", true, "ABCxyz should not have been deleted"),
+								},
+								continuations: map[string]opTree{
+									"Done:ABCxyz": opTree{ // Finish reading ABCxyz and remove from trie
+										ops: []testOp{
+											del("ABCxyz", true, "just confirmed ABCxyz exists"),
+										},
+									},
 								},
 							},
 						},
