@@ -111,6 +111,7 @@ type EcsInfo interface {
 
 type Decorator interface {
 	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+	Shutdown() error
 }
 
 type Cadvisor struct {
