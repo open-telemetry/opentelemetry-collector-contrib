@@ -35,6 +35,7 @@ func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{
 }
 
 // MetricCalculator is a calculator used to adjust metric values based on its previous record.
+// Shutdown() must be called to clean up goroutines before program exit.
 type MetricCalculator struct {
 	// lock on write
 	lock sync.Mutex
@@ -45,7 +46,6 @@ type MetricCalculator struct {
 }
 
 // NewMetricCalculator Creates a metric calculator that enforces a five-minute time to live on cache entries.
-// Shutdown() must be called to clean up goroutines before program exit.
 func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	return MetricCalculator{
 		cache:         NewMapWithExpiry(cleanInterval),
@@ -65,6 +65,11 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
+
+	// need to also lock cache to avoid the cleanup from removing entries while they are being processed.
+	// This is only likely to happen when data points come in close to expiration date.
+	rm.cache.Lock()
+	defer rm.cache.Unlock()
 
 	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
@@ -107,7 +112,7 @@ type MetricValue struct {
 }
 
 // MapWithExpiry act like a map which provides a method to clean up expired entries.
-// MapWithExpiry is not thread safe and locks must be managed by the use of Lock() and Unlock()
+// MapWithExpiry is not thread safe and locks must be managed by the owner of the Map by the use of Lock() and Unlock()
 type MapWithExpiry struct {
 	lock     *sync.Mutex
 	ttl      time.Duration
