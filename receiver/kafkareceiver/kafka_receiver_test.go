@@ -139,11 +139,12 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	testSession := testConsumerGroupSession{ctx: context.Background()}
@@ -188,11 +189,12 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -234,11 +236,12 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -261,11 +264,12 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewErr(consumerError),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -396,11 +400,12 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	testSession := testConsumerGroupSession{ctx: context.Background()}
@@ -445,11 +450,12 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -490,11 +496,12 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -517,11 +524,12 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewErr(consumerError),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -651,11 +659,12 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	testSession := testConsumerGroupSession{ctx: context.Background()}
@@ -700,11 +709,12 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -745,11 +755,12 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewNop(),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewNop(),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -772,11 +783,12 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:  newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
-		ready:        make(chan bool),
-		nextConsumer: consumertest.NewErr(consumerError),
-		obsrecv:      obsrecv,
+		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		logger:          zap.NewNop(),
+		ready:           make(chan bool),
+		nextConsumer:    consumertest.NewErr(consumerError),
+		obsrecv:         obsrecv,
+		headerExtractor: &nopHeaderExtractor{},
 	}
 
 	wg := sync.WaitGroup{}
@@ -842,11 +854,12 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 			require.NoError(t, err)
 			sink := &consumertest.LogsSink{}
 			c := logsConsumerGroupHandler{
-				unmarshaler:  unmarshaler,
-				logger:       zap.NewNop(),
-				ready:        make(chan bool),
-				nextConsumer: sink,
-				obsrecv:      obsrecv,
+				unmarshaler:     unmarshaler,
+				logger:          zap.NewNop(),
+				ready:           make(chan bool),
+				nextConsumer:    sink,
+				obsrecv:         obsrecv,
+				headerExtractor: &nopHeaderExtractor{},
 			}
 
 			wg := sync.WaitGroup{}

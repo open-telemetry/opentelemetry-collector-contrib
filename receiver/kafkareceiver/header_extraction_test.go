@@ -186,7 +186,6 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 		},
 		Value: bts,
 	}
-	// groupClaim.messageChan <- &sarama.ConsumerMessage{}
 	cancelFunc()
 	wg.Wait()
 

@@ -17,6 +17,12 @@ func getAttribute(key string) string {
 	return fmt.Sprintf("kafka.header.%s", key)
 }
 
+type HeaderExtractor interface {
+	extractHeadersTraces(ptrace.Traces, *sarama.ConsumerMessage)
+	extractHeadersMetrics(pmetric.Metrics, *sarama.ConsumerMessage)
+	extractHeadersLogs(plog.Logs, *sarama.ConsumerMessage)
+}
+
 type headerExtractor struct {
 	logger  *zap.Logger
 	headers []string
@@ -40,7 +46,7 @@ func (he *headerExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.Co
 	for _, header := range he.headers {
 		value, ok := getHeaderValue(message.Headers, header)
 		if !ok {
-			he.logger.Debug("Header key not found in the logger: ", zap.String("key", header))
+			he.logger.Debug("Header key not found in the log: ", zap.String("key", header))
 			continue
 		}
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
@@ -74,4 +80,15 @@ func getHeaderValue(headers []*sarama.RecordHeader, header string) (string, bool
 	}
 	// no header found matching the key, report to the user
 	return "", false
+}
+
+type nopHeaderExtractor struct{}
+
+func (he *nopHeaderExtractor) extractHeadersTraces(traces ptrace.Traces, message *sarama.ConsumerMessage) {
+}
+
+func (he *nopHeaderExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.ConsumerMessage) {
+}
+
+func (he *nopHeaderExtractor) extractHeadersMetrics(metrics pmetric.Metrics, message *sarama.ConsumerMessage) {
 }

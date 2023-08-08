@@ -144,6 +144,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
 	}
 	if c.headerExtraction {
 		consumerGroup.headerExtractor = &headerExtractor{
@@ -245,6 +246,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
 	}
 	if c.headerExtraction {
 		metricsConsumerGroup.headerExtractor = &headerExtractor{
@@ -374,6 +376,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		obsrecv:           obsrecv,
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
+		headerExtractor:   &nopHeaderExtractor{},
 	}
 	if c.headerExtraction {
 		logsConsumerGroup.headerExtractor = &headerExtractor{
@@ -424,7 +427,7 @@ type tracesConsumerGroupHandler struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
-	headerExtractor   *headerExtractor
+	headerExtractor   HeaderExtractor
 }
 
 type metricsConsumerGroupHandler struct {
@@ -440,7 +443,7 @@ type metricsConsumerGroupHandler struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
-	headerExtractor   *headerExtractor
+	headerExtractor   HeaderExtractor
 }
 
 type logsConsumerGroupHandler struct {
@@ -456,7 +459,7 @@ type logsConsumerGroupHandler struct {
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
-	headerExtractor   *headerExtractor
+	headerExtractor   HeaderExtractor
 }
 
 var _ sarama.ConsumerGroupHandler = (*tracesConsumerGroupHandler)(nil)
@@ -513,9 +516,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				return err
 			}
 
-			if c.headerExtractor != nil {
-				c.headerExtractor.extractHeadersTraces(traces, message)
-			}
+			c.headerExtractor.extractHeadersTraces(traces, message)
 			spanCount := traces.SpanCount()
 			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
@@ -590,9 +591,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				}
 				return err
 			}
-			if c.headerExtractor != nil {
-				c.headerExtractor.extractHeadersMetrics(metrics, message)
-			}
+			c.headerExtractor.extractHeadersMetrics(metrics, message)
 
 			dataPointCount := metrics.DataPointCount()
 			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
@@ -673,9 +672,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				}
 				return err
 			}
-			if c.headerExtractor != nil {
-				c.headerExtractor.extractHeadersLogs(logs, message)
-			}
+			c.headerExtractor.extractHeadersLogs(logs, message)
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
 			// TODO
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logs.LogRecordCount(), err)
