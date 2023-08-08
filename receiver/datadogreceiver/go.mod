@@ -68,6 +68,11 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
+// v0.47.x and v0.48.x are incompatible, prefer to use v0.48.x
+replace github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.7 => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+
+replace github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.7 => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 retract (
