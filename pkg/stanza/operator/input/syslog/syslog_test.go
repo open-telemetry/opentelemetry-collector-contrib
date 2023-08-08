@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
@@ -21,14 +22,55 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestInput(t *testing.T) {
-	basicConfig := func() *syslog.Config {
+var (
+	basicConfig = func() *syslog.Config {
 		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
 	}
+	OctetCase = syslog.Case{
+		Name: "RFC6587 Octet Counting",
+		Config: func() *syslog.Config {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.RFC5424
+			cfg.EnableOctetCounting = true
+			return cfg
+		}(),
+		Input: &entry.Entry{
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2016-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2017-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		Expect: &entry.Entry{
+			Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+			Severity:     entry.Info,
+			SeverityText: "info",
+			Attributes: map[string]interface{}{
+				"appname":  "SecureAuth0",
+				"facility": 10,
+				"hostname": "192.168.2.132",
+				"message":  "Found the user for retrieving user's profile",
+				"msg_id":   "ID52020",
+				"priority": 86,
+				"proc_id":  "23108",
+				"structured_data": map[string]map[string]string{
+					"SecureAuth@27389": {
+						"PEN":             "27389",
+						"Realm":           "SecureAuth0",
+						"UserHostAddress": "192.168.2.132",
+						"UserID":          "Tester2",
+					},
+				},
+				"version": 1,
+			},
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		ValidForTCP: true,
+	}
+)
+
+func TestInput(t *testing.T) {
 
 	cases, err := syslog.CreateCases(basicConfig)
 	require.NoError(t, err)
+	cases = append(cases, OctetCase)
 
 	for _, tc := range cases {
 		if tc.ValidForTCP {

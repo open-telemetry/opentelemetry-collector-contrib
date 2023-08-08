@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -165,23 +166,14 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	headerConf := &HeaderConfig{
-		Pattern: "^#",
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexConf,
-			},
-		},
-	}
-
 	enc, err := helper.EncodingConfig{
 		Encoding: "utf-8",
 	}.Build()
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc.Encoding)
 	require.NoError(t, err)
-	f.headerSettings = h
+	f.headerConfig = h
 
 	temp := openTemp(t, t.TempDir())
 
@@ -244,7 +236,7 @@ func TestEncodingDecode(t *testing.T) {
 
 	// Just faking out these properties
 	r.HeaderFinalized = true
-	r.FileAttributes.HeaderAttributes = map[string]any{"foo": "bar"}
+	r.FileAttributes = map[string]any{"foo": "bar"}
 
 	assert.Equal(t, testToken[:fingerprint.DefaultSize], r.Fingerprint.FirstBytes)
 	assert.Equal(t, int64(2*fingerprint.DefaultSize), r.Offset)
@@ -264,11 +256,11 @@ func TestEncodingDecode(t *testing.T) {
 	assert.Equal(t, testToken[:fingerprint.DefaultSize], decodedReader.Fingerprint.FirstBytes)
 	assert.Equal(t, int64(2*fingerprint.DefaultSize), decodedReader.Offset)
 	assert.True(t, decodedReader.HeaderFinalized)
-	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes.HeaderAttributes)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes)
 
 	// These fields are intentionally excluded, as they may have changed
-	assert.Empty(t, decodedReader.FileAttributes.Name)
-	assert.Empty(t, decodedReader.FileAttributes.Path)
-	assert.Empty(t, decodedReader.FileAttributes.NameResolved)
-	assert.Empty(t, decodedReader.FileAttributes.PathResolved)
+	assert.Empty(t, decodedReader.FileAttributes[logFileName])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePath])
+	assert.Empty(t, decodedReader.FileAttributes[logFileNameResolved])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePathResolved])
 }

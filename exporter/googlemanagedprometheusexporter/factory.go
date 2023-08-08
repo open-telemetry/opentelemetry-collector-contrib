@@ -38,6 +38,14 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
 		RetrySettings:   retrySettings,
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		GMPConfig: GMPConfig{
+			MetricConfig: MetricConfig{
+				ExtraMetricsConfig: ExtraMetricsConfig{
+					EnableTargetInfo: true,
+					EnableScopeInfo:  true,
+				},
+			},
+		},
 	}
 }
 

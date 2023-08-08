@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -214,6 +215,8 @@ const mockTypeStr = "mock"
 type mockConfig struct{}
 
 func (m *mockConfig) SetRootPath(_ string) {}
+
+func (m *mockConfig) SetEnvMap(_ common.EnvMap) {}
 
 type mockFactory struct{ mock.Mock }
 type mockScraper struct{ mock.Mock }

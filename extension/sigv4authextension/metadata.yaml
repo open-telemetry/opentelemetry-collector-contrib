@@ -4,4 +4,10 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, aws, sumo]
+  distributions:
+  - contrib
+  - aws
+  - grafana
+  - sumo
+  codeowners:
+    active: [Aneurysm9, erichsueh3]

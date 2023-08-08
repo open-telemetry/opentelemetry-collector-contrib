@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
+	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -24,7 +26,8 @@ import (
 )
 
 const (
-	maxErrMsgLen = 1024
+	maxErrMsgLen          = 1024
+	missingLabelsErrorMsg = "error at least one label pair is required per stream"
 )
 
 type lokiExporter struct {
@@ -44,11 +47,15 @@ func newExporter(config *Config, settings component.TelemetrySettings) *lokiExpo
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	requests := loki.LogsToLokiRequests(ld)
+	requests := loki.LogsToLokiRequests(ld, l.config.DefaultLabelsEnabled)
 
 	var errs error
 	for tenant, request := range requests {
 		err := l.sendPushRequest(ctx, tenant, request, ld)
+		if isErrMissingLabels(err) {
+			stats.Record(ctx, lokiExporterFailedToSendLogRecordsDueToMissingLabels.M(int64(ld.LogRecordCount())))
+		}
+
 		errs = multierr.Append(errs, err)
 	}
 
@@ -141,4 +148,11 @@ func (l *lokiExporter) start(_ context.Context, host component.Host) (err error)
 func (l *lokiExporter) stop(context.Context) (err error) {
 	l.wg.Wait()
 	return nil
+}
+
+func isErrMissingLabels(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), missingLabelsErrorMsg)
 }

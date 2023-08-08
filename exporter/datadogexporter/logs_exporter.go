@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	logsmapping "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs"
 	"go.opentelemetry.io/collector/consumer"
@@ -21,18 +22,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
+// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
+const otelTag = "otel_source:datadog_exporter"
+
 type logsExporter struct {
-	params         exporter.CreateSettings
-	cfg            *Config
-	ctx            context.Context // ctx triggers shutdown upon cancellation
-	scrubber       scrub.Scrubber  // scrubber scrubs sensitive information from error messages
-	sender         *logs.Sender
-	onceMetadata   *sync.Once
-	sourceProvider source.Provider
+	params           exporter.CreateSettings
+	cfg              *Config
+	ctx              context.Context // ctx triggers shutdown upon cancellation
+	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
+	sender           *logs.Sender
+	onceMetadata     *sync.Once
+	sourceProvider   source.Provider
+	metadataReporter *inframetadata.Reporter
 }
 
 // newLogsExporter creates a new instance of logsExporter
-func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *Config, onceMetadata *sync.Once, sourceProvider source.Provider) (*logsExporter, error) {
+func newLogsExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+	onceMetadata *sync.Once,
+	sourceProvider source.Provider,
+	metadataReporter *inframetadata.Reporter,
+) (*logsExporter, error) {
 	// create Datadog client
 	// validation endpoint is provided by Metrics
 	errchan := make(chan error)
@@ -57,13 +69,14 @@ func newLogsExporter(ctx context.Context, params exporter.CreateSettings, cfg *C
 	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedHTTPClientSettings.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
-		params:         params,
-		cfg:            cfg,
-		ctx:            ctx,
-		sender:         s,
-		onceMetadata:   onceMetadata,
-		scrubber:       scrub.NewScrubber(),
-		sourceProvider: sourceProvider,
+		params:           params,
+		cfg:              cfg,
+		ctx:              ctx,
+		sender:           s,
+		onceMetadata:     onceMetadata,
+		scrubber:         scrub.NewScrubber(),
+		sourceProvider:   sourceProvider,
+		metadataReporter: metadataReporter,
 	}, nil
 }
 
@@ -80,12 +93,18 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 			if ld.ResourceLogs().Len() > 0 {
 				attrs = ld.ResourceLogs().At(0).Resource().Attributes()
 			}
-			go hostmetadata.Pusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
 		})
+
+		// Consume resources for host metadata
+		for i := 0; i < ld.ResourceLogs().Len(); i++ {
+			res := ld.ResourceLogs().At(i).Resource()
+			consumeResource(exp.metadataReporter, res, exp.params.Logger)
+		}
 	}
 
 	rsl := ld.ResourceLogs()
-	var payload []datadogV2.HTTPLogItem
+	var payloads []datadogV2.HTTPLogItem
 	// Iterate over resource logs
 	for i := 0; i < rsl.Len(); i++ {
 		rl := rsl.At(i)
@@ -97,9 +116,16 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logsmapping.Transform(log, res, exp.params.Logger))
+				payload := logsmapping.Transform(log, res, exp.params.Logger)
+				ddtags := payload.GetDdtags()
+				if ddtags != "" {
+					payload.SetDdtags(ddtags + "," + otelTag)
+				} else {
+					payload.SetDdtags(otelTag)
+				}
+				payloads = append(payloads, payload)
 			}
 		}
 	}
-	return exp.sender.SubmitLogs(exp.ctx, payload)
+	return exp.sender.SubmitLogs(exp.ctx, payloads)
 }
