@@ -139,7 +139,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
 
-	time.Sleep(time.Millisecond * 5)
+	time.Sleep(time.Millisecond * 2)
 	store.CleanUp(time.Now())
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
