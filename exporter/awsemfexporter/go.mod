@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemf
 go 1.19
 
 require (
-	github.com/aws/aws-sdk-go v1.44.316
+	github.com/aws/aws-sdk-go v1.44.319
 	github.com/google/uuid v1.3.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.82.0
