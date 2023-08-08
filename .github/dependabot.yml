@@ -7,11 +7,17 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/cmd/configschema"
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
@@ -27,11 +33,17 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/cmd/oteltestbedcol"
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/cmd/telemetrygen"
     schedule:
@@ -142,6 +154,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/exporter/datasetexporter"
     schedule:
@@ -477,6 +492,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/internal/docker"
     schedule:
@@ -617,6 +635,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/processor/deltatorateprocessor"
     schedule:
@@ -822,6 +843,9 @@ updates:
     schedule:
       interval: "weekly"
       day: "wednesday"
+    ignore:
+      - dependency-name: "github.com/DataDog/datadog-agent/*"
+        versions: ["v0.47.x"]
   - package-ecosystem: "gomod"
     directory: "/receiver/dockerstatsreceiver"
     schedule:
