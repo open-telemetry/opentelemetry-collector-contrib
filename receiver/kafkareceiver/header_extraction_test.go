@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -24,14 +24,14 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
 		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
+		logger:       zaptest.NewLogger(t),
 		ready:        make(chan bool),
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 	}
 	headers := []string{"headerKey1", "headerKey2"}
 	c.headerExtractor = &headerExtractor{
-		logger:  zap.NewNop(),
+		logger:  zaptest.NewLogger(t),
 		headers: headers,
 	}
 	groupClaim := &testConsumerGroupClaim{
@@ -85,14 +85,14 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	unmarshaler, err = unmarshaler.WithEnc("utf-8")
 	c := logsConsumerGroupHandler{
 		unmarshaler:  unmarshaler,
-		logger:       zap.NewNop(),
+		logger:       zaptest.NewLogger(t),
 		ready:        make(chan bool),
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 	}
 	headers := []string{"headerKey1", "headerKey2"}
 	c.headerExtractor = &headerExtractor{
-		logger:  zap.NewNop(),
+		logger:  zaptest.NewLogger(t),
 		headers: headers,
 	}
 	groupClaim := &testConsumerGroupClaim{
@@ -139,14 +139,14 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
 		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
-		logger:       zap.NewNop(),
+		logger:       zaptest.NewLogger(t),
 		ready:        make(chan bool),
 		nextConsumer: nextConsumer,
 		obsrecv:      obsrecv,
 	}
 	headers := []string{"headerKey1", "headerKey2"}
 	c.headerExtractor = &headerExtractor{
-		logger:  zap.NewNop(),
+		logger:  zaptest.NewLogger(t),
 		headers: headers,
 	}
 	groupClaim := &testConsumerGroupClaim{
