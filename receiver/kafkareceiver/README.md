@@ -107,7 +107,7 @@ receivers:
     topic: test
     header_extraction: 
       extract_headers: true
-      headers: ["header1"]
+      headers: ["header1", "header2"]
 ```
 
 - If we feed following kafka record to `test` topic and use above configs: 
@@ -121,7 +121,8 @@ receivers:
 }
 ```
 we will get a log record in collector similar to: 
-```yaml{
+```yaml
+{
   ...
   body: Hello,
   resource: {
@@ -132,5 +133,5 @@ we will get a log record in collector similar to:
 }
 ```
 
-- Here you can see the kafka record header `header1` being added to resource attribute.
-- Every kafka header key is prefixed with `kafka.header` string and attached to resource attributes.
+- Here you can see the kafka record header `header1` and `header2` being added to resource attribute.
+- Every **matching** kafka header key is prefixed with `kafka.header` string and attached to resource attributes.

@@ -12,7 +12,7 @@ component: kafkareceiver
 note: Allow users to attach kafka header metadata with the log/metric/trace record in the pipeline. Introduce a new config param, 'header_extraction' and some examples.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [24367]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
