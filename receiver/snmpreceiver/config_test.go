@@ -690,21 +690,44 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		},
 	}
 
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute := factory.CreateDefaultConfig().(*Config)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute.Attributes = getBaseAttrConfig("oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Attributes = getBaseAttrConfig("oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
 		{
 			Name: "a2",
 		},
 	}
-	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Attributes = getBaseAttrConfig("prefix")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+		{
+			Name: "a2",
+		},
+	}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier := factory.CreateDefaultConfig().(*Config)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+	
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{IndexedValuePrefix: "p"}
+	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
 	testCases := []testCase{
 		{
@@ -852,9 +875,15 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			expectedErr: "",
 		},
 		{
-			name:        "ScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute",
-			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_attribute",
-			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedAttribute,
+			name:        "ScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute",
+			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_attribute",
+			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDAttribute,
+			expectedErr: "",
+		},
+		{
+			name:        "ScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute",
+			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_attribute",
+			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixAttribute,
 			expectedErr: "",
 		},
 		{
@@ -862,6 +891,18 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_without_indexed_identifier",
 			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithoutIndexedIdentifier,
 			expectedErr: fmt.Sprintf(errMsgColumnIndexedIdentifierRequired, "m3"),
+		},
+		{
+			name:        "ScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute",
+			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_resource_attribute",
+			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute,
+			expectedErr: "",
+		},
+		{
+			name:        "ScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute",
+			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_resource_attribute",
+			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute,
+			expectedErr: "",
 		},
 	}
 

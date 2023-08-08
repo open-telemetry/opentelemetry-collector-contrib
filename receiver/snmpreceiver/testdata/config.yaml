@@ -709,7 +709,7 @@ snmp/complex_good:
               value: val1
             - name: a3
             - name: a4
-snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_attribute:
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_attribute:
   collection_interval: 10s
   endpoint: udp://localhost:161
   version: v2c
@@ -717,6 +717,28 @@ snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_attribute:
   attributes:
     a2:
       oid: "1"
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          attributes:
+            - name: a2
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  attributes:
+    a2:
+      indexed_value_prefix: "p"
   resource_attributes:
     ra1:
       scalar_oid: "0"
@@ -748,3 +770,43 @@ snmp/scalar_oid_resource_attribute_on_column_oid_metric_without_indexed_identifi
         - oid: "1"
           resource_attributes:
             - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_column_oid_resource_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      oid: "1"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_resource_attribute:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      indexed_value_prefix: "p"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
