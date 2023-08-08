@@ -1136,5 +1136,9 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
+replace github.com/DataDog/datadog-agent/pkg/proto v0.47.0-rc.7 => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+
+replace github.com/DataDog/datadog-agent/pkg/trace v0.47.0-rc.7 => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
+
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go => cloud.google.com/go v0.110.2
