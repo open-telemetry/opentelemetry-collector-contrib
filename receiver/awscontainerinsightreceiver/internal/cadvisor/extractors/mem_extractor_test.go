@@ -4,8 +4,9 @@
 package extractors
 
 import (
-	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -17,9 +18,7 @@ func TestMemStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
 	containerType := TypeContainer
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	extractor := NewMemMetricExtractor(ctx, nil)
+	extractor := NewMemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
@@ -46,7 +45,8 @@ func TestMemStats(t *testing.T) {
 
 	// for node type
 	containerType = TypeNode
-	extractor = NewMemMetricExtractor(ctx, nil)
+	require.NoError(t, extractor.Shutdown())
+	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], MockCPUMemInfo, containerType)
@@ -74,7 +74,8 @@ func TestMemStats(t *testing.T) {
 
 	// for instance type
 	containerType = TypeInstance
-	extractor = NewMemMetricExtractor(ctx, nil)
+	require.NoError(t, extractor.Shutdown())
+	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], MockCPUMemInfo, containerType)
@@ -99,5 +100,5 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_hierarchical_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_utilization", 2.68630981, 1.0e-8)
-
+	require.NoError(t, extractor.Shutdown())
 }

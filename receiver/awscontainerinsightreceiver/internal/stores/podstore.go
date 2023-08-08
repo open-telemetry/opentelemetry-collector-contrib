@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -78,9 +79,9 @@ func (m *mapWithExpiry) Set(key string, content interface{}) {
 	m.MapWithExpiry.Set(awsmetrics.NewKey(key, nil), val)
 }
 
-func newMapWithExpiry(ctx context.Context, ttl time.Duration) *mapWithExpiry {
+func newMapWithExpiry(ttl time.Duration) *mapWithExpiry {
 	return &mapWithExpiry{
-		MapWithExpiry: awsmetrics.NewMapWithExpiry(ctx, ttl),
+		MapWithExpiry: awsmetrics.NewMapWithExpiry(ttl),
 	}
 }
 
@@ -93,20 +94,19 @@ type podClient interface {
 }
 
 type PodStore struct {
-	cache             *mapWithExpiry
-	prevMeasurements  map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
-	preMeasMapContext context.Context
-	podClient         podClient
-	k8sClient         replicaSetInfoProvider
-	lastRefreshed     time.Time
-	nodeInfo          *nodeInfo
-	prefFullPodName   bool
-	logger            *zap.Logger
+	cache            *mapWithExpiry
+	prevMeasurements map[string]*mapWithExpiry // preMeasurements per each Type (Pod, Container, etc)
+	podClient        podClient
+	k8sClient        replicaSetInfoProvider
+	lastRefreshed    time.Time
+	nodeInfo         *nodeInfo
+	prefFullPodName  bool
+	logger           *zap.Logger
 	sync.Mutex
 	addFullPodNameMetricLabel bool
 }
 
-func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
+func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*PodStore, error) {
 	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, logger)
 	if err != nil {
 		return nil, err
@@ -123,9 +123,8 @@ func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, addFu
 	}
 
 	podStore := &PodStore{
-		cache:                     newMapWithExpiry(ctx, podsExpiry),
+		cache:                     newMapWithExpiry(podsExpiry),
 		prevMeasurements:          make(map[string]*mapWithExpiry),
-		preMeasMapContext:         ctx,
 		podClient:                 podClient,
 		nodeInfo:                  newNodeInfo(logger),
 		prefFullPodName:           prefFullPodName,
@@ -135,6 +134,17 @@ func NewPodStore(ctx context.Context, hostIP string, prefFullPodName bool, addFu
 	}
 
 	return podStore, nil
+}
+
+func (p *PodStore) Shutdown() error {
+	var errs error
+	errs = p.cache.Shutdown()
+	for _, maps := range p.prevMeasurements {
+		if prevMeasErr := maps.Shutdown(); prevMeasErr != nil {
+			errs = multierr.Append(errs, prevMeasErr)
+		}
+	}
+	return errs
 }
 
 func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
@@ -155,7 +165,7 @@ func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}
 func (p *PodStore) setPrevMeasurement(metricType, metricKey string, content interface{}) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
-		prevMeasurement = newMapWithExpiry(p.preMeasMapContext, measurementsExpiry)
+		prevMeasurement = newMapWithExpiry(measurementsExpiry)
 		p.prevMeasurements[metricType] = prevMeasurement
 	}
 	prevMeasurement.Set(metricKey, content)

@@ -23,6 +23,7 @@ import (
 	"github.com/google/cadvisor/manager"
 	"github.com/google/cadvisor/utils/sysfs"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -162,6 +163,18 @@ var metricsExtractors = []extractors.MetricExtractor{}
 
 func GetMetricsExtractors() []extractors.MetricExtractor {
 	return metricsExtractors
+}
+
+func (c *Cadvisor) Shutdown() error {
+	var errs error
+	for _, ext := range metricsExtractors {
+		errs = multierr.Append(errs, ext.Shutdown())
+	}
+
+	if c.k8sDecorator != nil {
+		multierr.Append(errs, c.k8sDecorator.Shutdown())
+	}
+	return errs
 }
 
 func (c *Cadvisor) addEbsVolumeInfo(tags map[string]string, ebsVolumeIdsUsedAsPV map[string]string) {

@@ -54,3 +54,7 @@ func New(_ string, _ HostInfo, _ *zap.Logger, _ ...Option) (*Cadvisor, error) {
 func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	return []pmetric.Metrics{}
 }
+
+func (c *Cadvisor) Shutdown() error {
+	return nil
+}

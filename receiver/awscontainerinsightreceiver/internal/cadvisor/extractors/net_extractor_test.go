@@ -4,10 +4,10 @@
 package extractors
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -18,9 +18,7 @@ func TestNetStats(t *testing.T) {
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoNode.json")
 
 	containerType := ci.TypeNode
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	extractor := NewNetMetricExtractor(ctx, nil)
+	extractor := NewNetMetricExtractor(nil)
 	var cMetrics []*CAdvisorMetric
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
@@ -158,4 +156,5 @@ func TestNetStats(t *testing.T) {
 	for i := range expectedFields {
 		AssertContainsTaggedField(t, cMetrics[i], expectedFields[i], expectedTags[i])
 	}
+	require.NoError(t, extractor.Shutdown())
 }
