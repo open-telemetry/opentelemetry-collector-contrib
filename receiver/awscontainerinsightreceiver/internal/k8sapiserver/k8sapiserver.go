@@ -238,10 +238,11 @@ func (k *K8sAPIServer) init() error {
 }
 
 // Shutdown stops the k8sApiServer
-func (k *K8sAPIServer) Shutdown() {
+func (k *K8sAPIServer) Shutdown() error {
 	if k.cancel != nil {
 		k.cancel()
 	}
+	return nil
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {
