@@ -173,7 +173,7 @@ func (c *Cadvisor) Shutdown() error {
 	}
 
 	if c.k8sDecorator != nil {
-		multierr.Append(errs, c.k8sDecorator.Shutdown())
+		errs = multierr.Append(errs, c.k8sDecorator.Shutdown())
 	}
 	return errs
 }
