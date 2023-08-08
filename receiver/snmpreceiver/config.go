@@ -30,7 +30,7 @@ var (
 	errMsgInvalidEndpointWError            = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format: %w`
 	errMsgInvalidEndpoint                  = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
 	errMsgAttributeConfigNoEnumOIDOrPrefix = `attribute '%s' must contain one of either an enum, oid, or indexed_value_prefix`
-	errMsgResourceAttributeNoOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid or indexed_value_prefix`
+	errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid or scalar_oid or indexed_value_prefix`
 	errMsgMetricNoUnit                     = `metric '%s' must have a unit`
 	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a gauge or sum`
 	errMsgMetricNoOIDs                     = `metric '%s' must have one of either scalar_oids or indexed_oids`
@@ -133,17 +133,21 @@ type Config struct {
 type ResourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// OID is required only if IndexedValuePrefix is not defined.
+	// OID is required only if scalarOID and IndexedValuePrefix are not defined.
 	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// IndexedValuePrefix is required only if OID is not defined.
+	// scalarOID is required only if OID and IndexedValuePrefix are not defined. 
+	// This is the scalar OID which will provide a value to be used for this resource attribute.
+	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
+	ScalarOID string `mapstructure:"scalar_oid"`
+	// IndexedValuePrefix is required only if OID and scalarOID are not defined.
 	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
 	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
 	// those resources.
-	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid field
+	IndexedValuePrefix string `mapstructure:"indexed_value_prefix"` // required and valid if no oid or scalar_oid field
 }
 
 // AttributeConfig contains config info about all of the metric attributes that will be used by this receiver.
@@ -562,10 +566,10 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has either an OID or IndexedValuePrefix
+	// Make sure each Resource Attribute has either an OID or scalarOID or IndexedValuePrefix
 	for attrName, attrCfg := range resourceAttributes {
-		if attrCfg.OID == "" && attrCfg.IndexedValuePrefix == "" {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrPrefix, attrName))
+		if attrCfg.OID == "" && attrCfg.ScalarOID == "" && attrCfg.IndexedValuePrefix == "" {
+			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
 		}
 	}
 

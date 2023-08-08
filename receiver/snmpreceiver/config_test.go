@@ -332,6 +332,12 @@ func getBaseResourceAttrConfig(attrType string) map[string]*ResourceAttributeCon
 				OID: "2",
 			},
 		}
+	case "scalar_oid":
+		return map[string]*ResourceAttributeConfig{
+			"ra1": {
+				ScalarOID: "0",
+			},
+		}
 	default:
 		return map[string]*ResourceAttributeConfig{
 			"ra1": {
@@ -480,11 +486,11 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		},
 	}
 
-	expectedConfigNoResourceAttributeOIDOrPrefix := factory.CreateDefaultConfig().(*Config)
-	expectedConfigNoResourceAttributeOIDOrPrefix.Metrics = getBaseMetricConfig(true, false)
-	expectedConfigNoResourceAttributeOIDOrPrefix.ResourceAttributes = getBaseResourceAttrConfig("oid")
-	expectedConfigNoResourceAttributeOIDOrPrefix.ResourceAttributes["ra1"].OID = ""
-	expectedConfigNoResourceAttributeOIDOrPrefix.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix := factory.CreateDefaultConfig().(*Config)
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.ResourceAttributes["ra1"].OID = ""
+	expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
 	expectedConfigComplexGood := factory.CreateDefaultConfig().(*Config)
 	expectedConfigComplexGood.ResourceAttributes = getBaseResourceAttrConfig("prefix")
@@ -684,6 +690,17 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 		},
 	}
 
+	expectedConfigScalarOIDPresentWithIndexedAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDPresentWithIndexedAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDPresentWithIndexedAttribute.Attributes = getBaseAttrConfig("oid")
+	expectedConfigScalarOIDPresentWithIndexedAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDPresentWithIndexedAttribute.Metrics["m3"].ColumnOIDs[0].Attributes = []Attribute{
+		{
+			Name: "a2",
+		},
+	}
+	expectedConfigScalarOIDPresentWithIndexedAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+
 	testCases := []testCase{
 		{
 			name:        "NoMetricConfigsErrors",
@@ -818,15 +835,21 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			expectedErr: fmt.Sprintf(errMsgColumnIndexedAttributeRequired, "m3"),
 		},
 		{
-			name:        "NoResourceAttributeConfigOIDOrPrefixErrors",
-			nameVal:     "no_resource_attribute_oid_or_prefix",
-			expectedCfg: expectedConfigNoResourceAttributeOIDOrPrefix,
-			expectedErr: fmt.Sprintf(errMsgResourceAttributeNoOIDOrPrefix, "ra1"),
+			name:        "NoResourceAttributeConfigOIDOrScalarOIDOrPrefixErrors",
+			nameVal:     "no_resource_attribute_oid_or_scalar_oid_or_prefix",
+			expectedCfg: expectedConfigNoResourceAttributeOIDOrScalarOIDOrPrefix,
+			expectedErr: fmt.Sprintf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, "ra1"),
 		},
 		{
 			name:        "ComplexConfigGood",
 			nameVal:     "complex_good",
 			expectedCfg: expectedConfigComplexGood,
+			expectedErr: "",
+		},
+		{
+			name:        "ScalarOIDPresentWithIndexedAttribute",
+			nameVal:     "scalar_oid_present_with_indexed_attribute",
+			expectedCfg: expectedConfigScalarOIDPresentWithIndexedAttribute,
 			expectedErr: "",
 		},
 	}
