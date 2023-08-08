@@ -19,6 +19,7 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/configschema
+      - cmd/githubgen
       - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
@@ -102,6 +103,7 @@ body:
       - extension/storage/filestorage
       - internal/aws
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig
@@ -182,6 +184,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitprovider
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
@@ -211,7 +214,6 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
-      - receiver/prometheusexec
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb

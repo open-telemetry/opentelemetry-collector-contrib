@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 func TestFactory(t *testing.T) {
@@ -38,6 +39,8 @@ func TestFactory(t *testing.T) {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
+		MetadataCollectionInterval: 5 * time.Minute,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}, rCfg)
 
 	r, err := f.CreateTracesReceiver(

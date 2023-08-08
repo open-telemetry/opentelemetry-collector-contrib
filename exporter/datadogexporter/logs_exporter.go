@@ -22,6 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
+// otelTag specifies a tag to be added to all logs sent from the Datadog exporter
+const otelTag = "otel_source:datadog_exporter"
+
 type logsExporter struct {
 	params           exporter.CreateSettings
 	cfg              *Config
@@ -101,7 +104,7 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 	}
 
 	rsl := ld.ResourceLogs()
-	var payload []datadogV2.HTTPLogItem
+	var payloads []datadogV2.HTTPLogItem
 	// Iterate over resource logs
 	for i := 0; i < rsl.Len(); i++ {
 		rl := rsl.At(i)
@@ -113,9 +116,16 @@ func (exp *logsExporter) consumeLogs(_ context.Context, ld plog.Logs) (err error
 			// iterate over Logs
 			for k := 0; k < lsl.Len(); k++ {
 				log := lsl.At(k)
-				payload = append(payload, logsmapping.Transform(log, res, exp.params.Logger))
+				payload := logsmapping.Transform(log, res, exp.params.Logger)
+				ddtags := payload.GetDdtags()
+				if ddtags != "" {
+					payload.SetDdtags(ddtags + "," + otelTag)
+				} else {
+					payload.SetDdtags(otelTag)
+				}
+				payloads = append(payloads, payload)
 			}
 		}
 	}
-	return exp.sender.SubmitLogs(exp.ctx, payload)
+	return exp.sender.SubmitLogs(exp.ctx, payloads)
 }

@@ -28,8 +28,8 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	provider           ecsutil.MetadataProvider
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider ecsutil.MetadataProvider
+	rb       *metadata.ResourceBuilder
 }
 
 func NewDetector(params processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
@@ -43,7 +43,7 @@ func NewDetector(params processor.CreateSettings, dcfg internal.DetectorConfig) 
 		}
 		return nil, fmt.Errorf("unable to create task metadata provider: %w", err)
 	}
-	return &Detector{provider: provider, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{provider: provider, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
 // Detect records metadata retrieved from the ECS Task Metadata Endpoint (TMDE) as resource attributes
@@ -60,46 +60,45 @@ func (d *Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		return pcommon.NewResource(), "", fmt.Errorf("unable to fetch task metadata: %w", err)
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSECS)
-	rb.SetAwsEcsTaskArn(tmdeResp.TaskARN)
-	rb.SetAwsEcsTaskFamily(tmdeResp.Family)
-	rb.SetAwsEcsTaskRevision(tmdeResp.Revision)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSECS)
+	d.rb.SetAwsEcsTaskArn(tmdeResp.TaskARN)
+	d.rb.SetAwsEcsTaskFamily(tmdeResp.Family)
+	d.rb.SetAwsEcsTaskRevision(tmdeResp.Revision)
 
 	region, account := parseRegionAndAccount(tmdeResp.TaskARN)
 	if account != "" {
-		rb.SetCloudAccountID(account)
+		d.rb.SetCloudAccountID(account)
 	}
 
 	if region != "" {
-		rb.SetCloudRegion(region)
+		d.rb.SetCloudRegion(region)
 	}
 
 	// TMDE returns the cluster short name or ARN, so we need to construct the ARN if necessary
-	rb.SetAwsEcsClusterArn(constructClusterArn(tmdeResp.Cluster, region, account))
+	d.rb.SetAwsEcsClusterArn(constructClusterArn(tmdeResp.Cluster, region, account))
 
 	if tmdeResp.AvailabilityZone != "" {
-		rb.SetCloudAvailabilityZone(tmdeResp.AvailabilityZone)
+		d.rb.SetCloudAvailabilityZone(tmdeResp.AvailabilityZone)
 	}
 
 	// The launch type and log data attributes are only available in TMDE v4
 	switch lt := strings.ToLower(tmdeResp.LaunchType); lt {
 	case "ec2":
-		rb.SetAwsEcsLaunchtype("ec2")
+		d.rb.SetAwsEcsLaunchtype("ec2")
 	case "fargate":
-		rb.SetAwsEcsLaunchtype("fargate")
+		d.rb.SetAwsEcsLaunchtype("fargate")
 	}
 
 	selfMetaData, err := d.provider.FetchContainerMetadata()
 
 	if err != nil || selfMetaData == nil {
-		return rb.Emit(), "", err
+		return d.rb.Emit(), "", err
 	}
 
-	addValidLogData(tmdeResp.Containers, selfMetaData, account, rb)
+	addValidLogData(tmdeResp.Containers, selfMetaData, account, d.rb)
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
 func constructClusterArn(cluster, region, account string) string {

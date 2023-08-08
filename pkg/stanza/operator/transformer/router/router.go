@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
 	"go.uber.org/zap"
 
@@ -65,7 +64,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	routes := make([]*Route, 0, len(c.Routes))
 	for _, routeConfig := range c.Routes {
-		compiled, err := expr.Compile(routeConfig.Expression, expr.AsBool(), expr.AllowUndefinedVariables())
+		compiled, err := helper.ExprCompileBool(routeConfig.Expression)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile expression '%s': %w", routeConfig.Expression, err)
 		}
@@ -178,13 +177,13 @@ func (p *Transformer) SetOutputIDs(_ []string) {}
 
 // findOperators will find a subset of operators from a collection.
 func (p *Transformer) findOperators(operators []operator.Operator, operatorIDs []string) ([]operator.Operator, error) {
-	var result []operator.Operator
-	for _, operatorID := range operatorIDs {
+	result := make([]operator.Operator, len(operatorIDs))
+	for i, operatorID := range operatorIDs {
 		operator, err := p.findOperator(operators, operatorID)
 		if err != nil {
 			return nil, err
 		}
-		result = append(result, operator)
+		result[i] = operator
 	}
 	return result, nil
 }

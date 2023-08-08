@@ -6,7 +6,8 @@
 | Stability     | [beta]: metrics   |
 |               | [development]: logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -23,6 +24,10 @@ receiver can be used to monitor a cluster.
 Currently this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
 
+## Metrics
+
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml and [documentation.md](./documentation.md).
+
 ## Configuration
 
 The following settings are required:
@@ -38,6 +43,13 @@ The following settings are optional:
 for events using K8s API. However, the metrics collected are emitted only
 once every collection interval. `collection_interval` will determine the
 frequency at which metrics are emitted by this receiver.
+- `metadata_collection_interval` (default = `5m`): Collection interval for metadata
+for K8s entities such as pods, nodes, etc.
+Metadata of the particular entity in the cluster is collected when the entity changes.
+In addition metadata of all entities is collected periodically even if no changes happen.
+This setting controls the interval between periodic collections.
+Setting the duration to 0 will disable periodic collection (however will not impact
+metadata collection on changes).
 - `node_conditions_to_report` (default = `[Ready]`): An array of node
 conditions this receiver should report. See
 [here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) for
@@ -53,6 +65,8 @@ The following allocatable resource types are available.
   - memory
   - ephemeral-storage
   - storage
+- `metrics`: Allows to enable/disable metrics.
+- `resource_attributes`: Allows to enable/disable resource attributes.
 
 Example:
 
@@ -61,6 +75,12 @@ Example:
     auth_type: kubeConfig
     node_conditions_to_report: [Ready, MemoryPressure]
     allocatable_types_to_report: [cpu, memory]
+  metrics:
+    k8s.container.cpu_limit:
+      enabled: false
+  resource_attributes:
+    container.id:
+      enabled: false
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

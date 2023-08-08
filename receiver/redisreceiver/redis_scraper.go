@@ -93,7 +93,9 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordRoleMetrics(now, inf)
 	rs.recordCmdStatsMetrics(now, inf)
-	return rs.mb.Emit(metadata.WithRedisVersion(rs.getRedisVersion(inf))), nil
+	rb := rs.mb.NewResourceBuilder()
+	rb.SetRedisVersion(rs.getRedisVersion(inf))
+	return rs.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 // recordCommonMetrics records metrics from Redis info key-value pairs.

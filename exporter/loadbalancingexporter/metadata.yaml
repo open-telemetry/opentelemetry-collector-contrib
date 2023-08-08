@@ -4,4 +4,10 @@ status:
   class: exporter
   stability:
     beta: [traces, logs]
-  distributions: [contrib, observiq, sumo]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - sumo
+  codeowners:
+    active: [jpkrohling]
