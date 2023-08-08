@@ -10,7 +10,7 @@ component: awsemfexporter
 note: Enforce time to live on metric data that is stored for the purpose of cumulative to delta conversions within EMF Exporter
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [250508]
+issues: [25058]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
