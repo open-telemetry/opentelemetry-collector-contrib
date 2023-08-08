@@ -6,10 +6,12 @@ package metrics
 import (
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFloat64RateCalculator(t *testing.T) {
@@ -24,6 +26,7 @@ func TestFloat64RateCalculator(t *testing.T) {
 	r, ok = c.Calculate(mKey, float64(100), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 0.5, r, 0.1)
+	require.NoError(t, c.Shutdown())
 }
 
 func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
@@ -46,6 +49,7 @@ func TestFloat64RateCalculatorWithTooFrequentUpdate(t *testing.T) {
 	r, ok = c.Calculate(mKey, float64(105), nextTime)
 	assert.True(t, ok)
 	assert.InDelta(t, 1, r, 0.1)
+	require.NoError(t, c.Shutdown())
 }
 
 func newFloat64RateCalculator() MetricCalculator {
@@ -76,6 +80,7 @@ func TestFloat64DeltaCalculator(t *testing.T) {
 			assert.InDelta(t, f-testCases[i-1], r, f/10)
 		}
 	}
+	require.NoError(t, c.Shutdown())
 }
 
 func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
@@ -91,43 +96,55 @@ func TestFloat64DeltaCalculatorWithDecreasingValues(t *testing.T) {
 			assert.Equal(t, testCases[i]-testCases[i-1], r)
 		}
 	}
+	require.NoError(t, c.Shutdown())
 }
 
 func TestMapWithExpiryAdd(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
+	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1})
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
+	store.Unlock()
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue)
 
+	store.Lock()
+	defer store.Unlock()
 	val, ok = store.Get(Key{MetricMetadata: "key2"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
+	require.NoError(t, store.Shutdown())
 }
 
 func TestMapWithExpiryCleanup(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
 	value1 := rand.Float64()
+	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
 
-	store.CleanUp(time.Now())
 	val, ok := store.Get(Key{MetricMetadata: "key1"})
+
 	assert.Equal(t, true, ok)
 	assert.Equal(t, value1, val.RawValue.(float64))
 	assert.Equal(t, 1, store.Size())
+	store.Unlock()
 
-	time.Sleep(time.Second)
-	store.CleanUp(time.Now())
+	time.Sleep(time.Second + time.Millisecond)
+	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 	assert.Equal(t, 0, store.Size())
+	store.Unlock()
+	require.NoError(t, store.Shutdown())
 }
 
 func TestMapWithExpiryConcurrency(t *testing.T) {
 	store := NewMapWithExpiry(time.Second)
+	store.Lock()
 	store.Set(Key{MetricMetadata: "sum"}, MetricValue{RawValue: 0})
+	store.Unlock()
 
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -159,6 +176,7 @@ func TestMapWithExpiryConcurrency(t *testing.T) {
 	wg.Wait()
 	sum, _ := store.Get(Key{MetricMetadata: "sum"})
 	assert.Equal(t, 0, sum.RawValue.(int))
+	require.NoError(t, store.Shutdown())
 }
 
 type mockKey struct {
@@ -218,4 +236,40 @@ func TestMapKeyNotEqualOnName(t *testing.T) {
 		index: 1,
 	}, labelMap2)
 	assert.NotEqual(t, mKey1, mKey2)
+}
+
+func TestSweep(t *testing.T) {
+	sweepEvent := make(chan time.Time)
+	closed := &atomic.Bool{}
+
+	onSweep := func(now time.Time) {
+		sweepEvent <- now
+	}
+
+	mwe := &MapWithExpiry{
+		ttl:      1 * time.Millisecond,
+		lock:     &sync.Mutex{},
+		doneChan: make(chan struct{}),
+	}
+
+	start := time.Now()
+	go func() {
+		mwe.sweep(onSweep)
+		closed.Store(true)
+		close(sweepEvent)
+	}()
+
+	for i := 1; i <= 2; i++ {
+		sweepTime := <-sweepEvent
+		tickTime := time.Since(start) + mwe.ttl*time.Duration(i)
+		require.False(t, closed.Load())
+		assert.LessOrEqual(t, mwe.ttl, tickTime)
+		assert.LessOrEqual(t, time.Since(sweepTime), mwe.ttl)
+	}
+	require.NoError(t, mwe.Shutdown())
+	for range sweepEvent { // nolint
+	}
+	if !closed.Load() {
+		t.Errorf("Sweeper did not terminate.")
+	}
 }
