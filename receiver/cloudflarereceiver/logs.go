@@ -173,8 +173,9 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 }
 
 func parsePayload(payload []byte) ([]map[string]interface{}, error) {
-	var logs []map[string]interface{}
-	for _, line := range bytes.Split(payload, []byte("\n")) {
+	lines := bytes.Split(payload, []byte("\n"))
+	logs := make([]map[string]interface{}, 0, len(lines))
+	for _, line := range lines {
 		if len(line) == 0 {
 			continue
 		}

@@ -195,3 +195,8 @@ Oracle DB driver to connect and query the same table schema and contents as the 
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
 Another usage example is the `go_ora`
 example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
+
+#### MySQL Datasource Format Example
+
+The `datasource` format for MySQL works as follows:  
+`user:password@tcp(host:port)/databasename`  

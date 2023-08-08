@@ -116,7 +116,7 @@ func TestGRPCReception(t *testing.T) {
 
 	segmentCollection := &agent.SegmentCollection{
 		Segments: []*agent.SegmentObject{
-			MockGrpcTraceSegment(1),
+			mockGrpcTraceSegment(1),
 		},
 	}
 
@@ -163,7 +163,7 @@ func TestHttpReception(t *testing.T) {
 
 }
 
-func MockGrpcTraceSegment(sequence int) *agent.SegmentObject {
+func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 	seq := strconv.Itoa(sequence)
 	return &agent.SegmentObject{
 		TraceId:         "trace" + seq,

@@ -12,7 +12,6 @@ import (
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -30,7 +29,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
 )
 
 const (
@@ -635,6 +633,20 @@ func TestConnectorCapabilities(t *testing.T) {
 	assert.Equal(t, false, caps.MutatesData)
 }
 
+type errConsumer struct {
+	wg      *sync.WaitGroup
+	fakeErr error
+}
+
+func (e *errConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
+	e.wg.Done()
+	return e.fakeErr
+}
+
 func TestConsumeMetricsErrors(t *testing.T) {
 	// Prepare
 	fakeErr := fmt.Errorf("consume metrics error")
@@ -643,12 +655,10 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		wg.Done()
-		return true
-	})).Return(fakeErr)
-
+	mcon := &errConsumer{
+		wg:      &wg,
+		fakeErr: fakeErr,
+	}
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
 	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, disabledExemplarsConfig, cumulative, logger, ticker)
@@ -808,15 +818,7 @@ func TestConsumeTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 
-			mcon := &mocks.MetricsConsumer{}
-
-			var wg sync.WaitGroup
-			// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
-			mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				wg.Done()
-
-				return tc.verifier(t, input)
-			})).Return(nil)
+			mcon := &consumertest.MetricsSink{}
 
 			mockClock := clock.NewMock(time.Now())
 			ticker := mockClock.NewTicker(time.Nanosecond)
@@ -834,17 +836,18 @@ func TestConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Trigger flush.
-				wg.Add(1)
 				mockClock.Add(time.Nanosecond)
-				wg.Wait()
+				require.Eventually(t, func() bool {
+					return len(mcon.AllMetrics()) > 0
+				}, 1*time.Second, 10*time.Millisecond)
+				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
 			}
 		})
 	}
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	mcon := consumertest.NewNop()
 
 	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, cumulative, zaptest.NewLogger(t), nil)
 	traces := buildSampleTrace()
@@ -875,8 +878,7 @@ func TestMetricKeyCache(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	mcon := consumertest.NewNop()
 
 	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, cumulative, zaptest.NewLogger(b), nil)
 
@@ -890,8 +892,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 }
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
+	mcon := consumertest.NewNop()
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
 	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, cumulative, zaptest.NewLogger(t), nil, excludeDimensions...)
 	traces := buildSampleTrace()
@@ -1044,7 +1045,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			},
 		}, traces1.ResourceSpans().AppendEmpty())
 
-	mcon := &mocks.MetricsConsumer{}
+	mcon := &consumertest.MetricsSink{}
 
 	wantDataPointCounts := []int{
 		6, // (calls + duration) * (service-a + service-b + service-c)
@@ -1055,23 +1056,6 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	// invocations are complete.
 	var wg sync.WaitGroup
 	wg.Add(len(wantDataPointCounts))
-
-	// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
-	mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		defer wg.Done()
-
-		// Verify
-		require.NotEmpty(t, wantDataPointCounts)
-
-		// GreaterOrEqual is particularly necessary for the second assertion where we
-		// expect 4 data points; but could also be 6 due to the non-deterministic nature
-		// of the p.histograms map which, through the act of "Get"ting a cached key, will
-		// lead to updating its recent-ness.
-		require.GreaterOrEqual(t, input.DataPointCount(), wantDataPointCounts[0])
-		wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
-
-		return true
-	})).Return(nil)
 
 	mockClock := clock.NewMock(time.Now())
 	ticker := mockClock.NewTicker(time.Nanosecond)
@@ -1099,8 +1083,20 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	wg.Wait()
-	assert.Empty(t, wantDataPointCounts)
+	require.Eventually(t, func() bool {
+		return len(mcon.AllMetrics()) == len(wantDataPointCounts)
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// Verify
+	require.NotEmpty(t, wantDataPointCounts)
+
+	for i, wanted := range wantDataPointCounts {
+		// GreaterOrEqual is particularly necessary for the second assertion where we
+		// expect 4 data points; but could also be 6 due to the non-deterministic nature
+		// of the p.histograms map which, through the act of "Get"ting a cached key, will
+		// lead to updating its recent-ness.
+		require.GreaterOrEqual(t, mcon.AllMetrics()[i].DataPointCount(), wanted)
+	}
 }
 
 func TestBuildMetricName(t *testing.T) {

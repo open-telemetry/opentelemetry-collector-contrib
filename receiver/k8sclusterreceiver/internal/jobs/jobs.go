@@ -4,40 +4,32 @@
 package jobs // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, j *batchv1.Job) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
-
-	mbphase.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
-	mbphase.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))
-	mbphase.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded))
+func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Timestamp) {
+	mb.RecordK8sJobActivePodsDataPoint(ts, int64(j.Status.Active))
+	mb.RecordK8sJobFailedPodsDataPoint(ts, int64(j.Status.Failed))
+	mb.RecordK8sJobSuccessfulPodsDataPoint(ts, int64(j.Status.Succeeded))
 
 	if j.Spec.Completions != nil {
-		mbphase.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions))
+		mb.RecordK8sJobDesiredSuccessfulPodsDataPoint(ts, int64(*j.Spec.Completions))
 	}
 	if j.Spec.Parallelism != nil {
-		mbphase.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
+		mb.RecordK8sJobMaxParallelPodsDataPoint(ts, int64(*j.Spec.Parallelism))
 	}
 
-	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(j.Namespace)
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // Transform transforms the job to remove the fields that we don't use to reduce RAM utilization.

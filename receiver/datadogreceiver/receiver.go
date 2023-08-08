@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -17,6 +17,7 @@ import (
 )
 
 type datadogReceiver struct {
+	address      string
 	config       *Config
 	params       receiver.CreateSettings
 	nextConsumer consumer.Traces
@@ -65,6 +66,8 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
+
+	ddr.address = hln.Addr().String()
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
