@@ -122,7 +122,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	// Instead, manually create a Map Object, sleep, and then call cleanup to ensure that entries are erased.
 	// The sweep method is tested in a later unit test.
 	// Explicitly testing CleanUp allows us to avoid test race conditions when the sweep ticker may not fire within
-	//the allotted sleep time.
+	// the allotted sleep time.
 	store := &MapWithExpiry{
 		ttl:     time.Second,
 		entries: make(map[interface{}]*MetricValue),
