@@ -48,6 +48,7 @@ var (
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
 	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
+	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute %s has too many keys set, must have only one of oid, scalar_oid, or indexed_value_prefix`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -142,7 +143,7 @@ type ResourceAttributeConfig struct {
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
-	// IndexedValuePrefix is required only if OID and scalarOID are not defined.
+	// IndexedValuePrefix is required only if OID and ScalarOID are not defined.
 	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
 	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
@@ -458,7 +459,16 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
 				continue
 			} 
+
 			if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" { hasIndexedIdentifier = true }
+			
+			numKeys := 0
+			if resourceAttribute.OID != "" {numKeys++}
+			if resourceAttribute.ScalarOID != "" {numKeys++}
+			if resourceAttribute.IndexedValuePrefix != "" {numKeys++}
+			if numKeys > 1 {
+				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, name))
+			}
 		}
 	}
 

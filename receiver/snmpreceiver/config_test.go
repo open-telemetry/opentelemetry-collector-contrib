@@ -729,6 +729,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{IndexedValuePrefix: "p"}
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
 
+	expectedConfigMultipleKeysOnResourceAttribute := factory.CreateDefaultConfig().(*Config)
+	expectedConfigMultipleKeysOnResourceAttribute.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "0", OID: "1"}
+	expectedConfigMultipleKeysOnResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+
 	testCases := []testCase{
 		{
 			name:        "NoMetricConfigsErrors",
@@ -903,6 +909,12 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			nameVal:     "scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_value_prefix_resource_attribute",
 			expectedCfg: expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute,
 			expectedErr: "",
+		},
+		{
+			name:        "MultipleKeysOnResourceAttribute",
+			nameVal:     "multiple_keys_on_resource_attribute",
+			expectedCfg: expectedConfigMultipleKeysOnResourceAttribute,
+			expectedErr: fmt.Sprintf(errMsgMultipleKeysSetOnResourceAttribute, "ra1"),
 		},
 	}
 
