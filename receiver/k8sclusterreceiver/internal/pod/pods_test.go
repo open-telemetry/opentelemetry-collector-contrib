@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -24,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
@@ -41,7 +43,10 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), metadata.DefaultMetricsBuilderConfig(), pod)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(zap.NewNop(), mb, pod, ts)
+	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
@@ -248,7 +253,7 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 }
 
 func mockMetadataStore(to testCaseOptions) *metadata.Store {
-	ms := &metadata.Store{}
+	ms := metadata.NewStore()
 
 	if to.wantNilCache {
 		return ms
@@ -261,7 +266,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 
 	switch to.kind {
 	case "Job":
-		ms.Jobs = store
+		ms.Setup(gvk.Job, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-job-0"] = testutils.WithOwnerReferences(
@@ -279,7 +284,7 @@ func mockMetadataStore(to testCaseOptions) *metadata.Store {
 		}
 		return ms
 	case "ReplicaSet":
-		ms.ReplicaSets = store
+		ms.Setup(gvk.ReplicaSet, store)
 		if !to.emptyCache {
 			if to.withParentOR {
 				store.Cache["test-namespace/test-replicaset-0"] = testutils.WithOwnerReferences(
