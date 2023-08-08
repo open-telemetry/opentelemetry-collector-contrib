@@ -118,7 +118,16 @@ func TestMapWithExpiryAdd(t *testing.T) {
 }
 
 func TestMapWithExpiryCleanup(t *testing.T) {
-	store := NewMapWithExpiry(time.Second)
+	// This test is meant to explicitly test the CleanUp method. We do not need to use NewMapWithExpiry().
+	// Instead, manually create a Map Object, sleep, and then call cleanup to ensure that entries are erased.
+	// The sweep method is tested in a later unit test.
+	// Explicitly testing CleanUp allows us to avoid test race conditions when the sweep ticker may not fire within
+	// the allotted sleep time.
+	store := &MapWithExpiry{
+		ttl:     time.Millisecond,
+		entries: make(map[interface{}]*MetricValue),
+		lock:    &sync.Mutex{},
+	}
 	value1 := rand.Float64()
 	store.Lock()
 	store.Set(Key{MetricMetadata: "key1"}, MetricValue{RawValue: value1, Timestamp: time.Now()})
@@ -130,14 +139,14 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
 
-	time.Sleep(time.Second + time.Millisecond)
+	time.Sleep(time.Millisecond * 2)
+	store.CleanUp(time.Now())
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
 	assert.Equal(t, false, ok)
 	assert.True(t, val == nil)
 	assert.Equal(t, 0, store.Size())
 	store.Unlock()
-	require.NoError(t, store.Shutdown())
 }
 
 func TestMapWithExpiryConcurrency(t *testing.T) {
