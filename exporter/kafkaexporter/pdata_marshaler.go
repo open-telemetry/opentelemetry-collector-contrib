@@ -100,3 +100,104 @@ func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) Traces
 		encoding:  encoding,
 	}
 }
+
+func (p pdataTracesMarshaler) Marshal2(td ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
+	tracesSlice, err := p.protoFromTraces(td, config)
+	if err != nil {
+		return nil, err
+	}
+
+	messagesSlice := [][]*sarama.ProducerMessage{make([]*sarama.ProducerMessage, 0)}
+
+	for _, traces := range tracesSlice {
+		tracesData, err := p.marshaler.MarshalTraces(traces)
+		if err != nil {
+			return nil, err
+		}
+
+		message := &sarama.ProducerMessage{
+			Topic: topic,
+			Value: sarama.ByteEncoder(tracesData),
+		}
+		messagesSlice = append(messagesSlice, []*sarama.ProducerMessage{message})
+	}
+
+	return messagesSlice, nil
+}
+
+func (p pdataTracesMarshaler) protoFromTraces(td ptrace.Traces, config *Config) ([]ptrace.Traces, error) {
+	// 1. check td need to cut by it size
+	bytes, err := p.marshaler.MarshalTraces(td)
+	if err != nil {
+		return nil, err
+	}
+
+	maxBytesSize := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+
+	if len(bytes) <= maxBytesSize {
+		return []ptrace.Traces{td}, nil
+	}
+
+	// 2. cut td
+	// 2.1 cutSize = total_td_size/max_bytes_size
+	cutSize := len(bytes) / maxBytesSize
+
+	// 2.2 cut traces to tracesSlice
+	return p.cutTracesByMaxByte(cutSize, td, maxBytesSize)
+}
+
+func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces, maxByte int) (dest []ptrace.Traces, err error) {
+	if tracesSpansNum(td) <= splitSize {
+		return p.cutTracesByMaxByte(splitSize/2, td, maxByte)
+	}
+
+	split := splitTraces(splitSize, td)
+
+	if tracesSpansBytes(split, p) > maxByte {
+		// check spansNum == 1
+		if tracesSpansNum(split) == 1 {
+			return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+		}
+		left, err := p.cutTracesByMaxByte(splitSize/2, split, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, left...)
+	} else {
+		dest = append(dest, split)
+	}
+
+	if tracesSpansBytes(td, p) > maxByte {
+		right, err := p.cutTracesByMaxByte(splitSize, td, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, right...)
+	} else {
+		dest = append(dest, td)
+	}
+	return dest, nil
+
+}
+
+func tracesSpansNum(td ptrace.Traces) (num int) {
+	for x := 0; x < td.ResourceSpans().Len(); x++ {
+		for y := 0; y < td.ResourceSpans().At(x).ScopeSpans().Len(); y++ {
+			num += td.ResourceSpans().At(x).ScopeSpans().At(y).Spans().Len()
+		}
+	}
+	return num
+}
+
+func tracesSpansBytes(td ptrace.Traces, p pdataTracesMarshaler) int {
+	bytes, err := p.marshaler.MarshalTraces(td)
+	if err != nil {
+		return 0
+	}
+	return len(bytes)
+}
+
+func getBlankProducerMessageSize(config *Config) int {
+	msg := sarama.ProducerMessage{}
+	return msg.ByteSize(config.Producer.protoVersion)
+}
