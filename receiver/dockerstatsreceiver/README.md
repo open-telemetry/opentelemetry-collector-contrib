@@ -89,8 +89,8 @@ the following process will be followed to phase out the old metrics:
 
 - Between `v0.79.0` and `v0.81.0`, the new metric is introduced and the old metric is marked as deprecated.
   Only the old metric are emitted by default.
-- Between `v0.82.0` and `v0.84.0`, the old metric is disabled and the new one enabled by default.
-- In `v0.85.0` and up, the old metric is removed.
+- Between `v0.83.0` and `v0.85.0`, the old metric is disabled and the new one enabled by default.
+- In `v0.86.0` and up, the old metric is removed.
 
 To change the enabled state for the specific metrics, use the standard configuration options that are available for all metrics.
 

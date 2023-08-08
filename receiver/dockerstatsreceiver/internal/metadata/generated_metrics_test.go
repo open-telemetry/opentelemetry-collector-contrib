@@ -50,7 +50,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			expectedWarnings := 0
 			if test.configSet == testSetAll || test.configSet == testSetNone {
-				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be configured: The metric is deprecated and will be removed in v0.85.0. Please use `container.cpu.utilization` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] `container.cpu.percent` should not be configured: The metric is deprecated and will be removed in v0.86.0. Please use `container.cpu.utilization` instead. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification for more details.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			assert.Equal(t, expectedWarnings, observedLogs.Len())

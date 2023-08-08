@@ -18,6 +18,6 @@ issues: [21807]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  The metric `container.cpu.percentage` is now disabled by default and will be removed in v0.85.0.
+  The metric `container.cpu.percentage` is now disabled by default and will be removed in v0.86.0.
   As a replacement, the following metric is now enabled by default: `container.cpu.utilization`.
   For details, see the [docs](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.79.0/receiver/dockerstatsreceiver#transition-to-cpu-utilization-metric-name-aligned-with-opentelemetry-specification).
