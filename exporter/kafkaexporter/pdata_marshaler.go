@@ -73,21 +73,28 @@ type pdataTracesMarshaler struct {
 	encoding  string
 }
 
-func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalTraces(td)
+func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, config *Config) ([]*sarama.ProducerMessage, error) {
+	tracesSlice, err := p.cutTraces(td, config)
 	if err != nil {
 		return nil, err
 	}
 
-	message := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.ByteEncoder(bts),
-	}
-	if message.ByteSize(config.Producer.protoVersion) > config.Producer.MaxMessageBytes {
-		return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+	var messagesSlice []*sarama.ProducerMessage
+
+	for _, traces := range tracesSlice {
+		tracesData, err := p.marshaler.MarshalTraces(traces)
+		if err != nil {
+			return nil, err
+		}
+
+		message := &sarama.ProducerMessage{
+			Topic: config.Topic,
+			Value: sarama.ByteEncoder(tracesData),
+		}
+		messagesSlice = append(messagesSlice, message)
 	}
 
-	return [][]*sarama.ProducerMessage{{message}}, nil
+	return messagesSlice, nil
 }
 
 func (p pdataTracesMarshaler) Encoding() string {
@@ -101,35 +108,16 @@ func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) Traces
 	}
 }
 
-func (p pdataTracesMarshaler) Marshal2(td ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
-	tracesSlice, err := p.protoFromTraces(td, config)
-	if err != nil {
-		return nil, err
-	}
-
-	messagesSlice := [][]*sarama.ProducerMessage{make([]*sarama.ProducerMessage, 0)}
-
-	for _, traces := range tracesSlice {
-		tracesData, err := p.marshaler.MarshalTraces(traces)
-		if err != nil {
-			return nil, err
-		}
-
-		message := &sarama.ProducerMessage{
-			Topic: topic,
-			Value: sarama.ByteEncoder(tracesData),
-		}
-		messagesSlice = append(messagesSlice, []*sarama.ProducerMessage{message})
-	}
-
-	return messagesSlice, nil
-}
-
-func (p pdataTracesMarshaler) protoFromTraces(td ptrace.Traces, config *Config) ([]ptrace.Traces, error) {
+func (p pdataTracesMarshaler) cutTraces(td ptrace.Traces, config *Config) ([]ptrace.Traces, error) {
 	// 1. check td need to cut by it size
 	bytes, err := p.marshaler.MarshalTraces(td)
 	if err != nil {
 		return nil, err
+	}
+
+	// 不用cut
+	if config.Producer.MaxMessageBytes == 0 {
+		return []ptrace.Traces{td}, nil
 	}
 
 	maxBytesSize := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
@@ -168,6 +156,9 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 	}
 
 	if tracesSpansBytes(td, p) > maxByte {
+		if tracesSpansNum(td) == 1 {
+			return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+		}
 		right, err := p.cutTracesByMaxByte(splitSize, td, maxByte)
 		if err != nil {
 			return nil, err

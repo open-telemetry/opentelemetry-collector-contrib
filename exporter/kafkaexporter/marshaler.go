@@ -13,7 +13,7 @@ import (
 // TracesMarshaler marshals traces into Message array.
 type TracesMarshaler interface {
 	// Marshal serializes spans into sarama's ProducerMessages
-	Marshal(traces ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error)
+	Marshal(traces ptrace.Traces, config *Config) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string

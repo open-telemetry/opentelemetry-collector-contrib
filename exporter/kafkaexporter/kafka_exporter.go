@@ -39,22 +39,70 @@ func (ke kafkaErrors) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
+//func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
+//	messagesSlice, err := e.marshaler.Marshal(td, e.topic, e.config)
+//	if err != nil {
+//		return consumererror.NewPermanent(err)
+//	}
+//	for _, messages := range messagesSlice {
+//		err = e.producer.SendMessages(messages)
+//		if err != nil {
+//			var prodErr sarama.ProducerErrors
+//			if errors.As(err, &prodErr) {
+//				if len(prodErr) > 0 {
+//					return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+//				}
+//			}
+//			return err
+//		}
+//	}
+//	return nil
+//}
+
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-	messagesSlice, err := e.marshaler.Marshal(td, e.topic, e.config)
+	messagesSlice, err := e.marshaler.Marshal(td, e.config)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
-	for _, messages := range messagesSlice {
-		err = e.producer.SendMessages(messages)
-		if err != nil {
-			var prodErr sarama.ProducerErrors
-			if errors.As(err, &prodErr) {
-				if len(prodErr) > 0 {
-					return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-				}
+
+	startIndex := 0
+	messagesSize := 0
+	for i, messages := range messagesSlice {
+		messagesSize += messages.ByteSize(e.config.Producer.protoVersion)
+		if messagesSize < e.config.Producer.MaxMessageBytes {
+			continue
+		} else if messagesSize == e.config.Producer.MaxMessageBytes {
+			if err = e.pushMsg(messagesSlice, startIndex, i+1); err != nil {
+				return err
 			}
+			startIndex = i + 1
+			messagesSize = 0
+		} else {
+			if err = e.pushMsg(messagesSlice, startIndex, i); err != nil {
+				return err
+			}
+			startIndex = i
+			messagesSize = messages.ByteSize(e.config.Producer.protoVersion)
+		}
+	}
+	if messagesSize > 0 {
+		if err = e.pushMsg(messagesSlice, startIndex, len(messagesSlice)); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (e *kafkaTracesProducer) pushMsg(messagesSlice []*sarama.ProducerMessage, startIndex, endIndex int) error {
+	err := e.producer.SendMessages(messagesSlice[startIndex:endIndex])
+	if err != nil {
+		var prodErr sarama.ProducerErrors
+		if errors.As(err, &prodErr) {
+			if len(prodErr) > 0 {
+				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
+			}
+		}
+		return err
 	}
 	return nil
 }

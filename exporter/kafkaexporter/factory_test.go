@@ -44,15 +44,15 @@ func newMockMarshaler[Data data](encoding string) *mockMarshaler[Data] {
 }
 
 type mockTraceMarshaler[Data data] struct {
-	consume  func(d Data, topic string) ([][]*sarama.ProducerMessage, error)
+	consume  func(d Data, topic string) ([]*sarama.ProducerMessage, error)
 	encoding string
 }
 
 func (mm *mockTraceMarshaler[Data]) Encoding() string { return mm.encoding }
 
-func (mm *mockTraceMarshaler[Data]) Marshal(d Data, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
+func (mm *mockTraceMarshaler[Data]) Marshal(d Data, config *Config) ([]*sarama.ProducerMessage, error) {
 	if mm.consume != nil {
-		return mm.consume(d, topic)
+		return mm.consume(d, config.Topic)
 	}
 	return nil, errors.New("not implemented")
 }

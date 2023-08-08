@@ -94,11 +94,11 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	marshaler, ok := tracesMarshalers()["otlp_json"]
 	require.True(t, ok, "Must have otlp json marshaller")
 
-	msg, err := marshaler.Marshal(traces, t.Name(), &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}})
+	msg, err := marshaler.Marshal(traces, &Config{Topic: t.Name(), Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}})
 	require.NoError(t, err, "Must have marshaled the data without error")
 	require.Len(t, msg, 1, "Must have one entry in the message")
 
-	data, err := msg[0][0].Value.Encode()
+	data, err := msg[0].Value.Encode()
 	require.NoError(t, err, "Must not error when encoding value")
 	require.NotNil(t, data, "Must have valid data to test")
 

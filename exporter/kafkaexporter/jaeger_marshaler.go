@@ -5,7 +5,6 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"bytes"
-
 	"github.com/IBM/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
@@ -21,20 +20,14 @@ type jaegerMarshaler struct {
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string, config *Config) ([][]*sarama.ProducerMessage, error) {
+func (j jaegerMarshaler) Marshal(traces ptrace.Traces, config *Config) ([]*sarama.ProducerMessage, error) {
 	batches, err := jaeger.ProtoFromTraces(traces)
 	if err != nil {
 		return nil, err
 	}
-	messagesSlice := [][]*sarama.ProducerMessage{make([]*sarama.ProducerMessage, 0)}
+	var messages []*sarama.ProducerMessage
 
 	var errs error
-	var messagesByteSize, messageSliceIdx int
-	err = setKafkaProtoVersion(config)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, batch := range batches {
 		for _, span := range batch.Spans {
 			span.Process = batch.Process
@@ -46,22 +39,17 @@ func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string, config *Con
 			}
 			key := []byte(span.TraceID.String())
 			message := &sarama.ProducerMessage{
-				Topic: topic,
+				Topic: config.Topic,
 				Value: sarama.ByteEncoder(bts),
 				Key:   sarama.ByteEncoder(key),
 			}
 			if message.ByteSize(config.Producer.protoVersion) > config.Producer.MaxMessageBytes {
 				return nil, errSingleJaegerSpanMessageSizeOverMaxMsgByte
 			}
-			messagesByteSize += message.ByteSize(config.Producer.protoVersion)
-			if messagesByteSize > config.Producer.MaxMessageBytes {
-				messageSliceIdx += 1
-				messagesSlice = append(messagesSlice, []*sarama.ProducerMessage{})
-			}
-			messagesSlice[messageSliceIdx] = append(messagesSlice[messageSliceIdx], message)
+			messages = append(messages, message)
 		}
 	}
-	return messagesSlice, errs
+	return messages, errs
 }
 
 func (j jaegerMarshaler) Encoding() string {
