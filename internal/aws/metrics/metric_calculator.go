@@ -142,11 +142,10 @@ func (m *MapWithExpiry) sweep(removeFunc func(time2 time.Time)) {
 	}
 }
 
-// check if this is capatailized D
 func (m *MapWithExpiry) Shutdown() error {
 	select {
 	case <-m.doneChan:
-		return errors.New("closed already")
+		return errors.New("shutdown called on an already closed channel")
 	default:
 		close(m.doneChan)
 
