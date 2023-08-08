@@ -119,9 +119,9 @@ func TestMapWithExpiryAdd(t *testing.T) {
 
 func TestMapWithExpiryCleanup(t *testing.T) {
 	// This test is meant to explicitly test the CleanUp method. We do not need to use NewMapWithExpiry().
-	// Instead, manually create a Map Object, sleep, and then call cleanup to ensure that entires are erased.
+	// Instead, manually create a Map Object, sleep, and then call cleanup to ensure that entries are erased.
 	// The sweep method is tested in a later unit test.
-	// Explicitly testing CleanUp allows us to avoid tes race conditions when the sweep ticker may not fire within
+	// Explicitly testing CleanUp allows us to avoid test race conditions when the sweep ticker may not fire within
 	//the allotted sleep time.
 	store := &MapWithExpiry{
 		ttl:     time.Second,
