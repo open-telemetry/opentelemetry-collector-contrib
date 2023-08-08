@@ -36,6 +36,7 @@ func createDefaultConfig() component.Config {
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		MetadataCollectionInterval: defaultMetadataCollectionInterval,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

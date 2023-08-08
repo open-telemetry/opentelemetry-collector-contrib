@@ -14,6 +14,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -159,6 +160,66 @@ func TestIngestedDataRecordCount(t *testing.T) {
 	ingestedrecordsactual := ingestor.Records()
 	assert.Equal(t, recordstoingest, len(ingestedrecordsactual), "Number of metrics created should match number of records ingested")
 	assert.Nil(t, err)
+}
+
+func TestCreateKcsb(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name              string // name of the test
+		config            Config // config for the test
+		isMsi             bool   // is MSI enabled
+		applicationID     string // application id
+		managedIdentityID string // managed identity id
+	}{
+		{
+			name: "application id",
+			config: Config{
+				ClusterURI:     "https://CLUSTER.kusto.windows.net",
+				ApplicationID:  "an-application-id",
+				ApplicationKey: "an-application-key",
+				TenantID:       "tenant",
+				Database:       "tests",
+			},
+			isMsi:             false,
+			applicationID:     "an-application-id",
+			managedIdentityID: "",
+		},
+		{
+			name: "system managed id",
+			config: Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				Database:          "tests",
+				ManagedIdentityID: "system",
+			},
+			isMsi:             true,
+			managedIdentityID: "",
+			applicationID:     "",
+		},
+		{
+			name: "user managed id",
+			config: Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				Database:          "tests",
+				ManagedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
+			},
+			isMsi:             true,
+			managedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
+			applicationID:     "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wantAppID := tt.applicationID
+			gotKcsb := createKcsb(&tt.config, "1.0.0")
+			require.NotNil(t, gotKcsb)
+			assert.Equal(t, wantAppID, gotKcsb.ApplicationClientId)
+			wantIsMsi := tt.isMsi
+			assert.Equal(t, wantIsMsi, gotKcsb.MsiAuthentication)
+			wantManagedID := tt.managedIdentityID
+			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
+			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
+		})
+	}
 }
 
 type mockingestor struct {

@@ -43,9 +43,6 @@ receivers:
         timestamp:
           parse_from: attributes.time
           layout: '%Y-%m-%dT%H:%M:%S.%LZ'
-      - type: move
-        from: attributes.log
-        to: body
       # Extract metadata from file path
       - type: regex_parser
         id: extract_metadata_from_filepath
@@ -53,6 +50,10 @@ receivers:
         parse_from: attributes["log.file.path"]
         cache:
           size: 128  # default maximum amount of Pods per Node is 110
+      # Update body field after finishing all parsing
+      - type: move
+        from: attributes.log
+        to: body
       # Rename attributes
       - type: move
         from: attributes.stream

@@ -24,6 +24,7 @@ func TestValidateConfig(t *testing.T) {
 	errs = multierr.Append(errs, errMissingEndpointFromConfig)
 	errs = multierr.Append(errs, errReadTimeoutExceedsMaxValue)
 	errs = multierr.Append(errs, errWriteTimeoutExceedsMaxValue)
+	errs = multierr.Append(errs, errRequiredHeader)
 
 	tests := []struct {
 		desc   string
@@ -60,6 +61,32 @@ func TestValidateConfig(t *testing.T) {
 			},
 		},
 		{
+			desc:   "RequiredHeader does not contain both a key and a value",
+			expect: errRequiredHeader,
+			conf: Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "",
+				},
+				RequiredHeader: RequiredHeader{
+					Key:   "key-present",
+					Value: "",
+				},
+			},
+		},
+		{
+			desc:   "RequiredHeader does not contain both a key and a value",
+			expect: errRequiredHeader,
+			conf: Config{
+				HTTPServerSettings: confighttp.HTTPServerSettings{
+					Endpoint: "",
+				},
+				RequiredHeader: RequiredHeader{
+					Key:   "",
+					Value: "value-present",
+				},
+			},
+		},
+		{
 			desc:   "Multiple invalid configs",
 			expect: errs,
 			conf: Config{
@@ -68,6 +95,10 @@ func TestValidateConfig(t *testing.T) {
 				},
 				WriteTimeout: "14s",
 				ReadTimeout:  "15s",
+				RequiredHeader: RequiredHeader{
+					Key:   "",
+					Value: "value-present",
+				},
 			},
 		},
 	}
@@ -99,6 +130,10 @@ func TestLoadConfig(t *testing.T) {
 		WriteTimeout: "500ms",
 		Path:         "some/path",
 		HealthPath:   "health/path",
+		RequiredHeader: RequiredHeader{
+			Key:   "key-present",
+			Value: "value-present",
+		},
 	}
 
 	// create expected config

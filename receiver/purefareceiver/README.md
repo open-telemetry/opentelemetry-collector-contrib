@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
 | Distributions | [contrib], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpurefa%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpurefa%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fpurefa%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fpurefa) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fpurefa%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fpurefa) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@dgoscn](https://www.github.com/dgoscn), [@chrroberts-pure](https://www.github.com/chrroberts-pure) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
@@ -26,10 +26,13 @@ Example:
 extensions:
   bearertokenauth/array01:
     token: "..."
+  bearertokenauth/array02:
+    token: "..."
 
 receivers:
-  purefa:
-    endpoint: http://172.0.0.1:9490/metrics
+  purefa/array01:
+    fa_array_name: foobar01
+    endpoint: http://127.0.0.1:9490/metrics
     array:
       - address: array01
         auth:
@@ -58,6 +61,44 @@ receivers:
         directories: 15s
         pods: 30s
         volumes: 25s
+
+  purefa/array02:
+    fa_array_name: foobar02
+    endpoint: http://127.0.0.1:9490/metrics
+    array:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    hosts:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    directories:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    pods:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    volumes:
+      - address: array02
+        auth:
+          authenticator: bearertokenauth/array02
+    env: production
+    settings:
+      reload_intervals:
+        array: 15s
+        hosts: 15s
+        directories: 15s
+        pods: 30s
+        volumes: 25s
+
+service:
+  extensions: [bearertokenauth/array01,bearertokenauth/array02]
+  pipelines:
+    metrics:
+      receivers: [purefa/array01,purefa/array02]
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

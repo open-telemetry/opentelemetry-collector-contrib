@@ -75,6 +75,15 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
+	case gcp.CloudRunJob:
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudRun)
+		errs = multierr.Combine(errs,
+			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
+			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
+			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
+			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
+		)
 	case gcp.CloudFunctions:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPCloudFunctions)
 		errs = multierr.Combine(errs,
@@ -107,6 +116,8 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.GCEHostName),
+			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceHostname, d.detector.GCEInstanceHostname),
+			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceName, d.detector.GCEInstanceName),
 		)
 	default:
 		// We don't support this platform yet, so just return with what we have

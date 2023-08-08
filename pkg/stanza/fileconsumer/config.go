@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -56,7 +58,7 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	MatchingCriteria        `mapstructure:",squash"`
+	matcher.Criteria        `mapstructure:",squash"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
@@ -70,6 +72,11 @@ type Config struct {
 	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
 	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
 	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
+}
+
+type HeaderConfig struct {
+	Pattern           string            `mapstructure:"pattern"`
+	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
 // Build will build a file input operator from the supplied configuration
@@ -120,17 +127,22 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	var hs *headerSettings
+	var hCfg *header.Config
 	if c.Header != nil {
 		enc, err := c.Splitter.EncodingConfig.Build()
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
+	}
+
+	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Manager{
@@ -150,15 +162,15 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
 			encodingConfig:  c.Splitter.EncodingConfig,
-			headerSettings:  hs,
+			headerConfig:    hCfg,
 		},
-		finder:          c.MatchingCriteria,
+		fileMatcher:     fileMatcher,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*Reader, 0, 10),
+		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
@@ -172,34 +184,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
 	}
 
-	if len(c.Include) == 0 {
-		return fmt.Errorf("required argument `include` is empty")
-	}
-
-	// Ensure includes can be parsed as globs
-	for _, include := range c.Include {
-		_, err := doublestar.PathMatch(include, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse include glob: %w", err)
-		}
-	}
-
-	// Ensure excludes can be parsed as globs
-	for _, exclude := range c.Exclude {
-		_, err := doublestar.PathMatch(exclude, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse exclude glob: %w", err)
-		}
-	}
-
-	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
-		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
-	}
-
-	for _, sr := range c.OrderingCriteria.SortBy {
-		if err := sr.validate(); err != nil {
-			return err
-		}
+	if _, err := matcher.New(c.Criteria); err != nil {
+		return err
 	}
 
 	if c.MaxLogSize <= 0 {
@@ -226,13 +212,13 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	_, err := c.Splitter.EncodingConfig.Build()
+	enc, err := c.Splitter.EncodingConfig.Build()
 	if err != nil {
 		return err
 	}
 
 	if c.Header != nil {
-		if err := c.Header.validate(); err != nil {
+		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding); err != nil {
 			return fmt.Errorf("invalid config for `header`: %w", err)
 		}
 	}

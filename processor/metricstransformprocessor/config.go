@@ -4,49 +4,49 @@
 package metricstransformprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor"
 
 const (
-	// IncludeFieldName is the mapstructure field name for Include field
-	IncludeFieldName = "include"
+	// includeFieldName is the mapstructure field name for Include field
+	includeFieldName = "include"
 
-	// MatchTypeFieldName is the mapstructure field name for MatchType field
-	MatchTypeFieldName = "match_type"
+	// matchTypeFieldName is the mapstructure field name for matchType field
+	matchTypeFieldName = "match_type"
 
-	// ActionFieldName is the mapstructure field name for Action field
-	ActionFieldName = "action"
+	// actionFieldName is the mapstructure field name for Action field
+	actionFieldName = "action"
 
-	// NewNameFieldName is the mapstructure field name for NewName field
-	NewNameFieldName = "new_name"
+	// newNameFieldName is the mapstructure field name for NewName field
+	newNameFieldName = "new_name"
 
-	// GroupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
-	GroupResourceLabelsFieldName = "group_resource_labels"
+	// groupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	groupResourceLabelsFieldName = "group_resource_labels"
 
-	// AggregationTypeFieldName is the mapstructure field name for AggregationType field
-	AggregationTypeFieldName = "aggregation_type"
+	// aggregationTypeFieldName is the mapstructure field name for aggregationType field
+	aggregationTypeFieldName = "aggregation_type"
 
-	// LabelFieldName is the mapstructure field name for Label field
-	LabelFieldName = "label"
+	// labelFieldName is the mapstructure field name for Label field
+	labelFieldName = "label"
 
-	// NewLabelFieldName is the mapstructure field name for NewLabel field
-	NewLabelFieldName = "new_label"
+	// newLabelFieldName is the mapstructure field name for NewLabel field
+	newLabelFieldName = "new_label"
 
-	// NewValueFieldName is the mapstructure field name for NewValue field
-	NewValueFieldName = "new_value"
+	// newValueFieldName is the mapstructure field name for NewValue field
+	newValueFieldName = "new_value"
 
-	// ScaleFieldName is the mapstructure field name for Scale field
-	ScaleFieldName = "experimental_scale"
+	// scaleFieldName is the mapstructure field name for Scale field
+	scaleFieldName = "experimental_scale"
 
-	// SubmatchCaseFieldName is the mapstructure field name for SubmatchCase field
-	SubmatchCaseFieldName = "submatch_case"
+	// submatchCaseFieldName is the mapstructure field name for submatchCase field
+	submatchCaseFieldName = "submatch_case"
 )
 
 // Config defines configuration for Resource processor.
 type Config struct {
 
-	// Transform specifies a list of transforms on metrics with each transform focusing on one metric.
-	Transforms []Transform `mapstructure:"transforms"`
+	// transform specifies a list of transforms on metrics with each transform focusing on one metric.
+	Transforms []transform `mapstructure:"transforms"`
 }
 
-// Transform defines the transformation applied to the specific metric
-type Transform struct {
+// transform defines the transformation applied to the specific metric
+type transform struct {
 
 	// --- SPECIFY WHICH METRIC(S) TO MATCH ---
 
@@ -75,10 +75,10 @@ type Transform struct {
 
 	// AggregationType specifies how to aggregate.
 	// REQUIRED only if Action is COMBINE.
-	AggregationType AggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregationType `mapstructure:"aggregation_type"`
 
 	// SubmatchCase specifies what case to use for label values created from regexp submatches.
-	SubmatchCase SubmatchCase `mapstructure:"submatch_case"`
+	SubmatchCase submatchCase `mapstructure:"submatch_case"`
 
 	// Operations contains a list of operations that will be performed on the resulting metric(s).
 	Operations []Operation `mapstructure:"operations"`
@@ -89,7 +89,7 @@ type FilterConfig struct {
 	Include string `mapstructure:"include"`
 
 	// MatchType determines how the Include string is matched: <strict|regexp>.
-	MatchType MatchType `mapstructure:"match_type"`
+	MatchType matchType `mapstructure:"match_type"`
 
 	// MatchLabels specifies the label set against which the metric filter will work.
 	// This field is optional.
@@ -100,7 +100,7 @@ type FilterConfig struct {
 type Operation struct {
 	// Action specifies the action performed for this operation.
 	// REQUIRED
-	Action OperationAction `mapstructure:"action"`
+	Action operationAction `mapstructure:"action"`
 
 	// Label identifies the exact label to operate on.
 	Label string `mapstructure:"label"`
@@ -112,12 +112,12 @@ type Operation struct {
 	LabelSet []string `mapstructure:"label_set"`
 
 	// AggregationType specifies how to aggregate.
-	AggregationType AggregationType `mapstructure:"aggregation_type"`
+	AggregationType aggregationType `mapstructure:"aggregation_type"`
 
 	// AggregatedValues is a list of label values to aggregate away.
 	AggregatedValues []string `mapstructure:"aggregated_values"`
 
-	// NewValue is used to set a new label value either when the operation is `AggregatedValues` or `AddLabel`.
+	// NewValue is used to set a new label value either when the operation is `AggregatedValues` or `addLabel`.
 	NewValue string `mapstructure:"new_value"`
 
 	// ValueActions is a list of renaming actions for label values.
@@ -168,45 +168,45 @@ func (ca ConfigAction) isValid() bool {
 	return false
 }
 
-// OperationAction is the enum to capture the thress types of actions to perform for an operation.
-type OperationAction string
+// operationAction is the enum to capture the thress types of actions to perform for an operation.
+type operationAction string
 
 const (
-	// AddLabel adds a new label to an existing metric.
+	// addLabel adds a new label to an existing metric.
 	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
-	AddLabel OperationAction = "add_label"
+	addLabel operationAction = "add_label"
 
-	// UpdateLabel applies name changes to label and/or label values.
-	UpdateLabel OperationAction = "update_label"
+	// updateLabel applies name changes to label and/or label values.
+	updateLabel operationAction = "update_label"
 
-	// DeleteLabelValue deletes a label value by also removing all the points associated with this label value
+	// deleteLabelValue deletes a label value by also removing all the points associated with this label value
 	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
-	DeleteLabelValue OperationAction = "delete_label_value"
+	deleteLabelValue operationAction = "delete_label_value"
 
-	// ToggleScalarDataType changes the data type from int64 to double, or vice-versa
-	ToggleScalarDataType OperationAction = "toggle_scalar_data_type"
+	// toggleScalarDataType changes the data type from int64 to double, or vice-versa
+	toggleScalarDataType operationAction = "toggle_scalar_data_type"
 
-	// ScaleValue multiplies the value by a constant scalar
-	ScaleValue OperationAction = "experimental_scale_value"
+	// scaleValue multiplies the value by a constant scalar
+	scaleValue operationAction = "experimental_scale_value"
 
-	// AggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
+	// aggregateLabels aggregates away all labels other than the ones in Operation.LabelSet
 	// by the method indicated by Operation.AggregationType.
 	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
-	AggregateLabels OperationAction = "aggregate_labels"
+	aggregateLabels operationAction = "aggregate_labels"
 
-	// AggregateLabelValues aggregates away the values in Operation.AggregatedValues
+	// aggregateLabelValues aggregates away the values in Operation.AggregatedValues
 	// by the method indicated by Operation.AggregationType.
 	// Metric has to match the FilterConfig with all its data points if used with Update ConfigAction,
 	// otherwise the operation will be ignored.
-	AggregateLabelValues OperationAction = "aggregate_label_values"
+	aggregateLabelValues operationAction = "aggregate_label_values"
 )
 
-var operationActions = []OperationAction{AddLabel, UpdateLabel, DeleteLabelValue, ToggleScalarDataType, ScaleValue, AggregateLabels, AggregateLabelValues}
+var operationActions = []operationAction{addLabel, updateLabel, deleteLabelValue, toggleScalarDataType, scaleValue, aggregateLabels, aggregateLabelValues}
 
-func (oa OperationAction) isValid() bool {
+func (oa operationAction) isValid() bool {
 	for _, operationAction := range operationActions {
 		if oa == operationAction {
 			return true
@@ -216,26 +216,26 @@ func (oa OperationAction) isValid() bool {
 	return false
 }
 
-// AggregationType is the enum to capture the three types of aggregation for the aggregation operation.
-type AggregationType string
+// aggregationType is the enum to capture the three types of aggregation for the aggregation operation.
+type aggregationType string
 
 const (
-	// Sum indicates taking the sum of the aggregated data.
-	Sum AggregationType = "sum"
+	// sum indicates taking the sum of the aggregated data.
+	sum aggregationType = "sum"
 
-	// Mean indicates taking the mean of the aggregated data.
-	Mean AggregationType = "mean"
+	// mean indicates taking the mean of the aggregated data.
+	mean aggregationType = "mean"
 
-	// Min indicates taking the minimum of the aggregated data.
-	Min AggregationType = "min"
+	// min indicates taking the minimum of the aggregated data.
+	min aggregationType = "min"
 
-	// Max indicates taking the max of the aggregated data.
-	Max AggregationType = "max"
+	// max indicates taking the max of the aggregated data.
+	max aggregationType = "max"
 )
 
-var aggregationTypes = []AggregationType{Sum, Mean, Min, Max}
+var aggregationTypes = []aggregationType{sum, mean, min, max}
 
-func (at AggregationType) isValid() bool {
+func (at aggregationType) isValid() bool {
 	for _, aggregationType := range aggregationTypes {
 		if at == aggregationType {
 			return true
@@ -245,20 +245,20 @@ func (at AggregationType) isValid() bool {
 	return false
 }
 
-// MatchType is the enum to capture the two types of matching metric(s) that should have operations applied to them.
-type MatchType string
+// matchType is the enum to capture the two types of matching metric(s) that should have operations applied to them.
+type matchType string
 
 const (
-	// StrictMatchType is the FilterType for filtering by exact string matches.
-	StrictMatchType MatchType = "strict"
+	// strictMatchType is the FilterType for filtering by exact string matches.
+	strictMatchType matchType = "strict"
 
-	// RegexpMatchType is the FilterType for filtering by regexp string matches.
-	RegexpMatchType MatchType = "regexp"
+	// regexpMatchType is the FilterType for filtering by regexp string matches.
+	regexpMatchType matchType = "regexp"
 )
 
-var matchTypes = []MatchType{StrictMatchType, RegexpMatchType}
+var matchTypes = []matchType{strictMatchType, regexpMatchType}
 
-func (mt MatchType) isValid() bool {
+func (mt matchType) isValid() bool {
 	for _, matchType := range matchTypes {
 		if mt == matchType {
 			return true
@@ -268,20 +268,20 @@ func (mt MatchType) isValid() bool {
 	return false
 }
 
-// SubmatchCase is the enum to capture the two types of case changes to apply to submatches.
-type SubmatchCase string
+// submatchCase is the enum to capture the two types of case changes to apply to submatches.
+type submatchCase string
 
 const (
-	// Lower is the SubmatchCase for lower casing the submatch.
-	Lower SubmatchCase = "lower"
+	// lower is the submatchCase for lower casing the submatch.
+	lower submatchCase = "lower"
 
-	// Upper is the SubmatchCase for upper casing the submatch.
-	Upper SubmatchCase = "upper"
+	// upper is the submatchCase for upper casing the submatch.
+	upper submatchCase = "upper"
 )
 
-var submatchCases = []SubmatchCase{Lower, Upper}
+var submatchCases = []submatchCase{lower, upper}
 
-func (sc SubmatchCase) isValid() bool {
+func (sc submatchCase) isValid() bool {
 	for _, submatchCase := range submatchCases {
 		if sc == submatchCase {
 			return true
