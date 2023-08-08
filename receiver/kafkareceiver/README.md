@@ -85,7 +85,10 @@ The following settings can be optionally configured:
   - `after`: (default = false) If true, the messages are marked after the pipeline execution
   - `on_error`: (default = false) If false, only the successfully processed messages are marked
     **Note: this can block the entire partition in case a message processing returns a permanent error**
-
+- `header_extraction`:
+  - `extract_headers` (default = false): Allows user to attach header fields to resourse attributes in otel piepline
+  - `headers` (default = []): List of headers they'd like to extract from kafka record. 
+  **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
 Example:
 
 ```yaml
@@ -93,3 +96,39 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
+
+Example of header extraction:
+
+```yaml
+receivers:
+  kafka:
+    topic: test
+    header_extraction: 
+      extract_headers: true
+      headers: ["header1"]
+```
+
+- If we feed following kafka record to `test` topic and use above configs: 
+```yaml
+{
+  event: Hello,
+  headers: {
+    header1: value1,
+    header2: value2,
+  }
+}
+```
+we will get a log record in collector similar to: 
+```yaml{
+  ...
+  body: Hello,
+  resource: {
+    kafka.header.header1: value1,
+    kafka.header.header2: value2,
+  },
+  ...
+}
+```
+
+- Here you can see the kafka record header `header1` being added to resource attribute.
+- Every kafka header key is prefixed with `kafka.header` string and attached to resource attributes.
