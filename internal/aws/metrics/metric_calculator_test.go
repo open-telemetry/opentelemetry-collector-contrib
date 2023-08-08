@@ -124,7 +124,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	// Explicitly testing CleanUp allows us to avoid test race conditions when the sweep ticker may not fire within
 	// the allotted sleep time.
 	store := &MapWithExpiry{
-		ttl:     time.Second,
+		ttl:     time.Millisecond,
 		entries: make(map[interface{}]*MetricValue),
 		lock:    &sync.Mutex{},
 	}
@@ -139,7 +139,7 @@ func TestMapWithExpiryCleanup(t *testing.T) {
 	assert.Equal(t, 1, store.Size())
 	store.Unlock()
 
-	time.Sleep(time.Second * 2)
+	time.Sleep(time.Millisecond * 5)
 	store.CleanUp(time.Now())
 	store.Lock()
 	val, ok = store.Get(Key{MetricMetadata: "key1"})
