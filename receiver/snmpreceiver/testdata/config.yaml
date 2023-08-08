@@ -828,3 +828,40 @@ snmp/multiple_keys_on_resource_attribute:
         - oid: "1"
           resource_attributes:
             - ra1
+snmp/scalar_oid_resource_attribute_ends_in_nonzero_digit:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "1"
+    ra2:
+      oid: "1"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/column_oid_resource_attribute_ends_in_zero:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1

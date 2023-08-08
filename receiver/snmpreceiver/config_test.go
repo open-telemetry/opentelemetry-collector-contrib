@@ -735,6 +735,19 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigMultipleKeysOnResourceAttribute.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "0", OID: "1"}
 	expectedConfigMultipleKeysOnResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
 
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit := factory.CreateDefaultConfig().(*Config)
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra1"] = &ResourceAttributeConfig{ScalarOID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
+	expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
+
+	expectedConfigColumnOIDResourceAttributeEndsInZero := factory.CreateDefaultConfig().(*Config)
+	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics = getBaseMetricConfig(true, false)
+	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes = getBaseResourceAttrConfig("oid")
+	expectedConfigColumnOIDResourceAttributeEndsInZero.ResourceAttributes["ra1"] = &ResourceAttributeConfig{OID: "0"}
+	expectedConfigColumnOIDResourceAttributeEndsInZero.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1"}
+
 	testCases := []testCase{
 		{
 			name:        "NoMetricConfigsErrors",
@@ -915,6 +928,18 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 			nameVal:     "multiple_keys_on_resource_attribute",
 			expectedCfg: expectedConfigMultipleKeysOnResourceAttribute,
 			expectedErr: fmt.Sprintf(errMsgMultipleKeysSetOnResourceAttribute, "ra1"),
+		},
+		{
+			name:        "ScalarOIDResourceAttributeEndsInNonzeroDigit",
+			nameVal:     "scalar_oid_resource_attribute_ends_in_nonzero_digit",
+			expectedCfg: expectedConfigScalarOIDResourceAttributeEndsInNonzeroDigit,
+			expectedErr: fmt.Sprintf(errScalarOIDResourceAttributeEndsInNonzeroDigit, "ra1", "1"),
+		},
+		{
+			name:        "ColumnOIDResourceAttributeEndsInZero",
+			nameVal:     "column_oid_resource_attribute_ends_in_zero",
+			expectedCfg: expectedConfigColumnOIDResourceAttributeEndsInZero,
+			expectedErr: fmt.Sprintf(errColumnOIDResourceAttributeEndsInZero, "ra1", "0"),
 		},
 	}
 

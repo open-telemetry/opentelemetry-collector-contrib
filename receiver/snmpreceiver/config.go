@@ -49,6 +49,8 @@ var (
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
 	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
 	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute %s has too many keys set, must have only one of oid, scalar_oid, or indexed_value_prefix`
+	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute %s has key scalar_oid %s that ends in a nonzero digit (scalar oids should not be indexed)`
+	errColumnOIDResourceAttributeEndsInZero = `resource attribute %s has key oid %s that ends in a zero (column oids should be indexed)`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -134,12 +136,12 @@ type Config struct {
 type ResourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// OID is required only if scalarOID and IndexedValuePrefix are not defined.
+	// OID is required only if ScalarOID and IndexedValuePrefix are not defined.
 	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// scalarOID is required only if OID and IndexedValuePrefix are not defined. 
+	// ScalarOID is required only if OID and IndexedValuePrefix are not defined. 
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
@@ -577,10 +579,21 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has either an OID or scalarOID or IndexedValuePrefix
+	// Make sure each Resource Attribute has either an OID or ScalarOID or IndexedValuePrefix
 	for attrName, attrCfg := range resourceAttributes {
 		if attrCfg.OID == "" && attrCfg.ScalarOID == "" && attrCfg.IndexedValuePrefix == "" {
 			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
+			continue
+		}
+		// Check if scalar and column oid resource attribute values end in the right digit
+		if attrCfg.ScalarOID != "" {
+			nums := strings.Split(attrCfg.ScalarOID, ".")
+			if nums[len(nums) - 1] != "0" {combinedErr = multierr.Append(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))}
+			continue
+		}
+		if attrCfg.OID != "" {
+			nums := strings.Split(attrCfg.OID, ".")
+			if nums[len(nums) - 1] == "0" {combinedErr = multierr.Append(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))}
 		}
 	}
 
