@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/receive/v1"
+	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
 
 type brokerTraceReceiveUnmarshallerV1 struct {

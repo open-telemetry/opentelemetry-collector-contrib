@@ -34,6 +34,7 @@ TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+CHLOGGEN_CONFIG  := .chloggen/config.yaml
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -53,7 +54,7 @@ MULITMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
-CHECKDOC            := $(TOOLS_BIN_DIR)/checkdoc
+CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
 CROSSLINK           := $(TOOLS_BIN_DIR)/crosslink
 GOJUNIT             := $(TOOLS_BIN_DIR)/go-junit-report
 BUILDER             := $(TOOLS_BIN_DIR)/builder
@@ -92,7 +93,7 @@ all-pkg-dirs:
 .DEFAULT_GOAL := common
 
 .PHONY: common
-common: lint
+common: lint test
 
 .PHONY: test
 test:

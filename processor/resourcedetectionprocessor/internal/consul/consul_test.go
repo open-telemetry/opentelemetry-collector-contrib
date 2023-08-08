@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
 var _ consul.Provider = (*mockMetadata)(nil)
@@ -39,10 +40,10 @@ func TestDetect(t *testing.T) {
 		},
 		nil,
 	)
-
 	detector := &Detector{
 		provider: md,
 		logger:   zap.NewNop(),
+		rb:       metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)

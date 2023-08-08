@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/process
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -109,6 +111,16 @@ Number of disk operations performed by the process.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
+
+### process.handles
+
+Number of handles held by the process.
+
+This metric is only available on Windows.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {count} | Sum | Int | Cumulative | false |
 
 ### process.memory.utilization
 

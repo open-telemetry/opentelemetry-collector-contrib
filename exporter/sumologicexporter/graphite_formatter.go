@@ -79,6 +79,8 @@ func (gf *graphiteFormatter) numberRecord(fs fields, name string, dataPoint pmet
 			dataPoint.IntValue(),
 			dataPoint.Timestamp()/pcommon.Timestamp(time.Second),
 		)
+	case pmetric.NumberDataPointValueTypeEmpty:
+		return ""
 	}
 	return ""
 }
@@ -105,6 +107,8 @@ func (gf *graphiteFormatter) metric2String(record metricPair) string {
 	// Skip complex metrics
 	case pmetric.MetricTypeHistogram:
 	case pmetric.MetricTypeSummary:
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram:
 	}
 
 	return strings.Join(nextLines, "\n")

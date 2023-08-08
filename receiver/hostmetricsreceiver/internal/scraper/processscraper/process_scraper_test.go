@@ -354,7 +354,7 @@ func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	scraper, err := newProcessScraper(receivertest.NewNopCreateSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
-	scraper.getProcessHandles = func() (processHandles, error) { return nil, errors.New("err1") }
+	scraper.getProcessHandles = func(context.Context) (processHandles, error) { return nil, errors.New("err1") }
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -605,7 +605,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				handles = append(handles, handleMock)
 			}
 
-			scraper.getProcessHandles = func() (processHandles, error) {
+			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 				return &processHandlesMock{handles: handles}, nil
 			}
 
@@ -835,7 +835,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				},
 			}, test.rlimitError)
 
-			scraper.getProcessHandles = func() (processHandles, error) {
+			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 
@@ -1018,7 +1018,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				handleMock.On("IOCounters").Return("test", errors.New("permission denied"))
 			}
 
-			scraper.getProcessHandles = func() (processHandles, error) {
+			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 			md, err := scraper.scrape(context.Background())
@@ -1080,7 +1080,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 		handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
 		handleMock.On("Ppid").Return(int32(2), nil)
 
-		scraper.getProcessHandles = func() (processHandles, error) {
+		scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 			return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 		}
 		md, err := scraper.scrape(context.Background())
@@ -1148,7 +1148,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			handleMock.On("Exe").Return("test", nil)
 			handleMock.On("CreateTime").Return(time.Now().UnixMilli(), nil)
 
-			scraper.getProcessHandles = func() (processHandles, error) {
+			scraper.getProcessHandles = func(context.Context) (processHandles, error) {
 				return &processHandlesMock{handles: []*processHandleMock{handleMock}}, nil
 			}
 

@@ -19,7 +19,7 @@ func TestValidAuthentication(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedHTTPClientSettings,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
@@ -46,7 +46,7 @@ func TestInvalidAuthentication(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedHTTPClientSettings,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.EqualError(t, err, "client: missing url")
 	require.Nil(t, uaa)

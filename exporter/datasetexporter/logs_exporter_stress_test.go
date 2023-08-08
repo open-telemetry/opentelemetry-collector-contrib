@@ -78,8 +78,9 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		DatasetURL: server.URL,
 		APIKey:     "key-lib",
 		BufferSettings: BufferSettings{
-			MaxLifetime: maxDelay,
-			GroupBy:     []string{"attributes.container_id"},
+			MaxLifetime:          maxDelay,
+			GroupBy:              []string{"attributes.container_id"},
+			RetryShutdownTimeout: time.Minute,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

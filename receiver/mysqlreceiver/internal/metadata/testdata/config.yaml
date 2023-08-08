@@ -31,8 +31,6 @@ all_set:
       enabled: true
     mysql.joins:
       enabled: true
-    mysql.locked_connects:
-      enabled: true
     mysql.locks:
       enabled: true
     mysql.log_operations:
@@ -123,8 +121,6 @@ none_set:
     mysql.index.io.wait.time:
       enabled: false
     mysql.joins:
-      enabled: false
-    mysql.locked_connects:
       enabled: false
     mysql.locks:
       enabled: false

@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -46,11 +44,7 @@ func TestMetricNormalize(t *testing.T) {
 		},
 	}
 
-	registry := featuregate.NewRegistry()
-	_, err := registry.Register("pkg.translator.prometheus.NormalizeName", featuregate.StageBeta)
-	require.NoError(t, err)
-
-	testComponent(t, targets, false, "", registry)
+	testComponent(t, targets, false, true, "")
 }
 
 func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {

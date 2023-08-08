@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [rmfitzpatrick, jamesmoessis]
 
 sem_conv_version: 1.6.1
 
@@ -30,6 +32,14 @@ resource_attributes:
     description: "The hostname of the container."
     type: string
     enabled: true
+  container.image.id:
+    description: "The ID of the container image."
+    type: string
+    enabled: false
+  container.command_line:
+    description: "The full command executed by the container."
+    type: string
+    enabled: false
 
 attributes:
   core:
@@ -58,7 +68,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.usage.total:
     enabled: true
     description: "Total CPU time consumed."
@@ -66,7 +76,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.usage.kernelmode:
     enabled: true
     description: >-
@@ -76,7 +86,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.usage.usermode:
     enabled: true
     description: >-
@@ -86,7 +96,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.usage.percpu:
     enabled: false
     description: "Per-core CPU usage by the container (Only available with cgroups v1)."
@@ -94,7 +104,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - core
   container.cpu.throttling_data.periods:
@@ -104,7 +114,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.throttling_data.throttled_periods:
     enabled: false
     description: "Number of periods when the container hits its throttling limit."
@@ -112,7 +122,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.throttling_data.throttled_time:
     enabled: false
     description: "Aggregate time the container was throttled."
@@ -120,7 +130,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   container.cpu.utilization:
     enabled: false
     description: "Percent of CPU used by the container."
@@ -146,7 +156,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.usage.total:
     enabled: true
@@ -154,7 +164,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.usage.max:
     enabled: false
@@ -162,7 +172,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.percent:
     enabled: true
@@ -176,7 +186,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.rss:
     enabled: false
@@ -184,7 +194,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.rss_huge:
     enabled: false
@@ -192,7 +202,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.dirty:
     enabled: false
@@ -200,7 +210,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.writeback:
     enabled: false
@@ -208,7 +218,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.mapped_file:
     enabled: false
@@ -216,7 +226,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.pgpgin:
     enabled: false
@@ -225,7 +235,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.pgpgout:
     enabled: false
@@ -234,7 +244,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.pgfault:
     enabled: false
@@ -242,7 +252,7 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.pgmajfault:
     enabled: false
@@ -250,7 +260,7 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.inactive_anon:
     enabled: false
@@ -258,7 +268,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.active_anon:
     enabled: false
@@ -266,7 +276,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.inactive_file:
     enabled: false
@@ -275,7 +285,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.active_file:
     enabled: false
@@ -284,7 +294,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.unevictable:
     enabled: false
@@ -292,7 +302,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.hierarchical_memory_limit:
     enabled: false
@@ -300,7 +310,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.hierarchical_memsw_limit:
     enabled: false
@@ -308,7 +318,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_cache:
     enabled: true
@@ -316,7 +326,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_rss:
     enabled: false
@@ -324,7 +334,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_rss_huge:
     enabled: false
@@ -332,7 +342,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_dirty:
     enabled: false
@@ -340,7 +350,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_writeback:
     enabled: false
@@ -348,7 +358,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_mapped_file:
     enabled: false
@@ -356,7 +366,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_pgpgin:
     enabled: false
@@ -364,7 +374,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.total_pgpgout:
     enabled: false
@@ -372,7 +382,7 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.total_pgfault:
     enabled: false
@@ -380,7 +390,7 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.total_pgmajfault:
     enabled: false
@@ -388,7 +398,7 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
   container.memory.total_inactive_anon:
     enabled: false
@@ -396,7 +406,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_active_anon:
     enabled: false
@@ -404,7 +414,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_inactive_file:
     enabled: false
@@ -413,7 +423,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_active_file:
     enabled: false
@@ -422,7 +432,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.total_unevictable:
     enabled: false
@@ -430,7 +440,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.anon:
     enabled: false
@@ -439,7 +449,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
   container.memory.file:
     enabled: true
@@ -448,7 +458,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
 
@@ -461,7 +471,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -474,7 +484,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -490,7 +500,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -503,7 +513,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -516,7 +526,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -529,7 +539,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -542,7 +552,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -555,7 +565,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - device_major
       - device_minor
@@ -569,7 +579,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.tx_bytes:
@@ -579,7 +589,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.rx_dropped:
@@ -589,7 +599,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.tx_dropped:
@@ -599,7 +609,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.rx_errors:
@@ -609,7 +619,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.tx_errors:
@@ -619,7 +629,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.rx_packets:
@@ -629,7 +639,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
   container.network.io.usage.tx_packets:
@@ -639,7 +649,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:
       - interface
 
@@ -651,7 +661,7 @@ metrics:
     unit: "{pids}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   container.pids.limit:
@@ -661,7 +671,7 @@ metrics:
     unit: "{pids}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   # Base

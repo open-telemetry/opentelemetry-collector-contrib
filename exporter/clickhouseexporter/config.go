@@ -103,8 +103,15 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	// Override database if specified in config.
 	if cfg.Database != "" {
 		dsnURL.Path = cfg.Database
-	} else if database == "" && cfg.Database == "" && dsnURL.Path == "" {
-		// Use default database if not specified in any other place.
+	}
+
+	// Override database if specified in database param.
+	if database != "" {
+		dsnURL.Path = database
+	}
+
+	// Use default database if not specified in any other place.
+	if database == "" && cfg.Database == "" && dsnURL.Path == "" {
 		dsnURL.Path = defaultDatabase
 	}
 

@@ -44,6 +44,10 @@ func createDefaultConfig() component.Config {
 		RetrySettings:  exporterhelper.NewDefaultRetrySettings(),
 		MetricsSchema:  common.MetricsSchemaTelegrafPrometheusV1.String(),
 		SpanDimensions: otel2influx.DefaultOtelTracesToLineProtocolConfig().SpanDimensions,
+		// defaults per suggested:
+		// https://docs.influxdata.com/influxdb/cloud-serverless/write-data/best-practices/optimize-writes/#batch-writes
+		PayloadMaxLines: 10_000,
+		PayloadMaxBytes: 10_000_000,
 	}
 }
 

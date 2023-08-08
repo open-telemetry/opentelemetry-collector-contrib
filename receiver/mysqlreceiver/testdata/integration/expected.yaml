@@ -302,16 +302,6 @@ resourceMetrics:
                   timeUnixNano: "1674545265375344000"
               isMonotonic: true
             unit: "1"
-          - description: "[DEPRECATED] The number of attempts to connect to locked user accounts."
-            name: mysql.locked_connects
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1674545255370693000"
-                  timeUnixNano: "1674545265375344000"
-              isMonotonic: true
-            unit: "1"
           - description: The number of MySQL locks.
             name: mysql.locks
             sum:

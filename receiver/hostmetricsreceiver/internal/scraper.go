@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -23,12 +24,18 @@ type ScraperFactory interface {
 // Config is the configuration of a scraper.
 type Config interface {
 	SetRootPath(rootPath string)
+	SetEnvMap(envMap common.EnvMap)
 }
 
 type ScraperConfig struct {
-	RootPath string `mapstructure:"-"`
+	RootPath string        `mapstructure:"-"`
+	EnvMap   common.EnvMap `mapstructure:"-"`
 }
 
 func (p *ScraperConfig) SetRootPath(rootPath string) {
 	p.RootPath = rootPath
+}
+
+func (p *ScraperConfig) SetEnvMap(envMap common.EnvMap) {
+	p.EnvMap = envMap
 }

@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	grpcStore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
 	"github.com/jaegertracing/jaeger/plugin/sampling/strategystore/static"
 	"go.opentelemetry.io/collector/component"
@@ -62,13 +61,10 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 	if jrse.cfg.Source.Remote != nil {
 		conn, err := jrse.cfg.Source.Remote.ToClientConn(ctx, host, jrse.telemetry)
 		if err != nil {
-			return fmt.Errorf("error while connecting to the remote sampling source: %w", err)
+			return fmt.Errorf("failed to create the remote strategy store: %w", err)
 		}
-
-		jrse.samplingStore = grpcStore.NewConfigManager(conn)
-		jrse.closers = append(jrse.closers, func() error {
-			return conn.Close()
-		})
+		jrse.closers = append(jrse.closers, conn.Close)
+		jrse.samplingStore = internal.NewRemoteStrategyStore(conn, jrse.cfg.Source.Remote)
 	}
 
 	if jrse.cfg.HTTPServerSettings != nil {
