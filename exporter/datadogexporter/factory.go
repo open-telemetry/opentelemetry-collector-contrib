@@ -275,8 +275,6 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0 * time.Second}),
 		// We use our own custom mechanism for retries, since we hit several endpoints.
 		exporterhelper.WithRetry(exporterhelper.RetrySettings{Enabled: false}),
-		// The metrics remapping code mutates data
-		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
