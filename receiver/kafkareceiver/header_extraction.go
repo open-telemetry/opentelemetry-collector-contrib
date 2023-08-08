@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var getAttribute = func(key string) string {
+func getAttribute(key string) string {
 	return fmt.Sprintf("kafka.header.%s", key)
 }
 
@@ -22,11 +22,11 @@ type headerExtractor struct {
 	headers []string
 }
 
-func (ex *headerExtractor) extractHeadersTraces(traces ptrace.Traces, message *sarama.ConsumerMessage) {
-	for _, header := range ex.headers {
+func (he *headerExtractor) extractHeadersTraces(traces ptrace.Traces, message *sarama.ConsumerMessage) {
+	for _, header := range he.headers {
 		value, ok := getHeaderValue(message.Headers, header)
 		if !ok {
-			ex.logger.Warn("Header key not found in the trace: ", zap.String("key", header))
+			he.logger.Debug("Header key not found in the trace: ", zap.String("key", header))
 			continue
 		}
 		for i := 0; i < traces.ResourceSpans().Len(); i++ {
@@ -36,11 +36,11 @@ func (ex *headerExtractor) extractHeadersTraces(traces ptrace.Traces, message *s
 	}
 }
 
-func (ex *headerExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.ConsumerMessage) {
-	for _, header := range ex.headers {
+func (he *headerExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.ConsumerMessage) {
+	for _, header := range he.headers {
 		value, ok := getHeaderValue(message.Headers, header)
 		if !ok {
-			ex.logger.Warn("Header key not found in the logger: ", zap.String("key", header))
+			he.logger.Debug("Header key not found in the logger: ", zap.String("key", header))
 			continue
 		}
 		for i := 0; i < logs.ResourceLogs().Len(); i++ {
@@ -50,11 +50,11 @@ func (ex *headerExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.Co
 	}
 }
 
-func (ex *headerExtractor) extractHeadersMetrics(metrics pmetric.Metrics, message *sarama.ConsumerMessage) {
-	for _, header := range ex.headers {
+func (he *headerExtractor) extractHeadersMetrics(metrics pmetric.Metrics, message *sarama.ConsumerMessage) {
+	for _, header := range he.headers {
 		value, ok := getHeaderValue(message.Headers, header)
 		if !ok {
-			ex.logger.Warn("Header key not found in the metric: ", zap.String("key", header))
+			he.logger.Debug("Header key not found in the metric: ", zap.String("key", header))
 			continue
 		}
 		for i := 0; i < metrics.ResourceMetrics().Len(); i++ {

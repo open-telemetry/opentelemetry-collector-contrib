@@ -120,8 +120,8 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
-		headerExtraction:  config.HeaderExtraction,
-		headers:           config.Headers,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 
@@ -221,8 +221,8 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
-		headerExtraction:  config.HeaderExtraction,
-		headers:           config.Headers,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 
@@ -322,8 +322,8 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 		settings:          set,
 		autocommitEnabled: config.AutoCommit.Enable,
 		messageMarking:    config.MessageMarking,
-		headers:           config.Headers,
-		headerExtraction:  config.HeaderExtraction,
+		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
+		headers:           config.HeaderExtraction.Headers,
 	}, nil
 }
 

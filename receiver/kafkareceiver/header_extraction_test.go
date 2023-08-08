@@ -2,38 +2,32 @@ package kafkareceiver
 
 import (
 	"context"
+	"sync"
+	"testing"
+
 	"github.com/Shopify/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/obsreport"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"bytes"
-	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
-	"math"
-	"strings"
-	"sync"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestHeaderExtractionTraces(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
-	nextConsumer := (new(consumertest.TracesSink))
+	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
 		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
 		ready:        make(chan bool),
 		nextConsumer: nextConsumer,
-		// nextConsumer: &mockConsumer{},
-		obsrecv: obsrecv,
+		obsrecv:      obsrecv,
 	}
 	headers := []string{"headerKey1", "headerKey2"}
 	c.headerExtractor = &headerExtractor{
@@ -54,12 +48,8 @@ func TestHeaderExtractionTraces(t *testing.T) {
 		for _, trace := range nextConsumer.AllTraces() {
 			for i := 0; i < trace.ResourceSpans().Len(); i++ {
 				rs := trace.ResourceSpans().At(i)
-				val, ok := rs.Resource().Attributes().Get("kafka.header.headerKey1")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue1")
-				val, ok = rs.Resource().Attributes().Get("kafka.header.headerKey2")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue2")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValue1")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValue2")
 			}
 		}
 		assert.NoError(t, err)
@@ -90,7 +80,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 
 func TestHeaderExtractionLogs(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
-	nextConsumer := new(consumertest.LogsSink)
+	nextConsumer := &consumertest.LogsSink{}
 	unmarshaler := newTextLogsUnmarshaler()
 	unmarshaler, err = unmarshaler.WithEnc("utf-8")
 	c := logsConsumerGroupHandler{
@@ -119,12 +109,8 @@ func TestHeaderExtractionLogs(t *testing.T) {
 		for _, logs := range nextConsumer.AllLogs() {
 			for i := 0; i < logs.ResourceLogs().Len(); i++ {
 				rs := logs.ResourceLogs().At(i)
-				val, ok := rs.Resource().Attributes().Get("kafka.header.headerKey1")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue1")
-				val, ok = rs.Resource().Attributes().Get("kafka.header.headerKey2")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue2")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValueLog1")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValueLog2")
 			}
 		}
 		assert.NoError(t, err)
@@ -134,11 +120,11 @@ func TestHeaderExtractionLogs(t *testing.T) {
 		Headers: []*sarama.RecordHeader{
 			{
 				Key:   []byte("headerKey1"),
-				Value: []byte("headerValue1"),
+				Value: []byte("headerValueLog1"),
 			},
 			{
 				Key:   []byte("headerKey2"),
-				Value: []byte("headerValue2"),
+				Value: []byte("headerValueLog2"),
 			},
 		},
 		Value: []byte("Message"),
@@ -150,7 +136,7 @@ func TestHeaderExtractionLogs(t *testing.T) {
 
 func TestHeaderExtractionMetrics(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
-	nextConsumer := new(consumertest.MetricsSink)
+	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
 		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
 		logger:       zap.NewNop(),
@@ -177,12 +163,8 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 		for _, metric := range nextConsumer.AllMetrics() {
 			for i := 0; i < metric.ResourceMetrics().Len(); i++ {
 				rs := metric.ResourceMetrics().At(i)
-				val, ok := rs.Resource().Attributes().Get("kafka.header.headerKey1")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue1")
-				val, ok = rs.Resource().Attributes().Get("kafka.header.headerKey2")
-				assert.Equal(t, ok, true)
-				assert.Equal(t, val.Str(), "headerValue2")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey1", "headerValueMetric1")
+				validateHeader(t, rs.Resource(), "kafka.header.headerKey2", "headerValueMetric2")
 			}
 		}
 		assert.NoError(t, err)
@@ -195,11 +177,11 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 		Headers: []*sarama.RecordHeader{
 			{
 				Key:   []byte("headerKey1"),
-				Value: []byte("headerValue1"),
+				Value: []byte("headerValueMetric1"),
 			},
 			{
 				Key:   []byte("headerKey2"),
-				Value: []byte("headerValue2"),
+				Value: []byte("headerValueMetric2"),
 			},
 		},
 		Value: bts,
@@ -208,4 +190,10 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	cancelFunc()
 	wg.Wait()
 
+}
+
+func validateHeader(t *testing.T, rs pcommon.Resource, headerKey string, headerValue string) {
+	val, ok := rs.Attributes().Get(headerKey)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, val.Str(), headerValue)
 }

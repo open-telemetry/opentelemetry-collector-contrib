@@ -31,6 +31,11 @@ type MessageMarking struct {
 	OnError bool `mapstructure:"on_error"`
 }
 
+type HeaderExtraction struct {
+	ExtractHeaders bool     `mapstructure:"extract_headers"`
+	Headers        []string `mapstructure:"headers"`
+}
+
 // Config defines configuration for Kafka receiver.
 type Config struct {
 	// The list of kafka brokers (default localhost:9092)
@@ -61,9 +66,8 @@ type Config struct {
 	// Controls the way the messages are marked as consumed
 	MessageMarking MessageMarking `mapstructure:"message_marking"`
 
-	// Extract headers
-	HeaderExtraction bool     `mapstructure:"header_extraction"`
-	Headers          []string `mapstructure:"headers"`
+	// Extract headers from kafka records
+	HeaderExtraction HeaderExtraction `mapstructure:"header_extraction"`
 }
 
 const (
