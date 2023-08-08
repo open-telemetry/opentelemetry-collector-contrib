@@ -47,7 +47,7 @@ var (
 	errMsgColumnAttributeBadName           = `metric '%s' column_oid attribute name '%s' must match an attribute config`
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
-	errMsgColumnIndexedAttributeRequired   = `metric '%s' column_oid must either have a resource_attribute or an indexed_value_prefix/oid attribute`
+	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -452,18 +452,19 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 
 	// Check that any ResourceAttributes have a valid value
 	if len(columnOID.ResourceAttributes) > 0 {
-		hasIndexedIdentifier = true
 		for _, name := range columnOID.ResourceAttributes {
-			_, ok := cfg.ResourceAttributes[name]
+			resourceAttribute, ok := cfg.ResourceAttributes[name]
 			if !ok {
 				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
-			}
+				continue
+			} 
+			if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" { hasIndexedIdentifier = true }
 		}
 	}
 
 	// Check that there is either a column based attribute or resource attribute associated with it
 	if !hasIndexedIdentifier {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnIndexedAttributeRequired, metricName))
+		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnIndexedIdentifierRequired, metricName))
 	}
 
 	return combinedErr

@@ -709,7 +709,7 @@ snmp/complex_good:
               value: val1
             - name: a3
             - name: a4
-snmp/scalar_oid_present_with_indexed_attribute:
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_with_indexed_attribute:
   collection_interval: 10s
   endpoint: udp://localhost:161
   version: v2c
@@ -729,5 +729,22 @@ snmp/scalar_oid_present_with_indexed_attribute:
         - oid: "1"
           attributes:
             - name: a2
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_resource_attribute_on_column_oid_metric_without_indexed_identifier:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      column_oids:
+        - oid: "1"
           resource_attributes:
             - ra1
