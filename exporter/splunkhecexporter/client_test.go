@@ -184,14 +184,14 @@ type receivedRequest struct {
 	headers http.Header
 }
 
-type CapturingData struct {
+type capturingData struct {
 	testing          *testing.T
 	receivedRequest  chan receivedRequest
 	statusCode       int
 	checkCompression bool
 }
 
-func (c *CapturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (c *capturingData) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
 	if c.checkCompression && r.Header.Get("Content-Encoding") != "gzip" {
@@ -219,7 +219,7 @@ func runMetricsExport(cfg *Config, metrics pmetric.Metrics, expectedBatchesNum i
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
 	rr := make(chan receivedRequest)
-	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
@@ -272,7 +272,7 @@ func runTraceExport(testConfig *Config, traces ptrace.Traces, expectedBatchesNum
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
-	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
@@ -332,7 +332,7 @@ func runLogExport(cfg *Config, ld plog.Logs, expectedBatchesNum int, t *testing.
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
-	capture := CapturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
+	capture := capturingData{testing: t, receivedRequest: rr, statusCode: 200, checkCompression: !cfg.DisableCompression}
 	s := &http.Server{
 		Handler:           &capture,
 		ReadHeaderTimeout: 20 * time.Second,
@@ -1274,7 +1274,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 
 func TestErrorReceived(t *testing.T) {
 	rr := make(chan receivedRequest)
-	capture := CapturingData{receivedRequest: rr, statusCode: 500}
+	capture := capturingData{receivedRequest: rr, statusCode: 500}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1364,7 +1364,7 @@ func TestInvalidURL(t *testing.T) {
 
 func TestHeartbeatStartupFailed(t *testing.T) {
 	rr := make(chan receivedRequest)
-	capture := CapturingData{receivedRequest: rr, statusCode: 403}
+	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1400,7 +1400,7 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 
 func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	rr := make(chan receivedRequest)
-	capture := CapturingData{receivedRequest: rr, statusCode: 403}
+	capture := capturingData{receivedRequest: rr, statusCode: 403}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)
@@ -1435,7 +1435,7 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 
 func TestHeartbeatStartupPass(t *testing.T) {
 	rr := make(chan receivedRequest)
-	capture := CapturingData{receivedRequest: rr, statusCode: 200}
+	capture := capturingData{receivedRequest: rr, statusCode: 200}
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		panic(err)

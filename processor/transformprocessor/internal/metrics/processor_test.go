@@ -94,6 +94,81 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessMetrics_MetricContext(t *testing.T) {
+	tests := []struct {
+		statements []string
+		want       func(pmetric.Metrics)
+	}{
+		{
+			statements: []string{`extract_sum_metric(true) where name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				sumMetric.SetDescription(histogramMetric.Description())
+				sumMetric.SetName(histogramMetric.Name() + "_sum")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(histogramMetric.Unit())
+
+				histogramDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(histogramDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Sum datapoint
+			},
+		},
+		{ // this checks if subsequent statements apply to the newly created metric
+			statements: []string{
+				`extract_sum_metric(true) where name == "operationB"`,
+				`set(name, "new_name") where name == "operationB_sum"`,
+			},
+			want: func(td pmetric.Metrics) {
+				sumMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				sumDp := sumMetric.SetEmptySum().DataPoints().AppendEmpty()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+				histogramDp := histogramMetric.Histogram().DataPoints().At(0)
+
+				sumMetric.SetDescription(histogramMetric.Description())
+				sumMetric.SetName("new_name")
+				sumMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				sumMetric.Sum().SetIsMonotonic(true)
+				sumMetric.SetUnit(histogramMetric.Unit())
+
+				histogramDp.Attributes().CopyTo(sumDp.Attributes())
+				sumDp.SetDoubleValue(histogramDp.Sum())
+				sumDp.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints, but only one of them has the Sum set
+				// so we should only have one Sum datapoint
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statements[0], func(t *testing.T) {
+			td := constructMetrics()
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "metric", Statements: tt.statements}}, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessMetrics(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructMetrics()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 	tests := []struct {
 		statements []string
@@ -735,8 +810,10 @@ func fillMetricTwo(m pmetric.Metric) {
 	m.SetName("operationB")
 	m.SetDescription("operationB description")
 	m.SetUnit("operationB unit")
+	m.SetEmptyHistogram()
+	m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 
-	dataPoint0 := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+	dataPoint0 := m.Histogram().DataPoints().AppendEmpty()
 	dataPoint0.SetStartTimestamp(StartTimestamp)
 	dataPoint0.Attributes().PutStr("attr1", "test1")
 	dataPoint0.Attributes().PutStr("attr2", "test2")
@@ -744,6 +821,7 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint0.Attributes().PutStr("flags", "C|D")
 	dataPoint0.Attributes().PutStr("total.string", "345678")
 	dataPoint0.SetCount(1)
+	dataPoint0.SetSum(5)
 
 	dataPoint1 := m.Histogram().DataPoints().AppendEmpty()
 	dataPoint1.SetStartTimestamp(StartTimestamp)

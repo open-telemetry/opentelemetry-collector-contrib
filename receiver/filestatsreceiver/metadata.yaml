@@ -30,7 +30,7 @@ metrics:
     enabled: true
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
   file.ctime:
@@ -38,7 +38,7 @@ metrics:
     enabled: false
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
     attributes:
@@ -48,7 +48,7 @@ metrics:
     enabled: false
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
   file.size:
