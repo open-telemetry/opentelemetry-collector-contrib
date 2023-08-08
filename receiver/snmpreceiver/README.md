@@ -80,8 +80,9 @@ Resource attribute configurations are used to define what resource attributes wi
 
 | Field Name           | Description                              | Value        |
 | --                   | --                                       | --           |
-| `oid`                  | Required if no `indexed_value_prefix`. This is the column OID in a SNMP table which will use the returned indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
-| `indexed_value_prefix` | Required if no `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
+| `oid`                  | Required if no `scalar_oid` or `indexed_value_prefix`. This is the column OID in a SNMP table which will use the returned indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
+| `scalar_oid` | Required if no `oid` or `indexed_value_prefix`. This is the Scalar OID which will return non-indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string |
+| `indexed_value_prefix` | Required if no `scalar_oid` or `oid`. This is a string prefix which will be added to the indices of returned metric indexed SNMP data to create resource attribute values for unique resources. Metric configurations will reference these resource attribute configurations in order to assign metrics data to resources | string       |
 | `description`          | Definition of what the resource attribute represents  | string       |
 
 #### Attribute Configuration
