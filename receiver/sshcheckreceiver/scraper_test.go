@@ -183,6 +183,42 @@ func TestScraper(t *testing.T) {
 	}
 }
 
+func TestScraperPropagatesResourceAttributes(t *testing.T) {
+	if !supportedOS() {
+		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
+	}
+	endpoint := setupSSHServer(t)
+	require.NotEmpty(t, endpoint)
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.MetricsBuilderConfig.ResourceAttributes.SSHEndpoint.Enabled = true
+	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+	cfg.Username = "otelu"
+	cfg.Password = "otelp"
+	cfg.Endpoint = endpoint
+	cfg.IgnoreHostKey = true
+
+	settings := receivertest.NewNopCreateSettings()
+
+	scraper := newScraper(cfg, settings)
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err, "failed scrape")
+
+	resourceMetrics := actualMetrics.ResourceMetrics()
+	expectedResourceAttributes := map[string]any{"ssh.endpoint": endpoint}
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resourceAttributes := resourceMetrics.At(i).Resource().Attributes()
+		for name, value := range expectedResourceAttributes {
+			actualAttributeValue, ok := resourceAttributes.Get(name)
+			require.True(t, ok)
+			require.Equal(t, value, actualAttributeValue.Str())
+		}
+	}
+}
+
 func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 	if !supportedOS() {
 		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")

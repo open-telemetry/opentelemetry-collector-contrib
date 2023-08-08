@@ -136,7 +136,7 @@ func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
 func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
-	var result []*CAdvisorMetric
+	result := make([]*CAdvisorMetric, 0, len(metrics))
 	metricMap := make(map[string]*CAdvisorMetric)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
@@ -159,7 +159,7 @@ func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
 // return MetricKey for merge-able metrics
 func getMetricKey(metric *CAdvisorMetric) string {
 	metricType := metric.GetMetricType()
-	metricKey := ""
+	var metricKey string
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance

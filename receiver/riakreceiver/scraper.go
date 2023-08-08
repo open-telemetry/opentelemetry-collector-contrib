@@ -89,5 +89,7 @@ func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
 
-	return r.mb.Emit(metadata.WithRiakNodeName(stat.Node)), errors.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRiakNodeName(stat.Node)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errors.Combine()
 }

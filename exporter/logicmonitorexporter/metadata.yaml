@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [traces, logs]
   distributions: [contrib]
+  codeowners:
+    active: [bogdandrutu, khyatigandhi6, avadhut123pisal]

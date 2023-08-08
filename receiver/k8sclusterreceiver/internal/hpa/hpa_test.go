@@ -5,22 +5,28 @@ package hpa
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestHPAMetrics(t *testing.T) {
 	hpa := testutils.NewHPA("1")
 
-	md := GetMetrics(receivertest.NewNopCreateSettings(), hpa)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, hpa, ts)
+	m := mb.Emit()
 
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	rm := md.ResourceMetrics().At(0)
+	require.Equal(t, 1, m.ResourceMetrics().Len())
+	rm := m.ResourceMetrics().At(0)
 	assert.Equal(t,
 		map[string]any{
 			"k8s.hpa.uid":        "test-hpa-1-uid",

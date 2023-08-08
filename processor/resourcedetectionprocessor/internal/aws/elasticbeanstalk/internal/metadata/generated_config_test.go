@@ -45,18 +45,22 @@ func TestResourceAttributesConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			require.NoError(t, err)
-			sub, err := cm.Sub(tt.name)
-			require.NoError(t, err)
-			sub, err = sub.Sub("resource_attributes")
-			require.NoError(t, err)
-			cfg := DefaultResourceAttributesConfig()
-			require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-
+			cfg := loadResourceAttributesConfig(t, tt.name)
 			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})
 	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

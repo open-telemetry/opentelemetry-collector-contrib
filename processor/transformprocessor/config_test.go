@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
@@ -22,6 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	tests := []struct {
 		id       component.ID
 		expected component.Config
+		errorLen int
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -108,6 +110,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "unknown_function_log"),
 		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "bad_syntax_multi_signal"),
+			errorLen: 3,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -122,7 +128,13 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.Error(t, component.ValidateConfig(cfg))
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+
+				if tt.errorLen > 0 {
+					assert.Equal(t, tt.errorLen, len(multierr.Errors(err)))
+				}
+
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
