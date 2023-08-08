@@ -122,9 +122,9 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(c.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(c.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -159,10 +159,10 @@ func (v *vcenterMetricScraper) collectDatastore(
 	}
 
 	v.recordDatastoreProperties(now, moDS)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(cluster.Name()),
-		metadata.WithVcenterDatastoreName(moDS.Name),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(cluster.Name())
+	rb.SetVcenterDatastoreName(moDS.Name)
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -203,10 +203,10 @@ func (v *vcenterMetricScraper) collectHost(
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
-	v.mb.EmitForResource(
-		metadata.WithVcenterHostName(host.Name()),
-		metadata.WithVcenterClusterName(cluster.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterHostName(host.Name())
+	rb.SetVcenterClusterName(cluster.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
@@ -231,7 +231,9 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			continue
 		}
 		v.recordResourcePool(ts, moRP)
-		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterResourcePoolName(rp.Name())
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -294,12 +296,12 @@ func (v *vcenterMetricScraper) collectVMs(
 		vmUUID := moVM.Config.InstanceUuid
 
 		v.collectVM(ctx, colTime, moVM, hwSum, errs)
-		v.mb.EmitForResource(
-			metadata.WithVcenterVMName(vm.Name()),
-			metadata.WithVcenterVMID(vmUUID),
-			metadata.WithVcenterClusterName(cluster.Name()),
-			metadata.WithVcenterHostName(hostname),
-		)
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMID(vmUUID)
+		rb.SetVcenterClusterName(cluster.Name())
+		rb.SetVcenterHostName(hostname)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
 }

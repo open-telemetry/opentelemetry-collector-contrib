@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -59,7 +59,7 @@ type Producer struct {
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 
 	// RequiredAcks Number of acknowledgements required to assume that a message has been sent.
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
 	// The options are:
 	//   0 -> NoResponse.  doesn't send any response
 	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
@@ -67,7 +67,7 @@ type Producer struct {
 	RequiredAcks sarama.RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
 	// The options are: 'none', 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
@@ -104,6 +104,10 @@ func (cfg *Config) Validate() error {
 }
 
 func validateSASLConfig(c *SASLConfig) error {
+	if c == nil {
+		return nil
+	}
+
 	if c.Username == "" {
 		return fmt.Errorf("auth.sasl.username is required")
 	}

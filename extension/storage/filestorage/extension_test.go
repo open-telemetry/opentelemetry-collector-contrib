@@ -269,7 +269,7 @@ func TestCompaction(t *testing.T) {
 	require.NoError(t, err)
 
 	var key string
-	i := 0
+	var i int
 
 	// magic numbers giving enough data to force bbolt to allocate a new page
 	// see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/9004 for some discussion

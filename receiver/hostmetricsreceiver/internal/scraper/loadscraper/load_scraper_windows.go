@@ -146,7 +146,7 @@ func stopSampling(_ context.Context) error {
 	return nil
 }
 
-func getSampledLoadAverages() (*load.AvgStat, error) {
+func getSampledLoadAverages(_ context.Context) (*load.AvgStat, error) {
 	samplerInstance.lock.RLock()
 	defer samplerInstance.lock.RUnlock()
 
