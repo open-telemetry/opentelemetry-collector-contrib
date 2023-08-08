@@ -44,6 +44,8 @@ type MetricCalculator struct {
 	calculateFunc CalculateFunc
 }
 
+// NewMetricCalculator Creates a metric calculator that enforces a five-minute time to live on cache entries.
+// Shutdown() must be called to clean up goroutines before program exit.
 func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	return MetricCalculator{
 		cache:         NewMapWithExpiry(cleanInterval),
@@ -104,7 +106,8 @@ type MetricValue struct {
 	Timestamp time.Time
 }
 
-// MapWithExpiry act like a map which provide a method to clean up expired entries
+// MapWithExpiry act like a map which provides a method to clean up expired entries.
+// MapWithExpiry is not thread safe and locks must be managed by the use of Lock() and Unlock()
 type MapWithExpiry struct {
 	lock     *sync.Mutex
 	ttl      time.Duration
@@ -112,6 +115,8 @@ type MapWithExpiry struct {
 	doneChan chan struct{}
 }
 
+// NewMapWithExpiry automatically starts a sweeper to enforce the maps TTL. ShutDown() must be called to ensure that these
+// go routines are properly cleaned up ShutDown() must be called.
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
 	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue), doneChan: make(chan struct{})}
 	go m.sweep(m.CleanUp)
