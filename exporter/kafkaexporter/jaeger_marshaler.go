@@ -44,7 +44,7 @@ func (j jaegerMarshaler) Marshal(traces ptrace.Traces, config *Config) ([]*saram
 				Key:   sarama.ByteEncoder(key),
 			}
 			if message.ByteSize(config.Producer.protoVersion) > config.Producer.MaxMessageBytes {
-				return nil, errSingleJaegerSpanMessageSizeOverMaxMsgByte
+				return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
 			}
 			messages = append(messages, message)
 		}

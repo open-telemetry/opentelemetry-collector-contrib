@@ -39,31 +39,62 @@ func TestJaegerMarshaler(t *testing.T) {
 	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaler TracesMarshaler
-		encoding    string
-		messages    []*sarama.ProducerMessage
+		name           string
+		unmarshaler    TracesMarshaler
+		encoding       string
+		messages       []*sarama.ProducerMessage
+		maxMessageByte int
+		err            error
 	}{
 		{
+			name: "test jaeger proto ok",
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerProtoSpanMarshaler{},
 			},
-			encoding: "jaeger_proto",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			encoding:       "jaeger_proto",
+			messages:       []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			maxMessageByte: 1000 * 1000,
+			err:            nil,
 		},
 		{
+			name: "test jaeger json ok",
 			unmarshaler: jaegerMarshaler{
 				marshaler: jaegerJSONSpanMarshaler{
 					pbMarshaler: &jsonpb.Marshaler{},
 				},
 			},
-			encoding: "jaeger_json",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			encoding:       "jaeger_json",
+			messages:       []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			maxMessageByte: 1000 * 1000,
+			err:            nil,
+		},
+		{
+			name: "test jaeger proto error with maxMessageByte",
+			unmarshaler: jaegerMarshaler{
+				marshaler: jaegerProtoSpanMarshaler{},
+			},
+			encoding:       "jaeger_proto",
+			messages:       nil,
+			maxMessageByte: 100,
+			err:            errSingleKafkaProducerMessageSizeOverMaxMsgByte,
+		},
+		{
+			name: "test jaeger json error with maxMessageByte",
+			unmarshaler: jaegerMarshaler{
+				marshaler: jaegerJSONSpanMarshaler{
+					pbMarshaler: &jsonpb.Marshaler{},
+				},
+			},
+			encoding:       "jaeger_json",
+			messages:       nil,
+			maxMessageByte: 100,
+			err:            errSingleKafkaProducerMessageSizeOverMaxMsgByte,
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td, &Config{Topic: "topic", Producer: Producer{protoVersion: 2, MaxMessageBytes: 1000 * 1000}})
-			require.NoError(t, err)
+			messages, err := test.unmarshaler.Marshal(td, &Config{Topic: "topic", Producer: Producer{protoVersion: 2, MaxMessageBytes: test.maxMessageByte}})
+			assert.Equal(t, test.err, err)
 			assert.Equal(t, test.messages, messages)
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})

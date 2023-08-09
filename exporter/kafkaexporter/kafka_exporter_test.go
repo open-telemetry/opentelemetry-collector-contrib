@@ -174,6 +174,24 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 	assert.Contains(t, err.Error(), expErr.Error())
 }
 
+func TestTracesPusher_maxMessageErr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+
+	p := kafkaTracesProducer{
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 100}},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	td := testdata.GenerateTracesTwoSpansSameResource()
+	err := p.tracesPusher(context.Background(), td)
+	assert.Contains(t, err.Error(), errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+}
+
 func TestMetricsDataPusher(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)

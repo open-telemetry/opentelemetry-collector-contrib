@@ -125,10 +125,16 @@ func (p pdataTracesMarshaler) cutTraces(td ptrace.Traces, maxBytesSizeWithoutCom
 		return []ptrace.Traces{td}, nil
 	}
 
-	// 2. cut td  1000/ 10000 20
+	// 2. cut td  90*3/100
 	// 2.1 cutSize = (max_bytes_size / total_td_size) * totalSpanNum = (max_bytes_size * totalSpanNum) / total_td_size
 	//cutSize := int(float64(maxProducerMsgBytesSize) / float64(len(bytes)) * float64(tracesSpansNum(td)))
 	cutSize := (maxBytesSizeWithoutCommonData * tracesSpansNum(td)) / len(bytes)
+	if cutSize == 0 {
+		if len(bytes) > maxBytesSizeWithoutCommonData {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		return []ptrace.Traces{td}, nil
+	}
 
 	// 2.2 cut traces to tracesSlice
 	return p.cutTracesByMaxByte(cutSize, td, maxBytesSizeWithoutCommonData)
@@ -144,7 +150,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 	if tracesSpansBytes(split, p) > maxByte {
 		// check spansNum == 1
 		if tracesSpansNum(split) == 1 {
-			return nil, errSingleOtelSpanMessageSizeOverMaxMsgByte
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
 		}
 		left, err := p.cutTracesByMaxByte(splitSize/2, split, maxByte)
 		if err != nil {
@@ -157,7 +163,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 
 	if tracesSpansBytes(td, p) > maxByte {
 		if tracesSpansNum(td) == 1 {
-			return nil, errSingleOtelSpanMessageSizeOverMaxMsgByte
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
 		}
 		right, err := p.cutTracesByMaxByte(splitSize, td, maxByte)
 		if err != nil {

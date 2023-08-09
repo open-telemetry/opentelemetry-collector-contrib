@@ -60,6 +60,6 @@ func TestSplitTraces_maxSpansByteSize_bigSingleSpanError(t *testing.T) {
 	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
 	split, err := p.cutTraces(td, maxBytesSizeWithoutCommonData)
 	assert.Error(t, err)
-	assert.EqualError(t, err, errSingleOtelSpanMessageSizeOverMaxMsgByte.Error())
+	assert.EqualError(t, err, errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
 	assert.Nil(t, split)
 }

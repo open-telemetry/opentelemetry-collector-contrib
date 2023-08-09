@@ -18,8 +18,7 @@ import (
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
-var errSingleJaegerSpanMessageSizeOverMaxMsgByte = fmt.Errorf("one jaeger span message big then max_message_bytes settings")
-var errSingleOtelSpanMessageSizeOverMaxMsgByte = fmt.Errorf("one otel span message big then max_message_bytes settings")
+var errSingleKafkaProducerMessageSizeOverMaxMsgByte = fmt.Errorf("one kafka produer message big then max_message_bytes settings")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
@@ -69,31 +68,30 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) 
 	messagesSize := 0
 	for i, messages := range messagesSlice {
 		messagesSize += messages.ByteSize(e.config.Producer.protoVersion)
-		if messagesSize < e.config.Producer.MaxMessageBytes {
+		if messagesSize <= e.config.Producer.MaxMessageBytes {
 			continue
-		} else if messagesSize == e.config.Producer.MaxMessageBytes {
-			if err = e.pushMsg(messagesSlice, startIndex, i+1); err != nil {
-				return err
-			}
-			startIndex = i + 1
-			messagesSize = 0
-		} else {
-			if err = e.pushMsg(messagesSlice, startIndex, i); err != nil {
-				return err
-			}
-			startIndex = i
-			messagesSize = messages.ByteSize(e.config.Producer.protoVersion)
 		}
-	}
-	if messagesSize > 0 {
-		if err = e.pushMsg(messagesSlice, startIndex, len(messagesSlice)); err != nil {
+
+		// if only one message big then MaxMessageBytes
+		if i-startIndex == 0 {
+			return errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+
+		err = e.pushMsg(messagesSlice, startIndex, i)
+		if err != nil {
 			return err
 		}
+		startIndex = i
+		messagesSize = messages.ByteSize(e.config.Producer.protoVersion)
 	}
-	return nil
+	// push the rest message
+	return e.pushMsg(messagesSlice, startIndex, len(messagesSlice))
 }
 
 func (e *kafkaTracesProducer) pushMsg(messagesSlice []*sarama.ProducerMessage, startIndex, endIndex int) error {
+	if startIndex >= endIndex {
+		return nil
+	}
 	err := e.producer.SendMessages(messagesSlice[startIndex:endIndex])
 	if err != nil {
 		var prodErr sarama.ProducerErrors
@@ -130,7 +128,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 	for _, message := range messages {
 		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
 		if messagesByte > e.config.Producer.MaxMessageBytes {
-			return errSingleOtelSpanMessageSizeOverMaxMsgByte
+			return errSingleKafkaProducerMessageSizeOverMaxMsgByte
 		}
 	}
 	err = e.producer.SendMessages(messages)
@@ -169,7 +167,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 	for _, message := range messages {
 		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
 		if messagesByte > e.config.Producer.MaxMessageBytes {
-			return errSingleOtelSpanMessageSizeOverMaxMsgByte
+			return errSingleKafkaProducerMessageSizeOverMaxMsgByte
 		}
 	}
 
