@@ -85,7 +85,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 		for i := 0; i < resourceLogs.Len(); i++ {
 			logs := resourceLogs.At(i)
 			res := logs.Resource()
-<<<<<<< HEAD
 
 			attrs := res.Attributes()
 			attributesToMap(attrs, resAttr)
@@ -111,13 +110,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 				}
 				return true
 			})
-=======
-			resURL := logs.SchemaUrl()
-			resAttr := attributesToMap(res.Attributes())
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
->>>>>>> upstream/main
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
@@ -139,15 +131,11 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						int32(r.SeverityNumber()),
 						serviceName,
 						r.Body().AsString(),
-<<<<<<< HEAD
 						podName,
 						containerName,
 						region,
 						cloudProvider,
 						cell,
-=======
-						resURL,
->>>>>>> upstream/main
 						resAttr,
 						scopeURL,
 						scopeName,
@@ -194,17 +182,12 @@ CREATE TABLE IF NOT EXISTS %s (
      SeverityText LowCardinality(String) CODEC(ZSTD(1)),
      SeverityNumber Int32 CODEC(ZSTD(1)),
      ServiceName LowCardinality(String) CODEC(ZSTD(1)),
-<<<<<<< HEAD
      Body LowCardinality(String) CODEC(ZSTD(1)),
      PodName LowCardinality(String),
      ContainerName LowCardinality(String),
      Region LowCardinality(String),
      CloudProvider LowCardinality(String),
      Cell LowCardinality(String),
-=======
-     Body String CODEC(ZSTD(1)),
-     ResourceSchemaUrl String CODEC(ZSTD(1)),
->>>>>>> upstream/main
      ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
      ScopeSchemaUrl String CODEC(ZSTD(1)),
      ScopeName String CODEC(ZSTD(1)),
@@ -236,22 +219,17 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         SeverityNumber,
                         ServiceName,
                         Body,
-<<<<<<< HEAD
                         PodName,
 						ContainerName,
 						Region,
 						CloudProvider,
 						Cell,
-=======
-                        ResourceSchemaUrl,
->>>>>>> upstream/main
                         ResourceAttributes,
                         ScopeSchemaUrl,
                         ScopeName,
                         ScopeVersion,
                         ScopeAttributes,
                         LogAttributes
-<<<<<<< HEAD
                         )`
 	inlineinsertLogsSQLTemplate = `INSERT INTO %s SETTINGS async_insert=1, wait_for_async_insert=0 (
                         Timestamp,
@@ -270,25 +248,6 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ResourceAttributes,
                         LogAttributes
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-=======
-                        ) VALUES (
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?,
-                                  ?
-                                  )`
->>>>>>> upstream/main
 )
 
 var driverName = "clickhouse" // for testing
