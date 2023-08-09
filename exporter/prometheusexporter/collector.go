@@ -272,7 +272,6 @@ func (c *collector) convertDoubleHistogram(metric pmetric.Metric, resourceAttrs 
 }
 
 func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prometheus.Metric, error) {
-	var metrics []prometheus.Metric
 	var lastErr error
 
 	// deduplicate resourceAttrs by job and instance
@@ -289,6 +288,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 		}
 	}
 
+	metrics := make([]prometheus.Metric, 0, len(deduplicatedResourceAttrs))
 	for _, rAttributes := range deduplicatedResourceAttrs {
 		// map ensures no duplicate label name
 		labels := make(map[string]string, rAttributes.Len()+2) // +2 for job and instance labels.

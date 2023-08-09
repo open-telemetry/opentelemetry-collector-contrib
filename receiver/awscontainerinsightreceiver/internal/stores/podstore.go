@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -59,6 +60,8 @@ type mapWithExpiry struct {
 }
 
 func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
 		return val.RawValue, ok
 	}
@@ -67,6 +70,8 @@ func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
 }
 
 func (m *mapWithExpiry) Set(key string, content interface{}) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	val := awsmetrics.MetricValue{
 		RawValue:  content,
 		Timestamp: time.Now(),
@@ -131,6 +136,17 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 	return podStore, nil
 }
 
+func (p *PodStore) Shutdown() error {
+	var errs error
+	errs = p.cache.Shutdown()
+	for _, maps := range p.prevMeasurements {
+		if prevMeasErr := maps.Shutdown(); prevMeasErr != nil {
+			errs = multierr.Append(errs, prevMeasErr)
+		}
+	}
+	return errs
+}
+
 func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
 	prevMeasurement, ok := p.prevMeasurements[metricType]
 	if !ok {
@@ -164,8 +180,6 @@ func (p *PodStore) RefreshTick(ctx context.Context) {
 	now := time.Now()
 	if now.Sub(p.lastRefreshed) >= refreshInterval {
 		p.refresh(ctx, now)
-		// call cleanup every refresh cycle
-		p.cleanup(now)
 		p.lastRefreshed = now
 	}
 }
@@ -237,16 +251,6 @@ func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 	}
 	refreshWithTimeout(ctx, doRefresh, refreshInterval)
 	p.refreshInternal(now, podList)
-}
-
-func (p *PodStore) cleanup(now time.Time) {
-	for _, prevMeasurement := range p.prevMeasurements {
-		prevMeasurement.CleanUp(now)
-	}
-
-	p.Lock()
-	defer p.Unlock()
-	p.cache.CleanUp(now)
 }
 
 func (p *PodStore) refreshInternal(now time.Time, podList []corev1.Pod) {
