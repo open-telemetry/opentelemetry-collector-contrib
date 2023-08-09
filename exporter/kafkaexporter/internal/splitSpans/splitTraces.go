@@ -1,11 +1,14 @@
-package kafkaexporter
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package splitSpans
 
 import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// splitTracesWithByte removes spans from the input trace and returns a new trace of the specified size.
-func splitTraces(size int, src ptrace.Traces) ptrace.Traces {
+// SplitTraces removes spans from the input trace and returns a new trace of the specified size.
+func SplitTraces(size int, src ptrace.Traces) ptrace.Traces {
 	if src.SpanCount() <= size {
 		return src
 	}

@@ -5,6 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/IBM/sarama"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/splitSpans"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -145,7 +146,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 		return p.cutTracesByMaxByte(splitSize/2, td, maxByte)
 	}
 
-	split := splitTraces(splitSize, td)
+	split := splitSpans.SplitTraces(splitSize, td)
 
 	if tracesSpansBytes(split, p) > maxByte {
 		// check spansNum == 1
