@@ -150,6 +150,35 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				// so we should only have one Sum datapoint
 			},
 		},
+		{
+			statements: []string{`extract_count_metric(true) where name == "operationB"`},
+			want: func(td pmetric.Metrics) {
+				countMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
+				countMetric.SetEmptySum()
+
+				histogramMetric := pmetric.NewMetric()
+				fillMetricTwo(histogramMetric)
+
+				countMetric.SetDescription(histogramMetric.Description())
+				countMetric.SetName(histogramMetric.Name() + "_count")
+				countMetric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+				countMetric.Sum().SetIsMonotonic(true)
+				countMetric.SetUnit(histogramMetric.Unit())
+
+				histogramDp0 := histogramMetric.Histogram().DataPoints().At(0)
+				countDp0 := countMetric.Sum().DataPoints().AppendEmpty()
+				histogramDp0.Attributes().CopyTo(countDp0.Attributes())
+				countDp0.SetIntValue(int64(histogramDp0.Count()))
+				countDp0.SetStartTimestamp(StartTimestamp)
+
+				// we have two histogram datapoints
+				histogramDp1 := histogramMetric.Histogram().DataPoints().At(1)
+				countDp1 := countMetric.Sum().DataPoints().AppendEmpty()
+				histogramDp1.Attributes().CopyTo(countDp1.Attributes())
+				countDp1.SetIntValue(int64(histogramDp1.Count()))
+				countDp1.SetStartTimestamp(StartTimestamp)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -830,6 +859,7 @@ func fillMetricTwo(m pmetric.Metric) {
 	dataPoint1.Attributes().PutStr("attr3", "test3")
 	dataPoint1.Attributes().PutStr("flags", "C|D")
 	dataPoint1.Attributes().PutStr("total.string", "345678")
+	dataPoint1.SetCount(3)
 }
 
 func fillMetricThree(m pmetric.Metric) {
