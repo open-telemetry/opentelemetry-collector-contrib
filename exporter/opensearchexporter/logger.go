@@ -6,10 +6,10 @@
 package opensearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 
 import (
-	"github.com/opensearch-project/opensearch-go/v2/opensearchtransport"
 	"net/http"
 	"time"
 
+	"github.com/opensearch-project/opensearch-go/v2/opensearchtransport"
 	"go.uber.org/zap"
 )
 

@@ -5,10 +5,10 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
-	"go.uber.org/multierr"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 )
 
 const (

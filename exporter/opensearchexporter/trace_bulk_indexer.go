@@ -47,10 +47,6 @@ func (tbi *traceBulkIndexer) close(ctx context.Context) {
 	}
 }
 
-func (tbi *traceBulkIndexer) hasErrors() bool {
-	return len(tbi.errs) > 0
-}
-
 func (tbi *traceBulkIndexer) onIndexerError(_ context.Context, indexerErr error) {
 	if indexerErr != nil {
 		tbi.appendPermanentError(consumererror.NewPermanent(indexerErr))
