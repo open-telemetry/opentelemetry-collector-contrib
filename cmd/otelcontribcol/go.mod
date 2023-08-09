@@ -1084,6 +1084,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/reda
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ../../extension/jaegerremotesampling
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/deprecated => ../../extension/jaegerremotesampling/deprecated
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor => ../../processor/datadogprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver

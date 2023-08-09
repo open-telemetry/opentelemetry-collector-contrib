@@ -8,7 +8,7 @@ import (
 
 	grpcstore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
+	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"google.golang.org/grpc"
@@ -17,7 +17,7 @@ import (
 
 type grpcRemoteStrategyStore struct {
 	headerAdditions map[string]configopaque.String
-	delegate        *grpcstore.SamplingManager
+	delegate        *grpcstore.ConfigManagerProxy
 }
 
 // NewRemoteStrategyStore returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
@@ -34,7 +34,7 @@ func NewRemoteStrategyStore(
 	}
 }
 
-func (g *grpcRemoteStrategyStore) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
+func (g *grpcRemoteStrategyStore) GetSamplingStrategy(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
 	return g.delegate.GetSamplingStrategy(g.enhanceContext(ctx), serviceName)
 }
 

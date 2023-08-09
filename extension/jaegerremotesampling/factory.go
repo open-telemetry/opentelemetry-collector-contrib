@@ -5,18 +5,43 @@ package jaegerremotesampling // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 
+	deprecated "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/deprecated"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
+)
+
+var once sync.Once
+
+func logDeprecation(logger *zap.Logger) {
+	once.Do(func() {
+		logger.Warn("jaegerremotesampling extension will depricate Thrift-gen and replace it with Proto-gen to be compatbible to jaeger 1.42.0 and higher. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/18485 for more details.")
+	})
+}
+
+const protoInsteadOfThrift = "extension.jaegerremotesampling.replaceThriftWithProto"
+
+var protoGate = featuregate.GlobalRegistry().MustRegister(
+	protoInsteadOfThrift,
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription(
+		"When enabled, the jaeger ",
+	),
 )
 
 // NewFactory creates a factory for the OIDC Authenticator extension.
 func NewFactory() extension.Factory {
+	if !protoGate.IsEnabled() {
+		return deprecated.NewFactory()
+	}
 	return extension.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
