@@ -30,17 +30,6 @@ type wantedBody struct {
 	Value      float64
 }
 
-var endpoint = "localhost:8081"
-
-type testCase struct {
-	Name         string
-	HTTPMethod   string
-	QueryParams  string
-	RequestBody  string
-	ResponseCode int
-	WantData     []pmetric.Metrics
-}
-
 func TestNewReceiver(t *testing.T) {
 	type args struct {
 		addr         string
@@ -83,6 +72,16 @@ func TestNewReceiver(t *testing.T) {
 
 func TestCollectDServer(t *testing.T) {
 	t.Parallel()
+	type testCase struct {
+		Name         string
+		HTTPMethod   string
+		QueryParams  string
+		RequestBody  string
+		ResponseCode int
+		WantData     []pmetric.Metrics
+	}
+
+	var endpoint = "localhost:8081"
 	defaultAttrsPrefix := "dap_"
 
 	wantedRequestBody := wantedBody{
@@ -96,6 +95,7 @@ func TestCollectDServer(t *testing.T) {
 		},
 		Value: 2.1474,
 	}
+
 	wantedRequestBodyMetrics := createWantedMetrics(wantedRequestBody)
 
 	testInvalidHTTPMethodCase := testCase{
@@ -192,25 +192,22 @@ func TestCollectDServer(t *testing.T) {
 	}
 }
 
-func createWantedMetrics(wantedBody wantedBody) pmetric.Metrics {
+func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	var dataPoint pmetric.NumberDataPoint
 	testMetrics := pmetric.NewMetrics()
 	scopeMemtrics := testMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	testMetric := pmetric.NewMetric()
-	testMetric.SetName(wantedBody.Name)
+	testMetric.SetName(wantedRequestBody.Name)
 	sum := testMetric.SetEmptySum()
 	sum.SetIsMonotonic(true)
 	dataPoint = sum.DataPoints().AppendEmpty()
-	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, int64(float64(time.Second)*wantedBody.Time))))
+	dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, int64(float64(time.Second)*wantedRequestBody.Time))))
 	attributes := pcommon.NewMap()
-
-	for key, value := range wantedBody.Attributes {
+	for key, value := range wantedRequestBody.Attributes {
 		attributes.PutStr(key, value)
 	}
-
 	attributes.CopyTo(dataPoint.Attributes())
-	dataPoint.SetDoubleValue(wantedBody.Value)
-
+	dataPoint.SetDoubleValue(wantedRequestBody.Value)
 	newMetric := scopeMemtrics.Metrics().AppendEmpty()
 	testMetric.MoveTo(newMetric)
 	return testMetrics
