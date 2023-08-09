@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/deprecated/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {

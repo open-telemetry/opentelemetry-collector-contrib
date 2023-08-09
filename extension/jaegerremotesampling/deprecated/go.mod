@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/deprecated
 
 go 1.19
 
