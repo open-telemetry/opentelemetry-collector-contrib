@@ -133,9 +133,9 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						Unit: "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeInt},
-							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityCumulative},
-							Mono:            Mono{Monotonic: true},
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeInt},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+							Mono:                   Mono{Monotonic: true},
 						},
 						Attributes: []attributeName{"string_attr", "overridden_int_attr", "enum_attr", "slice_attr", "map_attr"},
 					},
@@ -160,9 +160,9 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						Unit: "s",
 						Sum: &sum{
-							MetricValueType: MetricValueType{pmetric.NumberDataPointValueTypeDouble},
-							Aggregated:      Aggregated{Aggregation: pmetric.AggregationTemporalityDelta},
-							Mono:            Mono{Monotonic: false},
+							MetricValueType:        MetricValueType{pmetric.NumberDataPointValueTypeDouble},
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityDelta},
+							Mono:                   Mono{Monotonic: false},
 						},
 					},
 				},
@@ -202,12 +202,12 @@ func Test_loadMetadata(t *testing.T) {
 		{
 			name:    "testdata/no_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation`",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': missing required field: `aggregation_temporality`",
 		},
 		{
 			name:    "testdata/invalid_aggregation.yaml",
 			want:    metadata{},
-			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation': invalid aggregation: \"invalidaggregation\"",
+			wantErr: "1 error(s) decoding:\n\n* error decoding 'metrics[default.metric]': 1 error(s) decoding:\n\n* error decoding 'sum': 1 error(s) decoding:\n\n* error decoding 'aggregation_temporality': invalid aggregation: \"invalidaggregation\"",
 		},
 		{
 			name:    "testdata/invalid_type_attr.yaml",
