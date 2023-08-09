@@ -34,7 +34,7 @@ var endpoint = "localhost:8081"
 
 type testCase struct {
 	Name         string
-	HttpMethod   string
+	HTTPMethod   string
 	QueryParams  string
 	RequestBody  string
 	ResponseCode int
@@ -98,9 +98,9 @@ func TestCollectDServer(t *testing.T) {
 	}
 	wantedRequestBodyMetrics := createWantedMetrics(wantedRequestBody)
 
-	testInvalidHttpMethodCase := testCase{
+	testInvalidHTTPMethodCase := testCase{
 		Name:         "invalid-http-method",
-		HttpMethod:   "GET",
+		HTTPMethod:   "GET",
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},
@@ -108,7 +108,7 @@ func TestCollectDServer(t *testing.T) {
 
 	testValidRequestBodyCase := testCase{
 		Name:        "valid-request-body",
-		HttpMethod:  "POST",
+		HTTPMethod:  "POST",
 		QueryParams: "dap_attr1=attr1val",
 		RequestBody: `[
     	{
@@ -136,13 +136,13 @@ func TestCollectDServer(t *testing.T) {
 
 	testInValidRequestBodyCase := testCase{
 		Name:         "invalid-request-body",
-		HttpMethod:   "POST",
+		HTTPMethod:   "POST",
 		RequestBody:  `invalid-body`,
 		ResponseCode: 400,
 		WantData:     []pmetric.Metrics{},
 	}
 
-	testCases := []testCase{testInvalidHttpMethodCase, testValidRequestBodyCase, testInValidRequestBodyCase}
+	testCases := []testCase{testInvalidHTTPMethodCase, testValidRequestBodyCase, testInValidRequestBodyCase}
 
 	sink := new(consumertest.MetricsSink)
 
@@ -166,7 +166,7 @@ func TestCollectDServer(t *testing.T) {
 		t.Run(tt.Name, func(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
-				tt.HttpMethod,
+				tt.HTTPMethod,
 				"http://"+endpoint+"?"+tt.QueryParams,
 				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
