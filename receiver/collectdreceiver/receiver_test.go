@@ -30,6 +30,17 @@ type wantedBody struct {
 	Value      float64
 }
 
+var endpoint = "localhost:8081"
+
+type testCase struct {
+	Name         string
+	HttpMethod   string
+	QueryParams  string
+	RequestBody  string
+	ResponseCode int
+	WantData     []pmetric.Metrics
+}
+
 func TestNewReceiver(t *testing.T) {
 	type args struct {
 		addr         string
@@ -71,16 +82,8 @@ func TestNewReceiver(t *testing.T) {
 }
 
 func TestCollectDServer(t *testing.T) {
-	const endpoint = "localhost:8081"
+	t.Parallel()
 	defaultAttrsPrefix := "dap_"
-
-	type testCase struct {
-		name         string
-		queryParams  string
-		requestBody  string
-		responseCode int
-		wantData     []pmetric.Metrics
-	}
 
 	wantedRequestBody := wantedBody{
 		Name: "memory.free",
@@ -94,37 +97,52 @@ func TestCollectDServer(t *testing.T) {
 		Value: 2.1474,
 	}
 	wantedRequestBodyMetrics := createWantedMetrics(wantedRequestBody)
-	testCases := []testCase{{
-		name:        "valid-request-body",
-		queryParams: "dap_attr1=attr1val",
-		requestBody: `[
-    {
-        "dsnames": [
-            "value"
-        ],
-        "dstypes": [
-            "derive"
-        ],
-        "host": "i-b13d1e5f",
-        "interval": 10.0,
-        "plugin": "memory",
-        "plugin_instance": "",
-        "time": 1415062577.4949999,
-        "type": "memory",
-        "type_instance": "free",
-        "values": [
-            2.1474
-        ]
-    }
-]`,
-		responseCode: 200,
-		wantData:     []pmetric.Metrics{wantedRequestBodyMetrics},
-	}, {
-		name:         "invalid-request-body",
-		requestBody:  `invalid-body`,
-		responseCode: 400,
-		wantData:     []pmetric.Metrics{},
-	}}
+
+	testInvalidHttpMethodCase := testCase{
+		Name:         "invalid-http-method",
+		HttpMethod:   "GET",
+		RequestBody:  `invalid-body`,
+		ResponseCode: 400,
+		WantData:     []pmetric.Metrics{},
+	}
+
+	testValidRequestBodyCase := testCase{
+		Name:        "valid-request-body",
+		HttpMethod:  "POST",
+		QueryParams: "dap_attr1=attr1val",
+		RequestBody: `[
+    	{
+			"dsnames": [
+				"value"
+			],
+			"dstypes": [
+				"derive"
+			],
+			"host": "i-b13d1e5f",
+			"interval": 10.0,
+			"plugin": "memory",
+			"plugin_instance": "",
+			"time": 1415062577.4949999,
+			"type": "memory",
+			"type_instance": "free",
+			"values": [
+				2.1474
+			]
+		}
+	]`,
+		ResponseCode: 200,
+		WantData:     []pmetric.Metrics{wantedRequestBodyMetrics},
+	}
+
+	testInValidRequestBodyCase := testCase{
+		Name:         "invalid-request-body",
+		HttpMethod:   "POST",
+		RequestBody:  `invalid-body`,
+		ResponseCode: 400,
+		WantData:     []pmetric.Metrics{},
+	}
+
+	testCases := []testCase{testInvalidHttpMethodCase, testValidRequestBodyCase, testInValidRequestBodyCase}
 
 	sink := new(consumertest.MetricsSink)
 
@@ -145,22 +163,22 @@ func TestCollectDServer(t *testing.T) {
 	time.Sleep(time.Second)
 
 	for _, tt := range testCases {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.Name, func(t *testing.T) {
 			sink.Reset()
 			req, err := http.NewRequest(
-				"POST",
-				"http://"+endpoint+"?"+tt.queryParams,
-				bytes.NewBuffer([]byte(tt.requestBody)),
+				tt.HttpMethod,
+				"http://"+endpoint+"?"+tt.QueryParams,
+				bytes.NewBuffer([]byte(tt.RequestBody)),
 			)
 			require.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 			client := &http.Client{}
 			resp, err := client.Do(req)
 			require.NoError(t, err)
-			assert.Equal(t, tt.responseCode, resp.StatusCode)
+			assert.Equal(t, tt.ResponseCode, resp.StatusCode)
 			defer resp.Body.Close()
 
-			if tt.responseCode != 200 {
+			if tt.ResponseCode != 200 {
 				return
 			}
 
@@ -169,7 +187,7 @@ func TestCollectDServer(t *testing.T) {
 			}, 10*time.Second, 5*time.Millisecond)
 			mds := sink.AllMetrics()
 			require.Len(t, mds, 1)
-			assertMetricsAreEqual(t, tt.wantData, mds)
+			assertMetricsAreEqual(t, tt.WantData, mds)
 		})
 	}
 }
