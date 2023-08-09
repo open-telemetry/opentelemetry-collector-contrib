@@ -119,7 +119,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		if c.extractNamespaceLabelsAnnotations() {
 			newNamespaceInformer = newNamespaceSharedInformer
 		} else {
-			// use kube-system shaared informer to only watch kube-system namespace
+			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
 			newNamespaceInformer = newKubeSystemSharedInformer
 		}
