@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.44.319
-	github.com/hashicorp/golang-lru v0.5.4
+	github.com/hashicorp/golang-lru v1.0.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/confmap v0.82.0
