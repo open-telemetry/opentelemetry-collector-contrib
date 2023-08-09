@@ -94,6 +94,8 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	result = append(result, k.getDeploymentMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getDaemonSetMetrics(clusterName, timestampNs)...)
 	result = append(result, k.getServiceMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getStatefulSetMetrics(clusterName, timestampNs)...)
+	result = append(result, k.getReplicaSetMetrics(clusterName, timestampNs)...)
 
 	return result
 }
@@ -153,10 +155,10 @@ func (k *K8sAPIServer) getDeploymentMetrics(clusterName, timestampNs string) []p
 	deployments := k.leaderElection.deploymentClient.DeploymentInfos()
 	for _, deployment := range deployments {
 		fields := map[string]interface{}{
-			ci.MetricName(ci.TypeClusterDeployment, ci.SpecReplicas):              deployment.Spec.Replicas,              // deployment_spec_replicas
-			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicas):            deployment.Status.Replicas,            // deployment_status_replicas
-			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicasAvailable):   deployment.Status.AvailableReplicas,   // deployment_status_replicas_available
-			ci.MetricName(ci.TypeClusterDeployment, ci.StatusReplicasUnavailable): deployment.Status.UnavailableReplicas, // deployment_status_replicas_unavailable
+			ci.ReplicasDesired:           deployment.Spec.Replicas,              // replicas_desired
+			ci.ReplicasReady:             deployment.Status.ReadyReplicas,       // replicas_ready
+			ci.StatusReplicasAvailable:   deployment.Status.AvailableReplicas,   // status_replicas_available
+			ci.StatusReplicasUnavailable: deployment.Status.UnavailableReplicas, // status_replicas_unavailable
 		}
 		attributes := map[string]string{
 			ci.ClusterNameKey: clusterName,
@@ -183,10 +185,10 @@ func (k *K8sAPIServer) getDaemonSetMetrics(clusterName, timestampNs string) []pm
 	daemonSets := k.leaderElection.daemonSetClient.DaemonSetInfos()
 	for _, daemonSet := range daemonSets {
 		fields := map[string]interface{}{
-			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusNumberAvailable):        daemonSet.Status.NumberAvailable,        // daemonset_status_number_available
-			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusNumberUnavailable):      daemonSet.Status.NumberUnavailable,      // daemonset_status_number_unavailable
-			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusDesiredNumberScheduled): daemonSet.Status.DesiredNumberScheduled, // daemonset_status_desired_number_scheduled
-			ci.MetricName(ci.TypeClusterDaemonSet, ci.StatusCurrentNumberScheduled): daemonSet.Status.CurrentNumberScheduled, // daemonset_status_current_number_scheduled
+			ci.StatusReplicasAvailable:   daemonSet.Status.NumberAvailable,        // status_replicas_available
+			ci.StatusReplicasUnavailable: daemonSet.Status.NumberUnavailable,      // status_replicas_unavailable
+			ci.ReplicasDesired:           daemonSet.Status.DesiredNumberScheduled, // replicas_desired
+			ci.ReplicasReady:             daemonSet.Status.CurrentNumberScheduled, // replicas_ready
 		}
 		attributes := map[string]string{
 			ci.ClusterNameKey: clusterName,
@@ -228,6 +230,60 @@ func (k *K8sAPIServer) getServiceMetrics(clusterName, timestampNs string) []pmet
 		attributes[ci.SourcesKey] = "[\"apiserver\"]"
 		attributes[ci.Kubernetes] = fmt.Sprintf("{\"namespace_name\":\"%s\",\"service_name\":\"%s\"}",
 			service.Namespace, service.ServiceName)
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		metrics = append(metrics, md)
+	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getStatefulSetMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	statefulSets := k.leaderElection.statefulSetClient.StatefulSetInfos()
+	for _, statefulSet := range statefulSets {
+		fields := map[string]interface{}{
+			ci.ReplicasDesired:         statefulSet.Spec.Replicas,            // replicas_desired
+			ci.ReplicasReady:           statefulSet.Status.ReadyReplicas,     // replicas_ready
+			ci.StatusReplicasAvailable: statefulSet.Status.AvailableReplicas, // status_replicas_available
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterStatefulSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     statefulSet.Name,
+			ci.K8sNamespace:   statefulSet.Namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes[ci.NodeNameKey] = k.nodeName
+		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
+		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
+		metrics = append(metrics, md)
+	}
+	return metrics
+}
+
+func (k *K8sAPIServer) getReplicaSetMetrics(clusterName, timestampNs string) []pmetric.Metrics {
+	var metrics []pmetric.Metrics
+	replicaSets := k.leaderElection.replicaSetClient.ReplicaSetInfos()
+	for _, replicaSet := range replicaSets {
+		fields := map[string]interface{}{
+			ci.ReplicasDesired:         replicaSet.Spec.Replicas,            // replicas_desired
+			ci.ReplicasReady:           replicaSet.Status.ReadyReplicas,     // replicas_ready
+			ci.StatusReplicasAvailable: replicaSet.Status.AvailableReplicas, // status_replicas_available
+		}
+		attributes := map[string]string{
+			ci.ClusterNameKey: clusterName,
+			ci.MetricType:     ci.TypeClusterReplicaSet,
+			ci.Timestamp:      timestampNs,
+			ci.PodNameKey:     replicaSet.Name,
+			ci.K8sNamespace:   replicaSet.Namespace,
+			ci.Version:        "0",
+		}
+		if k.nodeName != "" {
+			attributes[ci.NodeNameKey] = k.nodeName
+		}
+		attributes[ci.SourcesKey] = "[\"apiserver\"]"
 		md := ci.ConvertToOTLPMetrics(fields, attributes, k.logger)
 		metrics = append(metrics, md)
 	}

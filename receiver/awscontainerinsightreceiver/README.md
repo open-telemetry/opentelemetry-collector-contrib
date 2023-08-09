@@ -97,7 +97,7 @@ rules:
     resources: ["pods", "nodes", "endpoints"]
     verbs: ["list", "watch"]
   - apiGroups: ["apps"]
-    resources: ["replicasets", "daemonsets", "deployments"]
+    resources: ["replicasets", "daemonsets", "deployments", "statefulsets"]
     verbs: ["list", "watch"]
   - apiGroups: ["batch"]
     resources: ["jobs"]
@@ -430,12 +430,12 @@ kubectl apply -f config.yaml
 <br/><br/> 
 
 ### Cluster Deployment
-| Metric                                 | Unit  |
-|----------------------------------------|-------|
-| deployment_spec_replicas               | Count |
-| deployment_status_replicas             | Count |
-| deployment_status_replicas_available   | Count |
-| deployment_status_replicas_unavailable | Count |
+| Metric                      | Unit  |
+|-----------------------------|-------|
+| replicas_desired            | Count |
+| replicas_ready              | Count |
+| status_replicas_available   | Count |
+| status_replicas_unavailable | Count |
 
 
 <br/><br/>
@@ -455,13 +455,58 @@ kubectl apply -f config.yaml
 <br/><br/>
 <br/><br/>
 
+### Cluster ReplicaSet
+| Metric                    | Unit  |
+|---------------------------|-------|
+| replicas_desired          | Count |
+| replicas_ready            | Count |
+| status_replicas_available | Count |
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Namespace          |
+| PodName            |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
+| kubernetes         |
+
+<br/><br/>
+### Cluster StatefulSet
+| Metric                      | Unit  |
+|-----------------------------|-------|
+| replicas_desired            | Count |
+| replicas_ready              | Count |
+| status_replicas_available   | Count |
+
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Namespace          |
+| PodName            |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
+| kubernetes         |
+
+
+<br/><br/>
+
 ### Cluster DaemonSet
-| Metric                                    | Unit  |
-|-------------------------------------------|-------|
-| daemonset_status_number_available         | Count |
-| daemonset_status_number_unavailable       | Count |
-| daemonset_status_desired_number_scheduled | Count |
-| daemonset_status_current_number_scheduled | Count |
+| Metric                    | Unit  |
+|---------------------------|-------|
+| replicas_desired          | Count |
+| replicas_ready            | Count |
+| status_number_available   | Count |
+| status_number_unavailable | Count |
 
 
 <br/><br/>

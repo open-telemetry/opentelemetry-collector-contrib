@@ -14,20 +14,19 @@
 
 package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
-type DeploymentInfo struct {
+type StatefulSetInfo struct {
 	Name      string
 	Namespace string
-	Spec      *DeploymentSpec
-	Status    *DeploymentStatus
+	Spec      *StatefulSetSpec
+	Status    *StatefulSetStatus
 }
 
-type DeploymentSpec struct {
+type StatefulSetSpec struct {
 	Replicas uint32
 }
 
-type DeploymentStatus struct {
-	Replicas            uint32
-	ReadyReplicas       uint32
-	AvailableReplicas   uint32
-	UnavailableReplicas uint32
+type StatefulSetStatus struct {
+	Replicas          uint32
+	AvailableReplicas uint32
+	ReadyReplicas     uint32
 }

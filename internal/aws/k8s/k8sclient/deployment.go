@@ -135,6 +135,7 @@ func transformFuncDeployment(obj interface{}) (interface{}, error) {
 	}
 	info.Status = &DeploymentStatus{
 		Replicas:            uint32(deployment.Status.Replicas),
+		ReadyReplicas:       uint32(deployment.Status.ReadyReplicas),
 		AvailableReplicas:   uint32(deployment.Status.AvailableReplicas),
 		UnavailableReplicas: uint32(deployment.Status.UnavailableReplicas),
 	}

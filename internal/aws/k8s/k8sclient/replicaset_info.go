@@ -14,12 +14,25 @@
 
 package k8sclient // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 
-type replicaSetInfo struct {
-	name   string
-	owners []*replicaSetOwner
+type ReplicaSetInfo struct {
+	Name      string
+	Namespace string
+	Owners    []*ReplicaSetOwner
+	Spec      *ReplicaSetSpec
+	Status    *ReplicaSetStatus
 }
 
-type replicaSetOwner struct {
+type ReplicaSetOwner struct {
 	kind string
 	name string
+}
+
+type ReplicaSetSpec struct {
+	Replicas uint32
+}
+
+type ReplicaSetStatus struct {
+	Replicas          uint32
+	AvailableReplicas uint32
+	ReadyReplicas     uint32
 }

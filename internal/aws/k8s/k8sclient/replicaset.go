@@ -36,6 +36,7 @@ const (
 type ReplicaSetClient interface {
 	// Get the mapping between replica set and deployment
 	ReplicaSetToDeployment() map[string]string
+	ReplicaSetInfos() []*ReplicaSetInfo
 }
 
 type noOpReplicaSetClient struct {
@@ -43,6 +44,10 @@ type noOpReplicaSetClient struct {
 
 func (nc *noOpReplicaSetClient) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
+}
+
+func (nc *noOpReplicaSetClient) ReplicaSetInfos() []*ReplicaSetInfo {
+	return []*ReplicaSetInfo{}
 }
 
 func (nc *noOpReplicaSetClient) shutdown() {
@@ -66,6 +71,7 @@ type replicaSetClient struct {
 	mu                        sync.RWMutex
 	cachedReplicaSetMap       map[string]time.Time
 	replicaSetToDeploymentMap map[string]string
+	replicaSetInfos           []*ReplicaSetInfo
 }
 
 func (c *replicaSetClient) ReplicaSetToDeployment() map[string]string {
@@ -83,15 +89,21 @@ func (c *replicaSetClient) refresh() {
 
 	objsList := c.store.List()
 
+	var replicaSetInfos []*ReplicaSetInfo
 	tmpMap := make(map[string]string)
 	for _, obj := range objsList {
-		replicaSet := obj.(*replicaSetInfo)
-	ownerLoop:
-		for _, owner := range replicaSet.owners {
-			if owner.kind == deployment && owner.name != "" {
-				tmpMap[replicaSet.name] = owner.name
-				break ownerLoop
+		replicaSet := obj.(*ReplicaSetInfo)
+		if len(replicaSet.Owners) > 0 {
+		ownerLoop:
+			for _, owner := range replicaSet.Owners {
+				if owner.kind == deployment && owner.name != "" {
+					tmpMap[replicaSet.Name] = owner.name
+					break ownerLoop
+				}
 			}
+		} else {
+			// replicaSet without owner reference is not part of a deployment
+			replicaSetInfos = append(replicaSetInfos, replicaSet)
 		}
 	}
 
@@ -108,6 +120,17 @@ func (c *replicaSetClient) refresh() {
 		c.replicaSetToDeploymentMap[k] = v
 		c.cachedReplicaSetMap[k] = lastRefreshTime
 	}
+
+	c.replicaSetInfos = replicaSetInfos
+}
+
+func (c *replicaSetClient) ReplicaSetInfos() []*ReplicaSetInfo {
+	if c.store.GetResetRefreshStatus() {
+		c.refresh()
+	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.replicaSetInfos
 }
 
 func newReplicaSetClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...replicaSetClientOption) (*replicaSetClient, error) {
@@ -125,8 +148,6 @@ func newReplicaSetClient(clientSet kubernetes.Interface, logger *zap.Logger, opt
 	if _, err := clientSet.AppsV1().ReplicaSets(metav1.NamespaceAll).List(ctx, metav1.ListOptions{}); err != nil {
 		return nil, fmt.Errorf("cannot list ReplicaSet. err: %w", err)
 	}
-
-	c.stopChan = make(chan struct{})
 
 	c.store = NewObjStore(transformFuncReplicaSet, logger)
 
@@ -155,11 +176,20 @@ func transformFuncReplicaSet(obj interface{}) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not ReplicaSet type", obj)
 	}
-	info := new(replicaSetInfo)
-	info.name = replicaSet.Name
-	info.owners = []*replicaSetOwner{}
+	info := new(ReplicaSetInfo)
+	info.Name = replicaSet.Name
+	info.Namespace = replicaSet.Namespace
+	info.Owners = []*ReplicaSetOwner{}
 	for _, owner := range replicaSet.OwnerReferences {
-		info.owners = append(info.owners, &replicaSetOwner{kind: owner.Kind, name: owner.Name})
+		info.Owners = append(info.Owners, &ReplicaSetOwner{kind: owner.Kind, name: owner.Name})
+	}
+	info.Spec = &ReplicaSetSpec{
+		Replicas: uint32(*replicaSet.Spec.Replicas),
+	}
+	info.Status = &ReplicaSetStatus{
+		Replicas:          uint32(replicaSet.Status.Replicas),
+		AvailableReplicas: uint32(replicaSet.Status.AvailableReplicas),
+		ReadyReplicas:     uint32(replicaSet.Status.ReadyReplicas),
 	}
 	return info, nil
 }

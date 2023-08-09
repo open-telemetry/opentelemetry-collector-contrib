@@ -103,7 +103,6 @@ const (
 	StatusCurrentNumberScheduled      = "status_current_number_scheduled"
 	StatusReplicasAvailable           = "status_replicas_available"
 	StatusReplicasUnavailable         = "status_replicas_unavailable"
-	StatusReplicas                    = "status_replicas"
 	SpecReplicas                      = "spec_replicas"
 	StatusRunning                     = "status_running"
 	StatusTerminated                  = "status_terminated"
@@ -115,6 +114,8 @@ const (
 	StatusUnknown                     = "status_unknown"
 	StatusReady                       = "status_ready"
 	StatusScheduled                   = "status_scheduled"
+	ReplicasDesired                   = "replicas_desired"
+	ReplicasReady                     = "replicas_ready"
 
 	RunningPodCount       = "number_of_running_pods"
 	RunningContainerCount = "number_of_running_containers"
@@ -133,25 +134,27 @@ const (
 	DiskIOTotal              = "Total"
 
 	// Define the metric types
-	TypeCluster           = "Cluster"
-	TypeClusterService    = "ClusterService"
-	TypeClusterDeployment = "ClusterDeployment"
-	TypeClusterDaemonSet  = "ClusterDaemonSet"
-	TypeClusterNamespace  = "ClusterNamespace"
-	TypeService           = "Service"
-	TypeInstance          = "Instance" // mean EC2 Instance in ECS
-	TypeNode              = "Node"     // mean EC2 Instance in EKS
-	TypeInstanceFS        = "InstanceFS"
-	TypeNodeFS            = "NodeFS"
-	TypeInstanceNet       = "InstanceNet"
-	TypeNodeNet           = "NodeNet"
-	TypeInstanceDiskIO    = "InstanceDiskIO"
-	TypeNodeDiskIO        = "NodeDiskIO"
-	TypePod               = "Pod"
-	TypePodNet            = "PodNet"
-	TypeContainer         = "Container"
-	TypeContainerFS       = "ContainerFS"
-	TypeContainerDiskIO   = "ContainerDiskIO"
+	TypeCluster            = "Cluster"
+	TypeClusterService     = "ClusterService"
+	TypeClusterDeployment  = "ClusterDeployment"
+	TypeClusterDaemonSet   = "ClusterDaemonSet"
+	TypeClusterStatefulSet = "ClusterStatefulSet"
+	TypeClusterReplicaSet  = "ClusterReplicaSet"
+	TypeClusterNamespace   = "ClusterNamespace"
+	TypeService            = "Service"
+	TypeInstance           = "Instance" // mean EC2 Instance in ECS
+	TypeNode               = "Node"     // mean EC2 Instance in EKS
+	TypeInstanceFS         = "InstanceFS"
+	TypeNodeFS             = "NodeFS"
+	TypeInstanceNet        = "InstanceNet"
+	TypeNodeNet            = "NodeNet"
+	TypeInstanceDiskIO     = "InstanceDiskIO"
+	TypeNodeDiskIO         = "NodeDiskIO"
+	TypePod                = "Pod"
+	TypePodNet             = "PodNet"
+	TypeContainer          = "Container"
+	TypeContainerFS        = "ContainerFS"
+	TypeContainerDiskIO    = "ContainerDiskIO"
 	// Special type for pause container
 	// because containerd does not set container name pause container name to POD like docker does.
 	TypeInfraContainer = "InfraContainer"
@@ -245,7 +248,6 @@ func init() {
 		StatusConditionUnknown:            UnitCount,
 		StatusCapacityPods:                UnitCount,
 		StatusAllocatablePods:             UnitCount,
-		StatusReplicas:                    UnitCount,
 		StatusReplicasAvailable:           UnitCount,
 		StatusReplicasUnavailable:         UnitCount,
 		StatusNumberAvailable:             UnitCount,
@@ -253,6 +255,8 @@ func init() {
 		StatusDesiredNumberScheduled:      UnitCount,
 		StatusCurrentNumberScheduled:      UnitCount,
 		SpecReplicas:                      UnitCount,
+		ReplicasDesired:                   UnitCount,
+		ReplicasReady:                     UnitCount,
 
 		// kube-state-metrics equivalents
 		StatusRunning:              UnitCount,

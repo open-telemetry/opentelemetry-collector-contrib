@@ -635,6 +635,10 @@ func TestGetJobNamePrefix(t *testing.T) {
 
 type mockReplicaSetInfo1 struct{}
 
+func (m *mockReplicaSetInfo1) ReplicaSetInfos() []*k8sclient.ReplicaSetInfo {
+	return []*k8sclient.ReplicaSetInfo{}
+}
+
 func (m *mockReplicaSetInfo1) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{}
 }
@@ -646,6 +650,10 @@ func (m *mockK8sClient1) GetReplicaSetClient() k8sclient.ReplicaSetClient {
 }
 
 type mockReplicaSetInfo2 struct{}
+
+func (m *mockReplicaSetInfo2) ReplicaSetInfos() []*k8sclient.ReplicaSetInfo {
+	return []*k8sclient.ReplicaSetInfo{}
+}
 
 func (m *mockReplicaSetInfo2) ReplicaSetToDeployment() map[string]string {
 	return map[string]string{"DeploymentTest-sftrz2785": "DeploymentTest"}
