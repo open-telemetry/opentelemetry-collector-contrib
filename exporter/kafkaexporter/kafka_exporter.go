@@ -38,26 +38,6 @@ func (ke kafkaErrors) Error() string {
 	return fmt.Sprintf("Failed to deliver %d messages due to %s", ke.count, ke.err)
 }
 
-//func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
-//	messagesSlice, err := e.marshaler.Marshal(td, e.topic, e.config)
-//	if err != nil {
-//		return consumererror.NewPermanent(err)
-//	}
-//	for _, messages := range messagesSlice {
-//		err = e.producer.SendMessages(messages)
-//		if err != nil {
-//			var prodErr sarama.ProducerErrors
-//			if errors.As(err, &prodErr) {
-//				if len(prodErr) > 0 {
-//					return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-//				}
-//			}
-//			return err
-//		}
-//	}
-//	return nil
-//}
-
 func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) error {
 	messagesSlice, err := e.marshaler.Marshal(td, e.config)
 	if err != nil {

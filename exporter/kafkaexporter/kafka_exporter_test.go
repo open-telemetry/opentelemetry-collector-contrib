@@ -242,6 +242,24 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 	assert.Contains(t, err.Error(), expErr.Error())
 }
 
+func TestMetricsPusher_maxMessageErr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+
+	p := kafkaMetricsProducer{
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 100}},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	md := testdata.GenerateMetricsTwoMetrics()
+	err := p.metricsDataPusher(context.Background(), md)
+	assert.Contains(t, err.Error(), errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+}
+
 func TestLogsDataPusher(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -290,6 +308,24 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
+}
+
+func TestLogsPusher_maxMessageErr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+
+	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+		logger:    zap.NewNop(),
+		config:    &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: 100}},
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	ld := testdata.GenerateLogsTwoLogRecordsSameResource()
+	err := p.logsDataPusher(context.Background(), ld)
+	assert.Contains(t, err.Error(), errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
 }
 
 type tracesErrorMarshaler struct {
