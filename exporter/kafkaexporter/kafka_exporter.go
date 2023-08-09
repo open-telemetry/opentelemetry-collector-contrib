@@ -19,7 +19,7 @@ import (
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 var errSingleJaegerSpanMessageSizeOverMaxMsgByte = fmt.Errorf("one jaeger span message big then max_message_bytes settings")
-var errSingleResourcesSpansMessageSizeOverMaxMsgByte = fmt.Errorf("one resourcesSpans message big then max_message_bytes settings")
+var errSingleOtelSpanMessageSizeOverMaxMsgByte = fmt.Errorf("one otel span message big then max_message_bytes settings")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
@@ -130,7 +130,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.M
 	for _, message := range messages {
 		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
 		if messagesByte > e.config.Producer.MaxMessageBytes {
-			return errSingleResourcesSpansMessageSizeOverMaxMsgByte
+			return errSingleOtelSpanMessageSizeOverMaxMsgByte
 		}
 	}
 	err = e.producer.SendMessages(messages)
@@ -169,7 +169,7 @@ func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) erro
 	for _, message := range messages {
 		messagesByte += message.ByteSize(e.config.Producer.protoVersion)
 		if messagesByte > e.config.Producer.MaxMessageBytes {
-			return errSingleResourcesSpansMessageSizeOverMaxMsgByte
+			return errSingleOtelSpanMessageSizeOverMaxMsgByte
 		}
 	}
 

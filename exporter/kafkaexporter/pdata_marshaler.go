@@ -74,7 +74,9 @@ type pdataTracesMarshaler struct {
 }
 
 func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, config *Config) ([]*sarama.ProducerMessage, error) {
-	tracesSlice, err := p.cutTraces(td, config)
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+
+	tracesSlice, err := p.cutTraces(td, maxBytesSizeWithoutCommonData)
 	if err != nil {
 		return nil, err
 	}
@@ -108,30 +110,28 @@ func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) Traces
 	}
 }
 
-func (p pdataTracesMarshaler) cutTraces(td ptrace.Traces, config *Config) ([]ptrace.Traces, error) {
+func (p pdataTracesMarshaler) cutTraces(td ptrace.Traces, maxBytesSizeWithoutCommonData int) ([]ptrace.Traces, error) {
+	if maxBytesSizeWithoutCommonData <= 0 {
+		return []ptrace.Traces{td}, nil
+	}
+
 	// 1. check td need to cut by it size
 	bytes, err := p.marshaler.MarshalTraces(td)
 	if err != nil {
 		return nil, err
 	}
 
-	// 不用cut
-	if config.Producer.MaxMessageBytes == 0 {
+	if len(bytes) <= maxBytesSizeWithoutCommonData {
 		return []ptrace.Traces{td}, nil
 	}
 
-	maxBytesSize := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
-
-	if len(bytes) <= maxBytesSize {
-		return []ptrace.Traces{td}, nil
-	}
-
-	// 2. cut td
-	// 2.1 cutSize = total_td_size/max_bytes_size
-	cutSize := len(bytes) / maxBytesSize
+	// 2. cut td  1000/ 10000 20
+	// 2.1 cutSize = (max_bytes_size / total_td_size) * totalSpanNum = (max_bytes_size * totalSpanNum) / total_td_size
+	//cutSize := int(float64(maxProducerMsgBytesSize) / float64(len(bytes)) * float64(tracesSpansNum(td)))
+	cutSize := (maxBytesSizeWithoutCommonData * tracesSpansNum(td)) / len(bytes)
 
 	// 2.2 cut traces to tracesSlice
-	return p.cutTracesByMaxByte(cutSize, td, maxBytesSize)
+	return p.cutTracesByMaxByte(cutSize, td, maxBytesSizeWithoutCommonData)
 }
 
 func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces, maxByte int) (dest []ptrace.Traces, err error) {
@@ -144,7 +144,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 	if tracesSpansBytes(split, p) > maxByte {
 		// check spansNum == 1
 		if tracesSpansNum(split) == 1 {
-			return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+			return nil, errSingleOtelSpanMessageSizeOverMaxMsgByte
 		}
 		left, err := p.cutTracesByMaxByte(splitSize/2, split, maxByte)
 		if err != nil {
@@ -157,7 +157,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 
 	if tracesSpansBytes(td, p) > maxByte {
 		if tracesSpansNum(td) == 1 {
-			return nil, errSingleResourcesSpansMessageSizeOverMaxMsgByte
+			return nil, errSingleOtelSpanMessageSizeOverMaxMsgByte
 		}
 		right, err := p.cutTracesByMaxByte(splitSize, td, maxByte)
 		if err != nil {

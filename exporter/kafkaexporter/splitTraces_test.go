@@ -48,20 +48,3 @@ func TestSplitTraces_maxSpanCount(t *testing.T) {
 	}
 	assert.Equal(t, totalSpanCount, cutSpansCount)
 }
-
-func TestSplitTraces_maxSpansByteSize(t *testing.T) {
-	//traceMarshaler :=newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding)
-	//td := testdata.GenerateTraces(20)
-	//traceMarshaler.Marshal()
-	//splitSize := 40
-	//split, err := splitTracesWithByte(splitSize, td, nil)
-	//assert.NoError(t, err)
-	//assert.Equal(t, td, split)
-	//
-	//i := 0
-	//td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().RemoveIf(func(_ ptrace.Span) bool {
-	//	i++
-	//	return i > 5
-	//})
-	//assert.EqualValues(t, td, split)
-}
