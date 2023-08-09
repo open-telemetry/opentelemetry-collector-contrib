@@ -5,7 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"github.com/IBM/sarama"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/splitSpans"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/splitObjs"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -31,6 +31,90 @@ func (p pdataLogsMarshaler) Marshal(ld plog.Logs, config *Config) ([]*sarama.Pro
 
 func (p pdataLogsMarshaler) Encoding() string {
 	return p.encoding
+}
+
+func (p pdataLogsMarshaler) cutLogs(ld plog.Logs, maxBytesSizeWithoutCommonData int) ([]plog.Logs, error) {
+	if maxBytesSizeWithoutCommonData <= 0 {
+		return []plog.Logs{ld}, nil
+	}
+
+	// 1. check ld need to cut by it size
+	bytes, err := p.marshaler.MarshalLogs(ld)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bytes) <= maxBytesSizeWithoutCommonData {
+		return []plog.Logs{ld}, nil
+	}
+
+	// 2. cut ld  90*3/100
+	// 2.1 cutSize = (max_bytes_size / total_ld_size) * totalLogRecordsNum = (max_bytes_size * totalLogRecordsNum) / total_ld_size
+	//cutSize := int(float64(maxProducerMsgBytesSize) / float64(len(bytes)) * float64(logRecordsNum(ld)))
+	cutSize := (maxBytesSizeWithoutCommonData * logRecordsNum(ld)) / len(bytes)
+	if cutSize == 0 {
+		if len(bytes) > maxBytesSizeWithoutCommonData {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		return []plog.Logs{ld}, nil
+	}
+
+	// 2.2 cut logs to logsSlice
+	return p.cutLogsByMaxByte(cutSize, ld, maxBytesSizeWithoutCommonData)
+}
+
+func (p pdataLogsMarshaler) cutLogsByMaxByte(splitSize int, ld plog.Logs, maxByte int) (dest []plog.Logs, err error) {
+	if logRecordsNum(ld) <= splitSize {
+		return p.cutLogsByMaxByte(splitSize/2, ld, maxByte)
+	}
+
+	split := splitObjs.SplitLogs(splitSize, ld)
+
+	if logRecordsBytes(split, p) > maxByte {
+		// check logRecordsNum == 1
+		if logRecordsNum(split) == 1 {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		left, err := p.cutLogsByMaxByte(splitSize/2, split, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, left...)
+	} else {
+		dest = append(dest, split)
+	}
+
+	if logRecordsBytes(ld, p) > maxByte {
+		if logRecordsNum(ld) == 1 {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		right, err := p.cutLogsByMaxByte(splitSize, ld, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, right...)
+	} else {
+		dest = append(dest, ld)
+	}
+	return dest, nil
+
+}
+
+func logRecordsNum(ld plog.Logs) (num int) {
+	for x := 0; x < ld.ResourceLogs().Len(); x++ {
+		for y := 0; y < ld.ResourceLogs().At(x).ScopeLogs().Len(); y++ {
+			num += ld.ResourceLogs().At(x).ScopeLogs().At(y).LogRecords().Len()
+		}
+	}
+	return num
+}
+
+func logRecordsBytes(ld plog.Logs, p pdataLogsMarshaler) int {
+	bytes, err := p.marshaler.MarshalLogs(ld)
+	if err != nil {
+		return 0
+	}
+	return len(bytes)
 }
 
 func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string) LogsMarshaler {
@@ -60,6 +144,90 @@ func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, config *Config) ([]*s
 
 func (p pdataMetricsMarshaler) Encoding() string {
 	return p.encoding
+}
+
+func (p pdataMetricsMarshaler) cutMetrics(md pmetric.Metrics, maxBytesSizeWithoutCommonData int) ([]pmetric.Metrics, error) {
+	if maxBytesSizeWithoutCommonData <= 0 {
+		return []pmetric.Metrics{md}, nil
+	}
+
+	// 1. check md need to cut by it size
+	bytes, err := p.marshaler.MarshalMetrics(md)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(bytes) <= maxBytesSizeWithoutCommonData {
+		return []pmetric.Metrics{md}, nil
+	}
+
+	// 2. cut md  90*3/100
+	// 2.1 cutSize = (max_bytes_size / total_md_size) * totalMetricNum = (max_bytes_size * totalMetricNum) / total_md_size
+	//cutSize := int(float64(maxProducerMsgBytesSize) / float64(len(bytes)) * float64(metricsNum(md)))
+	cutSize := (maxBytesSizeWithoutCommonData * metricsNum(md)) / len(bytes)
+	if cutSize == 0 {
+		if len(bytes) > maxBytesSizeWithoutCommonData {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		return []pmetric.Metrics{md}, nil
+	}
+
+	// 2.2 cut metrics to metricsSlice
+	return p.cutMetricsByMaxByte(cutSize, md, maxBytesSizeWithoutCommonData)
+}
+
+func (p pdataMetricsMarshaler) cutMetricsByMaxByte(splitSize int, md pmetric.Metrics, maxByte int) (dest []pmetric.Metrics, err error) {
+	if metricsNum(md) <= splitSize {
+		return p.cutMetricsByMaxByte(splitSize/2, md, maxByte)
+	}
+
+	split := splitObjs.SplitMetrics(splitSize, md)
+
+	if metricsBytes(split, p) > maxByte {
+		// check metricsNum == 1
+		if metricsNum(split) == 1 {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		left, err := p.cutMetricsByMaxByte(splitSize/2, split, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, left...)
+	} else {
+		dest = append(dest, split)
+	}
+
+	if metricsBytes(md, p) > maxByte {
+		if metricsNum(md) == 1 {
+			return nil, errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		right, err := p.cutMetricsByMaxByte(splitSize, md, maxByte)
+		if err != nil {
+			return nil, err
+		}
+		dest = append(dest, right...)
+	} else {
+		dest = append(dest, md)
+	}
+	return dest, nil
+
+}
+
+func metricsNum(md pmetric.Metrics) (num int) {
+	for x := 0; x < md.ResourceMetrics().Len(); x++ {
+		for y := 0; y < md.ResourceMetrics().At(x).ScopeMetrics().Len(); y++ {
+			num += md.ResourceMetrics().At(x).ScopeMetrics().At(y).Metrics().Len()
+		}
+	}
+	return num
+}
+
+func metricsBytes(md pmetric.Metrics, p pdataMetricsMarshaler) int {
+	bytes, err := p.marshaler.MarshalMetrics(md)
+	if err != nil {
+		return 0
+	}
+	return len(bytes)
 }
 
 func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) MetricsMarshaler {
@@ -146,7 +314,7 @@ func (p pdataTracesMarshaler) cutTracesByMaxByte(splitSize int, td ptrace.Traces
 		return p.cutTracesByMaxByte(splitSize/2, td, maxByte)
 	}
 
-	split := splitSpans.SplitTraces(splitSize, td)
+	split := splitObjs.SplitTraces(splitSize, td)
 
 	if tracesSpansBytes(split, p) > maxByte {
 		// check spansNum == 1

@@ -1,4 +1,4 @@
-package splitSpans
+package splitObjs
 
 import (
 	"fmt"

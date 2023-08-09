@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package splitSpans // import "go.opentelemetry.io/collector/processor/batchprocessor"
+package splitObjs // import "go.opentelemetry.io/collector/processor/batchprocessor"
 
 import (
 	"go.opentelemetry.io/collector/pdata/plog"
