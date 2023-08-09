@@ -127,3 +127,5 @@ receivers:
         levelEnum: severityText
         severity: severityNumber
 ```
+
+More information about Avro as a encoding format can be found here: [Apache Avro specification](https://avro.apache.org/docs/current/specification/).
