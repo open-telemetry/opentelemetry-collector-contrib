@@ -26,15 +26,15 @@ type data interface {
 }
 
 type mockMarshaler[Data data] struct {
-	consume  func(d Data, topic string) ([]*sarama.ProducerMessage, error)
+	consume  func(d Data, config *Config) ([]*sarama.ProducerMessage, error)
 	encoding string
 }
 
 func (mm *mockMarshaler[Data]) Encoding() string { return mm.encoding }
 
-func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.ProducerMessage, error) {
+func (mm *mockMarshaler[Data]) Marshal(d Data, config *Config) ([]*sarama.ProducerMessage, error) {
 	if mm.consume != nil {
-		return mm.consume(d, topic)
+		return mm.consume(d, config)
 	}
 	return nil, errors.New("not implemented")
 }

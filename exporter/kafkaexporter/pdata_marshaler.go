@@ -16,14 +16,14 @@ type pdataLogsMarshaler struct {
 	encoding  string
 }
 
-func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+func (p pdataLogsMarshaler) Marshal(ld plog.Logs, config *Config) ([]*sarama.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalLogs(ld)
 	if err != nil {
 		return nil, err
 	}
 	return []*sarama.ProducerMessage{
 		{
-			Topic: topic,
+			Topic: config.Topic,
 			Value: sarama.ByteEncoder(bts),
 		},
 	}, nil
@@ -45,14 +45,14 @@ type pdataMetricsMarshaler struct {
 	encoding  string
 }
 
-func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error) {
+func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, config *Config) ([]*sarama.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalMetrics(ld)
 	if err != nil {
 		return nil, err
 	}
 	return []*sarama.ProducerMessage{
 		{
-			Topic: topic,
+			Topic: config.Topic,
 			Value: sarama.ByteEncoder(bts),
 		},
 	}, nil

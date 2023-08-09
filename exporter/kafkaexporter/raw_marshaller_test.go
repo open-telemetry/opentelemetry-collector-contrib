@@ -118,7 +118,8 @@ func Test_RawMarshaler(t *testing.T) {
 			logs := plog.NewLogs()
 			lr := test.logRecord()
 			lr.MoveTo(logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-			messages, err := r.Marshal(logs, "foo")
+			config := &Config{Topic: "foo"}
+			messages, err := r.Marshal(logs, config)
 			if test.errorExpected {
 				require.Error(t, err)
 			} else {

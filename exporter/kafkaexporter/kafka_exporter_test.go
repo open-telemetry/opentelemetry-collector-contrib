@@ -304,7 +304,7 @@ type logsErrorMarshaler struct {
 	err error
 }
 
-func (e metricsErrorMarshaler) Marshal(_ pmetric.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
+func (e metricsErrorMarshaler) Marshal(_ pmetric.Metrics, _ *Config) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 
@@ -322,7 +322,7 @@ func (e tracesErrorMarshaler) Encoding() string {
 	panic("implement me")
 }
 
-func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMessage, error) {
+func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ *Config) ([]*sarama.ProducerMessage, error) {
 	return nil, e.err
 }
 

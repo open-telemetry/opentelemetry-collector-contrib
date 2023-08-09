@@ -21,7 +21,7 @@ func newRawMarshaler() rawMarshaler {
 	return rawMarshaler{}
 }
 
-func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
+func (r rawMarshaler) Marshal(logs plog.Logs, config *Config) ([]*sarama.ProducerMessage, error) {
 	var messages []*sarama.ProducerMessage
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
@@ -38,7 +38,7 @@ func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerM
 				}
 
 				messages = append(messages, &sarama.ProducerMessage{
-					Topic: topic,
+					Topic: config.Topic,
 					Value: sarama.ByteEncoder(b),
 				})
 			}

@@ -22,7 +22,7 @@ type TracesMarshaler interface {
 // MetricsMarshaler marshals metrics into Message array
 type MetricsMarshaler interface {
 	// Marshal serializes metrics into sarama's ProducerMessages
-	Marshal(metrics pmetric.Metrics, topic string) ([]*sarama.ProducerMessage, error)
+	Marshal(metrics pmetric.Metrics, config *Config) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string
@@ -31,7 +31,7 @@ type MetricsMarshaler interface {
 // LogsMarshaler marshals logs into Message array
 type LogsMarshaler interface {
 	// Marshal serializes logs into sarama's ProducerMessages
-	Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error)
+	Marshal(logs plog.Logs, config *Config) ([]*sarama.ProducerMessage, error)
 
 	// Encoding returns encoding name
 	Encoding() string

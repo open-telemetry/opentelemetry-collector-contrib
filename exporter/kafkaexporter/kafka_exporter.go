@@ -119,7 +119,7 @@ type kafkaMetricsProducer struct {
 }
 
 func (e *kafkaMetricsProducer) metricsDataPusher(_ context.Context, md pmetric.Metrics) error {
-	messages, err := e.marshaler.Marshal(md, e.topic)
+	messages, err := e.marshaler.Marshal(md, e.config)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
@@ -158,7 +158,7 @@ type kafkaLogsProducer struct {
 }
 
 func (e *kafkaLogsProducer) logsDataPusher(_ context.Context, ld plog.Logs) error {
-	messages, err := e.marshaler.Marshal(ld, e.topic)
+	messages, err := e.marshaler.Marshal(ld, e.config)
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
