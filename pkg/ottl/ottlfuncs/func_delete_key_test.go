@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs
 
@@ -30,7 +19,7 @@ func Test_deleteKey(t *testing.T) {
 	input.PutInt("test2", 3)
 	input.PutBool("test3", true)
 
-	target := &ottl.StandardTypeGetter[pcommon.Map, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[pcommon.Map]{
 		Getter: func(ctx context.Context, tCtx pcommon.Map) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -76,10 +65,9 @@ func Test_deleteKey(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := DeleteKey(tt.target, tt.key)
-			assert.NoError(t, err)
+			exprFunc := deleteKey(tt.target, tt.key)
 
-			_, err = exprFunc(nil, scenarioMap)
+			_, err := exprFunc(nil, scenarioMap)
 			assert.Nil(t, err)
 
 			expected := pcommon.NewMap()
@@ -92,7 +80,7 @@ func Test_deleteKey(t *testing.T) {
 
 func Test_deleteKey_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -100,14 +88,13 @@ func Test_deleteKey_bad_input(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, input)
+	exprFunc := deleteKey[interface{}](target, key)
+	_, err := exprFunc(nil, input)
 	assert.Error(t, err)
 }
 
 func Test_deleteKey_get_nil(t *testing.T) {
-	target := &ottl.StandardTypeGetter[interface{}, pcommon.Map]{
+	target := &ottl.StandardPMapGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return tCtx, nil
 		},
@@ -115,8 +102,7 @@ func Test_deleteKey_get_nil(t *testing.T) {
 
 	key := "anything"
 
-	exprFunc, err := DeleteKey[interface{}](target, key)
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, nil)
+	exprFunc := deleteKey[interface{}](target, key)
+	_, err := exprFunc(nil, nil)
 	assert.Error(t, err)
 }

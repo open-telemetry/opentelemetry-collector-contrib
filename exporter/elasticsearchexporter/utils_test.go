@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package elasticsearchexporter
 
@@ -25,6 +14,10 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type itemRequest struct {
@@ -222,4 +215,39 @@ func itemsHasError(resp []itemResponse) bool {
 		}
 	}
 	return false
+}
+
+func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) plog.Logs {
+	logs := plog.NewLogs()
+	resourceSpans := logs.ResourceLogs()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return logs
+}
+
+func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans()
+	rs := resourceSpans.AppendEmpty()
+
+	scopeAttr := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty().Attributes()
+	fillResourceAttributeMap(scopeAttr, attrMp)
+
+	resAttr := rs.Resource().Attributes()
+	fillResourceAttributeMap(resAttr, resMp)
+
+	return traces
+}
+
+func fillResourceAttributeMap(attrs pcommon.Map, mp map[string]string) {
+	attrs.EnsureCapacity(len(mp))
+	for k, v := range mp {
+		attrs.PutStr(k, v)
+	}
 }

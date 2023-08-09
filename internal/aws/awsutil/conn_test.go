@@ -1,16 +1,5 @@
-// Copyright, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsutil
 
@@ -32,7 +21,7 @@ type mockConn struct {
 	sn *session.Session
 }
 
-func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
+func (c *mockConn) getEC2Region(_ *session.Session) (string, error) {
 	args := c.Called(nil)
 	errorStr := args.String(0)
 	var err error
@@ -43,7 +32,7 @@ func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(logger *zap.Logger, roleArn string, region string) (*session.Session, error) {
+func (c *mockConn) newAWSSession(_ *zap.Logger, _ string, _ string) (*session.Session, error) {
 	return c.sn, nil
 }
 

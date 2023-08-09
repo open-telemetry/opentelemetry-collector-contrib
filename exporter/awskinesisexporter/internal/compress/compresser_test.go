@@ -1,16 +1,5 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package compress_test
 
@@ -87,18 +76,19 @@ func BenchmarkGzipCompressor_1Mb(b *testing.B) {
 	benchmarkCompressor(b, "gzip", 131072)
 }
 
-func benchmarkCompressor(b *testing.B, format string, len int) {
+func benchmarkCompressor(b *testing.B, format string, length int) {
 	b.Helper()
 
-	rand.Seed(time.Now().UnixMilli())
+	source := rand.NewSource(time.Now().UnixMilli())
+	genRand := rand.New(source)
 
 	compressor, err := compress.NewCompressor(format)
 	require.NoError(b, err, "Must not error when given a valid format")
 	require.NotNil(b, compressor, "Must have a valid compressor")
 
-	data := make([]byte, len)
-	for i := 0; i < len; i++ {
-		data[i] = byte(rand.Int31())
+	data := make([]byte, length)
+	for i := 0; i < length; i++ {
+		data[i] = byte(genRand.Int31())
 	}
 	b.ReportAllocs()
 	b.ResetTimer()

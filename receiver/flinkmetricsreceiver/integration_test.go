@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 // +build integration
@@ -18,190 +7,84 @@
 package flinkmetricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 
 import (
-	"context"
 	"fmt"
-	"io"
 	"net"
-	"net/http"
-	"os"
-	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestFlinkIntegration(t *testing.T) {
-	t.Parallel()
-	networkName := "new-network"
-	ctx := context.Background()
-	newNetwork, err := testcontainers.GenericNetwork(ctx, testcontainers.GenericNetworkRequest{
-		NetworkRequest: testcontainers.NetworkRequest{
-			Name:           networkName,
-			CheckDuplicate: true,
-		},
-	})
-	if err != nil {
-		require.NoError(t, err)
-	}
-	defer func() {
-		require.NoError(t, newNetwork.Remove(ctx))
-	}()
+const (
+	networkName = "flink-network"
+	flinkPort   = "8081"
+)
 
-	masterContainer := getContainer(t, testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.flink-master",
-		},
-		Hostname:     "flink-master",
-		Networks:     []string{networkName},
-		ExposedPorts: []string{"8080:8080", "8081:8081"},
-		WaitingFor:   waitStrategy{endpoint: "http://localhost:8081/jobmanager/metrics"},
-	})
-
-	workerContainer := getContainer(t, testcontainers.ContainerRequest{
-		FromDockerfile: testcontainers.FromDockerfile{
-			Context:    path.Join("testdata", "integration"),
-			Dockerfile: "Dockerfile.flink-worker",
-		},
-		Hostname: "worker",
-		Networks: []string{networkName},
-	})
-	defer func() {
-		require.NoError(t, masterContainer.Terminate(context.Background()))
-	}()
-	defer func() {
-		require.NoError(t, workerContainer.Terminate(context.Background()))
-	}()
-
-	hostname, err := masterContainer.Host(context.Background())
-	require.NoError(t, err)
-
-	// Required to start the taskmanager
-	ws := waitStrategy{"http://localhost:8081/taskmanagers/metrics"}
-	err = ws.waitFor(context.Background(), "")
-	require.NoError(t, err)
-
-	// required to start the StateMachineExample job
-	code, _, err := masterContainer.Exec(context.Background(), []string{"/setup.sh"})
-	require.NoError(t, err)
-	require.Equal(t, 0, code)
-
-	// Required to prevent empty value jobs call
-	ws = waitStrategy{endpoint: "http://localhost:8081/jobs"}
-	err = ws.waitFor(context.Background(), "")
-	require.NoError(t, err)
-
-	// Required to prevent empty value for job, operator and task metrics call
-	ws = waitStrategy{endpoint: "http://localhost:8081/jobs/metrics"}
-	err = ws.waitFor(context.Background(), "")
-	require.NoError(t, err)
-
-	// Override function to return deterministic field
-	defer func() { osHostname = os.Hostname }()
-	osHostname = func() (string, error) { return "job-localhost", nil }
-
-	// Override function to return deterministic field
-	defer func() { taskmanagerHost = strings.Split }()
-	taskmanagerHost = func(id string, sep string) []string { return []string{"taskmanager-localhost"} }
-
-	// Override function to return deterministic field
-	defer func() { taskmanagerID = reflect }()
-	taskmanagerID = func(id string) string { return "taskmanagerID" }
-
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-	cfg.Endpoint = fmt.Sprintf("http://%s", net.JoinHostPort(hostname, "8081"))
-
-	consumer := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopCreateSettings()
-	rcvr, err := f.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	require.Eventuallyf(t, func() bool {
-		return consumer.DataPointCount() > 0
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, rcvr.Shutdown(context.Background()))
-
-	actualMetrics := consumer.AllMetrics()[0]
-	expectedFile := filepath.Join("testdata", "integration", "expected.json")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
-}
-
-func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
-	require.NoError(t, req.Validate())
-	container, err := testcontainers.GenericContainer(
-		context.Background(),
-		testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Started:          true,
-		})
-	require.NoError(t, err)
-	return container
-}
-
-type waitStrategy struct {
-	endpoint string
-}
-
-func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
-	if err := wait.ForListeningPort("8081").
-		WithStartupTimeout(2*time.Minute).
-		WaitUntilReady(ctx, st); err != nil {
-		return err
-	}
-
-	hostname, err := st.Host(ctx)
-	if err != nil {
-		return err
-	}
-
-	return ws.waitFor(ctx, hostname)
-}
-
-// waitFor waits until an endpoint is ready with an id response.
-func (ws waitStrategy) waitFor(ctx context.Context, _ string) error {
-	ticker := time.NewTicker(100 * time.Millisecond)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-time.After(5 * time.Second):
-			return fmt.Errorf("server startup problem")
-		case <-ticker.C:
-			resp, err := http.Get(ws.endpoint)
-			if err != nil {
-				continue
-			}
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				continue
-			}
-
-			if resp.Body.Close() != nil {
-				continue
-			}
-
-			// The server needs a moment to generate some stats
-			if strings.Contains(string(body), "id") {
-				return nil
-			}
-		}
-	}
+func TestIntegration(t *testing.T) {
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithNetworkRequest(
+			testcontainers.NetworkRequest{
+				Name:           networkName,
+				CheckDuplicate: true,
+			},
+		),
+		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
+			Image:        "flink:1.17.0",
+			Name:         "jobmanager",
+			Networks:     []string{networkName},
+			ExposedPorts: []string{flinkPort},
+			Cmd:          []string{"jobmanager"},
+			Env: map[string]string{
+				"FLINK_PROPERTIES": "jobmanager.rpc.address: jobmanager",
+			},
+			Files: []testcontainers.ContainerFile{{
+				HostFilePath:      filepath.Join("testdata", "integration", "setup.sh"),
+				ContainerFilePath: "/setup.sh",
+				FileMode:          700,
+			}},
+			WaitingFor: wait.ForAll(
+				wait.ForListeningPort(flinkPort),
+				wait.ForHTTP("jobmanager/metrics").WithPort(flinkPort),
+				wait.ForHTTP("taskmanagers/metrics").WithPort(flinkPort),
+			),
+			LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
+				PostStarts: []testcontainers.ContainerHook{
+					scraperinttest.RunScript([]string{"/setup.sh"}),
+				},
+			}},
+		}),
+		scraperinttest.WithContainerRequest(testcontainers.ContainerRequest{
+			Image:    "flink:1.17.0",
+			Name:     "taskmanager",
+			Networks: []string{networkName},
+			Cmd:      []string{"taskmanager"},
+			Env: map[string]string{
+				"FLINK_PROPERTIES": "jobmanager.rpc.address: jobmanager",
+			},
+		}),
+		scraperinttest.WithCustomConfig(func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			rCfg := cfg.(*Config)
+			rCfg.CollectionInterval = 100 * time.Millisecond
+			rCfg.Endpoint = fmt.Sprintf("http://%s",
+				net.JoinHostPort(
+					ci.HostForNamedContainer(t, "jobmanager"),
+					ci.MappedPortForNamedContainer(t, "jobmanager", flinkPort),
+				))
+		}),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreResourceAttributeValue("host.name"),
+			pmetrictest.IgnoreResourceAttributeValue("flink.task.name"),
+			pmetrictest.IgnoreResourceAttributeValue("flink.taskmanager.id"),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		),
+	).Run(t)
 }

@@ -1,20 +1,10 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 
 import (
+	"errors"
 	"sync"
 	"time"
 
@@ -34,7 +24,7 @@ func NewFloat64DeltaCalculator() MetricCalculator {
 	return NewMetricCalculator(calculateDelta)
 }
 
-func calculateDelta(prev *MetricValue, val interface{}, timestamp time.Time) (interface{}, bool) {
+func calculateDelta(prev *MetricValue, val interface{}, _ time.Time) (interface{}, bool) {
 	var deltaValue float64
 	if prev != nil {
 		deltaValue = val.(float64) - prev.RawValue.(float64)
@@ -45,6 +35,7 @@ func calculateDelta(prev *MetricValue, val interface{}, timestamp time.Time) (in
 }
 
 // MetricCalculator is a calculator used to adjust metric values based on its previous record.
+// Shutdown() must be called to clean up goroutines before program exit.
 type MetricCalculator struct {
 	// lock on write
 	lock sync.Mutex
@@ -54,6 +45,7 @@ type MetricCalculator struct {
 	calculateFunc CalculateFunc
 }
 
+// NewMetricCalculator Creates a metric calculator that enforces a five-minute time to live on cache entries.
 func NewMetricCalculator(calculateFunc CalculateFunc) MetricCalculator {
 	return MetricCalculator{
 		cache:         NewMapWithExpiry(cleanInterval),
@@ -74,6 +66,11 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 	rm.lock.Lock()
 	defer rm.lock.Unlock()
 
+	// need to also lock cache to avoid the cleanup from removing entries while they are being processed.
+	// This is only likely to happen when data points come in close to expiration date.
+	rm.cache.Lock()
+	defer rm.cache.Unlock()
+
 	prev, exists := cacheStore.Get(mKey)
 	result, done = rm.calculateFunc(prev, value, timestamp)
 	if !exists || done {
@@ -83,6 +80,10 @@ func (rm *MetricCalculator) Calculate(mKey Key, value interface{}, timestamp tim
 		})
 	}
 	return result, done
+}
+
+func (rm *MetricCalculator) Shutdown() error {
+	return rm.cache.Shutdown()
 }
 
 type Key struct {
@@ -110,15 +111,21 @@ type MetricValue struct {
 	Timestamp time.Time
 }
 
-// MapWithExpiry act like a map which provide a method to clean up expired entries
+// MapWithExpiry act like a map which provides a method to clean up expired entries.
+// MapWithExpiry is not thread safe and locks must be managed by the owner of the Map by the use of Lock() and Unlock()
 type MapWithExpiry struct {
-	lock    *sync.Mutex
-	ttl     time.Duration
-	entries map[interface{}]*MetricValue
+	lock     *sync.Mutex
+	ttl      time.Duration
+	entries  map[interface{}]*MetricValue
+	doneChan chan struct{}
 }
 
+// NewMapWithExpiry automatically starts a sweeper to enforce the maps TTL. ShutDown() must be called to ensure that these
+// go routines are properly cleaned up ShutDown() must be called.
 func NewMapWithExpiry(ttl time.Duration) *MapWithExpiry {
-	return &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue)}
+	m := &MapWithExpiry{lock: &sync.Mutex{}, ttl: ttl, entries: make(map[interface{}]*MetricValue), doneChan: make(chan struct{})}
+	go m.sweep(m.CleanUp)
+	return m
 }
 
 func (m *MapWithExpiry) Get(key Key) (*MetricValue, bool) {
@@ -128,6 +135,32 @@ func (m *MapWithExpiry) Get(key Key) (*MetricValue, bool) {
 
 func (m *MapWithExpiry) Set(key Key, value MetricValue) {
 	m.entries[key] = &value
+}
+
+func (m *MapWithExpiry) sweep(removeFunc func(time2 time.Time)) {
+	ticker := time.NewTicker(m.ttl)
+	for {
+		select {
+		case currentTime := <-ticker.C:
+			m.lock.Lock()
+			removeFunc(currentTime)
+			m.lock.Unlock()
+		case <-m.doneChan:
+			ticker.Stop()
+			return
+		}
+	}
+}
+
+func (m *MapWithExpiry) Shutdown() error {
+	select {
+	case <-m.doneChan:
+		return errors.New("shutdown called on an already closed channel")
+	default:
+		close(m.doneChan)
+
+	}
+	return nil
 }
 
 func (m *MapWithExpiry) CleanUp(now time.Time) {

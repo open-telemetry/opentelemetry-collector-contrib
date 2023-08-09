@@ -1,21 +1,12 @@
-// Copyright  OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -54,6 +45,7 @@ func TestMemStats(t *testing.T) {
 
 	// for node type
 	containerType = TypeNode
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -82,6 +74,7 @@ func TestMemStats(t *testing.T) {
 
 	// for instance type
 	containerType = TypeInstance
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -107,5 +100,5 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_hierarchical_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_utilization", 2.68630981, 1.0e-8)
-
+	require.NoError(t, extractor.Shutdown())
 }

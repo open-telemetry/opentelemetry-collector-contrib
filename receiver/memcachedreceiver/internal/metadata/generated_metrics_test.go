@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -64,7 +60,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommand(1))
+			mb.RecordMemcachedCommandsDataPoint(ts, 1, AttributeCommandGet)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,7 +72,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeState(1))
+			mb.RecordMemcachedCPUUsageDataPoint(ts, 1, AttributeStateSystem)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -88,21 +84,22 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeType(1), AttributeOperation(1))
+			mb.RecordMemcachedOperationsDataPoint(ts, 1, AttributeTypeHit, AttributeOperationIncrement)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedThreadsDataPoint(ts, 1)
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -111,11 +108,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -155,7 +148,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
-					assert.Equal(t, "get", attrVal.Str())
+					assert.EqualValues(t, "get", attrVal.Str())
 				case "memcached.connections.current":
 					assert.False(t, validatedMetrics["memcached.connections.current"], "Found a duplicate in the metrics slice: memcached.connections.current")
 					validatedMetrics["memcached.connections.current"] = true
@@ -200,7 +193,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.Equal(t, "system", attrVal.Str())
+					assert.EqualValues(t, "system", attrVal.Str())
 				case "memcached.current_items":
 					assert.False(t, validatedMetrics["memcached.current_items"], "Found a duplicate in the metrics slice: memcached.current_items")
 					validatedMetrics["memcached.current_items"] = true
@@ -245,7 +238,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "memcached.operation_hit_ratio":
 					assert.False(t, validatedMetrics["memcached.operation_hit_ratio"], "Found a duplicate in the metrics slice: memcached.operation_hit_ratio")
 					validatedMetrics["memcached.operation_hit_ratio"] = true
@@ -260,7 +253,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "increment", attrVal.Str())
+					assert.EqualValues(t, "increment", attrVal.Str())
 				case "memcached.operations":
 					assert.False(t, validatedMetrics["memcached.operations"], "Found a duplicate in the metrics slice: memcached.operations")
 					validatedMetrics["memcached.operations"] = true
@@ -277,10 +270,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "hit", attrVal.Str())
+					assert.EqualValues(t, "hit", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "increment", attrVal.Str())
+					assert.EqualValues(t, "increment", attrVal.Str())
 				case "memcached.threads":
 					assert.False(t, validatedMetrics["memcached.threads"], "Found a duplicate in the metrics slice: memcached.threads")
 					validatedMetrics["memcached.threads"] = true
@@ -299,14 +292,4 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

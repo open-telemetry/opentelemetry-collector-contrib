@@ -1,4 +1,6 @@
-name: hostmetricsreceiver/process
+type: hostmetricsreceiver/process
+
+parent: hostmetrics
 
 sem_conv_version: 1.9.0
 
@@ -75,7 +77,7 @@ metrics:
     unit: s
     sum:
       value_type: double
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [state]
 
@@ -96,7 +98,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   process.memory.virtual:
@@ -105,7 +107,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   process.memory.utilization:
@@ -121,7 +123,7 @@ metrics:
     unit: By
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]
 
@@ -132,7 +134,7 @@ metrics:
     unit: "{faults}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [paging_fault_type]
 
@@ -143,7 +145,7 @@ metrics:
     unit: "{signals}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   process.threads:
@@ -152,7 +154,7 @@ metrics:
     unit: "{threads}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
 
   process.open_file_descriptors:
@@ -162,7 +164,17 @@ metrics:
     unit: '{count}'
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  process.handles:
+    enabled: false
+    description: Number of handles held by the process.
+    extended_documentation: This metric is only available on Windows.
+    unit: '{count}'
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
       monotonic: false
   
   process.context_switches:
@@ -172,7 +184,7 @@ metrics:
     unit: '{count}'
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [context_switch_type]
 
@@ -182,6 +194,6 @@ metrics:
     unit: "{operations}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
     attributes: [direction]

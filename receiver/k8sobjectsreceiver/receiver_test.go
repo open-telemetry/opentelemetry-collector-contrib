@@ -1,16 +1,5 @@
-// Copyright  The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver
 
@@ -50,13 +39,13 @@ func TestPullObject(t *testing.T) {
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "1"),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "2"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "3"),
 	)
 
 	rCfg := createDefaultConfig().(*Config)
@@ -95,6 +84,12 @@ func TestWatchObject(t *testing.T) {
 
 	mockClient := newMockDynamicClient()
 
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]interface{}{
+			"environment": "production",
+		}, "1"),
+	)
+
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
@@ -123,30 +118,23 @@ func TestWatchObject(t *testing.T) {
 	require.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
 
 	time.Sleep(time.Millisecond * 100)
+	assert.Len(t, consumer.Logs(), 0)
+	assert.Equal(t, 0, consumer.Count())
 
 	mockClient.createPods(
-		generatePod("pod1", "default", map[string]interface{}{
-			"environment": "production",
-		}),
 		generatePod("pod2", "default", map[string]interface{}{
 			"environment": "test",
-		}),
+		}, "2"),
 		generatePod("pod3", "default_ignore", map[string]interface{}{
 			"environment": "production",
-		}),
+		}, "3"),
+		generatePod("pod4", "default", map[string]interface{}{
+			"environment": "production",
+		}, "4"),
 	)
 	time.Sleep(time.Millisecond * 100)
 	assert.Len(t, consumer.Logs(), 2)
 	assert.Equal(t, 2, consumer.Count())
-
-	mockClient.createPods(
-		generatePod("pod4", "default", map[string]interface{}{
-			"environment": "production",
-		}),
-	)
-	time.Sleep(time.Millisecond * 100)
-	assert.Len(t, consumer.Logs(), 3)
-	assert.Equal(t, 3, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
 }

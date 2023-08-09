@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
 // +build windows
@@ -36,7 +25,7 @@ type sqlServerScraper struct {
 	logger           *zap.Logger
 	config           *Config
 	watcherRecorders []watcherRecorder
-	metricsBuilder   *metadata.MetricsBuilder
+	mb               *metadata.MetricsBuilder
 }
 
 // watcherRecorder is a struct containing perf counter watcher along with corresponding value recorder.
@@ -51,8 +40,11 @@ type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSqlServerScraper returns a new sqlServerScraper.
 func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params)
-	return &sqlServerScraper{logger: params.Logger, config: cfg, metricsBuilder: metricsBuilder}
+	return &sqlServerScraper{
+		logger: params.Logger,
+		config: cfg,
+		mb:     metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+	}
 }
 
 // start creates and sets the watchers for the scraper.
@@ -87,7 +79,7 @@ func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 		s.emitMetricGroup(recorders, dbName)
 	}
 
-	return s.metricsBuilder.Emit(), errs
+	return s.mb.Emit(), errs
 }
 
 // recordersPerDatabase scrapes perf counter values using provided []watcherRecorder and returns
@@ -126,18 +118,18 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, recorder := range recorders {
-		recorder(s.metricsBuilder, now)
+		recorder(s.mb, now)
 	}
 
-	attributes := []metadata.ResourceMetricsOption{}
+	rb := s.mb.NewResourceBuilder()
 	if databaseName != "" {
-		attributes = append(attributes, metadata.WithSqlserverDatabaseName(databaseName))
+		rb.SetSqlserverDatabaseName(databaseName)
 	}
 	if s.config.InstanceName != "" {
-		attributes = append(attributes, metadata.WithSqlserverComputerName(s.config.ComputerName))
-		attributes = append(attributes, metadata.WithSqlserverInstanceName(s.config.InstanceName))
+		rb.SetSqlserverComputerName(s.config.ComputerName)
+		rb.SetSqlserverInstanceName(s.config.InstanceName)
 	}
-	s.metricsBuilder.EmitForResource(attributes...)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // shutdown stops all of the watchers for the scraper.

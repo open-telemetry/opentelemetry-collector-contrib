@@ -3,13 +3,9 @@
 package metadata
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -50,7 +46,7 @@ func TestMetricsBuilder(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 			settings := receivertest.NewNopCreateSettings()
 			settings.Logger = zap.New(observedZapCore)
-			mb := NewMetricsBuilder(loadConfig(t, test.name), settings, WithStartTime(start))
+			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
@@ -64,11 +60,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakNodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakNodeOperationTimeMeanDataPoint(ts, 1, AttributeRequestPut)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -76,13 +72,16 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperation(1))
+			mb.RecordRiakVnodeIndexOperationCountDataPoint(ts, 1, AttributeOperationRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequest(1))
+			mb.RecordRiakVnodeOperationCountDataPoint(ts, 1, AttributeRequestPut)
 
-			metrics := mb.Emit(WithRiakNodeName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetRiakNodeName("riak.node.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -91,18 +90,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("riak.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesSettings.RiakNodeName.Enabled, ok)
-			if mb.resourceAttributesSettings.RiakNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -144,7 +132,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				case "riak.node.operation.time.mean":
 					assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
 					validatedMetrics["riak.node.operation.time.mean"] = true
@@ -159,7 +147,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				case "riak.node.read_repair.count":
 					assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
 					validatedMetrics["riak.node.read_repair.count"] = true
@@ -190,7 +178,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "riak.vnode.operation.count":
 					assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
 					validatedMetrics["riak.vnode.operation.count"] = true
@@ -207,19 +195,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.Equal(t, "put", attrVal.Str())
+					assert.EqualValues(t, "put", attrVal.Str())
 				}
 			}
 		})
 	}
-}
-
-func loadConfig(t *testing.T, name string) MetricsBuilderConfig {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-	sub, err := cm.Sub(name)
-	require.NoError(t, err)
-	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-	return cfg
 }

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -21,7 +10,6 @@ import (
 	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -59,7 +47,7 @@ func TestMetricRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -102,7 +90,7 @@ func TestMetricRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -241,7 +229,7 @@ func TestLabelRenaming(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -367,7 +355,7 @@ func TestLabelRenamingKeepAction(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, false, false, "", func(cfg *promcfg.Config) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{

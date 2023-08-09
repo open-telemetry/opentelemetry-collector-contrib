@@ -1,34 +1,17 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"sort"
 	"testing"
 	"time"
 
-	commonpb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/common/v1"
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"github.com/golang/protobuf/ptypes/timestamp"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -36,253 +19,93 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
-func readFromFile(filename string) string {
-	data, err := os.ReadFile(filename)
-	if err != nil {
-		panic(err)
-	}
-	str := string(data)
-	return str
-}
+func createTestResourceMetrics() pmetric.ResourceMetrics {
+	rm := pmetric.NewResourceMetrics()
+	rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
+	rm.Resource().Attributes().PutStr(conventions.AttributeServiceNamespace, "myServiceNS")
+	rm.Resource().Attributes().PutStr("ClusterName", "myCluster")
+	rm.Resource().Attributes().PutStr("PodName", "myPod")
+	rm.Resource().Attributes().PutStr(attributeReceiver, prometheusReceiver)
+	sm := rm.ScopeMetrics().AppendEmpty()
 
-func createMetricTestData() *agentmetricspb.ExportMetricsServiceRequest {
-	request := &agentmetricspb.ExportMetricsServiceRequest{
-		Node: &commonpb.Node{
-			LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-		},
-		Resource: &resourcepb.Resource{
-			Labels: map[string]string{
-				conventions.AttributeServiceName:      "myServiceName",
-				conventions.AttributeServiceNamespace: "myServiceNS",
-				"ClusterName":                         "myCluster",
-				"PodName":                             "myPod",
-				attributeReceiver:                     prometheusReceiver,
-			},
-		},
-		Metrics: []*metricspb.Metric{
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_INT64,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_Int64Value{
-									Int64Value: 1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanGaugeDoubleCounter",
-					Description: "Counting all the spans",
-					Unit:        "Count",
-					Type:        metricspb.MetricDescriptor_GAUGE_DOUBLE,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-						{Key: "isItAnError"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-							{Value: "false", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DoubleValue{
-									DoubleValue: 0.1,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanTimer",
-					Description: "How long the spans take",
-					Unit:        "Seconds",
-					Type:        metricspb.MetricDescriptor_CUMULATIVE_DISTRIBUTION,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_DistributionValue{
-									DistributionValue: &metricspb.DistributionValue{
-										Sum:   15.0,
-										Count: 5,
-										BucketOptions: &metricspb.DistributionValue_BucketOptions{
-											Type: &metricspb.DistributionValue_BucketOptions_Explicit_{
-												Explicit: &metricspb.DistributionValue_BucketOptions_Explicit{
-													Bounds: []float64{0, 10},
-												},
-											},
-										},
-										Buckets: []*metricspb.DistributionValue_Bucket{
-											{
-												Count: 0,
-											},
-											{
-												Count: 4,
-											},
-											{
-												Count: 1,
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				MetricDescriptor: &metricspb.MetricDescriptor{
-					Name:        "spanTimer",
-					Description: "How long the spans take",
-					Unit:        "Seconds",
-					Type:        metricspb.MetricDescriptor_SUMMARY,
-					LabelKeys: []*metricspb.LabelKey{
-						{Key: "spanName"},
-					},
-				},
-				Timeseries: []*metricspb.TimeSeries{
-					{
-						LabelValues: []*metricspb.LabelValue{
-							{Value: "testSpan", HasValue: true},
-						},
-						Points: []*metricspb.Point{
-							{
-								Timestamp: &timestamp.Timestamp{
-									Seconds: 100,
-								},
-								Value: &metricspb.Point_SummaryValue{
-									SummaryValue: &metricspb.SummaryValue{
-										Sum: &wrappers.DoubleValue{
-											Value: 15.0,
-										},
-										Count: &wrappers.Int64Value{
-											Value: 5,
-										},
-										Snapshot: &metricspb.SummaryValue_Snapshot{
-											PercentileValues: []*metricspb.SummaryValue_Snapshot_ValueAtPercentile{{
-												Percentile: 0,
-												Value:      1,
-											},
-												{
-													Percentile: 100,
-													Value:      5,
-												}},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
+	m := sm.Metrics().AppendEmpty()
+	m.SetName("spanGaugeCounter")
+	m.SetDescription("Counting all the spans")
+	m.SetUnit("Count")
+	dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(100_000_000))
+	dp.SetIntValue(1)
+	dp.Attributes().PutStr("spanName", "testSpan")
+	dp.Attributes().PutStr("isItAnError", "false")
+
+	m = sm.Metrics().AppendEmpty()
+	m.SetName("spanGaugeDoubleCounter")
+	m.SetDescription("Counting all the spans")
+	m.SetUnit("Count")
+	dp = m.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.Timestamp(100_000_000))
+	dp.SetDoubleValue(0.1)
+	dp.Attributes().PutStr("spanName", "testSpan")
+	dp.Attributes().PutStr("isItAnError", "false")
+
+	m = sm.Metrics().AppendEmpty()
+	m.SetName("spanTimer")
+	m.SetDescription("How long the spans take")
+	m.SetUnit("Seconds")
+	hdp := m.SetEmptyHistogram().DataPoints().AppendEmpty()
+	hdp.SetTimestamp(pcommon.Timestamp(100_000_000))
+	hdp.SetCount(5)
+	hdp.SetSum(15)
+	hdp.ExplicitBounds().FromRaw([]float64{0, 10})
+	hdp.BucketCounts().FromRaw([]uint64{0, 4, 1})
+	hdp.Attributes().PutStr("spanName", "testSpan")
+
+	m = sm.Metrics().AppendEmpty()
+	m.SetName("spanTimer")
+	m.SetDescription("How long the spans take")
+	m.SetUnit("Seconds")
+	sdp := m.SetEmptySummary().DataPoints().AppendEmpty()
+	sdp.SetTimestamp(pcommon.Timestamp(100_000_000))
+	sdp.SetCount(5)
+	sdp.SetSum(15)
+	q1 := sdp.QuantileValues().AppendEmpty()
+	q1.SetQuantile(0)
+	q1.SetValue(1)
+	q2 := sdp.QuantileValues().AppendEmpty()
+	q2.SetQuantile(1)
+	q2.SetValue(5)
 
 	for i := 0; i < 2; i++ {
-		request.Metrics = append(request.Metrics, &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "spanCounter",
-				Description: "Counting all the spans",
-				Unit:        "Count",
-				Type:        metricspb.MetricDescriptor_CUMULATIVE_INT64,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "spanName"},
-					{Key: "isItAnError"},
-				},
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					LabelValues: []*metricspb.LabelValue{
-						{Value: "testSpan", HasValue: true},
-						{Value: "false", HasValue: true},
-					},
-					Points: []*metricspb.Point{
-						{
-							Timestamp: &timestamp.Timestamp{
-								Seconds: int64(i * 100),
-							},
-							Value: &metricspb.Point_Int64Value{
-								Int64Value: int64(i * 1),
-							},
-						},
-					},
-				},
-			},
-		}, &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        "spanDoubleCounter",
-				Description: "Counting all the spans",
-				Unit:        "Count",
-				Type:        metricspb.MetricDescriptor_CUMULATIVE_DOUBLE,
-				LabelKeys: []*metricspb.LabelKey{
-					{Key: "spanName"},
-					{Key: "isItAnError"},
-				},
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				{
-					LabelValues: []*metricspb.LabelValue{
-						{Value: "testSpan", HasValue: true},
-						{Value: "false", HasValue: true},
-					},
-					Points: []*metricspb.Point{
-						{
-							Timestamp: &timestamp.Timestamp{
-								Seconds: int64(i * 100),
-							},
-							Value: &metricspb.Point_DoubleValue{
-								DoubleValue: float64(i) * 0.1,
-							},
-						},
-					},
-				},
-			},
-		})
+		m = sm.Metrics().AppendEmpty()
+		m.SetName("spanCounter")
+		m.SetDescription("Counting all the spans")
+		m.SetUnit("Count")
+		sum := m.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp = sum.DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.Timestamp(i * 100_000_000))
+		dp.SetIntValue(int64(i))
+		dp.Attributes().PutStr("spanName", "testSpan")
+		dp.Attributes().PutStr("isItAnError", "false")
 
+		m = sm.Metrics().AppendEmpty()
+		m.SetName("spanDoubleCounter")
+		m.SetDescription("Counting all the spans")
+		m.SetUnit("Count")
+		sum = m.SetEmptySum()
+		sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dp = sum.DataPoints().AppendEmpty()
+		dp.SetTimestamp(pcommon.Timestamp(i * 100_000_000))
+		dp.SetDoubleValue(float64(i) * 0.1)
+		dp.Attributes().PutStr("spanName", "testSpan")
+		dp.Attributes().PutStr("isItAnError", "false")
 	}
-	return request
+
+	return rm
 }
 
 func stringSlicesEqual(expected, actual []string) bool {
@@ -433,16 +256,15 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
-	oc := createMetricTestData()
-
 	translator := newMetricTranslator(*config)
+	defer require.NoError(t, translator.Shutdown())
 
-	noInstrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
-	instrLibMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	noInstrLibMetric := createTestResourceMetrics()
+	instrLibMetric := createTestResourceMetrics()
 	ilm := instrLibMetric.ScopeMetrics().At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
 
-	noNamespaceMetric := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	noNamespaceMetric := createTestResourceMetrics()
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceNamespace)
 	noNamespaceMetric.Resource().Attributes().Remove(conventions.AttributeServiceName)
 
@@ -525,7 +347,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			setupDataPointCache()
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
@@ -556,18 +377,9 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	}
 
 	t.Run("No metrics", func(t *testing.T) {
-		oc = &agentmetricspb.ExportMetricsServiceRequest{
-			Node: &commonpb.Node{
-				LibraryInfo: &commonpb.LibraryInfo{ExporterVersion: "SomeVersion"},
-			},
-			Resource: &resourcepb.Resource{
-				Labels: map[string]string{
-					conventions.AttributeServiceName: "myServiceName",
-				},
-			},
-			Metrics: []*metricspb.Metric{},
-		}
-		rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+		rm := pmetric.NewResourceMetrics()
+		rm.Resource().Attributes().PutStr(conventions.AttributeServiceName, "myServiceName")
+		rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 		groupedMetrics := make(map[interface{}]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
 		assert.Nil(t, err)
@@ -576,37 +388,77 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 }
 
 func TestTranslateCWMetricToEMF(t *testing.T) {
-	cwMeasurement := cWMeasurement{
-		Namespace:  "test-emf",
-		Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
-		Metrics: []map[string]string{{
-			"Name": "spanCounter",
-			"Unit": "Count",
-		}},
+	testCases := map[string]struct {
+		emfVersion          string
+		measurements        []cWMeasurement
+		expectedEMFLogEvent string
+	}{
+		"WithMeasurementAndEMFV1": {
+			emfVersion: "1",
+			measurements: []cWMeasurement{{
+				Namespace:  "test-emf",
+				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
+				Metrics: []map[string]string{{
+					"Name": "spanCounter",
+					"Unit": "Count",
+				}},
+			}},
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Version\":\"1\",\"_aws\":{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"Timestamp\":1596151098037},\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
+		"WithMeasurementAndEMFV0": {
+			emfVersion: "0",
+			measurements: []cWMeasurement{{
+				Namespace:  "test-emf",
+				Dimensions: [][]string{{oTellibDimensionKey}, {oTellibDimensionKey, "spanName"}},
+				Metrics: []map[string]string{{
+					"Name": "spanCounter",
+					"Unit": "Count",
+				}},
+			}},
+			expectedEMFLogEvent: "{\"CloudWatchMetrics\":[{\"Namespace\":\"test-emf\",\"Dimensions\":[[\"OTelLib\"],[\"OTelLib\",\"spanName\"]],\"Metrics\":[{\"Name\":\"spanCounter\",\"Unit\":\"Count\"}]}],\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"Version\":\"0\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
+		"WithNoMeasurementAndEMFV1": {
+			emfVersion:          "1",
+			measurements:        nil,
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
+		"WithNoMeasurementAndEMFV0": {
+			emfVersion:          "0",
+			measurements:        nil,
+			expectedEMFLogEvent: "{\"OTelLib\":\"cloudwatch-otel\",\"Sources\":[\"cadvisor\",\"pod\",\"calculated\"],\"Timestamp\":\"1596151098037\",\"kubernetes\":{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]},\"spanCounter\":0,\"spanName\":\"test\"}",
+		},
 	}
-	timestamp := int64(1596151098037)
-	fields := make(map[string]interface{})
-	fields[oTellibDimensionKey] = "cloudwatch-otel"
-	fields["spanName"] = "test"
-	fields["spanCounter"] = 0
-	// add stringified json as attribute values
-	fields["kubernetes"] = "{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]}"
-	fields["Sources"] = "[\"cadvisor\",\"pod\",\"calculated\"]"
 
-	config := &Config{
-		// include valid json string, a non-existing key, and keys whose value are not json/string
-		ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
-		logger:                          zap.NewNop(),
+	for name, tc := range testCases {
+		t.Run(name, func(_ *testing.T) {
+			config := &Config{
+
+				// include valid json string, a non-existing key, and keys whose value are not json/string
+				ParseJSONEncodedAttributeValues: []string{"kubernetes", "Sources", "NonExistingAttributeKey", "spanName", "spanCounter"},
+				Version:                         tc.emfVersion,
+				logger:                          zap.NewNop(),
+			}
+
+			fields := map[string]interface{}{
+				oTellibDimensionKey: "cloudwatch-otel",
+				"spanName":          "test",
+				"spanCounter":       0,
+				"kubernetes":        "{\"container_name\":\"cloudwatch-agent\",\"docker\":{\"container_id\":\"fc1b0a4c3faaa1808e187486a3a90cbea883dccaf2e2c46d4069d663b032a1ca\"},\"host\":\"ip-192-168-58-245.ec2.internal\",\"labels\":{\"controller-revision-hash\":\"5bdbf497dc\",\"name\":\"cloudwatch-agent\",\"pod-template-generation\":\"1\"},\"namespace_name\":\"amazon-cloudwatch\",\"pod_id\":\"e23f3413-af2e-4a98-89e0-5df2251e7f05\",\"pod_name\":\"cloudwatch-agent-26bl6\",\"pod_owners\":[{\"owner_kind\":\"DaemonSet\",\"owner_name\":\"cloudwatch-agent\"}]}",
+				"Sources":           "[\"cadvisor\",\"pod\",\"calculated\"]",
+			}
+
+			cloudwatchMetric := &cWMetrics{
+				timestampMs:  int64(1596151098037),
+				fields:       fields,
+				measurements: tc.measurements,
+			}
+
+			emfLogEvent := translateCWMetricToEMF(cloudwatchMetric, config)
+
+			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
+		})
 	}
 
-	met := &cWMetrics{
-		timestampMs:  timestamp,
-		fields:       fields,
-		measurements: []cWMeasurement{cwMeasurement},
-	}
-	inputLogEvent := translateCWMetricToEMF(met, config)
-
-	assert.Equal(t, readFromFile("testdata/testTranslateCWMetricToEMF.json"), *inputLogEvent.InputLogEvent.Message, "Expect to be equal")
 }
 
 func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
@@ -2114,27 +1966,8 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 	}
 }
 
-func TestTranslateCWMetricToEMFNoMeasurements(t *testing.T) {
-	timestamp := int64(1596151098037)
-	fields := make(map[string]interface{})
-	fields[oTellibDimensionKey] = "cloudwatch-otel"
-	fields["spanName"] = "test"
-	fields["spanCounter"] = 0
-
-	met := &cWMetrics{
-		timestampMs:  timestamp,
-		fields:       fields,
-		measurements: nil,
-	}
-	inputLogEvent := translateCWMetricToEMF(met, &Config{})
-	expected := "{\"OTelLib\":\"cloudwatch-otel\",\"spanCounter\":0,\"spanName\":\"test\"}"
-
-	assert.Equal(t, expected, *inputLogEvent.InputLogEvent.Message)
-}
-
 func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
-	oc := createMetricTestData()
-	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	rm := createTestResourceMetrics()
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -2144,6 +1977,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2154,8 +1988,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B) {
-	oc := createMetricTestData()
-	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	rm := createTestResourceMetrics()
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -2167,6 +2000,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2177,8 +2011,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing.B) {
-	oc := createMetricTestData()
-	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	rm := createTestResourceMetrics()
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -2190,6 +2023,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2200,8 +2034,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B) {
-	oc := createMetricTestData()
-	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	rm := createTestResourceMetrics()
 	ilms := rm.ScopeMetrics()
 	ilm := ilms.At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -2213,6 +2046,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2223,14 +2057,14 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 }
 
 func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
-	oc := createMetricTestData()
-	rm := internaldata.OCToMetrics(oc.Node, oc.Resource, oc.Metrics).ResourceMetrics().At(0)
+	rm := createTestResourceMetrics()
 	config := &Config{
 		Namespace:             "",
 		DimensionRollupOption: zeroAndSingleDimensionRollup,
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2490,6 +2324,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			}
 
 			translator := newMetricTranslator(*config)
+			defer require.NoError(t, translator.Shutdown())
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 

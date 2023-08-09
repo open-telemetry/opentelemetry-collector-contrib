@@ -5,11 +5,9 @@ all_set:
       enabled: true
     system.memory.utilization:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     system.memory.usage:
       enabled: false
     system.memory.utilization:
       enabled: false
-  resource_attributes:

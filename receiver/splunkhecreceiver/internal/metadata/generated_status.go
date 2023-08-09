@@ -6,4 +6,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-const Stability = component.StabilityLevelBeta
+const (
+	Type             = "splunk_hec"
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
+)

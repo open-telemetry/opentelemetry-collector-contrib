@@ -1,16 +1,5 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
@@ -21,8 +10,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -102,6 +93,34 @@ func generateTestHistogramMetric(name string) pmetric.Metrics {
 	return otelMetrics
 }
 
+func generateTestExponentialHistogramMetric(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Seconds")
+	exponentialHistogramMetric := metric.SetEmptyExponentialHistogram()
+
+	exponentialHistogramDatapoint := exponentialHistogramMetric.DataPoints().AppendEmpty()
+	exponentialHistogramDatapoint.SetCount(4)
+	exponentialHistogramDatapoint.SetSum(0)
+	exponentialHistogramDatapoint.SetMin(-4)
+	exponentialHistogramDatapoint.SetMax(4)
+	exponentialHistogramDatapoint.SetZeroCount(0)
+	exponentialHistogramDatapoint.SetScale(1)
+	exponentialHistogramDatapoint.Positive().SetOffset(1)
+	exponentialHistogramDatapoint.Positive().BucketCounts().FromRaw([]uint64{
+		1, 0, 1,
+	})
+	exponentialHistogramDatapoint.Negative().SetOffset(1)
+	exponentialHistogramDatapoint.Negative().BucketCounts().FromRaw([]uint64{
+		1, 0, 1,
+	})
+	exponentialHistogramDatapoint.Attributes().PutStr("label1", "value1")
+	return otelMetrics
+}
+
 func generateTestSummaryMetric(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
@@ -152,14 +171,24 @@ func generateDeltaMetricMetadata(adjustToDelta bool, metricName string, retainIn
 	}
 }
 
-func setupDataPointCache() {
-	deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
-	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
+func setupEmfCalculators() *emfCalculators {
+	return &emfCalculators{
+		summary: aws.NewMetricCalculator(calculateSummaryDelta),
+		delta:   aws.NewFloat64DeltaCalculator(),
+	}
+}
+
+func shutdownEmfCalculators(c *emfCalculators) error {
+	var errs error
+	errs = multierr.Append(errs, c.delta.Shutdown())
+	return multierr.Append(errs, c.summary.Shutdown())
+
 }
 
 func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
-		setupDataPointCache()
 
 		testCases := []struct {
 			name              string
@@ -246,6 +275,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 
 		for _, tc := range testCases {
 			t.Run(tc.name, func(t *testing.T) {
+
 				// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
 				numberDPS := pmetric.NewNumberDataPointSlice()
 				numberDP := numberDPS.AppendEmpty()
@@ -263,7 +293,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
 
 				// When calculate the delta datapoints for number datapoint
-				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
 
 				assert.Equal(t, 1, numberDatapointSlice.Len())
 				assert.Equal(t, tc.expectedRetained, retained)
@@ -345,13 +375,116 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 		t.Run(tc.name, func(_ *testing.T) {
 			// Given the histogram datapoints
 			histogramDatapointSlice := histogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
-
+			emfCalcs := setupEmfCalculators()
+			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 			// When calculate the delta datapoints for histograms
-			dps, retained := histogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+			dps, retained := histogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
 
 			// Then receiving the following datapoint with an expected length
 			assert.True(t, retained)
 			assert.Equal(t, 1, histogramDatapointSlice.Len())
+			assert.Equal(t, tc.expectedDatapoint, dps[0])
+
+		})
+	}
+
+}
+
+func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.T) {
+	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
+
+	testCases := []struct {
+		name              string
+		histogramDPS      pmetric.ExponentialHistogramDataPointSlice
+		expectedDatapoint dataPoint
+	}{
+		{
+			name: "Exponential histogram with min and max",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(17.13)
+				histogramDP.SetMin(10)
+				histogramDP.SetMax(30)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			expectedDatapoint: dataPoint{
+				name:   "foo",
+				value:  &cWMetricHistogram{Values: []float64{}, Counts: []float64{}, Sum: 17.13, Count: 17, Min: 10, Max: 30},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			},
+		},
+		{
+			name: "Exponential histogram without min and max",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(17.13)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+
+			}(),
+			expectedDatapoint: dataPoint{
+				name:   "foo",
+				value:  &cWMetricHistogram{Values: []float64{}, Counts: []float64{}, Sum: 17.13, Count: 17, Min: 0, Max: 0},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			},
+		},
+		{
+			name: "Exponential histogram with buckets",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.SetZeroCount(4)
+				histogramDP.Negative().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			expectedDatapoint: dataPoint{
+				name:   "foo",
+				value:  &cWMetricHistogram{Values: []float64{1.5, 3, 6, 0, -1.5, -3, -6}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
+			},
+		},
+		{
+			name: "Exponential histogram with different scale/offset/labels",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetScale(-1)
+				histogramDP.Positive().SetOffset(-1)
+				histogramDP.Positive().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.SetZeroCount(4)
+				histogramDP.Negative().SetOffset(-1)
+				histogramDP.Negative().BucketCounts().FromRaw([]uint64{1, 2, 3})
+				histogramDP.Attributes().PutStr("label1", "value1")
+				histogramDP.Attributes().PutStr("label2", "value2")
+				return histogramDPS
+			}(),
+			expectedDatapoint: dataPoint{
+				name:   "foo",
+				value:  &cWMetricHistogram{Values: []float64{0.625, 2.5, 10, 0, -0.625, -2.5, -10}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1", "label2": "value2"},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(_ *testing.T) {
+			// Given the histogram datapoints
+			exponentialHistogramDatapointSlice := exponentialHistogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
+			emfCalcs := setupEmfCalculators()
+			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
+			// When calculate the delta datapoints for histograms
+			dps, retained := exponentialHistogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
+
+			// Then receiving the following datapoint with an expected length
+			assert.True(t, retained)
+			assert.Equal(t, 1, exponentialHistogramDatapointSlice.Len())
 			assert.Equal(t, tc.expectedDatapoint, dps[0])
 		})
 	}
@@ -359,6 +492,8 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
 		deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", retainInitialValueOfDeltaMetric)
 
@@ -423,7 +558,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 				summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata, summaryDPS}
 
 				// When calculate the delta datapoints for sum and count in summary
-				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true)
+				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true, emfCalcs)
 
 				// Then receiving the following datapoint with an expected length
 				assert.Equal(t, tc.expectedRetained, retained)
@@ -498,6 +633,13 @@ func TestGetDataPoints(t *testing.T) {
 			expectedAttributes:     map[string]interface{}{"label1": "value1"},
 		},
 		{
+			name:                   "ExponentialHistogram",
+			isPrometheusMetrics:    false,
+			metric:                 generateTestExponentialHistogramMetric("foo"),
+			expectedDatapointSlice: exponentialHistogramDataPointSlice{cumulativeDeltaMetricMetadata, pmetric.ExponentialHistogramDataPointSlice{}},
+			expectedAttributes:     map[string]interface{}{"label1": "value1"},
+		},
+		{
 			name:                   "Summary from SDK",
 			isPrometheusMetrics:    false,
 			metric:                 generateTestSummaryMetric("foo"),
@@ -520,7 +662,6 @@ func TestGetDataPoints(t *testing.T) {
 		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type())
 
 		t.Run(tc.name, func(t *testing.T) {
-			setupDataPointCache()
 
 			if tc.isPrometheusMetrics {
 				metadata.receiver = prometheusReceiver
@@ -550,6 +691,15 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
+				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
+			case exponentialHistogramDataPointSlice:
+				assert.Equal(t, 1, convertedDPS.Len())
+				dp := convertedDPS.ExponentialHistogramDataPointSlice.At(0)
+				assert.Equal(t, float64(0), dp.Sum())
+				assert.Equal(t, uint64(4), dp.Count())
+				assert.Equal(t, []uint64{1, 0, 1}, dp.Positive().BucketCounts().AsRaw())
+				assert.Equal(t, []uint64{1, 0, 1}, dp.Negative().BucketCounts().AsRaw())
+				assert.Equal(t, uint64(0), dp.ZeroCount())
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case summaryDataPointSlice:
 				expectedDPS := tc.expectedDatapointSlice.(summaryDataPointSlice)
@@ -598,6 +748,7 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 		generateTestGaugeMetric("int-gauge", intValueType),
 		generateTestGaugeMetric("int-gauge", doubleValueType),
 		generateTestHistogramMetric("histogram"),
+		generateTestExponentialHistogramMetric("exponential-histogram"),
 		generateTestSumMetric("int-sum", intValueType),
 		generateTestSumMetric("double-sum", doubleValueType),
 		generateTestSummaryMetric("summary"),
@@ -606,7 +757,8 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
 	rms := finalOtelMetrics.ResourceMetrics()
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
-
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < metrics.Len(); i++ {
@@ -614,7 +766,7 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
 
 			for i := 0; i < dps.Len(); i++ {
-				dps.CalculateDeltaDatapoints(i, "", false)
+				dps.CalculateDeltaDatapoints(i, "", false, emfCalcs)
 			}
 		}
 	}

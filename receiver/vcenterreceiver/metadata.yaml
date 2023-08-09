@@ -1,4 +1,12 @@
-name: vcenterreceiver
+type: vcenter
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   vcenter.cluster.name:
@@ -73,7 +81,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.cluster.cpu.effective:
     enabled: true
@@ -82,7 +90,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.cluster.memory.limit:
     enabled: true
@@ -91,7 +99,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
@@ -100,7 +108,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.cluster.memory.used:
     enabled: true
@@ -109,7 +117,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.cluster.vm.count:
     enabled: true
@@ -118,7 +126,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [vm_count_power_state]
   vcenter.cluster.host.count:
     enabled: true
@@ -127,7 +135,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [host_effective]
   vcenter.datastore.disk.usage:
     enabled: true
@@ -136,7 +144,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [disk_state]
   vcenter.datastore.disk.utilization:
     enabled: true
@@ -159,7 +167,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.host.disk.throughput:
     enabled: true
@@ -168,7 +176,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [disk_direction]
     extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
   vcenter.host.disk.latency.avg:
@@ -201,7 +209,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.host.network.throughput:
     enabled: true
@@ -210,7 +218,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.usage:
@@ -220,7 +228,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.host.network.packet.errors:
     enabled: true
@@ -229,7 +237,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.count:
@@ -239,7 +247,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [throughput_direction]
   vcenter.resource_pool.memory.usage:
     enabled: true
@@ -248,7 +256,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.memory.shares:
     enabled: true
@@ -257,7 +265,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.cpu.usage:
     enabled: true
@@ -266,7 +274,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.resource_pool.cpu.shares:
     enabled: true
@@ -275,7 +283,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.ballooned:
     enabled: true
@@ -284,7 +292,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.usage:
     enabled: true
@@ -293,7 +301,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.swapped:
     enabled: true
@@ -302,7 +310,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.swapped_ssd:
     enabled: true
@@ -311,7 +319,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.disk.usage:
     enabled: true
@@ -320,7 +328,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [disk_state]
   vcenter.vm.disk.utilization:
     enabled: true
@@ -351,7 +359,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.network.throughput:
     enabled: true
@@ -360,7 +368,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [throughput_direction]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.count:
@@ -370,7 +378,7 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [throughput_direction]
   vcenter.vm.network.usage:
     enabled: true
@@ -379,6 +387,29 @@ metrics:
     sum:
       monotonic: false
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.cpu.utilization:
+    enabled: true
+    description: The CPU utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []
+  vcenter.vm.cpu.usage:
+    enabled: true
+    description: The amount of CPU used by the VM.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+  vcenter.vm.memory.utilization:
+    enabled: false
+    description: The memory utilization of the VM.
+    unit: "%"
+    gauge:
+      value_type: double
+    attributes: []

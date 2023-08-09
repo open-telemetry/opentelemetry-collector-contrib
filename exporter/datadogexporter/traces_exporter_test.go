@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package datadogexporter
 
@@ -28,17 +17,16 @@ import (
 
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -50,10 +38,10 @@ func TestMain(m *testing.M) {
 type testlogger struct{}
 
 // Trace implements Logger.
-func (testlogger) Trace(v ...interface{}) {}
+func (testlogger) Trace(_ ...interface{}) {}
 
 // Tracef implements Logger.
-func (testlogger) Tracef(format string, params ...interface{}) {}
+func (testlogger) Tracef(_ string, _ ...interface{}) {}
 
 // Debug implements Logger.
 func (testlogger) Debug(v ...interface{}) { fmt.Println("DEBUG", fmt.Sprint(v...)) }
@@ -155,10 +143,7 @@ func TestTracesSource(t *testing.T) {
 
 	assert := assert.New(t)
 	params := exportertest.NewNopCreateSettings()
-	reg := featuregate.NewRegistry()
-	reg.MustRegister(hostmetadata.HostnamePreviewFeatureGate.ID(), featuregate.StageBeta)
-	assert.NoError(reg.Set(hostmetadata.HostnamePreviewFeatureGate.ID(), true))
-	f := newFactoryWithRegistry(reg)
+	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
 
@@ -344,7 +329,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

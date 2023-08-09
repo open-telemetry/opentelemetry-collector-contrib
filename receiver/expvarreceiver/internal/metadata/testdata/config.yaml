@@ -53,7 +53,6 @@ all_set:
       enabled: true
     process.runtime.memstats.total_alloc:
       enabled: true
-  resource_attributes:
 none_set:
   metrics:
     process.runtime.memstats.buck_hash_sys:
@@ -108,4 +107,3 @@ none_set:
       enabled: false
     process.runtime.memstats.total_alloc:
       enabled: false
-  resource_attributes:

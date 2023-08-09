@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-// http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package traces
 
@@ -51,6 +40,7 @@ func Start(cfg *Config) error {
 
 	httpExpOpt := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 
 	if cfg.Insecure {
@@ -82,13 +72,16 @@ func Start(cfg *Config) error {
 		}
 	}()
 
-	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer func() {
-		logger.Info("stop the batch span processor")
-		if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the batch span processor", zap.Error(err))
-		}
-	}()
+	var ssp sdktrace.SpanProcessor
+	if cfg.Batch {
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		defer func() {
+			logger.Info("stop the batch span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the batch span processor", zap.Error(err))
+			}
+		}()
+	}
 
 	var attributes []attribute.KeyValue
 	// may be overridden by `-otlp-attributes service.name="foo"`
@@ -99,7 +92,9 @@ func Start(cfg *Config) error {
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
-	tracerProvider.RegisterSpanProcessor(ssp)
+	if cfg.Batch {
+		tracerProvider.RegisterSpanProcessor(ssp)
+	}
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
@@ -141,6 +136,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
+			loadSize:         c.LoadSize,
 		}
 
 		go w.simulateTraces()

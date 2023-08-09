@@ -1,4 +1,12 @@
-name: couchdbreceiver
+type: couchdb
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib,observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   couchdb.node.name:
@@ -37,7 +45,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   couchdb.httpd.requests:
     enabled: true
     description: The number of HTTP requests by method.
@@ -45,7 +53,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ http.method ]
   couchdb.httpd.responses:
     enabled: true
@@ -54,7 +62,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ http.status_code ]
   couchdb.httpd.views:
     enabled: true
@@ -63,7 +71,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ view ]
   couchdb.database.open:
     enabled: true
@@ -72,7 +80,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   couchdb.file_descriptor.open:
     enabled: true
     description: The number of open file descriptors.
@@ -80,7 +88,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   couchdb.database.operations:
     enabled: true
     description: The number of database operations.
@@ -88,5 +96,5 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ operation ]

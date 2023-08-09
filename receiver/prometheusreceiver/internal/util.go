@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
 
@@ -45,8 +34,8 @@ var (
 	trimmableSuffixes     = []string{metricsSuffixBucket, metricsSuffixCount, metricsSuffixSum, metricSuffixTotal, metricSuffixInfo, metricSuffixCreated}
 	errNoDataToBuild      = errors.New("there's no data to build")
 	errNoBoundaryLabel    = errors.New("given metricType has no 'le' or 'quantile' label")
-	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric missing is empty")
-	errEmptyLeLabel       = errors.New("'le' label on histogram metric id missing or empty")
+	errEmptyQuantileLabel = errors.New("'quantile' label on summary metric is missing or empty")
+	errEmptyLeLabel       = errors.New("'le' label on histogram metric is missing or empty")
 	errMetricNameNotFound = errors.New("metricName not found from labels")
 	errTransactionAborted = errors.New("transaction aborted")
 	errNoJobInstance      = errors.New("job or instance cannot be found from labels")
@@ -67,6 +56,8 @@ func getSortedNotUsefulLabels(mType pmetric.MetricType) []string {
 		return notUsefulLabelsHistogram
 	case pmetric.MetricTypeSummary:
 		return notUsefulLabelsSummary
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return notUsefulLabelsOther
 	}
@@ -95,6 +86,8 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 		if val == "" {
 			return 0, errEmptyQuantileLabel
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		return 0, errNoBoundaryLabel
 	}
@@ -121,6 +114,8 @@ func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool
 		return pmetric.MetricTypeSummary, true
 	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
 		return pmetric.MetricTypeSum, false
+	case textparse.MetricTypeGaugeHistogram:
+		fallthrough
 	default:
 		// including: textparse.MetricTypeGaugeHistogram
 		return pmetric.MetricTypeEmpty, false

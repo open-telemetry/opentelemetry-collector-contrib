@@ -1,21 +1,9 @@
-// Copyright 2020, OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"testing"
@@ -55,7 +43,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "happy_path",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -76,7 +64,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "double",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -99,7 +87,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "array",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -126,7 +114,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "complex_structure",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -158,7 +146,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "nil_timestamp",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -179,7 +166,6 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "custom_config_mapping",
 			events: []*splunk.Event{
 				{
-					Time:       new(float64),
 					Host:       "localhost",
 					Source:     "mysource",
 					SourceType: "mysourcetype",
@@ -220,7 +206,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 			name: "group_events_by_resource_attributes",
 			events: []*splunk.Event{
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -231,7 +217,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -242,7 +228,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "1",
 					SourceType: "1",
@@ -253,7 +239,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "2",
 					SourceType: "2",
@@ -264,7 +250,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "1",
 					Source:     "2",
 					SourceType: "1",
@@ -275,7 +261,7 @@ func Test_SplunkHecToLogData(t *testing.T) {
 					},
 				},
 				{
-					Time:       &time,
+					Time:       time,
 					Host:       "2",
 					Source:     "1",
 					SourceType: "2",
@@ -365,15 +351,16 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 	}
 	tests := []struct {
 		name           string
-		sc             *bufio.Scanner
+		sc             io.Reader
 		query          map[string][]string
 		assertResource func(t *testing.T, got plog.Logs, slLen int)
+		config         *Config
 	}{
 		{
 			name: "all_mapping",
-			sc: func() *bufio.Scanner {
+			sc: func() io.Reader {
 				reader := io.NopCloser(bytes.NewReader([]byte("test")))
-				return bufio.NewScanner(reader)
+				return reader
 			}(),
 			query: func() map[string][]string {
 				m := make(map[string][]string)
@@ -409,12 +396,13 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 					assert.Fail(t, "index is not added to attributes")
 				}
 			},
+			config: hecConfig,
 		},
 		{
 			name: "some_mapping",
-			sc: func() *bufio.Scanner {
+			sc: func() io.Reader {
 				reader := io.NopCloser(bytes.NewReader([]byte("test")))
-				return bufio.NewScanner(reader)
+				return reader
 			}(),
 			query: func() map[string][]string {
 				m := make(map[string][]string)
@@ -438,12 +426,48 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 					assert.Fail(t, "sourcetype is not added to attributes")
 				}
 			},
+			config: hecConfig,
+		},
+		{
+			name: "no splitting",
+			sc: func() io.Reader {
+				reader := io.NopCloser(bytes.NewReader([]byte("test\nfoo\r\nbar")))
+				return reader
+			}(),
+			query: func() map[string][]string {
+				return map[string][]string{}
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 1, got.LogRecordCount())
+			},
+			config: func() *Config {
+				return &Config{
+					Splitting: SplittingStrategyNone,
+				}
+			}(),
+		},
+		{
+			name: "line splitting",
+			sc: func() io.Reader {
+				reader := io.NopCloser(bytes.NewReader([]byte("test\nfoo\r\nbar")))
+				return reader
+			}(),
+			query: func() map[string][]string {
+				return map[string][]string{}
+			}(),
+			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
+				assert.Equal(t, 3, got.LogRecordCount())
+			},
+			config: func() *Config {
+				return &Config{}
+			}(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, hecConfig)
+			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config)
+			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
 	}

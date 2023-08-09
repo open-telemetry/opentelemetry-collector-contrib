@@ -1,56 +1,45 @@
-// Copyright 2020 OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
 
 package cronjob
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	batchv1 "k8s.io/api/batch/v1"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestCronJobMetrics(t *testing.T) {
-	cj := newCronJob("1")
+	cj := testutils.NewCronJob("1")
 
-	actualResourceMetrics := GetMetrics(cj)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, cj, ts)
+	m := mb.Emit()
 
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 1, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.cronjob.uid":    "test-cronjob-1-uid",
-			"k8s.cronjob.name":   "test-cronjob-1",
-			"k8s.namespace.name": "test-namespace",
-		},
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.cronjob.active_jobs",
-		metricspb.MetricDescriptor_GAUGE_INT64, 2)
 }
 
 func TestCronJobMetadata(t *testing.T) {
-	cj := newCronJob("1")
+	cj := testutils.NewCronJob("1")
 
 	actualMetadata := GetMetadata(cj)
 
@@ -59,6 +48,7 @@ func TestCronJobMetadata(t *testing.T) {
 	// Assert metadata from Pod.
 	require.Equal(t,
 		metadata.KubernetesMetadata{
+			EntityType:    "k8s.cronjob",
 			ResourceIDKey: "k8s.cronjob.uid",
 			ResourceID:    "test-cronjob-1-uid",
 			Metadata: map[string]string{
@@ -73,25 +63,4 @@ func TestCronJobMetadata(t *testing.T) {
 		},
 		*actualMetadata["test-cronjob-1-uid"],
 	)
-}
-
-func newCronJob(id string) *batchv1.CronJob {
-	return &batchv1.CronJob{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-cronjob-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-cronjob-" + id + "-uid"),
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Spec: batchv1.CronJobSpec{
-			Schedule:          "schedule",
-			ConcurrencyPolicy: "concurrency_policy",
-		},
-		Status: batchv1.CronJobStatus{
-			Active: []corev1.ObjectReference{{}, {}},
-		},
-	}
 }

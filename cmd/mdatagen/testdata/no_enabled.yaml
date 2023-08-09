@@ -1,4 +1,12 @@
-name: metricreceiver
+type: metricreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [logs]
+    beta: [traces]
+    stable: [metrics]
+    
 metrics:
   system.cpu.time:
     description: Total CPU seconds broken down by different states.
@@ -6,5 +14,5 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes:

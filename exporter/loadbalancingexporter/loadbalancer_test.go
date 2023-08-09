@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package loadbalancingexporter
 
@@ -26,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -72,6 +62,24 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	// verify
 	require.Nil(t, p)
 	require.Equal(t, errNoHostname, err)
+}
+
+func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
+	// prepare
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			K8sSvc: &K8sSvcResolver{
+				Service: "",
+			},
+		},
+	}
+
+	// test
+	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+
+	// verify
+	assert.Nil(t, p)
+	assert.True(t, clientcmd.IsConfigurationInvalid(err) || errors.Is(err, errNoSvc))
 }
 
 func TestLoadBalancerStart(t *testing.T) {

@@ -5,3 +5,4 @@ awsxray/customname:
   role_arn: "arn:aws:iam::123456789:role/monitoring-EKS-NodeInstanceRole"
   indexed_attributes: [ "indexed_attr_0", "indexed_attr_1" ]
   aws_log_groups: ["group1", "group2"]
+  request_timeout_seconds: 120
