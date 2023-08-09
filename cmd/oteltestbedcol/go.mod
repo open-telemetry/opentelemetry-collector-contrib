@@ -46,7 +46,7 @@ require (
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.82.0
 	go.opentelemetry.io/collector/receiver v0.82.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.82.0
-	golang.org/x/sys v0.10.0
+	golang.org/x/sys v0.11.0
 )
 
 require (
@@ -62,13 +62,13 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.3.1 // indirect
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
-	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/antonmedv/expr v1.12.7 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.316 // indirect
+	github.com/aws/aws-sdk-go v1.44.319 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
@@ -119,7 +119,7 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grafana/regexp v0.0.0-20221122212121-6b5c0a4cb7fd // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.2 // indirect
-	github.com/hashicorp/consul/api v1.23.0 // indirect
+	github.com/hashicorp/consul/api v1.24.0 // indirect
 	github.com/hashicorp/cronexpr v1.1.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -181,7 +181,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.82.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.82.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/openzipkin/zipkin-go v0.4.1 // indirect
 	github.com/ovh/go-ovh v1.4.1 // indirect
@@ -198,7 +198,7 @@ require (
 	github.com/prometheus/statsd_exporter v0.22.7 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.15 // indirect
-	github.com/shirou/gopsutil/v3 v3.23.6 // indirect
+	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3 // indirect
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
@@ -254,15 +254,15 @@ require (
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.25.0 // indirect
-	golang.org/x/crypto v0.11.0 // indirect
+	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.12.0 // indirect
-	golang.org/x/oauth2 v0.10.0 // indirect
-	golang.org/x/term v0.10.0 // indirect
-	golang.org/x/text v0.11.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/oauth2 v0.11.0 // indirect
+	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.11.1 // indirect
+	golang.org/x/tools v0.12.0 // indirect
 	gonum.org/v1/gonum v0.13.0 // indirect
 	google.golang.org/api v0.134.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -379,6 +379,10 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
 
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
+
+replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
+
+replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go => cloud.google.com/go v0.110.2
