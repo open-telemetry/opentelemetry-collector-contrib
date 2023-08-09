@@ -23,7 +23,8 @@ const (
 	filterOPDoesNotExist = "does-not-exist"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	clusterUid           = "k8s.cluster.uid"
+	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUid with conventions.AttributeClusterUid
+	clusterUid = "k8s.cluster.uid"
 )
 
 // option represents a configuration option that can be passes.
