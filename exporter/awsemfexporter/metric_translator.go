@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 const (
@@ -85,6 +87,7 @@ type cWMetricMetadata struct {
 
 type metricTranslator struct {
 	metricDescriptor map[string]MetricDescriptor
+	calculators      *emfCalculators
 }
 
 func newMetricTranslator(config Config) metricTranslator {
@@ -94,7 +97,18 @@ func newMetricTranslator(config Config) metricTranslator {
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
+		calculators: &emfCalculators{
+			delta:   aws.NewFloat64DeltaCalculator(),
+			summary: aws.NewMetricCalculator(calculateSummaryDelta),
+		},
 	}
+}
+
+func (mt metricTranslator) Shutdown() error {
+	var errs error
+	errs = multierr.Append(errs, mt.calculators.delta.Shutdown())
+	errs = multierr.Append(errs, mt.calculators.summary.Shutdown())
+	return errs
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
@@ -129,7 +143,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 				instrumentationScopeName: instrumentationScopeName,
 				receiver:                 metricReceiver,
 			}
-			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config, mt.calculators)
 			if err != nil {
 				return err
 			}
