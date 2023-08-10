@@ -6,6 +6,7 @@ package ottlfuncs
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 
@@ -15,41 +16,41 @@ import (
 func Test_DurationToMilli(t *testing.T) {
 	tests := []struct {
 		name     string
-		duration ottl.StringGetter[interface{}]
+		duration ottl.DurationGetter[interface{}]
 		expected int64
 	}{
 		{
 			name: "100 Milliseconds",
-			duration: &ottl.StandardStringGetter[interface{}]{
+			duration: &ottl.StandardDurationGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "100ms", nil
+					return time.ParseDuration("100ms")
 				},
 			},
 			expected: 100,
 		},
 		{
 			name: "1000 hour",
-			duration: &ottl.StandardStringGetter[interface{}]{
+			duration: &ottl.StandardDurationGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "100h", nil
+					return time.ParseDuration("100h")
 				},
 			},
 			expected: 360000000,
 		},
 		{
 			name: "47 mins",
-			duration: &ottl.StandardStringGetter[interface{}]{
+			duration: &ottl.StandardDurationGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "47m", nil
+					return time.ParseDuration("47m")
 				},
 			},
 			expected: 2820000,
 		},
 		{
 			name: "1 hour 40 mins 3 seconds 30 milliseconds",
-			duration: &ottl.StandardStringGetter[interface{}]{
+			duration: &ottl.StandardDurationGetter[interface{}]{
 				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return "1h40m3s30ms", nil
+					return time.ParseDuration("1h40m3s30ms")
 				},
 			},
 			expected: 6003030,

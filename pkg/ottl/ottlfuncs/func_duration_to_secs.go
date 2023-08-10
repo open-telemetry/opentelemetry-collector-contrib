@@ -6,13 +6,12 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type DurationToSecsArguments[K any] struct {
-	Duration ottl.StringGetter[K] `ottlarg:"0"`
+	Duration ottl.DurationGetter[K] `ottlarg:"0"`
 }
 
 func NewDurationToSecsFactory[K any]() ottl.Factory[K] {
@@ -28,16 +27,12 @@ func createDurationToSecsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return DurationToSecs(args.Duration)
 }
 
-func DurationToSecs[K any](duration ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func DurationToSecs[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		dur, err := time.ParseDuration(d)
-		if err != nil {
-			return nil, err
-		}
-		return dur.Seconds(), nil
+		return d.Seconds(), nil
 	}, nil
 }
