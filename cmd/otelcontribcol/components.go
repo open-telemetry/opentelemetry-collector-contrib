@@ -5,7 +5,11 @@ package main
 import (
 	"go.opentelemetry.io/collector/connector"
 	forwardconnector "go.opentelemetry.io/collector/connector/forwardconnector"
-	"go.opentelemetry.io/collector/exporter"
+	countconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector"
+	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
+	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
+	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
+	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
 	loggingexporter "go.opentelemetry.io/collector/exporter/loggingexporter"
 	otlpexporter "go.opentelemetry.io/collector/exporter/otlpexporter"
 	otlphttpexporter "go.opentelemetry.io/collector/exporter/otlphttpexporter"
@@ -109,6 +113,14 @@ import (
 	spanprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor"
 	tailsamplingprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	transformprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor"
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+	otlpreceiver "go.opentelemetry.io/collector/receiver/otlpreceiver"
+=======
+	websocketprocessor "github.com/open-telemetry/opentelemetry-collector-contrib/processor/websocketprocessor"
+>>>>>>> parent of 4fa8eee297 (resolving issues with go dependencies for internal datadog module)
+>>>>>>> 15a1921fb4 (Revert "resolving issues with go dependencies for internal datadog module")
 	activedirectorydsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/activedirectorydsreceiver"
 	aerospikereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 	apachereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver"
@@ -165,6 +177,7 @@ import (
 	otlpjsonfilereceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	podmanreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	postgresqlreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
+	prometheusexecreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	prometheusreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	pulsarreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	purefareceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"

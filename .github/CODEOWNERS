@@ -36,6 +36,8 @@ connector/exceptionsconnector/                           @open-telemetry/collect
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @albertteoh
+connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
+
 
 examples/demo/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
