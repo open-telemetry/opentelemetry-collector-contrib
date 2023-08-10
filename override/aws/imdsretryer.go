@@ -47,7 +47,7 @@ type iMDSRetryer struct {
 func newIMDSRetryer() iMDSRetryer {
 	imdsRetryer := iMDSRetryer{
 		DefaultRetryer: client.DefaultRetryer{
-			NumMaxRetries: 5,
+			NumMaxRetries: 0,
 			MinRetryDelay: time.Second / 2,
 		},
 	}
