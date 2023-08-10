@@ -65,6 +65,7 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				var errs error
+				//exhaustive:enforce
 				switch r.Type() {
 				case pmetric.MetricTypeGauge:
 					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Gauge(), r.Name(), r.Description(), r.Unit()))
