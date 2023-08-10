@@ -121,7 +121,8 @@ data:
       pipelines:
         logs:
           receivers: [filelog]
-          exporters: [otlphttp]
+          processors: [k8sattributes]
+          exporters: [logging, otlphttp]
 ---
 apiVersion: apps/v1
 kind: DaemonSet

@@ -76,9 +76,6 @@ spec:
           args:
             - --config=/conf/collector.yaml
           resources:
-            limits:
-              cpu: 1
-              memory: 2Gi
             requests:
               cpu: 200m
               memory: 400Mi
