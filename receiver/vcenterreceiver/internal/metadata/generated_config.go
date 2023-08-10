@@ -197,6 +197,7 @@ type ResourceAttributeConfig struct {
 type ResourceAttributesConfig struct {
 	VcenterClusterName      ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
 	VcenterDatastoreName    ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
+	VcenterDeviceName       ResourceAttributeConfig `mapstructure:"vcenter.device.name"`
 	VcenterHostName         ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
 	VcenterResourcePoolName ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
 	VcenterVMID             ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
@@ -209,6 +210,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		VcenterDeviceName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		VcenterHostName: ResourceAttributeConfig{

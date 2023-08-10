@@ -201,11 +201,16 @@ func (v *vcenterMetricScraper) collectHost(
 		errs.AddPartial(1, err)
 		return
 	}
+	hri := hostResourceInfo{
+		host:    host.Name(),
+		cluster: cluster.Name(),
+	}
+
+	v.recordHostPerformanceMetrics(ctx, hwSum, hri, errs)
 	v.recordHostSystemMemoryUsage(now, hwSum)
-	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	rb := v.mb.NewResourceBuilder()
-	rb.SetVcenterHostName(host.Name())
-	rb.SetVcenterClusterName(cluster.Name())
+	rb.SetVcenterHostName(hri.host)
+	rb.SetVcenterClusterName(hri.cluster)
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -295,12 +300,20 @@ func (v *vcenterMetricScraper) collectVMs(
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		v.collectVM(ctx, colTime, moVM, hwSum, errs)
+		vmResourceInfo := vmResourceInfo{
+			cluster: cluster.Name(),
+			vm:      vm.Name(),
+			vmID:    vmUUID,
+			host:    hostname,
+		}
+		v.collectVM(ctx, colTime, moVM, hwSum, errs, vmResourceInfo)
+
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterVMName(vm.Name())
-		rb.SetVcenterVMID(vmUUID)
-		rb.SetVcenterClusterName(cluster.Name())
-		rb.SetVcenterHostName(hostname)
+		rb.SetVcenterVMName(vmResourceInfo.vm)
+		rb.SetVcenterVMID(vmResourceInfo.vmID)
+		rb.SetVcenterClusterName(vmResourceInfo.cluster)
+		rb.SetVcenterHostName(vmResourceInfo.host)
+
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
@@ -312,7 +325,8 @@ func (v *vcenterMetricScraper) collectVM(
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
+	vri vmResourceInfo,
 ) {
+	v.recordVMPerformance(ctx, vm, vri, errs)
 	v.recordVMUsages(colTime, vm, hs)
-	v.recordVMPerformance(ctx, vm, errs)
 }

@@ -429,6 +429,7 @@ The memory utilization of the VM.
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
+| vcenter.device.name | The name of the device on the host systsem or the virtual machine. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
