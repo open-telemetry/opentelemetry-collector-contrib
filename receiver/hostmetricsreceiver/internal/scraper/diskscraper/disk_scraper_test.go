@@ -24,7 +24,7 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name              string
 		config            Config
-		bootTimeFunc      func() (uint64, error)
+		bootTimeFunc      func(context.Context) (uint64, error)
 		newErrRegex       string
 		initializationErr string
 		expectMetrics     int
@@ -41,14 +41,14 @@ func TestScrape(t *testing.T) {
 		{
 			name:              "Validate Start Time",
 			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
-			bootTimeFunc:      func() (uint64, error) { return 100, nil },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 100, nil },
 			expectMetrics:     metricsLen,
 			expectedStartTime: 100 * 1e9,
 		},
 		{
 			name:              "Boot Time Error",
 			config:            Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 			expectMetrics:     metricsLen,
 		},

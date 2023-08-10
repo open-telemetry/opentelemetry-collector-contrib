@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -1088,8 +1087,8 @@ foo_total 1
 func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
-	// m1 has 3 metrics + 5 internal scraper metrics
-	assert.Equal(t, 8, metricsCount(m1))
+	// m1 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m1))
 
 	wantAttributes := td.attributes
 
@@ -1117,7 +1116,17 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("corrupted_hist",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(10, 100, []uint64{10}),
+					},
+				},
+			}),
 		assertMetricPresent("rpc_duration_seconds",
 			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
@@ -1142,8 +1151,8 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
-	// m2 has 3 metrics + 5 internal scraper metrics
-	assert.Equal(t, 8, metricsCount(m2))
+	// m2 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m2))
 
 	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
@@ -1169,7 +1178,17 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("corrupted_hist",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogram(15, 101, []uint64{15}),
+					},
+				},
+			}),
 		assertMetricPresent("rpc_duration_seconds",
 			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
@@ -1275,7 +1294,7 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 var startTimeMetricPage = `
@@ -1344,6 +1363,7 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 			}
 		}
 		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
@@ -1361,7 +1381,7 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "")
 }
 
 var startTimeMetricRegexPage = `
@@ -1410,7 +1430,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "^(.+_)*process_start_time_seconds$")
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1439,7 +1459,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -1557,7 +1577,7 @@ scrape_configs:
 	set := receivertest.NewNopCreateSettings()
 	receiver := newPrometheusReceiver(set, &Config{
 		PrometheusConfig: cfg,
-	}, new(consumertest.MetricsSink), featuregate.GlobalRegistry())
+	}, new(consumertest.MetricsSink))
 
 	ctx := context.Background()
 

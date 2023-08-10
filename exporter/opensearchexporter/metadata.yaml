@@ -1,0 +1,6 @@
+type: opensearch
+
+status:
+  class: exporter
+  codeowners:
+    active: [Aneurysm9, MitchellGale, MaxKsyunz, YANG-DB]

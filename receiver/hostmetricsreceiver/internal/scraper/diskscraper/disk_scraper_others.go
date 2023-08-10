@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
 	"go.opentelemetry.io/collector/component"
@@ -38,13 +39,13 @@ type scraper struct {
 	excludeFS filterset.FilterSet
 
 	// for mocking
-	bootTime   func() (uint64, error)
-	ioCounters func(names ...string) (map[string]disk.IOCountersStat, error)
+	bootTime   func(context.Context) (uint64, error)
+	ioCounters func(ctx context.Context, names ...string) (map[string]disk.IOCountersStat, error)
 }
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
-	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTime, ioCounters: disk.IOCounters}
+	scraper := &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, ioCounters: disk.IOCountersWithContext}
 
 	var err error
 
@@ -65,8 +66,9 @@ func newDiskScraper(_ context.Context, settings receiver.CreateSettings, cfg *Co
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -76,9 +78,11 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
+
 	now := pcommon.NewTimestampFromTime(time.Now())
-	ioCounters, err := s.ioCounters()
+	ioCounters, err := s.ioCounters(ctx)
 	if err != nil {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}

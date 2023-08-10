@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [alpha]: logs, traces   |
 | Distributions | [contrib] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdataset%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdataset) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdataset%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdataset) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@martin-majlis-s1](https://www.github.com/martin-majlis-s1), [@zdaratom](https://www.github.com/zdaratom), [@tomaz-s1](https://www.github.com/tomaz-s1) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -23,6 +25,24 @@ See the [Getting Started](https://app.scalyr.com/help/getting-started) guide.
 
 If you do not want to specify `api_key` in the file, you can use the [builtin functionality](https://opentelemetry.io/docs/collector/configuration/#configuration-environment-variables) and use `api_key: ${env:DATASET_API_KEY}`.
 
+### Server Host Settings
+
+Specifying the server host is crucial for ensuring the correct functionality of DataSet. 
+DataSet expects the server host value to be provided in the `serverHost` attribute. 
+If the server host value is stored in a different attribute, you can use the [resourceprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourceprocessor/README.md) or [attributesprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/attributesprocessor) to copy it into the `serverHost` attribute.
+
+You can also utilize the `server_host` settings (described below) to populate the serverHost attribute with different values.
+
+The process of populating the serverHost attribute works as follows:
+
+* If the `serverHost` attribute is specified and not empty in the log or trace, then it is used.
+* If the `serverHost` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
+* If the `host.name` attribute is specified and not empty in the [resource](https://opentelemetry.io/docs/specs/otel/resource/sdk/), then it is used.
+* If the `server_host.server_host` setting is specified and not empty, then it is used.
+* If `server_host.use_host_name` setting is set to `true`, the `hostname` of the node is used.
+
+Make sure to provide the appropriate server host value in the `serverHost` attribute to ensure the proper functionality of DataSet and accurate handling of events.
+
 ### Optional Settings
 
 - `buffer`:
@@ -31,43 +51,94 @@ If you do not want to specify `api_key` in the file, you can use the [builtin fu
   - `retry_initial_interval` (default = 5s): Time to wait after the first failure before retrying.
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
-- `traces`:
-  - `aggregate` (default = false): Count the number of spans and errors belonging to a trace.
-  - `max_wait` (default = 5s): The maximum waiting for all spans from single trace to arrive; ignored if `aggregate` is false.
+  - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
 - `logs`:
-  - `export_resource_info_on_event` (default = false): Include resource info to DataSet Event while exporting Logs. This is especially useful when reducing DataSet billable log volume.
+    - `export_scope_info_on_event` (default = false): Include LogRecord scope information (if available) on the DataSet event.
+    - `decompose_complex_message_field` (default = true): Set this to false to disable decomposing complex body / message field types (e.g. a map) into separate fields.
+- `server_host`:
+  - `server_host` (default = ''): Specifies the server host to be used for the events.
+  - `use_hostname` (default = true): Determines whether the `hostname` of the node should be used as the server host for the events. When set to `true`, the node's `hostname` is automatically used.
 - `retry_on_failure`: See [retry_on_failure](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `sending_queue`: See [sending_queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 - `timeout`: See [timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)
 
-
 ### Example
 
 ```yaml
+processors:
+  attributes:
+    - key: serverHost
+      action: insert
+      from_attribute: container_id
+  resource:
+    attributes:
+      - key: serverHost
+        from_attribute: node_id
+        action: insert      
 
 exporters:
-  dataset:
-    # DataSet API URL
+  dataset/logs:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
     dataset_url: https://app.scalyr.com
     # API Key
     api_key: your_api_key
     buffer:
-      # Send buffer to the API at least every 10s
-      max_lifetime: 10s
+      # Send buffer to the API at least every 5s
+      max_lifetime: 5s
       # Group data based on these attributes
       group_by:
-        - attributes.container_id
+        - container_id
+      # try to send data to the DataSet for at most 30s during shutdown
+      retry_shutdown_timeout: 30s
+    server_host:
+      # If the serverHost attribute is not specified or empty,
+      # use the value from the env variable SERVER_HOST
+      server_host: ${env:SERVER_HOST}
+      # If server_host is not set, use the hostname value
+      use_hostname: true
+
+  dataset/traces:
+    # DataSet API URL, https://app.eu.scalyr.com for DataSet EU instance
+    dataset_url: https://app.scalyr.com
+    # API Key
+    api_key: your_api_key
+    buffer:
+      max_lifetime: 15s
+      group_by:
+        - resource_service.instance.id
 
 service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [batch, attributes]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/logs]
     traces:
       receivers: [otlp]
       processors: [batch]
       # add dataset among your exporters
-      exporters: [dataset]
+      exporters: [dataset/traces]
 ```
+
+## Examples
+
+### Handling `serverHost` Attribute
+
+Based on the given configuration and scenarios, here's the expected behavior:
+
+1. Resource: `{'node_id:' 'node-pay-01', 'host.name': 'host-pay-01'}`, Log: `{'container_id': 'cont-pay-01'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is set, `attributesprocessor` will copy this value to the `serverHost`.
+   * Used `serverHost` will be `cont-pay-01`.
+2. Resource: `{'node_id': 'node-pay-01', 'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the resource attribute `node_id` is set, `resourceprocessor` will copy this value to the `serverHost`. 
+   * Used `serverHost` will be `node-pay-01`.
+3. Resource: `{'host.name': 'host-pay-01'}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the resource attribute `host.name` is set, it will be used.
+   * Used `serverHost` will be `host-pay-01`.
+4. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST='server-pay-01'`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is not set, the value from the environmental variable `SERVER_HOST`  will be copied to the `serverHost`.
+   * Used `serverHost` will be `server-pay-01`.
+5. Resource: `{}`, Log: `{'attribute.foo': 'Bar'}`, Env: `SERVER_HOST=''`, Hostname: `ip-172-31-27-19`
+   * Since the attribute `container_id` is not set and the environmental variable `SERVER_HOST` is empty, the `hostname` of the node (`ip-172-31-27-19`) will be used as the fallback value for `serverHost`.
+   * Used `serverHost` will be `ip-172-31-27-19`.

@@ -71,6 +71,8 @@ func (ft *FromTranslator) FromMetric(m pmetric.Metric, extraDimensions []*sfxpb.
 		dps = convertHistogram(m.Histogram().DataPoints(), m.Name(), mt, extraDimensions)
 	case pmetric.MetricTypeSummary:
 		dps = convertSummaryDataPoints(m.Summary().DataPoints(), m.Name(), extraDimensions)
+	case pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeEmpty:
 	}
 
 	return dps
@@ -95,6 +97,15 @@ func fromMetricTypeToMetricType(metric pmetric.Metric) *sfxpb.MetricType {
 			return &sfxMetricTypeCounter
 		}
 		return &sfxMetricTypeCumulativeCounter
+
+	case pmetric.MetricTypeEmpty:
+		return nil
+
+	case pmetric.MetricTypeSummary:
+		return nil
+
+	case pmetric.MetricTypeExponentialHistogram:
+		return nil
 	}
 
 	return nil
@@ -114,6 +125,7 @@ func convertNumberDataPoints(in pmetric.NumberDataPointSlice, name string, mt *s
 		case pmetric.NumberDataPointValueTypeDouble:
 			val := inDp.DoubleValue()
 			dp.Value.DoubleValue = &val
+		case pmetric.NumberDataPointValueTypeEmpty:
 		}
 	}
 	return dps.out
@@ -262,10 +274,10 @@ type dpsBuilder struct {
 	pos     int
 }
 
-func newDpsBuilder(cap int) dpsBuilder {
+func newDpsBuilder(capacity int) dpsBuilder {
 	return dpsBuilder{
-		baseOut: make([]sfxpb.DataPoint, cap),
-		out:     make([]*sfxpb.DataPoint, 0, cap),
+		baseOut: make([]sfxpb.DataPoint, capacity),
+		out:     make([]*sfxpb.DataPoint, 0, capacity),
 	}
 }
 

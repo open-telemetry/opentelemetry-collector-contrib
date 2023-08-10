@@ -27,12 +27,12 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				CloudProvider:                  ResourceAttributeConfig{Enabled: true},
 				HerokuAppID:                    ResourceAttributeConfig{Enabled: true},
-				HerokuAppName:                  ResourceAttributeConfig{Enabled: true},
 				HerokuDynoID:                   ResourceAttributeConfig{Enabled: true},
 				HerokuReleaseCommit:            ResourceAttributeConfig{Enabled: true},
 				HerokuReleaseCreationTimestamp: ResourceAttributeConfig{Enabled: true},
-				HerokuReleaseVersion:           ResourceAttributeConfig{Enabled: true},
 				ServiceInstanceID:              ResourceAttributeConfig{Enabled: true},
+				ServiceName:                    ResourceAttributeConfig{Enabled: true},
+				ServiceVersion:                 ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -40,29 +40,33 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				CloudProvider:                  ResourceAttributeConfig{Enabled: false},
 				HerokuAppID:                    ResourceAttributeConfig{Enabled: false},
-				HerokuAppName:                  ResourceAttributeConfig{Enabled: false},
 				HerokuDynoID:                   ResourceAttributeConfig{Enabled: false},
 				HerokuReleaseCommit:            ResourceAttributeConfig{Enabled: false},
 				HerokuReleaseCreationTimestamp: ResourceAttributeConfig{Enabled: false},
-				HerokuReleaseVersion:           ResourceAttributeConfig{Enabled: false},
 				ServiceInstanceID:              ResourceAttributeConfig{Enabled: false},
+				ServiceName:                    ResourceAttributeConfig{Enabled: false},
+				ServiceVersion:                 ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-			require.NoError(t, err)
-			sub, err := cm.Sub(tt.name)
-			require.NoError(t, err)
-			sub, err = sub.Sub("resource_attributes")
-			require.NoError(t, err)
-			cfg := DefaultResourceAttributesConfig()
-			require.NoError(t, component.UnmarshalConfig(sub, &cfg))
-
+			cfg := loadResourceAttributesConfig(t, tt.name)
 			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
 				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 			}
 		})
 	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
 }

@@ -147,6 +147,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 						dataPoint.CopyTo(groupedMetric.ExponentialHistogram().DataPoints().AppendEmpty())
 					}
 
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -222,6 +223,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	case pmetric.MetricTypeSummary:
 		metric.SetEmptySummary()
 
+	case pmetric.MetricTypeEmpty:
 	}
 
 	return metric

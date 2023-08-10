@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -138,10 +137,10 @@ func setupMockTargetAllocator(responses Responses) (*MockTargetAllocator, error)
 }
 
 func labelSetTargetsToList(sets []model.LabelSet) []string {
-	var result []string
-	for _, set := range sets {
+	result := make([]string, len(sets))
+	for i, set := range sets {
 		address := set["__address__"]
-		result = append(result, string(address))
+		result[i] = string(address)
 	}
 	return result
 }
@@ -494,7 +493,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms, featuregate.GlobalRegistry())
+			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms)
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 

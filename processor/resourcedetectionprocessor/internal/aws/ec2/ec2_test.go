@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	ec2provider "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/aws/ec2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/ec2/internal/metadata"
 )
 
 var errUnavailable = errors.New("ec2metadata unavailable")
@@ -172,11 +173,10 @@ func TestDetector_Detect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resourceAttributes := CreateDefaultConfig().ResourceAttributes
 			d := &Detector{
-				metadataProvider:   tt.fields.metadataProvider,
-				logger:             zap.NewNop(),
-				resourceAttributes: resourceAttributes,
+				metadataProvider: tt.fields.metadataProvider,
+				logger:           zap.NewNop(),
+				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 

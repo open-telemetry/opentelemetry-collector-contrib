@@ -5,3 +5,5 @@ status:
   stability:
     beta: [traces]
   distributions: [contrib]
+  codeowners:
+    active: [mx-psi, gbbr, dineshg13]
