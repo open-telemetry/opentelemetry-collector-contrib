@@ -48,6 +48,12 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, r := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
+		if r.Key != "" && r.KeyRegex != "" {
+			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", r.Key, r.KeyRegex)
+		}
+	}
+
 	return nil
 }
 

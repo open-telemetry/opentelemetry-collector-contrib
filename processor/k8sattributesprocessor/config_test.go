@@ -123,6 +123,15 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "too_many_sources"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keys_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keys_annotations"),
+		},
 	}
 
 	for _, tt := range tests {
@@ -137,6 +146,11 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
+			if tt.expected == nil {
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+				return
+			}
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

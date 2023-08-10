@@ -90,3 +90,31 @@ k8sattributes/4:
     metadata:
       # the following metadata field has been depracated
       - k8s.cluster.name
+
+k8sattributes/too_many_sources:
+  pod_association:
+    - sources:
+        - from: resource_attribute
+          name: custom-attribute
+        - from: resource_attribute
+          name: ip
+        - from: resource_attribute
+          name: k8s.pod.ip
+        - from: resource_attribute
+          name: host.name
+        - from: connection
+          name: ip
+
+k8sattributes/bad_keys_labels:
+  extract:
+    labels:
+      - tag_name: l1
+        key: label1
+        key_regex: label\d
+
+k8sattributes/bad_keys_annotations:
+  extract:
+    annotations:
+      - tag_name: a1
+        key: annotation1
+        key_regex: annotation\d
