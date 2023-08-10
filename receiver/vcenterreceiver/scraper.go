@@ -300,19 +300,19 @@ func (v *vcenterMetricScraper) collectVMs(
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		vmResourceInfo := vmResourceInfo{
+		vri := vmResourceInfo{
 			cluster: cluster.Name(),
 			vm:      vm.Name(),
 			vmID:    vmUUID,
 			host:    hostname,
 		}
-		v.collectVM(ctx, colTime, moVM, hwSum, errs, vmResourceInfo)
+		v.collectVM(ctx, colTime, moVM, hwSum, errs, vri)
 
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterVMName(vmResourceInfo.vm)
-		rb.SetVcenterVMID(vmResourceInfo.vmID)
-		rb.SetVcenterClusterName(vmResourceInfo.cluster)
-		rb.SetVcenterHostName(vmResourceInfo.host)
+		rb.SetVcenterVMName(vri.vm)
+		rb.SetVcenterVMID(vri.vmID)
+		rb.SetVcenterClusterName(vri.cluster)
+		rb.SetVcenterHostName(vri.host)
 
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

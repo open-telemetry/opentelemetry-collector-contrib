@@ -212,20 +212,16 @@ type vmResourceInfo struct {
 }
 
 type vmPerformanceMetrics struct {
-	bytesTx                    *perfMetric
-	bytesRx                    *perfMetric
-	usage                      *perfMetric
-	packetsTx                  *perfMetric
-	packetsRx                  *perfMetric
-	cpuUsagePercent            *perfMetric
-	memoryUsagePercent         *perfMetric
-	diskUsagePercent           *perfMetric
-	networkUsagePercent        *perfMetric
-	diskReadLatencyAvg         *perfMetric
-	virtualDiskReadLatencyAvg  *perfMetric
-	diskWriteLatencyAvg        *perfMetric
-	virtualDiskWriteLatencyAvg *perfMetric
-	diskMaxTotalLatency        *perfMetric
+	bytesTx                    []perfMetric
+	bytesRx                    []perfMetric
+	usage                      []perfMetric
+	packetsTx                  []perfMetric
+	packetsRx                  []perfMetric
+	diskReadLatencyAvg         []perfMetric
+	virtualDiskReadLatencyAvg  []perfMetric
+	diskWriteLatencyAvg        []perfMetric
+	virtualDiskWriteLatencyAvg []perfMetric
+	diskMaxTotalLatency        []perfMetric
 }
 
 func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResult, vri vmResourceInfo) {
@@ -238,73 +234,73 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 			}
 			for j, nestedValue := range val.Value {
 				si := m.SampleInfo[j]
-				pm := &perfMetric{
+				pm := perfMetric{
 					timestamp: si.Timestamp,
-					value:     int64(nestedValue),
+					value:     nestedValue,
 				}
 				switch val.Name {
 				// Performance monitoring level 1 metrics
 				case "net.bytesTx.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.bytesTx = pm
+						p.bytesTx = append(p.bytesTx, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{bytesTx: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{bytesTx: []perfMetric{pm}}
 					}
 				case "net.bytesRx.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.bytesRx = pm
+						p.bytesRx = append(p.bytesRx, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{bytesRx: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{bytesRx: []perfMetric{pm}}
 					}
 				case "net.usage.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.usage = pm
+						p.usage = append(p.usage, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{usage: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{usage: []perfMetric{pm}}
 					}
 				case "net.packetsTx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.packetsTx = pm
+						p.packetsTx = append(p.packetsTx, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{packetsTx: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{packetsTx: []perfMetric{pm}}
 					}
 				case "net.packetsRx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.packetsRx = pm
+						p.packetsRx = append(p.packetsRx, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{packetsRx: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{packetsRx: []perfMetric{pm}}
 					}
 
 				// Performance monitoring level 2 metrics required
 				case "disk.totalReadLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskReadLatencyAvg = pm
+						p.diskReadLatencyAvg = append(p.diskReadLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{diskReadLatencyAvg: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{diskReadLatencyAvg: []perfMetric{pm}}
 					}
 				case "virtualDisk.totalReadLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.virtualDiskReadLatencyAvg = pm
+						p.virtualDiskReadLatencyAvg = append(p.virtualDiskReadLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{virtualDiskReadLatencyAvg: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{virtualDiskReadLatencyAvg: []perfMetric{pm}}
 					}
 				case "disk.totalWriteLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskWriteLatencyAvg = pm
+						p.diskWriteLatencyAvg = append(p.diskWriteLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{diskWriteLatencyAvg: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{diskWriteLatencyAvg: []perfMetric{pm}}
 					}
 				case "virtualDisk.totalWriteLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.virtualDiskWriteLatencyAvg = pm
+						p.virtualDiskWriteLatencyAvg = append(p.virtualDiskWriteLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{virtualDiskWriteLatencyAvg: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{virtualDiskWriteLatencyAvg: []perfMetric{pm}}
 					}
 				case "disk.maxTotalLatency.latest":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskMaxTotalLatency = pm
+						p.diskMaxTotalLatency = append(p.diskMaxTotalLatency, pm)
 					} else {
-						perfMap[val.Instance] = vmPerformanceMetrics{diskMaxTotalLatency: pm}
+						perfMap[val.Instance] = vmPerformanceMetrics{diskMaxTotalLatency: []perfMetric{pm}}
 					}
 				}
 			}
@@ -313,41 +309,41 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 
 	for deviceName, perf := range perfMap {
 		rb := v.mb.NewResourceBuilder()
-		if p := perf.bytesTx; p != nil {
+		for _, p := range perf.bytesTx {
 			v.mb.RecordVcenterVMNetworkThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionTransmitted,
 			)
 		}
-		if p := perf.bytesRx; p != nil {
+		for _, p := range perf.bytesRx {
 			v.mb.RecordVcenterVMNetworkThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionReceived,
 			)
 		}
-		if p := perf.usage; p != nil {
+		for _, p := range perf.usage {
 			v.mb.RecordVcenterVMNetworkUsageDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 			)
 		}
-		if p := perf.packetsTx; p != nil {
+		for _, p := range perf.packetsTx {
 			v.mb.RecordVcenterVMNetworkPacketCountDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionTransmitted,
 			)
 		}
-		if p := perf.packetsRx; p != nil {
+		for _, p := range perf.packetsRx {
 			v.mb.RecordVcenterVMNetworkPacketCountDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionReceived,
 			)
 		}
-		if p := perf.diskReadLatencyAvg; p != nil {
+		for _, p := range perf.diskReadLatencyAvg {
 			v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
@@ -355,7 +351,7 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				metadata.AttributeDiskTypePhysical,
 			)
 		}
-		if p := perf.virtualDiskReadLatencyAvg; p != nil {
+		for _, p := range perf.virtualDiskReadLatencyAvg {
 			v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
@@ -363,7 +359,7 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				metadata.AttributeDiskTypeVirtual,
 			)
 		}
-		if p := perf.diskWriteLatencyAvg; p != nil {
+		for _, p := range perf.diskWriteLatencyAvg {
 			v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
@@ -371,7 +367,7 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				metadata.AttributeDiskTypePhysical,
 			)
 		}
-		if p := perf.virtualDiskWriteLatencyAvg; p != nil {
+		for _, p := range perf.virtualDiskWriteLatencyAvg {
 			v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
@@ -379,7 +375,7 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				metadata.AttributeDiskTypeVirtual,
 			)
 		}
-		if p := perf.diskMaxTotalLatency; p != nil {
+		for _, p := range perf.diskMaxTotalLatency {
 			v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
@@ -395,18 +391,18 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 }
 
 type hostPerformanceMetrics struct {
-	netUsageAverage          *perfMetric
-	netBytesTx               *perfMetric
-	netBytesRx               *perfMetric
-	netPacketsTx             *perfMetric
-	netPacketsRx             *perfMetric
-	netErrorsRx              *perfMetric
-	netErrorsTx              *perfMetric
-	diskTotalWriteLatencyAvg *perfMetric
-	diskTotalReadLatencyAvg  *perfMetric
-	diskTotalMaxLatency      *perfMetric
-	diskReadAverage          *perfMetric
-	diskWriteAverage         *perfMetric
+	netUsageAverage          []perfMetric
+	netBytesTx               []perfMetric
+	netBytesRx               []perfMetric
+	netPacketsTx             []perfMetric
+	netPacketsRx             []perfMetric
+	netErrorsRx              []perfMetric
+	netErrorsTx              []perfMetric
+	diskTotalWriteLatencyAvg []perfMetric
+	diskTotalReadLatencyAvg  []perfMetric
+	diskTotalMaxLatency      []perfMetric
+	diskReadAverage          []perfMetric
+	diskWriteAverage         []perfMetric
 }
 
 type hostResourceInfo struct {
@@ -432,77 +428,77 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 				// Performance monitoring level 1 metrics
 				case "net.usage.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netUsageAverage = &pm
+						p.netUsageAverage = append(p.netUsageAverage, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netUsageAverage: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netUsageAverage: []perfMetric{pm}}
 					}
 				case "net.bytesTx.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netBytesTx = &pm
+						p.netBytesTx = append(p.netBytesTx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netBytesTx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netBytesTx: []perfMetric{pm}}
 					}
 				case "net.bytesRx.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netBytesRx = &pm
+						p.netBytesRx = append(p.netBytesRx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netBytesRx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netBytesRx: []perfMetric{pm}}
 					}
 				case "net.packetsTx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netPacketsTx = &pm
+						p.netPacketsTx = append(p.netPacketsTx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netPacketsTx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netPacketsTx: []perfMetric{pm}}
 					}
 				case "net.packetsRx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netPacketsRx = &pm
+						p.netPacketsRx = append(p.netPacketsRx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netPacketsRx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netPacketsRx: []perfMetric{pm}}
 					}
 				// Following requires performance level 2
 				case "net.errorsRx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netErrorsRx = &pm
+						p.netErrorsRx = append(p.netErrorsRx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netErrorsRx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netErrorsRx: []perfMetric{pm}}
 					}
 				case "net.errorsTx.summation":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.netErrorsTx = &pm
+						p.netErrorsTx = append(p.netErrorsTx, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{netErrorsTx: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{netErrorsTx: []perfMetric{pm}}
 					}
 				case "disk.totalWriteLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskTotalWriteLatencyAvg = &pm
+						p.diskTotalWriteLatencyAvg = append(p.diskTotalWriteLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalWriteLatencyAvg: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalWriteLatencyAvg: []perfMetric{pm}}
 					}
 				case "disk.totalReadLatency.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskTotalReadLatencyAvg = &pm
+						p.diskTotalReadLatencyAvg = append(p.diskTotalReadLatencyAvg, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalReadLatencyAvg: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalReadLatencyAvg: []perfMetric{pm}}
 					}
 				case "disk.maxTotalLatency.latest":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskTotalMaxLatency = &pm
+						p.diskTotalMaxLatency = append(p.diskTotalMaxLatency, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalMaxLatency: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{diskTotalMaxLatency: []perfMetric{pm}}
 					}
 				// Following requires performance level 4
 				case "disk.read.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskReadAverage = &pm
+						p.diskReadAverage = append(p.diskReadAverage, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{diskReadAverage: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{diskReadAverage: []perfMetric{pm}}
 					}
 				case "disk.write.average":
 					if p, ok := perfMap[val.Instance]; ok {
-						p.diskWriteAverage = &pm
+						p.diskWriteAverage = append(p.diskWriteAverage, pm)
 					} else {
-						perfMap[val.Instance] = hostPerformanceMetrics{diskWriteAverage: &pm}
+						perfMap[val.Instance] = hostPerformanceMetrics{diskWriteAverage: []perfMetric{pm}}
 					}
 				}
 			}
@@ -510,82 +506,82 @@ func (v *vcenterMetricScraper) processHostPerformance(metrics []performance.Enti
 	}
 
 	for deviceName, perf := range perfMap {
-		if p := perf.netUsageAverage; p != nil {
+		for _, p := range perf.netUsageAverage {
 			v.mb.RecordVcenterHostNetworkUsageDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 			)
 		}
-		if p := perf.netBytesTx; p != nil {
+		for _, p := range perf.netBytesTx {
 			v.mb.RecordVcenterHostNetworkThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionTransmitted,
 			)
 		}
-		if p := perf.netBytesRx; p != nil {
+		for _, p := range perf.netBytesRx {
 			v.mb.RecordVcenterHostNetworkThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionReceived,
 			)
 		}
-		if p := perf.netPacketsTx; p != nil {
+		for _, p := range perf.netPacketsTx {
 			v.mb.RecordVcenterHostNetworkPacketCountDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionTransmitted,
 			)
 		}
-		if p := perf.netPacketsRx; p != nil {
+		for _, p := range perf.netPacketsRx {
 			v.mb.RecordVcenterHostNetworkPacketCountDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionReceived,
 			)
 		}
-		if p := perf.netErrorsTx; p != nil {
+		for _, p := range perf.netErrorsTx {
 			v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionTransmitted,
 			)
 		}
-		if p := perf.netErrorsRx; p != nil {
+		for _, p := range perf.netErrorsRx {
 			v.mb.RecordVcenterHostNetworkPacketErrorsDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeThroughputDirectionReceived,
 			)
 		}
-		if p := perf.diskTotalWriteLatencyAvg; p != nil {
+		for _, p := range perf.diskTotalWriteLatencyAvg {
 			v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeDiskDirectionWrite,
 			)
 		}
-		if p := perf.diskTotalReadLatencyAvg; p != nil {
+		for _, p := range perf.diskTotalReadLatencyAvg {
 			v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeDiskDirectionRead,
 			)
 		}
-		if p := perf.diskTotalMaxLatency; p != nil {
+		for _, p := range perf.diskTotalMaxLatency {
 			v.mb.RecordVcenterHostDiskLatencyMaxDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 			)
 		}
-		if p := perf.diskReadAverage; p != nil {
+		for _, p := range perf.diskReadAverage {
 			v.mb.RecordVcenterHostDiskThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
 				metadata.AttributeDiskDirectionRead,
 			)
 		}
-		if p := perf.diskWriteAverage; p != nil {
+		for _, p := range perf.diskWriteAverage {
 			v.mb.RecordVcenterHostDiskThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
 				p.value,
