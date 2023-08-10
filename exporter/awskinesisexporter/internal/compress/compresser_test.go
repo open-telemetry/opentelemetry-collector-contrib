@@ -28,7 +28,7 @@ func GzipDecompress(data []byte) ([]byte, error) {
 	}
 
 	out := bytes.Buffer{}
-	if _, err = io.Copy(&out, zr); err != nil {
+	if _, err = io.CopyN(&out, zr, 1024); err != nil && err != io.EOF {
 		zr.Close()
 		return nil, err
 	}
@@ -49,7 +49,7 @@ func ZlibDecompress(data []byte) ([]byte, error) {
 	}
 
 	out := bytes.Buffer{}
-	if _, err = io.Copy(&out, zr); err != nil {
+	if _, err = io.CopyN(&out, zr, 1024); err != nil && err != io.EOF {
 		zr.Close()
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func FlateDecompress(data []byte) ([]byte, error) {
 	buf := bytes.NewBuffer(data)
 	zr := flate.NewReader(buf)
 	out := bytes.Buffer{}
-	if _, err = io.Copy(&out, zr); err != nil {
+	if _, err = io.CopyN(&out, zr, 1024); err != nil && err != io.EOF {
 		zr.Close()
 		return nil, err
 	}
