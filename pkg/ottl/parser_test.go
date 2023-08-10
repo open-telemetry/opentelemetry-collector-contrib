@@ -154,6 +154,118 @@ func Test_parse(t *testing.T) {
 			},
 		},
 		{
+			name:      "Converter parameters (All Uppercase)",
+			statement: `replace_pattern(attributes["message"], "device=*", attributes["device_name"], SHA256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							String: ottltest.Strp("device=*"),
+						},
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("device_name"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters",
+			statement: `replace_pattern(attributes["message"], Sha256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							FunctionName: (ottltest.Strp("Sha256")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters (One Uppercase symbol)",
+			statement: `replace_pattern(attributes["message"], S)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(ottltest.Strp("S")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
 			name:      "complex path",
 			statement: `set(foo.bar["x"]["y"].z, Test()[0]["pass"])`,
 			expected: &parsedStatement{

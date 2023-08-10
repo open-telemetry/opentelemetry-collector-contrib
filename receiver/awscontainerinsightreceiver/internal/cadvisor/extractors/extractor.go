@@ -30,6 +30,7 @@ type CPUMemInfoProvider interface {
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
 	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
+	Shutdown() error
 }
 
 type CAdvisorMetric struct {
