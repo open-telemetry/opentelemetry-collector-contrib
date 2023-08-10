@@ -6,11 +6,7 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
-<<<<<<< HEAD
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
-=======
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
->>>>>>> c2d244a8a0 (adding code for datadog connector)
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
