@@ -5,6 +5,7 @@ package kafkaexporter
 
 import (
 	"bytes"
+	"strconv"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -99,4 +100,17 @@ func TestJaegerMarshaler(t *testing.T) {
 			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
+}
+
+func genJaegerTracesData(spanNum int) ptrace.Traces {
+	td := ptrace.NewTraces()
+	for i := 0; i < spanNum; i++ {
+		span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+		span.SetName("foo:" + strconv.Itoa(i))
+		span.SetStartTimestamp(pcommon.Timestamp(10))
+		span.SetEndTimestamp(pcommon.Timestamp(20))
+		span.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, byte(i)})
+		span.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, byte(i)})
+	}
+	return td
 }

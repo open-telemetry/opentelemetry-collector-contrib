@@ -17,7 +17,7 @@ func TestSplitLogs_maxLogRecordsByteSize_success(t *testing.T) {
 		encoding:  defaultEncoding,
 	}
 	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
-	spanNumList := []int{5, 10, 15, 20}
+	spanNumList := []int{1, 5, 10, 15, 20}
 	for i, spanNum := range spanNumList {
 		td := testdata.GenerateLogs(spanNum)
 		beforeCutSize := logRecordsBytes(td, p)
@@ -47,7 +47,7 @@ func TestSplitLogs_maxLogRecordsByteSize_success(t *testing.T) {
 	}
 }
 
-func TestSplitLogs_maxLogRecordsByteSize_bigSingleSpanError(t *testing.T) {
+func TestSplitLogs_maxLogRecordsByteSize_bigSingleLogError(t *testing.T) {
 	maxMessageBytes := 100
 	p := pdataLogsMarshaler{
 		marshaler: &plog.ProtoMarshaler{},
@@ -66,6 +66,39 @@ func TestSplitLogs_maxLogRecordsByteSize_bigSingleSpanError(t *testing.T) {
 	assert.Nil(t, split)
 }
 
+func TestSplitLogs_maxLogRecordsByteSize_bigLogsError(t *testing.T) {
+	maxMessageBytes := 800
+	p := pdataLogsMarshaler{
+		marshaler: &plog.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+	td := testdata.GenerateBigLogs(3)
+	singleSpanSize := logRecordsBytes(td, p)
+	// singleLogRecordSize big then maxMessageBytes
+	assert.Greater(t, singleSpanSize, maxMessageBytes)
+
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutLogs(td, maxBytesSizeWithoutCommonData)
+	assert.Error(t, err)
+	assert.EqualError(t, err, errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+	assert.Nil(t, split)
+}
+
+func TestSplitLogs_noMaxMessageSize_success(t *testing.T) {
+	maxMessageBytes := 0
+	p := pdataLogsMarshaler{
+		marshaler: &plog.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+	td := testdata.GenerateLogs(1)
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutLogs(td, maxBytesSizeWithoutCommonData)
+	assert.NoError(t, err)
+	assert.NotNil(t, split)
+}
+
 func TestSplitMetrics_maxMetricsByteSize_success(t *testing.T) {
 	maxMessageBytes := 1000
 	p := pdataMetricsMarshaler{
@@ -73,7 +106,7 @@ func TestSplitMetrics_maxMetricsByteSize_success(t *testing.T) {
 		encoding:  defaultEncoding,
 	}
 	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
-	spanNumList := []int{5, 10, 15, 20}
+	spanNumList := []int{1, 5, 10, 15, 20}
 	for i, spanNum := range spanNumList {
 		td := testdata.GenerateMetrics(spanNum)
 		beforeCutSize := metricsBytes(td, p)
@@ -103,7 +136,7 @@ func TestSplitMetrics_maxMetricsByteSize_success(t *testing.T) {
 	}
 }
 
-func TestSplitMetrics_maxMetricsByteSize_bigSingleSpanError(t *testing.T) {
+func TestSplitMetrics_maxMetricsByteSize_bigSingleMetircError(t *testing.T) {
 	maxMessageBytes := 100
 	p := pdataMetricsMarshaler{
 		marshaler: &pmetric.ProtoMarshaler{},
@@ -122,6 +155,40 @@ func TestSplitMetrics_maxMetricsByteSize_bigSingleSpanError(t *testing.T) {
 	assert.Nil(t, split)
 }
 
+func TestSplitMetrics_maxMetricsByteSize_bigSpansError(t *testing.T) {
+	maxMessageBytes := 360
+	p := pdataMetricsMarshaler{
+		marshaler: &pmetric.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+
+	td := testdata.GenerateBigMetrics(3)
+	size := metricsBytes(td, p)
+	fmt.Println("metrics size: ", size)
+
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutMetrics(td, maxBytesSizeWithoutCommonData)
+	assert.Error(t, err)
+	assert.EqualError(t, err, errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+	assert.Nil(t, split)
+}
+
+func TestSplitMetrics_noMaxMessageSize_success(t *testing.T) {
+	maxMessageBytes := 0
+	p := pdataMetricsMarshaler{
+		marshaler: &pmetric.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+
+	td := testdata.GenerateBigMetrics(3)
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutMetrics(td, maxBytesSizeWithoutCommonData)
+	assert.NoError(t, err)
+	assert.NotNil(t, split)
+}
+
 func TestSplitTraces_maxSpansByteSize_success(t *testing.T) {
 	maxMessageBytes := 1000
 	p := pdataTracesMarshaler{
@@ -129,7 +196,7 @@ func TestSplitTraces_maxSpansByteSize_success(t *testing.T) {
 		encoding:  defaultEncoding,
 	}
 	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
-	spanNumList := []int{5, 10, 15, 20}
+	spanNumList := []int{1, 5, 10, 15, 20}
 	for i, spanNum := range spanNumList {
 		td := testdata.GenerateTraces(spanNum)
 		beforeCutSize := tracesSpansBytes(td, p)
@@ -176,4 +243,39 @@ func TestSplitTraces_maxSpansByteSize_bigSingleSpanError(t *testing.T) {
 	assert.Error(t, err)
 	assert.EqualError(t, err, errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
 	assert.Nil(t, split)
+}
+
+func TestSplitTraces_maxSpansByteSize_bigSpanError(t *testing.T) {
+	maxMessageBytes := 1000
+	p := pdataTracesMarshaler{
+		marshaler: &ptrace.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+
+	td := testdata.GenerateBigTraces(3)
+	spansSize := tracesSpansBytes(td, p)
+	fmt.Println("spansSize: ", spansSize)
+
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutTraces(td, maxBytesSizeWithoutCommonData)
+	assert.Error(t, err)
+	assert.EqualError(t, err, errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+	assert.Nil(t, split)
+
+}
+
+func TestSplitTraces_noMaxMessageSize_success(t *testing.T) {
+	maxMessageBytes := 0
+	p := pdataTracesMarshaler{
+		marshaler: &ptrace.ProtoMarshaler{},
+		encoding:  defaultEncoding,
+	}
+	config := &Config{Topic: "topic", Producer: Producer{MaxMessageBytes: maxMessageBytes}}
+
+	td := testdata.GenerateTraces(1)
+	maxBytesSizeWithoutCommonData := config.Producer.MaxMessageBytes - getBlankProducerMessageSize(config)
+	split, err := p.cutTraces(td, maxBytesSizeWithoutCommonData)
+	assert.NoError(t, err)
+	assert.NotNil(t, split)
 }

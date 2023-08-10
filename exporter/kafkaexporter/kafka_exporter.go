@@ -47,7 +47,11 @@ func (e *kafkaTracesProducer) tracesPusher(_ context.Context, td ptrace.Traces) 
 	startIndex := 0
 	messagesSize := 0
 	for i, messages := range messagesSlice {
-		messagesSize += messages.ByteSize(e.config.Producer.protoVersion)
+		currentMessageSize := messages.ByteSize(e.config.Producer.protoVersion)
+		if currentMessageSize > e.config.Producer.MaxMessageBytes {
+			return errSingleKafkaProducerMessageSizeOverMaxMsgByte
+		}
+		messagesSize += currentMessageSize
 		if messagesSize <= e.config.Producer.MaxMessageBytes {
 			continue
 		}

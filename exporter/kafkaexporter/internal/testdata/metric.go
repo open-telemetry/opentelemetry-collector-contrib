@@ -291,3 +291,43 @@ func initMetric(m pmetric.Metric, name string, ty pmetric.MetricType) {
 		m.SetEmptySummary()
 	}
 }
+
+func GenerateBigMetrics(count int) pmetric.Metrics {
+	md := generateMetricsOneEmptyInstrumentationScope()
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	ms.EnsureCapacity(count)
+	for i := 0; i < count; i++ {
+		switch i % 2 {
+		case 0:
+			initBigMetric(ms.AppendEmpty())
+		default:
+			initGaugeDoubleMetric(ms.AppendEmpty())
+		}
+	}
+	return md
+}
+
+func initBigMetric(im pmetric.Metric) {
+	initMetric(im, TestGaugeIntMetricName, pmetric.MetricTypeGauge)
+
+	idps := im.Gauge().DataPoints()
+	idp0 := idps.AppendEmpty()
+	initMetricAttributes1(idp0.Attributes())
+	idp0.SetStartTimestamp(metricStartTimestamp)
+	idp0.SetTimestamp(metricTimestamp)
+	idp0.SetIntValue(123)
+	idp0.Attributes().PutDouble("doubleKey1", 1.1)
+	idp0.Attributes().PutDouble("doubleKey2", 1.1)
+	idp0.Attributes().PutDouble("doubleKey3", 1.1)
+	idp0.Attributes().PutDouble("doubleKey4", 1.1)
+	idp0.Attributes().PutDouble("doubleKey5", 1.1)
+	idp0.Attributes().PutDouble("doubleKey6", 1.1)
+	idp0.Attributes().PutDouble("doubleKey7", 1.1)
+	idp0.Attributes().PutDouble("doubleKey8", 1.1)
+	idp0.Attributes().PutDouble("doubleKey9", 1.1)
+	idp1 := idps.AppendEmpty()
+	initMetricAttributes2(idp1.Attributes())
+	idp1.SetStartTimestamp(metricStartTimestamp)
+	idp1.SetTimestamp(metricTimestamp)
+	idp1.SetIntValue(456)
+}

@@ -57,3 +57,39 @@ func fillLogTwo(log plog.LogRecord) {
 
 	log.Body().SetStr("something happened")
 }
+
+func GenerateBigLogs(count int) plog.Logs {
+	ld := plog.NewLogs()
+	initResource(ld.ResourceLogs().AppendEmpty().Resource())
+	logs := ld.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords()
+	logs.EnsureCapacity(count)
+	for i := 0; i < count; i++ {
+		switch i % 3 {
+		case 0, 1:
+			fillLogBig(logs.AppendEmpty())
+		case 2:
+			fillLogTwo(logs.AppendEmpty())
+		}
+	}
+	return ld
+}
+
+func fillLogBig(log plog.LogRecord) {
+	log.SetTimestamp(logTimestamp)
+	log.SetDroppedAttributesCount(1)
+	log.SetSeverityNumber(plog.SeverityNumberInfo)
+	log.SetSeverityText("Info")
+	log.SetSpanID([8]byte{0x01, 0x02, 0x04, 0x08})
+	log.SetTraceID([16]byte{0x08, 0x04, 0x02, 0x01})
+
+	attrs := log.Attributes()
+	attrs.PutStr("app1", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutStr("app2", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutStr("app3", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutStr("app4", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutStr("app5", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutStr("app6", "server-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank-blank")
+	attrs.PutInt("instance_num", 1)
+
+	log.Body().SetStr("This is a log message")
+}

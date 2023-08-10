@@ -4,8 +4,11 @@
 package kafkaexporter
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -190,6 +193,166 @@ func TestTracesPusher_maxMessageErr(t *testing.T) {
 	td := testdata.GenerateTracesTwoSpansSameResource()
 	err := p.tracesPusher(context.Background(), td)
 	assert.Contains(t, err.Error(), errSingleKafkaProducerMessageSizeOverMaxMsgByte.Error())
+}
+
+func TestTracesPusher_jaegerProto(t *testing.T) {
+	c := sarama.NewConfig()
+
+	tests := []struct {
+		name                            string
+		spanNum                         int
+		maxMessageByte                  int
+		mockProducerSuccessTimes        int
+		singleSpanBigThenMaxMessageByte bool
+		err                             error
+	}{
+		{
+			name:                     "cut proto data ok",
+			spanNum:                  2,
+			mockProducerSuccessTimes: 2,
+			maxMessageByte:           150,
+			err:                      nil,
+		}, {
+			name:           "cut proto data err",
+			spanNum:        2,
+			maxMessageByte: 100,
+			err:            errSingleKafkaProducerMessageSizeOverMaxMsgByte,
+		},
+	}
+
+	for _, test := range tests {
+		producer := mocks.NewSyncProducer(t, c)
+		for i := 0; i < test.mockProducerSuccessTimes; i++ {
+			producer.ExpectSendMessageAndSucceed()
+		}
+
+		p := kafkaTracesProducer{
+			producer: producer,
+			marshaler: jaegerMarshaler{
+				marshaler: jaegerProtoSpanMarshaler{},
+			},
+			logger: zap.NewNop(),
+			config: &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: test.maxMessageByte}},
+		}
+
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+
+		td := genJaegerTracesData(test.spanNum)
+
+		assert.Equal(t, test.spanNum, td.SpanCount())
+		batches, _ := jaeger.ProtoFromTraces(td)
+		tdSize := 0
+		for i := 0; i < len(batches); i++ {
+			batches[i].Spans[0].Process = batches[i].Process
+			jaegerProtoBytes, _ := batches[i].Spans[0].Marshal()
+			require.NotNil(t, jaegerProtoBytes)
+			messages := &sarama.ProducerMessage{
+				Topic: "topic",
+				Value: sarama.ByteEncoder(jaegerProtoBytes),
+				Key:   sarama.ByteEncoder(batches[i].Spans[0].TraceID.String()),
+			}
+			// check singleSpanSize with maxMessageSize
+			if messages.ByteSize(2) > test.maxMessageByte {
+				test.singleSpanBigThenMaxMessageByte = true
+			}
+
+			tdSize += messages.ByteSize(2)
+		}
+
+		fmt.Println("current td size: ", tdSize)
+
+		err := p.tracesPusher(context.Background(), td)
+		if test.singleSpanBigThenMaxMessageByte {
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), test.err.Error())
+		} else {
+			assert.NoError(t, err)
+		}
+	}
+}
+
+func TestTracesPusher_jaegerJson(t *testing.T) {
+	c := sarama.NewConfig()
+
+	tests := []struct {
+		name                            string
+		spanNum                         int
+		maxMessageByte                  int
+		mockProducerSuccessTimes        int
+		singleSpanBigThenMaxMessageByte bool
+		err                             error
+	}{
+		{
+			name:                     "cut proto data ok",
+			spanNum:                  2,
+			mockProducerSuccessTimes: 2,
+			maxMessageByte:           800,
+			err:                      nil,
+		}, {
+			name:           "cut proto data err",
+			spanNum:        2,
+			maxMessageByte: 100,
+			err:            errSingleKafkaProducerMessageSizeOverMaxMsgByte,
+		},
+	}
+
+	for _, test := range tests {
+		producer := mocks.NewSyncProducer(t, c)
+		for i := 0; i < test.mockProducerSuccessTimes; i++ {
+			producer.ExpectSendMessageAndSucceed()
+		}
+
+		p := kafkaTracesProducer{
+			producer: producer,
+			marshaler: jaegerMarshaler{
+				marshaler: jaegerJSONSpanMarshaler{
+					pbMarshaler: &jsonpb.Marshaler{},
+				},
+			},
+			logger: zap.NewNop(),
+			config: &Config{Producer: Producer{protoVersion: 2, MaxMessageBytes: test.maxMessageByte}},
+		}
+
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+
+		td := genJaegerTracesData(test.spanNum)
+
+		assert.Equal(t, test.spanNum, td.SpanCount())
+		batches, _ := jaeger.ProtoFromTraces(td)
+		tdSize := 0
+		for i := 0; i < len(batches); i++ {
+			batches[i].Spans[0].Process = batches[i].Process
+			jsonMarshaler := &jsonpb.Marshaler{}
+			jsonByteBuffer := new(bytes.Buffer)
+			require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
+
+			messages := &sarama.ProducerMessage{
+				Topic: "topic",
+				Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()),
+				Key:   sarama.ByteEncoder(batches[i].Spans[0].TraceID.String()),
+			}
+			// check singleSpanSize with maxMessageSize
+			if messages.ByteSize(2) > test.maxMessageByte {
+				test.singleSpanBigThenMaxMessageByte = true
+			}
+
+			tdSize += messages.ByteSize(2)
+		}
+
+		fmt.Println("current td size: ", tdSize)
+
+		err := p.tracesPusher(context.Background(), td)
+		if test.singleSpanBigThenMaxMessageByte {
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), test.err.Error())
+		} else {
+			assert.NoError(t, err)
+		}
+	}
 }
 
 func TestMetricsDataPusher(t *testing.T) {
