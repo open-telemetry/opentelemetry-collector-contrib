@@ -10,11 +10,14 @@ import (
 	"compress/zlib"
 	"fmt"
 	"io"
+	"sync"
+
+	"go.uber.org/zap"
 )
 
 type bufferedResetWriter interface {
 	Write(p []byte) (int, error)
-	Flush() error
+	Close() error
 	Reset(newWriter io.Writer)
 }
 
@@ -25,35 +28,63 @@ type Compressor interface {
 var _ Compressor = (*compressor)(nil)
 
 type compressor struct {
-	compression bufferedResetWriter
+	compressionPool sync.Pool
 }
 
-func NewCompressor(format string) (Compressor, error) {
-	c := &compressor{
-		compression: &noop{},
-	}
+func NewCompressor(format string, log *zap.Logger) (Compressor, error) {
+	var c Compressor
 	switch format {
 	case "flate":
-		w, err := flate.NewWriter(nil, flate.BestSpeed)
-		if err != nil {
-			return nil, err
+		c = &compressor{
+			compressionPool: sync.Pool{
+				New: func() any {
+					w, err := flate.NewWriter(nil, flate.BestSpeed)
+					if err != nil {
+						errMsg := fmt.Sprintf("Unable to instantiate Flate compressor: %v", err)
+						log.Error(errMsg)
+						return nil
+					}
+					return w
+				},
+			},
 		}
-		c.compression = w
 	case "gzip":
-		w, err := gzip.NewWriterLevel(nil, gzip.BestSpeed)
-		if err != nil {
-			return nil, err
-		}
-		c.compression = w
 
-	case "zlib":
-		w, err := zlib.NewWriterLevel(nil, zlib.BestSpeed)
-		if err != nil {
-			return nil, err
+		c = &compressor{
+			compressionPool: sync.Pool{
+				New: func() any {
+					w, err := gzip.NewWriterLevel(nil, gzip.BestSpeed)
+					if err != nil {
+						errMsg := fmt.Sprintf("Unable to instantiate Gzip compressor: %v", err)
+						log.Error(errMsg)
+						return nil
+					}
+					return w
+				},
+			},
 		}
-		c.compression = w
+	case "zlib":
+		c = &compressor{
+			compressionPool: sync.Pool{
+				New: func() any {
+					w, err := zlib.NewWriterLevel(nil, zlib.BestSpeed)
+					if err != nil {
+						errMsg := fmt.Sprintf("Unable to instantiate Zlib compressor: %v", err)
+						log.Error(errMsg)
+						return nil
+					}
+					return w
+				},
+			},
+		}
 	case "noop", "none":
-		// Already the default case
+		c = &compressor{
+			compressionPool: sync.Pool{
+				New: func() any {
+					return &noop{}
+				},
+			},
+		}
 	default:
 		return nil, fmt.Errorf("unknown compression format: %s", format)
 	}
@@ -63,14 +94,19 @@ func NewCompressor(format string) (Compressor, error) {
 
 func (c *compressor) Do(in []byte) ([]byte, error) {
 	buf := new(bytes.Buffer)
+	comp := c.compressionPool.Get().(bufferedResetWriter)
+	if comp == nil {
+		return nil, fmt.Errorf("compressor is nil and did not get instantiated correctly")
+	}
+	defer c.compressionPool.Put(comp)
 
-	c.compression.Reset(buf)
+	comp.Reset(buf)
 
-	if _, err := c.compression.Write(in); err != nil {
+	if _, err := comp.Write(in); err != nil {
 		return nil, err
 	}
 
-	if err := c.compression.Flush(); err != nil {
+	if err := comp.Close(); err != nil {
 		return nil, err
 	}
 

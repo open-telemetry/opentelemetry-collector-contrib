@@ -89,7 +89,7 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
-	compressor, err := compress.NewCompressor(conf.Encoding.Compression)
+	compressor, err := compress.NewCompressor(conf.Encoding.Compression, log)
 	if err != nil {
 		return nil, err
 	}

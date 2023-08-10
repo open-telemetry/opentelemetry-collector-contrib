@@ -3,7 +3,10 @@
 
 package compress // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 
-import "io"
+import (
+	"io"
+	"sync"
+)
 
 type noop struct {
 	data io.Writer
@@ -11,7 +14,11 @@ type noop struct {
 
 func NewNoopCompressor() Compressor {
 	return &compressor{
-		compression: &noop{},
+		compressionPool: sync.Pool{
+			New: func() any {
+				return &noop{}
+			},
+		},
 	}
 }
 
@@ -23,6 +30,6 @@ func (n noop) Write(p []byte) (int, error) {
 	return n.data.Write(p)
 }
 
-func (n noop) Flush() error {
+func (n noop) Close() error {
 	return nil
 }
