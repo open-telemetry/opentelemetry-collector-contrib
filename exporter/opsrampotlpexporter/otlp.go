@@ -202,7 +202,7 @@ func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error 
 
 	req := plogotlp.NewExportRequestFromLogs(ld)
 
-	_, err := e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+	_, err := e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
 
 	// trying to get new access token in case of expiration
 	if err != nil {
@@ -212,7 +212,7 @@ func (e *opsrampOTLPExporter) pushLogs(ctx context.Context, ld plog.Logs) error 
 				return fmt.Errorf("couldn't retreive new token instead of expired: %w", err)
 			}
 
-			_, err = e.logExporter.Export(e.enhanceContext(ctx), req, e.callOptions...)
+			_, err = e.logExporter.Export(e.enhanceContext(context.Background()), req, e.callOptions...)
 			if err != nil {
 				return err
 			}
@@ -283,6 +283,9 @@ func shouldRetry(code codes.Code, retryInfo *errdetails.RetryInfo) bool {
 		codes.Aborted,
 		codes.OutOfRange,
 		codes.Unavailable,
+		codes.Unknown,
+		codes.PermissionDenied,
+		codes.Internal,
 		codes.DataLoss:
 		// These are retryable errors.
 		return true
