@@ -10,6 +10,7 @@ import (
 	"net/url"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
 )
@@ -27,7 +28,7 @@ type Config struct {
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
 	// Username is the authentication password.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
 	// ConnectionParams is the extra connection parameters with map format. for example compression/dial_timeout
@@ -117,7 +118,7 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 
 	// Override username and password if specified in config.
 	if cfg.Username != "" {
-		dsnURL.User = url.UserPassword(cfg.Username, cfg.Password)
+		dsnURL.User = url.UserPassword(cfg.Username, string(cfg.Password))
 	}
 
 	dsnURL.RawQuery = queryParams.Encode()
