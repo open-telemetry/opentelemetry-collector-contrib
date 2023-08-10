@@ -5,13 +5,13 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -668,6 +669,13 @@ func Test_PushMetrics(t *testing.T) {
 
 					defer server.Close()
 
+					// Adjusted retry settings for faster testing
+					retrySettings := exporterhelper.RetrySettings{
+						Enabled:         true,
+						InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+						MaxInterval:     1 * time.Second,        // Shorter max interval
+						MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+					}
 					cfg := &Config{
 						Namespace: "",
 						HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -683,6 +691,7 @@ func Test_PushMetrics(t *testing.T) {
 						CreatedMetric: &CreatedMetric{
 							Enabled: true,
 						},
+						RetrySettings: retrySettings,
 					}
 
 					if useWAL {

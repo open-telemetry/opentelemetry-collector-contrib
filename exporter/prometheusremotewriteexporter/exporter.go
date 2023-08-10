@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
@@ -24,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
@@ -43,6 +43,7 @@ type prwExporter struct {
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
 	settings        component.TelemetrySettings
+	retrySettings   exporterhelper.RetrySettings
 
 	wal              *prweWAL
 	exporterSettings prometheusremotewrite.Settings
@@ -70,6 +71,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
+		retrySettings:   cfg.RetrySettings,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -220,9 +222,11 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
 	// Attempt the HTTP request with retry logic
 	backOff := backoff.NewExponentialBackOff()
-	backOff.InitialInterval = 1 * time.Second
-	backOff.MaxInterval = 10 * time.Second
-	backOff.MaxElapsedTime = 1 * time.Minute
+	backOff.InitialInterval = prwe.retrySettings.InitialInterval
+	backOff.RandomizationFactor = prwe.retrySettings.RandomizationFactor
+	backOff.Multiplier = prwe.retrySettings.Multiplier
+	backOff.MaxInterval = prwe.retrySettings.MaxInterval
+	backOff.MaxElapsedTime = prwe.retrySettings.MaxElapsedTime
 
 	retryFunc := func() error {
 		// Uses proto.Marshal to convert the WriteRequest into bytes array
