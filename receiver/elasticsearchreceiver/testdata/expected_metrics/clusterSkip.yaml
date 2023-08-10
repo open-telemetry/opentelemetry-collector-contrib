@@ -22,8 +22,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -32,8 +31,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -42,8 +40,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -52,8 +49,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -62,8 +58,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -72,8 +67,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -82,8 +76,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -92,8 +85,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -102,8 +94,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -112,8 +103,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -122,8 +112,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -132,8 +121,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -142,8 +130,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -152,8 +139,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -162,8 +148,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -172,8 +157,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -182,8 +166,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -192,8 +175,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -202,8 +184,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -212,8 +193,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -222,8 +202,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -232,8 +211,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Time spent on operations for an index.
@@ -249,8 +227,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -259,8 +236,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -269,8 +245,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -279,8 +254,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -289,8 +263,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -299,8 +272,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -309,8 +281,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -319,8 +290,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -329,8 +299,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -339,8 +308,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -349,8 +317,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: aggregation
@@ -359,8 +326,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -369,8 +335,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -379,8 +344,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -389,8 +353,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -399,8 +362,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -409,8 +371,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -419,8 +380,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -429,8 +389,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -439,8 +398,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -449,8 +407,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -459,8 +416,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: The size of the shards assigned to this index.
@@ -473,8 +429,7 @@ resourceMetrics:
                     - key: aggregation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
             unit: By
         scope:
           name: otelcol/elasticsearchreceiver
@@ -502,8 +457,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -512,8 +466,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -522,8 +475,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -532,8 +484,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -542,8 +493,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -552,8 +502,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -562,8 +511,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -572,8 +520,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -582,8 +529,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -592,8 +538,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -602,8 +547,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -612,8 +556,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -622,8 +565,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -632,8 +574,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "13"
                   attributes:
                     - key: aggregation
@@ -642,8 +583,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "40"
                   attributes:
                     - key: aggregation
@@ -652,8 +592,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: aggregation
@@ -662,8 +601,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "43"
                   attributes:
                     - key: aggregation
@@ -672,8 +610,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "10"
                   attributes:
                     - key: aggregation
@@ -682,8 +619,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -692,8 +628,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: aggregation
@@ -702,8 +637,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "6"
                   attributes:
                     - key: aggregation
@@ -712,8 +646,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Time spent on operations for an index.
@@ -729,8 +662,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -739,8 +671,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -749,8 +680,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -759,8 +689,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -769,8 +698,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -779,8 +707,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -789,8 +716,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -799,8 +725,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -809,8 +734,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -819,8 +743,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -829,8 +752,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: aggregation
@@ -839,8 +761,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "82"
                   attributes:
                     - key: aggregation
@@ -849,8 +770,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "192"
                   attributes:
                     - key: aggregation
@@ -859,8 +779,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: aggregation
@@ -869,8 +788,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "938"
                   attributes:
                     - key: aggregation
@@ -879,8 +797,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: aggregation
@@ -889,8 +806,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "52"
                   attributes:
                     - key: aggregation
@@ -899,8 +815,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "169"
                   attributes:
                     - key: aggregation
@@ -909,8 +824,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "30"
                   attributes:
                     - key: aggregation
@@ -919,8 +833,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: aggregation
@@ -929,8 +842,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: aggregation
@@ -939,8 +851,7 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: The size of the shards assigned to this index.
@@ -953,8 +864,7 @@ resourceMetrics:
                     - key: aggregation
                       value:
                         stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
+                  timeUnixNano: "1000000"
             unit: By
         scope:
           name: otelcol/elasticsearchreceiver
@@ -980,43 +890,37 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: accounting
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: fielddata
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: in_flight_requests
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: model_inference
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "305152000"
                   attributes:
                     - key: name
                       value:
                         stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: request
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.breaker.memory.estimated
             unit: By
           - description: Memory limit for the circuit breaker.
@@ -1029,43 +933,37 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: accounting
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "214748364"
                   attributes:
                     - key: name
                       value:
                         stringValue: fielddata
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "536870912"
                   attributes:
                     - key: name
                       value:
                         stringValue: in_flight_requests
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "268435456"
                   attributes:
                     - key: name
                       value:
                         stringValue: model_inference
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "510027366"
                   attributes:
                     - key: name
                       value:
                         stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "322122547"
                   attributes:
                     - key: name
                       value:
                         stringValue: request
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: Total number of times the circuit breaker has been triggered and prevented an out of memory error.
             name: elasticsearch.breaker.tripped
@@ -1077,43 +975,37 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: accounting
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: fielddata
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: in_flight_requests
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: model_inference
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: request
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: Number of differences between published cluster states.
@@ -1126,15 +1018,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: compatible
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: incompatible
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: "1"
           - description: Number of published cluster states.
             name: elasticsearch.cluster.published_states.full
@@ -1142,8 +1032,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: "1"
           - description: Number of cluster states in queue.
             name: elasticsearch.cluster.state_queue
@@ -1155,15 +1044,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: committed
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: pending
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: "1"
           - description: The number of cluster state update attempts that changed the cluster state since the node started.
             name: elasticsearch.cluster.state_update.count
@@ -1175,22 +1062,19 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: failure
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "7"
                   attributes:
                     - key: state
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: state
                       value:
                         stringValue: unchanged
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: The cumulative amount of time updating the cluster state since the node started.
@@ -1206,8 +1090,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: commit
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
@@ -1216,8 +1099,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: completion
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
@@ -1226,8 +1108,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: computation
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
@@ -1236,8 +1117,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: context_construction
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
@@ -1246,8 +1126,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: master_apply
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
@@ -1256,8 +1135,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: notification
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "113"
                   attributes:
                     - key: state
@@ -1266,8 +1144,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: commit
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "117"
                   attributes:
                     - key: state
@@ -1276,8 +1153,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: completion
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "40"
                   attributes:
                     - key: state
@@ -1286,8 +1162,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: computation
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "17"
                   attributes:
                     - key: state
@@ -1296,8 +1171,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: context_construction
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "484"
                   attributes:
                     - key: state
@@ -1306,8 +1180,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: master_apply
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: state
@@ -1316,8 +1189,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: notification
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "7"
                   attributes:
                     - key: state
@@ -1326,8 +1198,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: computation
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: state
@@ -1336,16 +1207,14 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: notification
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: Configured memory limit, in bytes, for the indexing requests.
             gauge:
               dataPoints:
                 - asInt: "53687091"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.indexing_pressure.memory.limit
             unit: By
           - description: Cumulative number of indexing requests rejected in the primary stage.
@@ -1354,8 +1223,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: Number of indexing requests rejected in the replica stage.
@@ -1364,8 +1232,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: Memory consumed, in bytes, by indexing requests in the specified stage.
@@ -1378,22 +1245,19 @@ resourceMetrics:
                     - key: stage
                       value:
                         stringValue: coordinating
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: stage
                       value:
                         stringValue: primary
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: stage
                       value:
                         stringValue: replica
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: Total count of query cache misses across all shards assigned to selected nodes.
             name: elasticsearch.node.cache.count
@@ -1405,15 +1269,13 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: hit
-                  startTimeUnixNano: "1662952760849369000"
-                  timeUnixNano: "1662952760851518000"
+                  timeUnixNano: "1000000"
                 - asInt: "5324"
                   attributes:
                     - key: type
                       value:
                         stringValue: miss
-                  startTimeUnixNano: "1662952760849369000"
-                  timeUnixNano: "1662952760851518000"
+                  timeUnixNano: "1000000"
             unit: '{count}'
           - description: The number of evictions from the cache on a node.
             name: elasticsearch.node.cache.evictions
@@ -1425,15 +1287,13 @@ resourceMetrics:
                     - key: cache_name
                       value:
                         stringValue: fielddata
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "938"
                   attributes:
                     - key: cache_name
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{evictions}'
           - description: The size in bytes of the cache on a node.
@@ -1446,15 +1306,13 @@ resourceMetrics:
                     - key: cache_name
                       value:
                         stringValue: fielddata
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "394"
                   attributes:
                     - key: cache_name
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of open tcp connections for internal cluster communication.
             name: elasticsearch.node.cluster.connections
@@ -1462,8 +1320,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "100"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: The number of bytes sent and received on the network for internal cluster communication.
             name: elasticsearch.node.cluster.io
@@ -1475,15 +1332,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "157732"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The total number of kilobytes read across all file stores for this node.
@@ -1492,8 +1347,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1617780"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: KiBy
           - description: The total number of kilobytes written across all file stores for this node.
             name: elasticsearch.node.disk.io.write
@@ -1501,8 +1355,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "602016"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: KiBy
           - description: The number of documents on the node.
             name: elasticsearch.node.documents
@@ -1514,15 +1367,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "200"
                   attributes:
                     - key: state
                       value:
                         stringValue: deleted
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{documents}'
           - description: The amount of disk space available to the JVM across all file stores for this node. Depending on OS or process level restrictions, this might appear less than free. This is the actual amount of free disk space the Elasticsearch node can utilise.
             name: elasticsearch.node.fs.disk.available
@@ -1530,8 +1381,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "12293464064"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of unallocated disk space across all file stores for this node.
             name: elasticsearch.node.fs.disk.free
@@ -1539,8 +1389,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "15746158592"
-                  startTimeUnixNano: "1642218266053041000"
-                  timeUnixNano: "1642218266053039000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of disk space across all file stores for this node.
             name: elasticsearch.node.fs.disk.total
@@ -1548,8 +1397,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "67371577344"
-                  startTimeUnixNano: "1642218266053041000"
-                  timeUnixNano: "1642218266053039000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of HTTP connections to the node.
             name: elasticsearch.node.http.connections
@@ -1557,8 +1405,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Total number of documents ingested during the lifetime of this node.
             name: elasticsearch.node.ingest.documents
@@ -1566,8 +1413,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{documents}'
           - description: Total number of documents currently being ingested.
@@ -1576,8 +1422,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{documents}'
           - description: Total number of failed ingest operations during the lifetime of this node.
             name: elasticsearch.node.ingest.operations.failed
@@ -1585,8 +1430,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operation}'
           - description: The number of open file descriptors held by the node.
@@ -1595,8 +1439,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "270"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{files}'
           - description: The number of operations completed by a node.
             name: elasticsearch.node.operations.completed
@@ -1608,78 +1451,67 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "234"
                   attributes:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "345"
                   attributes:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "600"
                   attributes:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "200"
                   attributes:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "5234"
                   attributes:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "124"
                   attributes:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "958"
                   attributes:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "235"
                   attributes:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "5234"
                   attributes:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Time spent on operations by a node.
@@ -1692,78 +1524,67 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "256"
                   attributes:
                     - key: operation
                       value:
                         stringValue: fetch
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "995"
                   attributes:
                     - key: operation
                       value:
                         stringValue: flush
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "500"
                   attributes:
                     - key: operation
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "300"
                   attributes:
                     - key: operation
                       value:
                         stringValue: index
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "25345"
                   attributes:
                     - key: operation
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "2354"
                   attributes:
                     - key: operation
                       value:
                         stringValue: query
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "544"
                   attributes:
                     - key: operation
                       value:
                         stringValue: refresh
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "5234"
                   attributes:
                     - key: operation
                       value:
                         stringValue: scroll
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "2342"
                   attributes:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "664"
                   attributes:
                     - key: operation
                       value:
                         stringValue: warmer
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: Total number of documents currently being ingested by a pipeline.
@@ -1776,15 +1597,13 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_6
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_7
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{documents}'
           - description: Number of documents preprocessed by the ingest pipeline.
             name: elasticsearch.node.pipeline.ingest.documents.preprocessed
@@ -1796,15 +1615,13 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_6
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_7
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{documents}'
           - description: Total number of failed operations for the ingest pipeline.
             name: elasticsearch.node.pipeline.ingest.operations.failed
@@ -1816,15 +1633,13 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_6
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
                         stringValue: xpack_monitoring_7
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operation}'
           - description: Total number of times the script cache has evicted old data.
@@ -1833,8 +1648,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: Total number of times the script compilation circuit breaker has limited inline script compilations.
@@ -1843,8 +1657,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: Total number of inline script compilations performed by the node.
@@ -1853,8 +1666,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{compilations}'
           - description: Total data set size of all shards assigned to the node. This includes the size of shards not stored fully on the node, such as the cache for partially mounted indices.
             name: elasticsearch.node.shards.data_set.size
@@ -1862,8 +1674,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: A prediction of how much larger the shard stores on this node will eventually grow due to ongoing peer recoveries, restoring snapshots, and similar activities. A value of -1 indicates that this is not available.
             name: elasticsearch.node.shards.reserved.size
@@ -1871,8 +1682,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the shards assigned to this node.
             name: elasticsearch.node.shards.size
@@ -1880,8 +1690,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "300"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of tasks finished by the thread pool.
             name: elasticsearch.node.thread_pool.tasks.finished
@@ -1896,8 +1705,7 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: analyze
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: state
@@ -1906,8 +1714,7 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: analyze
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{tasks}'
           - description: The number of queued tasks in the thread pool.
@@ -1920,8 +1727,7 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: analyze
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{tasks}'
           - description: The number of threads in the thread pool.
             name: elasticsearch.node.thread_pool.threads
@@ -1936,8 +1742,7 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: analyze
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "-2"
                   attributes:
                     - key: state
@@ -1946,8 +1751,7 @@ resourceMetrics:
                     - key: thread_pool_name
                       value:
                         stringValue: analyze
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: '{threads}'
           - description: Number of transaction log operations.
             name: elasticsearch.node.translog.operations
@@ -1955,8 +1759,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: Size of the transaction log.
@@ -1965,8 +1768,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: Size of uncommitted transaction log operations.
             name: elasticsearch.node.translog.uncommitted.size
@@ -1974,39 +1776,34 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
             gauge:
               dataPoints:
                 - asDouble: 0.02
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.os.cpu.load_avg.15m
             unit: "1"
           - description: One-minute load average on the system (field is not present if one-minute load average is not available).
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.os.cpu.load_avg.1m
             unit: "1"
           - description: Five-minute load average on the system (field is not present if five-minute load average is not available).
             gauge:
               dataPoints:
                 - asDouble: 0.02
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.os.cpu.load_avg.5m
             unit: "1"
           - description: Recent CPU usage for the whole system, or -1 if not supported.
             gauge:
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.os.cpu.usage
             unit: '%'
           - description: Amount of physical memory.
@@ -2017,23 +1814,20 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "779632640"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: elasticsearch.os.memory
             unit: By
           - description: The number of loaded classes
             gauge:
               dataPoints:
                 - asInt: "20695"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.classes.loaded
             unit: "1"
           - description: The total number of garbage collections that have occurred
@@ -2046,15 +1840,13 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: old
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "20"
                   attributes:
                     - key: name
                       value:
                         stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: "1"
           - description: The approximate accumulated collection elapsed time
@@ -2067,55 +1859,48 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: old
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "930"
                   attributes:
                     - key: name
                       value:
                         stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: The amount of memory that is guaranteed to be available for the heap
             gauge:
               dataPoints:
                 - asInt: "536870912"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.heap.committed
             unit: By
           - description: The maximum amount of memory can be used for the heap
             gauge:
               dataPoints:
                 - asInt: "536870912"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.heap.max
             unit: By
           - description: The current heap memory usage
             gauge:
               dataPoints:
                 - asInt: "305152000"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.heap.used
             unit: By
           - description: The amount of memory that is guaranteed to be available for non-heap purposes
             gauge:
               dataPoints:
                 - asInt: "131792896"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.nonheap.committed
             unit: By
           - description: The current non-heap memory usage
             gauge:
               dataPoints:
                 - asInt: "128825192"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.nonheap.used
             unit: By
           - description: The maximum amount of memory can be used for the memory pool
@@ -2126,22 +1911,19 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: old
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "736870912"
                   attributes:
                     - key: name
                       value:
                         stringValue: survivor
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "636870912"
                   attributes:
                     - key: name
                       value:
                         stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.pool.max
             unit: By
           - description: The current memory pool memory usage
@@ -2152,30 +1934,26 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: old
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "10485760"
                   attributes:
                     - key: name
                       value:
                         stringValue: survivor
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
                 - asInt: "218103808"
                   attributes:
                     - key: name
                       value:
                         stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.memory.pool.used
             unit: By
           - description: The current number of threads
             gauge:
               dataPoints:
                 - asInt: "27"
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
+                  timeUnixNano: "1000000"
             name: jvm.threads.count
             unit: "1"
         scope:

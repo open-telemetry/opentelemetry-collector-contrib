@@ -10,6 +10,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
+                  timeUnixNano: "1000000"
             name: httpcheck.duration
             unit: ms
           - description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
@@ -31,8 +32,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: http.method
@@ -47,8 +47,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -63,8 +62,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -79,8 +77,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -95,8 +92,7 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  startTimeUnixNano: "1651783208655196000"
-                  timeUnixNano: "1651783208656862000"
+                  timeUnixNano: "1000000"
             unit: "1"
         scope:
           name: otelcol/httpcheckreceiver

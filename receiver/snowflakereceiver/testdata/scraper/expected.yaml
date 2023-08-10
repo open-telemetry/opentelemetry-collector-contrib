@@ -32,8 +32,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.database.bytes_scanned.avg
             unit: By
           - description: Total query count for database over the last 24 hour window.
@@ -62,8 +61,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.database.query.count
             unit: "1"
           - description: Blocked query count for warehouse over the last 24 hour window.
@@ -74,8 +72,7 @@ resourceMetrics:
                     - key: warehouse_name
                       value:
                         stringValue: t
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.blocked
             unit: "1"
           - description: Average bytes deleted in database over the last 24 hour window.
@@ -104,8 +101,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.bytes_deleted.avg
             unit: By
           - description: Average bytes written by database over the last 24 hour window.
@@ -134,8 +130,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.bytes_written.avg
             unit: By
           - description: Average time taken to compile query over the last 24 hour window.
@@ -164,8 +159,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.compilation_time.avg
             unit: s
           - description: Executed query count for warehouse over the last 24 hour window.
@@ -176,8 +170,7 @@ resourceMetrics:
                     - key: warehouse_name
                       value:
                         stringValue: t
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.executed
             unit: "1"
           - description: Average time spent executing queries in database over the last 24 hour window.
@@ -206,8 +199,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.execution_time.avg
             unit: s
           - description: Overloaded query count for warehouse over the last 24 hour window.
@@ -218,8 +210,7 @@ resourceMetrics:
                     - key: warehouse_name
                       value:
                         stringValue: t
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.queued_overload
             unit: "1"
           - description: Number of compute resources queued for provisioning over the last 24 hour window.
@@ -230,8 +221,7 @@ resourceMetrics:
                     - key: warehouse_name
                       value:
                         stringValue: t
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.query.queued_provision
             unit: "1"
           - description: Average time spent in warehouse queue due to warehouse being overloaded over the last 24 hour window.
@@ -260,8 +250,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.queued_overload_time.avg
             unit: s
           - description: Average time spent in warehouse queue waiting for resources to provision over the last 24 hour window.
@@ -290,8 +279,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.queued_provisioning_time.avg
             unit: s
           - description: Average time spent in warehouse queue waiting for compute resources to be repaired over the last 24 hour window.
@@ -320,24 +308,21 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.queued_repair_time.avg
             unit: s
           - description: Number of bytes of stage storage used by files in all internal stages (named, table, user).
             gauge:
               dataPoints:
                 - asInt: "2"
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.storage.stage_bytes.total
             unit: By
           - description: Number of bytes of table storage used, including bytes for data currently in Time Travel.
             gauge:
               dataPoints:
                 - asInt: "1"
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.storage.storage_bytes.total
             unit: By
           - description: Average elapsed time over the last 24 hour window.
@@ -366,8 +351,7 @@ resourceMetrics:
                     - key: warehouse_size
                       value:
                         stringValue: g
-                  startTimeUnixNano: "1673535514803922000"
-                  timeUnixNano: "1673535514803926000"
+                  timeUnixNano: "1000000"
             name: snowflake.total_elapsed_time.avg
             unit: s
         scope:

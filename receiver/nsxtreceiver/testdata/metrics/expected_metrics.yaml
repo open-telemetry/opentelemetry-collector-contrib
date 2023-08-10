@@ -20,15 +20,13 @@ resourceMetrics:
                     - key: class
                       value:
                         stringValue: datapath
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asDouble: 4.34
                   attributes:
                     - key: class
                       value:
                         stringValue: services
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.cpu.utilization
             unit: '%'
           - description: The amount of storage space used by the node.
@@ -41,22 +39,19 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The percentage of storage space utilized.
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.filesystem.utilization
             unit: '%'
           - description: The size of the node's memory cache.
@@ -65,8 +60,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
@@ -74,8 +68,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "89169108"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
         scope:
           name: otelcol/nsxtreceiver
@@ -101,15 +94,13 @@ resourceMetrics:
                     - key: class
                       value:
                         stringValue: datapath
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asDouble: 0
                   attributes:
                     - key: class
                       value:
                         stringValue: services
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.cpu.utilization
             unit: '%'
           - description: The amount of storage space used by the node.
@@ -122,22 +113,19 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "26168032"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The percentage of storage space utilized.
             gauge:
               dataPoints:
                 - asDouble: 0.09942935492936687
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.filesystem.utilization
             unit: '%'
           - description: The size of the node's memory cache.
@@ -146,8 +134,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1716556"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
@@ -155,8 +142,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "19636300"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
         scope:
           name: otelcol/nsxtreceiver
@@ -182,15 +168,13 @@ resourceMetrics:
                     - key: class
                       value:
                         stringValue: datapath
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asDouble: 4.34
                   attributes:
                     - key: class
                       value:
                         stringValue: services
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.cpu.utilization
             unit: '%'
           - description: The amount of storage space used by the node.
@@ -203,22 +187,19 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: available
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The percentage of storage space utilized.
             gauge:
               dataPoints:
                 - asDouble: 0
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             name: nsxt.node.filesystem.utilization
             unit: '%'
           - description: The size of the node's memory cache.
@@ -227,8 +208,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "234"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
           - description: The memory usage of the node.
             name: nsxt.node.memory.usage
@@ -236,8 +216,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "143728936"
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
             unit: KBy
         scope:
           name: otelcol/nsxtreceiver
@@ -268,15 +247,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "5877910030884"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -292,8 +269,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -302,8 +278,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "12483778397"
                   attributes:
                     - key: direction
@@ -312,8 +287,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -322,8 +296,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -332,8 +305,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "12313320048"
                   attributes:
                     - key: direction
@@ -342,8 +314,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:
@@ -375,15 +346,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "5877910030884"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -399,8 +368,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -409,8 +377,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "12483778397"
                   attributes:
                     - key: direction
@@ -419,8 +386,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -429,8 +395,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -439,8 +404,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "12313320048"
                   attributes:
                     - key: direction
@@ -449,8 +413,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:
@@ -482,15 +445,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -506,8 +467,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -516,8 +476,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "63594238"
                   attributes:
                     - key: direction
@@ -526,8 +485,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -536,8 +494,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -546,8 +503,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -556,8 +512,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:
@@ -589,15 +544,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -613,8 +566,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -623,8 +575,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "63594238"
                   attributes:
                     - key: direction
@@ -633,8 +584,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -643,8 +593,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -653,8 +602,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -663,8 +611,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:
@@ -696,15 +643,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -720,8 +665,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -730,8 +674,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "63594238"
                   attributes:
                     - key: direction
@@ -740,8 +683,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -750,8 +692,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -760,8 +701,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -770,8 +710,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:
@@ -803,15 +742,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: transmitted
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The number of packets which have flowed through the network interface on the node.
@@ -827,8 +764,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -837,8 +773,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "63594238"
                   attributes:
                     - key: direction
@@ -847,8 +782,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -857,8 +791,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: dropped
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -867,8 +800,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: errored
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
@@ -877,8 +809,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: success
-                  startTimeUnixNano: "1652365826688352000"
-                  timeUnixNano: "1652365826697632000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
         scope:

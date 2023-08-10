@@ -16,29 +16,25 @@ resourceMetrics:
                     - key: rating
                       value:
                         stringValue: "1"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: rating
                       value:
                         stringValue: "2"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "1000"
                   attributes:
                     - key: rating
                       value:
                         stringValue: "4"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{alerts}'
           - description: The age of the latest backup by start time.
             gauge:
               dataPoints:
                 - asInt: "13"
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             name: saphana.backup.latest
             unit: s
           - description: The amount of time remaining before license expiration.
@@ -52,8 +48,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             name: saphana.license.expiration.time
             unit: s
           - description: The allowed product usage as specified by the license (for example, main memory).
@@ -69,8 +64,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "128"
                   attributes:
                     - key: product
@@ -79,8 +73,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPT
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{licenses}'
           - description: The peak product usage value during last 13 months, measured periodically.
             name: saphana.license.peak
@@ -95,8 +88,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPE
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "33"
                   attributes:
                     - key: product
@@ -105,8 +97,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPT
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{licenses}'
           - description: The average amount of time consumed replicating a log.
             gauge:
@@ -125,8 +116,7 @@ resourceMetrics:
                     - key: secondary
                       value:
                         stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             name: saphana.replication.average_time
             unit: us
           - description: The current replication backlog size.
@@ -148,8 +138,7 @@ resourceMetrics:
                     - key: secondary
                       value:
                         stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The current replication backlog.
             name: saphana.replication.backlog.time
@@ -170,8 +159,7 @@ resourceMetrics:
                     - key: secondary
                       value:
                         stringValue: host2
-                  startTimeUnixNano: "1655998954207635000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: us
         scope:
           name: otelcol/saphanareceiver
@@ -199,8 +187,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "12"
                   attributes:
                     - key: subtype
@@ -209,8 +196,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "17"
                   attributes:
                     - key: subtype
@@ -219,8 +205,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "13"
                   attributes:
                     - key: subtype
@@ -229,8 +214,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "18"
                   attributes:
                     - key: subtype
@@ -239,8 +223,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "14"
                   attributes:
                     - key: subtype
@@ -249,8 +232,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "19"
                   attributes:
                     - key: subtype
@@ -259,8 +241,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "15"
                   attributes:
                     - key: subtype
@@ -269,8 +250,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory used in components.
             name: saphana.component.memory.used
@@ -282,8 +262,7 @@ resourceMetrics:
                     - key: component
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of current connections.
             name: saphana.connection.count
@@ -295,15 +274,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: idle
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "15"
                   attributes:
                     - key: status
                       value:
                         stringValue: running
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Total CPU time spent.
             name: saphana.cpu.used
@@ -315,29 +292,25 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: idle
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "8674"
                   attributes:
                     - key: type
                       value:
                         stringValue: io_wait
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "82828"
                   attributes:
                     - key: type
                       value:
                         stringValue: system
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "82"
                   attributes:
                     - key: type
                       value:
                         stringValue: user
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: The disk size.
@@ -356,8 +329,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "123"
                   attributes:
                     - key: path
@@ -369,8 +341,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "33"
                   attributes:
                     - key: path
@@ -382,8 +353,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "456"
                   attributes:
                     - key: path
@@ -395,8 +365,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of physical memory on the host.
             name: saphana.host.memory.current
@@ -408,15 +377,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "3233"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of swap space on the host.
             name: saphana.host.swap.current
@@ -428,15 +395,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "23423"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The instance code size, including shared libraries of SAP HANA processes.
             name: saphana.instance.code_size
@@ -444,8 +409,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5454"
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the memory pool for all SAP HANA processes.
             name: saphana.instance.memory.current
@@ -457,15 +421,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "62727"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The shared memory size of SAP HANA processes.
             name: saphana.instance.memory.shared.allocated
@@ -473,8 +435,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "82568"
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
             name: saphana.instance.memory.used.peak
@@ -482,15 +443,13 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "342"
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The average response time calculated over recent requests
             gauge:
               dataPoints:
                 - asDouble: 99.999
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             name: saphana.network.request.average_time
             unit: ms
           - description: The number of active and pending service requests.
@@ -503,15 +462,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: state
                       value:
                         stringValue: pending
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{requests}'
           - description: The number of service requests that have completed.
             name: saphana.network.request.finished.count
@@ -523,15 +480,13 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: external
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "133"
                   attributes:
                     - key: type
                       value:
                         stringValue: internal
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
           - description: The used memory for all row tables.
@@ -544,15 +499,13 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: fixed
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "123"
                   attributes:
                     - key: type
                       value:
                         stringValue: variable
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory size for all tables in schema.
             name: saphana.schema.memory.used.current
@@ -567,8 +520,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "7777"
                   attributes:
                     - key: schema
@@ -577,8 +529,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "43434"
                   attributes:
                     - key: schema
@@ -587,8 +538,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "123123"
                   attributes:
                     - key: schema
@@ -597,8 +547,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
             name: saphana.schema.memory.used.max
@@ -610,8 +559,7 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: SYS
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of operations done on all tables in schema.
             name: saphana.schema.operation.count
@@ -626,8 +574,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "123"
                   attributes:
                     - key: schema
@@ -636,8 +583,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "5454"
                   attributes:
                     - key: schema
@@ -646,8 +592,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: The number of entries in main during the last optimize compression run for all tables in schema.
@@ -660,8 +605,7 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: SYS
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{records}'
           - description: The number of records for all tables in schema.
             name: saphana.schema.record.count
@@ -676,8 +620,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "878743"
                   attributes:
                     - key: schema
@@ -686,8 +629,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_delta
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "34843"
                   attributes:
                     - key: schema
@@ -696,8 +638,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "1234"
                   attributes:
                     - key: schema
@@ -706,8 +647,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{records}'
           - description: The service code size, including shared libraries.
             name: saphana.service.code_size
@@ -719,8 +659,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of services in a given status.
             name: saphana.service.count
@@ -732,15 +671,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{services}'
           - description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
             name: saphana.service.memory.compactors.allocated
@@ -752,8 +689,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory that can be freed during a memory shortage.
             name: saphana.service.memory.compactors.freeable
@@ -765,8 +701,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
             name: saphana.service.memory.effective_limit
@@ -778,8 +713,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the heap portion of the memory pool.
             name: saphana.service.memory.heap.current
@@ -794,8 +728,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "6"
                   attributes:
                     - key: service
@@ -804,8 +737,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The configured maximum memory pool size.
             name: saphana.service.memory.limit
@@ -817,8 +749,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the shared portion of the memory pool.
             name: saphana.service.memory.shared.current
@@ -833,8 +764,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: service
@@ -843,8 +773,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The used memory from the operating system perspective.
             name: saphana.service.memory.used
@@ -859,8 +788,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: logical
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: service
@@ -869,8 +797,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: physical
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The service stack size.
             name: saphana.service.stack_size
@@ -882,8 +809,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: nameserver
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of service threads in a given status.
             name: saphana.service.thread.count
@@ -895,15 +821,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "11"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{threads}'
           - description: The number of transactions waiting for a lock.
             name: saphana.transaction.blocked
@@ -911,8 +835,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{transactions}'
           - description: The number of transactions.
             name: saphana.transaction.count
@@ -924,22 +847,19 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: commit
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: type
                       value:
                         stringValue: rollback
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "100"
                   attributes:
                     - key: type
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{transactions}'
           - description: The uptime of the database.
@@ -955,8 +875,7 @@ resourceMetrics:
                     - key: system
                       value:
                         stringValue: PPE
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: s
           - description: The number of operations executed.
             name: saphana.volume.operation.count
@@ -974,8 +893,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: path
@@ -987,8 +905,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: The size of operations executed.
@@ -1007,8 +924,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: path
@@ -1020,8 +936,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The time spent executing operations.
@@ -1040,8 +955,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: path
@@ -1053,8 +967,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: LOG_SOMETHING
-                  startTimeUnixNano: "1655998954206841000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
         scope:
@@ -1083,8 +996,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "100"
                   attributes:
                     - key: subtype
@@ -1093,8 +1005,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "95"
                   attributes:
                     - key: subtype
@@ -1103,8 +1014,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "99"
                   attributes:
                     - key: subtype
@@ -1113,8 +1023,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "94"
                   attributes:
                     - key: subtype
@@ -1123,8 +1032,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "98"
                   attributes:
                     - key: subtype
@@ -1133,8 +1041,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "93"
                   attributes:
                     - key: subtype
@@ -1143,8 +1050,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "97"
                   attributes:
                     - key: subtype
@@ -1153,8 +1059,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory used in components.
             name: saphana.component.memory.used
@@ -1166,8 +1071,7 @@ resourceMetrics:
                     - key: component
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of current connections.
             name: saphana.connection.count
@@ -1179,8 +1083,7 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: idle
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Total CPU time spent.
             name: saphana.cpu.used
@@ -1192,29 +1095,25 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: idle
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "884"
                   attributes:
                     - key: type
                       value:
                         stringValue: io_wait
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "774"
                   attributes:
                     - key: type
                       value:
                         stringValue: system
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "412"
                   attributes:
                     - key: type
                       value:
                         stringValue: user
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
           - description: The disk size.
@@ -1233,8 +1132,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "234423234"
                   attributes:
                     - key: path
@@ -1246,8 +1144,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of physical memory on the host.
             name: saphana.host.memory.current
@@ -1259,15 +1156,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The amount of swap space on the host.
             name: saphana.host.swap.current
@@ -1279,15 +1174,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "42424"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The instance code size, including shared libraries of SAP HANA processes.
             name: saphana.instance.code_size
@@ -1295,8 +1188,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "44"
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the memory pool for all SAP HANA processes.
             name: saphana.instance.memory.current
@@ -1308,15 +1200,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "451"
                   attributes:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The shared memory size of SAP HANA processes.
             name: saphana.instance.memory.shared.allocated
@@ -1324,8 +1214,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4123123"
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The peak memory from the memory pool used by SAP HANA processes since the instance started (this is a sample-based value).
             name: saphana.instance.memory.used.peak
@@ -1333,15 +1222,13 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "212"
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The average response time calculated over recent requests
             gauge:
               dataPoints:
                 - asDouble: 0.222
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             name: saphana.network.request.average_time
             unit: ms
           - description: The number of active and pending service requests.
@@ -1354,15 +1241,13 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "222"
                   attributes:
                     - key: state
                       value:
                         stringValue: pending
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{requests}'
           - description: The number of service requests that have completed.
             name: saphana.network.request.finished.count
@@ -1374,15 +1259,13 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: external
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: type
                       value:
                         stringValue: internal
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
           - description: The used memory for all row tables.
@@ -1395,15 +1278,13 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: fixed
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "12323233"
                   attributes:
                     - key: type
                       value:
                         stringValue: variable
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory size for all tables in schema.
             name: saphana.schema.memory.used.current
@@ -1418,8 +1299,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "8265"
                   attributes:
                     - key: schema
@@ -1428,8 +1308,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "2456"
                   attributes:
                     - key: schema
@@ -1438,8 +1317,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "2"
                   attributes:
                     - key: schema
@@ -1448,8 +1326,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The estimated maximum memory consumption for all fully loaded tables in schema (data for open transactions is not included).
             name: saphana.schema.memory.used.max
@@ -1461,8 +1338,7 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: MON
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of operations done on all tables in schema.
             name: saphana.schema.operation.count
@@ -1477,8 +1353,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: merge
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "76578"
                   attributes:
                     - key: schema
@@ -1487,8 +1362,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: read
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "7245"
                   attributes:
                     - key: schema
@@ -1497,8 +1371,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: write
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: The number of entries in main during the last optimize compression run for all tables in schema.
@@ -1511,8 +1384,7 @@ resourceMetrics:
                     - key: schema
                       value:
                         stringValue: MON
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{records}'
           - description: The number of records for all tables in schema.
             name: saphana.schema.record.count
@@ -1527,8 +1399,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "85"
                   attributes:
                     - key: schema
@@ -1537,8 +1408,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_delta
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "8888"
                   attributes:
                     - key: schema
@@ -1547,8 +1417,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: history_main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "654"
                   attributes:
                     - key: schema
@@ -1557,8 +1426,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: main
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{records}'
           - description: The service code size, including shared libraries.
             name: saphana.service.code_size
@@ -1570,8 +1438,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of services in a given status.
             name: saphana.service.count
@@ -1583,15 +1450,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "8"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{services}'
           - description: The part of the memory pool that can potentially (if unpinned) be freed during a memory shortage.
             name: saphana.service.memory.compactors.allocated
@@ -1603,8 +1468,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The memory that can be freed during a memory shortage.
             name: saphana.service.memory.compactors.freeable
@@ -1616,8 +1480,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The effective maximum memory pool size, calculated considering the pool sizes of other processes.
             name: saphana.service.memory.effective_limit
@@ -1629,8 +1492,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the heap portion of the memory pool.
             name: saphana.service.memory.heap.current
@@ -1645,8 +1507,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "9"
                   attributes:
                     - key: service
@@ -1655,8 +1516,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The configured maximum memory pool size.
             name: saphana.service.memory.limit
@@ -1668,8 +1528,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The size of the shared portion of the memory pool.
             name: saphana.service.memory.shared.current
@@ -1684,8 +1543,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: free
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "11"
                   attributes:
                     - key: service
@@ -1694,8 +1552,7 @@ resourceMetrics:
                     - key: state
                       value:
                         stringValue: used
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The used memory from the operating system perspective.
             name: saphana.service.memory.used
@@ -1710,8 +1567,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: logical
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: service
@@ -1720,8 +1576,7 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: physical
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The service stack size.
             name: saphana.service.stack_size
@@ -1733,8 +1588,7 @@ resourceMetrics:
                     - key: service
                       value:
                         stringValue: indexserver
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: By
           - description: The number of service threads in a given status.
             name: saphana.service.thread.count
@@ -1746,15 +1600,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "1111"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{threads}'
           - description: The number of transactions waiting for a lock.
             name: saphana.transaction.blocked
@@ -1762,8 +1614,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "292393"
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
             unit: '{transactions}'
           - description: The number of transactions.
             name: saphana.transaction.count
@@ -1775,22 +1626,19 @@ resourceMetrics:
                     - key: type
                       value:
                         stringValue: commit
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "333"
                   attributes:
                     - key: type
                       value:
                         stringValue: rollback
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: type
                       value:
                         stringValue: update
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{transactions}'
           - description: The number of operations executed.
@@ -1809,8 +1657,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "72"
                   attributes:
                     - key: path
@@ -1822,8 +1669,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{operations}'
           - description: The size of operations executed.
@@ -1842,8 +1688,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "37"
                   attributes:
                     - key: path
@@ -1855,8 +1700,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: The time spent executing operations.
@@ -1875,8 +1719,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
                 - asInt: "33"
                   attributes:
                     - key: path
@@ -1888,8 +1731,7 @@ resourceMetrics:
                     - key: usage_type
                       value:
                         stringValue: DATA
-                  startTimeUnixNano: "1655998954206896000"
-                  timeUnixNano: "1655998954206724000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: ms
         scope:
