@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   postgresql.database.name:
@@ -85,7 +87,7 @@ metrics:
     description: Number of buffers allocated.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{buffers}"
@@ -95,7 +97,7 @@ metrics:
     description: Number of buffers written.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{buffers}"
@@ -105,7 +107,7 @@ metrics:
     description: The number of checkpoints performed.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{checkpoints}"
@@ -115,7 +117,7 @@ metrics:
     description: Total time spent writing and syncing files to disk by checkpoints.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: double
     unit: ms
@@ -123,7 +125,7 @@ metrics:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: 1
@@ -134,7 +136,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database, table, source]
   postgresql.commits:
     enabled: true
@@ -143,14 +145,14 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database]
   postgresql.database.count:
     attributes: []
     description: Number of user databases.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{databases}"
@@ -161,7 +163,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database]
   postgresql.backends:
     enabled: true
@@ -170,7 +172,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database]
   postgresql.connection.max:
     enabled: true
@@ -185,14 +187,14 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database, table, state]
   postgresql.index.scans:
     attributes: []
     description: The number of index scans on a table.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{scans}"
@@ -210,7 +212,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database, table, operation]
   postgresql.replication.data_delay:
     attributes: [replication_client]
@@ -226,14 +228,14 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [database]
   postgresql.table.count:
     attributes: []
     description: Number of user tables in a database.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{table}"
@@ -243,7 +245,7 @@ metrics:
     enabled: true
     unit: By
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
   postgresql.table.vacuum.count:
@@ -252,7 +254,7 @@ metrics:
     enabled: true
     unit: "{vacuums}"
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
   postgresql.wal.age:

@@ -17,19 +17,27 @@ import (
 )
 
 // Mock cadvisor
-type MockCadvisor struct {
+type mockCadvisor struct {
 }
 
-func (c *MockCadvisor) GetMetrics() []pmetric.Metrics {
+func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }
 
-// Mock k8sapiserver
-type MockK8sAPIServer struct {
+func (c *mockCadvisor) Shutdown() error {
+	return nil
 }
 
-func (m *MockK8sAPIServer) GetMetrics() []pmetric.Metrics {
+// Mock k8sapiserver
+type mockK8sAPIServer struct {
+}
+
+func (m *mockK8sAPIServer) Shutdown() error {
+	return nil
+}
+
+func (m *mockK8sAPIServer) GetMetrics() []pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	return []pmetric.Metrics{md}
 }
@@ -81,8 +89,8 @@ func TestCollectData(t *testing.T) {
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
-	r.k8sapiserver = &MockK8sAPIServer{}
-	r.cadvisor = &MockCadvisor{}
+	r.k8sapiserver = &mockK8sAPIServer{}
+	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 
@@ -106,8 +114,8 @@ func TestCollectDataWithErrConsumer(t *testing.T) {
 
 	r := metricsReceiver.(*awsContainerInsightReceiver)
 	_ = r.Start(context.Background(), nil)
-	r.cadvisor = &MockCadvisor{}
-	r.k8sapiserver = &MockK8sAPIServer{}
+	r.cadvisor = &mockCadvisor{}
+	r.k8sapiserver = &mockK8sAPIServer{}
 	ctx := context.Background()
 
 	err = r.collectData(ctx)
@@ -130,7 +138,7 @@ func TestCollectDataWithECS(t *testing.T) {
 	_ = r.Start(context.Background(), nil)
 	ctx := context.Background()
 
-	r.cadvisor = &MockCadvisor{}
+	r.cadvisor = &mockCadvisor{}
 	err = r.collectData(ctx)
 	require.Nil(t, err)
 

@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -84,8 +84,8 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
-		observerTypeNotSupportErr      = "observer_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
 	)
 
 	tests := []test{

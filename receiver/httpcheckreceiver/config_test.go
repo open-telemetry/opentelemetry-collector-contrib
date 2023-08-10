@@ -9,7 +9,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -26,6 +29,7 @@ func TestValidate(t *testing.T) {
 						HTTPClientSettings: confighttp.HTTPClientSettings{},
 					},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingEndpoint,
@@ -41,6 +45,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
@@ -61,9 +66,26 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
+		},
+		{
+			desc: "missing scheme",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
+					},
+				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
 			),
 		},
 		{
@@ -75,7 +97,13 @@ func TestValidate(t *testing.T) {
 							Endpoint: "https://opentelemetry.io",
 						},
 					},
+					{
+						HTTPClientSettings: confighttp.HTTPClientSettings{
+							Endpoint: "https://opentelemetry.io:80/docs",
+						},
+					},
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: nil,
 		},

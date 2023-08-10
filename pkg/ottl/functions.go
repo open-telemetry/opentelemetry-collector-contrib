@@ -20,7 +20,7 @@ type Enum int64
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %v", ed.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
 	args := f.CreateDefaultArguments()
 
@@ -30,12 +30,12 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(args).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
+			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
 		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", ed.Function, err)
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
 	}
 
@@ -47,42 +47,57 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, err
 }
 
+func getArgumentIndex(index int, args reflect.Value) (int, error) {
+	argsType := args.Type()
+	fieldTag, ok := argsType.Field(index).Tag.Lookup("ottlarg")
+	if !ok {
+		return 0, fmt.Errorf("no `ottlarg` struct tag on Arguments field %q", argsType.Field(index).Name)
+	}
+	argNum, err := strconv.Atoi(fieldTag)
+	if err != nil {
+		return 0, fmt.Errorf("ottlarg struct tag on field %q is not a valid integer: %w", argsType.Field(index).Name, err)
+	}
+	if argNum < 0 || argNum >= args.NumField() {
+		return 0, fmt.Errorf("ottlarg struct tag on field %q has value %d, but must be between 0 and %d", argsType.Field(index).Name, argNum, args.NumField())
+	}
+	return argNum, nil
+}
+
 func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 	if len(ed.Arguments) != argsVal.NumField() {
 		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
-	argsType := argsVal.Type()
-
 	for i := 0; i < argsVal.NumField(); i++ {
 		field := argsVal.Field(i)
 		fieldType := field.Type()
-
-		fieldTag, ok := argsType.Field(i).Tag.Lookup("ottlarg")
-
-		if !ok {
-			return fmt.Errorf("no `ottlarg` struct tag on Arguments field '%s'", argsType.Field(i).Name)
-		}
-
-		argNum, err := strconv.Atoi(fieldTag)
-
+		argNum, err := getArgumentIndex(i, argsVal)
 		if err != nil {
-			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
+			return err
 		}
-
-		if argNum < 0 || argNum >= len(ed.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
-		}
-
 		argVal := ed.Arguments[argNum]
-
 		var val any
-		if fieldType.Kind() == reflect.Slice {
+		switch {
+		case strings.HasPrefix(fieldType.Name(), "FunctionGetter"):
+			var name string
+			switch {
+			case argVal.Enum != nil:
+				name = string(*argVal.Enum)
+			case argVal.FunctionName != nil:
+				name = *argVal.FunctionName
+			default:
+				return fmt.Errorf("invalid function name given")
+			}
+			f, ok := p.functions[name]
+			if !ok {
+				return fmt.Errorf("undefined function %s", name)
+			}
+			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
+		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(argVal, fieldType)
-		} else {
+		default:
 			val, err = p.buildArg(argVal, fieldType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
@@ -167,7 +182,7 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 		}
 		return arg, nil
 	default:
-		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
+		return nil, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
 	}
 }
 

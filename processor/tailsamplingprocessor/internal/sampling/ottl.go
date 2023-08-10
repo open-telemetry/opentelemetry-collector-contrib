@@ -63,8 +63,8 @@ func (ocf *ottlConditionFilter) Evaluate(ctx context.Context, traceID pcommon.Tr
 	}
 
 	trace.Lock()
+	defer trace.Unlock()
 	batches := trace.ReceivedBatches
-	trace.Unlock()
 
 	for i := 0; i < batches.ResourceSpans().Len(); i++ {
 		rs := batches.ResourceSpans().At(i)

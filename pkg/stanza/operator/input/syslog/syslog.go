@@ -61,11 +61,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
+		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.MultiLineBuilder = OctetMultiLineBuilder
 		}
 
-		tcpInputCfg.BaseConfig = *c.TCP
 		tcpInput, err := tcpInputCfg.Build(logger)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
