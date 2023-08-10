@@ -71,6 +71,10 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
 	}
 
+	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
+		"in a future release. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23997 for more" +
+		"information")
+
 	return emfExporter, nil
 }
 
@@ -177,7 +181,7 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 		}
 	}
 
-	return nil
+	return emf.metricTranslator.Shutdown()
 }
 
 func wrapErrorIfBadRequest(err error) error {

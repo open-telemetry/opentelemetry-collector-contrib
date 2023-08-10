@@ -134,7 +134,6 @@ type spanBundle struct {
 }
 
 func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.EventBundle {
-	var events []*add_events.EventBundle
 	var spans = make([]spanBundle, 0)
 
 	// convert spans into events
@@ -152,8 +151,9 @@ func buildEventsFromTraces(ld ptrace.Traces, serverHost string) []*add_events.Ev
 		}
 	}
 
-	for _, span := range spans {
-		events = append(events, buildEventFromSpan(span, serverHost))
+	events := make([]*add_events.EventBundle, len(spans))
+	for i, span := range spans {
+		events[i] = buildEventFromSpan(span, serverHost)
 	}
 
 	return events

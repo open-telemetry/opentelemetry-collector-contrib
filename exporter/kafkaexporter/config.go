@@ -107,6 +107,10 @@ func (cfg *Config) Validate() error {
 }
 
 func validateSASLConfig(c *SASLConfig) error {
+	if c == nil {
+		return nil
+	}
+
 	if c.Username == "" {
 		return fmt.Errorf("auth.sasl.username is required")
 	}
