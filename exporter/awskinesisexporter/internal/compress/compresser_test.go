@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 )
@@ -29,18 +30,21 @@ func TestCompressorFormats(t *testing.T) {
 	}
 
 	const data = "You know nothing Jon Snow"
+
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("format_%s", tc.format), func(t *testing.T) {
-			c, err := compress.NewCompressor(tc.format)
+			logger := zaptest.NewLogger(t)
+			c, err := compress.NewCompressor(tc.format, logger)
 			require.NoError(t, err, "Must have a valid compression format")
 			require.NotNil(t, c, "Must have a valid compressor")
 
 			out, err := c.Do([]byte(data))
 			assert.NoError(t, err, "Must not error when processing data")
 			assert.NotNil(t, out, "Must have a valid record")
+			assert.NoError(t, err, "Decompression must have no errors")
 		})
 	}
-	_, err := compress.NewCompressor("invalid-format")
+	_, err := compress.NewCompressor("invalid-format", zaptest.NewLogger(t))
 	assert.Error(t, err, "Must error when an invalid compression format is given")
 }
 
@@ -82,7 +86,7 @@ func benchmarkCompressor(b *testing.B, format string, length int) {
 	source := rand.NewSource(time.Now().UnixMilli())
 	genRand := rand.New(source)
 
-	compressor, err := compress.NewCompressor(format)
+	compressor, err := compress.NewCompressor(format, zaptest.NewLogger(b))
 	require.NoError(b, err, "Must not error when given a valid format")
 	require.NotNil(b, compressor, "Must have a valid compressor")
 
