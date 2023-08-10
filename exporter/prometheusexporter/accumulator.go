@@ -77,7 +77,7 @@ func (a *lastValueAccumulator) Accumulate(rm pmetric.ResourceMetrics) (n int) {
 
 func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) int {
 	a.logger.Debug(fmt.Sprintf("accumulating metric: %s", metric.Name()))
-
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return a.accumulateGauge(metric, il, resourceAttrs, now)
@@ -87,6 +87,8 @@ func (a *lastValueAccumulator) addMetric(metric pmetric.Metric, il pcommon.Instr
 		return a.accumulateDoubleHistogram(metric, il, resourceAttrs, now)
 	case pmetric.MetricTypeSummary:
 		return a.accumulateSummary(metric, il, resourceAttrs, now)
+	case pmetric.MetricTypeExponentialHistogram:
+		fallthrough
 	default:
 		a.logger.With(
 			zap.String("data_type", string(metric.Type())),

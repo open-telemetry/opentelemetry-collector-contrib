@@ -95,6 +95,7 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 var errUnknownMetricType = fmt.Errorf("unknown metric type")
 
 func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return c.convertGauge(metric, resourceAttrs)
@@ -104,6 +105,8 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 		return c.convertDoubleHistogram(metric, resourceAttrs)
 	case pmetric.MetricTypeSummary:
 		return c.convertSummary(metric, resourceAttrs)
+	case pmetric.MetricTypeExponentialHistogram:
+		return nil, fmt.Errorf("unsupported metric type")
 	}
 
 	return nil, errUnknownMetricType
