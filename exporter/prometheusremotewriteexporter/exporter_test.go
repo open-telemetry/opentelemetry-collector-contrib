@@ -14,7 +14,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
@@ -999,7 +998,7 @@ func TestRetryOn5xx(t *testing.T) {
 	// Create the prwExporter
 	exporter := &prwExporter{
 		endpointURL: endpointURL,
-		client:      retryablehttp.NewClient(),
+		client:      http.DefaultClient,
 	}
 
 	ctx := context.Background()

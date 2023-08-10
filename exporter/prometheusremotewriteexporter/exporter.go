@@ -16,9 +16,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/hashicorp/go-retryablehttp"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -36,15 +36,13 @@ const maxBatchByteSize = 3000000
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
 	endpointURL     *url.URL
-	client          *retryablehttp.Client
+	client          *http.Client
 	wg              *sync.WaitGroup
 	closeChan       chan struct{}
 	concurrency     int
 	userAgentHeader string
 	clientSettings  *confighttp.HTTPClientSettings
 	settings        component.TelemetrySettings
-	retryWaitMin    time.Duration
-	retryWaitMax    time.Duration
 
 	wal              *prweWAL
 	exporterSettings prometheusremotewrite.Settings
@@ -72,9 +70,6 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
 		clientSettings:  &cfg.HTTPClientSettings,
 		settings:        set.TelemetrySettings,
-		client:          retryablehttp.NewClient(),
-		retryWaitMax:    cfg.MaxInterval,
-		retryWaitMin:    cfg.InitialInterval,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -96,16 +91,10 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 
 // Start creates the prometheus client
 func (prwe *prwExporter) Start(ctx context.Context, host component.Host) (err error) {
-	httpClient, err := prwe.clientSettings.ToClient(host, prwe.settings)
+	prwe.client, err = prwe.clientSettings.ToClient(host, prwe.settings)
 	if err != nil {
 		return err
 	}
-
-	// Set the HTTP client as the underlying client for the retryable client
-	prwe.client.HTTPClient = httpClient
-	prwe.client.RetryWaitMin = prwe.retryWaitMin
-	prwe.client.RetryWaitMax = prwe.retryWaitMax
-
 	return prwe.turnOnWALIfEnabled(contextWithLogger(ctx, prwe.settings.Logger.Named("prw.wal")))
 }
 
@@ -229,50 +218,58 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-	// Uses proto.Marshal to convert the WriteRequest into bytes array
-	data, err := proto.Marshal(writeReq)
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	buf := make([]byte, len(data), cap(data))
-	compressedData := snappy.Encode(buf, data)
+	// Attempt the HTTP request with retry logic
+	backOff := backoff.NewExponentialBackOff()
+	backOff.InitialInterval = 1 * time.Second
+	backOff.MaxInterval = 10 * time.Second
+	backOff.MaxElapsedTime = 1 * time.Minute
 
-	// Create the HTTP POST request to send to the endpoint
-	req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
-	if err != nil {
-		return consumererror.NewPermanent(err)
+	retryFunc := func() error {
+		// Uses proto.Marshal to convert the WriteRequest into bytes array
+		data, err := proto.Marshal(writeReq)
+		if err != nil {
+			return consumererror.NewPermanent(err)
+		}
+		buf := make([]byte, len(data), cap(data))
+		compressedData := snappy.Encode(buf, data)
+
+		// Create the HTTP POST request to send to the endpoint
+		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
+		if err != nil {
+			return consumererror.NewPermanent(err)
+		}
+
+		// Add necessary headers specified by:
+		// https://cortexmetrics.io/docs/apis/#remote-api
+		req.Header.Add("Content-Encoding", "snappy")
+		req.Header.Set("Content-Type", "application/x-protobuf")
+		req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
+		req.Header.Set("User-Agent", prwe.userAgentHeader)
+
+		resp, err := prwe.client.Do(req)
+		if err != nil {
+			return err
+		}
+		defer resp.Body.Close()
+
+		// 2xx status code is considered a success
+		// 5xx errors are recoverable and the exporter should retry
+		// Reference for different behavior according to status code:
+		// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
+		if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+			return nil
+		}
+
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
+		rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
+		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+			return rerr
+		}
+		return consumererror.NewPermanent(rerr)
 	}
 
-	// Add necessary headers specified by:
-	// https://cortexmetrics.io/docs/apis/#remote-api
-	req.Header.Add("Content-Encoding", "snappy")
-	req.Header.Set("Content-Type", "application/x-protobuf")
-	req.Header.Set("X-Prometheus-Remote-Write-Version", "0.1.0")
-	req.Header.Set("User-Agent", prwe.userAgentHeader)
-
-	retryReq, err := retryablehttp.FromRequest(req)
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	resp, err := prwe.client.Do(retryReq)
-	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	defer resp.Body.Close()
-
-	// 2xx status code is considered a success
-	// 5xx errors are recoverable and the exporter should retry
-	// Reference for different behavior according to status code:
-	// https://github.com/prometheus/prometheus/pull/2552/files#diff-ae8db9d16d8057358e49d694522e7186
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil
-	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 256))
-	rerr := fmt.Errorf("remote write returned HTTP status %v; err = %w: %s", resp.Status, err, body)
-	if resp.StatusCode >= 500 && resp.StatusCode < 600 {
-		return rerr
-	}
-	return consumererror.NewPermanent(rerr)
+	// Use the BackOff instance to retry the operation with exponential backoff.
+	return backoff.Retry(retryFunc, backOff)
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
