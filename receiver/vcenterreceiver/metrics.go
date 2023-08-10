@@ -308,7 +308,6 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 	}
 
 	for deviceName, perf := range perfMap {
-		rb := v.mb.NewResourceBuilder()
 		for _, p := range perf.bytesTx {
 			v.mb.RecordVcenterVMNetworkThroughputDataPoint(
 				pcommon.NewTimestampFromTime(p.timestamp),
@@ -381,6 +380,8 @@ func (v *vcenterMetricScraper) processVMPerformanceMetrics(info *perfSampleResul
 				p.value,
 			)
 		}
+
+		rb := v.mb.NewResourceBuilder()
 		rb.SetVcenterClusterName(vri.cluster)
 		rb.SetVcenterHostName(vri.host)
 		rb.SetVcenterVMName(vri.vm)
