@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -1007,4 +1008,35 @@ func TestRetryOn5xx(t *testing.T) {
 	err = exporter.execute(ctx, &prompb.WriteRequest{})
 	assert.NoError(t, err)
 	assert.Equal(t, 4, attempts)
+}
+
+func TestNoRetryOn4xx(t *testing.T) {
+	// Create a mock HTTP server with a counter to simulate a 4xx error
+	attempts := 0
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if attempts < 1 {
+			attempts++
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer mockServer.Close()
+
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(t, err)
+
+	// Create the prwExporter
+	exporter := &prwExporter{
+		endpointURL: endpointURL,
+		client:      http.DefaultClient,
+	}
+
+	ctx := context.Background()
+
+	// Execute the write request and verify that the exporter returns an error due to the 4xx response.
+	err = exporter.execute(ctx, &prompb.WriteRequest{})
+	assert.Error(t, err)
+	assert.True(t, consumererror.IsPermanent(err))
+	assert.Equal(t, 1, attempts)
 }

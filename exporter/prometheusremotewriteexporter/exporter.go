@@ -228,7 +228,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Uses proto.Marshal to convert the WriteRequest into bytes array
 		data, err := proto.Marshal(writeReq)
 		if err != nil {
-			return consumererror.NewPermanent(err)
+			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 		buf := make([]byte, len(data), cap(data))
 		compressedData := snappy.Encode(buf, data)
@@ -236,7 +236,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		// Create the HTTP POST request to send to the endpoint
 		req, err := http.NewRequestWithContext(ctx, "POST", prwe.endpointURL.String(), bytes.NewReader(compressedData))
 		if err != nil {
-			return consumererror.NewPermanent(err)
+			return backoff.Permanent(consumererror.NewPermanent(err))
 		}
 
 		// Add necessary headers specified by:
@@ -265,7 +265,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
-		return consumererror.NewPermanent(rerr)
+		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
 	// Use the BackOff instance to retry the operation with exponential backoff.
