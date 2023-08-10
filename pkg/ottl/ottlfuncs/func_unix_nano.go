@@ -7,12 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type UnixNanoArguments[K any] struct {
-	Time ottl.StringGetter[K] `ottlarg:"0"`
+	Time ottl.TimeGetter[K] `ottlarg:"0"`
 }
 
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
@@ -28,21 +27,12 @@ func createUnixNanoFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return UnixNano(args.Time)
 }
 
-func UnixNano[K any](inputTime ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func UnixNano[K any](inputTime ottl.TimeGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		t, err := inputTime.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		if t == "" {
-			return nil, fmt.Errorf("time cannot be nil")
-		}
-		timestamp, err := timeutils.ParseStrptime(format, t, loc)
-		if err != nil {
-			return nil, err
-		}
-		// return timestamp, nil
-
-		// return inputTime.UnixNano(), nil
+		return t.UnixNano(), nil
 	}, nil
 }

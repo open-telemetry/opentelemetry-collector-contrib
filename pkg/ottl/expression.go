@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -529,4 +530,34 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 		expr: call,
 		keys: c.Keys,
 	}, nil
+}
+
+// IntGetter is a Getter that must return an int64.
+type TimeGetter[K any] interface {
+	// Get retrieves an int64 value.
+	Get(ctx context.Context, tCtx K) (time.Time, error)
+}
+
+// StandardIntGetter is a basic implementation of IntGetter
+type StandardTimeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves an int64 value.
+// If the value is not an int64 a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return time.Time{}, TypeError("expected time but got nil")
+	}
+	switch v := val.(type) {
+	case time.Time:
+		return v, nil
+	default:
+		return time.Time{}, TypeError(fmt.Sprintf("expected time but got %T", val))
+	}
 }
