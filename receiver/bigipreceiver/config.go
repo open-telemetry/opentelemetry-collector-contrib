@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -28,8 +29,8 @@ const defaultEndpoint = "https://localhost:443"
 type Config struct {
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	Username                                string `mapstructure:"username"`
-	Password                                string `mapstructure:"password"`
+	Username                                string              `mapstructure:"username"`
+	Password                                configopaque.String `mapstructure:"password"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
 }
 

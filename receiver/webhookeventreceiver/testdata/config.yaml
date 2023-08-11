@@ -5,3 +5,6 @@ webhookevent/valid_config:
   write_timeout: "500ms"
   path: "some/path"
   health_path: "health/path"
+  required_header:
+    key: key-present
+    value: value-present

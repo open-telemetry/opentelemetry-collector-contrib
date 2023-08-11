@@ -86,10 +86,13 @@ func newOIDCServer() (*oidcServer, error) {
 }
 
 func (s *oidcServer) token(jsonPayload []byte) (string, error) {
-	jsonHeader, _ := json.Marshal(map[string]interface{}{
+	jsonHeader, err := json.Marshal(map[string]interface{}{
 		"alg": "RS256",
 		"typ": "JWT",
 	})
+	if err != nil {
+		return "", err
+	}
 
 	header := base64.RawURLEncoding.EncodeToString(jsonHeader)
 	payload := base64.RawURLEncoding.EncodeToString(jsonPayload)

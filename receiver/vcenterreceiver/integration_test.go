@@ -19,6 +19,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
@@ -60,7 +61,7 @@ func TestIntegration(t *testing.T) {
 					rCfg.CollectionInterval = 2 * time.Second
 					rCfg.Endpoint = fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host)
 					rCfg.Username = simulator.DefaultLogin.Username()
-					rCfg.Password = pw
+					rCfg.Password = configopaque.String(pw)
 					rCfg.TLSClientSetting = configtls.TLSClientSetting{
 						Insecure: true,
 					}

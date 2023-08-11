@@ -23,7 +23,6 @@ import (
 const sparkPort = "4040"
 
 func TestIntegration(t *testing.T) {
-	t.Skip("The test is failing. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23670")
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithContainerRequest(

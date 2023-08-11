@@ -101,7 +101,7 @@ func (e *Event) RenderRaw(buffer Buffer) (EventRaw, error) {
 		buffer.UpdateSizeBytes(*bufferUsed)
 		return e.RenderRaw(buffer)
 	}
-	bytes, err := buffer.ReadWideChars(*bufferUsed)
+	bytes, err := buffer.ReadBytes(*bufferUsed)
 	if err != nil {
 		return EventRaw{}, fmt.Errorf("failed to read bytes from buffer: %w", err)
 	}

@@ -32,8 +32,8 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *Trac
 	l.logger.Debug("Evaluating spans in latency filter")
 
 	traceData.Lock()
+	defer traceData.Unlock()
 	batches := traceData.ReceivedBatches
-	traceData.Unlock()
 
 	var minTime pcommon.Timestamp
 	var maxTime pcommon.Timestamp

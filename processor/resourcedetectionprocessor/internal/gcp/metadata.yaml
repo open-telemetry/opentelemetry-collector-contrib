@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/gcp
 
+parent: resourcedetection
+
 resource_attributes:
   host.name:
     description: The host.name
@@ -49,3 +51,19 @@ resource_attributes:
     description: The k8s.cluster.name
     type: string
     enabled: true
+  gcp.cloud_run.job.execution:
+    description: The Job execution name
+    type: string
+    enabled: true
+  gcp.cloud_run.job.task_index:
+    description: The Job execution task index
+    type: string
+    enabled: true
+  gcp.gce.instance.name:
+    description: The name of the GCE instance.
+    type: string
+    enabled: false
+  gcp.gce.instance.hostname:
+    description: The hostname of the GCE instance.
+    type: string
+    enabled: false

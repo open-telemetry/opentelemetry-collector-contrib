@@ -20,7 +20,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 type metricNameTest struct {
@@ -866,4 +869,181 @@ func fillMetricFive(m pmetric.Metric) {
 	dataPoint1.Attributes().PutStr("attr1", "test1")
 	dataPoint1.Attributes().PutStr("attr2", "test2")
 	dataPoint1.Attributes().PutStr("attr3", "test3")
+}
+
+func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
+	tests := []struct {
+		name      string
+		condition *filterconfig.MatchConfig
+	}{
+		// resource attributes
+		{
+			name: "single static resource attribute include",
+			condition: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svcA",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple static resource attribute include",
+			condition: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svc2",
+						},
+						{
+							Key:   "service.version",
+							Value: "v1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single regex resource attribute include",
+			condition: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Regexp,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svc.*",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple regex resource attribute include",
+			condition: &filterconfig.MatchConfig{
+				Include: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Regexp,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: ".*2",
+						},
+						{
+							Key:   "service.name",
+							Value: ".*3",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single static resource attribute exclude",
+			condition: &filterconfig.MatchConfig{
+				Exclude: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svcA",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple static resource attribute exclude",
+			condition: &filterconfig.MatchConfig{
+				Exclude: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Strict,
+					},
+
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svc2",
+						},
+						{
+							Key:   "service.version",
+							Value: "v1",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "single regex resource attribute exclude",
+			condition: &filterconfig.MatchConfig{
+				Exclude: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Regexp,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: "svc.*",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple regex resource attribute exclude",
+			condition: &filterconfig.MatchConfig{
+				Exclude: &filterconfig.MatchProperties{
+					Config: filterset.Config{
+						MatchType: filterset.Regexp,
+					},
+					Resources: []filterconfig.Attribute{
+						{
+							Key:   "service.name",
+							Value: ".*2",
+						},
+						{
+							Key:   "service.name",
+							Value: ".*3",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resource := pcommon.NewResource()
+			resource.Attributes().PutStr("test", "test")
+
+			tCtx := ottlresource.NewTransformContext(resource)
+
+			boolExpr, err := newSkipResExpr(filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Include), filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Exclude))
+			require.NoError(t, err)
+			expectedResult, err := boolExpr.Eval(context.Background(), tCtx)
+			assert.NoError(t, err)
+
+			ottlBoolExpr, err := filterottl.NewResourceSkipExprBridge(tt.condition)
+
+			assert.NoError(t, err)
+			ottlResult, err := ottlBoolExpr.Eval(context.Background(), tCtx)
+			assert.NoError(t, err)
+
+			assert.Equal(t, expectedResult, ottlResult)
+		})
+	}
 }

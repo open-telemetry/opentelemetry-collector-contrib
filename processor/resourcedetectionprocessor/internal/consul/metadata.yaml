@@ -1,5 +1,7 @@
 type: resourcedetectionprocessor/consul
 
+parent: resourcedetection
+
 resource_attributes:
   cloud.provider:
     description: The cloud.provider

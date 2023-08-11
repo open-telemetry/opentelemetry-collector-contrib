@@ -252,7 +252,6 @@ func (rt rotationTest) run(tc rotationTest, copyTruncate, sequential bool) func(
 		cfg := NewConfig().includeDir(tempDir)
 		cfg.StartAt = "beginning"
 		cfg.PollInterval = tc.pollInterval
-		cfg.FingerprintSize = 128
 		emitCalls := make(chan *emitParams, tc.totalLines)
 		operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 

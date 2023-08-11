@@ -56,7 +56,6 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, fo
 		return SplitNone(maxLogSize), nil
 	case endPattern == "" && startPattern == "":
 		splitFunc, err = NewNewlineSplitFunc(enc, flushAtEOF, getTrimFunc(preserveLeadingWhitespaces, preserveTrailingWhitespaces))
-
 		if err != nil {
 			return nil, err
 		}

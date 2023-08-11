@@ -311,7 +311,7 @@ func (f *prometheusFormatter) histogram2Strings(record metricPair) []string {
 // metric2String returns stringified metricPair
 func (f *prometheusFormatter) metric2String(record metricPair) string {
 	var lines []string
-
+	//exhaustive:enforce
 	switch record.metric.Type() {
 	case pmetric.MetricTypeGauge:
 		lines = f.gauge2Strings(record)
@@ -321,6 +321,7 @@ func (f *prometheusFormatter) metric2String(record metricPair) string {
 		lines = f.summary2Strings(record)
 	case pmetric.MetricTypeHistogram:
 		lines = f.histogram2Strings(record)
+	case pmetric.MetricTypeExponentialHistogram:
 	}
 	return strings.Join(lines, "\n")
 }
