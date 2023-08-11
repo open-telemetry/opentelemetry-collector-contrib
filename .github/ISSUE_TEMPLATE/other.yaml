@@ -97,6 +97,7 @@ body:
       - extension/storage/filestorage
       - internal/aws
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig

@@ -100,6 +100,28 @@ func (g *Graphite) SendMetric(metric Metric) error {
 	return nil
 }
 
+// SputterThenSendMetric method sends a bad partial metric, then the whole metric across.
+func (g *Graphite) SputterThenSendMetric(metric Metric) error {
+	str := metric.String()
+	for i := 0; i < 5; i++ {
+		if _, err := fmt.Fprint(g.Conn, ""); err != nil {
+			return err
+		}
+		if err := g.Disconnect(); err != nil {
+			return err
+		}
+		if err := g.connect(TCP); err != nil {
+			return err
+		}
+	}
+
+	if _, err := fmt.Fprint(g.Conn, str); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SendMetrics method can be used to pass a set of metrics and
 // have it be sent to the Graphite host
 func (g *Graphite) SendMetrics(metrics []Metric) error {

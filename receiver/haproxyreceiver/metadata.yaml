@@ -37,11 +37,13 @@ resource_attributes:
     description: load balancing algorithm
     enabled: true
     type: string
-  proxy_name:
+  haproxy.proxy_name:
     description: Proxy name
+    enabled: true
     type: string
-  service_name:
+  haproxy.service_name:
     description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
+    enabled: true
     type: string
 
 attributes:
