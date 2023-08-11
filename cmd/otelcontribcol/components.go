@@ -408,11 +408,11 @@ func components() (otelcol.Factories, error) {
 	factories.Connectors, err = connector.MakeFactoryMap(
 		forwardconnector.NewFactory(),
 		countconnector.NewFactory(),
+		datadogconnector.NewFactory(),
 		exceptionsconnector.NewFactory(),
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
-		datadogconnector.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err
