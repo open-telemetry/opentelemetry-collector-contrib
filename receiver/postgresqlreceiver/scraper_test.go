@@ -37,6 +37,7 @@ func TestScraper(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -55,6 +56,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -73,6 +75,7 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -91,6 +94,7 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -109,6 +113,7 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -210,20 +215,21 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
 
-		commitsAndRollbacks := map[databaseName]databaseStats{}
+		dbStats := map[databaseName]databaseStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
 
 		for idx, db := range databases {
-			commitsAndRollbacks[databaseName(db)] = databaseStats{
+			dbStats[databaseName(db)] = databaseStats{
 				transactionCommitted: int64(idx + 1),
 				transactionRollback:  int64(idx + 2),
+				deadlocks:            int64(idx + 3),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
 		}
 
-		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
+		m.On("getDatabaseStats", databases).Return(dbStats, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{

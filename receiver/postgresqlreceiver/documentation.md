@@ -273,6 +273,30 @@ This metric requires WAL to be enabled with at least one replica.
 | operation | The operation which is responsible for the lag. | Str: ``flush``, ``replay``, ``write`` |
 | replication_client | The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket. | Any Str |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### postgresql.deadlocks
+
+The number of deadlocks.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of the database. | Any Str |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

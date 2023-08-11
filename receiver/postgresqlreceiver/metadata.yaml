@@ -230,6 +230,15 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [database]
+  postgresql.deadlocks:
+    enabled: false
+    description: The number of deadlocks.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: [database]
   postgresql.table.count:
     attributes: []
     description: Number of user tables in a database.
