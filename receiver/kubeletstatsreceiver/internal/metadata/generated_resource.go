@@ -35,6 +35,20 @@ func (rb *ResourceBuilder) SetContainerID(val string) {
 	}
 }
 
+// SetCsiDriver sets provided value as "csi.driver" attribute.
+func (rb *ResourceBuilder) SetCsiDriver(val string) {
+	if rb.config.CsiDriver.Enabled {
+		rb.res.Attributes().PutStr("csi.driver", val)
+	}
+}
+
+// SetCsiVolumeHandle sets provided value as "csi.volume.handle" attribute.
+func (rb *ResourceBuilder) SetCsiVolumeHandle(val string) {
+	if rb.config.CsiVolumeHandle.Enabled {
+		rb.res.Attributes().PutStr("csi.volume.handle", val)
+	}
+}
+
 // SetFsType sets provided value as "fs.type" attribute.
 func (rb *ResourceBuilder) SetFsType(val string) {
 	if rb.config.FsType.Enabled {

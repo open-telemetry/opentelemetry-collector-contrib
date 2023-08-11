@@ -148,6 +148,39 @@ func TestDetailedPVCLabels(t *testing.T) {
 				"k8s.namespace.name":             "pod-namespace",
 			},
 		},
+		{
+			name:       "persistentVolumeClaim - with detailed PVC labels (CSI PV with GCP driver)",
+			volumeName: "volume0",
+			volumeSource: v1.VolumeSource{
+				PersistentVolumeClaim: &v1.PersistentVolumeClaimVolumeSource{
+					ClaimName: "claim-name",
+				},
+			},
+			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
+					CSI: &v1.CSIPersistentVolumeSource{
+						Driver:       csiDriverGCP,
+						VolumeHandle: "projects/project-name/zones/us-central1-a/disks/disk-name",
+						ReadOnly:     false,
+						FSType:       "ext4",
+					},
+				})
+				return nil
+			},
+			want: map[string]interface{}{
+				"k8s.volume.name":                "volume0",
+				"k8s.volume.type":                labelValueCSIPersistentVolume,
+				"k8s.persistentvolumeclaim.name": "claim-name",
+				"k8s.pod.uid":                    "uid-1234",
+				"k8s.pod.name":                   "pod-name",
+				"k8s.namespace.name":             "pod-namespace",
+				"gce.pd.name":                    "disk-name",
+				"csi.driver":                     csiDriverGCP,
+				"csi.volume.handle":              "projects/project-name/zones/us-central1-a/disks/disk-name",
+				"fs.type":                        "ext4",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

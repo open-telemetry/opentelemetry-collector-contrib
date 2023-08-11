@@ -279,6 +279,8 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 type ResourceAttributesConfig struct {
 	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
+	CsiDriver                    ResourceAttributeConfig `mapstructure:"csi.driver"`
+	CsiVolumeHandle              ResourceAttributeConfig `mapstructure:"csi.volume.handle"`
 	FsType                       ResourceAttributeConfig `mapstructure:"fs.type"`
 	GcePdName                    ResourceAttributeConfig `mapstructure:"gce.pd.name"`
 	GlusterfsEndpointsName       ResourceAttributeConfig `mapstructure:"glusterfs.endpoints.name"`
@@ -300,6 +302,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ContainerID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CsiDriver: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		CsiVolumeHandle: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		FsType: ResourceAttributeConfig{
