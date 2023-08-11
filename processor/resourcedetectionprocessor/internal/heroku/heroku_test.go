@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 )
@@ -62,13 +61,31 @@ func TestDetectTruePartial(t *testing.T) {
 		res.Attributes().AsRaw())
 }
 
+func TestDetectTruePartialMissingDynoId(t *testing.T) {
+	t.Setenv("HEROKU_APP_ID", "appid")
+	t.Setenv("HEROKU_APP_NAME", "appname")
+	t.Setenv("HEROKU_RELEASE_VERSION", "v1")
+
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
+	res, schemaURL, err := detector.Detect(context.Background())
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	require.NoError(t, err)
+	assert.Equal(t, map[string]any{
+		"heroku.app.id":   "appid",
+		"service.name":    "appname",
+		"service.version": "v1",
+		"cloud.provider":  "heroku",
+	},
+		res.Attributes().AsRaw())
+}
+
 func TestDetectFalse(t *testing.T) {
 
-	detector := &detector{
-		logger: zap.NewNop(),
-	}
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Equal(t, "https://opentelemetry.io/schemas/1.6.1", schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 }

@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -57,6 +58,10 @@ func createMetricsExporter(ctx context.Context,
 		return nil, err
 	}
 
+	if config.(*Config).MarshalerName == SumoIC {
+		return nil, fmt.Errorf("metrics are not supported by sumo_ic output format")
+	}
+
 	return exporterhelper.NewMetricsExporter(ctx, params,
 		config,
 		s3Exporter.ConsumeMetrics)
@@ -69,6 +74,10 @@ func createTracesExporter(ctx context.Context,
 	s3Exporter, err := newS3Exporter(config.(*Config), params)
 	if err != nil {
 		return nil, err
+	}
+
+	if config.(*Config).MarshalerName == SumoIC {
+		return nil, fmt.Errorf("traces are not supported by sumo_ic output format")
 	}
 
 	return exporterhelper.NewTracesExporter(ctx,
