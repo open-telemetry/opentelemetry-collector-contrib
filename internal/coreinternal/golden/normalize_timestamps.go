@@ -26,155 +26,30 @@ func normalizeTimestamps(metrics pmetric.Metrics) {
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
 						m.Gauge().DataPoints().At(l).SetStartTimestamp(nanosec)
 					}
-					normNumberDataPointSlice(m.Gauge().DataPoints())
+					normalizeDataPointSlice(dataPointSlice[pmetric.NumberDataPoint](m.Gauge().DataPoints()))
 				case pmetric.MetricTypeSum:
 					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
 						m.Sum().DataPoints().At(l).SetStartTimestamp(nanosec)
 					}
-					normNumberDataPointSlice(m.Sum().DataPoints())
+					normalizeDataPointSlice(dataPointSlice[pmetric.NumberDataPoint](m.Sum().DataPoints()))
 				case pmetric.MetricTypeHistogram:
 					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
 						m.Histogram().DataPoints().At(l).SetStartTimestamp(nanosec)
 					}
-					normHistogramDataPointSlice(m.Histogram().DataPoints())
+					normalizeDataPointSlice(dataPointSlice[pmetric.HistogramDataPoint](m.Histogram().DataPoints()))
 				case pmetric.MetricTypeExponentialHistogram:
 					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
 						m.ExponentialHistogram().DataPoints().At(l).SetStartTimestamp(nanosec)
 					}
-					normExponentialHistogramDataPointSlice(m.ExponentialHistogram().DataPoints())
+					normalizeDataPointSlice(dataPointSlice[pmetric.ExponentialHistogramDataPoint](m.ExponentialHistogram().DataPoints()))
 				case pmetric.MetricTypeSummary:
 					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
 						m.Summary().DataPoints().At(l).SetStartTimestamp(nanosec)
 					}
-					normSummaryDataPointSlice(m.Summary().DataPoints())
+					normalizeDataPointSlice(dataPointSlice[pmetric.SummaryDataPoint](m.Summary().DataPoints()))
 				}
 			}
 		}
-	}
-}
-
-func normNumberDataPointSlice(ndps pmetric.NumberDataPointSlice) {
-	attrCache := make(map[[16]byte]bool)
-	for i := 0; i < ndps.Len(); i++ {
-		attrHash := pdatautil.MapHash(ndps.At(i).Attributes())
-		if attrCache[attrHash] {
-			continue
-		}
-		timeSeries := []pcommon.Timestamp{ndps.At(i).Timestamp()}
-
-		// Find any other data points in the time series
-		for j := i + 1; j < ndps.Len(); j++ {
-			if pdatautil.MapHash(ndps.At(j).Attributes()) != attrHash {
-				continue
-			}
-			timeSeries = append(timeSeries, ndps.At(j).Timestamp())
-		}
-
-		normalizedTs := normalizeTimeSeries(timeSeries)
-		for k := 0; k < ndps.Len(); k++ {
-			if pdatautil.MapHash(ndps.At(k).Attributes()) != attrHash {
-				continue
-			}
-			for key, value := range normalizedTs {
-				if ndps.At(k).Timestamp() == key {
-					ndps.At(k).SetTimestamp(value)
-				}
-			}
-		}
-		attrCache[attrHash] = true
-	}
-}
-
-func normSummaryDataPointSlice(sdps pmetric.SummaryDataPointSlice) {
-	attrCache := make(map[[16]byte]bool)
-	for i := 0; i < sdps.Len(); i++ {
-		attrHash := pdatautil.MapHash(sdps.At(i).Attributes())
-		if attrCache[attrHash] {
-			continue
-		}
-		timeSeries := []pcommon.Timestamp{sdps.At(i).Timestamp()}
-		// Find any other data points in the time series
-		for j := i + 1; j < sdps.Len(); j++ {
-			if pdatautil.MapHash(sdps.At(j).Attributes()) != attrHash {
-				continue
-			}
-			timeSeries = append(timeSeries, sdps.At(j).Timestamp())
-		}
-
-		normalizedTs := normalizeTimeSeries(timeSeries)
-		for k := 0; k < sdps.Len(); k++ {
-			if pdatautil.MapHash(sdps.At(k).Attributes()) != attrHash {
-				continue
-			}
-			for key, value := range normalizedTs {
-				if sdps.At(k).Timestamp() == key {
-					sdps.At(k).SetTimestamp(value)
-				}
-			}
-		}
-		attrCache[attrHash] = true
-	}
-}
-
-func normExponentialHistogramDataPointSlice(ehdps pmetric.ExponentialHistogramDataPointSlice) {
-	attrCache := make(map[[16]byte]bool)
-	for i := 0; i < ehdps.Len(); i++ {
-		attrHash := pdatautil.MapHash(ehdps.At(i).Attributes())
-		if attrCache[attrHash] {
-			continue
-		}
-		timeSeries := []pcommon.Timestamp{ehdps.At(i).Timestamp()}
-		// Find any other data points in the time series
-		for j := i + 1; j < ehdps.Len(); j++ {
-			if pdatautil.MapHash(ehdps.At(j).Attributes()) != attrHash {
-				continue
-			}
-			timeSeries = append(timeSeries, ehdps.At(j).Timestamp())
-		}
-
-		normalizedTs := normalizeTimeSeries(timeSeries)
-		for k := 0; k < ehdps.Len(); k++ {
-			if pdatautil.MapHash(ehdps.At(k).Attributes()) != attrHash {
-				continue
-			}
-			for key, value := range normalizedTs {
-				if ehdps.At(k).Timestamp() == key {
-					ehdps.At(k).SetTimestamp(value)
-				}
-			}
-		}
-		attrCache[attrHash] = true
-	}
-}
-
-func normHistogramDataPointSlice(hdps pmetric.HistogramDataPointSlice) {
-	attrCache := make(map[[16]byte]bool)
-	for i := 0; i < hdps.Len(); i++ {
-		attrHash := pdatautil.MapHash(hdps.At(i).Attributes())
-		if attrCache[attrHash] {
-			continue
-		}
-		timeSeries := []pcommon.Timestamp{hdps.At(i).Timestamp()}
-		// Find any other data points in the time series
-		for j := i + 1; j < hdps.Len(); j++ {
-			if pdatautil.MapHash(hdps.At(j).Attributes()) != attrHash {
-				continue
-			}
-			timeSeries = append(timeSeries, hdps.At(j).Timestamp())
-		}
-
-		normalizedTs := normalizeTimeSeries(timeSeries)
-		for k := 0; k < hdps.Len(); k++ {
-			if pdatautil.MapHash(hdps.At(k).Attributes()) != attrHash {
-				continue
-			}
-			for key, value := range normalizedTs {
-				if hdps.At(k).Timestamp() == key {
-					hdps.At(k).SetTimestamp(value)
-				}
-			}
-		}
-		attrCache[attrHash] = true
 	}
 }
 
@@ -201,4 +76,48 @@ func normalizeTimeSeries(timeSeries []pcommon.Timestamp) map[pcommon.Timestamp]p
 
 func normalTime(timeSeriesIndex int) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(0, 0).Add(time.Duration(timeSeriesIndex+1) * 1000000 * time.Nanosecond))
+}
+
+type dataPointSlice[T dataPoint] interface {
+	Len() int
+	At(i int) T
+}
+
+type dataPoint interface {
+	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint | pmetric.SummaryDataPoint
+	Attributes() pcommon.Map
+	Timestamp() pcommon.Timestamp
+	SetTimestamp(pcommon.Timestamp)
+}
+
+func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
+	attrCache := make(map[[16]byte]bool)
+	for i := 0; i < dps.Len(); i++ {
+		attrHash := pdatautil.MapHash(dps.At(i).Attributes())
+		if attrCache[attrHash] {
+			continue
+		}
+		timeSeries := []pcommon.Timestamp{dps.At(i).Timestamp()}
+
+		// Find any other data points in the time series
+		for j := i + 1; j < dps.Len(); j++ {
+			if pdatautil.MapHash(dps.At(j).Attributes()) != attrHash {
+				continue
+			}
+			timeSeries = append(timeSeries, dps.At(j).Timestamp())
+		}
+
+		normalizedTs := normalizeTimeSeries(timeSeries)
+		for k := 0; k < dps.Len(); k++ {
+			if pdatautil.MapHash(dps.At(k).Attributes()) != attrHash {
+				continue
+			}
+			for key, value := range normalizedTs {
+				if dps.At(k).Timestamp() == key {
+					dps.At(k).SetTimestamp(value)
+				}
+			}
+		}
+		attrCache[attrHash] = true
+	}
 }
