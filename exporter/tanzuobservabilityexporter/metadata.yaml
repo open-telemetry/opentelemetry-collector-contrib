@@ -5,3 +5,8 @@ status:
   stability:
     beta: [traces, metrics]
   distributions: [contrib]
+
+feature_gates:
+  enableSha256Gate:
+    description: When enabled, switches hashing algorithm from SHA-1 to SHA-2 256
+    stage: Beta

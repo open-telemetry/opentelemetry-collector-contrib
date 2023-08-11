@@ -36,6 +36,16 @@ func (mn attributeName) RenderUnexported() (string, error) {
 	return formatIdentifier(string(mn), false)
 }
 
+type featureGateName string
+
+func (mn featureGateName) Render() (string, error) {
+	return formatIdentifier(string(mn), true)
+}
+
+func (mn featureGateName) RenderUnexported() (string, error) {
+	return formatIdentifier(string(mn), false)
+}
+
 // ValueType defines an attribute value type.
 type ValueType struct {
 	// ValueType is type of the attribute value.
@@ -216,6 +226,8 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// FeatureGates that can be used for the component.
+	FeatureGates map[featureGateName]feature_gate `mapstructure:"feature_gates"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {
@@ -289,4 +301,26 @@ func scopeName(filePath string) string {
 		}
 	}
 	return sn
+}
+
+type feature_gate struct {
+	// Id can optionally give
+	Id string `mapstructure:"id"`
+	// Description describes the purpose of the attribute.
+	Description string `mapstructure:"description"`
+	// Stage current stage at which the feature gate is in the development lifecyle
+	Stage string `mapstructure:"stage"`
+	// ReferenceURL can optionally give the url of the feature_gate
+	ReferenceURL string `mapstructure:"referenceURL"`
+	// FromVersion optional field which gives the release version from which the gate has been given the current stage
+	FromVersion string `mapstructure:"fromVersion"`
+	// ToVersion optional field which gives the release version till which the gate the gate had the given lifecycle stage
+	ToVersion string `mapstructure:"toVersion"`
+	// FeatureGateName name of the feature gate
+	FeatureGateName featureGateName `mapstructure:"-"`
+}
+
+// Name returns the name of the feature gate
+func (fg feature_gate) Name() featureGateName {
+	return fg.FeatureGateName
 }

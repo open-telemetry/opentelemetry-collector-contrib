@@ -5,3 +5,8 @@ status:
   stability:
     deprecated: [traces]
   distributions: [contrib, observiq, splunk, sumo]
+
+feature_gates:
+  dropSanitizationGate:
+    description: Controls whether to change labels starting with '_' to 'key_'
+    stage: Alpha

@@ -6,3 +6,14 @@ status:
     deprecated: [traces]
   distributions: [contrib, sumo]
   warnings: []
+
+feature_gates:
+  virtualNodeFeatureGate:
+    description: When enabled, when the edge expires, processor checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196
+
+  legacyMetricNamesFeatureGate:
+    description: When enabled, processor uses legacy latency metric names.
+    stage: Alpha
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578

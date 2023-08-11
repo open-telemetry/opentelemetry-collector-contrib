@@ -62,3 +62,10 @@ metrics:
     gauge:
       value_type: int
     attributes: [state]
+
+feature_gates:
+  connectorsAsSumGate:
+    description: When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge.
+    stage: Beta
+    referenceURL: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326
+    fromVersion: v0.78.0

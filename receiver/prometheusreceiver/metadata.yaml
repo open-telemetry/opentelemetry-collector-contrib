@@ -6,3 +6,8 @@ status:
     beta: [metrics]
   distributions: [core, contrib, splunk, observiq, sumo, aws]
 
+feature_gates:
+  useCreatedMetricGate:
+    description: When enabled, the Prometheus receiver will retrieve the start time for Summary, Histogram and Sum metrics from _created metric
+    stage: Alpha
+

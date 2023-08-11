@@ -92,3 +92,9 @@ resource_attributes:
     description: Container image tag. Requires container.id or k8s.container.name.
     type: string
     enabled: true
+
+feature_gates:
+  enableRFC3339Timestamp:
+    description: When enabled, uses RFC3339 format for k8s.pod.start_time value
+    stage: Alpha
+    fromVersion: v0.82.0

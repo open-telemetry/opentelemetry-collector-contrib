@@ -6,3 +6,8 @@ status:
     alpha: [logs]
     beta: [traces, metrics]
   distributions: [contrib, aws, observiq]
+
+feature_gates:
+  mertricExportNativeClientFeatureGate:
+    description: When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs.
+    stage: Beta
