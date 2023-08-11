@@ -125,9 +125,16 @@ func mapAttribute(avroLog map[string]interface{}, sourceField string, attributes
 	}
 }
 
+// setAttribute adds a map entry in *pcommon.Map with an arbitrary value.
+// If the value can't be mapped, the entry is cleaned up.
 func setAttribute(attributes *pcommon.Map, key string, value interface{}) {
 	attribute := attributes.PutEmpty(key)
-	_ = attribute.FromRaw(value)
+	err := attribute.FromRaw(value)
+	
+	// if FromRaw failed, clean up empty entry.
+	if err != nil {
+		attributes.Remove(key)
+	}
 }
 
 type avroDeserializer interface {
