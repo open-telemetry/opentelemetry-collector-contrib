@@ -37,6 +37,8 @@ type connectorImp struct {
 	exit chan struct{}
 }
 
+var _ component.Component = (*connectorImp)(nil) // testing that the connectorImp properly implements the type Component interface
+
 // function to create a new connector
 func newConnector(logger *zap.Logger, _ component.Config, nextConsumer consumer.Metrics) (*connectorImp, error) {
 	logger.Info("Building datadog connector")
