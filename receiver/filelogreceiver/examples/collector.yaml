@@ -97,4 +97,3 @@ spec:
             items:
               - key: collector.yaml
                 path: collector.yaml
-          
