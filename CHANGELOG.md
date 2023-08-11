@@ -950,7 +950,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 ### 🛑 Breaking changes 🛑
 
 - `fluentbitextension`: remove deprecated extension (#18505)
-- `all`: Remove go 1.18 support, bump minimum to go 1.19 and add testing for 1.20 (#18436)
+- `all`: Remove go 1.18 support, bump minimum to go 1.20 and add testing for 1.20 (#18436)
 - `pkg/ottl`: switch ErrorMode to be a string instead of an int (#18692)
 - `hostmetricsreceiver`: Remove deprecated process memory metrics (#14327)
   The metrics `process.memory.physical_usage` and `process.memory.virtual_usage` have been deprecated since v0.64.0.

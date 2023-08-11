@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
 
-go 1.19
+go 1.20
 
 require (
 	github.com/fatih/structtag v1.2.0
