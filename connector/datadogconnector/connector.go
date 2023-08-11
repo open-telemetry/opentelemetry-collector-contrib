@@ -20,7 +20,6 @@ import (
 type connectorImp struct {
 	metricsConsumer consumer.Metrics // the next component in the pipeline to ingest data after connector
 	logger          *zap.Logger
-	started         bool
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
@@ -62,7 +61,6 @@ func newConnector(logger *zap.Logger, _ component.Config, nextConsumer consumer.
 // Start implements the component.Component interface.
 func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 	c.logger.Info("Starting datadogconnector")
-	c.started = true
 	c.agent.Start()
 	go c.run()
 	return nil
@@ -71,7 +69,6 @@ func (c *connectorImp) Start(_ context.Context, _ component.Host) error {
 // Shutdown implements the component.Component interface.
 func (c *connectorImp) Shutdown(context.Context) error {
 	c.logger.Info("Shutting down datadog connector")
-	c.started = false
 	c.agent.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close

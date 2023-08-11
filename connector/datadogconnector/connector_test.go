@@ -23,10 +23,9 @@ func TestNewConnector(t *testing.T) {
 	creationParams := connectortest.NewNopCreateSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	// Test
 	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
-	smc := traceConnector.(*connectorImp)
+	assert.NoError(t, err)
 
-	assert.Nil(t, err)
-	assert.NotNil(t, smc) // checks if the created connector implements the connectorImp struct
+	_, ok := traceConnector.(*connectorImp)
+	assert.True(t, ok) // checks if the created connector implements the connectorImp struct
 }

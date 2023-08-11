@@ -11,22 +11,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-)
 
-const (
-	// this is the name used to refer to the connector in the config.yaml
-	typeStr = "datadog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 )
 
 // NewFactory creates a factory for tailtracer connector.
 func NewFactory() connector.Factory {
 	//  OTel connector factory to make a factory for connectors
 	return connector.NewFactory(
-		// metadata.Type,
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		// connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesStability))
-		connector.WithTracesToMetrics(createTracesToMetricsConnector, component.StabilityLevelAlpha))
+		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability))
 }
 
 var _ component.Config = (*Config)(nil)
