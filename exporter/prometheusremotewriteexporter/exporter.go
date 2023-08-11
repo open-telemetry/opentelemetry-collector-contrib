@@ -220,13 +220,6 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-	// Attempt the HTTP request with retry logic
-	backOff := backoff.NewExponentialBackOff()
-	backOff.InitialInterval = prwe.retrySettings.InitialInterval
-	backOff.RandomizationFactor = prwe.retrySettings.RandomizationFactor
-	backOff.Multiplier = prwe.retrySettings.Multiplier
-	backOff.MaxInterval = prwe.retrySettings.MaxInterval
-	backOff.MaxElapsedTime = prwe.retrySettings.MaxElapsedTime
 
 	retryFunc := func() error {
 		// Uses proto.Marshal to convert the WriteRequest into bytes array
@@ -272,8 +265,16 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 
-	// Use the BackOff instance to retry the operation with exponential backoff.
-	return backoff.Retry(retryFunc, backOff)
+	// Use the BackOff instance to retry the func with exponential backoff.
+	return backoff.Retry(retryFunc, &backoff.ExponentialBackOff{
+		InitialInterval:     prwe.retrySettings.InitialInterval,
+		RandomizationFactor: prwe.retrySettings.RandomizationFactor,
+		Multiplier:          prwe.retrySettings.Multiplier,
+		MaxInterval:         prwe.retrySettings.MaxInterval,
+		MaxElapsedTime:      prwe.retrySettings.MaxElapsedTime,
+		Stop:                backoff.Stop,
+		Clock:               backoff.SystemClock,
+	})
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
