@@ -234,6 +234,9 @@ func TestScrapeV2(t *testing.T) {
 				require.NoError(t, err)
 				return mockServer
 			},
+			cfgBuilder: newTestConfigBuilder().
+				withDefaultLabels().
+				withMetrics(allMetricsEnabled),
 		},
 		{
 			desc:                "scrapeV2_cpu_limit",
