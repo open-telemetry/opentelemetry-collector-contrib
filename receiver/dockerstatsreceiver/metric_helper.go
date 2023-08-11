@@ -12,6 +12,8 @@ import (
 	ctypes "github.com/docker/docker/api/types/container"
 )
 
+const nanosInASecond = 1e9
+
 // Following functions has been copied from: calculateCPUPercentUnix(), calculateMemUsageUnixNoCache(), calculateMemPercentUnixNoCache()
 // https://github.com/docker/cli/blob/a2e9ed3b874fccc177b9349f3b0277612403934f/cli/command/container/stats_helpers.go
 
@@ -91,7 +93,7 @@ func calculateCPULimit(hostConfig *ctypes.HostConfig) (float64, error) {
 
 	switch {
 	case hostConfig.NanoCPUs > 0:
-		cpuLimit = float64(hostConfig.NanoCPUs) / 1e9
+		cpuLimit = float64(hostConfig.NanoCPUs) / nanosInASecond
 	case hostConfig.CpusetCpus != "":
 		cpuLimit, err = parseCPUSet(hostConfig.CpusetCpus)
 		if err != nil {
