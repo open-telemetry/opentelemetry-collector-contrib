@@ -220,7 +220,7 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 }
 
 func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequest) error {
-
+	// Retry function for backoff
 	retryFunc := func() error {
 		// Uses proto.Marshal to convert the WriteRequest into bytes array
 		data, err := proto.Marshal(writeReq)
@@ -266,7 +266,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 	}
 
 	// Use the BackOff instance to retry the func with exponential backoff.
-	return backoff.Retry(retryFunc, &backoff.ExponentialBackOff{
+	err := backoff.Retry(retryFunc, &backoff.ExponentialBackOff{
 		InitialInterval:     prwe.retrySettings.InitialInterval,
 		RandomizationFactor: prwe.retrySettings.RandomizationFactor,
 		Multiplier:          prwe.retrySettings.Multiplier,
@@ -275,6 +275,12 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		Stop:                backoff.Stop,
 		Clock:               backoff.SystemClock,
 	})
+
+	if err != nil {
+		return consumererror.NewPermanent(err)
+	}
+
+	return nil
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
