@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -21,7 +22,7 @@ type readerFactory struct {
 	*zap.SugaredLogger
 	readerConfig    *readerConfig
 	fromBeginning   bool
-	splitterFactory splitterFactory
+	splitterFactory splitter.Factory
 	encodingConfig  helper.EncodingConfig
 	headerConfig    *header.Config
 }
