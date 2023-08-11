@@ -5,11 +5,13 @@ package traces // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.opentelemetry.io/otel/trace"
@@ -25,12 +27,15 @@ type worker struct {
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
 	logger           *zap.Logger
+	loadSize         int
 }
 
 const (
 	fakeIP string = "1.2.3.4"
 
 	fakeSpanDuration = 123 * time.Microsecond
+
+	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
 )
 
 func (w worker) simulateTraces() {
@@ -44,6 +49,9 @@ func (w worker) simulateTraces() {
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
 		)
+		for j := 0; j < w.loadSize; j++ {
+			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
+		}
 
 		childCtx := ctx
 		if w.propagateContext {

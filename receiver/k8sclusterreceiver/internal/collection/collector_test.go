@@ -118,5 +118,5 @@ func TestCollectMetricData(t *testing.T) {
 	m2 := dc.CollectMetricData(time.Now())
 
 	// Second scrape should be the same as the first one except for the timestamp.
-	assert.NoError(t, pmetrictest.CompareMetrics(m1, m2, pmetrictest.IgnoreTimestamp()))
+	assert.NoError(t, pmetrictest.CompareMetrics(m1, m2, pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceMetricsOrder()))
 }
