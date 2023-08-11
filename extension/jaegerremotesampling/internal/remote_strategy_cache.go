@@ -82,10 +82,9 @@ func (c *serviceStrategyTTLCache) put(
 	}
 }
 
-// periodicallyClearCache provides a secondary "cleanup" mechanism motivated by wanting to guarantee
-// that the memory usage of this serviceStrategyTTLCache does not grow unbounded over long periods of collector uptime.
-// Ideally, this is really unnecessary because the get/put access pattern suffices to maintain a small
-// set of services. If that assumption is violated, this async process will periodically flush stale items.
+// periodicallyClearCache periodically clears expired items from the cache and replaces the backing map with only
+// valid (fresh) items. Note that this is not necessary for correctness, just preferred for memory usage hygiene.
+// Client request activity drives the replacement of stale items with fresh items upon cache misses for any service.
 func (c *serviceStrategyTTLCache) periodicallyClearCache(
 	ctx context.Context,
 	schedulingPeriod time.Duration,
