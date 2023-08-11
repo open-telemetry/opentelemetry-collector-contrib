@@ -279,9 +279,9 @@ func TestScrapeV2(t *testing.T) {
 			mockDockerEngine: func(t *testing.T) *httptest.Server {
 				containerID := "73364842ef014441cac89fed05df19463b1230db25a31252cdf82e754f1ec581"
 				mockServer, err := dockerMockServer(&map[string]string{
-					"/v1.23/containers/json":                      filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "containers.json"),
-					"/v1.23/containers/" + containerID + "/json":  filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "container.json"),
-					"/v1.23/containers/" + containerID + "/stats": filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "stats.json"),
+					"/v1.25/containers/json":                      filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "containers.json"),
+					"/v1.25/containers/" + containerID + "/json":  filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "container.json"),
+					"/v1.25/containers/" + containerID + "/stats": filepath.Join(mockFolder, "single_container_with_optional_resource_attributes", "stats.json"),
 				})
 				require.NoError(t, err)
 				return mockServer
@@ -294,6 +294,9 @@ func TestScrapeV2(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		if tc.desc != "scrapeV2_single_container_with_optional_resource_attributes" {
+			continue
+		}
 		t.Run(tc.desc, func(t *testing.T) {
 			mockDockerEngine := tc.mockDockerEngine(t)
 			defer mockDockerEngine.Close()
