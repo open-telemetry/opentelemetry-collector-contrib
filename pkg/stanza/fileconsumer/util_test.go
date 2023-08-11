@@ -91,7 +91,7 @@ func buildTestManager(t *testing.T, cfg *Config, opts ...testManagerOption) (*Ma
 	}
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
-	return input, tmc.emitChan
+	return input.(*Manager), tmc.emitChan
 }
 
 func openFile(tb testing.TB, path string) *os.File {

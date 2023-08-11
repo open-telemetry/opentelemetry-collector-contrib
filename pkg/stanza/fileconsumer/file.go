@@ -26,6 +26,11 @@ const (
 	logFilePathResolved = "log.file.path_resolved"
 )
 
+type ManagerInterface interface {
+	Start(operator.Persister) error
+	Stop() error
+}
+
 type Manager struct {
 	*zap.SugaredLogger
 	wg     sync.WaitGroup

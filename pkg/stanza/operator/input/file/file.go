@@ -19,7 +19,7 @@ type toBodyFunc func([]byte) interface{}
 type Input struct {
 	helper.InputOperator
 
-	fileConsumer *fileconsumer.Manager
+	fileConsumer fileconsumer.ManagerInterface
 
 	toBody toBodyFunc
 }

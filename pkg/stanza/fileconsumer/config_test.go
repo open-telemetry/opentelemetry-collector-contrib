@@ -631,7 +631,7 @@ func TestBuild(t *testing.T) {
 				return
 			}
 
-			tc.validate(t, input)
+			tc.validate(t, input.(*Manager))
 		})
 	}
 }
@@ -710,7 +710,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return
 			}
 
-			tc.validate(t, input)
+			tc.validate(t, input.(*Manager))
 		})
 	}
 }
@@ -796,7 +796,7 @@ func TestBuildWithHeader(t *testing.T) {
 			if err != nil {
 				return
 			}
-			tc.validate(t, input)
+			tc.validate(t, input.(*Manager))
 		})
 	}
 }

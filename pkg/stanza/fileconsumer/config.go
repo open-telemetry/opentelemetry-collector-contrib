@@ -80,7 +80,7 @@ type HeaderConfig struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
+func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (ManagerInterface, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (ManagerInterface, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (ManagerInterface, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}

@@ -45,7 +45,7 @@ func createDefaultConfig() component.Config {
 }
 
 type receiver struct {
-	input     *fileconsumer.Manager
+	input     fileconsumer.ManagerInterface
 	id        component.ID
 	storageID *component.ID
 }
