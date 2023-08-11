@@ -67,6 +67,7 @@ func traverseMetrics(metrics pmetric.Metrics, collect collectFunc) {
 			l := r.ScopeMetrics().At(lix)
 			for dix := 0; dix < l.Metrics().Len(); dix++ {
 				d := l.Metrics().At(dix)
+				//exhaustive:enforce
 				switch d.Type() {
 				case pmetric.MetricTypeHistogram:
 					for pix := 0; pix < d.Histogram().DataPoints().Len(); pix++ {
