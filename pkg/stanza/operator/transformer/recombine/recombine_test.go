@@ -735,7 +735,7 @@ func TestSourceBatchDelete(t *testing.T) {
 	require.NoError(t, recombine.Process(ctx, start))
 	require.NoError(t, recombine.Process(ctx, next))
 	require.Equal(t, 1, len(recombine.batchMap))
-	require.NoError(t, recombine.flushSource("file1", true))
+	require.NoError(t, recombine.flushSource("file1", true, nil))
 	require.Equal(t, 0, len(recombine.batchMap))
 	require.NoError(t, recombine.Stop())
 }
