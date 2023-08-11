@@ -5,12 +5,17 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"strconv"
+	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	v1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
+)
+
+const (
+	csiDriverGCP = "pd.csi.storage.gke.io"
 )
 
 func addVolumeMetrics(mb *metadata.MetricsBuilder, volumeMetrics metadata.VolumeMetrics, s stats.VolumeStats, currentTime pcommon.Timestamp) {
@@ -65,6 +70,8 @@ func SetPersistentVolumeLabels(rb *metadata.ResourceBuilder, pv v1.PersistentVol
 			Path:          pv.Glusterfs.Path,
 			ReadOnly:      pv.Glusterfs.ReadOnly,
 		})
+	case pv.CSI != nil:
+		csiPersistentVolumeDims(rb, *pv.CSI)
 	}
 }
 
@@ -89,4 +96,23 @@ func glusterfsDims(rb *metadata.ResourceBuilder, vs v1.GlusterfsVolumeSource) {
 	// GlusterFS specific labels.
 	rb.SetGlusterfsEndpointsName(vs.EndpointsName)
 	rb.SetGlusterfsPath(vs.Path)
+}
+
+func csiPersistentVolumeDims(rb *metadata.ResourceBuilder, vs v1.CSIPersistentVolumeSource) {
+	rb.SetK8sVolumeType(labelValueCSIPersistentVolume)
+
+	// CSI specific labels.
+	rb.SetCsiVolumeHandle(vs.VolumeHandle)
+	rb.SetCsiDriver(vs.Driver)
+	rb.SetFsType(vs.FSType)
+
+	// CSI driver specific labels.
+	switch vs.Driver {
+	case csiDriverGCP:
+		// This is in one of two formats:
+		// projects/<project>/regions/<region>/disks/<disk>
+		// projects/<project>/zones/<zone>/disks/<disk>
+		parts := strings.SplitN(vs.VolumeHandle, "/", 6)
+		rb.SetGcePdName(parts[len(parts)-1])
+	}
 }

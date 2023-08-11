@@ -225,6 +225,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb := mb.NewResourceBuilder()
 			rb.SetAwsVolumeID("aws.volume.id-val")
 			rb.SetContainerID("container.id-val")
+			rb.SetCsiDriver("csi.driver-val")
+			rb.SetCsiVolumeHandle("csi.volume.handle-val")
 			rb.SetFsType("fs.type-val")
 			rb.SetGcePdName("gce.pd.name-val")
 			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")

@@ -69,6 +69,14 @@ resource_attributes:
     description: "Glusterfs volume path"
     enabled: true
     type: string
+  csi.volume.handle:
+    description: "CSI volume handle"
+    enabled: true
+    type: string
+  csi.driver:
+    description: "CSI driver"
+    enabled: true
+    type: string
 
 attributes:
   interface:

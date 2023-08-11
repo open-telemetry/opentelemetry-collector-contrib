@@ -16,5 +16,6 @@ const (
 	labelValueLocalVolume           = "local"
 	labelValueAWSEBSVolume          = "awsElasticBlockStore"
 	labelValueGCEPDVolume           = "gcePersistentDisk"
+	labelValueCSIPersistentVolume   = "csiPersistentVolume"
 	labelValueGlusterFSVolume       = "glusterfs"
 )

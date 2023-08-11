@@ -90,6 +90,10 @@ all_set:
       enabled: true
     container.id:
       enabled: true
+    csi.driver:
+      enabled: true
+    csi.volume.handle:
+      enabled: true
     fs.type:
       enabled: true
     gce.pd.name:
@@ -206,6 +210,10 @@ none_set:
     aws.volume.id:
       enabled: false
     container.id:
+      enabled: false
+    csi.driver:
+      enabled: false
+    csi.volume.handle:
       enabled: false
     fs.type:
       enabled: false
