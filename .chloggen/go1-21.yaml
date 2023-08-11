@@ -5,7 +5,7 @@ change_type: breaking
 component: all
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove go 1.20 support, bump minimum to go 1.20 and add testing for 1.21
+note: Remove go 1.19 support, bump minimum to go 1.20 and add testing for 1.21
 
 # One or more tracking issues or pull requests related to the change
 issues: [8207]
