@@ -69,6 +69,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 				var err error
+				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					err = d.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())
