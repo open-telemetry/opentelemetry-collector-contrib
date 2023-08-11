@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -30,6 +31,13 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `delete_after_read` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
+)
+
+var useThreadPool = featuregate.GlobalRegistry().MustRegister(
+	"filelog.useThreadPool",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, log collection switches to a thread pool model, respecting the `poll_interval` config."),
+	// featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16314"),
 )
 
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
@@ -145,7 +153,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		return nil, err
 	}
 
-	return &Manager{
+	manager := Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
 		readerFactory: readerFactory{
@@ -172,7 +180,12 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
-	}, nil
+	}
+	if useThreadPool.IsEnabled() {
+		manager.readerChan = make(chan readerWrapper, c.MaxConcurrentFiles)
+		manager.trie = trie.NewTrie()
+	}
+	return &manager, nil
 }
 
 func (c Config) validate() error {

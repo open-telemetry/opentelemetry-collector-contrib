@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/trie"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
@@ -45,6 +46,17 @@ type Manager struct {
 	seenPaths  map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
+
+	// Following fields are used only when useThreadPool is enabled
+	workerWg       sync.WaitGroup
+	_workerWg      sync.WaitGroup
+	knownFilesLock sync.RWMutex
+
+	readerChan chan readerWrapper
+	trieLock   sync.RWMutex
+
+	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
+	trie *trie.Trie
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -61,6 +73,11 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.Warnw("finding files", "error", err.Error())
 	}
 
+	// If useThreadPool is enabled, kick off the worker threads
+	if useThreadPool.IsEnabled() {
+		m.kickOffThreads(ctx)
+	}
+
 	// Start polling goroutine
 	m.startPoller(ctx)
 
@@ -71,6 +88,10 @@ func (m *Manager) Start(persister operator.Persister) error {
 func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
+	if useThreadPool.IsEnabled() {
+		m.shutdownThreads()
+	}
+
 	m.roller.cleanup()
 	for _, reader := range m.knownFiles {
 		reader.Close()
@@ -95,14 +116,21 @@ func (m *Manager) startPoller(ctx context.Context) {
 				return
 			case <-globTicker.C:
 			}
-
 			m.poll(ctx)
 		}
 	}()
 }
 
-// poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
+	if useThreadPool.IsEnabled() {
+		m.pollConcurrent(ctx)
+	} else {
+		m.pollRegular(ctx)
+	}
+}
+
+// poll checks all the watched paths for new entries
+func (m *Manager) pollRegular(ctx context.Context) {
 	// Increment the generation on all known readers
 	// This is done here because the next generation is about to start
 	for i := 0; i < len(m.knownFiles); i++ {
@@ -134,6 +162,18 @@ func (m *Manager) poll(ctx context.Context) {
 	m.consume(ctx, matches)
 }
 
+func (m *Manager) readToEnd(ctx context.Context, r *reader) bool {
+	r.ReadToEnd(ctx)
+	if m.deleteAfterRead && r.eof {
+		r.Close()
+		if err := os.Remove(r.file.Name()); err != nil {
+			m.Errorf("could not delete %s", r.file.Name())
+		}
+		return true
+	}
+	return false
+}
+
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.Debug("Consuming files")
 	readers := make([]*reader, 0, len(paths))
@@ -154,14 +194,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader) {
 			defer wg.Done()
-			r.ReadToEnd(ctx)
-			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
-			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
-			}
+			m.readToEnd(ctx, r)
 		}(r)
 	}
 	wg.Wait()

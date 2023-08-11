@@ -357,7 +357,7 @@ func TestMoveFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -389,7 +389,7 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -417,6 +417,8 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	movedFile, err := os.OpenFile(newFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	require.NoError(t, err)
 	writeString(t, movedFile, "testlog2\n")
+	operator.poll(context.Background())
+	operator.poll(context.Background())
 	operator.poll(context.Background())
 
 	waitForToken(t, emitCalls, []byte("testlog2"))
@@ -474,7 +476,7 @@ func TestTruncateThenWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
@@ -511,7 +513,7 @@ func TestCopyTruncateWriteBoth(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg)
+	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp1 := openTemp(t, tempDir)
