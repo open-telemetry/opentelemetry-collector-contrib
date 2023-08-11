@@ -44,6 +44,27 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 		"k1": "v1",
 	}
 
+	labelMapBucket1 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "1",
+	}
+	labelMapBucket2 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "2",
+	}
+	labelMapBucket3 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "4",
+	}
+	labelMapBucket4 := map[string]interface{}{
+		"k0": "v0",
+		"k1": "v1",
+		"le": "+Inf",
+	}
+
 	longLabelMap := map[string]interface{}{
 		fmt.Sprintf("l%sng_key", strings.Repeat("o", 128)): "v0",
 		"k0": "v0",
@@ -89,8 +110,8 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 
 	initHistDP := func(histDP pmetric.HistogramDataPoint) {
 		histDP.SetTimestamp(ts)
-		histDP.SetCount(16)
-		histDP.SetSum(100.0)
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetSum(doubleVal)
 		histDP.ExplicitBounds().FromRaw([]float64{1, 2, 4})
 		histDP.BucketCounts().FromRaw([]uint64{4, 2, 3, 7})
 		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
@@ -99,13 +120,18 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 	initHistDP(histDP)
 
 	initHistDPNoBuckets := func(histDP pmetric.HistogramDataPoint) {
-		histDP.SetCount(2)
-		histDP.SetSum(10)
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetSum(doubleVal)
 		histDP.SetTimestamp(ts)
 		assert.NoError(t, histDP.Attributes().FromRaw(labelMap))
 	}
 	histDPNoBuckets := pmetric.NewHistogramDataPoint()
 	initHistDPNoBuckets(histDPNoBuckets)
+
+	initHistPt := func(histDP pmetric.HistogramDataPoint) {
+		histDP.SetCount(uint64(int64Val))
+		histDP.SetTimestamp(ts)
+	}
 
 	tests := []struct {
 		name              string
@@ -170,7 +196,11 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetEmptySum().SetIsMonotonic(false)
 					initInt64Pt(m.Sum().DataPoints().AppendEmpty())
 				}
-
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_empty_metric")
+					initHistPt(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
 				return out
 			},
 			wantSfxDataPoints: []*sfxpb.DataPoint{
@@ -182,6 +212,7 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint("delta_int_with_dims", &sfxMetricTypeCounter, nil),
 				doubleSFxDataPoint("gauge_sum_double_with_dims", &sfxMetricTypeGauge, nil),
 				int64SFxDataPoint("gauge_sum_int_with_dims", &sfxMetricTypeGauge, nil),
+				int64SFxDataPoint("histo_empty_metric_count", &sfxMetricTypeCumulativeCounter, nil),
 			},
 		},
 		{
@@ -212,6 +243,16 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 					m.SetEmptySum().SetIsMonotonic(true)
 					initInt64PtWithLabels(m.Sum().DataPoints().AppendEmpty())
 				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_no_buckets_dims")
+					initHistDPNoBuckets(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
+				{
+					m := ilm.Metrics().AppendEmpty()
+					m.SetName("histo_with_buckets_dims")
+					initHistDP(m.SetEmptyHistogram().DataPoints().AppendEmpty())
+				}
 
 				return out
 			},
@@ -220,6 +261,14 @@ func Test_MetricDataToSignalFxV2(t *testing.T) {
 				int64SFxDataPoint("gauge_int_with_dims", &sfxMetricTypeGauge, labelMap),
 				doubleSFxDataPoint("cumulative_double_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
 				int64SFxDataPoint("cumulative_int_with_dims", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_no_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_no_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+				int64SFxDataPoint("histo_with_buckets_dims_count", &sfxMetricTypeCumulativeCounter, labelMap),
+				doubleSFxDataPoint("histo_with_buckets_dims_sum", &sfxMetricTypeCumulativeCounter, labelMap),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket1), 4),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket2), 6),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket3), 9),
+				histoValue(int64SFxDataPoint("histo_with_buckets_dims_bucket", &sfxMetricTypeCumulativeCounter, labelMapBucket4), 16),
 			},
 		},
 		{
@@ -800,6 +849,11 @@ func int64SFxDataPoint(
 		MetricType: metricType,
 		Dimensions: sfxDimensions(dims),
 	}
+}
+
+func histoValue(dps *sfxpb.DataPoint, val int64) *sfxpb.DataPoint {
+	dps.Value = sfxpb.Datum{IntValue: &val}
+	return dps
 }
 
 func sfxDimensions(m map[string]interface{}) []*sfxpb.Dimension {

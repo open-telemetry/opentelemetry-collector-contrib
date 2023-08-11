@@ -63,6 +63,10 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 	return metrics
 }
 
+func (f *FileSystemMetricExtractor) Shutdown() error {
+	return nil
+}
+
 func NewFileSystemMetricExtractor(logger *zap.Logger) *FileSystemMetricExtractor {
 	fse := &FileSystemMetricExtractor{
 		logger:          logger,

@@ -133,6 +133,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 					}
 				}
 				if fmp.skipDataPointExpr != nil {
+					//exhaustive:enforce
 					switch metric.Type() {
 					case pmetric.MetricTypeSum:
 						errors = multierr.Append(errors, fmp.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metric, smetrics.Metrics(), scope, resource))
