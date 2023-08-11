@@ -25,8 +25,16 @@ func (c *mockCadvisor) GetMetrics() []pmetric.Metrics {
 	return []pmetric.Metrics{md}
 }
 
+func (c *mockCadvisor) Shutdown() error {
+	return nil
+}
+
 // Mock k8sapiserver
 type mockK8sAPIServer struct {
+}
+
+func (m *mockK8sAPIServer) Shutdown() error {
+	return nil
 }
 
 func (m *mockK8sAPIServer) GetMetrics() []pmetric.Metrics {
