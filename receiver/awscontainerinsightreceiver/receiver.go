@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
@@ -26,6 +27,7 @@ var _ receiver.Metrics = (*awsContainerInsightReceiver)(nil)
 
 type metricsProvider interface {
 	GetMetrics() []pmetric.Metrics
+	Shutdown() error
 }
 
 // awsContainerInsightReceiver implements the receiver.Metrics
@@ -125,7 +127,18 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 		return nil
 	}
 	acir.cancel()
-	return nil
+
+	var errs error
+
+	if acir.k8sapiserver != nil {
+		errs = multierr.Append(errs, acir.k8sapiserver.Shutdown())
+	}
+	if acir.cadvisor != nil {
+		errs = multierr.Append(errs, acir.cadvisor.Shutdown())
+	}
+
+	return errs
+
 }
 
 // collectData collects container stats from Amazon ECS Task Metadata Endpoint
