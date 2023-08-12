@@ -34,7 +34,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
