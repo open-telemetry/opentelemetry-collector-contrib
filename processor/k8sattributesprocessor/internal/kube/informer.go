@@ -17,6 +17,8 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
+const kubeSystemNamespace = "kube-system"
+
 // InformerProvider defines a function type that returns a new SharedInformer. It is used to
 // allow passing custom shared informers to the watch client.
 type InformerProvider func(
@@ -71,6 +73,27 @@ func informerWatchFuncWithSelectors(client kubernetes.Interface, namespace strin
 		opts.FieldSelector = fs.String()
 		return client.CoreV1().Pods(namespace).Watch(context.Background(), opts)
 	}
+}
+
+// newKubeSystemSharedInformer watches only kube-system namespace
+func newKubeSystemSharedInformer(
+	client kubernetes.Interface,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
+				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
+				return client.CoreV1().Namespaces().List(context.Background(), opts)
+			},
+			WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
+				opts.FieldSelector = fields.OneTermEqualSelector("metadata.name", kubeSystemNamespace).String()
+				return client.CoreV1().Namespaces().Watch(context.Background(), opts)
+			},
+		},
+		&api_v1.Namespace{},
+		watchSyncPeriod,
+	)
+	return informer
 }
 
 func newNamespaceSharedInformer(
