@@ -5,7 +5,7 @@ change_type: enhancement
 component: awsxrayexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Promoting consumer spans to segments and naming them after their resoruce service name
+note: Promoting consumer spans to segments and follow server span naming
 
 # One or more tracking issues related to the change
 issues: [25177]
