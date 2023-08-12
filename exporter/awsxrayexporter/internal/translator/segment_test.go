@@ -1013,7 +1013,6 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 	attributes[awsLocalService] = "ConsumerService"
 
 	resource := constructDefaultResource()
-	resource.Attributes().Remove(conventions.AttributeServiceName)
 	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
