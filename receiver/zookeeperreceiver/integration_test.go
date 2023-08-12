@@ -34,7 +34,7 @@ func integrationTest(name string, image string, standalone bool) func(*testing.T
 			testcontainers.ContainerRequest{
 				Image: image,
 				Env: map[string]string{
-					"ZOO_4LW_COMMANDS_WHITELIST": "srvr,mntr",
+					"ZOO_4LW_COMMANDS_WHITELIST": "srvr,mntr,ruok",
 					"ZOO_STANDALONE_ENABLED":     fmt.Sprintf("%t", standalone),
 				},
 				ExposedPorts: []string{zookeeperPort},

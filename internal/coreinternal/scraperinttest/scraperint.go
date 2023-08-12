@@ -49,6 +49,7 @@ func NewIntegrationTest(f receiver.Factory, opts ...TestOption) *IntegrationTest
 type IntegrationTest struct {
 	networkRequest         *testcontainers.NetworkRequest
 	containerRequests      []testcontainers.ContainerRequest
+	allowHardcodedHostPort bool
 	createContainerTimeout time.Duration
 
 	factory      receiver.Factory
@@ -199,8 +200,10 @@ func (it *IntegrationTest) validate(t *testing.T) {
 		} else {
 			containerNames[cr.Name] = true
 		}
-		for _, port := range cr.ExposedPorts {
-			require.False(t, strings.ContainsRune(port, ':'), "exposed port hardcoded to host port: %q", port)
+		if !it.allowHardcodedHostPort {
+			for _, port := range cr.ExposedPorts {
+				require.False(t, strings.ContainsRune(port, ':'), "exposed port hardcoded to host port: %q", port)
+			}
 		}
 		require.NoError(t, cr.Validate())
 	}
@@ -217,6 +220,12 @@ func WithNetworkRequest(nr testcontainers.NetworkRequest) TestOption {
 func WithContainerRequest(cr testcontainers.ContainerRequest) TestOption {
 	return func(it *IntegrationTest) {
 		it.containerRequests = append(it.containerRequests, cr)
+	}
+}
+
+func AllowHardcodedHostPort() TestOption {
+	return func(it *IntegrationTest) {
+		it.allowHardcodedHostPort = true
 	}
 }
 

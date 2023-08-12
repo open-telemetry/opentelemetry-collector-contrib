@@ -3,37 +3,19 @@
 
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
-import (
-	"github.com/bmatcuk/doublestar/v4"
-)
+import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 
-type Finder struct {
-	Include []string `mapstructure:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty"`
-}
+// Deprecated: [v0.83.0] Use matcher.Criteria instead.
+type MatchingCriteria = matcher.Criteria
 
-// FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func (f Finder) FindFiles() []string {
-	all := make([]string, 0, len(f.Include))
-	for _, include := range f.Include {
-		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
-	INCLUDE:
-		for _, match := range matches {
-			for _, exclude := range f.Exclude {
-				if itMatches, _ := doublestar.PathMatch(exclude, match); itMatches {
-					continue INCLUDE
-				}
-			}
+// Deprecated: [v0.83.0] Use matcher.OrderingCriteria instead.
+type OrderingCriteria = matcher.OrderingCriteria
 
-			for _, existing := range all {
-				if existing == match {
-					continue INCLUDE
-				}
-			}
+// Deprecated: [v0.83.0] Use matcher.Sort instead.
+type NumericSortRule = matcher.Sort
 
-			all = append(all, match)
-		}
-	}
+// Deprecated: [v0.83.0] Use matcher.Sort instead.
+type AlphabeticalSortRule = matcher.Sort
 
-	return all
-}
+// Deprecated: [v0.83.0] Use matcher.Sort instead.
+type TimestampSortRule = matcher.Sort

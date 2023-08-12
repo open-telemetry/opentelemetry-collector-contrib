@@ -124,6 +124,8 @@ func getFirstTimestampFromMetric(metric pmetric.Metric) pcommon.Timestamp {
 			return 0
 		}
 		return dps.At(0).Timestamp()
+	case pmetric.MetricTypeEmpty:
+		return 0
 	}
 	return 0
 }

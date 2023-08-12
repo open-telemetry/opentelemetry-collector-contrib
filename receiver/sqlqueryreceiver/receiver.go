@@ -21,7 +21,19 @@ type dbProviderFunc func() (*sql.DB, error)
 
 type clientProviderFunc func(db, string, *zap.Logger) dbClient
 
-func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
+func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
+	return func(
+		ctx context.Context,
+		settings receiver.CreateSettings,
+		config component.Config,
+		consumer consumer.Logs,
+	) (receiver.Logs, error) {
+		sqlQueryConfig := config.(*Config)
+		return newLogsReceiver(sqlQueryConfig, settings, sqlOpenerFunc, clientProviderFunc, consumer)
+	}
+}
+
+func createMetricsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateMetricsFunc {
 	return func(
 		ctx context.Context,
 		settings receiver.CreateSettings,
@@ -31,6 +43,9 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 		sqlCfg := cfg.(*Config)
 		var opts []scraperhelper.ScraperControllerOption
 		for i, query := range sqlCfg.Queries {
+			if len(query.Metrics) == 0 {
+				continue
+			}
 			id := component.NewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			mp := &scraper{
 				id:        id,

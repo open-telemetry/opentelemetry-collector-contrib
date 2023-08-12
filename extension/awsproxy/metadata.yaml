@@ -5,3 +5,5 @@ status:
   stability:
     beta: [extension]
   distributions: [contrib, aws, sumo]
+  codeowners:
+    active: [Aneurysm9, mxiamxia]

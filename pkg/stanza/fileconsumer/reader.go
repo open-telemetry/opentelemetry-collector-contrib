@@ -6,48 +6,51 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 type readerConfig struct {
-	fingerprintSize int
-	maxLogSize      int
-	emit            EmitFunc
+	fingerprintSize         int
+	maxLogSize              int
+	emit                    emit.Callback
+	includeFileName         bool
+	includeFilePath         bool
+	includeFileNameResolved bool
+	includeFilePathResolved bool
 }
 
-// Reader manages a single file
-type Reader struct {
+// reader manages a single file
+type reader struct {
 	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
 	*readerConfig
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
 	encoding      helper.Encoding
-	processFunc   EmitFunc
+	processFunc   emit.Callback
 
-	Fingerprint    *Fingerprint
+	Fingerprint    *fingerprint.Fingerprint
 	Offset         int64
 	generation     int
 	file           *os.File
-	FileAttributes *FileAttributes
+	FileAttributes map[string]any
 	eof            bool
 
 	HeaderFinalized bool
-	recreateScanner bool
-
-	headerSettings       *headerSettings
-	headerPipeline       pipeline.Pipeline
-	headerPipelineOutput *headerPipelineOutput
+	headerReader    *header.Reader
 }
 
 // offsetToEnd sets the starting offset
-func (r *Reader) offsetToEnd() error {
+func (r *reader) offsetToEnd() error {
 	info, err := r.file.Stat()
 	if err != nil {
 		return fmt.Errorf("stat: %w", err)
@@ -57,13 +60,13 @@ func (r *Reader) offsetToEnd() error {
 }
 
 // ReadToEnd will read until the end of the file
-func (r *Reader) ReadToEnd(ctx context.Context) {
+func (r *reader) ReadToEnd(ctx context.Context) {
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return
 	}
 
-	scanner := NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
+	s := scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -73,10 +76,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		default:
 		}
 
-		ok := scanner.Scan()
+		ok := s.Scan()
 		if !ok {
 			r.eof = true
-			if err := scanner.getError(); err != nil {
+			if err := s.Error(); err != nil {
 				// If Scan returned an error then we are not guaranteed to be at the end of the file
 				r.eof = false
 				r.Errorw("Failed during scan", zap.Error(err))
@@ -84,93 +87,58 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(scanner.Bytes())
+		token, err := r.encoding.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
-		} else {
-			r.processFunc(ctx, r.FileAttributes, token)
-		}
+		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
+			if errors.Is(err, header.ErrEndOfHeader) {
+				r.finalizeHeader()
 
-		if r.recreateScanner {
-			r.recreateScanner = false
-			// recreate the scanner with the log-line's split func.
-			// We do not use the updated offset from the scanner,
-			// as the log line we just read could be multiline, and would be
-			// split differently with the new splitter.
-			if _, err := r.file.Seek(r.Offset, 0); err != nil {
-				r.Errorw("Failed to seek post-header", zap.Error(err))
-				return
+				// Now that the header is consumed, use the normal split and process functions.
+				// Recreate the scanner with the normal split func.
+				// Do not use the updated offset from the old scanner, as the most recent token
+				// could be split differently with the new splitter.
+				r.splitFunc = r.lineSplitFunc
+				r.processFunc = r.emit
+				if _, err = r.file.Seek(r.Offset, 0); err != nil {
+					r.Errorw("Failed to seek post-header", zap.Error(err))
+					return
+				}
+				s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+			} else {
+				r.Errorw("process: %w", zap.Error(err))
 			}
-
-			scanner = NewPositionalScanner(r, r.maxLogSize, r.Offset, r.splitFunc)
 		}
 
-		r.Offset = scanner.Pos()
+		r.Offset = s.Pos()
 	}
 }
 
-// consumeHeaderLine checks if the given token is a line of the header, and consumes it if it is.
-// The return value dictates whether the given line was a header line or not.
-// If false is returned, the full header can be assumed to be read.
-func (r *Reader) consumeHeaderLine(ctx context.Context, _ *FileAttributes, token []byte) {
-	if !r.headerSettings.matchRegex.Match(token) {
-		// Finalize and cleanup the pipeline
-		r.HeaderFinalized = true
-
-		// Stop and drop the header pipeline.
-		if err := r.headerPipeline.Stop(); err != nil {
-			r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
-		}
-		r.headerPipeline = nil
-		r.headerPipelineOutput = nil
-
-		// Use the line split func instead of the header split func
-		r.splitFunc = r.lineSplitFunc
-		r.processFunc = r.emit
-		// Mark that we should recreate the scanner, since we changed the split function
-		r.recreateScanner = true
-		return
+func (r *reader) finalizeHeader() {
+	if err := r.headerReader.Stop(); err != nil {
+		r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 	}
-
-	firstOperator := r.headerPipeline.Operators()[0]
-
-	newEntry := entry.New()
-	newEntry.Body = string(token)
-
-	if err := firstOperator.Process(ctx, newEntry); err != nil {
-		r.Errorw("Failed to process header entry", zap.Error(err))
-		return
-	}
-
-	ent, err := r.headerPipelineOutput.WaitForEntry(ctx)
-	if err != nil {
-		r.Errorw("Error while waiting for header entry", zap.Error(err))
-		return
-	}
-
-	// Copy resultant attributes over current set of attributes (upsert)
-	for k, v := range ent.Attributes {
-		r.FileAttributes.HeaderAttributes[k] = v
-	}
+	r.headerReader = nil
+	r.HeaderFinalized = true
 }
 
 // Close will close the file
-func (r *Reader) Close() {
+func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
 	}
 
-	if r.headerPipeline != nil {
-		if err := r.headerPipeline.Stop(); err != nil {
+	if r.headerReader != nil {
+		if err := r.headerReader.Stop(); err != nil {
 			r.Errorw("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }
 
 // Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (int, error) {
+func (r *reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
 	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {
@@ -196,20 +164,4 @@ func min0(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// mapCopy deep copies the provided attributes map.
-func mapCopy(m map[string]any) map[string]any {
-	newMap := make(map[string]any, len(m))
-	for k, v := range m {
-		switch typedVal := v.(type) {
-		case map[string]any:
-			newMap[k] = mapCopy(typedVal)
-		default:
-			// Assume any other values are safe to directly copy.
-			// Struct types and slice types shouldn't appear in attribute maps from pipelines
-			newMap[k] = v
-		}
-	}
-	return newMap
 }

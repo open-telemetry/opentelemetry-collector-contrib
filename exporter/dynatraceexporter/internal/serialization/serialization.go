@@ -19,7 +19,7 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 
 	ce := logger.Check(zap.DebugLevel, "SerializeMetric")
 	var points int
-
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		metricLines = serializeGauge(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
@@ -27,6 +27,12 @@ func SerializeMetric(logger *zap.Logger, prefix string, metric pmetric.Metric, d
 		metricLines = serializeSum(logger, prefix, metric, defaultDimensions, staticDimensions, prev, metricLines)
 	case pmetric.MetricTypeHistogram:
 		metricLines = serializeHistogram(logger, prefix, metric, defaultDimensions, staticDimensions, metricLines)
+	case pmetric.MetricTypeEmpty:
+		fallthrough
+	case pmetric.MetricTypeExponentialHistogram:
+		fallthrough
+	case pmetric.MetricTypeSummary:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("metric type %s unsupported", metric.Type().String())
 	}

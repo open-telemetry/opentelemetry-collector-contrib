@@ -17,6 +17,14 @@ func MaskResourceAttributeValue(res pcommon.Resource, attr string) {
 	}
 }
 
+func ChangeResourceAttributeValue(res pcommon.Resource, attr string, changeFn func(string) string) {
+	if _, ok := res.Attributes().Get(attr); ok {
+		if v, ok := res.Attributes().Get(attr); ok {
+			res.Attributes().PutStr(attr, changeFn(v.Str()))
+		}
+	}
+}
+
 // AddErrPrefix adds a prefix to every multierr error.
 func AddErrPrefix(prefix string, in error) error {
 	var out error

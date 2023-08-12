@@ -37,13 +37,11 @@ func newMySQLScraper(
 	settings receiver.CreateSettings,
 	config *Config,
 ) *mySQLScraper {
-	ms := &mySQLScraper{
+	return &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
-
-	return ms
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -104,7 +102,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
-	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+	rb := m.mb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }
@@ -122,7 +122,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 
 	for k, v := range globalStats {
 		switch k {
-
 		// bytes transmission
 		case "Bytes_received":
 			addPartialIfError(errs, m.mb.RecordMysqlClientNetworkIoDataPoint(now, v, metadata.AttributeDirectionReceived))
@@ -186,6 +185,16 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Connection_errors_tcpwrap":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorTcpwrap))
+		case "Aborted_clients":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAbortedClients))
+		case "Aborted_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorAborted))
+		case "Locked_connects":
+			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
+				metadata.AttributeConnectionErrorLocked))
+
 		// connection
 		case "Connections":
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionCountDataPoint(now, v))
@@ -321,10 +330,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksImmediate))
 		case "Table_locks_waited":
 			addPartialIfError(errs, m.mb.RecordMysqlLocksDataPoint(now, v, metadata.AttributeLocksWaited))
-
-		// locked_connects
-		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 
 		// joins
 		case "Select_full_join":

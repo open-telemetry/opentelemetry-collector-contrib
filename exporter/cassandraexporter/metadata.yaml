@@ -5,4 +5,6 @@ status:
   stability:
     alpha: [traces, logs]
   distributions: [contrib]
+  codeowners:
+    active: [atoulme, emreyalvac]
 

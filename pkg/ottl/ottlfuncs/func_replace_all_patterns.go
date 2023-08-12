@@ -19,10 +19,10 @@ const (
 )
 
 type ReplaceAllPatternsArguments[K any] struct {
-	Target       ottl.PMapGetter[K] `ottlarg:"0"`
-	Mode         string             `ottlarg:"1"`
-	RegexPattern string             `ottlarg:"2"`
-	Replacement  string             `ottlarg:"3"`
+	Target       ottl.PMapGetter[K]   `ottlarg:"0"`
+	Mode         string               `ottlarg:"1"`
+	RegexPattern string               `ottlarg:"2"`
+	Replacement  ottl.StringGetter[K] `ottlarg:"3"`
 }
 
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
@@ -39,7 +39,7 @@ func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement)
 }
 
-func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
+func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
@@ -53,20 +53,24 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 		if err != nil {
 			return nil, err
 		}
+		replacementVal, err := replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(val.Len())
 		val.Range(func(key string, originalValue pcommon.Value) bool {
 			switch mode {
 			case modeValue:
 				if compiledPattern.MatchString(originalValue.Str()) {
-					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacement)
+					updatedString := compiledPattern.ReplaceAllString(originalValue.Str(), replacementVal)
 					updated.PutStr(key, updatedString)
 				} else {
 					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			case modeKey:
 				if compiledPattern.MatchString(key) {
-					updatedKey := compiledPattern.ReplaceAllString(key, replacement)
+					updatedKey := compiledPattern.ReplaceAllString(key, replacementVal)
 					originalValue.CopyTo(updated.PutEmpty(updatedKey))
 				} else {
 					originalValue.CopyTo(updated.PutEmpty(key))

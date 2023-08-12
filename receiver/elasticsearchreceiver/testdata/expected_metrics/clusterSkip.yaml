@@ -4,6 +4,966 @@ resourceMetrics:
         - key: elasticsearch.cluster.name
           value:
             stringValue: docker-cluster
+        - key: elasticsearch.index.name
+          value:
+            stringValue: .geoip_databases
+    scopeMetrics:
+      - metrics:
+          - description: The number of operations completed for an index.
+            name: elasticsearch.index.operations.completed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "13"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "8"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "10"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "6"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "13"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "8"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "10"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "6"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+              isMonotonic: true
+            unit: '{operations}'
+          - description: Time spent on operations for an index.
+            name: elasticsearch.index.operations.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "82"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "192"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "938"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "52"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "169"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "30"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "1"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "2"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "82"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "192"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "938"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "52"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "169"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "30"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "1"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+              isMonotonic: true
+            unit: ms
+          - description: The size of the shards assigned to this index.
+            name: elasticsearch.index.shards.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40230884"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+            unit: By
+        scope:
+          name: otelcol/elasticsearchreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: elasticsearch.cluster.name
+          value:
+            stringValue: docker-cluster
+        - key: elasticsearch.index.name
+          value:
+            stringValue: _all
+    scopeMetrics:
+      - metrics:
+          - description: The number of operations completed for an index.
+            name: elasticsearch.index.operations.completed
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "13"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "8"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "10"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "6"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "13"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "40"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "8"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "43"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "10"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "5"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "6"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+              isMonotonic: true
+            unit: '{operations}'
+          - description: Time spent on operations for an index.
+            name: elasticsearch.index.operations.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "82"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "192"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "938"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "52"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "169"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "30"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "1"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: primary_shards
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "2"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "82"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "192"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: flush
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "3"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: get
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "938"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "12"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "52"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: query
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "169"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: refresh
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "30"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: scroll
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "1"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: suggest
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+                - asInt: "4"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                    - key: operation
+                      value:
+                        stringValue: warmer
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+              isMonotonic: true
+            unit: ms
+          - description: The size of the shards assigned to this index.
+            name: elasticsearch.index.shards.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "40230884"
+                  attributes:
+                    - key: aggregation
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "1661811689941624000"
+                  timeUnixNano: "1661811689943245000"
+            unit: By
+        scope:
+          name: otelcol/elasticsearchreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: elasticsearch.cluster.name
+          value:
+            stringValue: docker-cluster
         - key: elasticsearch.node.name
           value:
             stringValue: 917e13e55eed
@@ -15,18 +975,11 @@ resourceMetrics:
           - description: Estimated memory used for the operation.
             gauge:
               dataPoints:
-                - asInt: "305152000"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
-                        stringValue: request
+                        stringValue: accounting
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "0"
@@ -50,11 +1003,18 @@ resourceMetrics:
                         stringValue: model_inference
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
+                - asInt: "305152000"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: parent
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
                 - asInt: "0"
                   attributes:
                     - key: name
                       value:
-                        stringValue: accounting
+                        stringValue: request
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
             name: elasticsearch.breaker.memory.estimated
@@ -64,18 +1024,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "510027366"
+                - asInt: "536870912"
                   attributes:
                     - key: name
                       value:
-                        stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "322122547"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: request
+                        stringValue: accounting
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "214748364"
@@ -99,11 +1052,18 @@ resourceMetrics:
                         stringValue: model_inference
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "536870912"
+                - asInt: "510027366"
                   attributes:
                     - key: name
                       value:
-                        stringValue: accounting
+                        stringValue: parent
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "322122547"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: request
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
             unit: By
@@ -116,14 +1076,7 @@ resourceMetrics:
                   attributes:
                     - key: name
                       value:
-                        stringValue: parent
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "0"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: request
+                        stringValue: accounting
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "0"
@@ -151,7 +1104,14 @@ resourceMetrics:
                   attributes:
                     - key: name
                       value:
-                        stringValue: accounting
+                        stringValue: parent
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "0"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: request
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
               isMonotonic: true
@@ -210,11 +1170,11 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "4"
+                - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: unchanged
+                        stringValue: failure
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "7"
@@ -224,11 +1184,11 @@ resourceMetrics:
                         stringValue: success
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "0"
+                - asInt: "4"
                   attributes:
                     - key: state
                       value:
-                        stringValue: failure
+                        stringValue: unchanged
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
               isMonotonic: true
@@ -238,54 +1198,64 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "7"
+                - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: unchanged
+                        stringValue: failure
+                    - key: type
+                      value:
+                        stringValue: commit
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: failure
+                    - key: type
+                      value:
+                        stringValue: completion
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: failure
                     - key: type
                       value:
                         stringValue: computation
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "1"
+                - asInt: "0"
                   attributes:
                     - key: state
                       value:
-                        stringValue: unchanged
-                    - key: type
-                      value:
-                        stringValue: notification
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "40"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: success
-                    - key: type
-                      value:
-                        stringValue: computation
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "2"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: success
-                    - key: type
-                      value:
-                        stringValue: notification
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "17"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: success
+                        stringValue: failure
                     - key: type
                       value:
                         stringValue: context_construction
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: failure
+                    - key: type
+                      value:
+                        stringValue: master_apply
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "0"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: failure
+                    - key: type
+                      value:
+                        stringValue: notification
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "113"
@@ -308,6 +1278,26 @@ resourceMetrics:
                         stringValue: completion
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
+                - asInt: "40"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: success
+                    - key: type
+                      value:
+                        stringValue: computation
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "17"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: success
+                    - key: type
+                      value:
+                        stringValue: context_construction
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
                 - asInt: "484"
                   attributes:
                     - key: state
@@ -318,64 +1308,34 @@ resourceMetrics:
                         stringValue: master_apply
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "0"
+                - asInt: "2"
                   attributes:
                     - key: state
                       value:
-                        stringValue: failure
-                    - key: type
-                      value:
-                        stringValue: computation
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: failure
+                        stringValue: success
                     - key: type
                       value:
                         stringValue: notification
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "0"
+                - asInt: "7"
                   attributes:
                     - key: state
                       value:
-                        stringValue: failure
+                        stringValue: unchanged
                     - key: type
                       value:
-                        stringValue: context_construction
+                        stringValue: computation
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "0"
+                - asInt: "1"
                   attributes:
                     - key: state
                       value:
-                        stringValue: failure
+                        stringValue: unchanged
                     - key: type
                       value:
-                        stringValue: commit
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: failure
-                    - key: type
-                      value:
-                        stringValue: completion
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "0"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: failure
-                    - key: type
-                      value:
-                        stringValue: master_apply
+                        stringValue: notification
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
               isMonotonic: true
@@ -417,14 +1377,14 @@ resourceMetrics:
                   attributes:
                     - key: stage
                       value:
-                        stringValue: primary
+                        stringValue: coordinating
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "0"
                   attributes:
                     - key: stage
                       value:
-                        stringValue: coordinating
+                        stringValue: primary
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "0"
@@ -643,18 +1603,25 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "200"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "400"
                   attributes:
                     - key: operation
                       value:
                         stringValue: delete
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "234"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "345"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: flush
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "600"
@@ -664,6 +1631,20 @@ resourceMetrics:
                         stringValue: get
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
+                - asInt: "200"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "5234"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
                 - asInt: "124"
                   attributes:
                     - key: operation
@@ -671,11 +1652,11 @@ resourceMetrics:
                         stringValue: query
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "234"
+                - asInt: "958"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: fetch
+                        stringValue: refresh
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "235"
@@ -692,27 +1673,6 @@ resourceMetrics:
                         stringValue: suggest
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "5234"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "958"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "345"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "0"
                   attributes:
                     - key: operation
@@ -727,18 +1687,25 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "300"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "500"
                   attributes:
                     - key: operation
                       value:
                         stringValue: delete
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "256"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "995"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: flush
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "500"
@@ -748,6 +1715,20 @@ resourceMetrics:
                         stringValue: get
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
+                - asInt: "300"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "25345"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: merge
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
                 - asInt: "2354"
                   attributes:
                     - key: operation
@@ -755,11 +1736,11 @@ resourceMetrics:
                         stringValue: query
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "256"
+                - asInt: "544"
                   attributes:
                     - key: operation
                       value:
-                        stringValue: fetch
+                        stringValue: refresh
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "5234"
@@ -774,27 +1755,6 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: suggest
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "25345"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "544"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
-                - asInt: "995"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: flush
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "664"
@@ -1052,18 +2012,18 @@ resourceMetrics:
           - description: Amount of physical memory.
             gauge:
               dataPoints:
-                - asInt: "779632640"
-                  attributes:
-                    - key: state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "294109184"
                   attributes:
                     - key: state
                       value:
                         stringValue: free
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "779632640"
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: used
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
             name: elasticsearch.os.memory
@@ -1081,18 +2041,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "20"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "10"
                   attributes:
                     - key: name
                       value:
                         stringValue: old
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "20"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: young
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
               isMonotonic: true
@@ -1102,18 +2062,18 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "930"
-                  attributes:
-                    - key: name
-                      value:
-                        stringValue: young
-                  startTimeUnixNano: "1661811026803971000"
-                  timeUnixNano: "1661811026805343000"
                 - asInt: "5"
                   attributes:
                     - key: name
                       value:
                         stringValue: old
+                  startTimeUnixNano: "1661811026803971000"
+                  timeUnixNano: "1661811026805343000"
+                - asInt: "930"
+                  attributes:
+                    - key: name
+                      value:
+                        stringValue: young
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
               isMonotonic: true
@@ -1161,11 +2121,11 @@ resourceMetrics:
           - description: The maximum amount of memory can be used for the memory pool
             gauge:
               dataPoints:
-                - asInt: "636870912"
+                - asInt: "536870912"
                   attributes:
                     - key: name
                       value:
-                        stringValue: young
+                        stringValue: old
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "736870912"
@@ -1175,11 +2135,11 @@ resourceMetrics:
                         stringValue: survivor
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "536870912"
+                - asInt: "636870912"
                   attributes:
                     - key: name
                       value:
-                        stringValue: old
+                        stringValue: young
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
             name: jvm.memory.pool.max
@@ -1187,11 +2147,11 @@ resourceMetrics:
           - description: The current memory pool memory usage
             gauge:
               dataPoints:
-                - asInt: "218103808"
+                - asInt: "76562432"
                   attributes:
                     - key: name
                       value:
-                        stringValue: young
+                        stringValue: old
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
                 - asInt: "10485760"
@@ -1201,11 +2161,11 @@ resourceMetrics:
                         stringValue: survivor
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
-                - asInt: "76562432"
+                - asInt: "218103808"
                   attributes:
                     - key: name
                       value:
-                        stringValue: old
+                        stringValue: young
                   startTimeUnixNano: "1661811026803971000"
                   timeUnixNano: "1661811026805343000"
             name: jvm.memory.pool.used
@@ -1218,966 +2178,6 @@ resourceMetrics:
                   timeUnixNano: "1661811026805343000"
             name: jvm.threads.count
             unit: "1"
-        scope:
-          name: otelcol/elasticsearchreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: elasticsearch.cluster.name
-          value:
-            stringValue: docker-cluster
-        - key: elasticsearch.index.name
-          value:
-            stringValue: .geoip_databases
-    scopeMetrics:
-      - metrics:
-          - description: The number of operations completed for an index.
-            name: elasticsearch.index.operations.completed
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "40"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "13"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "5"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "8"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "10"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "6"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "40"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "13"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "5"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "8"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "10"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "6"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-              isMonotonic: true
-            unit: '{operations}'
-          - description: Time spent on operations for an index.
-            name: elasticsearch.index.operations.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "82"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "52"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "938"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "2"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "30"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "1"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "169"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "192"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "82"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "52"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "938"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "2"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "30"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "1"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "169"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "192"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-              isMonotonic: true
-            unit: ms
-          - description: The size of the shards assigned to this index.
-            name: elasticsearch.index.shards.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "40230884"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-            unit: By
-        scope:
-          name: otelcol/elasticsearchreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: elasticsearch.cluster.name
-          value:
-            stringValue: docker-cluster
-        - key: elasticsearch.index.name
-          value:
-            stringValue: _all
-    scopeMetrics:
-      - metrics:
-          - description: The number of operations completed for an index.
-            name: elasticsearch.index.operations.completed
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "40"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "13"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "5"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "8"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "10"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "6"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "43"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "40"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "13"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "5"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "8"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "10"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "6"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-              isMonotonic: true
-            unit: '{operations}'
-          - description: Time spent on operations for an index.
-            name: elasticsearch.index.operations.time
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "82"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "52"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "938"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "2"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "30"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "1"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "169"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "192"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "82"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: fetch
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "52"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: query
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "12"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: merge
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "938"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: index
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "2"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: delete
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "3"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: get
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "30"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: scroll
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "1"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: suggest
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "169"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: refresh
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "192"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: flush
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-                - asInt: "4"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: primary_shards
-                    - key: operation
-                      value:
-                        stringValue: warmer
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-              isMonotonic: true
-            unit: ms
-          - description: The size of the shards assigned to this index.
-            name: elasticsearch.index.shards.size
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "40230884"
-                  attributes:
-                    - key: aggregation
-                      value:
-                        stringValue: total
-                  startTimeUnixNano: "1661811689941624000"
-                  timeUnixNano: "1661811689943245000"
-            unit: By
         scope:
           name: otelcol/elasticsearchreceiver
           version: latest

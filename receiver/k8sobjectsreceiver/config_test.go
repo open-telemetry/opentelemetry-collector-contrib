@@ -55,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 			Mode:            WatchMode,
 			Namespaces:      []string{"default"},
 			Group:           "events.k8s.io",
-			ResourceVersion: "1",
+			ResourceVersion: "",
 			gvr: &schema.GroupVersionResource{
 				Group:    "events.k8s.io",
 				Version:  "v1",
@@ -170,7 +170,7 @@ func TestWatchResourceVersion(t *testing.T) {
 			Mode:            WatchMode,
 			Namespaces:      []string{"default"},
 			Group:           "events.k8s.io",
-			ResourceVersion: "1",
+			ResourceVersion: "",
 			gvr: &schema.GroupVersionResource{
 				Group:    "events.k8s.io",
 				Version:  "v1",

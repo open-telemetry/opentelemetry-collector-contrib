@@ -36,6 +36,8 @@ const (
 
 	serverStateKey = "zk_server_state"
 	zkVersionKey   = "zk_version"
+
+	ruokKey = "ruok"
 )
 
 // metricCreator handles generation of metric and metric recording
@@ -89,6 +91,8 @@ func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Time
 		return m.mb.RecordZookeeperFileDescriptorLimitDataPoint
 	case fSyncThresholdExceedCountMetricKey:
 		return m.mb.RecordZookeeperFsyncExceededThresholdCountDataPoint
+	case ruokKey:
+		return m.mb.RecordZookeeperRuokDataPoint
 	case packetsReceivedMetricKey:
 		return func(ts pcommon.Timestamp, val int64) {
 			m.mb.RecordZookeeperPacketCountDataPoint(ts, val, metadata.AttributeDirectionReceived)

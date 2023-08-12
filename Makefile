@@ -73,9 +73,13 @@ all-common:
 e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
-TARGET="do-integration-tests-with-cover"
+.PHONY: integration-test
+integration-test:
+	@$(MAKE) for-integration-target TARGET="mod-integration-test"
+
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover: $(INTEGRATION_MODS)
+integration-tests-with-cover:
+	@$(MAKE) for-integration-target TARGET="do-integration-tests-with-cover"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -205,6 +209,9 @@ for-pkg-target: $(PKG_MODS)
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
 
+.PHONY: for-integration-target
+for-integration-target: $(INTEGRATION_MODS)
+
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -246,22 +253,29 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+.PHONY: gengithub
+gengithub:
+	$(GOCMD) run cmd/githubgen/main.go .
+
+.PHONY: update-codeowners
+update-codeowners: gengithub generate
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
-	$(CHLOGGEN) new --filename $(FILENAME)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: $(CHLOGGEN)
-	$(CHLOGGEN) validate
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
 chlog-preview: $(CHLOGGEN)
-	$(CHLOGGEN) update --dry
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
 chlog-update: $(CHLOGGEN)
-	$(CHLOGGEN) update --version $(VERSION)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
@@ -331,8 +345,13 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKDOC)
-	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
+
+# Verify existence of metadata.yaml for components specified as default components in the collector.
+.PHONY: checkmetadata
+checkmetadata: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: all-checklinks
 all-checklinks:

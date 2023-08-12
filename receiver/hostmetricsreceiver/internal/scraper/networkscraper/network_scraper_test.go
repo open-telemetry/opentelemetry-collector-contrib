@@ -26,10 +26,10 @@ func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                 string
 		config               Config
-		bootTimeFunc         func() (uint64, error)
-		ioCountersFunc       func(bool) ([]net.IOCountersStat, error)
-		connectionsFunc      func(string) ([]net.ConnectionStat, error)
-		conntrackFunc        func() ([]net.FilterStat, error)
+		bootTimeFunc         func(context.Context) (uint64, error)
+		ioCountersFunc       func(context.Context, bool) ([]net.IOCountersStat, error)
+		connectionsFunc      func(context.Context, string) ([]net.ConnectionStat, error)
+		conntrackFunc        func(context.Context) ([]net.FilterStat, error)
 		expectNetworkMetrics bool
 		expectedStartTime    pcommon.Timestamp
 		newErrRegex          string
@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
-			bootTimeFunc:         func() (uint64, error) { return 100, nil },
+			bootTimeFunc:         func(context.Context) (uint64, error) { return 100, nil },
 			expectNetworkMetrics: true,
 			expectedStartTime:    100 * 1e9,
 		},
@@ -89,18 +89,18 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:              "Boot Time Error",
-			bootTimeFunc:      func() (uint64, error) { return 0, errors.New("err1") },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 0, errors.New("err1") },
 			initializationErr: "err1",
 		},
 		{
 			name:             "IOCounters Error",
-			ioCountersFunc:   func(bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
+			ioCountersFunc:   func(context.Context, bool) ([]net.IOCountersStat, error) { return nil, errors.New("err2") },
 			expectedErr:      "failed to read network IO stats: err2",
 			expectedErrCount: networkMetricsLen,
 		},
 		{
 			name:             "Connections Error",
-			connectionsFunc:  func(string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
+			connectionsFunc:  func(context.Context, string) ([]net.ConnectionStat, error) { return nil, errors.New("err3") },
 			expectedErr:      "failed to read TCP connections: err3",
 			expectedErrCount: connectionsMetricsLen,
 		},
@@ -109,7 +109,7 @@ func TestScrape(t *testing.T) {
 			config: Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(), // conntrack metrics are disabled by default
 			},
-			conntrackFunc:        func() ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
+			conntrackFunc:        func(ctx context.Context) ([]net.FilterStat, error) { return nil, errors.New("conntrack failed") },
 			expectNetworkMetrics: true,
 		},
 	}

@@ -23,17 +23,12 @@ func (v *vcenterMetricScraper) recordHostSystemMemoryUsage(
 	h := s.Hardware
 	z := s.QuickStats
 
-	memUsage := z.OverallMemoryUsage
-	v.mb.RecordVcenterHostMemoryUsageDataPoint(now, int64(memUsage))
-
+	v.mb.RecordVcenterHostMemoryUsageDataPoint(now, int64(z.OverallMemoryUsage))
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(now, memUtilization)
 
-	ncpu := int32(h.NumCpuCores)
-	cpuUsage := z.OverallCpuUsage
-	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(ncpu*h.CpuMhz)
-
-	v.mb.RecordVcenterHostCPUUsageDataPoint(now, int64(cpuUsage))
+	v.mb.RecordVcenterHostCPUUsageDataPoint(now, int64(z.OverallCpuUsage))
+	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(now, cpuUtilization)
 }
 
@@ -67,32 +62,26 @@ func (v *vcenterMetricScraper) recordVMUsages(
 		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
 	}
 
-	s := vm.Summary
-	z := s.QuickStats
-
-	cpuUsage := z.OverallCpuUsage
-	ncpu := vm.Config.Hardware.NumCPU
-
-	// if no cpu usage, we probably shouldn't return a value. Most likely the VM is unavailable
-	// or is unreachable.
+	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
 	if cpuUsage == 0 {
+		// Most likely the VM is unavailable or is unreachable.
 		return
 	}
+	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
 
 	// https://communities.vmware.com/t5/VMware-code-Documents/Resource-Management/ta-p/2783456
 	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
 	// This value is always equal to the limit value set for that virtual machine.
 	// If no limit, it has full host mhz * vm.Config.Hardware.NumCPU.
-	var cpuUtil float64
+	cpuLimit := vm.Config.Hardware.NumCPU * hs.Summary.Hardware.CpuMhz
 	if vm.Runtime.MaxCpuUsage != 0 {
-		cpuUtil = 100 * float64(cpuUsage) / float64(vm.Runtime.MaxCpuUsage)
-	} else {
-		cpuUtil = 100 * float64(cpuUsage) / float64(ncpu*hs.Summary.Hardware.CpuMhz)
+		cpuLimit = vm.Runtime.MaxCpuUsage
 	}
-
-	v.mb.RecordVcenterVMCPUUsageDataPoint(now, int64(cpuUsage))
-	v.mb.RecordVcenterVMCPUUtilizationDataPoint(now, cpuUtil)
-
+	if cpuLimit == 0 {
+		// This shouldn't happen, but protect against division by zero.
+		return
+	}
+	v.mb.RecordVcenterVMCPUUtilizationDataPoint(now, 100*float64(cpuUsage)/float64(cpuLimit))
 }
 
 func (v *vcenterMetricScraper) recordDatastoreProperties(
@@ -103,7 +92,7 @@ func (v *vcenterMetricScraper) recordDatastoreProperties(
 	diskUsage := s.Capacity - s.FreeSpace
 	diskUtilization := float64(diskUsage) / float64(s.Capacity) * 100
 	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, diskUsage, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.Capacity, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatastoreDiskUsageDataPoint(now, s.FreeSpace, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatastoreDiskUtilizationDataPoint(now, diskUtilization)
 }
 

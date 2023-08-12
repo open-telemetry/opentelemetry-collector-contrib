@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -127,6 +128,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+					case pmetric.NumberDataPointValueTypeEmpty:
 					}
 
 					return
@@ -221,7 +223,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		}
 	}
 
-	k8sAPIServer.Shutdown()
+	require.NoError(t, k8sAPIServer.Shutdown())
 }
 
 func TestK8sAPIServer_init(t *testing.T) {

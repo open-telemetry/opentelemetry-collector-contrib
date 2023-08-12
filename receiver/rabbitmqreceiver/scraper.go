@@ -119,11 +119,11 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 			r.mb.RecordRabbitmqMessageDroppedDataPoint(now, val64)
 		}
 	}
-	r.mb.EmitForResource(
-		metadata.WithRabbitmqQueueName(queue.Name),
-		metadata.WithRabbitmqNodeName(queue.Node),
-		metadata.WithRabbitmqVhostName(queue.VHost),
-	)
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqQueueName(queue.Name)
+	rb.SetRabbitmqNodeName(queue.Node)
+	rb.SetRabbitmqVhostName(queue.VHost)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.

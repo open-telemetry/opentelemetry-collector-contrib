@@ -5,6 +5,7 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -100,9 +101,10 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
-				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Scope(), resourceMetric.Resource())
+				mCtx := ottlmetric.NewTransformContext(metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
 				errors = multierr.Append(errors, metricsCounter.update(ctx, pcommon.NewMap(), mCtx))
 
+				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeGauge:
 					dps := metric.Gauge().DataPoints()
@@ -134,6 +136,8 @@ func (c *count) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 						dCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, scopeMetrics.Metrics(), scopeMetrics.Scope(), resourceMetric.Resource())
 						errors = multierr.Append(errors, dataPointsCounter.update(ctx, dps.At(i).Attributes(), dCtx))
 					}
+				case pmetric.MetricTypeEmpty:
+					errors = multierr.Append(errors, fmt.Errorf("metric %q: invalid metric type: %v", metric.Name(), metric.Type()))
 				}
 			}
 		}

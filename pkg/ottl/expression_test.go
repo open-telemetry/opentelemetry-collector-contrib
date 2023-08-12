@@ -669,10 +669,144 @@ func Test_StandardStringGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+func Test_FunctionGetter(t *testing.T) {
+	functions := CreateFactoryMap(
+		createFactory[any](
+			"SHA256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"test_arg_mismatch",
+			&multipleArgsArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"no_struct_tag",
+			&noStructTagFunctionArguments{},
+			functionWithStringGetter,
+		),
+		NewFactory(
+			"cannot_create_function",
+			&stringGetterArguments{},
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return functionWithErr()
+			},
+		),
+	)
+	type EditorArguments struct {
+		Replacement StringGetter[any]
+		Function    FunctionGetter[any]
+	}
+	type FuncArgs struct {
+		Input StringGetter[any] `ottlarg:"0"`
+	}
+	tests := []struct {
+		name             string
+		getter           StringGetter[any]
+		function         FunctionGetter[any]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "function getter",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			function: StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA256"]},
+			want:     "anything",
+			valid:    true,
+		},
+		{
+			name: "function getter nil",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA250"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "undefined function",
+		},
+		{
+			name: "function arg mismatch",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["test_arg_mismatch"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "incorrect number of arguments. Expected: 4 Received: 1",
+		},
+		{
+			name: "Invalid Arguments struct tag",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["no_struct_tag"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "no `ottlarg` struct tag on Arguments field \"StringArg\"",
+		},
+		{
+			name: "Cannot create function",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["cannot_create_function"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "couldn't create function: error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			editorArgs := EditorArguments{
+				Replacement: tt.getter,
+				Function:    tt.function,
+			}
+			fn, err := editorArgs.Function.Get(&FuncArgs{Input: editorArgs.Replacement})
+			if tt.valid {
+				var result interface{}
+				result, err = fn.Eval(context.Background(), nil)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, result.(string))
+			} else {
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardStringGetter_WrappedError(t *testing.T) {
+	getter := StandardStringGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardStringLikeGetter(t *testing.T) {
@@ -802,10 +936,24 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardStringLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardFloatGetter(t *testing.T) {
@@ -865,10 +1013,24 @@ func Test_StandardFloatGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardFloatGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardFloatLikeGetter(t *testing.T) {
@@ -1028,10 +1190,24 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardFloatLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardIntGetter(t *testing.T) {
@@ -1091,10 +1267,24 @@ func Test_StandardIntGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardIntGetter_WrappedError(t *testing.T) {
+	getter := StandardIntGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardIntLikeGetter(t *testing.T) {
@@ -1254,10 +1444,24 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 					assert.Equal(t, tt.want, *val)
 				}
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardIntLikeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
 
 func Test_StandardPMapGetter(t *testing.T) {
@@ -1327,8 +1531,22 @@ func Test_StandardPMapGetter(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.want, val)
 			} else {
+				assert.IsType(t, TypeError(""), err)
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardPMapGetter_WrappedError(t *testing.T) {
+	getter := StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }

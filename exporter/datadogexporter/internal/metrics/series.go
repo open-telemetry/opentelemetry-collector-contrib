@@ -52,14 +52,7 @@ func NewCount(name string, ts uint64, value float64, tags []string) datadogV2.Me
 }
 
 // DefaultMetrics creates built-in metrics to report that an exporter is running
-func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buildInfo component.BuildInfo) []datadogV2.MetricSeries {
-	var tags []string
-	if buildInfo.Version != "" {
-		tags = append(tags, "version:"+buildInfo.Version)
-	}
-	if buildInfo.Command != "" {
-		tags = append(tags, "command:"+buildInfo.Command)
-	}
+func DefaultMetrics(exporterType string, hostname string, timestamp uint64, tags []string) []datadogV2.MetricSeries {
 	metrics := []datadogV2.MetricSeries{
 		NewGauge(fmt.Sprintf("otel.datadog_exporter.%s.running", exporterType), timestamp, 1.0, tags),
 	}
@@ -72,4 +65,16 @@ func DefaultMetrics(exporterType string, hostname string, timestamp uint64, buil
 		})
 	}
 	return metrics
+}
+
+// TagsFromBuildInfo returns a list of tags derived from buildInfo to be used when creating metrics
+func TagsFromBuildInfo(buildInfo component.BuildInfo) []string {
+	var tags []string
+	if buildInfo.Version != "" {
+		tags = append(tags, "version:"+buildInfo.Version)
+	}
+	if buildInfo.Command != "" {
+		tags = append(tags, "command:"+buildInfo.Command)
+	}
+	return tags
 }

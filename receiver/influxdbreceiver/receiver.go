@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -32,23 +34,34 @@ type metricsReceiver struct {
 
 	logger common.Logger
 
+	obsrecv *obsreport.Receiver
+
 	settings component.TelemetrySettings
 }
 
-func newMetricsReceiver(config *Config, settings component.TelemetrySettings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
-	influxLogger := newZapInfluxLogger(settings.Logger)
+func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
+	influxLogger := newZapInfluxLogger(settings.TelemetrySettings.Logger)
 	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {
 		return nil, err
 	}
-	receiver := &metricsReceiver{
+	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		ReceiverID:             settings.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: settings,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &metricsReceiver{
 		nextConsumer:       nextConsumer,
 		httpServerSettings: &config.HTTPServerSettings,
 		converter:          converter,
 		logger:             influxLogger,
-		settings:           settings,
-	}
-	return receiver, nil
+		obsrecv:            obsrecv,
+		settings:           settings.TelemetrySettings,
+	}, err
 }
 
 func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
@@ -87,7 +100,10 @@ func (r *metricsReceiver) Shutdown(_ context.Context) error {
 	return nil
 }
 
-const defaultPrecision = lineprotocol.Nanosecond
+const (
+	defaultPrecision = lineprotocol.Nanosecond
+	dataFormat       = "influxdb"
+)
 
 var precisions = map[string]lineprotocol.Precision{
 	lineprotocol.Nanosecond.String():  lineprotocol.Nanosecond,
@@ -113,6 +129,8 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 
 	batch := r.converter.NewBatch()
 	lpDecoder := lineprotocol.NewDecoder(req.Body)
+
+	ctx := r.obsrecv.StartMetricsOp(req.Context())
 
 	var k, vTag []byte
 	var vField lineprotocol.Value
@@ -165,7 +183,9 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		}
 	}
 
-	if err := r.nextConsumer.ConsumeMetrics(req.Context(), batch.GetMetrics()); err != nil {
+	err := r.nextConsumer.ConsumeMetrics(req.Context(), batch.GetMetrics())
+	r.obsrecv.EndMetricsOp(ctx, dataFormat, batch.GetMetrics().DataPointCount(), err)
+	if err != nil {
 		if consumererror.IsPermanent(err) {
 			w.WriteHeader(http.StatusBadRequest)
 		} else {

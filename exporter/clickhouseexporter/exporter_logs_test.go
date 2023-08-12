@@ -92,6 +92,34 @@ func TestExporter_pushLogsData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
+	t.Run("test check resource metadata", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
+				require.Equal(t, map[string]string{
+					"service.name": "test-service",
+				}, values[9])
+			}
+			return nil
+		})
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, simpleLogs(1))
+	})
+	t.Run("test check scope metadata", func(t *testing.T) {
+		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			if strings.HasPrefix(query, "INSERT") {
+				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
+				require.Equal(t, "1.0.0", values[12])
+				require.Equal(t, map[string]string{
+					"lib": "clickhouse",
+				}, values[13])
+			}
+			return nil
+		})
+		exporter := newTestLogsExporter(t, defaultEndpoint)
+		mustPushLogsData(t, exporter, simpleLogs(1))
+	})
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
@@ -117,7 +145,13 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 func simpleLogs(count int) plog.Logs {
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
+	rl.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
+	rl.Resource().Attributes().PutStr("service.name", "test-service")
 	sl := rl.ScopeLogs().AppendEmpty()
+	sl.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
+	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
+	sl.Scope().SetVersion("1.0.0")
+	sl.Scope().Attributes().PutStr("lib", "clickhouse")
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
 		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))

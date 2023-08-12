@@ -117,6 +117,14 @@ resourceMetrics:
                   startTimeUnixNano: "1642685966462139000"
                   timeUnixNano: "1642685966462251000"
             unit: '{requests}'
+          - description: Response from zookeeper ruok command
+            name: zookeeper.ruok
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1642685966447704000"
+                  timeUnixNano: "1642685966447860000"
+            unit: '1'
           - description: Number of z-nodes that a ZooKeeper server has in its data tree.
             name: zookeeper.znode.count
             sum:

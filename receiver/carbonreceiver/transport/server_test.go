@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport/client"
 )
@@ -92,9 +91,8 @@ func Test_Server_ListenAndServe(t *testing.T) {
 
 			mdd := mc.AllMetrics()
 			require.Len(t, mdd, 1)
-			_, _, metrics := internaldata.ResourceMetricsToOC(mdd[0].ResourceMetrics().At(0))
-			require.Len(t, metrics, 1)
-			assert.Equal(t, "test.metric", metrics[0].GetMetricDescriptor().GetName())
+			require.Equal(t, 1, mdd[0].MetricCount())
+			assert.Equal(t, "test.metric", mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
 		})
 	}
 }
