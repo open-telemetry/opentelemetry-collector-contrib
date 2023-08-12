@@ -23,8 +23,8 @@ const (
 	filterOPDoesNotExist = "does-not-exist"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUid with conventions.AttributeClusterUid
-	clusterUid = "k8s.cluster.uid"
+	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
+	clusterUID = "k8s.cluster.uid"
 )
 
 // option represents a configuration option that can be passes.
@@ -53,7 +53,7 @@ func withPassthrough() option {
 func enabledAttributes() (attributes []string) {
 	defaultConfig := metadata.DefaultResourceAttributesConfig()
 	if defaultConfig.K8sClusterUID.Enabled {
-		attributes = append(attributes, clusterUid)
+		attributes = append(attributes, clusterUID)
 	}
 	if defaultConfig.ContainerID.Enabled {
 		attributes = append(attributes, conventions.AttributeContainerID)
@@ -172,7 +172,7 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
-			case clusterUid:
+			case clusterUID:
 				p.rules.ClusterUID = true
 			default:
 				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
