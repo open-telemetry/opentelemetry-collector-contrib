@@ -15,6 +15,7 @@ import (
 	"github.com/scalyr/dataset-go/pkg/api/add_events"
 	"github.com/scalyr/dataset-go/pkg/client"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 )
@@ -25,6 +26,7 @@ type DatasetExporter struct {
 	logger      *zap.Logger
 	session     string
 	exporterCfg *ExporterConfig
+	serverHost  string
 }
 
 func newDatasetExporter(entity string, config *Config, set exporter.CreateSettings) (*DatasetExporter, error) {
@@ -63,12 +65,12 @@ func newDatasetExporter(entity string, config *Config, set exporter.CreateSettin
 		session:     uuid.New().String(),
 		logger:      logger,
 		exporterCfg: exporterCfg,
+		serverHost:  client.ServerHost(),
 	}, nil
 }
 
 func (e *DatasetExporter) shutdown(context.Context) error {
-	e.client.SendAllAddEventsBuffers()
-	return nil
+	return e.client.Shutdown()
 }
 
 func sendBatch(events []*add_events.EventBundle, client *client.DataSetClient) error {
@@ -117,4 +119,32 @@ func updateWithPrefixedValues(target map[string]interface{}, prefix string, sepa
 		}
 
 	}
+}
+
+func inferServerHost(
+	resource pcommon.Resource,
+	attrs map[string]interface{},
+	serverHost string,
+) string {
+	// first use value from the attribute serverHost
+	valA, okA := attrs[add_events.AttrServerHost]
+	if okA {
+		host := fmt.Sprintf("%v", valA)
+		if len(host) > 0 {
+			return host
+		}
+	}
+
+	// then use value from resource attributes - serverHost and host.name
+	for _, resKey := range []string{add_events.AttrServerHost, "host.name"} {
+		valR, okR := resource.Attributes().Get(resKey)
+		if okR {
+			host := valR.AsString()
+			if len(host) > 0 {
+				return host
+			}
+		}
+	}
+
+	return serverHost
 }

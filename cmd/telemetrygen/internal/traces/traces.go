@@ -40,6 +40,7 @@ func Start(cfg *Config) error {
 
 	httpExpOpt := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 
 	if cfg.Insecure {
@@ -71,13 +72,16 @@ func Start(cfg *Config) error {
 		}
 	}()
 
-	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer func() {
-		logger.Info("stop the batch span processor")
-		if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the batch span processor", zap.Error(err))
-		}
-	}()
+	var ssp sdktrace.SpanProcessor
+	if cfg.Batch {
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		defer func() {
+			logger.Info("stop the batch span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the batch span processor", zap.Error(err))
+			}
+		}()
+	}
 
 	var attributes []attribute.KeyValue
 	// may be overridden by `-otlp-attributes service.name="foo"`
@@ -88,7 +92,9 @@ func Start(cfg *Config) error {
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
-	tracerProvider.RegisterSpanProcessor(ssp)
+	if cfg.Batch {
+		tracerProvider.RegisterSpanProcessor(ssp)
+	}
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
@@ -130,6 +136,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
+			loadSize:         c.LoadSize,
 		}
 
 		go w.simulateTraces()

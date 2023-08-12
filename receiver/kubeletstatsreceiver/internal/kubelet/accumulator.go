@@ -52,10 +52,11 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
-
+	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sNodeName(s.NodeName)
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
-		metadata.WithK8sNodeName(s.NodeName),
+		metadata.WithResource(rb.Emit()),
 	))
 }
 
@@ -70,11 +71,13 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
+	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
+	rb.SetK8sPodUID(s.PodRef.UID)
+	rb.SetK8sPodName(s.PodRef.Name)
+	rb.SetK8sNamespaceName(s.PodRef.Namespace)
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
-		metadata.WithK8sPodUID(s.PodRef.UID),
-		metadata.WithK8sPodName(s.PodRef.Name),
-		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
+		metadata.WithResource(rb.Emit()),
 	))
 }
 
@@ -83,7 +86,8 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 		return
 	}
 
-	ro, err := getContainerResourceOptions(sPod, s, a.metadata)
+	rb := a.mbs.ContainerMetricsBuilder.NewResourceBuilder()
+	res, err := getContainerResource(rb, sPod, s, a.metadata)
 	if err != nil {
 		a.logger.Warn(
 			"failed to fetch container metrics",
@@ -98,7 +102,10 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
 
-	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(ro...))
+	a.m = append(a.m, a.mbs.ContainerMetricsBuilder.Emit(
+		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
+		metadata.WithResource(res),
+	))
 }
 
 func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeStats) {
@@ -106,7 +113,8 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 		return
 	}
 
-	ro, err := getVolumeResourceOptions(sPod, s, a.metadata)
+	rb := a.mbs.OtherMetricsBuilder.NewResourceBuilder()
+	res, err := getVolumeResourceOptions(rb, sPod, s, a.metadata)
 	if err != nil {
 		a.logger.Warn(
 			"Failed to gather additional volume metadata. Skipping metric collection.",
@@ -119,5 +127,5 @@ func (a *metricDataAccumulator) volumeStats(sPod stats.PodStats, s stats.VolumeS
 	currentTime := pcommon.NewTimestampFromTime(a.time)
 	addVolumeMetrics(a.mbs.OtherMetricsBuilder, metadata.K8sVolumeMetrics, s, currentTime)
 
-	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(ro...))
+	a.m = append(a.m, a.mbs.OtherMetricsBuilder.Emit(metadata.WithResource(res)))
 }

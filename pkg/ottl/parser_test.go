@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -146,6 +147,118 @@ func Test_parse(t *testing.T) {
 						},
 						{
 							String: ottltest.Strp("dog"),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters (All Uppercase)",
+			statement: `replace_pattern(attributes["message"], "device=*", attributes["device_name"], SHA256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							String: ottltest.Strp("device=*"),
+						},
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("device_name"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(ottltest.Strp("SHA256")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters",
+			statement: `replace_pattern(attributes["message"], Sha256)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							FunctionName: (ottltest.Strp("Sha256")),
+						},
+					},
+				},
+				WhereClause: nil,
+			},
+		},
+		{
+			name:      "Converter parameters (One Uppercase symbol)",
+			statement: `replace_pattern(attributes["message"], S)`,
+			expected: &parsedStatement{
+				Editor: editor{
+					Function: "replace_pattern",
+					Arguments: []value{
+						{
+							Literal: &mathExprLiteral{
+								Path: &Path{
+									Fields: []Field{
+										{
+											Name: "attributes",
+											Keys: []Key{
+												{
+													String: ottltest.Strp("message"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						{
+							Enum: (*EnumSymbol)(ottltest.Strp("S")),
 						},
 					},
 				},
@@ -868,6 +981,36 @@ func testParsePath(val *Path) (GetSetter[interface{}], error) {
 		return &StandardGetSetter[interface{}]{
 			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 				return tCtx, nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "dur1" || val.Fields[0].Name == "dur2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Duration)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
+			},
+			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
+				reflect.DeepEqual(tCtx, val)
+				return nil
+			},
+		}, nil
+	}
+	if val.Fields[0].Name == "time1" || val.Fields[0].Name == "time2" {
+		return &StandardGetSetter[interface{}]{
+			Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+				m, ok := tCtx.(map[string]time.Time)
+				if !ok {
+					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+				}
+				return m[val.Fields[0].Name], nil
 			},
 			Setter: func(ctx context.Context, tCtx interface{}, val interface{}) error {
 				reflect.DeepEqual(tCtx, val)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 )
@@ -89,6 +90,7 @@ func newTestComponents(t *testing.T) otelcol.Factories {
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
+			dockerstatsreceiver.NewFactory(),
 			filelogreceiver.NewFactory(),
 		}...,
 	)

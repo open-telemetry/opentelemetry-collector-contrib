@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
 
 func TestDetect(t *testing.T) {
@@ -88,13 +89,15 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "GCE",
 			detector: newTestDetector(&fakeGCPDetector{
-				projectID:           "my-project",
-				cloudPlatform:       gcp.GCE,
-				gceHostID:           "1472385723456792345",
-				gceHostName:         "my-gke-node-1234",
-				gceHostType:         "n1-standard1",
-				gceAvailabilityZone: "us-central1-c",
-				gceRegion:           "us-central1",
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
 			}),
 			expectedResource: map[string]any{
 				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
@@ -105,6 +108,35 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeHostType:              "n1-standard1",
 				conventions.AttributeCloudRegion:           "us-central1",
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+			},
+		},
+		{
+			desc: "GCE with instance.hostname and instance.name enabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:              "my-project",
+				cloudPlatform:          gcp.GCE,
+				gceHostID:              "1472385723456792345",
+				gceHostName:            "my-gke-node-1234",
+				gceHostType:            "n1-standard1",
+				gceAvailabilityZone:    "us-central1-c",
+				gceRegion:              "us-central1",
+				gcpGceInstanceHostname: "custom.dns.example.com",
+				gcpGceInstanceName:     "my-gke-node-1234",
+			}, func(cfg *localMetadata.ResourceAttributesConfig) {
+				cfg.GcpGceInstanceHostname.Enabled = true
+				cfg.GcpGceInstanceName.Enabled = true
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPComputeEngine,
+				conventions.AttributeHostID:                "1472385723456792345",
+				conventions.AttributeHostName:              "my-gke-node-1234",
+				conventions.AttributeHostType:              "n1-standard1",
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				"gcp.gce.instance.hostname":                "custom.dns.example.com",
+				"gcp.gce.instance.name":                    "my-gke-node-1234",
 			},
 		},
 		{
@@ -125,6 +157,28 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSName:       "my-service",
 				conventions.AttributeFaaSVersion:    "123456",
 				conventions.AttributeFaaSID:         "1472385723456792345",
+			},
+		},
+		{
+			desc: "Cloud Run Job",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "2",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+				"gcp.cloud_run.job.execution":       "my-service-ajg89",
+				"gcp.cloud_run.job.task_index":      "2",
 			},
 		},
 		{
@@ -226,12 +280,15 @@ func TestDetect(t *testing.T) {
 	}
 }
 
-func newTestDetector(gcpDetector *fakeGCPDetector) *detector {
-	resourceAttributes := CreateDefaultConfig().ResourceAttributes
+func newTestDetector(gcpDetector *fakeGCPDetector, opts ...func(*localMetadata.ResourceAttributesConfig)) *detector {
+	cfg := localMetadata.DefaultResourceAttributesConfig()
+	for _, opt := range opts {
+		opt(&cfg)
+	}
 	return &detector{
-		logger:             zap.NewNop(),
-		detector:           gcpDetector,
-		resourceAttributes: resourceAttributes,
+		logger:   zap.NewNop(),
+		detector: gcpDetector,
+		rb:       localMetadata.NewResourceBuilder(cfg),
 	}
 }
 
@@ -259,6 +316,10 @@ type fakeGCPDetector struct {
 	gceHostID                 string
 	gceHostName               string
 	gceHostNameErr            error
+	gcpCloudRunJobExecution   string
+	gcpCloudRunJobTaskIndex   string
+	gcpGceInstanceName        string
+	gcpGceInstanceHostname    string
 }
 
 func (f *fakeGCPDetector) ProjectID() (string, error) {
@@ -392,4 +453,32 @@ func (f *fakeGCPDetector) GCEHostName() (string, error) {
 		return "", f.err
 	}
 	return f.gceHostName, f.gceHostNameErr
+}
+
+func (f *fakeGCPDetector) CloudRunJobTaskIndex() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobTaskIndex, nil
+}
+
+func (f *fakeGCPDetector) CloudRunJobExecution() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpCloudRunJobExecution, nil
+}
+
+func (f *fakeGCPDetector) GCEInstanceName() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpGceInstanceName, nil
+}
+
+func (f *fakeGCPDetector) GCEInstanceHostname() (string, error) {
+	if f.err != nil {
+		return "", f.err
+	}
+	return f.gcpGceInstanceHostname, nil
 }
