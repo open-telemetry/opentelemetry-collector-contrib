@@ -947,8 +947,61 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
+func TestConsumerSpanWithoutNameOverrides(t *testing.T) {
+	spanName := "destination receive"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+
+	resource := constructDefaultResource()
+	resource.Attributes().Remove(conventions.AttributeServiceName)
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, spanName, *segment.Name)
+	assert.Equal(t, (*string)(nil), segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "signup_aggregator"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
+func TestConsumerSpanWithResourceServiceName(t *testing.T) {
+	spanName := "destination receive"
+	parentSpanID := newSegmentID()
+	user := "testingT"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+
+	resource := constructDefaultResource()
+	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	assert.Equal(t, "signup_aggregator", *segment.Name)
+	assert.Equal(t, (*string)(nil), segment.Type)
+
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, jsonStr)
+	assert.Nil(t, err)
+	assert.True(t, strings.Contains(jsonStr, "signup_aggregator"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
+}
+
 func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
-	spanName := "ABC.payment"
+	spanName := "destination receive"
 	parentSpanID := newSegmentID()
 	user := "testingT"
 	attributes := make(map[string]interface{})
@@ -964,6 +1017,7 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 	assert.Equal(t, "ConsumerService", *segment.Name)
+	assert.Equal(t, (*string)(nil), segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
 
