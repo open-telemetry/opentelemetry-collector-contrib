@@ -55,10 +55,8 @@ The following is example configuration
 ```
 
 Brief description of configuration properties:
-- `leader_election`: We usually run multiple instances to ensure high availability of `otel-col`, but the `k8sobjectsreceiver` collected data will be duplicated, 
-so we can use the `leader election mode` to ensure that only one instance(as leader instance) is collecting `k8sobjects` data, and the other instances are the alternative nodes.
-and if the leader instance fails, another one is elected as leader and takes its place. 
-*Note*: We need to add additional permissions in RBAC to perform `leader election mode`, See below [Leader Election RBAC](#RBAC-Leader-Election) for more information.
+- `leader_election`: Leader election mode helps to ensure that only one instance (as leader instance) is collecting `k8sobjects` data, and if the leader instance fails, another one is elected as leader and takes its place. 
+*Note*: You need to add additional RBAC to perform the leader election mode. See below [Leader Election RBAC](#RBAC-Leader-Election) for more information.
   - `enabled` (default = `false`): whether run in leader election mode.
   - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.
   - `lease_duration` (default = `15s`): the duration that non-leader candidates will wait to force acquire leadership.
