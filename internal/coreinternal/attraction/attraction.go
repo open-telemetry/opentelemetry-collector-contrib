@@ -172,8 +172,8 @@ type AttrProc struct {
 // and returns a AttrProc to be used to process attributes.
 // An error is returned if there are any invalid inputs.
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
-	attributeActions := make([]attributeAction, len(settings.Actions))
-	for i, a := range settings.Actions {
+	attributeActions := make([]attributeAction, 0, len(settings.Actions))
+	for _, a := range settings.Actions {
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
 
@@ -283,7 +283,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			return nil, fmt.Errorf("error creating AttrProc due to unsupported action %q at the %d-th actions", a.Action, i)
 		}
 
-		attributeActions[i] = action
+		attributeActions = append(attributeActions, action)
 	}
 	return &AttrProc{actions: attributeActions}, nil
 }
