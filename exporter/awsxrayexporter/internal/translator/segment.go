@@ -120,15 +120,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
 	// support x-ray specific service name attributes as segment name if it exists
-	if span.Kind() == ptrace.SpanKindConsumer {
-		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
-			name = service.Str()
-		} else if localServiceName, ok := attributes.Get(awsLocalService); ok {
-			name = localServiceName.Str()
-		}
-	}
-
-	if span.Kind() == ptrace.SpanKindServer {
+	if span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer {
 		if localServiceName, ok := attributes.Get(awsLocalService); ok {
 			name = localServiceName.Str()
 		}
@@ -182,7 +174,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		}
 	}
 
-	if name == "" && span.Kind() == ptrace.SpanKindServer {
+	if name == "" && (span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer) {
 		// Only for a server span, we can use the resource.
 		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
 			name = service.Str()
