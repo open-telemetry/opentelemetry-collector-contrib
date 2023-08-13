@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
 
-go 1.19
+go 1.20
 
 require (
 	github.com/IBM/sarama v1.40.1
