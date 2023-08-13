@@ -14,8 +14,6 @@ import (
 )
 
 func normalizeTimestamps(metrics pmetric.Metrics) {
-	zeroTime := time.Unix(0, 0)
-	nanosec := pcommon.NewTimestampFromTime(zeroTime)
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
@@ -23,29 +21,14 @@ func normalizeTimestamps(metrics pmetric.Metrics) {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
-						m.Gauge().DataPoints().At(l).SetStartTimestamp(nanosec)
-					}
 					normalizeDataPointSlice(dataPointSlice[pmetric.NumberDataPoint](m.Gauge().DataPoints()))
 				case pmetric.MetricTypeSum:
-					for l := 0; l < m.Sum().DataPoints().Len(); l++ {
-						m.Sum().DataPoints().At(l).SetStartTimestamp(nanosec)
-					}
 					normalizeDataPointSlice(dataPointSlice[pmetric.NumberDataPoint](m.Sum().DataPoints()))
 				case pmetric.MetricTypeHistogram:
-					for l := 0; l < m.Histogram().DataPoints().Len(); l++ {
-						m.Histogram().DataPoints().At(l).SetStartTimestamp(nanosec)
-					}
 					normalizeDataPointSlice(dataPointSlice[pmetric.HistogramDataPoint](m.Histogram().DataPoints()))
 				case pmetric.MetricTypeExponentialHistogram:
-					for l := 0; l < m.ExponentialHistogram().DataPoints().Len(); l++ {
-						m.ExponentialHistogram().DataPoints().At(l).SetStartTimestamp(nanosec)
-					}
 					normalizeDataPointSlice(dataPointSlice[pmetric.ExponentialHistogramDataPoint](m.ExponentialHistogram().DataPoints()))
 				case pmetric.MetricTypeSummary:
-					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
-						m.Summary().DataPoints().At(l).SetStartTimestamp(nanosec)
-					}
 					normalizeDataPointSlice(dataPointSlice[pmetric.SummaryDataPoint](m.Summary().DataPoints()))
 				}
 			}
@@ -53,11 +36,22 @@ func normalizeTimestamps(metrics pmetric.Metrics) {
 	}
 }
 
+type timeStampInfo struct {
+	timestamp pcommon.Timestamp
+	position  int
+}
+
 // returns a map of the original timestamps with their corresponding normalized values.
 // normalization entails setting nonunique subsequent timestamps to the same value while incrementing unique timestamps by a set value of 1,000,000 ns
-func normalizeTimeSeries(timeSeries []pcommon.Timestamp) map[pcommon.Timestamp]pcommon.Timestamp {
-	normalizedTs := make(map[pcommon.Timestamp]pcommon.Timestamp)
-	sort.Slice(timeSeries, func(i, j int) bool {
+func normalizeTimeSeries(timeSeries []timestampPair) []timestampPair {
+	// flatten values
+	var flattened []timeStampInfo
+	for i, pair := range timeSeries {
+		flattened = append(flattened, timeStampInfo{timestamp: pair.StartTime, position: 2 * i})
+		flattened = append(flattened, timeStampInfo{timestamp: pair.TimeUnix, position: 2*i + 1})
+	}
+
+	sort.Slice(flattened, func(i, j int) bool {
 		return func(t1, t2 pcommon.Timestamp) int {
 			if t1 < t2 {
 				return -1
@@ -65,13 +59,33 @@ func normalizeTimeSeries(timeSeries []pcommon.Timestamp) map[pcommon.Timestamp]p
 				return 1
 			}
 			return 0
-		}(timeSeries[i], timeSeries[j]) < 0
+		}(flattened[i].timestamp, flattened[j].timestamp) < 0
 	})
 
-	for i := range timeSeries {
-		normalizedTs[timeSeries[i]] = normalTime(i)
+	// normalize values
+	normalizedTs := make(map[pcommon.Timestamp]pcommon.Timestamp)
+	count := 0
+	for _, v := range flattened {
+		if v.timestamp == 0 {
+			continue
+		}
+		if _, ok := normalizedTs[v.timestamp]; !ok {
+			normalizedTs[v.timestamp] = normalTime(count)
+			count++
+		}
 	}
-	return normalizedTs
+	for i := range flattened {
+		flattened[i].timestamp = normalizedTs[flattened[i].timestamp]
+	}
+
+	for _, tsi := range flattened {
+		if tsi.position%2 == 0 { // even index, so it's a StartTime
+			timeSeries[tsi.position/2].StartTime = tsi.timestamp
+		} else { // odd index, so it's a TimeUnix
+			timeSeries[tsi.position/2].TimeUnix = tsi.timestamp
+		}
+	}
+	return timeSeries
 }
 
 func normalTime(timeSeriesIndex int) pcommon.Timestamp {
@@ -86,8 +100,15 @@ type dataPointSlice[T dataPoint] interface {
 type dataPoint interface {
 	pmetric.NumberDataPoint | pmetric.HistogramDataPoint | pmetric.ExponentialHistogramDataPoint | pmetric.SummaryDataPoint
 	Attributes() pcommon.Map
+	StartTimestamp() pcommon.Timestamp
+	SetStartTimestamp(pcommon.Timestamp)
 	Timestamp() pcommon.Timestamp
 	SetTimestamp(pcommon.Timestamp)
+}
+
+type timestampPair struct {
+	StartTime pcommon.Timestamp
+	TimeUnix  pcommon.Timestamp
 }
 
 func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
@@ -97,26 +118,33 @@ func normalizeDataPointSlice[T dataPoint](dps dataPointSlice[T]) {
 		if attrCache[attrHash] {
 			continue
 		}
-		timeSeries := []pcommon.Timestamp{dps.At(i).Timestamp()}
+		timeSeries := []timestampPair{
+			{
+				StartTime: dps.At(i).StartTimestamp(),
+				TimeUnix:  dps.At(i).Timestamp(),
+			},
+		}
 
 		// Find any other data points in the time series
 		for j := i + 1; j < dps.Len(); j++ {
 			if pdatautil.MapHash(dps.At(j).Attributes()) != attrHash {
 				continue
 			}
-			timeSeries = append(timeSeries, dps.At(j).Timestamp())
+			timeSeries = append(timeSeries, timestampPair{
+				StartTime: dps.At(j).StartTimestamp(),
+				TimeUnix:  dps.At(j).Timestamp(),
+			})
 		}
 
-		normalizedTs := normalizeTimeSeries(timeSeries)
+		timeSeries = normalizeTimeSeries(timeSeries)
+		index := 0
 		for k := 0; k < dps.Len(); k++ {
 			if pdatautil.MapHash(dps.At(k).Attributes()) != attrHash {
 				continue
 			}
-			for key, value := range normalizedTs {
-				if dps.At(k).Timestamp() == key {
-					dps.At(k).SetTimestamp(value)
-				}
-			}
+			dps.At(k).SetStartTimestamp(timeSeries[index].StartTime)
+			dps.At(k).SetTimestamp(timeSeries[index].TimeUnix)
+			index++
 		}
 		attrCache[attrHash] = true
 	}

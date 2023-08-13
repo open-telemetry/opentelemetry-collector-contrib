@@ -12,7 +12,7 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: a
-                  startTimeUnixNano: "1111111111111111111"
+                  startTimeUnixNano: "3333333333333333333"
                   timeUnixNano: "5555555555555555555"
                 - asInt: "0"
                   attributes:
@@ -70,6 +70,23 @@ resourceMetrics:
                   timeUnixNano: "1111111111111111111"
                 - asInt: "50"
                   startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "8888888888888888888"
+              isMonotonic: true
+            unit: By
+          - description: Timestamp normalization without startTimeUnixNano
+            name: test.second
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "5555555555555555555"
+                - asInt: "1"
+                  timeUnixNano: "3333333333333333333"
+                - asInt: "5"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "10"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "50"
                   timeUnixNano: "8888888888888888888"
               isMonotonic: true
             unit: By

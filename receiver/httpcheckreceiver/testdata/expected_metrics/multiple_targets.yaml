@@ -10,13 +10,13 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             name: httpcheck.duration
             unit: ms
           - description: 1 if the check resulted in status_code matching the status_class, otherwise 0.

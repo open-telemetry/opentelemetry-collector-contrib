@@ -16,31 +16,36 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "3000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
                 - asInt: "10"
                   attributes:
                     - key: a
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "3000000"
                 - asInt: "30"
                   attributes:
                     - key: a
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "0"
                   attributes:
                     - key: a
                       value:
                         stringValue: BBBB
+                  startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: d
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
         scope:
           attributes:
@@ -60,13 +65,15 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "3000000"
                 - asInt: "0"
                   attributes:
                     - key: a
                       value:
                         stringValue: AAAA
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: "1"
         scope:
           attributes:
@@ -92,43 +99,50 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
                 - asInt: "1"
                   attributes:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
                 - asInt: "6"
                   attributes:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "3000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "5000000"
                 - asInt: "4"
                   attributes:
                     - key: a
                       value:
                         stringValue: b
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "2"
                   attributes:
                     - key: b
                       value:
                         stringValue: b
+                  startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: d
                       value:
                         stringValue: d
+                  startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
                 - asInt: "5"
                   attributes:
                     - key: d
                       value:
                         stringValue: d
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
               isMonotonic: true
             unit: By
           - description: Sort + Timestamp normalization (full standardize) second test
@@ -141,36 +155,42 @@ resourceMetrics:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "4000000"
                 - asInt: "3"
                   attributes:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
                 - asInt: "6"
                   attributes:
                     - key: a
                       value:
                         stringValue: a
-                  timeUnixNano: "3000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "5000000"
                 - asInt: "2"
                   attributes:
                     - key: b
                       value:
                         stringValue: b
+                  startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
                 - asInt: "4"
                   attributes:
                     - key: d
                       value:
                         stringValue: d
-                  timeUnixNano: "2000000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "3000000"
                 - asInt: "5"
                   attributes:
                     - key: d
                       value:
                         stringValue: d
+                  startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
