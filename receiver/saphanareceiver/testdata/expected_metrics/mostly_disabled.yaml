@@ -19,13 +19,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896781000"
+                  timeUnixNano: "1651180632896172000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896781000"
+                  timeUnixNano: "1651180632896172000"
             unit: '{services}'
           - description: The number of service threads in a given status.
             name: saphana.service.thread.count
@@ -37,13 +39,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896781000"
+                  timeUnixNano: "1651180632896172000"
                 - asInt: "11"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896781000"
+                  timeUnixNano: "1651180632896172000"
             unit: '{threads}'
         scope:
           name: otelcol/saphanareceiver
@@ -68,13 +72,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896952000"
+                  timeUnixNano: "1651180632896172000"
                 - asInt: "8"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896952000"
+                  timeUnixNano: "1651180632896172000"
             unit: '{services}'
           - description: The number of service threads in a given status.
             name: saphana.service.thread.count
@@ -86,13 +92,15 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: active
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896952000"
+                  timeUnixNano: "1651180632896172000"
                 - asInt: "1111"
                   attributes:
                     - key: status
                       value:
                         stringValue: inactive
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651180632896952000"
+                  timeUnixNano: "1651180632896172000"
             unit: '{threads}'
         scope:
           name: otelcol/saphanareceiver

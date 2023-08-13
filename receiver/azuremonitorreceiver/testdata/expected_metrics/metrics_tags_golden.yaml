@@ -22,7 +22,8 @@ resourceMetrics:
                     - key: metadata_dimension2
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654594697"
             name: azure_metric5_average
             unit: unit1
           - gauge:
@@ -38,7 +39,8 @@ resourceMetrics:
                     - key: metadata_dimension2
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654594697"
             name: azure_metric5_minimum
             unit: unit1
           - gauge:
@@ -51,7 +53,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654602044"
             name: azure_metric6_maximum
             unit: unit1
           - gauge:
@@ -67,7 +70,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654622051"
             name: azure_metric1_count
             unit: unit1
           - gauge:
@@ -83,7 +87,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654639679"
             name: azure_metric2_maximum
             unit: unit1
           - gauge:
@@ -99,7 +104,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654639679"
             name: azure_metric2_total
             unit: unit1
           - gauge:
@@ -115,7 +121,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654622051"
             name: azure_metric1_maximum
             unit: unit1
           - gauge:
@@ -131,7 +138,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654639679"
             name: azure_metric2_count
             unit: unit1
           - gauge:
@@ -147,7 +155,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654645513"
             name: azure_metric3_maximum
             unit: unit1
           - gauge:
@@ -163,7 +172,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654645513"
             name: azure_metric3_total
             unit: unit1
           - gauge:
@@ -173,7 +183,8 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654583673"
             name: azure_metric4_minimum
             unit: unit1
           - gauge:
@@ -186,7 +197,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654602044"
             name: azure_metric6_minimum
             unit: unit1
           - gauge:
@@ -199,7 +211,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654602044"
             name: azure_metric6_total
             unit: unit1
           - gauge:
@@ -215,7 +228,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654622051"
             name: azure_metric1_minimum
             unit: unit1
           - gauge:
@@ -225,7 +239,8 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654583673"
             name: azure_metric4_count
             unit: unit1
           - gauge:
@@ -241,7 +256,8 @@ resourceMetrics:
                     - key: metadata_dimension2
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654594697"
             name: azure_metric5_count
             unit: unit1
           - gauge:
@@ -254,7 +270,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654602044"
             name: azure_metric6_count
             unit: unit1
           - gauge:
@@ -270,7 +287,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654645513"
             name: azure_metric3_minimum
             unit: unit1
           - gauge:
@@ -280,7 +298,8 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654583673"
             name: azure_metric4_average
             unit: unit1
           - gauge:
@@ -290,7 +309,8 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654583673"
             name: azure_metric4_maximum
             unit: unit1
           - gauge:
@@ -306,7 +326,8 @@ resourceMetrics:
                     - key: metadata_dimension2
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654594697"
             name: azure_metric5_total
             unit: unit1
           - gauge:
@@ -322,7 +343,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654622051"
             name: azure_metric1_total
             unit: unit1
           - gauge:
@@ -338,7 +360,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654645513"
             name: azure_metric3_average
             unit: unit1
           - gauge:
@@ -351,7 +374,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654674823"
             name: azure_metric7_count
             unit: unit1
           - gauge:
@@ -364,7 +388,8 @@ resourceMetrics:
                     - key: metadata_dimension1
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654602044"
             name: azure_metric6_average
             unit: unit1
           - gauge:
@@ -380,7 +405,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654622051"
             name: azure_metric1_average
             unit: unit1
           - gauge:
@@ -396,7 +422,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654639679"
             name: azure_metric2_minimum
             unit: unit1
           - gauge:
@@ -406,7 +433,8 @@ resourceMetrics:
                     - key: azuremonitor.resource_id
                       value:
                         stringValue: resourceId2
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654583673"
             name: azure_metric4_total
             unit: unit1
           - gauge:
@@ -422,7 +450,8 @@ resourceMetrics:
                     - key: metadata_dimension2
                       value:
                         stringValue: dimension value
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654594697"
             name: azure_metric5_maximum
             unit: unit1
           - gauge:
@@ -438,7 +467,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654639679"
             name: azure_metric2_average
             unit: unit1
           - gauge:
@@ -454,7 +484,8 @@ resourceMetrics:
                     - key: tags_tagName1
                       value:
                         stringValue: tagValue1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1681790471654481953"
+                  timeUnixNano: "1681790471654645513"
             name: azure_metric3_count
             unit: unit1
         scope:

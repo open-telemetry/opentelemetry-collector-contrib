@@ -19,13 +19,15 @@ resourceMetrics:
                     - key: checkpoint
                       value:
                         stringValue: completed
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "0"
                   attributes:
                     - key: checkpoint
                       value:
                         stringValue: failed
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{checkpoints}'
           - description: The number of checkpoints in progress.
@@ -34,7 +36,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: '{checkpoints}'
           - description: The total size of the last checkpoint.
             name: flink.job.last_checkpoint.size
@@ -42,13 +45,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The end to end duration of the last checkpoint.
             gauge:
               dataPoints:
                 - asInt: "4"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             name: flink.job.last_checkpoint.time
             unit: ms
           - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
@@ -57,7 +62,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{restarts}'
         scope:
@@ -83,13 +89,15 @@ resourceMetrics:
                     - key: checkpoint
                       value:
                         stringValue: completed
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "0"
                   attributes:
                     - key: checkpoint
                       value:
                         stringValue: failed
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{checkpoints}'
           - description: The number of checkpoints in progress.
@@ -98,7 +106,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: '{checkpoints}'
           - description: The total size of the last checkpoint.
             name: flink.job.last_checkpoint.size
@@ -106,13 +115,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The end to end duration of the last checkpoint.
             gauge:
               dataPoints:
                 - asInt: "4"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             name: flink.job.last_checkpoint.time
             unit: ms
           - description: The total number of restarts since this job was submitted, including full restarts and fine-grained restarts.
@@ -121,7 +132,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{restarts}'
         scope:
@@ -143,14 +155,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "21"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{classes}'
           - description: The CPU usage of the JVM for a jobmanager or taskmanager.
             gauge:
               dataPoints:
                 - asDouble: 0.24
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             name: flink.jvm.cpu.load
             unit: '%'
           - description: The CPU time used by the JVM for a jobmanager or taskmanager.
@@ -159,7 +173,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ns
           - description: The total number of collections that have occurred.
@@ -172,13 +187,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: PS_MarkSweep
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "12"
                   attributes:
                     - key: name
                       value:
                         stringValue: PS_Scavenge
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{collections}'
           - description: The total time spent performing garbage collection.
@@ -191,13 +208,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: PS_MarkSweep
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "9"
                   attributes:
                     - key: name
                       value:
                         stringValue: PS_Scavenge
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ms
           - description: The total capacity of all buffers in the direct buffer pool.
@@ -206,7 +225,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "19"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the direct buffer pool.
             name: flink.jvm.memory.direct.used
@@ -214,7 +234,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "18"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.heap.committed
@@ -222,7 +243,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of heap memory that can be used for memory management.
             name: flink.jvm.memory.heap.max
@@ -230,7 +252,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "25"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory currently used.
             name: flink.jvm.memory.heap.used
@@ -238,7 +261,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "26"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The number of buffers in the mapped buffer pool.
             name: flink.jvm.memory.mapped.total_capacity
@@ -246,7 +270,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the mapped buffer pool.
             name: flink.jvm.memory.mapped.used
@@ -254,7 +279,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.committed
@@ -262,7 +288,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "8"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of memory that can be used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.max
@@ -270,7 +297,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "17"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory currently used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.used
@@ -278,7 +306,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "23"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.nonheap.committed
@@ -286,7 +315,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "15"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of non-heap memory that can be used for memory management.
             name: flink.jvm.memory.nonheap.max
@@ -294,7 +324,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "13"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory currently used.
             name: flink.jvm.memory.nonheap.used
@@ -302,7 +333,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "16"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The total number of live threads.
             name: flink.jvm.threads.count
@@ -310,7 +342,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "6"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: '{threads}'
           - description: The total amount of managed memory.
             name: flink.memory.managed.total
@@ -318,7 +351,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "28"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of managed memory currently used.
             name: flink.memory.managed.used
@@ -326,7 +360,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "29"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
         scope:
           name: otelcol/flinkmetricsreceiver
@@ -350,14 +385,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "24"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{classes}'
           - description: The CPU usage of the JVM for a jobmanager or taskmanager.
             gauge:
               dataPoints:
                 - asDouble: 0.28
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             name: flink.jvm.cpu.load
             unit: '%'
           - description: The CPU time used by the JVM for a jobmanager or taskmanager.
@@ -366,7 +403,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ns
           - description: The total number of collections that have occurred.
@@ -379,13 +417,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "6"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Young_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{collections}'
           - description: The total time spent performing garbage collection.
@@ -398,13 +438,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "32"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Young_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ms
           - description: The total capacity of all buffers in the direct buffer pool.
@@ -413,7 +455,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "22"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the direct buffer pool.
             name: flink.jvm.memory.direct.used
@@ -421,7 +464,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "20"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.heap.committed
@@ -429,7 +473,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "9"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of heap memory that can be used for memory management.
             name: flink.jvm.memory.heap.max
@@ -437,7 +482,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "29"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory currently used.
             name: flink.jvm.memory.heap.used
@@ -445,7 +491,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "30"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The number of buffers in the mapped buffer pool.
             name: flink.jvm.memory.mapped.total_capacity
@@ -453,7 +500,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the mapped buffer pool.
             name: flink.jvm.memory.mapped.used
@@ -461,7 +509,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.committed
@@ -469,7 +518,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "11"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of memory that can be used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.max
@@ -477,7 +527,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "18"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory currently used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.used
@@ -485,7 +536,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "27"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.nonheap.committed
@@ -493,7 +545,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "16"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of non-heap memory that can be used for memory management.
             name: flink.jvm.memory.nonheap.max
@@ -501,7 +554,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "14"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory currently used.
             name: flink.jvm.memory.nonheap.used
@@ -509,7 +563,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "17"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The total number of live threads.
             name: flink.jvm.threads.count
@@ -517,7 +572,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: '{threads}'
           - description: The total amount of managed memory.
             name: flink.memory.managed.total
@@ -525,7 +581,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of managed memory currently used.
             name: flink.memory.managed.used
@@ -533,7 +590,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "26"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
         scope:
           name: otelcol/flinkmetricsreceiver
@@ -557,14 +615,16 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "24"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{classes}'
           - description: The CPU usage of the JVM for a jobmanager or taskmanager.
             gauge:
               dataPoints:
                 - asDouble: 0.28
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             name: flink.jvm.cpu.load
             unit: '%'
           - description: The CPU time used by the JVM for a jobmanager or taskmanager.
@@ -573,7 +633,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ns
           - description: The total number of collections that have occurred.
@@ -586,13 +647,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "6"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Young_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{collections}'
           - description: The total time spent performing garbage collection.
@@ -605,13 +668,15 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: G1_Old_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "32"
                   attributes:
                     - key: name
                       value:
                         stringValue: G1_Young_Generation
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: ms
           - description: The total capacity of all buffers in the direct buffer pool.
@@ -620,7 +685,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "22"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the direct buffer pool.
             name: flink.jvm.memory.direct.used
@@ -628,7 +694,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "20"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.heap.committed
@@ -636,7 +703,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "9"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of heap memory that can be used for memory management.
             name: flink.jvm.memory.heap.max
@@ -644,7 +712,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "29"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of heap memory currently used.
             name: flink.jvm.memory.heap.used
@@ -652,7 +721,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "30"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The number of buffers in the mapped buffer pool.
             name: flink.jvm.memory.mapped.total_capacity
@@ -660,7 +730,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory used by the JVM for the mapped buffer pool.
             name: flink.jvm.memory.mapped.used
@@ -668,7 +739,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory guaranteed to be available to the JVM in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.committed
@@ -676,7 +748,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "11"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of memory that can be used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.max
@@ -684,7 +757,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "18"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of memory currently used in the Metaspace memory pool.
             name: flink.jvm.memory.metaspace.used
@@ -692,7 +766,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "27"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory guaranteed to be available to the JVM.
             name: flink.jvm.memory.nonheap.committed
@@ -700,7 +775,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "16"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The maximum amount of non-heap memory that can be used for memory management.
             name: flink.jvm.memory.nonheap.max
@@ -708,7 +784,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "14"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of non-heap memory currently used.
             name: flink.jvm.memory.nonheap.used
@@ -716,7 +793,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "17"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The total number of live threads.
             name: flink.jvm.threads.count
@@ -724,7 +802,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "7"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: '{threads}'
           - description: The total amount of managed memory.
             name: flink.memory.managed.total
@@ -732,7 +811,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
           - description: The amount of managed memory currently used.
             name: flink.memory.managed.used
@@ -740,7 +820,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "26"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: By
         scope:
           name: otelcol/flinkmetricsreceiver
@@ -777,7 +858,8 @@ resourceMetrics:
                     - key: record
                       value:
                         stringValue: dropped
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "5"
                   attributes:
                     - key: name
@@ -786,7 +868,8 @@ resourceMetrics:
                     - key: record
                       value:
                         stringValue: in
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "0"
                   attributes:
                     - key: name
@@ -795,7 +878,8 @@ resourceMetrics:
                     - key: record
                       value:
                         stringValue: out
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{records}'
           - description: The last watermark this operator has emitted.
@@ -808,7 +892,8 @@ resourceMetrics:
                     - key: name
                       value:
                         stringValue: Source__Custom_Source
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
             unit: ms
           - description: The number of records a task has.
             name: flink.task.record.count
@@ -820,19 +905,22 @@ resourceMetrics:
                     - key: record
                       value:
                         stringValue: dropped
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "4"
                   attributes:
                     - key: record
                       value:
                         stringValue: in
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
                 - asInt: "1"
                   attributes:
                     - key: record
                       value:
                         stringValue: out
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1656013018050954000"
+                  timeUnixNano: "1656013018050996000"
               isMonotonic: true
             unit: '{records}'
         scope:

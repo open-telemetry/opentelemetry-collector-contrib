@@ -8,7 +8,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 1
-                  timeUnixNano: "1000000"
+                  timeUnixNano: "1651783494931319000"
               isMonotonic: true
             unit: By
         scope:

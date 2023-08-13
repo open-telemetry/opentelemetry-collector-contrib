@@ -8,7 +8,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1660587887969146000"
+                  timeUnixNano: "1660587887969460000"
             unit: '{databases}'
         scope:
           name: otelcol/mongodbreceiver

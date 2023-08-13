@@ -10,13 +10,13 @@ resourceMetrics:
                     - key: attr1
                       value:
                         stringValue: thing1
-                  timeUnixNano: "1000000"
+                  timeUnixNano: "1651783494931319000"
                 - asInt: "2"
                   attributes:
                     - key: attr1
                       value:
                         stringValue: thing2
-                  timeUnixNano: "1000000"
+                  timeUnixNano: "1651783494931319000"
             name: metric1
             unit: By
         scope:

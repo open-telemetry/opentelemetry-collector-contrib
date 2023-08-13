@@ -10,7 +10,6 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
             name: httpcheck.duration
             unit: ms
           - description: Records errors occurring during HTTP check.
@@ -26,7 +25,6 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
             unit: '{error}'
           - description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
             name: httpcheck.status
@@ -47,7 +45,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -62,7 +61,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -77,7 +77,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -92,7 +93,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -107,7 +109,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://invalid-endpoint
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
             unit: "1"
         scope:
           name: otelcol/httpcheckreceiver

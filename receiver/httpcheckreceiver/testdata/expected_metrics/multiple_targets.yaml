@@ -10,15 +10,14 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
             name: httpcheck.duration
             unit: ms
+
           - description: 1 if the check resulted in status_code matching the status_class, otherwise 0.
             name: httpcheck.status
             sum:
@@ -38,7 +37,72 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
+                - asInt: "1"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 2xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 3xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 4xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
+                - asInt: "0"
+                  attributes:
+                    - key: http.method
+                      value:
+                        stringValue: GET
+                    - key: http.status_class
+                      value:
+                        stringValue: 5xx
+                    - key: http.status_code
+                      value:
+                        intValue: "200"
+                    - key: http.url
+                      value:
+                        stringValue: http://127.0.0.1:8000
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -53,22 +117,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
-                - asInt: "1"
-                  attributes:
-                    - key: http.method
-                      value:
-                        stringValue: GET
-                    - key: http.status_class
-                      value:
-                        stringValue: 2xx
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -83,22 +133,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: http.method
-                      value:
-                        stringValue: GET
-                    - key: http.status_class
-                      value:
-                        stringValue: 3xx
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -113,22 +149,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: http.method
-                      value:
-                        stringValue: GET
-                    - key: http.status_class
-                      value:
-                        stringValue: 4xx
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "1"
                   attributes:
                     - key: http.method
@@ -143,22 +165,8 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: http.method
-                      value:
-                        stringValue: GET
-                    - key: http.status_class
-                      value:
-                        stringValue: 5xx
-                    - key: http.status_code
-                      value:
-                        intValue: "200"
-                    - key: http.url
-                      value:
-                        stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
                 - asInt: "0"
                   attributes:
                     - key: http.method
@@ -173,8 +181,11 @@ resourceMetrics:
                     - key: http.url
                       value:
                         stringValue: http://127.0.0.1:8000
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1651783208655196000"
+                  timeUnixNano: "1651783208656862000"
+
             unit: "1"
+
         scope:
           name: otelcol/httpcheckreceiver
           version: latest

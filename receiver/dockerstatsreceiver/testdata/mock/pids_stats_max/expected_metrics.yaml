@@ -35,7 +35,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -47,7 +48,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
                 - asInt: "1998848"
                   attributes:
                     - key: device_major
@@ -59,7 +61,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -71,7 +74,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
                 - asInt: "1998848"
                   attributes:
                     - key: device_major
@@ -83,7 +87,8 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: read
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
                 - asInt: "0"
                   attributes:
                     - key: device_major
@@ -95,14 +100,16 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: write
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: By
           - description: 'Deprecated: use `container.cpu.utilization` metric instead. Percent of CPU used by the container.'
             gauge:
               dataPoints:
                 - asDouble: 0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             name: container.cpu.percent
             unit: "1"
           - description: Number of periods with throttling active.
@@ -111,7 +118,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{periods}'
           - description: Number of periods when the container hits its throttling limit.
@@ -120,7 +128,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{periods}'
           - description: Aggregate time the container was throttled.
@@ -129,7 +138,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: ns
           - description: Time spent by tasks of the cgroup in kernel mode (Linux).  Time spent by all container processes in kernel mode (Windows).
@@ -138,7 +148,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5467000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: ns
           - description: System CPU usage, as reported by docker.
@@ -147,7 +158,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "183556380000000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: ns
           - description: Total CPU time consumed.
@@ -156,7 +168,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "10935000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: ns
           - description: Time spent by tasks of the cgroup in user mode (Linux).  Time spent by all container processes in user mode (Windows).
@@ -165,7 +178,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5467000"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: ns
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -174,7 +188,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4096"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Cache memory that has been identified as active by the kernel.
             name: container.memory.active_file
@@ -182,7 +197,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Amount of memory used in anonymous mappings such as brk(), sbrk(), and mmap(MAP_ANONYMOUS) (Only available with cgroups v2).
             name: container.memory.anon
@@ -190,7 +206,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "114688"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Amount of memory used to cache filesystem data, including tmpfs and shared memory (Only available with cgroups v2).
             name: container.memory.file
@@ -198,7 +215,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1892352"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: The amount of anonymous memory that has been identified as inactive by the kernel.
             name: container.memory.inactive_anon
@@ -206,7 +224,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "110592"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Cache memory that has been identified as inactive by the kernel.
             name: container.memory.inactive_file
@@ -214,13 +233,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1892352"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Percentage of memory used.
             gauge:
               dataPoints:
                 - asDouble: 0.016875995187363255
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             name: container.memory.percent
             unit: "1"
           - description: Indicate the number of times that a process of the cgroup triggered a page fault.
@@ -229,7 +250,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1029"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{faults}'
           - description: Indicate the number of times that a process of the cgroup triggered a major fault.
@@ -238,7 +260,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "12"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{faults}'
           - description: The amount of memory that cannot be reclaimed.
@@ -247,7 +270,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Memory limit of the container.
             name: container.memory.usage.limit
@@ -255,7 +279,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2063048704"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Maximum memory usage.
             name: container.memory.usage.max
@@ -263,7 +288,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Memory usage of the container. This excludes the cache.
             name: container.memory.usage.total
@@ -271,7 +297,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "348160"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: By
           - description: Bytes received by the container.
             name: container.network.io.usage.rx_bytes
@@ -283,7 +310,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: By
           - description: Incoming packets dropped.
@@ -296,7 +324,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{packets}'
           - description: Received errors.
@@ -309,7 +338,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{errors}'
           - description: Packets received.
@@ -322,7 +352,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{packets}'
           - description: Bytes sent.
@@ -335,7 +366,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: By
           - description: Outgoing packets dropped.
@@ -348,7 +380,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{packets}'
           - description: Sent errors.
@@ -361,7 +394,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{errors}'
           - description: Packets sent.
@@ -374,7 +408,8 @@ resourceMetrics:
                     - key: interface
                       value:
                         stringValue: eth0
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of pids in the container's cgroup.
@@ -383,7 +418,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "1"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: '{pids}'
           - description: Maximum number of pids in the container's cgroup.
             name: container.pids.limit
@@ -391,13 +427,15 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2192"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             unit: '{pids}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
                 - asDouble: 5.849208473080516e+06
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1687762436274253000"
+                  timeUnixNano: "1687762436282542000"
             name: container.uptime
             unit: s
         scope:

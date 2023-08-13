@@ -16,7 +16,8 @@ resourceMetrics:
                     - key: kind
                       value:
                         stringValue: free
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1659981155092597000"
+                  timeUnixNano: "1659981155092604000"
             unit: "1"
         scope:
           name: otelcol/mysqlreceiver

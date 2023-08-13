@@ -10,7 +10,8 @@ resourceMetrics:
             gauge:
               dataPoints:
                 - asDouble: 1
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
             name: couchdb.average_request_time
             unit: ms
           - description: The number of open databases.
@@ -19,7 +20,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "36"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
             unit: '{databases}'
           - description: The number of database operations.
             name: couchdb.database.operations
@@ -31,13 +33,15 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: reads
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "39"
                   attributes:
                     - key: operation
                       value:
                         stringValue: writes
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
               isMonotonic: true
             unit: '{operations}'
           - description: The number of open file descriptors.
@@ -46,7 +50,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "37"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
             unit: '{files}'
           - description: The number of bulk requests.
             name: couchdb.httpd.bulk_requests
@@ -54,7 +59,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "2"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
               isMonotonic: true
             unit: '{requests}'
           - description: The number of HTTP requests by method.
@@ -67,43 +73,50 @@ resourceMetrics:
                     - key: http.method
                       value:
                         stringValue: COPY
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "4"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: DELETE
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "5"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: GET
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "6"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: HEAD
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "7"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: OPTIONS
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "8"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: POST
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "9"
                   attributes:
                     - key: http.method
                       value:
                         stringValue: PUT
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
               isMonotonic: true
             unit: '{requests}'
           - description: The number of each HTTP status code.
@@ -116,145 +129,169 @@ resourceMetrics:
                     - key: http.status_code
                       value:
                         stringValue: "200"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "11"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "201"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "12"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "202"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "13"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "204"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "14"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "206"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "15"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "301"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "16"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "302"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "17"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "304"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "18"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "400"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "19"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "401"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "20"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "403"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "21"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "404"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "22"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "405"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "23"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "406"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "24"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "409"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "25"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "412"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "26"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "413"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "27"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "414"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "28"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "415"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "29"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "416"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "30"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "417"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "31"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "500"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "32"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "501"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "33"
                   attributes:
                     - key: http.status_code
                       value:
                         stringValue: "503"
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
               isMonotonic: true
             unit: '{responses}'
           - description: The number of views read.
@@ -267,13 +304,15 @@ resourceMetrics:
                     - key: view
                       value:
                         stringValue: temporary_view_reads
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
                 - asInt: "35"
                   attributes:
                     - key: view
                       value:
                         stringValue: view_reads
-                  timeUnixNano: "1000000"
+                  startTimeUnixNano: "1642435850241561000"
+                  timeUnixNano: "1642435850241610000"
               isMonotonic: true
             unit: '{views}'
         scope:
