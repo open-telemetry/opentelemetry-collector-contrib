@@ -8,6 +8,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 type pdataLogsMarshaler struct {
@@ -74,16 +76,22 @@ type pdataTracesMarshaler struct {
 }
 
 func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var messages []*sarama.ProducerMessage
+
+	for _, tracesById := range batchpersignal.SplitTraces(td) {
+		bts, err := p.marshaler.MarshalTraces(tracesById)
+		if err != nil {
+			return nil, err
+		}
+		var traceId = tracesById.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+		key := []byte(traceId.String())
+		messages = append(messages, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+			Key:   sarama.ByteEncoder(key),
+		})
+	}
+	return messages, nil
 }
 
 func (p pdataTracesMarshaler) Encoding() string {
