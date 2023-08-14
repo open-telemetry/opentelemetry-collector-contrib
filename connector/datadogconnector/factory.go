@@ -24,9 +24,7 @@ func NewFactory() connector.Factory {
 		connector.WithTracesToMetrics(createTracesToMetricsConnector, metadata.TracesToMetricsStability))
 }
 
-var _ component.Config = (*Config)(nil)
-
-type Config struct{}
+// var _ component.Config = (*Config)(nil)
 
 func createDefaultConfig() component.Config {
 	return &Config{}
