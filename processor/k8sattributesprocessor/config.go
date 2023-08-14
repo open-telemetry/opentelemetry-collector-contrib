@@ -66,6 +66,7 @@ type ExtractConfig struct {
 	//   k8s.statefulset.name, k8s.statefulset.uid,
 	//   k8s.container.name, container.image.name,
 	//   container.image.tag, container.id
+	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default, the following fields are extracted and added to spans, metrics and logs as attributes:

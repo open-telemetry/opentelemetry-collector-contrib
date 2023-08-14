@@ -1,7 +1,7 @@
 // Deprecated: the service graph processor is deprecated and will be removed in future versions. Use the service graph connector instead.
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/servicegraphprocessor
 
-go 1.19
+go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4

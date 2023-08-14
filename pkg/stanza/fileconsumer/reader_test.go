@@ -166,12 +166,13 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	enc, err := helper.EncodingConfig{
+	encodingConf := helper.EncodingConfig{
 		Encoding: "utf-8",
-	}.Build()
+	}
+	enc, err := helper.LookupEncoding(encodingConf.Encoding)
 	require.NoError(t, err)
 
-	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
 	f.headerConfig = h
 

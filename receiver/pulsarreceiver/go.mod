@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver
 
-go 1.19
+go 1.20
 
 require (
 	github.com/apache/pulsar-client-go v0.8.1
@@ -9,7 +9,7 @@ require (
 	github.com/jaegertracing/jaeger v1.41.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.82.0
-	github.com/openzipkin/zipkin-go v0.4.1
+	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/config/configopaque v0.82.0
