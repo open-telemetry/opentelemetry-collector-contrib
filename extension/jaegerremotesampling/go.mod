@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/component v0.82.0
 	go.opentelemetry.io/collector/config/configgrpc v0.82.0
 	go.opentelemetry.io/collector/config/confighttp v0.82.0
-	go.opentelemetry.io/collector/config/confignet v0.82.0
+	go.opentelemetry.io/collector/config/confignet v0.83.0
 	go.opentelemetry.io/collector/config/configopaque v0.82.0
 	go.opentelemetry.io/collector/config/configtls v0.82.0
 	go.opentelemetry.io/collector/confmap v0.82.0
