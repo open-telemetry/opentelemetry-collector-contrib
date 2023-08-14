@@ -9,7 +9,7 @@ change_type: enhancement
 component: prometheusremotewriteexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add otel_scope_info metric to prometheus remote write exporter.
+note: Emit `otel_scope_info` metric, and add `otel_scope_name` and `otel_scope_version` labels to metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [21091]

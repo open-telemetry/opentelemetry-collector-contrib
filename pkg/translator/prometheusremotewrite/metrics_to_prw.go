@@ -108,7 +108,7 @@ func FromMetrics(md pmetric.Metrics, settings Settings) (tsMap map[string]*promp
 					errs = multierr.Append(errs, errors.New("unsupported metric type"))
 				}
 			}
-			addScopeTargetInfo(scope, resource, settings, mostRecentTimestamp, tsMap)
+			addScopeInfo(resource, scope, settings, mostRecentTimestamp, tsMap)
 		}
 		addResourceTargetInfo(resource, settings, mostRecentTimestamp, tsMap)
 	}

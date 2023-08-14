@@ -604,18 +604,14 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	addSample(tsMap, sample, labels, infoType)
 }
 
-func addScopeTargetInfo(
-	scope pcommon.InstrumentationScope,
+func addScopeInfo(
 	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
 	settings Settings,
 	timestamp pcommon.Timestamp,
 	tsMap map[string]*prompb.TimeSeries,
 ) {
 	if settings.DisableScopeInfo {
-		return
-	}
-	if scope.Attributes().Len() == 0 {
-		// If the scope doesn't have additional attributes, then otel_scope_info isn't useful.
 		return
 	}
 
