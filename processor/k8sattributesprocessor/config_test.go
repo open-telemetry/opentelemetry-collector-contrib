@@ -132,6 +132,42 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "bad_keys_annotations"),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_from_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_from_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keyregex_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_keyregex_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_groups_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_groups_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_name_labels"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_regex_name_annotations"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_filter_label_op"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "bad_filter_field_op"),
+		},
 	}
 
 	for _, tt := range tests {
