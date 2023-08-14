@@ -26,6 +26,27 @@ type EncodingConfig struct {
 	Encoding string `mapstructure:"encoding,omitempty"`
 }
 
+// Deprecated: [v0.83.0] Use NewDecoder instead.
+func (c EncodingConfig) Build() (Encoding, error) {
+	enc, err := LookupEncoding(c.Encoding)
+	if err != nil {
+		return Encoding{}, err
+	}
+
+	return Encoding{
+		Encoding:     enc,
+		decodeBuffer: make([]byte, 1<<12),
+		decoder:      enc.NewDecoder(),
+	}, nil
+}
+
+// Deprecated: [v0.83.0] Use Decoder instead.
+type Encoding struct {
+	Encoding     encoding.Encoding
+	decoder      *encoding.Decoder
+	decodeBuffer []byte
+}
+
 type Decoder struct {
 	encoding     encoding.Encoding
 	decoder      *encoding.Decoder
