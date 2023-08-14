@@ -114,10 +114,11 @@ func (b *readerBuilder) build() (r *reader, err error) {
 		}
 	}
 
-	r.encoding, err = b.encodingConfig.Build()
+	encoding, err := helper.LookupEncoding(b.encodingConfig.Encoding)
 	if err != nil {
 		return nil, err
 	}
+	r.decoder = helper.NewDecoder(encoding)
 
 	if b.headerConfig == nil || b.headerFinalized {
 		r.splitFunc = r.lineSplitFunc
