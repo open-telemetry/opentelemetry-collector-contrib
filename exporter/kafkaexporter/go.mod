@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/component v0.82.0
-	go.opentelemetry.io/collector/config/configtls v0.82.0
+	go.opentelemetry.io/collector/config/configtls v0.83.0
 	go.opentelemetry.io/collector/confmap v0.82.0
 	go.opentelemetry.io/collector/consumer v0.82.0
 	go.opentelemetry.io/collector/exporter v0.82.0
@@ -60,7 +60,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.82.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.82.0 // indirect
 	go.opentelemetry.io/collector/extension v0.82.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
