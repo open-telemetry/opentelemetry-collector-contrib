@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.82.0
 	go.opentelemetry.io/collector/config/configopaque v0.82.0
 	go.opentelemetry.io/collector/config/configtls v0.82.0
-	go.opentelemetry.io/collector/confmap v0.82.0
+	go.opentelemetry.io/collector/confmap v0.83.0
 	go.opentelemetry.io/collector/extension v0.82.0
 	go.uber.org/zap v1.25.0
 )
