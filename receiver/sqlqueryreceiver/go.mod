@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlque
 go 1.20
 
 require (
-	github.com/SAP/go-hdb v1.3.10
+	github.com/SAP/go-hdb v1.4.1
 	github.com/denisenkom/go-mssqldb v0.12.2
 	github.com/docker/go-connections v0.4.0
 	github.com/go-sql-driver/mysql v1.7.1
@@ -116,7 +116,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	golang.org/x/exp v0.0.0-20230810033253-352e893a4cad // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
