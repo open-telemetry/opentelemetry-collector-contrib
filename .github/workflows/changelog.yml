@@ -37,13 +37,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: changelog-${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
 
       - name: Ensure no changes to the CHANGELOG.md or CHANGELOG-API.md
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}

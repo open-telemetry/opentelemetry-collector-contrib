@@ -29,13 +29,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -83,13 +87,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -144,13 +152,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
@@ -167,13 +179,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -246,13 +262,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -320,13 +340,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Run Integration Tests
         run: make integration-test
 
@@ -341,13 +365,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -367,13 +395,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -431,13 +463,17 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -566,13 +602,17 @@ jobs:
           mkdir bin/ dist/
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            timeout-minutes: 2
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+            key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+          attempt_limit: 3
+          attempt_delay: 15000
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload

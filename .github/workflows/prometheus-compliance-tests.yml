@@ -30,14 +30,18 @@ jobs:
           cache: false
       - name: Cache Go
         id: go-cache
-        timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: Wandalen/wretry.action@v1.3.0
         with:
-          path: |
-            ~/go/bin
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: prometheus-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          action: actions/cache@v3
+          with: |
+            path: |
+              ~/go/bin
+              ~/go/pkg/mod
+              ~/.cache/go-build
+            key: prometheus-${{ runner.os }}-go-${{ hashFiles('**/go.mod', '**/go.sum') }}
+            timeout-minutes: 2
+          attempt_limit: 3
+          attempt_delay: 15000
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
