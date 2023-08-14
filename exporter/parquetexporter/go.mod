@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.20
 
 require (
-	go.opentelemetry.io/collector/component v0.82.0
+	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/exporter v0.82.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 )
@@ -22,8 +22,8 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.82.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.83.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.82.0 // indirect
 	go.opentelemetry.io/collector/extension v0.82.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
