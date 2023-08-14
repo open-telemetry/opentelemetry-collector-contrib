@@ -69,8 +69,8 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 
 	scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
-    client := newSplunkEntClient(cfg)
-    scraper.splunkClient = &client
+	client := newSplunkEntClient(cfg)
+	scraper.splunkClient = &client
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)

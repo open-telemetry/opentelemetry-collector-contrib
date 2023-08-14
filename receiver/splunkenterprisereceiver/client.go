@@ -83,7 +83,7 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 
 func (c *splunkEntClient) createAPIRequest(apiEndpoint string) (*http.Request, error) {
 	method := "GET"
-	url := c.endpoint.String() + apiEndpoint 
+	url := c.endpoint.String() + apiEndpoint
 
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
