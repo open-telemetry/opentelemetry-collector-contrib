@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
 
-go 1.19
+go 1.20
 
 require (
 	github.com/fsnotify/fsnotify v1.6.0

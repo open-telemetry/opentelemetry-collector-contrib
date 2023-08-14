@@ -1,7 +1,7 @@
 // Deprecated: use github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector instead.
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor
 
-go 1.19
+go 1.20
 
 require (
 	github.com/hashicorp/golang-lru v1.0.2

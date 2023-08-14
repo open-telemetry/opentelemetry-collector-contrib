@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter
 
-go 1.19
+go 1.20
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1

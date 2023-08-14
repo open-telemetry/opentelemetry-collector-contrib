@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
-go 1.19
+go 1.20
 
 require (
 	github.com/hashicorp/go-hclog v1.5.0
