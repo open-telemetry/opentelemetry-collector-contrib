@@ -6,7 +6,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.82.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.82.0
-	go.opentelemetry.io/collector/config/configcompression v0.82.0
+	go.opentelemetry.io/collector/config/configcompression v0.83.0
 	go.opentelemetry.io/collector/config/configgrpc v0.82.0
 	go.opentelemetry.io/collector/config/configopaque v0.82.0
 	go.opentelemetry.io/collector/config/configtls v0.82.0
