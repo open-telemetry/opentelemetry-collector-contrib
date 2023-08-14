@@ -51,7 +51,7 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("This component is deprecated in favor of the Datadog connector")
+	logger.Warn("This component is deprecated in favor of the Datadog connector")
 	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
