@@ -18,7 +18,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.22.0
 	go.opentelemetry.io/collector v0.82.0
 	go.opentelemetry.io/collector/component v0.82.0
-	go.opentelemetry.io/collector/confmap v0.82.0
+	go.opentelemetry.io/collector/confmap v0.83.0
 	go.opentelemetry.io/collector/consumer v0.82.0
 	go.opentelemetry.io/collector/extension v0.82.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
