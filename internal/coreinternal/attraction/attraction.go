@@ -173,7 +173,7 @@ type AttrProc struct {
 // An error is returned if there are any invalid inputs.
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
 	attributeActions := make([]attributeAction, 0, len(settings.Actions))
-	for _, a := range settings.Actions {
+	for i, a := range settings.Actions {
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))
 
