@@ -37,7 +37,8 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 }
 
 func TestDisabledMetrics(t *testing.T) {

@@ -12,10 +12,10 @@
 
 > **Warning**
 >
-> This feature can be disabled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `pkg.translator.prometheus.NormalizeName`. It is enabled by default (beta stage).
+> This feature can be enabled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `pkg.translator.prometheus.NormalizeName`. It is disabled by default (alpha stage).
 >
 > ```shell-session
-> $ otelcol --config=config.yaml --feature-gates=-pkg.translator.prometheus.NormalizeName
+> $ otelcol --config=config.yaml --feature-gates=pkg.translator.prometheus.NormalizeName
 > ```
 
 #### List of transformations to convert OpenTelemetry metrics to Prometheus metrics

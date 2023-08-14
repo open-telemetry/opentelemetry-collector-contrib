@@ -297,7 +297,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet3(t *testing.T) {
 }
 
 // Tests proper assignment for a HTTP client span
-// http.scheme, net.peer.ip, net.peer.port, http.target
+// http.scheme, net.peer.ip, net.peer.port, http.target, enduser.id
 func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	span := getDefaultHTTPClientSpan()
 	spanAttributes := span.Attributes()
@@ -307,6 +307,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	spanAttributes.PutStr(conventions.AttributeNetPeerIP, "127.0.0.1")
 	spanAttributes.PutInt(conventions.AttributeNetPeerPort, 81)
 	spanAttributes.PutStr(conventions.AttributeHTTPTarget, "/bar?biz=baz")
+	spanAttributes.PutStr(conventions.AttributeEnduserID, "12345")
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 	envelope := envelopes[0]
@@ -314,6 +315,7 @@ func TestHTTPClientSpanToRemoteDependencyAttributeSet4(t *testing.T) {
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultHTTPRemoteDependencyDataValidations(t, span, data)
 	assert.Equal(t, "https://127.0.0.1:81/bar?biz=baz", data.Data)
+	assert.Equal(t, "12345", envelope.Tags[contracts.UserId])
 }
 
 // Tests proper assignment for an RPC server span
@@ -461,18 +463,20 @@ func TestMessagingProducerSpanToRequestData(t *testing.T) {
 	assert.Equal(t, "foo:81", data.Target)
 }
 
-// Tests proper assignment for an internal span
+// Tests proper assignment for an internal span and enduser.id
 func TestUnknownInternalSpanToRemoteDependencyData(t *testing.T) {
 	span := getDefaultInternalSpan()
 	spanAttributes := span.Attributes()
 
 	spanAttributes.PutStr("foo", "bar")
+	spanAttributes.PutStr(conventions.AttributeEnduserID, "4567")
 
 	envelopes, _ := spanToEnvelopes(defaultResource, defaultInstrumentationLibrary, span, true, zap.NewNop())
 	envelope := envelopes[0]
 	commonEnvelopeValidations(t, span, envelope, defaultRemoteDependencyDataEnvelopeName)
 	data := envelope.Data.(*contracts.Data).BaseData.(*contracts.RemoteDependencyData)
 	defaultInternalRemoteDependencyDataValidations(t, span, data)
+	assert.Equal(t, "4567", envelope.Tags[contracts.UserId])
 }
 
 // Tests that spans with unspecified kind are treated similar to internal spans

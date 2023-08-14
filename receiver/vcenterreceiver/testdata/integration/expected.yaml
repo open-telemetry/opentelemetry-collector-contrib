@@ -166,7 +166,7 @@ resourceMetrics:
                   attributes:
                     - key: disk_state
                       value:
-                        stringValue: used
+                        stringValue: available
                   startTimeUnixNano: "1682367880520917116"
                   timeUnixNano: "1682367880570405002"
             unit: By

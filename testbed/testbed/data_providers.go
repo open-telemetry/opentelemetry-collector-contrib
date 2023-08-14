@@ -61,7 +61,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 	traceID := dp.traceIDSequence.Add(1)
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 
-		startTime := time.Now()
+		startTime := time.Now().Add(time.Duration(i+int(traceID)*1000) * time.Second)
 		endTime := startTime.Add(time.Millisecond)
 
 		spanID := dp.dataItemsGenerated.Add(1)
@@ -71,7 +71,7 @@ func (dp *perfTestDataProvider) GenerateTraces() (ptrace.Traces, bool) {
 		// Create a span.
 		span.SetTraceID(idutils.UInt64ToTraceID(0, traceID))
 		span.SetSpanID(idutils.UInt64ToSpanID(spanID))
-		span.SetName("load-generator-span")
+		span.SetName("load-generator-span" + strconv.FormatUint(spanID+traceID*1000, 10))
 		span.SetKind(ptrace.SpanKindClient)
 		attrs := span.Attributes()
 		attrs.PutInt("load_generator.span_seq_num", int64(spanID))

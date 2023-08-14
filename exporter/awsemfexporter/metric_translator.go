@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 const (
@@ -56,6 +58,17 @@ type cWMetricStats struct {
 	Sum   float64
 }
 
+// The SampleCount of CloudWatch metrics will be calculated by the sum of the 'Counts' array.
+// The 'Count' field should be same as the sum of the 'Counts' array and will be ignored in CloudWatch.
+type cWMetricHistogram struct {
+	Values []float64
+	Counts []float64
+	Max    float64
+	Min    float64
+	Count  uint64
+	Sum    float64
+}
+
 type groupedMetricMetadata struct {
 	namespace                  string
 	timestampMs                int64
@@ -74,6 +87,7 @@ type cWMetricMetadata struct {
 
 type metricTranslator struct {
 	metricDescriptor map[string]MetricDescriptor
+	calculators      *emfCalculators
 }
 
 func newMetricTranslator(config Config) metricTranslator {
@@ -83,7 +97,18 @@ func newMetricTranslator(config Config) metricTranslator {
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
+		calculators: &emfCalculators{
+			delta:   aws.NewFloat64DeltaCalculator(),
+			summary: aws.NewMetricCalculator(calculateSummaryDelta),
+		},
 	}
+}
+
+func (mt metricTranslator) Shutdown() error {
+	var errs error
+	errs = multierr.Append(errs, mt.calculators.delta.Shutdown())
+	errs = multierr.Append(errs, mt.calculators.summary.Shutdown())
+	return errs
 }
 
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
@@ -92,6 +117,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
+	deltaInitialValue := config.RetainInitialValueOfDeltaMetric
 
 	ilms := rm.ScopeMetrics()
 	var metricReceiver string
@@ -109,16 +135,17 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:      cWNamespace,
-					timestampMs:    timestamp,
-					logGroup:       logGroup,
-					logStream:      logStream,
-					metricDataType: metric.Type(),
+					namespace:                  cWNamespace,
+					timestampMs:                timestamp,
+					logGroup:                   logGroup,
+					logStream:                  logStream,
+					metricDataType:             metric.Type(),
+					retainInitialValueForDelta: deltaInitialValue,
 				},
 				instrumentationScopeName: instrumentationScopeName,
 				receiver:                 metricReceiver,
 			}
-			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config, mt.calculators)
 			if err != nil {
 				return err
 			}

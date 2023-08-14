@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -39,7 +40,8 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Encoding: helper.NewEncodingConfig(),
+			Encoding:        helper.NewEncodingConfig(),
+			OneLogPerPacket: false,
 			Multiline: helper.MultilineConfig{
 				LineStartPattern: "",
 				LineEndPattern:   ".^", // Use never matching regex to not split data by default
@@ -57,6 +59,7 @@ type Config struct {
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
 	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket             bool                   `mapstructure:"one_log_per_packet,omitempty"`
 	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
 	Encoding                    helper.EncodingConfig  `mapstructure:",squash,omitempty"`
 	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
@@ -80,13 +83,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	encoding, err := c.Encoding.Build()
+	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +100,14 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	udpInput := &Input{
-		InputOperator: inputOperator,
-		address:       address,
-		buffer:        make([]byte, MaxUDPSize),
-		addAttributes: c.AddAttributes,
-		encoding:      encoding,
-		splitFunc:     splitFunc,
-		resolver:      resolver,
+		InputOperator:   inputOperator,
+		address:         address,
+		buffer:          make([]byte, MaxUDPSize),
+		addAttributes:   c.AddAttributes,
+		encoding:        enc,
+		splitFunc:       splitFunc,
+		resolver:        resolver,
+		OneLogPerPacket: c.OneLogPerPacket,
 	}
 	return udpInput, nil
 }
@@ -112,14 +116,15 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 type Input struct {
 	buffer []byte
 	helper.InputOperator
-	address       *net.UDPAddr
-	addAttributes bool
+	address         *net.UDPAddr
+	addAttributes   bool
+	OneLogPerPacket bool
 
 	connection net.PacketConn
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
 
-	encoding  helper.Encoding
+	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 }
@@ -146,6 +151,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	go func() {
 		defer u.wg.Done()
 
+		decoder := helper.NewDecoder(u.encoding)
 		buf := make([]byte, 0, MaxUDPSize)
 		for {
 			message, remoteAddr, err := u.readMessage()
@@ -159,48 +165,70 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 				break
 			}
 
+			if u.OneLogPerPacket {
+				log := truncateMaxLog(message)
+				u.handleMessage(ctx, remoteAddr, decoder, log)
+				continue
+			}
+
 			scanner := bufio.NewScanner(bytes.NewReader(message))
 			scanner.Buffer(buf, MaxUDPSize)
 
 			scanner.Split(u.splitFunc)
 
 			for scanner.Scan() {
-				decoded, err := u.encoding.Decode(scanner.Bytes())
-				if err != nil {
-					u.Errorw("Failed to decode data", zap.Error(err))
-					continue
-				}
-
-				entry, err := u.NewEntry(string(decoded))
-				if err != nil {
-					u.Errorw("Failed to create entry", zap.Error(err))
-					continue
-				}
-
-				if u.addAttributes {
-					entry.AddAttribute("net.transport", "IP.UDP")
-					if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
-						ip := addr.IP.String()
-						entry.AddAttribute("net.host.ip", addr.IP.String())
-						entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.host.name", u.resolver.GetHostFromIP(ip))
-					}
-
-					if addr, ok := remoteAddr.(*net.UDPAddr); ok {
-						ip := addr.IP.String()
-						entry.AddAttribute("net.peer.ip", ip)
-						entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-						entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIP(ip))
-					}
-				}
-
-				u.Write(ctx, entry)
+				u.handleMessage(ctx, remoteAddr, decoder, scanner.Bytes())
 			}
 			if err := scanner.Err(); err != nil {
 				u.Errorw("Scanner error", zap.Error(err))
 			}
 		}
 	}()
+}
+
+func truncateMaxLog(data []byte) (token []byte) {
+	if len(data) >= MaxUDPSize {
+		return data[:MaxUDPSize]
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	return data
+}
+
+func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, decoder *helper.Decoder, log []byte) {
+	decoded, err := decoder.Decode(log)
+	if err != nil {
+		u.Errorw("Failed to decode data", zap.Error(err))
+		return
+	}
+
+	entry, err := u.NewEntry(string(decoded))
+	if err != nil {
+		u.Errorw("Failed to create entry", zap.Error(err))
+		return
+	}
+
+	if u.addAttributes {
+		entry.AddAttribute("net.transport", "IP.UDP")
+		if addr, ok := u.connection.LocalAddr().(*net.UDPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.host.ip", addr.IP.String())
+			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.host.name", u.resolver.GetHostFromIP(ip))
+		}
+
+		if addr, ok := remoteAddr.(*net.UDPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.peer.ip", ip)
+			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.peer.name", u.resolver.GetHostFromIP(ip))
+		}
+	}
+
+	u.Write(ctx, entry)
 }
 
 // readMessage will read log messages from the connection.

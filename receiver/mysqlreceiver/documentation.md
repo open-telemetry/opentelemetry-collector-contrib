@@ -146,14 +146,6 @@ The total time of I/O wait events for an index.
 | schema | The schema of the object. | Any Str |
 | index | The name of the index. | Any Str |
 
-### mysql.locked_connects
-
-The number of attempts to connect to locked user accounts.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
-
 ### mysql.locks
 
 The number of MySQL locks.
@@ -422,7 +414,7 @@ Errors that occur during the client connection process.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap`` |
+| error | The connection error type. | Str: ``accept``, ``internal``, ``max_connections``, ``peer_address``, ``select``, ``tcpwrap``, ``aborted``, ``aborted_clients``, ``locked`` |
 
 ### mysql.joins
 

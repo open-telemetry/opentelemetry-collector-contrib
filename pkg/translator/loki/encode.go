@@ -23,6 +23,7 @@ type lokiEntry struct {
 	TraceID              string                 `json:"traceid,omitempty"`
 	SpanID               string                 `json:"spanid,omitempty"`
 	Severity             string                 `json:"severity,omitempty"`
+	Flags                uint32                 `json:"flags,omitempty"`
 	Attributes           map[string]interface{} `json:"attributes,omitempty"`
 	Resources            map[string]interface{} `json:"resources,omitempty"`
 	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
@@ -53,6 +54,7 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
+		Flags:      uint32(lr.Flags()),
 	}
 
 	scopeName := scope.Name()
@@ -90,6 +92,11 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 	severity := lr.SeverityText()
 	if severity != "" {
 		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
+	}
+
+	flags := lr.Flags()
+	if flags != 0 {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
 	}
 
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {

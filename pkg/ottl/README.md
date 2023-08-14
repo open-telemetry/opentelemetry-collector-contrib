@@ -172,9 +172,18 @@ When defining an OTTL function, if the function needs to take an Enum then the f
 
 Math Expressions represent arithmetic calculations.  They support `+`, `-`, `*`, and `/`, along with `()` for grouping.
 
-Math Expressions currently only support `int64` and `float64`.
+Math Expressions currently support `int64`, `float64`, `time.Time` and `time.Duration`. 
+For `time.Time` and `time.Duration`, only `+` and `-` are supported with the following rules: 
+  - A `time.Time` `-` a `time.Time` yields a `time.Duration`.
+  - A `time.Duration` `+` a `time.Time` yields a `time.Time`. 
+  - A `time.Time` `+`  a `time.Duration` yields a `time.Time`.
+  - A `time.Time` `-`  a `time.Duration` yields a `time.Time`.
+  - A `time.Duration` `+` a `time.Duration` yields a `time.Duration`.
+  - A `time.Duration` `-` a `time.Duration` yields a `time.Duration`.
+
 Math Expressions support `Paths` and `Editors` that return supported types.
 Note that `*` and `/` take precedence over `+` and `-`.
+Also note that `time.Time` and `time.Duration` can only be used with `+` and `-`. 
 Operations that share the same level of precedence will be executed in the order that they appear in the Math Expression.
 Math Expressions can be grouped with parentheses to override evaluation precedence.
 Math Expressions that mix `int64` and `float64` will result in an error.
@@ -236,15 +245,19 @@ For values that are not one of the basic primitive types, the only valid compari
 
 A `not equal` notation in the table below means that the "!=" operator returns true, but any other operator returns false. Note that a nil byte array is considered equivalent to nil.
 
+The `time.Time` and `time.Duration` types are compared using comparison functions from their respective packages. For more details on how those comparisons work, see the [Golang Time package](https://pkg.go.dev/time).
 
-| base type | bool        | int64               | float64             | string                          | Bytes                    | nil                    |
-|-----------|-------------|---------------------|---------------------|---------------------------------|--------------------------|------------------------|
-| bool      | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              |
-| int64     | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              |
-| float64   | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              |
-| string    | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              |
-| Bytes     | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     |
-| nil       | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only |
+
+| base type     | bool        | int64               | float64             | string                          | Bytes                    | nil                    | time.Time                                                    | time.Duration                                        |
+|---------------|-------------|---------------------|---------------------|---------------------------------|--------------------------|------------------------|--------------------------------------------------------------|------------------------------------------------------|
+| bool          | normal, T>F | not equal           | not equal           | not equal                       | not equal                | not equal              | not equal                                                    | not equal                                            |
+| int64         | not equal   | compared as largest | compared as float64 | not equal                       | not equal                | not equal              | not equal                                                    | not equal                                            |
+| float64       | not equal   | compared as float64 | compared as largest | not equal                       | not equal                | not equal              | not equal                                                    | not equal                                            |
+| string        | not equal   | not equal           | not equal           | normal (compared as Go strings) | not equal                | not equal              | not equal                                                    | not equal                                            |
+| Bytes         | not equal   | not equal           | not equal           | not equal                       | byte-for-byte comparison | []byte(nil) == nil     | not equal                                                    | not equal                                            |
+| nil           | not equal   | not equal           | not equal           | not equal                       | []byte(nil) == nil       | true for equality only | not equal                                                    | not equal                                            |
+| time.Time     | not equal   | not equal           | not equal           | not equal                       | not equal                | not equal              | uses `time.Equal()`to check equality | not equal                                            |
+| time.Duration | not equal   | not equal           | not equal           | not equal                       | not equal                | not equal              | not equal                                                    | uses `time.Before()` and `time.After` for comparison |
 
 Examples:
 - `name == "a name"`

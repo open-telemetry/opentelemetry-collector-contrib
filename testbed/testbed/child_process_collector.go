@@ -30,7 +30,7 @@ type childProcessCollector struct {
 	// Path to agent executable. If unset the default executable in
 	// bin/otelcol_{{.GOOS}}_{{.GOARCH}} will be used.
 	// Can be set for example to use the unstable executable for a specific test.
-	AgentExePath string
+	agentExePath string
 
 	// Descriptive name of the process
 	name string
@@ -81,9 +81,24 @@ type childProcessCollector struct {
 	ramMiBMax uint32
 }
 
-// NewChildProcessCollector crewtes a new OtelcolRunner as a child process on the same machine executing the test.
-func NewChildProcessCollector() OtelcolRunner {
-	return &childProcessCollector{}
+type ChildProcessOption func(*childProcessCollector)
+
+// NewChildProcessCollector creates a new OtelcolRunner as a child process on the same machine executing the test.
+func NewChildProcessCollector(options ...ChildProcessOption) OtelcolRunner {
+	col := &childProcessCollector{}
+
+	for _, option := range options {
+		option(col)
+	}
+
+	return col
+}
+
+// WithAgentExePath sets the path of the Collector executable
+func WithAgentExePath(exePath string) ChildProcessOption {
+	return func(cpc *childProcessCollector) {
+		cpc.agentExePath = exePath
+	}
 }
 
 func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
@@ -155,10 +170,10 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	cp.doneSignal = make(chan struct{})
 	cp.resourceSpec = params.resourceSpec
 
-	if cp.AgentExePath == "" {
-		cp.AgentExePath = GlobalConfig.DefaultAgentExeRelativeFile
+	if cp.agentExePath == "" {
+		cp.agentExePath = GlobalConfig.DefaultAgentExeRelativeFile
 	}
-	exePath := expandExeFileName(cp.AgentExePath)
+	exePath := expandExeFileName(cp.agentExePath)
 	exePath, err := filepath.Abs(exePath)
 	if err != nil {
 		return err

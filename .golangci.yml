@@ -123,12 +123,17 @@ linters-settings:
           files:
             - "!**/*_test.go"
 
+  exhaustive:
+    explicit-exhaustive-switch: true
+    ignore-enum-members: "pmetric.MetricTypeEmpty"
+
 linters:
   enable:
     - depguard
     - errcheck
     - errorlint
     - exportloopref
+    - exhaustive
     - gci
     - gocritic
     - gofmt

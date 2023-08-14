@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -22,8 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
-
-const defaultResourcesLen = 5
 
 const (
 	defaultDockerAPIVersion         = 1.23
@@ -104,47 +103,49 @@ func (r *receiver) scrapeV2(ctx context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
 			continue
 		}
-		r.recordContainerStats(now, res.stats, res.container)
+		if err := r.recordContainerStats(now, res.stats, res.container); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 
 	return r.mb.Emit(), errs
 }
 
-func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) {
+func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *dtypes.StatsJSON, container *docker.Container) error {
+	var errs error
 	r.recordCPUMetrics(now, &containerStats.CPUStats, &containerStats.PreCPUStats)
 	r.recordMemoryMetrics(now, &containerStats.MemoryStats)
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
+	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
+		errs = multierr.Append(errs, err)
+	}
 
 	// Always-present resource attrs + the user-configured resource attrs
-	resourceCapacity := defaultResourcesLen + len(r.config.EnvVarsToMetricLabels) + len(r.config.ContainerLabelsToMetricLabels)
-	resourceMetricsOptions := make([]metadata.ResourceMetricsOption, 0, resourceCapacity)
-	resourceMetricsOptions = append(resourceMetricsOptions,
-		metadata.WithContainerRuntime("docker"),
-		metadata.WithContainerHostname(container.Config.Hostname),
-		metadata.WithContainerID(container.ID),
-		metadata.WithContainerImageName(container.Config.Image),
-		metadata.WithContainerName(strings.TrimPrefix(container.Name, "/")))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetContainerRuntime("docker")
+	rb.SetContainerHostname(container.Config.Hostname)
+	rb.SetContainerID(container.ID)
+	rb.SetContainerImageName(container.Config.Image)
+	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
+	rb.SetContainerImageID(container.Image)
+	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
+	resource := rb.Emit()
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
-		label := label
 		if v := container.EnvMap[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutStr(label, v)
-			})
+			resource.Attributes().PutStr(label, v)
 		}
 	}
 	for k, label := range r.config.ContainerLabelsToMetricLabels {
-		label := label
 		if v := container.Config.Labels[k]; v != "" {
-			resourceMetricsOptions = append(resourceMetricsOptions, func(ras metadata.ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-				rm.Resource().Attributes().PutStr(label, v)
-			})
+			resource.Attributes().PutStr(label, v)
 		}
 	}
 
-	r.mb.EmitForResource(resourceMetricsOptions...)
+	r.mb.EmitForResource(metadata.WithResource(resource))
+	return errs
 }
 
 func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtypes.MemoryStats) {
@@ -190,6 +191,8 @@ func (r *receiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats *dtype
 		"total_unevictable":         r.mb.RecordContainerMemoryTotalUnevictableDataPoint,
 		"hierarchical_memory_limit": r.mb.RecordContainerMemoryHierarchicalMemoryLimitDataPoint,
 		"hierarchical_memsw_limit":  r.mb.RecordContainerMemoryHierarchicalMemswLimitDataPoint,
+		"anon":                      r.mb.RecordContainerMemoryAnonDataPoint,
+		"file":                      r.mb.RecordContainerMemoryFileDataPoint,
 	}
 
 	for name, val := range memoryStats.Stats {
@@ -264,4 +267,16 @@ func (r *receiver) recordPidsMetrics(now pcommon.Timestamp, pidsStats *dtypes.Pi
 			r.mb.RecordContainerPidsLimitDataPoint(now, int64(pidsStats.Limit))
 		}
 	}
+}
+
+func (r *receiver) recordBaseMetrics(now pcommon.Timestamp, base *types.ContainerJSONBase) error {
+	t, err := time.Parse(time.RFC3339, base.State.StartedAt)
+	if err != nil {
+		// value not available or invalid
+		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.uptime from Container.State.StartedAt: %w", err), 1)
+	}
+	if v := now.AsTime().Sub(t); v > 0 {
+		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
+	}
+	return nil
 }

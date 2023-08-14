@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, observiq, splunk, sumo]
+  codeowners:
+    active: [dmitryax]
 
 resource_attributes:
   k8s.node.name:
@@ -93,7 +95,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   k8s.node.memory.available:
     enabled: true
@@ -165,7 +167,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.node.network.errors:
     enabled: true
@@ -174,7 +176,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.pod.cpu.utilization:
     enabled: true
@@ -190,7 +192,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   k8s.pod.memory.available:
     enabled: true
@@ -262,7 +264,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.pod.network.errors:
     enabled: true
@@ -271,7 +273,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   container.cpu.utilization:
     enabled: true
@@ -287,7 +289,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   container.memory.available:
     enabled: true

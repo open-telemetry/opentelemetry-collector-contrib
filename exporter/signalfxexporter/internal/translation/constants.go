@@ -21,7 +21,7 @@ translation_rules:
       k8s: true
       container: true
 
-- action: rename_metrics
+- action: copy_metrics
   mapping:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization
@@ -394,6 +394,14 @@ translation_rules:
   mapping:
     major: vmpage_io.swap.out
     minor: vmpage_io.memory.out
+
+# convert from bytes to pages
+- action: divide_int
+  scale_factors_int:
+    vmpage_io.swap.in: 4096
+    vmpage_io.swap.out: 4096
+    vmpage_io.memory.in: 4096
+    vmpage_io.memory.out: 4096
 
 # process metric
 - action: copy_metrics

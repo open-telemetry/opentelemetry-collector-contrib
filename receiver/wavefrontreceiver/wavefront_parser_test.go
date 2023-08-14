@@ -8,97 +8,84 @@ import (
 	"testing"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func Test_buildLabels(t *testing.T) {
 	tests := []struct {
-		name       string
-		tags       string
-		wantKeys   []*metricspb.LabelKey
-		wantValues []*metricspb.LabelValue
-		wantErr    bool
+		name           string
+		tags           string
+		wantAttributes pcommon.Map
+		wantErr        bool
 	}{
 		{
-			name: "empty_tags",
+			name:           "empty_tags",
+			wantAttributes: pcommon.NewMap(),
 		},
 		{
-			name:     "only_source",
-			tags:     "source=test",
-			wantKeys: []*metricspb.LabelKey{{Key: "source"}},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "test", HasValue: true},
-			},
+			name: "only_source",
+			tags: "source=test",
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("source", "test")
+				return m
+			}(),
 		},
 		{
 			name: "no_quotes",
 			tags: "source=tst k0=v0 k1=v1",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "source"},
-				{Key: "k0"},
-				{Key: "k1"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "tst", HasValue: true},
-				{Value: "v0", HasValue: true},
-				{Value: "v1", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("source", "tst")
+				m.PutStr("k0", "v0")
+				m.PutStr("k1", "v1")
+				return m
+			}(),
 		},
 		{
 			name: "end_with_quotes",
 			tags: "source=\"tst escape\\\" tst\" x=\"tst spc\"",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "source"},
-				{Key: "x"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "tst escape\" tst", HasValue: true},
-				{Value: "tst spc", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("source", "tst escape\" tst")
+				m.PutStr("x", "tst spc")
+				return m
+			}(),
 		},
 		{
 			name: "multiple_escapes",
 			tags: "source=\"tst\\\"\\ntst\\\"\" bgn=\"\nb\" mid=\"tst\\nspc\" end=\"e\n\"",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "source"},
-				{Key: "bgn"},
-				{Key: "mid"},
-				{Key: "end"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "tst\"\ntst\"", HasValue: true},
-				{Value: "\nb", HasValue: true},
-				{Value: "tst\nspc", HasValue: true},
-				{Value: "e\n", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("source", "tst\"\ntst\"")
+				m.PutStr("bgn", "\nb")
+				m.PutStr("mid", "tst\nspc")
+				m.PutStr("end", "e\n")
+				return m
+			}(),
 		},
 		{
 			name: "missing_tagValue",
 			tags: "k0=0 k1= k2=2",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "k0"},
-				{Key: "k1"},
-				{Key: "k2"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "0", HasValue: true},
-				{Value: "", HasValue: true},
-				{Value: "2", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "0")
+				m.PutStr("k1", "")
+				m.PutStr("k2", "2")
+				return m
+			}(),
 		},
 		{
 			name: "empty_tagValue",
 			tags: "k0=0 k1=\"\"",
-			wantKeys: []*metricspb.LabelKey{
-				{Key: "k0"},
-				{Key: "k1"},
-			},
-			wantValues: []*metricspb.LabelValue{
-				{Value: "0", HasValue: true},
-				{Value: "", HasValue: true},
-			},
+			wantAttributes: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("k0", "0")
+				m.PutStr("k1", "")
+				return m
+			}(),
 		},
 		{
 			name:    "no_tag",
@@ -108,9 +95,11 @@ func Test_buildLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotKeys, gotValues, err := buildLabels(tt.tags)
-			assert.Equal(t, tt.wantKeys, gotKeys)
-			assert.Equal(t, tt.wantValues, gotValues)
+			gotAttributes := pcommon.NewMap()
+			err := buildLabels(gotAttributes, tt.tags)
+			if !tt.wantErr {
+				assert.Equal(t, tt.wantAttributes, gotAttributes)
+			}
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}
@@ -121,127 +110,133 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 		line                string
 		extractCollectDTags bool
 		missingTimestamp    bool
-		want                *metricspb.Metric
+		want                pmetric.Metric
 		wantErr             bool
 	}{
 		{
 			line: "no.tags 1 1582230020",
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"no.tags",
-				nil,
-				nil,
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				pcommon.NewMap(),
+				1582230020,
+				1,
 			),
 		},
 		{
 			line: "\"/and,\" 1 1582230020 source=tst",
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"/and,",
-				[]string{"source"},
-				[]string{"tst"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					return m
+				}(),
+				1582230020,
+				1,
 			),
 		},
 		{
 			line: "tst.int 1 1582230020 source=tst",
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"tst.int",
-				[]string{"source"},
-				[]string{"tst"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					return m
+				}(),
+				1582230020,
+				1,
 			),
 		},
 		{
 			line:             "tst.dbl 3.14 source=tst k0=v0",
 			missingTimestamp: true,
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			want: buildDoubleMetric(
 				"tst.dbl",
-				[]string{"source", "k0"},
-				[]string{"tst", "v0"},
-				&metricspb.Point{
-					Value: &metricspb.Point_DoubleValue{DoubleValue: 3.14},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					m.PutStr("k0", "v0")
+					return m
+				}(),
+				0,
+				3.14,
 			),
 		},
 		{
 			line: "tst.int.3tags 128 1582230020 k0=v_0 k1=v_1 k2=v_2",
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"tst.int.3tags",
-				[]string{"k0", "k1", "k2"},
-				[]string{"v_0", "v_1", "v_2"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 128},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("k0", "v_0")
+					m.PutStr("k1", "v_1")
+					m.PutStr("k2", "v_2")
+					return m
+				}(),
+				1582230020,
+				128,
 			),
 		},
 		{
 			line: "tst.int.1tag 1.23 1582230020 k0=v_0",
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_DOUBLE,
+			want: buildDoubleMetric(
 				"tst.int.1tag",
-				[]string{"k0"},
-				[]string{"v_0"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_DoubleValue{DoubleValue: 1.23},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("k0", "v_0")
+					return m
+				}(),
+				1582230020,
+				1.23,
 			),
 		},
 		{
 			line:                "collectd.[cdk=cdv].tags 1 source=tst k0=v0",
 			missingTimestamp:    true,
 			extractCollectDTags: true,
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"collectd.tags",
-				[]string{"source", "k0", "cdk"},
-				[]string{"tst", "v0", "cdv"},
-				&metricspb.Point{
-					Value: &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					m.PutStr("k0", "v0")
+					m.PutStr("cdk", "cdv")
+					return m
+				}(),
+				0,
+				1,
 			),
 		},
 		{
 			line:                "mult.[cdk0=cdv0].collectd.[cdk1=cdv1].groups 1 1582230020 source=tst",
 			extractCollectDTags: true,
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"mult.collectd.groups",
-				[]string{"source", "cdk0", "cdk1"},
-				[]string{"tst", "cdv0", "cdv1"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					m.PutStr("cdk0", "cdv0")
+					m.PutStr("cdk1", "cdv1")
+					return m
+				}(),
+				1582230020,
+				1,
 			),
 		},
 		{
 			line:                "collectd.last[cdk0=cdv0] 1 1582230020 source=tst",
 			extractCollectDTags: true,
-			want: buildMetric(
-				metricspb.MetricDescriptor_GAUGE_INT64,
+			want: buildIntMetric(
 				"collectd.last",
-				[]string{"source", "cdk0"},
-				[]string{"tst", "cdv0"},
-				&metricspb.Point{
-					Timestamp: &timestamppb.Timestamp{Seconds: 1582230020},
-					Value:     &metricspb.Point_Int64Value{Int64Value: 1},
-				},
+				func() pcommon.Map {
+					m := pcommon.NewMap()
+					m.PutStr("source", "tst")
+					m.PutStr("cdk0", "cdv0")
+					return m
+				}(),
+				1582230020,
+				1,
 			),
 		},
 		{
@@ -274,11 +269,11 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 				// The timestamp was actually generated by the parser.
 				// Assert that it is within a certain range around now.
 				unixNow := time.Now().Unix()
-				ts := got.Timeseries[0].Points[0].Timestamp
-				assert.LessOrEqual(t, ts.GetSeconds(), time.Now().Unix())
-				assert.LessOrEqual(t, math.Abs(float64(ts.GetSeconds()-unixNow)), 2.0)
+				ts := got.Gauge().DataPoints().At(0).Timestamp().AsTime()
+				assert.LessOrEqual(t, ts, time.Now())
+				assert.LessOrEqual(t, math.Abs(float64(ts.Unix()-unixNow)), 2.0)
 				// Copy returned timestamp so asserts below can succeed.
-				tt.want.Timeseries[0].Points[0].Timestamp = ts
+				tt.want.Gauge().DataPoints().At(0).SetTimestamp(pcommon.NewTimestampFromTime(ts))
 			}
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
@@ -286,41 +281,34 @@ func Test_wavefrontParser_Parse(t *testing.T) {
 	}
 }
 
-func buildMetric(
-	typ metricspb.MetricDescriptor_Type,
+func buildDoubleMetric(
 	name string,
-	keys []string,
-	values []string,
-	point *metricspb.Point,
-) *metricspb.Metric {
-	var labelKeys []*metricspb.LabelKey
-	if len(keys) > 0 {
-		labelKeys = make([]*metricspb.LabelKey, 0, len(keys))
-		for _, key := range keys {
-			labelKeys = append(labelKeys, &metricspb.LabelKey{Key: key})
-		}
-	}
-	var labelValues []*metricspb.LabelValue
-	if len(values) > 0 {
-		labelValues = make([]*metricspb.LabelValue, 0, len(values))
-		for _, value := range values {
-			labelValues = append(labelValues, &metricspb.LabelValue{
-				Value:    value,
-				HasValue: true,
-			})
-		}
-	}
-	return &metricspb.Metric{
-		MetricDescriptor: &metricspb.MetricDescriptor{
-			Name:      name,
-			Type:      typ,
-			LabelKeys: labelKeys,
-		},
-		Timeseries: []*metricspb.TimeSeries{
-			{
-				LabelValues: labelValues,
-				Points:      []*metricspb.Point{point},
-			},
-		},
-	}
+	attributes pcommon.Map,
+	ts int64,
+	dblVal float64,
+) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	g := metric.SetEmptyGauge()
+	dp := g.DataPoints().AppendEmpty()
+	dp.SetDoubleValue(dblVal)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(ts, 0)))
+	attributes.CopyTo(dp.Attributes())
+	return metric
+}
+
+func buildIntMetric(
+	name string,
+	attributes pcommon.Map,
+	ts int64,
+	intVal int64,
+) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	g := metric.SetEmptyGauge()
+	dp := g.DataPoints().AppendEmpty()
+	dp.SetIntValue(intVal)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(ts, 0)))
+	attributes.CopyTo(dp.Attributes())
+	return metric
 }

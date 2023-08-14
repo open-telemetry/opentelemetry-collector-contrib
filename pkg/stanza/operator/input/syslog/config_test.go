@@ -32,6 +32,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					cfg.Protocol = "rfc3164"
 					cfg.Location = "foo"
+					cfg.EnableOctetCounting = true
 					cfg.TCP = &tcp.NewConfig().BaseConfig
 					cfg.TCP.MaxLogSize = 1000000
 					cfg.TCP.ListenAddress = "10.0.0.1:9000"

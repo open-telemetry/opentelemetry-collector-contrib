@@ -1,0 +1,41 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.resourcequota.name
+          value:
+            stringValue: test-resourcequota-1
+        - key: k8s.resourcequota.uid
+          value:
+            stringValue: test-resourcequota-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The upper limit for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+            gauge:
+              dataPoints:
+                - asInt: "2000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+            name: k8s.resource_quota.hard_limit
+            unit: "1"
+          - description: The usage for a particular resource in a specific namespace. Will only be sent if a quota is specified. CPU requests/limits will be sent as millicores
+            gauge:
+              dataPoints:
+                - asInt: "1000"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: requests.cpu
+            name: k8s.resource_quota.used
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

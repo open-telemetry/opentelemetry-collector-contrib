@@ -57,7 +57,7 @@ type defaultClientFactory struct{}
 func (d *defaultClientFactory) getClient(c *Config, database string) (client, error) {
 	return newPostgreSQLClient(postgreSQLConfig{
 		username: c.Username,
-		password: c.Password,
+		password: string(c.Password),
 		database: database,
 		tls:      c.TLSClientSetting,
 		address:  c.NetAddr,
@@ -166,7 +166,9 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlCommitsDataPointWithoutDatabase(now, stats.transactionCommitted)
 		p.mb.RecordPostgresqlRollbacksDataPointWithoutDatabase(now, stats.transactionRollback)
 	}
-	p.mb.EmitForResource(metadata.WithPostgresqlDatabaseName(db))
+	rb := p.mb.NewResourceBuilder()
+	rb.SetPostgresqlDatabaseName(db)
+	p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Timestamp, dbClient client, db string, errs *errsMux) (numTables int64) {
@@ -197,14 +199,14 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxRead, metadata.AttributeSourceIdxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.idxHit, metadata.AttributeSourceIdxHit)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastHit, metadata.AttributeSourceToastHit)
-			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastHit)
+			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.toastRead, metadata.AttributeSourceToastRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxRead, metadata.AttributeSourceTidxRead)
 			p.mb.RecordPostgresqlBlocksReadDataPointWithoutDatabaseAndTable(now, br.tidxHit, metadata.AttributeSourceTidxHit)
 		}
-		p.mb.EmitForResource(
-			metadata.WithPostgresqlDatabaseName(db),
-			metadata.WithPostgresqlTableName(tm.table),
-		)
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(db)
+		rb.SetPostgresqlTableName(tm.table)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return int64(len(tableMetrics))
 }
@@ -225,11 +227,11 @@ func (p *postgreSQLScraper) collectIndexes(
 	for _, stat := range idxStats {
 		p.mb.RecordPostgresqlIndexScansDataPoint(now, stat.scans)
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
-		p.mb.EmitForResource(
-			metadata.WithPostgresqlDatabaseName(stat.database),
-			metadata.WithPostgresqlTableName(stat.table),
-			metadata.WithPostgresqlIndexName(stat.index),
-		)
+		rb := p.mb.NewResourceBuilder()
+		rb.SetPostgresqlDatabaseName(database)
+		rb.SetPostgresqlTableName(stat.table)
+		rb.SetPostgresqlIndexName(stat.index)
+		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 

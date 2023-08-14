@@ -8,5 +8,5 @@ import (
 
 const (
 	Type          = "webhookevent"
-	LogsStability = component.StabilityLevelDevelopment
+	LogsStability = component.StabilityLevelAlpha
 )

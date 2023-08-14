@@ -58,13 +58,16 @@ type serviceGraphProcessor struct {
 
 	startTime time.Time
 
-	seriesMutex                    sync.Mutex
-	reqTotal                       map[string]int64
-	reqFailedTotal                 map[string]int64
-	reqDurationSecondsSum          map[string]float64
-	reqDurationSecondsCount        map[string]uint64
-	reqDurationBounds              []float64
-	reqDurationSecondsBucketCounts map[string][]uint64
+	seriesMutex                          sync.Mutex
+	reqTotal                             map[string]int64
+	reqFailedTotal                       map[string]int64
+	reqClientDurationSecondsCount        map[string]uint64
+	reqClientDurationSecondsSum          map[string]float64
+	reqClientDurationSecondsBucketCounts map[string][]uint64
+	reqServerDurationSecondsCount        map[string]uint64
+	reqServerDurationSecondsSum          map[string]float64
+	reqServerDurationSecondsBucketCounts map[string][]uint64
+	reqDurationBounds                    []float64
 
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
@@ -93,17 +96,20 @@ func newProcessor(logger *zap.Logger, config component.Config) *serviceGraphProc
 	}
 
 	return &serviceGraphProcessor{
-		config:                         pConfig,
-		logger:                         logger,
-		startTime:                      time.Now(),
-		reqTotal:                       make(map[string]int64),
-		reqFailedTotal:                 make(map[string]int64),
-		reqDurationSecondsSum:          make(map[string]float64),
-		reqDurationSecondsCount:        make(map[string]uint64),
-		reqDurationBounds:              bounds,
-		reqDurationSecondsBucketCounts: make(map[string][]uint64),
-		keyToMetric:                    make(map[string]metricSeries),
-		shutdownCh:                     make(chan interface{}),
+		config:                               pConfig,
+		logger:                               logger,
+		startTime:                            time.Now(),
+		reqTotal:                             make(map[string]int64),
+		reqFailedTotal:                       make(map[string]int64),
+		reqClientDurationSecondsCount:        make(map[string]uint64),
+		reqClientDurationSecondsSum:          make(map[string]float64),
+		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqServerDurationSecondsCount:        make(map[string]uint64),
+		reqServerDurationSecondsSum:          make(map[string]float64),
+		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqDurationBounds:                    bounds,
+		keyToMetric:                          make(map[string]metricSeries),
+		shutdownCh:                           make(chan interface{}),
 	}
 }
 
@@ -336,9 +342,6 @@ func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
 	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
 	dimensions := buildDimensions(e)
 
-	// TODO: Consider configuring server or client latency
-	duration := e.ServerLatencySec
-
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
@@ -346,7 +349,7 @@ func (p *serviceGraphProcessor) aggregateMetricsForEdge(e *store.Edge) {
 	if e.Failed {
 		p.updateErrorMetrics(metricKey)
 	}
-	p.updateDurationMetrics(metricKey, duration)
+	p.updateDurationMetrics(metricKey, e.ServerLatencySec, e.ClientLatencySec)
 }
 
 func (p *serviceGraphProcessor) updateSeries(key string, dimensions pcommon.Map) {
@@ -373,14 +376,29 @@ func (p *serviceGraphProcessor) updateCountMetrics(key string) { p.reqTotal[key]
 
 func (p *serviceGraphProcessor) updateErrorMetrics(key string) { p.reqFailedTotal[key]++ }
 
-func (p *serviceGraphProcessor) updateDurationMetrics(key string, duration float64) {
+func (p *serviceGraphProcessor) updateDurationMetrics(key string, serverDuration, clientDuration float64) {
+	p.updateServerDurationMetrics(key, serverDuration)
+	p.updateClientDurationMetrics(key, clientDuration)
+}
+
+func (p *serviceGraphProcessor) updateServerDurationMetrics(key string, duration float64) {
 	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
-	if _, ok := p.reqDurationSecondsBucketCounts[key]; !ok {
-		p.reqDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	if _, ok := p.reqServerDurationSecondsBucketCounts[key]; !ok {
+		p.reqServerDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
 	}
-	p.reqDurationSecondsSum[key] += duration
-	p.reqDurationSecondsCount[key]++
-	p.reqDurationSecondsBucketCounts[key][index]++
+	p.reqServerDurationSecondsSum[key] += duration
+	p.reqServerDurationSecondsCount[key]++
+	p.reqServerDurationSecondsBucketCounts[key][index]++
+}
+
+func (p *serviceGraphProcessor) updateClientDurationMetrics(key string, duration float64) {
+	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+	if _, ok := p.reqClientDurationSecondsBucketCounts[key]; !ok {
+		p.reqClientDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	}
+	p.reqClientDurationSecondsSum[key] += duration
+	p.reqClientDurationSecondsCount[key]++
+	p.reqClientDurationSecondsBucketCounts[key][index]++
 }
 
 func buildDimensions(e *store.Edge) pcommon.Map {
@@ -460,9 +478,22 @@ func (p *serviceGraphProcessor) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 }
 
 func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	for key := range p.reqDurationSecondsCount {
+	// TODO: Remove this once legacy metric names are removed
+	if legacyMetricNamesFeatureGate.IsEnabled() {
+		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration_seconds")
+	}
+
+	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server_seconds"); err != nil {
+		return err
+	}
+
+	return p.collectClientLatencyMetrics(ilm)
+}
+
+func (p *serviceGraphProcessor) collectClientLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	for key := range p.reqServerDurationSecondsCount {
 		mDuration := ilm.Metrics().AppendEmpty()
-		mDuration.SetName("traces_service_graph_request_duration_seconds")
+		mDuration.SetName("traces_service_graph_request_client_seconds")
 		// TODO: Support other aggregation temporalities
 		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -472,12 +503,39 @@ func (p *serviceGraphProcessor) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
 		dpDuration.SetTimestamp(timestamp)
 		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
-		dpDuration.BucketCounts().FromRaw(p.reqDurationSecondsBucketCounts[key])
-		dpDuration.SetCount(p.reqDurationSecondsCount[key])
-		dpDuration.SetSum(p.reqDurationSecondsSum[key])
+		dpDuration.BucketCounts().FromRaw(p.reqServerDurationSecondsBucketCounts[key])
+		dpDuration.SetCount(p.reqServerDurationSecondsCount[key])
+		dpDuration.SetSum(p.reqServerDurationSecondsSum[key])
 
 		// TODO: Support exemplars
+		dimensions, ok := p.dimensionsForSeries(key)
+		if !ok {
+			return fmt.Errorf("failed to find dimensions for key %s", key)
+		}
 
+		dimensions.CopyTo(dpDuration.Attributes())
+	}
+	return nil
+}
+
+func (p *serviceGraphProcessor) collectServerLatencyMetrics(ilm pmetric.ScopeMetrics, mName string) error {
+	for key := range p.reqServerDurationSecondsCount {
+		mDuration := ilm.Metrics().AppendEmpty()
+		mDuration.SetName(mName)
+		// TODO: Support other aggregation temporalities
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+		timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
+		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+		dpDuration.SetTimestamp(timestamp)
+		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+		dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
+		dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
+		dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+
+		// TODO: Support exemplars
 		dimensions, ok := p.dimensionsForSeries(key)
 		if !ok {
 			return fmt.Errorf("failed to find dimensions for key %s", key)
@@ -562,9 +620,12 @@ func (p *serviceGraphProcessor) cleanCache() {
 	for _, key := range staleSeries {
 		delete(p.reqTotal, key)
 		delete(p.reqFailedTotal, key)
-		delete(p.reqDurationSecondsCount, key)
-		delete(p.reqDurationSecondsSum, key)
-		delete(p.reqDurationSecondsBucketCounts, key)
+		delete(p.reqClientDurationSecondsCount, key)
+		delete(p.reqClientDurationSecondsSum, key)
+		delete(p.reqClientDurationSecondsBucketCounts, key)
+		delete(p.reqServerDurationSecondsCount, key)
+		delete(p.reqServerDurationSecondsSum, key)
+		delete(p.reqServerDurationSecondsBucketCounts, key)
 	}
 	p.seriesMutex.Unlock()
 }

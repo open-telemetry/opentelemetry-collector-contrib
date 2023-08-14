@@ -4,5 +4,12 @@ status:
   class: receiver
   stability:
     beta: [metrics, traces]
-  distributions: [core, contrib, observiq, sumo]
-
+  distributions:
+  - core
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - sumo
+  codeowners:
+    active: [open-telemetry/collector-approvers]

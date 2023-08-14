@@ -40,7 +40,6 @@ type MetricsConfig struct {
 	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
 	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLockedConnects          MetricConfig `mapstructure:"mysql.locked_connects"`
 	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
 	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
@@ -117,9 +116,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlJoins: MetricConfig{
 			Enabled: false,
-		},
-		MysqlLockedConnects: MetricConfig{
-			Enabled: true,
 		},
 		MysqlLocks: MetricConfig{
 			Enabled: true,

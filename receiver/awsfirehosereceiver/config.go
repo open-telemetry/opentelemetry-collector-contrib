@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type Config struct {
@@ -20,7 +21,7 @@ type Config struct {
 	// AccessKey is checked against the one received with each request.
 	// This can be set when creating or updating the Firehose delivery
 	// stream.
-	AccessKey string `mapstructure:"access_key"`
+	AccessKey configopaque.String `mapstructure:"access_key"`
 }
 
 // Validate checks that the endpoint and record type exist and

@@ -149,6 +149,37 @@ func (sm *CumulativeMonotonicSumMode) UnmarshalText(in []byte) error {
 	}
 }
 
+// InitialValueMode defines what the exporter should do with the initial value
+// of a time series when transforming from cumulative to delta.
+type InitialValueMode string
+
+const (
+	// InitialValueModeAuto reports the initial value if its start timestamp
+	// is set and it happens after the process was started.
+	InitialValueModeAuto InitialValueMode = "auto"
+
+	// InitialValueModeDrop always drops the initial value.
+	InitialValueModeDrop InitialValueMode = "drop"
+
+	// InitialValueModeKeep always reports the initial value.
+	InitialValueModeKeep InitialValueMode = "keep"
+)
+
+var _ encoding.TextUnmarshaler = (*InitialValueMode)(nil)
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (iv *InitialValueMode) UnmarshalText(in []byte) error {
+	switch mode := InitialValueMode(in); mode {
+	case InitialValueModeAuto,
+		InitialValueModeDrop,
+		InitialValueModeKeep:
+		*iv = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid initial value mode %q", mode)
+	}
+}
+
 // SumConfig customizes export of OTLP Sums.
 type SumConfig struct {
 	// CumulativeMonotonicMode is the mode for exporting OTLP Cumulative Monotonic Sums.
@@ -159,6 +190,10 @@ type SumConfig struct {
 	// The default is 'to_delta'.
 	// See https://docs.datadoghq.com/metrics/otlp/?tab=sum#mapping for details and examples.
 	CumulativeMonotonicMode CumulativeMonotonicSumMode `mapstructure:"cumulative_monotonic_mode"`
+
+	// InitialCumulativeMonotonicMode defines the behavior of the exporter when receiving the first value
+	// of a cumulative monotonic sum.
+	InitialCumulativeMonotonicMode InitialValueMode `mapstructure:"initial_cumulative_monotonic_value"`
 }
 
 // SummaryMode is the export mode for OTLP Summary metrics.
@@ -233,6 +268,17 @@ type TracesConfig struct {
 	// If set to false the resource name will be filled with the instrumentation library name + span kind.
 	// The default value is `false`.
 	SpanNameAsResourceName bool `mapstructure:"span_name_as_resource_name"`
+
+	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
+	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
+	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
+	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
+	// If enabling both causes the datadog exporter to consume too many resources, try disabling `compute_stats_by_span_kind` first.
+	// If the overhead remains high, it will be due to a high cardinality of `peer.service` values from the traces. You may need to check your instrumentation.
+	PeerServiceAggregation bool `mapstructure:"peer_service_aggregation"`
 
 	// flushInterval defines the interval in seconds at which the writer flushes traces
 	// to the intake; used in tests.
@@ -516,6 +562,15 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	// Return an error if an endpoint is explicitly set to ""
 	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
 		return errEmptyEndpoint
+	}
+
+	const (
+		initialValueSetting = "metrics::sums::initial_cumulative_monotonic_value"
+		cumulMonoMode       = "metrics::sums::cumulative_monotonic_mode"
+	)
+	if configMap.IsSet(initialValueSetting) && c.Metrics.SumConfig.CumulativeMonotonicMode != CumulativeMonotonicSumModeToDelta {
+		return fmt.Errorf("%q can only be configured when %q is set to %q",
+			initialValueSetting, cumulMonoMode, CumulativeMonotonicSumModeToDelta)
 	}
 
 	return nil

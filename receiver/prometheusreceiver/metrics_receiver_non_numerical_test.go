@@ -10,7 +10,6 @@ import (
 
 	"github.com/prometheus/prometheus/model/value"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -20,8 +19,8 @@ var staleNaNsPage1 = `
 # TYPE go_threads gauge
 go_threads 19
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 
@@ -71,7 +70,7 @@ func TestStaleNaNs(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyStaleNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -104,7 +103,7 @@ func verifyStaleNaNsSuccessfulScrape(t *testing.T, td *testData, resourceMetric 
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -170,7 +169,7 @@ func verifyStaleNaNsFailedScrape(t *testing.T, td *testData, resourceMetric pmet
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -245,7 +244,7 @@ func TestNormalNaNs(t *testing.T) {
 			validateFunc: verifyNormalNaNs,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyNormalNaNs(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -305,8 +304,8 @@ go_threads +Inf
 # HELP redis_connected_clients Redis connected clients
 redis_connected_clients{name="rough-snowflake-web",port="6380"} -Inf
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} +Inf
 
 # HELP rpc_duration_seconds A summary of the RPC duration in seconds.
@@ -329,7 +328,7 @@ func TestInfValues(t *testing.T) {
 			validateFunc: verifyInfValues,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -365,7 +364,7 @@ func verifyInfValues(t *testing.T, td *testData, resourceMetrics []pmetric.Resou
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{

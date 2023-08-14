@@ -14,17 +14,17 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1114"
-                  attributes:
-                    - key: command
-                      value:
-                        stringValue: touch
-                  timeUnixNano: "1639770622333015000"
                 - asInt: "1110"
                   attributes:
                     - key: command
                       value:
                         stringValue: flush
+                  timeUnixNano: "1639770622333015000"
+                - asInt: "1111"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: get
                   timeUnixNano: "1639770622333015000"
                 - asInt: "1113"
                   attributes:
@@ -32,11 +32,11 @@ resourceMetrics:
                       value:
                         stringValue: set
                   timeUnixNano: "1639770622333015000"
-                - asInt: "1111"
+                - asInt: "1114"
                   attributes:
                     - key: command
                       value:
-                        stringValue: get
+                        stringValue: touch
                   timeUnixNano: "1639770622333015000"
               isMonotonic: true
             unit: '{commands}'
@@ -115,12 +115,6 @@ resourceMetrics:
           - description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
             gauge:
               dataPoints:
-                - asDouble: 50.0220361392684
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: increment
-                  timeUnixNano: "1639770622333015000"
                 - asDouble: 50.02233139794551
                   attributes:
                     - key: operation
@@ -133,6 +127,12 @@ resourceMetrics:
                       value:
                         stringValue: get
                   timeUnixNano: "1639770622333015000"
+                - asDouble: 50.0220361392684
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: increment
+                  timeUnixNano: "1639770622333015000"
             name: memcached.operation_hit_ratio
             unit: '%'
           - description: Operation counts.
@@ -140,42 +140,6 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "1134"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: increment
-                    - key: type
-                      value:
-                        stringValue: hit
-                  timeUnixNano: "1639770622333015000"
-                - asInt: "1131"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: get
-                    - key: type
-                      value:
-                        stringValue: miss
-                  timeUnixNano: "1639770622333015000"
-                - asInt: "1135"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: increment
-                    - key: type
-                      value:
-                        stringValue: miss
-                  timeUnixNano: "1639770622333015000"
-                - asInt: "1130"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: get
-                    - key: type
-                      value:
-                        stringValue: hit
-                  timeUnixNano: "1639770622333015000"
                 - asInt: "1119"
                   attributes:
                     - key: operation
@@ -190,6 +154,42 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: decrement
+                    - key: type
+                      value:
+                        stringValue: miss
+                  timeUnixNano: "1639770622333015000"
+                - asInt: "1130"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: get
+                    - key: type
+                      value:
+                        stringValue: hit
+                  timeUnixNano: "1639770622333015000"
+                - asInt: "1131"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: get
+                    - key: type
+                      value:
+                        stringValue: miss
+                  timeUnixNano: "1639770622333015000"
+                - asInt: "1134"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: increment
+                    - key: type
+                      value:
+                        stringValue: hit
+                  timeUnixNano: "1639770622333015000"
+                - asInt: "1135"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: increment
                     - key: type
                       value:
                         stringValue: miss

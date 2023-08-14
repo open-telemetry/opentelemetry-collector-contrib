@@ -1,0 +1,52 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: test-namespace
+        - key: k8s.job.name
+          value:
+            stringValue: test-job-1
+        - key: k8s.job.uid
+          value:
+            stringValue: test-job-1-uid
+        - key: opencensus.resourcetype
+          value:
+            stringValue: k8s
+    schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: The number of actively running pods for a job
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.job.active_pods
+            unit: "1"
+          - description: The number of pods which reached phase Failed for a job
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.job.failed_pods
+            unit: "1"
+          - description: The number of pods which reached phase Succeeded for a job
+            gauge:
+              dataPoints:
+                - asInt: "3"
+            name: k8s.job.successful_pods
+            unit: "1"
+          - description: The desired number of successfully finished pods the job should be run with
+            gauge:
+              dataPoints:
+                - asInt: "10"
+            name: k8s.job.desired_successful_pods
+            unit: "1"
+          - description: The max desired number of pods the job should run at any given time
+            gauge:
+              dataPoints:
+                - asInt: "2"
+            name: k8s.job.max_parallel_pods
+            unit: "1"
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest
+
