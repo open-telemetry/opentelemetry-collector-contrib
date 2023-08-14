@@ -531,7 +531,7 @@ require (
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openzipkin/zipkin-go v0.4.1 // indirect
+	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/ovh/go-ovh v1.4.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect

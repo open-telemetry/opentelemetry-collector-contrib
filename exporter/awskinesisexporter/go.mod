@@ -49,7 +49,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
-	github.com/openzipkin/zipkin-go v0.4.1 // indirect
+	github.com/openzipkin/zipkin-go v0.4.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
