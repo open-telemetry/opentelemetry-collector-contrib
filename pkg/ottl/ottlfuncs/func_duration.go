@@ -12,7 +12,7 @@ import (
 )
 
 type DurationArguments[K any] struct {
-	Duration ottl.StringGetter[K] `ottlarg:"0"`
+	Duration ottl.StringGetter[K]
 }
 
 func NewDurationFactory[K any]() ottl.Factory[K] {
