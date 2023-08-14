@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v0.82.0
+	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/configgrpc v0.82.0
-	go.opentelemetry.io/collector/confmap v0.82.0
+	go.opentelemetry.io/collector/confmap v0.83.0
 	go.opentelemetry.io/collector/consumer v0.82.0
 	go.opentelemetry.io/collector/exporter v0.82.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.82.0
@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v0.82.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.82.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.82.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.82.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.82.0 // indirect
 	go.opentelemetry.io/collector/extension v0.82.0 // indirect
