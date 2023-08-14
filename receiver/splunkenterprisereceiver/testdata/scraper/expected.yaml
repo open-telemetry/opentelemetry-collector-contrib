@@ -1,1 +1,19 @@
-{}
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Gauge tracking average KBps throughput of indexer
+            gauge:
+              dataPoints:
+                - asDouble: 25.579690815904478
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: normal
+                  startTimeUnixNano: "1692026466778927000"
+                  timeUnixNano: "1692026466780373000"
+            name: splunk.server.introspection.indexer.throughput
+            unit: KBy
+        scope:
+          name: otelcol/splunkenterprisereceiver
+          version: latest

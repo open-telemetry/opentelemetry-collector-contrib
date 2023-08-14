@@ -82,11 +82,14 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 	if err != nil {
 		errs.Add(err)
 	}
+    defer res.Body.Close()
+
 
 	err = unmarshallSearchReq(res, &sr)
 	if err != nil {
 		errs.Add(err)
 	}
+
 
 	for ok := true; ok; ok = (sr.Return == 204) {
 		req, err = s.splunkClient.createRequest(&sr)
@@ -98,6 +101,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 		if err != nil {
 			errs.Add(err)
 		}
+        defer res.Body.Close()
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 
@@ -162,7 +166,7 @@ func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Tim
 	var it indexThroughput
 	var ept string
 
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
+	if s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled {
 		ept = apiDict[`SplunkIndexerThroughput`]
 	} else {
 		return
@@ -188,6 +192,8 @@ func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Tim
 	if err != nil {
 		errs.Add(err)
 	}
+
+    fmt.Printf("\n%v\n", it.Entries)
 
 	s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, it.Entries[0].Content.AvgKb, it.Entries[0].Content.Status)
 }

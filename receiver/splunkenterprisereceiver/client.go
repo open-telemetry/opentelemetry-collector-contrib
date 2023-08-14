@@ -56,7 +56,6 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 		// return the build request, ready to be run by makeRequest
 		req, err := http.NewRequest(method, url, data)
 		if err != nil {
-			fmt.Println("error building request")
 			return nil, err
 		}
 
@@ -72,7 +71,6 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
-		fmt.Println("error building request")
 		return nil, err
 	}
 
@@ -90,7 +88,6 @@ func (c *splunkEntClient) createAPIRequest(apiEndpoint string) (*http.Request, e
 
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
-		fmt.Println("error building request")
 		return nil, err
 	}
 
@@ -106,7 +103,6 @@ func (c *splunkEntClient) createAPIRequest(apiEndpoint string) (*http.Request, e
 func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error) {
 	res, err := c.client.Do(req)
 	if err != nil {
-		fmt.Printf("\n error performing request:\n %v", err)
 		return nil, err
 	}
 

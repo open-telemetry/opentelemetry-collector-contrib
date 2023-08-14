@@ -16,24 +16,24 @@ type searchResponse struct {
 	search string
 	Jobid  *string `xml:"sid"`
 	Return int
-	Fields []*Field `xml:"result>field"`
+	Fields []*field `xml:"result>field"`
 }
 
-type Field struct {
+type field struct {
 	FieldName string `xml:"k,attr"`
 	Value     string `xml:"value>text"`
 }
 
 // '/services/server/introspection/indexer'
 type indexThroughput struct {
-	Entries []IdxTEntry `json:"entry"`
+	Entries []idxTEntry `json:"entry"`
 }
 
-type IdxTEntry struct {
-	Content IdxTContent `json:"content"`
+type idxTEntry struct {
+	Content idxTContent `json:"content"`
 }
 
-type IdxTContent struct {
+type idxTContent struct {
 	Status string  `json:"status"`
 	AvgKb  float64 `json:"average_KBps"`
 }
