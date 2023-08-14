@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -54,14 +53,14 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 
 		// No conditions, so match all.
 		if md.condition == nil {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			errors = errors.Join(errors, c.increment(name, countAttrs))
 			continue
 		}
 
 		if match, err := md.condition.Eval(ctx, tCtx); err != nil {
-			errors = multierr.Append(errors, err)
+			errors = errors.Join(errors, err)
 		} else if match {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			errors = errors.Join(errors, c.increment(name, countAttrs))
 		}
 	}
 	return errors
