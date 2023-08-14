@@ -19,6 +19,7 @@ import (
 	"github.com/jpillora/backoff"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -40,7 +41,7 @@ func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfigWithID creates a new TCP input config with default values
+// NewConfig creates a new TCP input config with default values
 func NewConfig() *Config {
 	return NewConfigWithID(operatorType)
 }
@@ -77,10 +78,10 @@ type BaseConfig struct {
 	MultiLineBuilder            MultiLineBuilderFunc
 }
 
-type MultiLineBuilderFunc func(encoding helper.Encoding) (bufio.SplitFunc, error)
+type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder(encoding helper.Encoding) (bufio.SplitFunc, error) {
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
+func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +113,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	encoding, err := c.Encoding.Build()
+	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +123,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	// Build multiline
-	splitFunc, err := c.MultiLineBuilder(encoding)
+	splitFunc, err := c.MultiLineBuilder(enc)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +139,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		MaxLogSize:      int(c.MaxLogSize),
 		addAttributes:   c.AddAttributes,
 		OneLogPerPacket: c.OneLogPerPacket,
-		encoding:        encoding,
+		encoding:        enc,
 		splitFunc:       splitFunc,
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
@@ -170,7 +171,7 @@ type Input struct {
 	tls      *tls.Config
 	backoff  backoff.Backoff
 
-	encoding  helper.Encoding
+	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 }
@@ -260,6 +261,8 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		defer t.wg.Done()
 		defer cancel()
 
+		decoder := helper.NewDecoder(t.encoding)
+
 		if t.OneLogPerPacket {
 			var buf bytes.Buffer
 			_, err := io.Copy(&buf, conn)
@@ -267,7 +270,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 				t.Errorw("IO copy net connection buffer error", zap.Error(err))
 			}
 			log := truncateMaxLog(buf.Bytes(), t.MaxLogSize)
-			t.handleMessage(ctx, conn, log)
+			t.handleMessage(ctx, conn, decoder, log)
 			return
 		}
 
@@ -279,7 +282,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		scanner.Split(t.splitFunc)
 
 		for scanner.Scan() {
-			t.handleMessage(ctx, conn, scanner.Bytes())
+			t.handleMessage(ctx, conn, decoder, scanner.Bytes())
 		}
 
 		if err := scanner.Err(); err != nil {
@@ -288,8 +291,8 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	}()
 }
 
-func (t *Input) handleMessage(ctx context.Context, conn net.Conn, log []byte) {
-	decoded, err := t.encoding.Decode(log)
+func (t *Input) handleMessage(ctx context.Context, conn net.Conn, decoder *helper.Decoder, log []byte) {
+	decoded, err := decoder.Decode(log)
 	if err != nil {
 		t.Errorw("Failed to decode data", zap.Error(err))
 		return
