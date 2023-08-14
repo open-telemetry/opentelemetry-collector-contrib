@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver v0.82.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.82.0
-	go.opentelemetry.io/collector/component v0.82.0
+	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/configtls v0.82.0
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.82.0
 	golang.org/x/mod v0.12.0
@@ -620,9 +620,9 @@ require (
 	go.opentelemetry.io/collector/config/confighttp v0.82.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.82.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v0.82.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.82.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.82.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.83.0 // indirect
 	go.opentelemetry.io/collector/connector v0.82.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.82.0 // indirect
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.82.0 // indirect
