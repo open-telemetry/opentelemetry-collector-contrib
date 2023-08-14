@@ -11,7 +11,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
-	go.opentelemetry.io/collector/semconv v0.82.0
+	go.opentelemetry.io/collector/semconv v0.83.0
 	google.golang.org/protobuf v1.31.0
 )
 
