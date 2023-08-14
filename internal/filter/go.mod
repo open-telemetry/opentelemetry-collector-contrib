@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.12.5
+	github.com/antonmedv/expr v1.13.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.82.0
