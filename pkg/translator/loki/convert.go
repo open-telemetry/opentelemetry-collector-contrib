@@ -32,6 +32,8 @@ const (
 	levelLabel    string = "level"
 )
 
+const attrSeparator = "."
+
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
 	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
@@ -112,12 +114,11 @@ func getAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
 
 	// couldn't find the attribute under the given name directly
 	// perhaps it's a nested attribute?
-	sep := "."
-	segments := strings.Split(attr, sep)
+	segments := strings.Split(attr, attrSeparator)
 	segmentsNumber := len(segments)
 	for i := 0; i < segmentsNumber-1; i++ {
-		left := strings.Join(segments[:segmentsNumber-i-1], sep)
-		right := strings.Join(segments[segmentsNumber-i-1:], sep)
+		left := strings.Join(segments[:segmentsNumber-i-1], attrSeparator)
+		right := strings.Join(segments[segmentsNumber-i-1:], attrSeparator)
 
 		if av, ok := getAttribute(left, attributes); ok {
 			if av.Type() == pcommon.ValueTypeMap {
