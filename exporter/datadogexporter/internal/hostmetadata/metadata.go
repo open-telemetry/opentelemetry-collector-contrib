@@ -169,14 +169,18 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
 	// Consume one first time
-	reporter.ConsumeHostMetadata(hostMetadata)
+	if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
+		params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			reporter.ConsumeHostMetadata(hostMetadata)
+			if err := reporter.ConsumeHostMetadata(hostMetadata); err != nil {
+				params.Logger.Warn("Failed to consume host metadata", zap.Any("payload", hostMetadata))
+			}
 		}
 	}
 }
