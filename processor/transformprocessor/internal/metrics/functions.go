@@ -32,6 +32,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 
 	metricFunctions := ottl.CreateFactoryMap(
 		newExtractSumMetricFactory(),
+		newExtractCountMetricFactory(),
 	)
 
 	for k, v := range metricFunctions {

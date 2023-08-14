@@ -32,6 +32,7 @@ cmd/telemetrygen/                                        @open-telemetry/collect
 confmap/provider/s3provider/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
+connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @gbbr @dineshg13
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
@@ -45,7 +46,7 @@ exporter/awsemfexporter/                                 @open-telemetry/collect
 exporter/awskinesisexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                  @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
 exporter/awsxrayexporter/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
-exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharan @ag-ramachandran
+exporter/azuredataexplorerexporter/                      @open-telemetry/collector-contrib-approvers @asaharn @ag-ramachandran
 exporter/azuremonitorexporter/                           @open-telemetry/collector-contrib-approvers @pcwiese
 exporter/carbonexporter/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
 exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
