@@ -80,12 +80,10 @@ type Key struct {
 }
 
 func NewKey(metricMetadata interface{}, labels map[string]string) Key {
-	kvs := make([]attribute.KeyValue, len(labels))
+	kvs := make([]attribute.KeyValue, 0, len(labels))
 	var sortable attribute.Sortable
-	i := 0
 	for k, v := range labels {
-		kvs[i] = attribute.String(k, v)
-		i++
+		kvs = append(kvs, attribute.String(k, v))
 	}
 	set := attribute.NewSetWithSortable(kvs, &sortable)
 
