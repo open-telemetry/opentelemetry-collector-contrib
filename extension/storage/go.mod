@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage
 
-go 1.19
+go 1.20
 
 require (
 	github.com/jackc/pgx/v4 v4.18.1

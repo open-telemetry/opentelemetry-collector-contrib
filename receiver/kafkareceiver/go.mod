@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver
 
-go 1.19
+go 1.20
 
 require (
 	github.com/IBM/sarama v1.40.1
@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.82.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.82.0
-	github.com/openzipkin/zipkin-go v0.4.1
+	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector v0.82.0
