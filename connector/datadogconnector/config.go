@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor"
+package datadogconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 
 // Config defines the configuration options for datadogprocessor.
 type Config struct {
