@@ -11,6 +11,7 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -20,13 +21,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
+const (
+	emitPerfMetricsWithObjectsFeatureGateID = "receiver.vcenter.emitPerfMetricsWithObjects"
+)
+
+var emitPerfMetricsWithObjects = featuregate.GlobalRegistry().MustRegister(
+	emitPerfMetricsWithObjectsFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver emits vCenter performance metrics with object metric label dimension."),
+)
+
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client *vcenterClient
-	config *Config
-	mb     *metadata.MetricsBuilder
-	logger *zap.Logger
+	client             *vcenterClient
+	config             *Config
+	mb                 *metadata.MetricsBuilder
+	logger             *zap.Logger
+	emitPerfWithObject bool
 }
 
 func newVmwareVcenterScraper(
@@ -36,10 +48,11 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client: client,
-		config: config,
-		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		client:             client,
+		config:             config,
+		logger:             logger,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		emitPerfWithObject: emitPerfMetricsWithObjects.IsEnabled(),
 	}
 }
 
@@ -201,16 +214,11 @@ func (v *vcenterMetricScraper) collectHost(
 		errs.AddPartial(1, err)
 		return
 	}
-	hri := hostResourceInfo{
-		host:    host.Name(),
-		cluster: cluster.Name(),
-	}
-
-	v.recordHostPerformanceMetrics(ctx, hwSum, hri, errs)
 	v.recordHostSystemMemoryUsage(now, hwSum)
+	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	rb := v.mb.NewResourceBuilder()
-	rb.SetVcenterHostName(hri.host)
-	rb.SetVcenterClusterName(hri.cluster)
+	rb.SetVcenterHostName(host.Name())
+	rb.SetVcenterClusterName(cluster.Name())
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -300,20 +308,12 @@ func (v *vcenterMetricScraper) collectVMs(
 		}
 		vmUUID := moVM.Config.InstanceUuid
 
-		vri := vmResourceInfo{
-			cluster: cluster.Name(),
-			vm:      vm.Name(),
-			vmID:    vmUUID,
-			host:    hostname,
-		}
-		v.collectVM(ctx, colTime, moVM, hwSum, errs, vri)
-
+		v.collectVM(ctx, colTime, moVM, hwSum, errs)
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterVMName(vri.vm)
-		rb.SetVcenterVMID(vri.vmID)
-		rb.SetVcenterClusterName(vri.cluster)
-		rb.SetVcenterHostName(vri.host)
-
+		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMID(vmUUID)
+		rb.SetVcenterClusterName(cluster.Name())
+		rb.SetVcenterHostName(hostname)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
@@ -325,8 +325,7 @@ func (v *vcenterMetricScraper) collectVM(
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 	errs *scrapererror.ScrapeErrors,
-	vri vmResourceInfo,
 ) {
-	v.recordVMPerformance(ctx, vm, vri, errs)
 	v.recordVMUsages(colTime, vm, hs)
+	v.recordVMPerformance(ctx, vm, errs)
 }

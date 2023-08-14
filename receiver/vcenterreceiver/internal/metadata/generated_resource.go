@@ -35,13 +35,6 @@ func (rb *ResourceBuilder) SetVcenterDatastoreName(val string) {
 	}
 }
 
-// SetVcenterDeviceName sets provided value as "vcenter.device.name" attribute.
-func (rb *ResourceBuilder) SetVcenterDeviceName(val string) {
-	if rb.config.VcenterDeviceName.Enabled {
-		rb.res.Attributes().PutStr("vcenter.device.name", val)
-	}
-}
-
 // SetVcenterHostName sets provided value as "vcenter.host.name" attribute.
 func (rb *ResourceBuilder) SetVcenterHostName(val string) {
 	if rb.config.VcenterHostName.Enabled {

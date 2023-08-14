@@ -69,7 +69,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:      ResourceAttributeConfig{Enabled: true},
 					VcenterDatastoreName:    ResourceAttributeConfig{Enabled: true},
-					VcenterDeviceName:       ResourceAttributeConfig{Enabled: true},
 					VcenterHostName:         ResourceAttributeConfig{Enabled: true},
 					VcenterResourcePoolName: ResourceAttributeConfig{Enabled: true},
 					VcenterVMID:             ResourceAttributeConfig{Enabled: true},
@@ -124,7 +123,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:      ResourceAttributeConfig{Enabled: false},
 					VcenterDatastoreName:    ResourceAttributeConfig{Enabled: false},
-					VcenterDeviceName:       ResourceAttributeConfig{Enabled: false},
 					VcenterHostName:         ResourceAttributeConfig{Enabled: false},
 					VcenterResourcePoolName: ResourceAttributeConfig{Enabled: false},
 					VcenterVMID:             ResourceAttributeConfig{Enabled: false},
@@ -167,7 +165,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				VcenterClusterName:      ResourceAttributeConfig{Enabled: true},
 				VcenterDatastoreName:    ResourceAttributeConfig{Enabled: true},
-				VcenterDeviceName:       ResourceAttributeConfig{Enabled: true},
 				VcenterHostName:         ResourceAttributeConfig{Enabled: true},
 				VcenterResourcePoolName: ResourceAttributeConfig{Enabled: true},
 				VcenterVMID:             ResourceAttributeConfig{Enabled: true},
@@ -179,7 +176,6 @@ func TestResourceAttributesConfig(t *testing.T) {
 			want: ResourceAttributesConfig{
 				VcenterClusterName:      ResourceAttributeConfig{Enabled: false},
 				VcenterDatastoreName:    ResourceAttributeConfig{Enabled: false},
-				VcenterDeviceName:       ResourceAttributeConfig{Enabled: false},
 				VcenterHostName:         ResourceAttributeConfig{Enabled: false},
 				VcenterResourcePoolName: ResourceAttributeConfig{Enabled: false},
 				VcenterVMID:             ResourceAttributeConfig{Enabled: false},
