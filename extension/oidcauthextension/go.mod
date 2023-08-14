@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.82.0
-	go.opentelemetry.io/collector/component v0.82.0
+	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/extension v0.82.0
 	go.opentelemetry.io/collector/extension/auth v0.82.0
 	go.uber.org/zap v1.25.0
@@ -23,8 +23,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.83.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
