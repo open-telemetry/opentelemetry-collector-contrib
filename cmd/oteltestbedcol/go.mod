@@ -2,7 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
 
-go 1.19
+go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.82.0
