@@ -168,6 +168,8 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 		hostMetadata = metadataFromAttributes(attrs)
 	}
 	fillHostMetadata(params, pcfg, p, &hostMetadata)
+	// Consume one first time
+	reporter.ConsumeHostMetadata(hostMetadata)
 
 	for {
 		select {
