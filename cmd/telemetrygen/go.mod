@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
 
-go 1.19
+go 1.20
 
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
