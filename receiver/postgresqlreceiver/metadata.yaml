@@ -233,7 +233,7 @@ metrics:
   postgresql.deadlocks:
     enabled: false
     description: The number of deadlocks.
-    unit: 1
+    unit: "{deadlock}"
     sum:
       value_type: int
       monotonic: true

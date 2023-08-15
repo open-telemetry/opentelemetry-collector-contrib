@@ -822,7 +822,7 @@ type metricPostgresqlDeadlocks struct {
 func (m *metricPostgresqlDeadlocks) init() {
 	m.data.SetName("postgresql.deadlocks")
 	m.data.SetDescription("The number of deadlocks.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{deadlock}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)

@@ -155,7 +155,7 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
               isMonotonic: true
-            unit: "1"
+            unit: "{deadlock}"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -213,7 +213,7 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
               isMonotonic: true
-            unit: "1"
+            unit: "{deadlock}"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -280,7 +280,7 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
               isMonotonic: true
-            unit: "1"
+            unit: "{deadlock}"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:

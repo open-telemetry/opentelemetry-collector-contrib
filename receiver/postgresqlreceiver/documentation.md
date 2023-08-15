@@ -289,7 +289,7 @@ The number of deadlocks.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | true |
+| {deadlock} | Sum | Int | Cumulative | true |
 
 #### Attributes
 
