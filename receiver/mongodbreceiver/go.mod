@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-version v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.23.0
 	go.mongodb.org/mongo-driver v1.12.1
@@ -55,7 +55,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect

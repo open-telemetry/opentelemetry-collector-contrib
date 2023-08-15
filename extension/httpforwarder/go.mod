@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpf
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.83.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/confighttp v0.83.0
