@@ -51,6 +51,7 @@ var (
 		"rest_client_requests_total",
 		"etcd_request_duration_seconds.*",
 		"etcd_db_total_size_in_bytes.*",
+		"apiserver_storage_list_duration_seconds.*",
 	}
 )
 

@@ -415,7 +415,6 @@ kubectl apply -f config.yaml
 |-----------------------------|-------|
 | etcd_db_total_size_in_bytes | bytes |
 
-
 <br/><br/>
 | Resource Attribute |
 |--------------------|
@@ -428,6 +427,21 @@ kubectl apply -f config.yaml
 | Sources            |
 
 <br/><br/> 
+
+### Cluster Resources
+| Metric                                  | Unit    |
+|-----------------------------------------|---------|
+| apiserver_storage_list_duration_seconds | Seconds |
+
+<br/><br/>
+| Resource Attribute |
+|--------------------|
+| ClusterName        |
+| NodeName           |
+| Type               |
+| Timestamp          |
+| Version            |
+| Sources            |
 
 ### Cluster Deployment
 | Metric                      | Unit  |
