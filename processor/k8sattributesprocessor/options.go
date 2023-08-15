@@ -227,7 +227,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			var err error
 			r, err = regexp.Compile(a.Regex)
 			if err != nil {
-				return rules, fmt.Errorf("this is an error in the k8sattributesprocessor, %w", err)
+				return rules, err
 			}
 		}
 
