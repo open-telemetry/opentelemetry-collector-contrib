@@ -237,7 +237,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			var err error
 			keyRegex, err = regexp.Compile("^(?:" + a.KeyRegex + ")$")
 			if err != nil {
-				return rules, fmt.Errorf("this is an error in the k8sattributesprocessor, %w", err)
+				return rules, err
 			}
 
 			if keyRegex.NumSubexp() > 0 {
