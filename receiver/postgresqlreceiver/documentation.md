@@ -20,12 +20,6 @@ The number of backends.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | false |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
-
 ### postgresql.bgwriter.buffers.allocated
 
 Number of buffers allocated.
@@ -96,8 +90,6 @@ The number of blocks read.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
-| table | The schema name followed by the table name. | Any Str |
 | source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` |
 
 ### postgresql.commits
@@ -107,12 +99,6 @@ The number of commits.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
 
 ### postgresql.connection.max
 
@@ -137,12 +123,6 @@ The database disk usage.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
 
 ### postgresql.index.scans
 
@@ -172,8 +152,6 @@ The number of db row operations.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
-| table | The schema name followed by the table name. | Any Str |
 | operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` |
 
 ### postgresql.replication.data_delay
@@ -198,12 +176,6 @@ The number of rollbacks.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | 1 | Sum | Int | Cumulative | true |
 
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
-
 ### postgresql.rows
 
 The number of rows in the database.
@@ -216,8 +188,6 @@ The number of rows in the database.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
-| table | The schema name followed by the table name. | Any Str |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` |
 
 ### postgresql.table.count
@@ -290,12 +260,6 @@ The number of deadlocks.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {deadlock} | Sum | Int | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| database | The name of the database. | Any Str |
 
 ## Resource Attributes
 

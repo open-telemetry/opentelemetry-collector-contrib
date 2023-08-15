@@ -46,12 +46,6 @@ attributes:
       - sync
       - write
     name_override: type
-  database:
-    description: The name of the database.
-    type: string
-  table:
-    description: The schema name followed by the table name.
-    type: string
   source:
     description: The block read source type.
     type: string
@@ -83,7 +77,6 @@ attributes:
 
 metrics:
   postgresql.bgwriter.buffers.allocated:
-    attributes: []
     description: Number of buffers allocated.
     enabled: true
     sum:
@@ -137,7 +130,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [database, table, source]
+    attributes: [source]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -146,9 +139,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [database]
   postgresql.database.count:
-    attributes: []
     description: Number of user databases.
     enabled: true
     sum:
@@ -164,7 +155,6 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [database]
   postgresql.backends:
     enabled: true
     description: The number of backends.
@@ -173,7 +163,6 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [database]
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
@@ -188,9 +177,8 @@ metrics:
       value_type: int
       monotonic: false
       aggregation_temporality: cumulative
-    attributes: [database, table, state]
+    attributes: [state]
   postgresql.index.scans:
-    attributes: []
     description: The number of index scans on a table.
     enabled: true
     sum:
@@ -199,7 +187,6 @@ metrics:
       value_type: int
     unit: "{scans}"
   postgresql.index.size:
-    attributes: []
     description: The size of the index on disk.
     enabled: true
     gauge:
@@ -213,7 +200,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [database, table, operation]
+    attributes: [operation]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
@@ -229,7 +216,6 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [database]
   postgresql.deadlocks:
     enabled: false
     description: The number of deadlocks.
@@ -238,9 +224,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: [database]
   postgresql.table.count:
-    attributes: []
     description: Number of user tables in a database.
     enabled: true
     sum:
@@ -249,7 +233,6 @@ metrics:
       value_type: int
     unit: "{table}"
   postgresql.table.size:
-    attributes: []
     description: Disk space used by a table.
     enabled: true
     unit: By
@@ -258,7 +241,6 @@ metrics:
       monotonic: false
       value_type: int
   postgresql.table.vacuum.count:
-    attributes: []
     description: Number of times a table has manually been vacuumed.
     enabled: true
     unit: "{vacuums}"
@@ -267,7 +249,6 @@ metrics:
       monotonic: true
       value_type: int
   postgresql.wal.age:
-    attributes: []
     description: Age of the oldest WAL file.
     extended_documentation: |
      This metric requires WAL to be enabled with at least one replica.
