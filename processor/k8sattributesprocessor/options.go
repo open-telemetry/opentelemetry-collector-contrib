@@ -174,8 +174,6 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageTag = true
 			case clusterUID:
 				p.rules.ClusterUID = true
-			default:
-				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 			}
 		}
 		return nil
@@ -211,14 +209,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	for _, a := range fields {
 		name := a.TagName
 
-		switch a.From {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		case "", kube.MetadataFromPod:
+		if a.From == "" {
 			a.From = kube.MetadataFromPod
-		case kube.MetadataFromNamespace:
-			a.From = kube.MetadataFromNamespace
-		default:
-			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
 		}
 
 		if name == "" && a.Key != "" {
@@ -236,10 +228,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			r, err = regexp.Compile(a.Regex)
 			if err != nil {
 				return rules, err
-			}
-			names := r.SubexpNames()
-			if len(names) != 2 || names[1] != "value" {
-				return rules, fmt.Errorf("regex must contain exactly one named submatch (value)")
 			}
 		}
 
@@ -289,14 +277,8 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		var labels []kube.FieldFilter
 		for _, f := range filters {
-			if f.Op == "" {
-				f.Op = filterOPEquals
-			}
-
 			var op selection.Operator
 			switch f.Op {
-			case filterOPEquals:
-				op = selection.Equals
 			case filterOPNotEquals:
 				op = selection.NotEquals
 			case filterOPExists:
@@ -304,7 +286,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 			case filterOPDoesNotExist:
 				op = selection.DoesNotExist
 			default:
-				return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+				op = selection.Equals
 			}
 			labels = append(labels, kube.FieldFilter{
 				Key:   f.Key,
@@ -322,18 +304,12 @@ func withFilterFields(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		var fields []kube.FieldFilter
 		for _, f := range filters {
-			if f.Op == "" {
-				f.Op = filterOPEquals
-			}
-
 			var op selection.Operator
 			switch f.Op {
-			case filterOPEquals:
-				op = selection.Equals
 			case filterOPNotEquals:
 				op = selection.NotEquals
 			default:
-				return fmt.Errorf("'%s' is not a valid field filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+				op = selection.Equals
 			}
 			fields = append(fields, kube.FieldFilter{
 				Key:   f.Key,
