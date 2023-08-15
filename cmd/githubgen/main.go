@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	_ "embed"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -80,7 +79,6 @@ const unmaintainedStatus = "unmaintained"
 // Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
-// Usage: go run cmd/githubgen/main.go <repository root> [--check]
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
 	membersFilePath := flag.String("members", "cmd/githubgen/members.txt", "path to a file containing OpenTelemetry members")
