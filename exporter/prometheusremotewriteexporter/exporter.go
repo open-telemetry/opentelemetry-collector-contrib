@@ -280,7 +280,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		return consumererror.NewPermanent(err)
 	}
 
-	return nil
+	return err
 }
 
 func (prwe *prwExporter) walEnabled() bool { return prwe.wal != nil }
