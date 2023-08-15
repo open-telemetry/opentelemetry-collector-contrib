@@ -48,6 +48,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/connector/datadogconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/connector/exceptionsconnector"
     schedule:
       interval: "weekly"
@@ -469,6 +474,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/internal/coreinternal"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/internal/datadog"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1089,16 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/splunkenterprisereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkhecreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/sqlqueryreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

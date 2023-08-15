@@ -35,7 +35,7 @@ type reader struct {
 	*readerConfig
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
-	encoding      helper.Encoding
+	decoder       *helper.Decoder
 	processFunc   emit.Callback
 
 	Fingerprint    *fingerprint.Fingerprint
@@ -87,7 +87,7 @@ func (r *reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(s.Bytes())
+		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
