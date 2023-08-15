@@ -10,8 +10,8 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/observiq/nanojack v0.0.0-20201106172433-343928847ebc
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.83.0
 	go.opentelemetry.io/collector/component v0.83.0
