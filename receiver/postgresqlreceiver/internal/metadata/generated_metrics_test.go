@@ -56,7 +56,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBackendsDataPoint(ts, 1, "database-val")
+			mb.RecordPostgresqlBackendsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -80,11 +80,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, "database-val", "table-val", AttributeSourceHeapRead)
+			mb.RecordPostgresqlBlocksReadDataPoint(ts, 1, AttributeSourceHeapRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlCommitsDataPoint(ts, 1, "database-val")
+			mb.RecordPostgresqlCommitsDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -96,10 +96,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlDbSizeDataPoint(ts, 1, "database-val")
+			mb.RecordPostgresqlDbSizeDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordPostgresqlDeadlocksDataPoint(ts, 1, "database-val")
+			mb.RecordPostgresqlDeadlocksDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -111,7 +111,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlOperationsDataPoint(ts, 1, "database-val", "table-val", AttributeOperationIns)
+			mb.RecordPostgresqlOperationsDataPoint(ts, 1, AttributeOperationIns)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -119,11 +119,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlRollbacksDataPoint(ts, 1, "database-val")
+			mb.RecordPostgresqlRollbacksDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordPostgresqlRowsDataPoint(ts, 1, "database-val", "table-val", AttributeStateDead)
+			mb.RecordPostgresqlRowsDataPoint(ts, 1, AttributeStateDead)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -185,9 +185,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "postgresql.bgwriter.buffers.allocated":
 					assert.False(t, validatedMetrics["postgresql.bgwriter.buffers.allocated"], "Found a duplicate in the metrics slice: postgresql.bgwriter.buffers.allocated")
 					validatedMetrics["postgresql.bgwriter.buffers.allocated"] = true
@@ -281,13 +278,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("table")
-					assert.True(t, ok)
-					assert.EqualValues(t, "table-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("source")
+					attrVal, ok := dp.Attributes().Get("source")
 					assert.True(t, ok)
 					assert.EqualValues(t, "heap_read", attrVal.Str())
 				case "postgresql.commits":
@@ -304,9 +295,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "postgresql.connection.max":
 					assert.False(t, validatedMetrics["postgresql.connection.max"], "Found a duplicate in the metrics slice: postgresql.connection.max")
 					validatedMetrics["postgresql.connection.max"] = true
@@ -347,9 +335,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "postgresql.deadlocks":
 					assert.False(t, validatedMetrics["postgresql.deadlocks"], "Found a duplicate in the metrics slice: postgresql.deadlocks")
 					validatedMetrics["postgresql.deadlocks"] = true
@@ -364,9 +349,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "postgresql.index.scans":
 					assert.False(t, validatedMetrics["postgresql.index.scans"], "Found a duplicate in the metrics slice: postgresql.index.scans")
 					validatedMetrics["postgresql.index.scans"] = true
@@ -407,13 +389,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("table")
-					assert.True(t, ok)
-					assert.EqualValues(t, "table-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("operation")
+					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
 					assert.EqualValues(t, "ins", attrVal.Str())
 				case "postgresql.replication.data_delay":
@@ -445,9 +421,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
 				case "postgresql.rows":
 					assert.False(t, validatedMetrics["postgresql.rows"], "Found a duplicate in the metrics slice: postgresql.rows")
 					validatedMetrics["postgresql.rows"] = true
@@ -462,13 +435,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("database")
-					assert.True(t, ok)
-					assert.EqualValues(t, "database-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("table")
-					assert.True(t, ok)
-					assert.EqualValues(t, "table-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("state")
+					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
 					assert.EqualValues(t, "dead", attrVal.Str())
 				case "postgresql.table.count":
