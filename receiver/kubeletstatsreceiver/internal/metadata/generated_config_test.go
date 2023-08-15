@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ContainerCPUTime:               MetricConfig{Enabled: true},
+					ContainerCPUUsagePercent:       MetricConfig{Enabled: true},
 					ContainerCPUUtilization:        MetricConfig{Enabled: true},
 					ContainerFilesystemAvailable:   MetricConfig{Enabled: true},
 					ContainerFilesystemCapacity:    MetricConfig{Enabled: true},
@@ -36,6 +37,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPageFaults:      MetricConfig{Enabled: true},
 					ContainerMemoryRss:             MetricConfig{Enabled: true},
 					ContainerMemoryUsage:           MetricConfig{Enabled: true},
+					ContainerMemoryUsagePercent:    MetricConfig{Enabled: true},
 					ContainerMemoryWorkingSet:      MetricConfig{Enabled: true},
 					K8sNodeCPUTime:                 MetricConfig{Enabled: true},
 					K8sNodeCPUUtilization:          MetricConfig{Enabled: true},
@@ -51,6 +53,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkErrors:           MetricConfig{Enabled: true},
 					K8sNodeNetworkIo:               MetricConfig{Enabled: true},
 					K8sPodCPUTime:                  MetricConfig{Enabled: true},
+					K8sPodCPUUsagePercent:          MetricConfig{Enabled: true},
 					K8sPodCPUUtilization:           MetricConfig{Enabled: true},
 					K8sPodFilesystemAvailable:      MetricConfig{Enabled: true},
 					K8sPodFilesystemCapacity:       MetricConfig{Enabled: true},
@@ -60,6 +63,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryPageFaults:         MetricConfig{Enabled: true},
 					K8sPodMemoryRss:                MetricConfig{Enabled: true},
 					K8sPodMemoryUsage:              MetricConfig{Enabled: true},
+					K8sPodMemoryUsagePercent:       MetricConfig{Enabled: true},
 					K8sPodMemoryWorkingSet:         MetricConfig{Enabled: true},
 					K8sPodNetworkErrors:            MetricConfig{Enabled: true},
 					K8sPodNetworkIo:                MetricConfig{Enabled: true},
@@ -93,6 +97,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					ContainerCPUTime:               MetricConfig{Enabled: false},
+					ContainerCPUUsagePercent:       MetricConfig{Enabled: false},
 					ContainerCPUUtilization:        MetricConfig{Enabled: false},
 					ContainerFilesystemAvailable:   MetricConfig{Enabled: false},
 					ContainerFilesystemCapacity:    MetricConfig{Enabled: false},
@@ -102,6 +107,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryPageFaults:      MetricConfig{Enabled: false},
 					ContainerMemoryRss:             MetricConfig{Enabled: false},
 					ContainerMemoryUsage:           MetricConfig{Enabled: false},
+					ContainerMemoryUsagePercent:    MetricConfig{Enabled: false},
 					ContainerMemoryWorkingSet:      MetricConfig{Enabled: false},
 					K8sNodeCPUTime:                 MetricConfig{Enabled: false},
 					K8sNodeCPUUtilization:          MetricConfig{Enabled: false},
@@ -117,6 +123,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sNodeNetworkErrors:           MetricConfig{Enabled: false},
 					K8sNodeNetworkIo:               MetricConfig{Enabled: false},
 					K8sPodCPUTime:                  MetricConfig{Enabled: false},
+					K8sPodCPUUsagePercent:          MetricConfig{Enabled: false},
 					K8sPodCPUUtilization:           MetricConfig{Enabled: false},
 					K8sPodFilesystemAvailable:      MetricConfig{Enabled: false},
 					K8sPodFilesystemCapacity:       MetricConfig{Enabled: false},
@@ -126,6 +133,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					K8sPodMemoryPageFaults:         MetricConfig{Enabled: false},
 					K8sPodMemoryRss:                MetricConfig{Enabled: false},
 					K8sPodMemoryUsage:              MetricConfig{Enabled: false},
+					K8sPodMemoryUsagePercent:       MetricConfig{Enabled: false},
 					K8sPodMemoryWorkingSet:         MetricConfig{Enabled: false},
 					K8sPodNetworkErrors:            MetricConfig{Enabled: false},
 					K8sPodNetworkIo:                MetricConfig{Enabled: false},

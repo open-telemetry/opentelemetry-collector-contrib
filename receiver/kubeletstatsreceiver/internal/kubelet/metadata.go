@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -50,15 +51,74 @@ type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
+	podLimits                 map[string]limit
+	containerLimits           map[string]limit
+}
+
+type limit struct {
+	cpu    float64
+	memory float64
+}
+
+func newContainerLimit(resources *v1.ResourceRequirements) limit {
+	if resources == nil {
+		return limit{}
+	}
+	var containerLimit limit
+	cpuLimit, err := strconv.ParseFloat(resources.Limits.Cpu().AsDec().String(), 64)
+	if err == nil {
+		containerLimit.cpu = cpuLimit
+	}
+	memoryLimit, err := strconv.ParseFloat(resources.Limits.Memory().AsDec().String(), 64)
+	if err == nil {
+		containerLimit.memory = memoryLimit
+	}
+	return containerLimit
 }
 
 func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 	detailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error) Metadata {
-	return Metadata{
+	m := Metadata{
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
+		podLimits:                 make(map[string]limit, 0),
+		containerLimits:           make(map[string]limit, 0),
 	}
+
+	if podsMetadata != nil {
+		for _, pod := range podsMetadata.Items {
+			var podLimit limit
+			allContainersCPUDefined := true
+			allContainersMemoryDefined := true
+			for _, container := range pod.Status.ContainerStatuses {
+				containerLimit := newContainerLimit(container.Resources)
+
+				if allContainersCPUDefined && containerLimit.cpu == 0 {
+					allContainersCPUDefined = false
+					podLimit.cpu = 0
+				}
+
+				if allContainersCPUDefined {
+					podLimit.cpu += containerLimit.cpu
+				}
+
+				if allContainersMemoryDefined && containerLimit.memory == 0 {
+					allContainersMemoryDefined = false
+					podLimit.memory = 0
+				}
+
+				if allContainersMemoryDefined {
+					podLimit.memory += containerLimit.memory
+				}
+
+				m.containerLimits[string(pod.UID)+container.Name] = containerLimit
+			}
+			m.podLimits[string(pod.UID)] = podLimit
+		}
+	}
+
+	return m
 }
 
 func getLabelsMap(metadataLabels []MetadataLabel) map[MetadataLabel]bool {
@@ -150,4 +210,48 @@ func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, er
 	}
 
 	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
+}
+
+func (m *Metadata) getPodCpuLimit(uid string) *float64 {
+	podLimit, ok := m.podLimits[uid]
+	if !ok {
+		return nil
+	}
+	if podLimit.cpu > 0 {
+		return &podLimit.cpu
+	}
+	return nil
+}
+
+func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
+	podLimit, ok := m.podLimits[uid]
+	if !ok {
+		return nil
+	}
+	if podLimit.memory > 0 {
+		return &podLimit.memory
+	}
+	return nil
+}
+
+func (m *Metadata) getContainerCpuLimit(podUID string, containerName string) *float64 {
+	containerLimit, ok := m.containerLimits[podUID+containerName]
+	if !ok {
+		return nil
+	}
+	if containerLimit.cpu > 0 {
+		return &containerLimit.cpu
+	}
+	return nil
+}
+
+func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) *float64 {
+	containerLimit, ok := m.containerLimits[podUID+containerName]
+	if !ok {
+		return nil
+	}
+	if containerLimit.memory > 0 {
+		return &containerLimit.memory
+	}
+	return nil
 }

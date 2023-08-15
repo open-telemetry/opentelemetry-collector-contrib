@@ -26,6 +26,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 // MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime               MetricConfig `mapstructure:"container.cpu.time"`
+	ContainerCPUUsagePercent       MetricConfig `mapstructure:"container.cpu.usagePercent"`
 	ContainerCPUUtilization        MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerFilesystemAvailable   MetricConfig `mapstructure:"container.filesystem.available"`
 	ContainerFilesystemCapacity    MetricConfig `mapstructure:"container.filesystem.capacity"`
@@ -35,6 +36,7 @@ type MetricsConfig struct {
 	ContainerMemoryPageFaults      MetricConfig `mapstructure:"container.memory.page_faults"`
 	ContainerMemoryRss             MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryUsage           MetricConfig `mapstructure:"container.memory.usage"`
+	ContainerMemoryUsagePercent    MetricConfig `mapstructure:"container.memory.usagePercent"`
 	ContainerMemoryWorkingSet      MetricConfig `mapstructure:"container.memory.working_set"`
 	K8sNodeCPUTime                 MetricConfig `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUtilization          MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
@@ -50,6 +52,7 @@ type MetricsConfig struct {
 	K8sNodeNetworkErrors           MetricConfig `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo               MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sPodCPUTime                  MetricConfig `mapstructure:"k8s.pod.cpu.time"`
+	K8sPodCPUUsagePercent          MetricConfig `mapstructure:"k8s.pod.cpu.usagePercent"`
 	K8sPodCPUUtilization           MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
 	K8sPodFilesystemAvailable      MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
 	K8sPodFilesystemCapacity       MetricConfig `mapstructure:"k8s.pod.filesystem.capacity"`
@@ -59,6 +62,7 @@ type MetricsConfig struct {
 	K8sPodMemoryPageFaults         MetricConfig `mapstructure:"k8s.pod.memory.page_faults"`
 	K8sPodMemoryRss                MetricConfig `mapstructure:"k8s.pod.memory.rss"`
 	K8sPodMemoryUsage              MetricConfig `mapstructure:"k8s.pod.memory.usage"`
+	K8sPodMemoryUsagePercent       MetricConfig `mapstructure:"k8s.pod.memory.usagePercent"`
 	K8sPodMemoryWorkingSet         MetricConfig `mapstructure:"k8s.pod.memory.working_set"`
 	K8sPodNetworkErrors            MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                MetricConfig `mapstructure:"k8s.pod.network.io"`
@@ -73,6 +77,9 @@ func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		ContainerCPUTime: MetricConfig{
 			Enabled: true,
+		},
+		ContainerCPUUsagePercent: MetricConfig{
+			Enabled: false,
 		},
 		ContainerCPUUtilization: MetricConfig{
 			Enabled: true,
@@ -100,6 +107,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerMemoryUsage: MetricConfig{
 			Enabled: true,
+		},
+		ContainerMemoryUsagePercent: MetricConfig{
+			Enabled: false,
 		},
 		ContainerMemoryWorkingSet: MetricConfig{
 			Enabled: true,
@@ -146,6 +156,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodCPUTime: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodCPUUsagePercent: MetricConfig{
+			Enabled: false,
+		},
 		K8sPodCPUUtilization: MetricConfig{
 			Enabled: true,
 		},
@@ -172,6 +185,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sPodMemoryUsage: MetricConfig{
 			Enabled: true,
+		},
+		K8sPodMemoryUsagePercent: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodMemoryWorkingSet: MetricConfig{
 			Enabled: true,

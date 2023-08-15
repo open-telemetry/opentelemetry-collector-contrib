@@ -10,7 +10,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.MemoryMetrics, s *stats.MemoryStats, currentTime pcommon.Timestamp) {
+func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.MemoryMetrics, s *stats.MemoryStats, currentTime pcommon.Timestamp, limit *float64) {
 	if s == nil {
 		return
 	}
@@ -21,4 +21,9 @@ func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.Memory
 	recordIntDataPoint(mb, memoryMetrics.WorkingSet, s.WorkingSetBytes, currentTime)
 	recordIntDataPoint(mb, memoryMetrics.PageFaults, s.PageFaults, currentTime)
 	recordIntDataPoint(mb, memoryMetrics.MajorPageFaults, s.MajorPageFaults, currentTime)
+
+	if limit != nil && *limit > 0 && s.UsageBytes != nil {
+		value := (float64(*s.UsageBytes) / *limit) * 100
+		memoryMetrics.UsagePercent(mb, currentTime, value)
+	}
 }

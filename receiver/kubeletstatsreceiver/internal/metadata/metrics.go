@@ -19,8 +19,9 @@ type MetricsBuilders struct {
 }
 
 type CPUMetrics struct {
-	Time        RecordDoubleDataPointFunc
-	Utilization RecordDoubleDataPointFunc
+	Time         RecordDoubleDataPointFunc
+	Utilization  RecordDoubleDataPointFunc
+	UsagePercent RecordDoubleDataPointFunc
 }
 
 var NodeCPUMetrics = CPUMetrics{
@@ -29,18 +30,21 @@ var NodeCPUMetrics = CPUMetrics{
 }
 
 var PodCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	Time:         (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
+	Utilization:  (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	UsagePercent: (*MetricsBuilder).RecordK8sPodCPUUsagePercentDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
-	Utilization: (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	Time:         (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
+	Utilization:  (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
+	UsagePercent: (*MetricsBuilder).RecordContainerCPUUsagePercentDataPoint,
 }
 
 type MemoryMetrics struct {
 	Available       RecordIntDataPointFunc
 	Usage           RecordIntDataPointFunc
+	UsagePercent    RecordDoubleDataPointFunc
 	Rss             RecordIntDataPointFunc
 	WorkingSet      RecordIntDataPointFunc
 	PageFaults      RecordIntDataPointFunc
@@ -59,6 +63,7 @@ var NodeMemoryMetrics = MemoryMetrics{
 var PodMemoryMetrics = MemoryMetrics{
 	Available:       (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
 	Usage:           (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
+	UsagePercent:    (*MetricsBuilder).RecordK8sPodMemoryUsagePercentDataPoint,
 	Rss:             (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
 	WorkingSet:      (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
 	PageFaults:      (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
@@ -68,6 +73,7 @@ var PodMemoryMetrics = MemoryMetrics{
 var ContainerMemoryMetrics = MemoryMetrics{
 	Available:       (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
 	Usage:           (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
+	UsagePercent:    (*MetricsBuilder).RecordContainerMemoryUsagePercentDataPoint,
 	Rss:             (*MetricsBuilder).RecordContainerMemoryRssDataPoint,
 	WorkingSet:      (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
 	PageFaults:      (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,

@@ -376,6 +376,48 @@ The inodes used by the filesystem. This may not equal inodes - free because file
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### container.cpu.usagePercent
+
+Container CPU usage as a percentage of the container's limit
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### container.memory.usagePercent
+
+Container memory usage as a percentage of the container's limit
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.cpu.usagePercent
+
+Pod CPU utilization as a percentage of the pod's limit
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.memory.usagePercent
+
+Pod memory usage as a percentage of the pod's limit
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

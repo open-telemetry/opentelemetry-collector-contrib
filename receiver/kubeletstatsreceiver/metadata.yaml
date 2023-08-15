@@ -185,6 +185,13 @@ metrics:
     gauge:
       value_type: double
     attributes: [ ]
+  k8s.pod.cpu.usagePercent:
+    enabled: false
+    description: "Pod CPU utilization as a percentage of the pod's limit"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.cpu.time:
     enabled: true
     description: "Pod CPU time"
@@ -208,6 +215,13 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.memory.usagePercent:
+    enabled: false
+    description: "Pod memory usage as a percentage of the pod's limit"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.memory.rss:
     enabled: true
     description: "Pod memory rss"
@@ -282,6 +296,13 @@ metrics:
     gauge:
       value_type: double
     attributes: [ ]
+  container.cpu.usagePercent:
+    enabled: false
+    description: "Container CPU usage as a percentage of the container's limit"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   container.cpu.time:
     enabled: true
     description: "Container CPU time"
@@ -305,6 +326,13 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  container.memory.usagePercent:
+    enabled: false
+    description: "Container memory usage as a percentage of the container's limit"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   container.memory.rss:
     enabled: true
     description: "Container memory rss"

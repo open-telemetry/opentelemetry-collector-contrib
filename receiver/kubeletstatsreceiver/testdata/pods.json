@@ -9,7 +9,13 @@
         "containerStatuses": [
           {
             "name": "kube-scheduler",
-            "containerID": "364bd8f13021f326"
+            "containerID": "364bd8f13021f326",
+            "resources": {
+              "limits": {
+                "cpu": "100m",
+                "memory": "1G"
+              }
+            }
           }
         ]
       }

@@ -6,6 +6,7 @@ package kubeletstatsreceiver
 import (
 	"context"
 	"errors"
+	"github.com/stretchr/testify/assert"
 	"os"
 	"strings"
 	"testing"
@@ -128,6 +129,179 @@ func TestScraperWithMetadata(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestScraperWithPercentMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+			kubelet.ContainerMetricGroup: true,
+			kubelet.PodMetricGroup:       true,
+		},
+	}
+	metricsConfig := metadata.MetricsBuilderConfig{
+		Metrics: metadata.MetricsConfig{
+			ContainerCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerCPUUsagePercent: metadata.MetricConfig{
+				Enabled: true,
+			},
+			ContainerCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryUsagePercent: metadata.MetricConfig{
+				Enabled: true,
+			},
+			ContainerMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeNetworkErrors: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeNetworkIo: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodCPUUsagePercent: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryUsagePercent: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodNetworkErrors: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodNetworkIo: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodes: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodesFree: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodesUsed: metadata.MetricConfig{
+				Enabled: false,
+			},
+		},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
+	r, err := newKubletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopCreateSettings(),
+		options,
+		metricsConfig,
+	)
+	require.NoError(t, err)
+
+	md, err := r.Scrape(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, 4, md.DataPointCount())
+
+	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name(), "k8s.pod.cpu.usagePercent")
+	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue(), 3.6201029999999994)
+	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Name(), "k8s.pod.memory.usagePercent")
+	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), 1.4290943999999999)
+	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Name(), "container.cpu.usagePercent")
+	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue(), 3.438624999999999)
+	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Name(), "container.memory.usagePercent")
+	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), 1.370112)
+
 }
 
 func TestScraperWithMetricGroups(t *testing.T) {

@@ -36,6 +36,7 @@ type kubletScraper struct {
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
+	needsLimits           bool
 }
 
 func newKubletScraper(
@@ -58,6 +59,10 @@ func newKubletScraper(
 			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
+		needsLimits: metricsConfig.Metrics.K8sPodCPUUsagePercent.Enabled ||
+			metricsConfig.Metrics.ContainerCPUUsagePercent.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryUsagePercent.Enabled ||
+			metricsConfig.Metrics.ContainerMemoryUsagePercent.Enabled,
 	}
 	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }
@@ -71,7 +76,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	var podsMetadata *v1.PodList
 	// fetch metadata only when extra metadata labels are needed
-	if len(r.extraMetadataLabels) > 0 {
+	if len(r.extraMetadataLabels) > 0 || r.needsLimits {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
 			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
