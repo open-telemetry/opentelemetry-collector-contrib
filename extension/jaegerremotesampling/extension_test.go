@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 	"github.com/stretchr/testify/assert"
@@ -45,24 +46,39 @@ func TestStartAndShutdownLocalFile(t *testing.T) {
 	assert.NoError(t, e.Shutdown(context.Background()))
 }
 
-func TestStartAndCallAndShutdownRemote(t *testing.T) {
+func TestRemote(t *testing.T) {
 	for _, tc := range []struct {
-		name                     string
-		remoteClientHeaderConfig map[string]configopaque.String
+		name                          string
+		remoteClientHeaderConfig      map[string]configopaque.String
+		performedClientCallCount      int
+		expectedOutboundGrpcCallCount int
+		reloadInterval                time.Duration
 	}{
 		{
-			name: "no configured header additions",
+			name:                          "no configured header additions and no configured reload_interval",
+			performedClientCallCount:      3,
+			expectedOutboundGrpcCallCount: 3,
 		},
 		{
-			name: "configured header additions",
+			name:                          "configured header additions",
+			performedClientCallCount:      3,
+			expectedOutboundGrpcCallCount: 3,
 			remoteClientHeaderConfig: map[string]configopaque.String{
 				"testheadername":    "testheadervalue",
 				"anotherheadername": "anotherheadervalue",
 			},
 		},
+		{
+			name:                          "reload_interval set to nonzero value caching outbound same-service gRPC calls",
+			reloadInterval:                time.Minute * 5,
+			performedClientCallCount:      3,
+			expectedOutboundGrpcCallCount: 1,
+			remoteClientHeaderConfig: map[string]configopaque.String{
+				"somecoolheader": "some-more-coverage-whynot",
+			},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-
 			// prepare the socket the mock server will listen at
 			lis, err := net.Listen("tcp", "127.0.0.1:0")
 			require.NoError(t, err)
@@ -82,6 +98,7 @@ func TestStartAndCallAndShutdownRemote(t *testing.T) {
 			// create the config, pointing to the mock server
 			cfg := testConfig()
 			cfg.GRPCServerSettings.NetAddr.Endpoint = "127.0.0.1:0"
+			cfg.Source.ReloadInterval = tc.reloadInterval
 			cfg.Source.Remote = &configgrpc.GRPCClientSettings{
 				Endpoint: fmt.Sprintf("127.0.0.1:%d", lis.Addr().(*net.TCPAddr).Port),
 				TLSSetting: configtls.TLSClientSetting{
@@ -98,24 +115,27 @@ func TestStartAndCallAndShutdownRemote(t *testing.T) {
 			// start the server
 			assert.NoError(t, e.Start(context.Background(), componenttest.NewNopHost()))
 
-			// make a call
-			resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
-			assert.NoError(t, err)
-			assert.Equal(t, 200, resp.StatusCode)
+			// make test case defined number of calls
+			for i := 0; i < tc.performedClientCallCount; i++ {
+				resp, err := http.Get("http://127.0.0.1:5778/sampling?service=foo")
+				assert.NoError(t, err)
+				assert.Equal(t, 200, resp.StatusCode)
+			}
 
 			// shut down the server
 			assert.NoError(t, e.Shutdown(context.Background()))
 
 			// verify observed calls
-			assert.Len(t, mockServer.observedCalls, 1)
-			singleCall := mockServer.observedCalls[0]
-			assert.Equal(t, &api_v2.SamplingStrategyParameters{
-				ServiceName: "foo",
-			}, singleCall.params)
-			md, ok := metadata.FromIncomingContext(singleCall.ctx)
-			assert.True(t, ok)
-			for expectedHeaderName, expectedHeaderValue := range tc.remoteClientHeaderConfig {
-				assert.Equal(t, []string{string(expectedHeaderValue)}, md.Get(expectedHeaderName))
+			assert.Len(t, mockServer.observedCalls, tc.expectedOutboundGrpcCallCount)
+			for _, singleCall := range mockServer.observedCalls {
+				assert.Equal(t, &api_v2.SamplingStrategyParameters{
+					ServiceName: "foo",
+				}, singleCall.params)
+				md, ok := metadata.FromIncomingContext(singleCall.ctx)
+				assert.True(t, ok)
+				for expectedHeaderName, expectedHeaderValue := range tc.remoteClientHeaderConfig {
+					assert.Equal(t, []string{string(expectedHeaderValue)}, md.Get(expectedHeaderName))
+				}
 			}
 		})
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -34,7 +35,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
@@ -86,7 +87,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := newMultilineSplitterFactory(c.Splitter)
+	factory := splitter.NewMultilineFactory(c.Splitter)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
+	factory := splitter.NewCustomFactory(c.Splitter.Flusher, splitFunc)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -129,12 +130,12 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := c.Splitter.EncodingConfig.Build()
+		enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding)
+		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -212,13 +213,13 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := c.Splitter.EncodingConfig.Build()
+	enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
 	if err != nil {
 		return err
 	}
 
 	if c.Header != nil {
-		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding); err != nil {
+		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
 			return fmt.Errorf("invalid config for `header`: %w", err)
 		}
 	}

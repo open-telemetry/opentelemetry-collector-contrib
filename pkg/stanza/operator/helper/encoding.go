@@ -14,21 +14,21 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// NewBasicConfig creates a new Encoding config
+// NewEncodingConfig creates a new Encoding config
 func NewEncodingConfig() EncodingConfig {
 	return EncodingConfig{
 		Encoding: "utf-8",
 	}
 }
 
-// EncodingConfig is the configuration of a Encoding helper
+// EncodingConfig is the configuration of an Encoding helper
 type EncodingConfig struct {
 	Encoding string `mapstructure:"encoding,omitempty"`
 }
 
-// Build will build an Encoding operator.
+// Deprecated: [v0.83.0] Use NewDecoder instead.
 func (c EncodingConfig) Build() (Encoding, error) {
-	enc, err := lookupEncoding(c.Encoding)
+	enc, err := LookupEncoding(c.Encoding)
 	if err != nil {
 		return Encoding{}, err
 	}
@@ -40,22 +40,39 @@ func (c EncodingConfig) Build() (Encoding, error) {
 	}, nil
 }
 
+// Deprecated: [v0.83.0] Use Decoder instead.
 type Encoding struct {
 	Encoding     encoding.Encoding
 	decoder      *encoding.Decoder
 	decodeBuffer []byte
 }
 
-// Decode converts the bytes in msgBuf to utf-8 from the configured encoding
-func (e *Encoding) Decode(msgBuf []byte) ([]byte, error) {
+type Decoder struct {
+	encoding     encoding.Encoding
+	decoder      *encoding.Decoder
+	decodeBuffer []byte
+}
+
+// NewDecoder wraps a character set encoding and creates a reusable buffer to reduce allocation.
+// Decoder is not thread-safe and must not be used in multiple goroutines.
+func NewDecoder(enc encoding.Encoding) *Decoder {
+	return &Decoder{
+		encoding:     enc,
+		decoder:      enc.NewDecoder(),
+		decodeBuffer: make([]byte, 1<<12),
+	}
+}
+
+// Decode converts the bytes in msgBuf to UTF-8 from the configured encoding.
+func (d *Decoder) Decode(msgBuf []byte) ([]byte, error) {
 	for {
-		e.decoder.Reset()
-		nDst, _, err := e.decoder.Transform(e.decodeBuffer, msgBuf, true)
+		d.decoder.Reset()
+		nDst, _, err := d.decoder.Transform(d.decodeBuffer, msgBuf, true)
 		if err == nil {
-			return e.decodeBuffer[:nDst], nil
+			return d.decodeBuffer[:nDst], nil
 		}
 		if errors.Is(err, transform.ErrShortDst) {
-			e.decodeBuffer = make([]byte, len(e.decodeBuffer)*2)
+			d.decodeBuffer = make([]byte, len(d.decodeBuffer)*2)
 			continue
 		}
 		return nil, fmt.Errorf("transform encoding: %w", err)
@@ -73,7 +90,8 @@ var encodingOverrides = map[string]encoding.Encoding{
 	"":         unicode.UTF8,
 }
 
-func lookupEncoding(enc string) (encoding.Encoding, error) {
+// LookupEncoding attempts to match the string name provided with a character set encoding.
+func LookupEncoding(enc string) (encoding.Encoding, error) {
 	if e, ok := encodingOverrides[strings.ToLower(enc)]; ok {
 		return e, nil
 	}
@@ -88,7 +106,7 @@ func lookupEncoding(enc string) (encoding.Encoding, error) {
 }
 
 func IsNop(enc string) bool {
-	e, err := lookupEncoding(enc)
+	e, err := LookupEncoding(enc)
 	if err != nil {
 		return false
 	}

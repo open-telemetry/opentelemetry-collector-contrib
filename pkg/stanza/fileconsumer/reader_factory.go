@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -21,7 +22,7 @@ type readerFactory struct {
 	*zap.SugaredLogger
 	readerConfig    *readerConfig
 	fromBeginning   bool
-	splitterFactory splitterFactory
+	splitterFactory splitter.Factory
 	encodingConfig  helper.EncodingConfig
 	headerConfig    *header.Config
 }
@@ -114,10 +115,11 @@ func (b *readerBuilder) build() (r *reader, err error) {
 		}
 	}
 
-	r.encoding, err = b.encodingConfig.Build()
+	encoding, err := helper.LookupEncoding(b.encodingConfig.Encoding)
 	if err != nil {
 		return nil, err
 	}
+	r.decoder = helper.NewDecoder(encoding)
 
 	if b.headerConfig == nil || b.headerFinalized {
 		r.splitFunc = r.lineSplitFunc

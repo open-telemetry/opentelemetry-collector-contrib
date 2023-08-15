@@ -1,19 +1,19 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
 
-go 1.19
+go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector v0.82.0
-	go.opentelemetry.io/collector/component v0.82.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.82.0
-	go.opentelemetry.io/collector/confmap v0.82.0
-	go.opentelemetry.io/collector/consumer v0.82.0
+	go.opentelemetry.io/collector v0.83.0
+	go.opentelemetry.io/collector/component v0.83.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.0
+	go.opentelemetry.io/collector/confmap v0.83.0
+	go.opentelemetry.io/collector/consumer v0.83.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
-	go.opentelemetry.io/collector/processor v0.82.0
-	go.opentelemetry.io/collector/semconv v0.82.0
+	go.opentelemetry.io/collector/processor v0.83.0
+	go.opentelemetry.io/collector/semconv v0.83.0
 	go.uber.org/zap v1.25.0
 )
 
@@ -58,11 +58,11 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/connector v0.82.0 // indirect
-	go.opentelemetry.io/collector/exporter v0.82.0 // indirect
-	go.opentelemetry.io/collector/extension v0.82.0 // indirect
+	go.opentelemetry.io/collector/connector v0.83.0 // indirect
+	go.opentelemetry.io/collector/exporter v0.83.0 // indirect
+	go.opentelemetry.io/collector/extension v0.83.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
-	go.opentelemetry.io/collector/receiver v0.82.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.83.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v0.39.0 // indirect

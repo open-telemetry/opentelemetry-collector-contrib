@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 
@@ -141,7 +140,7 @@ func (p *PodStore) Shutdown() error {
 	errs = p.cache.Shutdown()
 	for _, maps := range p.prevMeasurements {
 		if prevMeasErr := maps.Shutdown(); prevMeasErr != nil {
-			errs = multierr.Append(errs, prevMeasErr)
+			errs = errors.Join(errs, prevMeasErr)
 		}
 	}
 	return errs
