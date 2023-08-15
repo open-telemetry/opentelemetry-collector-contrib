@@ -16,14 +16,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   - Remove predefined metrics definitions from metadata.yaml because they are controlled by `node_conditions_to_report` 
     and `allocatable_types_to_report` config options.
   
-- `pkg/stanza`: Remove deprecated 'fileconsumer.FileAttributes' (#24688)
-- `pkg/stanza`: Remove deprecated 'fileconsumer.EmitFunc' (#24688)
-- `pkg/stanza`: Remove deprecated `fileconsumer.Finder` (#24688)
-- `pkg/stanza`: Remove deprecated `fileconsumer.BaseSortRule` and `fileconsumer.SortRuleImpl` (#24688)
-- `pkg/stanza`: Remove deprecated 'fileconsumer.Reader' (#24688)
 - `prometheusexporter`: Remove invalid unit translations from the prometheus exporters (#24647)
 - `receiver/prometheusexec`: Removes the deprecated prometheus_exec receiver (#24740)
-- `mdatagen`: Rename the mdatagen sum field `aggregation` to `aggregation_temporality` (#16374)
 
 ### 🚀 New components 🚀
 
