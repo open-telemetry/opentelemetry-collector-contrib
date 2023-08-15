@@ -81,6 +81,21 @@ func (m *metricPostgresqlRollbacks) recordDatapointWithoutDatabase(start pcommon
 	dp.SetIntValue(val)
 }
 
+// RecordPostgresqlDeadlocksDataPointWithoutDatabase adds a data point to postgresql.deadlocks metric without the database metric attribute.
+func (mb *MetricsBuilder) RecordPostgresqlDeadlocksDataPointWithoutDatabase(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlDeadlocks.recordDatapointWithoutDatabase(mb.startTime, ts, val)
+}
+
+func (m *metricPostgresqlDeadlocks) recordDatapointWithoutDatabase(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
 // RecordPostgresqlRowsDataPointWithoutDatabaseAndTable adds a data point to postgresql.rows metric without the database or table metric attribute.
 func (mb *MetricsBuilder) RecordPostgresqlRowsDataPointWithoutDatabaseAndTable(ts pcommon.Timestamp, val int64, stateAttributeValue AttributeState) {
 	mb.metricPostgresqlRows.recordDatapointWithoutDatabaseAndTable(mb.startTime, ts, val, stateAttributeValue.String())

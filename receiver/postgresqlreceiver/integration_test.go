@@ -58,6 +58,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Username = "otelu"
 				rCfg.Password = "otelp"
 				rCfg.Insecure = true
+				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
