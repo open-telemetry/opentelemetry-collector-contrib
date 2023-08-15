@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	k8sresource "k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -383,6 +384,307 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.want, rb.Emit().Attributes().AsRaw())
+		})
+	}
+}
+
+func floatp(f float64) *float64 {
+	return &f
+}
+
+// Test happy paths for volume type metadata.
+func TestCpuAndMemoryGetters(t *testing.T) {
+
+	tests := []struct {
+		name                       string
+		metadata                   Metadata
+		podUID                     string
+		containerName              string
+		wantPodCPULimit            *float64
+		wantPodCPURequest          *float64
+		wantContainerCPULimit      *float64
+		wantContainerCPURequest    *float64
+		wantPodMemoryLimit         *float64
+		wantPodMemoryRequest       *float64
+		wantContainerMemoryLimit   *float64
+		wantContainerMemoryRequest *float64
+	}{
+		{
+			name:     "no metadata",
+			metadata: NewMetadata([]MetadataLabel{}, nil, nil),
+		},
+		{
+			name: "pod happy path",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID:                     "uid-1234",
+			containerName:              "container-2",
+			wantPodCPULimit:            floatp(3),
+			wantPodCPURequest:          floatp(3),
+			wantContainerCPULimit:      floatp(2),
+			wantContainerCPURequest:    floatp(2),
+			wantPodMemoryLimit:         floatp(4000000000),
+			wantPodMemoryRequest:       floatp(4000000000),
+			wantContainerMemoryLimit:   floatp(3000000000),
+			wantContainerMemoryRequest: floatp(3000000000),
+		},
+		{
+			name: "unknown pod",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID: "uid-12345",
+		},
+		{
+			name: "unknown container",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("2"),
+											v1.ResourceMemory: k8sresource.MustParse("3G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID:               "uid-1234",
+			containerName:        "container-3",
+			wantPodCPULimit:      floatp(3),
+			wantPodCPURequest:    floatp(3),
+			wantPodMemoryLimit:   floatp(4000000000),
+			wantPodMemoryRequest: floatp(4000000000),
+		},
+		{
+			name: "container limit not set",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID:                     "uid-1234",
+			containerName:              "container-2",
+			wantPodCPURequest:          floatp(2),
+			wantContainerCPURequest:    floatp(1),
+			wantPodMemoryRequest:       floatp(2000000000),
+			wantContainerMemoryRequest: floatp(1000000000),
+		},
+		{
+			name: "container request not set",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+									Resources: v1.ResourceRequirements{
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID:                   "uid-1234",
+			containerName:            "container-2",
+			wantPodCPULimit:          floatp(2),
+			wantContainerCPULimit:    floatp(1),
+			wantPodMemoryLimit:       floatp(2000000000),
+			wantContainerMemoryLimit: floatp(1000000000),
+		},
+		{
+			name: "container limit not set but other is",
+			metadata: NewMetadata([]MetadataLabel{}, &v1.PodList{
+				Items: []v1.Pod{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							UID: "uid-1234",
+						},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
+								{
+									Name: "container-1",
+									Resources: v1.ResourceRequirements{
+										Requests: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+										Limits: v1.ResourceList{
+											v1.ResourceCPU:    k8sresource.MustParse("1"),
+											v1.ResourceMemory: k8sresource.MustParse("1G"),
+										},
+									},
+								},
+								{
+									Name: "container-2",
+								},
+							},
+						},
+					},
+				},
+			}, nil),
+			podUID:                     "uid-1234",
+			containerName:              "container-1",
+			wantContainerCPULimit:      floatp(1),
+			wantContainerCPURequest:    floatp(1),
+			wantContainerMemoryLimit:   floatp(1000000000),
+			wantContainerMemoryRequest: floatp(1000000000),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.wantPodCPULimit, tt.metadata.getPodCPULimit(tt.podUID))
+			require.Equal(t, tt.wantPodCPURequest, tt.metadata.getPodCPURequest(tt.podUID))
+			require.Equal(t, tt.wantContainerCPULimit, tt.metadata.getContainerCPULimit(tt.podUID, tt.containerName))
+			require.Equal(t, tt.wantContainerCPURequest, tt.metadata.getContainerCPURequest(tt.podUID, tt.containerName))
+			require.Equal(t, tt.wantPodMemoryLimit, tt.metadata.getPodMemoryLimit(tt.podUID))
+			require.Equal(t, tt.wantPodMemoryRequest, tt.metadata.getPodMemoryRequest(tt.podUID))
+			require.Equal(t, tt.wantContainerMemoryLimit, tt.metadata.getContainerMemoryLimit(tt.podUID, tt.containerName))
+			require.Equal(t, tt.wantContainerMemoryRequest, tt.metadata.getContainerMemoryRequest(tt.podUID, tt.containerName))
 		})
 	}
 }
