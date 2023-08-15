@@ -72,8 +72,10 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 			return nil, err
 		}
 
-		// use component "type-name" as resource lock name.
-		objReceiver.leaderElection.LockName = getLeaderElectionLockName(params.ID)
+		// use component "type-name" if resource lock name not set.
+		if objReceiver.leaderElection.LockName == "" {
+			objReceiver.leaderElection.LockName = getLeaderElectionLockName(params.ID)
+		}
 	}
 
 	return objReceiver, nil
