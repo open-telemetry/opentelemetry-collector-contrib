@@ -16,8 +16,14 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 - `solacereceiver`: Move model package to the internal package (#24890)
 - `receiver/statsdreceiver`: Move protocol and transport packages to internal (#24892)
 - `filterprocessor`: Unexport `Strict` and `Regexp` (#24845)
+- `mdatagen`: Rename the mdatagen sum field `aggregation` to `aggregation_temporality` (#16374)
 - `metricstransformprocessor`: Unexport elements of the Go API of the processor (#24846)
 - `mezmoexporter`: Unexport the `MezmoLogLine` and `MezmoLogBody` structs (#24842)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.FileAttributes' (#24688)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.EmitFunc' (#24688)
+- `pkg/stanza`: Remove deprecated `fileconsumer.Finder` (#24688)
+- `pkg/stanza`: Remove deprecated `fileconsumer.BaseSortRule` and `fileconsumer.SortRuleImpl` (#24688)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.Reader' (#24688)
 
 ### 🚩 Deprecations 🚩
 
