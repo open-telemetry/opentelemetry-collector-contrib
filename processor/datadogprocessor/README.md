@@ -14,7 +14,7 @@
 ## Description
 
 
-This component has been deprecated in favor of its predecessor the [Datadog Connector](../../connector/datadogconnector/README.md) which serves the same purpose and should be used in place of the Datadog processor.
+This component has been deprecated in favor of its successor the [Datadog Connector](../../connector/datadogconnector/README.md) which serves the same purpose and should be used in place of the Datadog processor.
 
 The Datadog Processor can be used to compute Datadog APM Stats pre-sampling. For example, when using the [tailsamplingprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor#tail-sampling-processor) or [probabilisticsamplerprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor) components, the `datadogprocessor` can be prepended into the pipeline to ensure that Datadog APM Stats are accurate and include the dropped traces.
 
