@@ -15,6 +15,7 @@ TylerHelmuth
 YANG-DB
 aabmass
 aboguszewski-sumo
+adrielp
 ag-ramachandran
 agoallikmaa
 albertteoh
@@ -24,7 +25,7 @@ antonblock
 architjugran
 arminru
 armstrmi
-asaharan
+asaharn
 astencel-sumo
 atingchen
 atoulme

@@ -260,7 +260,8 @@ gengithub:
 
 .PHONY: gengithubcheck
 gengithubcheck:
-	$(GOCMD) run cmd/githubgen/main.go . --check
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen --check
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
