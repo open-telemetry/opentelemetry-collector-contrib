@@ -77,13 +77,6 @@ internal/common
 
 const unmaintainedStatus = "unmaintained"
 
-var members []string
-var allowlist []string
-
-func init() {
-
-}
-
 // Generates files specific to Github according to status metadata:
 // .github/CODEOWNERS
 // .github/ALLOWLIST
@@ -146,12 +139,12 @@ func run(folder string, membersFilePath string, allowlistFilePath string, checkM
 	if err != nil {
 		return err
 	}
-	members = strings.Split(string(membersData), "\n")
+	members := strings.Split(string(membersData), "\n")
 	allowlistData, err := os.ReadFile(allowlistFilePath)
 	if err != nil {
 		return err
 	}
-	allowlist = strings.Split(string(allowlistData), "\n")
+	allowlist := strings.Split(string(allowlistData), "\n")
 	if checkMembers {
 		members, err = getGithubMembers()
 		if err != nil {
@@ -196,10 +189,10 @@ func run(folder string, membersFilePath string, allowlistFilePath string, checkM
 	sort.Strings(foldersList)
 	var missingCodeowners []string
 	for codeowner := range allCodeowners {
-		present := hasMember(codeowner)
+		present := inList(members, codeowner)
 
 		if !present {
-			allowed := inAllowlist(codeowner) || strings.HasPrefix(codeowner, "open-telemetry/")
+			allowed := inList(allowlist, codeowner) || strings.HasPrefix(codeowner, "open-telemetry/")
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
 			}
@@ -272,17 +265,8 @@ LOOP:
 	return nil
 }
 
-func hasMember(id string) bool {
-	for _, m := range members {
-		if id == m {
-			return true
-		}
-	}
-	return false
-}
-
-func inAllowlist(id string) bool {
-	for _, m := range allowlist {
+func inList(list []string, id string) bool {
+	for _, m := range list {
 		if id == m {
 			return true
 		}
