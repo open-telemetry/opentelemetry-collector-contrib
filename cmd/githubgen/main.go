@@ -8,15 +8,14 @@ import (
 	_ "embed"
 	"flag"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
-	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
+	"github.com/google/go-github/v53/github"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
@@ -78,18 +77,11 @@ internal/common
 
 const unmaintainedStatus = "unmaintained"
 
-//go:embed members.txt
-var membersData string
-
-//go:embed allowlist.txt
-var allowlistData string
 var members []string
 var allowlist []string
 
 func init() {
-	members = strings.Split(membersData, "\n")
 
-	allowlist = strings.Split(allowlistData, "\n")
 }
 
 // Generates files specific to Github according to status metadata:
@@ -97,9 +89,12 @@ func init() {
 // .github/ALLOWLIST
 // Usage: go run cmd/githubgen/main.go <repository root> [--check]
 func main() {
+	folder := flag.String("folder", ".", "folder investigated for codeowners")
+	membersFilePath := flag.String("members", "cmd/githubgen/members.txt", "path to a file containing OpenTelemetry members")
+	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
+	checkMembership := flag.Bool("check", false, "whether to check the members file content against the Github API")
 	flag.Parse()
-	folder := flag.Arg(0)
-	if err := run(folder, flag.Arg(1) == "--check"); err != nil {
+	if err := run(*folder, *membersFilePath, *allowlistFilePath, *checkMembership); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -145,12 +140,30 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func run(folder string, checkMembers bool) error {
+func run(folder string, membersFilePath string, allowlistFilePath string, checkMembers bool) error {
+
+	membersData, err := os.ReadFile(membersFilePath)
+	if err != nil {
+		return err
+	}
+	members = strings.Split(string(membersData), "\n")
+	allowlistData, err := os.ReadFile(allowlistFilePath)
+	if err != nil {
+		return err
+	}
+	allowlist = strings.Split(string(allowlistData), "\n")
+	if checkMembers {
+		members, err = getGithubMembers()
+		if err != nil {
+			return err
+		}
+	}
+
 	components := map[string]metadata{}
 	foldersList := []string{}
 	maxLength := 0
 	allCodeowners := make(map[string]struct{}, 24)
-	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	err = filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
 			if err != nil {
@@ -183,10 +196,7 @@ func run(folder string, checkMembers bool) error {
 	sort.Strings(foldersList)
 	var missingCodeowners []string
 	for codeowner := range allCodeowners {
-		present, err2 := hasMember(codeowner, checkMembers)
-		if err2 != nil {
-			return err2
-		}
+		present := hasMember(codeowner)
 
 		if !present {
 			allowed := inAllowlist(codeowner) || strings.HasPrefix(codeowner, "open-telemetry/")
@@ -208,7 +218,7 @@ func run(folder string, checkMembers bool) error {
 			list = append(list, codeowner)
 		}
 		sort.Strings(list)
-		err = os.WriteFile(filepath.Join("cmd", "githubgen", "members.txt"), []byte(strings.Join(list, "\n")), 0600)
+		err = os.WriteFile(membersFilePath, []byte(strings.Join(list, "\n")), 0600)
 		if err != nil {
 			return err
 		}
@@ -262,17 +272,13 @@ LOOP:
 	return nil
 }
 
-func hasMember(id string, checkGithub bool) (bool, error) {
-	if checkGithub {
-		present, err := checkGithubMembership(id)
-		return present, err
-	}
+func hasMember(id string) bool {
 	for _, m := range members {
 		if id == m {
-			return true, nil
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 func inAllowlist(id string) bool {
@@ -284,22 +290,34 @@ func inAllowlist(id string) bool {
 	return false
 }
 
-func checkGithubMembership(id string) (bool, error) {
-	req, err := http.NewRequest("GET", "https://api.github.com/orgs/open-telemetry/members/"+id, nil)
-	if err != nil {
-		return false, err
+func getGithubMembers() ([]string, error) {
+	client := github.NewTokenClient(context.Background(), os.Getenv("GITHUB_TOKEN"))
+	var allUsers []*github.User
+	i := 0
+	for {
+		users, resp, err := client.Organizations.ListMembers(context.Background(), "open-telemetry",
+			&github.ListMembersOptions{
+				PublicOnly: false,
+				ListOptions: github.ListOptions{
+					PerPage: 50,
+					Page:    i,
+				},
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if len(users) == 0 {
+			break
+		}
+		allUsers = append(allUsers, users...)
+		i++
 	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
-	}
-	httpClient := http.DefaultClient
 
-	res, err := httpClient.Do(req)
-	if err == nil {
-		_, _ = io.Copy(io.Discard, res.Body)
-		_ = res.Body.Close()
+	usernames := make([]string, len(allUsers))
+	for i, u := range allUsers {
+		usernames[i] = *u.Login
 	}
-	return res.StatusCode == 204, err
+	return usernames, nil
 }

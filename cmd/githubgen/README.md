@@ -9,7 +9,7 @@ It checks that codeowners are known members of the OpenTelemetry organization.
 ## Usage
 
 ```
-$> go run cmd/githubgen/main.go . [--check]
+$> go run cmd/githubgen/main.go --folder . [--check] [--members cmd/githubgen/members.txt] [--allowlist cmd/githubgen/allowlist.txt] 
 ```
 
 ## Checking codeowners against OpenTelemetry membership via Github API

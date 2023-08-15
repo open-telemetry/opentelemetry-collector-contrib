@@ -255,7 +255,8 @@ mdatagen-test:
 
 .PHONY: gengithub
 gengithub:
-	$(GOCMD) run cmd/githubgen/main.go .
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen
 
 .PHONY: gengithubcheck
 gengithubcheck:

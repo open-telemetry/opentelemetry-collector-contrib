@@ -1,12 +1,15 @@
 AbhiPrasad
 Aneurysm9
+BinaryFissionGames
 Caleb-Hurshman
 Doron-Bargo
 Frapschen
 JaredTan95
+JonathanWamsley
 MaxKsyunz
 MitchellGale
 MovieStoreGuy
+Mrod1598
 StefanKurek
 TylerHelmuth
 YANG-DB
@@ -28,7 +31,6 @@ atoulme
 avadhut123pisal
 bertysentry
 billmeyer
-binaryfissiongames
 bogdandrutu
 boostchicken
 chrroberts-pure
@@ -61,7 +63,6 @@ hvaghani221
 jacobmarble
 jamesmoessis
 jmacd
-jonathanwamsley
 jpkrohling
 jsuereth
 keep94
@@ -79,7 +80,6 @@ mar4uk
 martin-majlis-s1
 matej-g
 mcardy
-mrod1598
 mrsillydog
 mwear
 mx-psi
