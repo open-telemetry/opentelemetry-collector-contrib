@@ -6,12 +6,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/go-cmp v0.5.9
 	github.com/mongodb-forks/digest v1.0.4
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.83.0
 	github.com/stretchr/testify v1.8.4
-	go.mongodb.org/atlas v0.32.0
+	go.mongodb.org/atlas v0.33.0
 	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/configopaque v0.83.0
 	go.opentelemetry.io/collector/config/configtls v0.83.0
@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	github.com/antonmedv/expr v1.12.7 // indirect
+	github.com/antonmedv/expr v1.13.0 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -42,7 +42,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
