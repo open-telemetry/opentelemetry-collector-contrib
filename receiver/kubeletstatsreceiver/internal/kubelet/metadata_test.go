@@ -4,12 +4,12 @@
 package kubelet
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -601,9 +601,9 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.wantPodCPU, tt.metadata.getPodCpuLimit(tt.podUID))
+			assert.Equal(t, tt.wantPodCPU, tt.metadata.getPodCPULimit(tt.podUID))
 			assert.Equal(t, tt.wantPodMemory, tt.metadata.getPodMemoryLimit(tt.podUID))
-			assert.Equal(t, tt.wantContainerCPU, tt.metadata.getContainerCpuLimit(tt.podUID, tt.containerName))
+			assert.Equal(t, tt.wantContainerCPU, tt.metadata.getContainerCPULimit(tt.podUID, tt.containerName))
 			assert.Equal(t, tt.wantContainerMemory, tt.metadata.getContainerMemoryLimit(tt.podUID, tt.containerName))
 		})
 	}

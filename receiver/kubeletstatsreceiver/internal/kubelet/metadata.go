@@ -212,7 +212,7 @@ func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, er
 	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }
 
-func (m *Metadata) getPodCpuLimit(uid string) *float64 {
+func (m *Metadata) getPodCPULimit(uid string) *float64 {
 	podLimit, ok := m.podLimits[uid]
 	if !ok {
 		return nil
@@ -234,7 +234,7 @@ func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
 	return nil
 }
 
-func (m *Metadata) getContainerCpuLimit(podUID string, containerName string) *float64 {
+func (m *Metadata) getContainerCPULimit(podUID string, containerName string) *float64 {
 	containerLimit, ok := m.containerLimits[podUID+containerName]
 	if !ok {
 		return nil
