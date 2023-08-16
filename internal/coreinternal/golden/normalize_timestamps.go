@@ -62,9 +62,6 @@ func normalizeTimeSeries(timeSeries []pcommon.Timestamp) map[pcommon.Timestamp]p
 			count++
 		}
 	}
-	for i := range timeSeries {
-		timeSeries[i] = normalizedTs[timeSeries[i]]
-	}
 
 	return normalizedTs
 }
