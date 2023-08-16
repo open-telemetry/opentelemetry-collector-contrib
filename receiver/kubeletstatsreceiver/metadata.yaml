@@ -187,7 +187,7 @@ metrics:
     attributes: [ ]
   k8s.pod.cpu.utilization.scale:
     enabled: false
-    description: "Pod CPU utilization as a percentage of the pod's limit"
+    description: "Pod CPU utilization as a ratio of the pod's limit"
     unit: 1
     gauge:
       value_type: double
@@ -217,7 +217,7 @@ metrics:
     attributes: []
   k8s.pod.memory.usage.scale:
     enabled: false
-    description: "Pod memory usage as a percentage of the pod's limit"
+    description: "Pod memory utilization as a ratio of the pod's limit"
     unit: 1
     gauge:
       value_type: double
@@ -298,7 +298,7 @@ metrics:
     attributes: [ ]
   container.cpu.utilization.scale:
     enabled: false
-    description: "Container CPU usage as a percentage of the container's limit"
+    description: "Container CPU utilization as a ratio of the container's limit"
     unit: 1
     gauge:
       value_type: double
@@ -328,7 +328,7 @@ metrics:
     attributes: []
   container.memory.usage.scale:
     enabled: false
-    description: "Container memory usage as a percentage of the container's limit"
+    description: "Container memory utilization as a ratio of the container's limit"
     unit: 1
     gauge:
       value_type: double

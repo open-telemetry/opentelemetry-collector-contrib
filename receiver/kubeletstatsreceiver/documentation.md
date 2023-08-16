@@ -388,7 +388,7 @@ metrics:
 
 ### container.cpu.utilization.scale
 
-Container CPU usage as a percentage of the container's limit
+Container CPU utilization as a ratio of the container's limit
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -396,7 +396,7 @@ Container CPU usage as a percentage of the container's limit
 
 ### container.memory.usage.scale
 
-Container memory usage as a percentage of the container's limit
+Container memory utilization as a ratio of the container's limit
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -404,7 +404,7 @@ Container memory usage as a percentage of the container's limit
 
 ### k8s.pod.cpu.utilization.scale
 
-Pod CPU utilization as a percentage of the pod's limit
+Pod CPU utilization as a ratio of the pod's limit
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -412,7 +412,7 @@ Pod CPU utilization as a percentage of the pod's limit
 
 ### k8s.pod.memory.usage.scale
 
-Pod memory usage as a percentage of the pod's limit
+Pod memory utilization as a ratio of the pod's limit
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

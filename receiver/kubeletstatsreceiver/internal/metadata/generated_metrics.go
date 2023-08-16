@@ -146,7 +146,7 @@ type metricContainerCPUUtilizationScale struct {
 // init fills container.cpu.utilization.scale metric with initial data.
 func (m *metricContainerCPUUtilizationScale) init() {
 	m.data.SetName("container.cpu.utilization.scale")
-	m.data.SetDescription("Container CPU usage as a percentage of the container's limit")
+	m.data.SetDescription("Container CPU utilization as a ratio of the container's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -587,7 +587,7 @@ type metricContainerMemoryUsageScale struct {
 // init fills container.memory.usage.scale metric with initial data.
 func (m *metricContainerMemoryUsageScale) init() {
 	m.data.SetName("container.memory.usage.scale")
-	m.data.SetDescription("Container memory usage as a percentage of the container's limit")
+	m.data.SetDescription("Container memory utilization as a ratio of the container's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -1434,7 +1434,7 @@ type metricK8sPodCPUUtilizationScale struct {
 // init fills k8s.pod.cpu.utilization.scale metric with initial data.
 func (m *metricK8sPodCPUUtilizationScale) init() {
 	m.data.SetName("k8s.pod.cpu.utilization.scale")
-	m.data.SetDescription("Pod CPU utilization as a percentage of the pod's limit")
+	m.data.SetDescription("Pod CPU utilization as a ratio of the pod's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
@@ -1875,7 +1875,7 @@ type metricK8sPodMemoryUsageScale struct {
 // init fills k8s.pod.memory.usage.scale metric with initial data.
 func (m *metricK8sPodMemoryUsageScale) init() {
 	m.data.SetName("k8s.pod.memory.usage.scale")
-	m.data.SetDescription("Pod memory usage as a percentage of the pod's limit")
+	m.data.SetDescription("Pod memory utilization as a ratio of the pod's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }

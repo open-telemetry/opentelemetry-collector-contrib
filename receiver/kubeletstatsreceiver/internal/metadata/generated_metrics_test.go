@@ -303,7 +303,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.cpu.utilization.scale"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container CPU usage as a percentage of the container's limit", ms.At(i).Description())
+					assert.Equal(t, "Container CPU utilization as a ratio of the container's limit", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -411,7 +411,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["container.memory.usage.scale"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Container memory usage as a percentage of the container's limit", ms.At(i).Description())
+					assert.Equal(t, "Container memory utilization as a ratio of the container's limit", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -635,7 +635,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.pod.cpu.utilization.scale"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod CPU utilization as a percentage of the pod's limit", ms.At(i).Description())
+					assert.Equal(t, "Pod CPU utilization as a ratio of the pod's limit", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -743,7 +743,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.pod.memory.usage.scale"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Pod memory usage as a percentage of the pod's limit", ms.At(i).Description())
+					assert.Equal(t, "Pod memory utilization as a ratio of the pod's limit", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
