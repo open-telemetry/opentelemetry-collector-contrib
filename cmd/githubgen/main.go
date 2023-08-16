@@ -185,10 +185,8 @@ func run(folder string, allowlistFilePath string) error {
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
 			}
-		} else {
-			if inList(allowlist, codeowner) {
-				duplicateCodeowners = append(duplicateCodeowners, codeowner)
-			}
+		} else if inList(allowlist, codeowner) {
+			duplicateCodeowners = append(duplicateCodeowners, codeowner)
 		}
 	}
 	if len(missingCodeowners) > 0 {
