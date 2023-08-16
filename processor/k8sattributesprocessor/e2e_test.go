@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -63,6 +64,32 @@ func TestE2E(t *testing.T) {
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
 	require.NoError(t, err)
 
+	metricsConsumer := new(consumertest.MetricsSink)
+	tracesConsumer := new(consumertest.TracesSink)
+	logsConsumer := new(consumertest.LogsSink)
+	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for.
+
+	f := otlpreceiver.NewFactory()
+	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
+
+	_, err = f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, metricsConsumer)
+	require.NoError(t, err, "failed creating metrics receiver")
+	_, err = f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, tracesConsumer)
+	require.NoError(t, err, "failed creating traces receiver")
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, logsConsumer)
+	require.NoError(t, err, "failed creating logs receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		assert.NoError(t, rcvr.Shutdown(context.Background()))
+	}()
+
+	dataReceivedWg := sync.WaitGroup{}
+	dataReceivedWg.Add(1)
+	go func() {
+		waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+		dataReceivedWg.Done()
+	}()
+
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
 	telemetryGenObjs, telemetryGenObjInfos := k8stest.CreateTelemetryGenObjects(t, dynamicClient, testID)
@@ -76,11 +103,7 @@ func TestE2E(t *testing.T) {
 		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
-	metricsConsumer := new(consumertest.MetricsSink)
-	tracesConsumer := new(consumertest.TracesSink)
-	logsConsumer := new(consumertest.LogsSink)
-	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for.
-	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
+	dataReceivedWg.Wait()
 
 	tcs := []struct {
 		name     string
@@ -477,20 +500,6 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 }
 
 func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc *consumertest.TracesSink, lc *consumertest.LogsSink) {
-	f := otlpreceiver.NewFactory()
-	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
-
-	_, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, mc)
-	require.NoError(t, err, "failed creating metrics receiver")
-	_, err = f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, tc)
-	require.NoError(t, err, "failed creating traces receiver")
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, lc)
-	require.NoError(t, err, "failed creating logs receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	defer func() {
-		assert.NoError(t, rcvr.Shutdown(context.Background()))
-	}()
-
 	timeoutMinutes := 3
 	require.Eventuallyf(t, func() bool {
 		return len(mc.AllMetrics()) > entriesNum && len(tc.AllTraces()) > entriesNum && len(lc.AllLogs()) > entriesNum
