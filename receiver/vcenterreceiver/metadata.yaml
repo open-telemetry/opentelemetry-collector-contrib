@@ -72,6 +72,10 @@ attributes:
     enum:
       - "on"
       - "off"
+  object_name:
+    name_override: object
+    description: The object on the virtual machine or host that is being reported on.
+    type: string
 
 metrics:
   vcenter.cluster.cpu.limit:
@@ -177,7 +181,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [disk_direction]
+    attributes: [disk_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
   vcenter.host.disk.latency.avg:
     enabled: true
@@ -185,7 +189,7 @@ metrics:
     unit: ms
     gauge:
       value_type: int
-    attributes: [disk_direction]
+    attributes: [disk_direction, object_name]
     extended_documentation: This latency is the sum of the device and kernel read and write latencies. Requires Performance Counter level 2 for metric to populate.
   vcenter.host.disk.latency.max:
     enabled: true
@@ -193,7 +197,7 @@ metrics:
     unit: ms
     gauge:
       value_type: int
-    attributes: []
+    attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 3.
   vcenter.host.memory.utilization:
     enabled: true
@@ -219,7 +223,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction]
+    attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.usage:
     enabled: true
@@ -229,7 +233,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [object_name]
   vcenter.host.network.packet.errors:
     enabled: true
     description: The summation of packet errors on the host network.
@@ -238,7 +242,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction]
+    attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.count:
     enabled: true
@@ -248,7 +252,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction]
+    attributes: [throughput_direction, object_name]
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -343,7 +347,7 @@ metrics:
     unit: ms
     gauge:
       value_type: int
-    attributes: [disk_direction, disk_type]
+    attributes: [disk_direction, disk_type, object_name]
     extended_documentation: Requires Performance Counter level 2 for metric to populate. As measured over the most recent 20s interval.
   vcenter.vm.disk.latency.max:
     enabled: true
@@ -351,7 +355,7 @@ metrics:
     unit: ms
     gauge:
       value_type: int
-    attributes: []
+    attributes: [object_name]
   vcenter.vm.disk.throughput:
     enabled: true
     description: The throughput of the virtual machine's disk.
@@ -360,7 +364,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [object_name]
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.
@@ -369,7 +373,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction]
+    attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.packet.count:
     enabled: true
@@ -379,7 +383,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [throughput_direction]
+    attributes: [throughput_direction, object_name]
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
@@ -388,7 +392,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.cpu.utilization:
     enabled: true
