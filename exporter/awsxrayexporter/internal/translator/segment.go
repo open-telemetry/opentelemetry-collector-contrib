@@ -175,7 +175,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if name == "" && (span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer) {
-		// Only for a server span, we can use the resource.
+		// Only for a server and consumer spans, we can use the resource.
 		if service, ok := resource.Attributes().Get(conventions.AttributeServiceName); ok {
 			name = service.Str()
 		}

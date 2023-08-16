@@ -947,7 +947,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
-func TestConsumerSpanWithoutNameOverrides(t *testing.T) {
+func TestConsumerSpanWithoutSegmentNameOverrides(t *testing.T) {
 	spanName := "destination receive"
 	parentSpanID := newSegmentID()
 	user := "testingT"
