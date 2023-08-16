@@ -571,7 +571,7 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has either an OID or ScalarOID or IndexedValuePrefix
+	// Make sure each Resource Attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit 
 	for attrName, attrCfg := range resourceAttributes {
 
 		hasOID := attrCfg.OID != ""
