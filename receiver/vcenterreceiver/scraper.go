@@ -246,6 +246,7 @@ func (v *vcenterMetricScraper) collectResourcePools(
 		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
 		rb.SetVcenterResourcePoolName(rp.Name())
+		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

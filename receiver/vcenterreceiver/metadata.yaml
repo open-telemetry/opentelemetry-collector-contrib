@@ -21,6 +21,10 @@ resource_attributes:
     description: The name of the resource pool.
     enabled: true
     type: string
+  vcenter.resource_pool.inventory_path:
+    description: The inventory path of the resource pool.
+    enabled: true
+    type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
