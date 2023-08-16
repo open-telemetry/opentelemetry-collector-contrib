@@ -213,6 +213,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetVcenterClusterName("vcenter.cluster.name-val")
 			rb.SetVcenterDatastoreName("vcenter.datastore.name-val")
 			rb.SetVcenterHostName("vcenter.host.name-val")
+			rb.SetVcenterResourcePoolInventoryPath("vcenter.resource_pool.inventory_path-val")
 			rb.SetVcenterResourcePoolName("vcenter.resource_pool.name-val")
 			rb.SetVcenterVMID("vcenter.vm.id-val")
 			rb.SetVcenterVMName("vcenter.vm.name-val")
