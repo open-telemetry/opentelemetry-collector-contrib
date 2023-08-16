@@ -72,6 +72,7 @@ func TestE2E(t *testing.T) {
 	}()
 
 	for _, info := range telemetryGenObjInfos {
+		fmt.Printf("WaitForTelemetryGenToStart info.Namespace %v, info.Workload %v, info.DataType %v, info.PodLabelSelectors %v\n", info.Namespace, info.Workload, info.DataType, info.PodLabelSelectors)
 		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
