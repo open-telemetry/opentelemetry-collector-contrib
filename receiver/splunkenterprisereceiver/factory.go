@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -21,10 +23,16 @@ const (
 )
 
 func createDefaultConfig() component.Config {
+    defaultHeaders := map[string]configopaque.String {
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
 	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scfg.CollectionInterval = defaultInterval
 
 	return &Config{
+        HTTPClientSettings: confighttp.HTTPClientSettings{
+            Headers: defaultHeaders,
+        },
 		ScraperControllerSettings: scfg,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		MaxSearchWaitTime:         defaultMaxSearchWaitTime,
