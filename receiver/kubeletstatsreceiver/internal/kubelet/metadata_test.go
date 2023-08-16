@@ -419,11 +419,11 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "uid-1234",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
 									Name: "container-1",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("1"),
 											v1.ResourceMemory: resource.MustParse("1G"),
@@ -432,7 +432,7 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 								},
 								{
 									Name: "container-2",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("2"),
 											v1.ResourceMemory: resource.MustParse("3G"),
@@ -459,11 +459,11 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "uid-1234",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
 									Name: "container-1",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("1"),
 											v1.ResourceMemory: resource.MustParse("1G"),
@@ -472,7 +472,7 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 								},
 								{
 									Name: "container-2",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("2"),
 											v1.ResourceMemory: resource.MustParse("3G"),
@@ -498,11 +498,11 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "uid-1234",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
 									Name: "container-1",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("1"),
 											v1.ResourceMemory: resource.MustParse("1G"),
@@ -511,7 +511,7 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 								},
 								{
 									Name: "container-2",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("2"),
 											v1.ResourceMemory: resource.MustParse("3G"),
@@ -538,11 +538,11 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "uid-1234",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
 									Name: "container-1",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("1"),
 											v1.ResourceMemory: resource.MustParse("1G"),
@@ -572,11 +572,11 @@ func TestCpuAndMemoryLimits(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							UID: "uid-1234",
 						},
-						Status: v1.PodStatus{
-							ContainerStatuses: []v1.ContainerStatus{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{
 								{
 									Name: "container-1",
-									Resources: &v1.ResourceRequirements{
+									Resources: v1.ResourceRequirements{
 										Limits: v1.ResourceList{
 											v1.ResourceCPU:    resource.MustParse("1"),
 											v1.ResourceMemory: resource.MustParse("1G"),

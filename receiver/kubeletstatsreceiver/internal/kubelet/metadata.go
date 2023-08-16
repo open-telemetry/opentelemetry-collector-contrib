@@ -51,8 +51,8 @@ type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
-	podLimits                 map[string]limit
-	containerLimits           map[string]limit
+	PodLimits                 map[string]limit
+	ContainerLimits           map[string]limit
 }
 
 type limit struct {
@@ -82,8 +82,8 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
-		podLimits:                 make(map[string]limit, 0),
-		containerLimits:           make(map[string]limit, 0),
+		PodLimits:                 make(map[string]limit, 0),
+		ContainerLimits:           make(map[string]limit, 0),
 	}
 
 	if podsMetadata != nil {
@@ -91,8 +91,8 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 			var podLimit limit
 			allContainersCPUDefined := true
 			allContainersMemoryDefined := true
-			for _, container := range pod.Status.ContainerStatuses {
-				containerLimit := newContainerLimit(container.Resources)
+			for _, container := range pod.Spec.Containers {
+				containerLimit := newContainerLimit(&container.Resources)
 
 				if allContainersCPUDefined && containerLimit.cpu == 0 {
 					allContainersCPUDefined = false
@@ -112,9 +112,9 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 					podLimit.memory += containerLimit.memory
 				}
 
-				m.containerLimits[string(pod.UID)+container.Name] = containerLimit
+				m.ContainerLimits[string(pod.UID)+container.Name] = containerLimit
 			}
-			m.podLimits[string(pod.UID)] = podLimit
+			m.PodLimits[string(pod.UID)] = podLimit
 		}
 	}
 
@@ -213,7 +213,7 @@ func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, er
 }
 
 func (m *Metadata) getPodCPULimit(uid string) *float64 {
-	podLimit, ok := m.podLimits[uid]
+	podLimit, ok := m.PodLimits[uid]
 	if !ok {
 		return nil
 	}
@@ -224,7 +224,7 @@ func (m *Metadata) getPodCPULimit(uid string) *float64 {
 }
 
 func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
-	podLimit, ok := m.podLimits[uid]
+	podLimit, ok := m.PodLimits[uid]
 	if !ok {
 		return nil
 	}
@@ -235,7 +235,7 @@ func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
 }
 
 func (m *Metadata) getContainerCPULimit(podUID string, containerName string) *float64 {
-	containerLimit, ok := m.containerLimits[podUID+containerName]
+	containerLimit, ok := m.ContainerLimits[podUID+containerName]
 	if !ok {
 		return nil
 	}
@@ -246,7 +246,7 @@ func (m *Metadata) getContainerCPULimit(podUID string, containerName string) *fl
 }
 
 func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) *float64 {
-	containerLimit, ok := m.containerLimits[podUID+containerName]
+	containerLimit, ok := m.ContainerLimits[podUID+containerName]
 	if !ok {
 		return nil
 	}

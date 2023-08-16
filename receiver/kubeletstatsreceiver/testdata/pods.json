@@ -5,17 +5,24 @@
         "name": "kube-scheduler-minikube",
         "uid": "5795d0c442cb997ff93c49feeb9f6386"
       },
-      "status": {
-        "containerStatuses": [
+      "spec": {
+        "containers": [
           {
-            "name": "kube-scheduler",
-            "containerID": "364bd8f13021f326",
+            "name":"kube-scheduler",
             "resources": {
               "limits": {
                 "cpu": "100m",
                 "memory": "1G"
               }
             }
+          }
+        ]
+      },
+      "status": {
+        "containerStatuses": [
+          {
+            "name": "kube-scheduler",
+            "containerID": "364bd8f13021f326"
           }
         ]
       }
