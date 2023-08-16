@@ -4,9 +4,10 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	"math"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
-	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
