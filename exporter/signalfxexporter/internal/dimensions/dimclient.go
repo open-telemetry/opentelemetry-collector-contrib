@@ -317,7 +317,8 @@ func (dc *DimensionClient) makePatchRequest(dim *DimensionUpdate) (*http.Request
 		return nil, err
 	}
 
-	req, err := http.NewRequest(
+	req, err := http.NewRequestWithContext(
+		context.Background(),
 		"PATCH",
 		strings.TrimRight(url.String(), "/")+"/_/sfxagent",
 		bytes.NewReader(json))

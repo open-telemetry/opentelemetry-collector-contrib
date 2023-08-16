@@ -22,6 +22,7 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	tempDir := t.TempDir()
 	temp, err := os.CreateTemp(tempDir, "")
 	require.NoError(t, err)
+	defer temp.Close()
 
 	_, err = temp.WriteString(fileContents)
 	require.NoError(t, err)
@@ -114,6 +115,7 @@ func TestNew(t *testing.T) {
 			tempDir := t.TempDir()
 			temp, err := os.CreateTemp(tempDir, "")
 			require.NoError(t, err)
+			defer temp.Close()
 
 			_, err = temp.WriteString(string(tokenWithLength(tc.fileSize)))
 			require.NoError(t, err)
@@ -164,8 +166,32 @@ func TestFingerprintCopy(t *testing.T) {
 	}
 }
 
-func TestFingerprintStartsWith(t *testing.T) {
+func TestEqual(t *testing.T) {
+	empty := &Fingerprint{FirstBytes: []byte("")}
+	empty2 := &Fingerprint{FirstBytes: []byte("")}
+	hello := &Fingerprint{FirstBytes: []byte("hello")}
+	hello2 := &Fingerprint{FirstBytes: []byte("hello")}
+	world := &Fingerprint{FirstBytes: []byte("world")}
+	world2 := &Fingerprint{FirstBytes: []byte("world")}
+	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
+	helloworld2 := &Fingerprint{FirstBytes: []byte("helloworld")}
 
+	require.True(t, empty.Equal(empty2))
+	require.True(t, hello.Equal(hello2))
+	require.True(t, world.Equal(world2))
+	require.True(t, helloworld.Equal(helloworld2))
+
+	require.False(t, hello.Equal(empty))
+	require.False(t, empty.Equal(hello))
+
+	require.False(t, hello.Equal(world))
+	require.False(t, world.Equal(hello))
+
+	require.False(t, hello.Equal(helloworld))
+	require.False(t, helloworld.Equal(hello))
+}
+
+func TestStartsWith(t *testing.T) {
 	empty := &Fingerprint{FirstBytes: []byte("")}
 	hello := &Fingerprint{FirstBytes: []byte("hello")}
 	world := &Fingerprint{FirstBytes: []byte("world")}
@@ -181,7 +207,6 @@ func TestFingerprintStartsWith(t *testing.T) {
 	require.True(t, helloworld.StartsWith(hello))
 	require.True(t, helloworld.StartsWith(helloworld))
 	require.False(t, helloworld.StartsWith(world))
-
 }
 
 // Generates a file filled with many random bytes, then
@@ -191,7 +216,7 @@ func TestFingerprintStartsWith(t *testing.T) {
 // The static file can be thought of as the present state of
 // the file, while each iteration of the growing file represents
 // a possible state of the same file at a previous time.
-func TestFingerprintStartsWith_FromFile(t *testing.T) {
+func TestStartsWith_FromFile(t *testing.T) {
 	r := rand.New(rand.NewSource(112358))
 	fingerprintSize := 10
 	fileLength := 12 * fingerprintSize

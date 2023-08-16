@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -134,7 +136,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
+	f.splitterFactory = splitter.NewMultilineFactory(helper.SplitterConfig{
 		EncodingConfig: helper.NewEncodingConfig(),
 		Flusher:        helper.NewFlusherConfig(),
 		Multiline:      mlc,
@@ -165,23 +167,15 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	headerConf := &HeaderConfig{
-		Pattern: "^#",
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexConf,
-			},
-		},
-	}
-
-	enc, err := helper.EncodingConfig{
+	encodingConf := helper.EncodingConfig{
 		Encoding: "utf-8",
-	}.Build()
+	}
+	enc, err := helper.LookupEncoding(encodingConf.Encoding)
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
-	f.headerSettings = h
+	f.headerConfig = h
 
 	temp := openTemp(t, t.TempDir())
 
@@ -207,7 +201,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		splitterFactory: splitter.NewMultilineFactory(splitterConfig),
 		encodingConfig:  splitterConfig.EncodingConfig,
 	}, emitChan
 }
@@ -220,27 +214,6 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 		require.FailNow(t, "Timed out waiting for token")
 	}
 	return nil
-}
-
-func TestMapCopy(t *testing.T) {
-	initMap := map[string]any{
-		"mapVal": map[string]any{
-			"nestedVal": "value1",
-		},
-		"intVal": 1,
-		"strVal": "OrigStr",
-	}
-
-	copyMap := mapCopy(initMap)
-	// Mutate values on the copied map
-	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
-	copyMap["intVal"] = 2
-	copyMap["strVal"] = "CopyString"
-
-	// Assert that the original map should have the same values
-	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
-	assert.Equal(t, 1, initMap["intVal"])
-	assert.Equal(t, "OrigStr", initMap["strVal"])
 }
 
 func TestEncodingDecode(t *testing.T) {
@@ -257,7 +230,7 @@ func TestEncodingDecode(t *testing.T) {
 			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 		},
-		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		splitterFactory: splitter.NewMultilineFactory(helper.NewSplitterConfig()),
 		fromBeginning:   false,
 	}
 	r, err := f.newReader(testFile, fp)
@@ -265,7 +238,7 @@ func TestEncodingDecode(t *testing.T) {
 
 	// Just faking out these properties
 	r.HeaderFinalized = true
-	r.FileAttributes.HeaderAttributes = map[string]any{"foo": "bar"}
+	r.FileAttributes = map[string]any{"foo": "bar"}
 
 	assert.Equal(t, testToken[:fingerprint.DefaultSize], r.Fingerprint.FirstBytes)
 	assert.Equal(t, int64(2*fingerprint.DefaultSize), r.Offset)
@@ -285,11 +258,11 @@ func TestEncodingDecode(t *testing.T) {
 	assert.Equal(t, testToken[:fingerprint.DefaultSize], decodedReader.Fingerprint.FirstBytes)
 	assert.Equal(t, int64(2*fingerprint.DefaultSize), decodedReader.Offset)
 	assert.True(t, decodedReader.HeaderFinalized)
-	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes.HeaderAttributes)
+	assert.Equal(t, map[string]any{"foo": "bar"}, decodedReader.FileAttributes)
 
 	// These fields are intentionally excluded, as they may have changed
-	assert.Empty(t, decodedReader.FileAttributes.Name)
-	assert.Empty(t, decodedReader.FileAttributes.Path)
-	assert.Empty(t, decodedReader.FileAttributes.NameResolved)
-	assert.Empty(t, decodedReader.FileAttributes.PathResolved)
+	assert.Empty(t, decodedReader.FileAttributes[logFileName])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePath])
+	assert.Empty(t, decodedReader.FileAttributes[logFileNameResolved])
+	assert.Empty(t, decodedReader.FileAttributes[logFilePathResolved])
 }
