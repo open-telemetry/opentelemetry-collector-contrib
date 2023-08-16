@@ -1,4 +1,4 @@
-// Deprecated 
+// Deprecated
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogprocessor
 
 go 1.20
