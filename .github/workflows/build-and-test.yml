@@ -213,17 +213,12 @@ jobs:
         with:
           filters: |
             src:
-              - 'cmd/githubgen/members.txt'
+              - '**/metadata.yaml'
       - name: Check codeowners
-        if: false #steps.codeowner-changes.outputs.src == 'true' TODO Need a github token from opentelemetrybot with permissions to query the API
+        if: steps.codeowner-changes.outputs.src == 'true'
         run: |
-          GITHUB_TOKEN=${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }} make gengithubcheck
+          GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} make gengithub
           git diff -s --exit-code || (echo 'Generated code or members.txt are out of date, please run "make gengithubcheck" and commit the changes in this PR.' && exit 1)
-      - name: Gen codeowners
-        if: true #steps.codeowner-changes.outputs.src == 'false' TODO Need a github token from opentelemetrybot with permissions to query the API
-        run: |
-          make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gengithub" and commit the changes in this PR.' && exit 1)
       - name: Check gendependabot
         run: |
           make -j2 gendependabot

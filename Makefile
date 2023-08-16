@@ -258,11 +258,6 @@ gengithub:
 	cd cmd/githubgen && $(GOCMD) install .
 	githubgen
 
-.PHONY: gengithubcheck
-gengithubcheck:
-	cd cmd/githubgen && $(GOCMD) install .
-	githubgen --check
-
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
 

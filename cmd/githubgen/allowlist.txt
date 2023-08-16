@@ -3,7 +3,6 @@ Doron-Bargo
 MaxKsyunz
 MitchellGale
 YANG-DB
-ag-ramachandran
 agoallikmaa
 alexvanboxel
 architjugran
@@ -17,9 +16,7 @@ kiranmayib
 kkujawa-sumo
 leonsp-ai
 liqiangz
-mrsillydog
 oded-dd
-pcwiese
 shaochengwang
 svrakitin
 thepeterstone

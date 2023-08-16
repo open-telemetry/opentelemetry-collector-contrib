@@ -81,11 +81,9 @@ const unmaintainedStatus = "unmaintained"
 // .github/ALLOWLIST
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for codeowners")
-	membersFilePath := flag.String("members", "cmd/githubgen/members.txt", "path to a file containing OpenTelemetry members")
 	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
-	checkMembership := flag.Bool("check", false, "whether to check the members file content against the Github API")
 	flag.Parse()
-	if err := run(*folder, *membersFilePath, *allowlistFilePath, *checkMembership); err != nil {
+	if err := run(*folder, *allowlistFilePath); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -131,24 +129,16 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func run(folder string, membersFilePath string, allowlistFilePath string, checkMembers bool) error {
-
-	membersData, err := os.ReadFile(membersFilePath)
+func run(folder string, allowlistFilePath string) error {
+	members, err := getGithubMembers()
 	if err != nil {
 		return err
 	}
-	members := strings.Split(string(membersData), "\n")
 	allowlistData, err := os.ReadFile(allowlistFilePath)
 	if err != nil {
 		return err
 	}
 	allowlist := strings.Split(string(allowlistData), "\n")
-	if checkMembers {
-		members, err = getGithubMembers()
-		if err != nil {
-			return err
-		}
-	}
 
 	components := map[string]metadata{}
 	foldersList := []string{}
@@ -186,6 +176,7 @@ func run(folder string, membersFilePath string, allowlistFilePath string, checkM
 	}
 	sort.Strings(foldersList)
 	var missingCodeowners []string
+	var duplicateCodeowners []string
 	for codeowner := range allCodeowners {
 		present := inList(members, codeowner)
 
@@ -194,25 +185,19 @@ func run(folder string, membersFilePath string, allowlistFilePath string, checkM
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
 			}
+		} else {
+			if inList(allowlist, codeowner) {
+				duplicateCodeowners = append(duplicateCodeowners, codeowner)
+			}
 		}
 	}
 	if len(missingCodeowners) > 0 {
 		sort.Strings(missingCodeowners)
 		return fmt.Errorf("codeowners are not members: %s", strings.Join(missingCodeowners, ", "))
 	}
-	if checkMembers {
-		var list []string
-		for codeowner := range allCodeowners {
-			if strings.HasPrefix(codeowner, "open-telemetry/") {
-				continue
-			}
-			list = append(list, codeowner)
-		}
-		sort.Strings(list)
-		err = os.WriteFile(membersFilePath, []byte(strings.Join(list, "\n")), 0600)
-		if err != nil {
-			return err
-		}
+	if len(duplicateCodeowners) > 0 {
+		sort.Strings(duplicateCodeowners)
+		return fmt.Errorf("codeowners members duplicate in allowlist: %s", strings.Join(duplicateCodeowners, ", "))
 	}
 
 	codeowners := codeownersHeader
