@@ -58,7 +58,6 @@ exclude_metrics:
 # Disk-IO metrics.
 - metric_names:
   - system.disk.merged
-  - system.disk.io
   - system.disk.time
   - system.disk.io_time
   - system.disk.operation_time
