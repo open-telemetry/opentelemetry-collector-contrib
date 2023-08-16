@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -135,7 +136,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
+	f.splitterFactory = splitter.NewMultilineFactory(helper.SplitterConfig{
 		EncodingConfig: helper.NewEncodingConfig(),
 		Flusher:        helper.NewFlusherConfig(),
 		Multiline:      mlc,
@@ -166,12 +167,13 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	enc, err := helper.EncodingConfig{
+	encodingConf := helper.EncodingConfig{
 		Encoding: "utf-8",
-	}.Build()
+	}
+	enc, err := helper.LookupEncoding(encodingConf.Encoding)
 	require.NoError(t, err)
 
-	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
 	f.headerConfig = h
 
@@ -199,7 +201,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: newMultilineSplitterFactory(splitterConfig),
+		splitterFactory: splitter.NewMultilineFactory(splitterConfig),
 		encodingConfig:  splitterConfig.EncodingConfig,
 	}, emitChan
 }
@@ -228,7 +230,7 @@ func TestEncodingDecode(t *testing.T) {
 			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 		},
-		splitterFactory: newMultilineSplitterFactory(helper.NewSplitterConfig()),
+		splitterFactory: splitter.NewMultilineFactory(helper.NewSplitterConfig()),
 		fromBeginning:   false,
 	}
 	r, err := f.newReader(testFile, fp)

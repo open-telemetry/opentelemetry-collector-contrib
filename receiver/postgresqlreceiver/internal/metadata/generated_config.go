@@ -36,6 +36,7 @@ type MetricsConfig struct {
 	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
 	PostgresqlDatabaseCount            MetricConfig `mapstructure:"postgresql.database.count"`
 	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
+	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
 	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`
 	PostgresqlIndexSize                MetricConfig `mapstructure:"postgresql.index.size"`
 	PostgresqlOperations               MetricConfig `mapstructure:"postgresql.operations"`
@@ -83,6 +84,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlDbSize: MetricConfig{
 			Enabled: true,
+		},
+		PostgresqlDeadlocks: MetricConfig{
+			Enabled: false,
 		},
 		PostgresqlIndexScans: MetricConfig{
 			Enabled: true,
