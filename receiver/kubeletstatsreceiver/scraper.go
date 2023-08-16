@@ -59,10 +59,10 @@ func newKubletScraper(
 			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
-		needsLimits: metricsConfig.Metrics.K8sPodCPUUsagePercent.Enabled ||
-			metricsConfig.Metrics.ContainerCPUUsagePercent.Enabled ||
-			metricsConfig.Metrics.K8sPodMemoryUsagePercent.Enabled ||
-			metricsConfig.Metrics.ContainerMemoryUsagePercent.Enabled,
+		needsLimits: metricsConfig.Metrics.K8sPodCPUUtilizationScale.Enabled ||
+			metricsConfig.Metrics.ContainerCPUUtilizationScale.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryUsageScale.Enabled ||
+			metricsConfig.Metrics.ContainerMemoryUsageScale.Enabled,
 	}
 	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
 }

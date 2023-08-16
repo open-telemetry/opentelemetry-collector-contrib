@@ -32,13 +32,13 @@ var NodeCPUMetrics = CPUMetrics{
 var PodCPUMetrics = CPUMetrics{
 	Time:         (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
 	Utilization:  (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
-	UsagePercent: (*MetricsBuilder).RecordK8sPodCPUUsagePercentDataPoint,
+	UsagePercent: (*MetricsBuilder).RecordK8sPodCPUUtilizationScaleDataPoint,
 }
 
 var ContainerCPUMetrics = CPUMetrics{
 	Time:         (*MetricsBuilder).RecordContainerCPUTimeDataPoint,
 	Utilization:  (*MetricsBuilder).RecordContainerCPUUtilizationDataPoint,
-	UsagePercent: (*MetricsBuilder).RecordContainerCPUUsagePercentDataPoint,
+	UsagePercent: (*MetricsBuilder).RecordContainerCPUUtilizationScaleDataPoint,
 }
 
 type MemoryMetrics struct {
@@ -63,7 +63,7 @@ var NodeMemoryMetrics = MemoryMetrics{
 var PodMemoryMetrics = MemoryMetrics{
 	Available:       (*MetricsBuilder).RecordK8sPodMemoryAvailableDataPoint,
 	Usage:           (*MetricsBuilder).RecordK8sPodMemoryUsageDataPoint,
-	UsagePercent:    (*MetricsBuilder).RecordK8sPodMemoryUsagePercentDataPoint,
+	UsagePercent:    (*MetricsBuilder).RecordK8sPodMemoryUsageScaleDataPoint,
 	Rss:             (*MetricsBuilder).RecordK8sPodMemoryRssDataPoint,
 	WorkingSet:      (*MetricsBuilder).RecordK8sPodMemoryWorkingSetDataPoint,
 	PageFaults:      (*MetricsBuilder).RecordK8sPodMemoryPageFaultsDataPoint,
@@ -73,7 +73,7 @@ var PodMemoryMetrics = MemoryMetrics{
 var ContainerMemoryMetrics = MemoryMetrics{
 	Available:       (*MetricsBuilder).RecordContainerMemoryAvailableDataPoint,
 	Usage:           (*MetricsBuilder).RecordContainerMemoryUsageDataPoint,
-	UsagePercent:    (*MetricsBuilder).RecordContainerMemoryUsagePercentDataPoint,
+	UsagePercent:    (*MetricsBuilder).RecordContainerMemoryUsageScaleDataPoint,
 	Rss:             (*MetricsBuilder).RecordContainerMemoryRssDataPoint,
 	WorkingSet:      (*MetricsBuilder).RecordContainerMemoryWorkingSetDataPoint,
 	PageFaults:      (*MetricsBuilder).RecordContainerMemoryPageFaultsDataPoint,

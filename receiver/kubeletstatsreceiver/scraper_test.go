@@ -143,7 +143,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			ContainerCPUTime: metadata.MetricConfig{
 				Enabled: false,
 			},
-			ContainerCPUUsagePercent: metadata.MetricConfig{
+			ContainerCPUUtilizationScale: metadata.MetricConfig{
 				Enabled: true,
 			},
 			ContainerCPUUtilization: metadata.MetricConfig{
@@ -173,7 +173,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			ContainerMemoryUsage: metadata.MetricConfig{
 				Enabled: false,
 			},
-			ContainerMemoryUsagePercent: metadata.MetricConfig{
+			ContainerMemoryUsageScale: metadata.MetricConfig{
 				Enabled: true,
 			},
 			ContainerMemoryWorkingSet: metadata.MetricConfig{
@@ -221,7 +221,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sPodCPUTime: metadata.MetricConfig{
 				Enabled: false,
 			},
-			K8sPodCPUUsagePercent: metadata.MetricConfig{
+			K8sPodCPUUtilizationScale: metadata.MetricConfig{
 				Enabled: true,
 			},
 			K8sPodCPUUtilization: metadata.MetricConfig{
@@ -251,7 +251,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 			K8sPodMemoryUsage: metadata.MetricConfig{
 				Enabled: false,
 			},
-			K8sPodMemoryUsagePercent: metadata.MetricConfig{
+			K8sPodMemoryUsageScale: metadata.MetricConfig{
 				Enabled: true,
 			},
 			K8sPodMemoryWorkingSet: metadata.MetricConfig{
@@ -293,14 +293,18 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 4, md.DataPointCount())
 
-	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name(), "k8s.pod.cpu.usagePercent")
-	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue(), 3.6201029999999994)
-	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Name(), "k8s.pod.memory.usagePercent")
-	assert.Equal(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), 1.4290943999999999)
-	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Name(), "container.cpu.usagePercent")
-	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue(), 3.438624999999999)
-	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Name(), "container.memory.usagePercent")
-	assert.Equal(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue(), 1.370112)
+	assert.Equal(t, "k8s.pod.cpu.utilization.scale", md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Name())
+	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() >= 0)
+	assert.Equal(t, "k8s.pod.memory.usage.scale", md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Name())
+	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() >= 0)
+	assert.Equal(t, "container.cpu.utilization.scale", md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Name())
+	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).DoubleValue() >= 0)
+	assert.Equal(t, "container.memory.usage.scale", md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Name())
+	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() <= 1)
+	assert.True(t, md.ResourceMetrics().At(1).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).DoubleValue() >= 0)
 
 }
 

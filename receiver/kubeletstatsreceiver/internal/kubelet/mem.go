@@ -6,6 +6,7 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -23,7 +24,7 @@ func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.Memory
 	recordIntDataPoint(mb, memoryMetrics.MajorPageFaults, s.MajorPageFaults, currentTime)
 
 	if limit != nil && *limit > 0 && s.UsageBytes != nil {
-		value := (float64(*s.UsageBytes) / *limit) * 100
+		value := math.Min(float64(*s.UsageBytes) / *limit, 1)
 		memoryMetrics.UsagePercent(mb, currentTime, value)
 	}
 }

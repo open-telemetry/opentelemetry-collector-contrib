@@ -88,55 +88,6 @@ func newMetricContainerCPUTime(cfg MetricConfig) metricContainerCPUTime {
 	return m
 }
 
-type metricContainerCPUUsagePercent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills container.cpu.usagePercent metric with initial data.
-func (m *metricContainerCPUUsagePercent) init() {
-	m.data.SetName("container.cpu.usagePercent")
-	m.data.SetDescription("Container CPU usage as a percentage of the container's limit")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricContainerCPUUsagePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerCPUUsagePercent) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerCPUUsagePercent) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricContainerCPUUsagePercent(cfg MetricConfig) metricContainerCPUUsagePercent {
-	m := metricContainerCPUUsagePercent{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricContainerCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -179,6 +130,55 @@ func (m *metricContainerCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUUtilization(cfg MetricConfig) metricContainerCPUUtilization {
 	m := metricContainerCPUUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUUtilizationScale struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.utilization.scale metric with initial data.
+func (m *metricContainerCPUUtilizationScale) init() {
+	m.data.SetName("container.cpu.utilization.scale")
+	m.data.SetDescription("Container CPU usage as a percentage of the container's limit")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricContainerCPUUtilizationScale) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUUtilizationScale) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUUtilizationScale) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUUtilizationScale(cfg MetricConfig) metricContainerCPUUtilizationScale {
+	m := metricContainerCPUUtilizationScale{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -578,21 +578,21 @@ func newMetricContainerMemoryUsage(cfg MetricConfig) metricContainerMemoryUsage 
 	return m
 }
 
-type metricContainerMemoryUsagePercent struct {
+type metricContainerMemoryUsageScale struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills container.memory.usagePercent metric with initial data.
-func (m *metricContainerMemoryUsagePercent) init() {
-	m.data.SetName("container.memory.usagePercent")
+// init fills container.memory.usage.scale metric with initial data.
+func (m *metricContainerMemoryUsageScale) init() {
+	m.data.SetName("container.memory.usage.scale")
 	m.data.SetDescription("Container memory usage as a percentage of the container's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricContainerMemoryUsagePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricContainerMemoryUsageScale) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -603,14 +603,14 @@ func (m *metricContainerMemoryUsagePercent) recordDataPoint(start pcommon.Timest
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricContainerMemoryUsagePercent) updateCapacity() {
+func (m *metricContainerMemoryUsageScale) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricContainerMemoryUsagePercent) emit(metrics pmetric.MetricSlice) {
+func (m *metricContainerMemoryUsageScale) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -618,8 +618,8 @@ func (m *metricContainerMemoryUsagePercent) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricContainerMemoryUsagePercent(cfg MetricConfig) metricContainerMemoryUsagePercent {
-	m := metricContainerMemoryUsagePercent{config: cfg}
+func newMetricContainerMemoryUsageScale(cfg MetricConfig) metricContainerMemoryUsageScale {
+	m := metricContainerMemoryUsageScale{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1376,55 +1376,6 @@ func newMetricK8sPodCPUTime(cfg MetricConfig) metricK8sPodCPUTime {
 	return m
 }
 
-type metricK8sPodCPUUsagePercent struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills k8s.pod.cpu.usagePercent metric with initial data.
-func (m *metricK8sPodCPUUsagePercent) init() {
-	m.data.SetName("k8s.pod.cpu.usagePercent")
-	m.data.SetDescription("Pod CPU utilization as a percentage of the pod's limit")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricK8sPodCPUUsagePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodCPUUsagePercent) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodCPUUsagePercent) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricK8sPodCPUUsagePercent(cfg MetricConfig) metricK8sPodCPUUsagePercent {
-	m := metricK8sPodCPUUsagePercent{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricK8sPodCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1467,6 +1418,55 @@ func (m *metricK8sPodCPUUtilization) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodCPUUtilization(cfg MetricConfig) metricK8sPodCPUUtilization {
 	m := metricK8sPodCPUUtilization{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodCPUUtilizationScale struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.cpu.utilization.scale metric with initial data.
+func (m *metricK8sPodCPUUtilizationScale) init() {
+	m.data.SetName("k8s.pod.cpu.utilization.scale")
+	m.data.SetDescription("Pod CPU utilization as a percentage of the pod's limit")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPodCPUUtilizationScale) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodCPUUtilizationScale) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodCPUUtilizationScale) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodCPUUtilizationScale(cfg MetricConfig) metricK8sPodCPUUtilizationScale {
+	m := metricK8sPodCPUUtilizationScale{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1866,21 +1866,21 @@ func newMetricK8sPodMemoryUsage(cfg MetricConfig) metricK8sPodMemoryUsage {
 	return m
 }
 
-type metricK8sPodMemoryUsagePercent struct {
+type metricK8sPodMemoryUsageScale struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills k8s.pod.memory.usagePercent metric with initial data.
-func (m *metricK8sPodMemoryUsagePercent) init() {
-	m.data.SetName("k8s.pod.memory.usagePercent")
+// init fills k8s.pod.memory.usage.scale metric with initial data.
+func (m *metricK8sPodMemoryUsageScale) init() {
+	m.data.SetName("k8s.pod.memory.usage.scale")
 	m.data.SetDescription("Pod memory usage as a percentage of the pod's limit")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
-func (m *metricK8sPodMemoryUsagePercent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+func (m *metricK8sPodMemoryUsageScale) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1891,14 +1891,14 @@ func (m *metricK8sPodMemoryUsagePercent) recordDataPoint(start pcommon.Timestamp
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricK8sPodMemoryUsagePercent) updateCapacity() {
+func (m *metricK8sPodMemoryUsageScale) updateCapacity() {
 	if m.data.Gauge().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricK8sPodMemoryUsagePercent) emit(metrics pmetric.MetricSlice) {
+func (m *metricK8sPodMemoryUsageScale) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1906,8 +1906,8 @@ func (m *metricK8sPodMemoryUsagePercent) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricK8sPodMemoryUsagePercent(cfg MetricConfig) metricK8sPodMemoryUsagePercent {
-	m := metricK8sPodMemoryUsagePercent{config: cfg}
+func newMetricK8sPodMemoryUsageScale(cfg MetricConfig) metricK8sPodMemoryUsageScale {
+	m := metricK8sPodMemoryUsageScale{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2326,8 +2326,8 @@ type MetricsBuilder struct {
 	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                            component.BuildInfo  // contains version information.
 	metricContainerCPUTime               metricContainerCPUTime
-	metricContainerCPUUsagePercent       metricContainerCPUUsagePercent
 	metricContainerCPUUtilization        metricContainerCPUUtilization
+	metricContainerCPUUtilizationScale   metricContainerCPUUtilizationScale
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
 	metricContainerFilesystemCapacity    metricContainerFilesystemCapacity
 	metricContainerFilesystemUsage       metricContainerFilesystemUsage
@@ -2336,7 +2336,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryPageFaults      metricContainerMemoryPageFaults
 	metricContainerMemoryRss             metricContainerMemoryRss
 	metricContainerMemoryUsage           metricContainerMemoryUsage
-	metricContainerMemoryUsagePercent    metricContainerMemoryUsagePercent
+	metricContainerMemoryUsageScale      metricContainerMemoryUsageScale
 	metricContainerMemoryWorkingSet      metricContainerMemoryWorkingSet
 	metricK8sNodeCPUTime                 metricK8sNodeCPUTime
 	metricK8sNodeCPUUtilization          metricK8sNodeCPUUtilization
@@ -2352,8 +2352,8 @@ type MetricsBuilder struct {
 	metricK8sNodeNetworkErrors           metricK8sNodeNetworkErrors
 	metricK8sNodeNetworkIo               metricK8sNodeNetworkIo
 	metricK8sPodCPUTime                  metricK8sPodCPUTime
-	metricK8sPodCPUUsagePercent          metricK8sPodCPUUsagePercent
 	metricK8sPodCPUUtilization           metricK8sPodCPUUtilization
+	metricK8sPodCPUUtilizationScale      metricK8sPodCPUUtilizationScale
 	metricK8sPodFilesystemAvailable      metricK8sPodFilesystemAvailable
 	metricK8sPodFilesystemCapacity       metricK8sPodFilesystemCapacity
 	metricK8sPodFilesystemUsage          metricK8sPodFilesystemUsage
@@ -2362,7 +2362,7 @@ type MetricsBuilder struct {
 	metricK8sPodMemoryPageFaults         metricK8sPodMemoryPageFaults
 	metricK8sPodMemoryRss                metricK8sPodMemoryRss
 	metricK8sPodMemoryUsage              metricK8sPodMemoryUsage
-	metricK8sPodMemoryUsagePercent       metricK8sPodMemoryUsagePercent
+	metricK8sPodMemoryUsageScale         metricK8sPodMemoryUsageScale
 	metricK8sPodMemoryWorkingSet         metricK8sPodMemoryWorkingSet
 	metricK8sPodNetworkErrors            metricK8sPodNetworkErrors
 	metricK8sPodNetworkIo                metricK8sPodNetworkIo
@@ -2390,8 +2390,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
 		metricContainerCPUTime:               newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
-		metricContainerCPUUsagePercent:       newMetricContainerCPUUsagePercent(mbc.Metrics.ContainerCPUUsagePercent),
 		metricContainerCPUUtilization:        newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
+		metricContainerCPUUtilizationScale:   newMetricContainerCPUUtilizationScale(mbc.Metrics.ContainerCPUUtilizationScale),
 		metricContainerFilesystemAvailable:   newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
 		metricContainerFilesystemCapacity:    newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
 		metricContainerFilesystemUsage:       newMetricContainerFilesystemUsage(mbc.Metrics.ContainerFilesystemUsage),
@@ -2400,7 +2400,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerMemoryPageFaults:      newMetricContainerMemoryPageFaults(mbc.Metrics.ContainerMemoryPageFaults),
 		metricContainerMemoryRss:             newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
 		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
-		metricContainerMemoryUsagePercent:    newMetricContainerMemoryUsagePercent(mbc.Metrics.ContainerMemoryUsagePercent),
+		metricContainerMemoryUsageScale:      newMetricContainerMemoryUsageScale(mbc.Metrics.ContainerMemoryUsageScale),
 		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
 		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
 		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mbc.Metrics.K8sNodeCPUUtilization),
@@ -2416,8 +2416,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
 		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
 		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
-		metricK8sPodCPUUsagePercent:          newMetricK8sPodCPUUsagePercent(mbc.Metrics.K8sPodCPUUsagePercent),
 		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
+		metricK8sPodCPUUtilizationScale:      newMetricK8sPodCPUUtilizationScale(mbc.Metrics.K8sPodCPUUtilizationScale),
 		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
 		metricK8sPodFilesystemCapacity:       newMetricK8sPodFilesystemCapacity(mbc.Metrics.K8sPodFilesystemCapacity),
 		metricK8sPodFilesystemUsage:          newMetricK8sPodFilesystemUsage(mbc.Metrics.K8sPodFilesystemUsage),
@@ -2426,7 +2426,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sPodMemoryPageFaults:         newMetricK8sPodMemoryPageFaults(mbc.Metrics.K8sPodMemoryPageFaults),
 		metricK8sPodMemoryRss:                newMetricK8sPodMemoryRss(mbc.Metrics.K8sPodMemoryRss),
 		metricK8sPodMemoryUsage:              newMetricK8sPodMemoryUsage(mbc.Metrics.K8sPodMemoryUsage),
-		metricK8sPodMemoryUsagePercent:       newMetricK8sPodMemoryUsagePercent(mbc.Metrics.K8sPodMemoryUsagePercent),
+		metricK8sPodMemoryUsageScale:         newMetricK8sPodMemoryUsageScale(mbc.Metrics.K8sPodMemoryUsageScale),
 		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
 		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
 		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
@@ -2497,8 +2497,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricContainerCPUTime.emit(ils.Metrics())
-	mb.metricContainerCPUUsagePercent.emit(ils.Metrics())
 	mb.metricContainerCPUUtilization.emit(ils.Metrics())
+	mb.metricContainerCPUUtilizationScale.emit(ils.Metrics())
 	mb.metricContainerFilesystemAvailable.emit(ils.Metrics())
 	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
 	mb.metricContainerFilesystemUsage.emit(ils.Metrics())
@@ -2507,7 +2507,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerMemoryPageFaults.emit(ils.Metrics())
 	mb.metricContainerMemoryRss.emit(ils.Metrics())
 	mb.metricContainerMemoryUsage.emit(ils.Metrics())
-	mb.metricContainerMemoryUsagePercent.emit(ils.Metrics())
+	mb.metricContainerMemoryUsageScale.emit(ils.Metrics())
 	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUUtilization.emit(ils.Metrics())
@@ -2523,8 +2523,8 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
-	mb.metricK8sPodCPUUsagePercent.emit(ils.Metrics())
 	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
+	mb.metricK8sPodCPUUtilizationScale.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemCapacity.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemUsage.emit(ils.Metrics())
@@ -2533,7 +2533,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sPodMemoryPageFaults.emit(ils.Metrics())
 	mb.metricK8sPodMemoryRss.emit(ils.Metrics())
 	mb.metricK8sPodMemoryUsage.emit(ils.Metrics())
-	mb.metricK8sPodMemoryUsagePercent.emit(ils.Metrics())
+	mb.metricK8sPodMemoryUsageScale.emit(ils.Metrics())
 	mb.metricK8sPodMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sPodNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sPodNetworkIo.emit(ils.Metrics())
@@ -2567,14 +2567,14 @@ func (mb *MetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, 
 	mb.metricContainerCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerCPUUsagePercentDataPoint adds a data point to container.cpu.usagePercent metric.
-func (mb *MetricsBuilder) RecordContainerCPUUsagePercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerCPUUsagePercent.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordContainerCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerCPUUtilizationScaleDataPoint adds a data point to container.cpu.utilization.scale metric.
+func (mb *MetricsBuilder) RecordContainerCPUUtilizationScaleDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricContainerCPUUtilizationScale.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerFilesystemAvailableDataPoint adds a data point to container.filesystem.available metric.
@@ -2617,9 +2617,9 @@ func (mb *MetricsBuilder) RecordContainerMemoryUsageDataPoint(ts pcommon.Timesta
 	mb.metricContainerMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordContainerMemoryUsagePercentDataPoint adds a data point to container.memory.usagePercent metric.
-func (mb *MetricsBuilder) RecordContainerMemoryUsagePercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricContainerMemoryUsagePercent.recordDataPoint(mb.startTime, ts, val)
+// RecordContainerMemoryUsageScaleDataPoint adds a data point to container.memory.usage.scale metric.
+func (mb *MetricsBuilder) RecordContainerMemoryUsageScaleDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricContainerMemoryUsageScale.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerMemoryWorkingSetDataPoint adds a data point to container.memory.working_set metric.
@@ -2697,14 +2697,14 @@ func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val
 	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordK8sPodCPUUsagePercentDataPoint adds a data point to k8s.pod.cpu.usagePercent metric.
-func (mb *MetricsBuilder) RecordK8sPodCPUUsagePercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sPodCPUUsagePercent.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordK8sPodCPUUtilizationDataPoint adds a data point to k8s.pod.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordK8sPodCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sPodCPUUtilization.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodCPUUtilizationScaleDataPoint adds a data point to k8s.pod.cpu.utilization.scale metric.
+func (mb *MetricsBuilder) RecordK8sPodCPUUtilizationScaleDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sPodCPUUtilizationScale.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodFilesystemAvailableDataPoint adds a data point to k8s.pod.filesystem.available metric.
@@ -2747,9 +2747,9 @@ func (mb *MetricsBuilder) RecordK8sPodMemoryUsageDataPoint(ts pcommon.Timestamp,
 	mb.metricK8sPodMemoryUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordK8sPodMemoryUsagePercentDataPoint adds a data point to k8s.pod.memory.usagePercent metric.
-func (mb *MetricsBuilder) RecordK8sPodMemoryUsagePercentDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricK8sPodMemoryUsagePercent.recordDataPoint(mb.startTime, ts, val)
+// RecordK8sPodMemoryUsageScaleDataPoint adds a data point to k8s.pod.memory.usage.scale metric.
+func (mb *MetricsBuilder) RecordK8sPodMemoryUsageScaleDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sPodMemoryUsageScale.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodMemoryWorkingSetDataPoint adds a data point to k8s.pod.memory.working_set metric.

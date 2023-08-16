@@ -3,9 +3,9 @@ all_set:
   metrics:
     container.cpu.time:
       enabled: true
-    container.cpu.usagePercent:
-      enabled: true
     container.cpu.utilization:
+      enabled: true
+    container.cpu.utilization.scale:
       enabled: true
     container.filesystem.available:
       enabled: true
@@ -23,7 +23,7 @@ all_set:
       enabled: true
     container.memory.usage:
       enabled: true
-    container.memory.usagePercent:
+    container.memory.usage.scale:
       enabled: true
     container.memory.working_set:
       enabled: true
@@ -55,9 +55,9 @@ all_set:
       enabled: true
     k8s.pod.cpu.time:
       enabled: true
-    k8s.pod.cpu.usagePercent:
-      enabled: true
     k8s.pod.cpu.utilization:
+      enabled: true
+    k8s.pod.cpu.utilization.scale:
       enabled: true
     k8s.pod.filesystem.available:
       enabled: true
@@ -75,7 +75,7 @@ all_set:
       enabled: true
     k8s.pod.memory.usage:
       enabled: true
-    k8s.pod.memory.usagePercent:
+    k8s.pod.memory.usage.scale:
       enabled: true
     k8s.pod.memory.working_set:
       enabled: true
@@ -128,9 +128,9 @@ none_set:
   metrics:
     container.cpu.time:
       enabled: false
-    container.cpu.usagePercent:
-      enabled: false
     container.cpu.utilization:
+      enabled: false
+    container.cpu.utilization.scale:
       enabled: false
     container.filesystem.available:
       enabled: false
@@ -148,7 +148,7 @@ none_set:
       enabled: false
     container.memory.usage:
       enabled: false
-    container.memory.usagePercent:
+    container.memory.usage.scale:
       enabled: false
     container.memory.working_set:
       enabled: false
@@ -180,9 +180,9 @@ none_set:
       enabled: false
     k8s.pod.cpu.time:
       enabled: false
-    k8s.pod.cpu.usagePercent:
-      enabled: false
     k8s.pod.cpu.utilization:
+      enabled: false
+    k8s.pod.cpu.utilization.scale:
       enabled: false
     k8s.pod.filesystem.available:
       enabled: false
@@ -200,7 +200,7 @@ none_set:
       enabled: false
     k8s.pod.memory.usage:
       enabled: false
-    k8s.pod.memory.usagePercent:
+    k8s.pod.memory.usage.scale:
       enabled: false
     k8s.pod.memory.working_set:
       enabled: false

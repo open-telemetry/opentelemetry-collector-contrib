@@ -6,6 +6,7 @@ package kubelet // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
+	"math"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -43,6 +44,6 @@ func addCPUUsagePercentMetric(mb *metadata.MetricsBuilder, recordDataPoint metad
 		return
 	}
 	cpuUsage := float64(*s.UsageNanoCores) / 1_000_000_000
-	value := (cpuUsage / limit) * 100
+	value := math.Min(cpuUsage/limit, 1)
 	recordDataPoint(mb, currentTime, value)
 }
