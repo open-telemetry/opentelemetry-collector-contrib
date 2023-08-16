@@ -30,7 +30,7 @@ var (
 	errMsgInvalidEndpointWError            = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format: %w`
 	errMsgInvalidEndpoint                  = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
 	errMsgAttributeConfigNoEnumOIDOrPrefix = `attribute '%s' must contain one of either an enum, oid, or indexed_value_prefix`
-	errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid or scalar_oid or indexed_value_prefix`
+	errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid, scalar_oid, or indexed_value_prefix`
 	errMsgMetricNoUnit                     = `metric '%s' must have a unit`
 	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a gauge or sum`
 	errMsgMetricNoOIDs                     = `metric '%s' must have one of either scalar_oids or indexed_oids`
@@ -136,16 +136,16 @@ type Config struct {
 type ResourceAttributeConfig struct {
 	// Description is optional and describes what the resource attribute represents
 	Description string `mapstructure:"description"`
-	// OID is required only if ScalarOID and IndexedValuePrefix are not defined.
+	// OID is required only if ScalarOID or IndexedValuePrefix is not set.
 	// This is the column OID which will provide indexed values to be used for this resource attribute. These indexed values
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// ScalarOID is required only if OID and IndexedValuePrefix are not defined. 
+	// ScalarOID is required only if OID or IndexedValuePrefix is not set. 
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
-	// IndexedValuePrefix is required only if OID and ScalarOID are not defined.
+	// IndexedValuePrefix is required only if OID or ScalarOID is not set.
 	// This will be used alongside indexed metric values for this resource attribute. The prefix value concatenated with
 	// specific indexes of metric indexed values (Ex: prefix.1.2) will ultimately each be associated with a different "resource"
 	// as an attribute on that resource. The related indexed metric values will then be used to associate metric datapoints to
@@ -581,26 +581,26 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		switch {
 			case hasOID:
 				if hasScalarOID || hasIVP {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
 				}
 				nums := strings.Split(attrCfg.OID, ".")
 				if nums[len(nums) - 1] == "0" {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))
 				}
 			case hasScalarOID:
 				if hasOID || hasIVP {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
 				}
 				nums := strings.Split(attrCfg.ScalarOID, ".")
 				if nums[len(nums) - 1] != "0" {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))
 				}
 			case hasIVP:
 				if hasScalarOID || hasOID {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
 				}
 			default:
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
 		}
 	}
 	return combinedErr
