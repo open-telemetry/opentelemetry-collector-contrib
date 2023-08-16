@@ -55,7 +55,7 @@ func (m *metricSystemDiskIo) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -65,6 +65,7 @@ func (m *metricSystemDiskIo) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
 	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -109,7 +110,7 @@ func (m *metricSystemDiskIoTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
+func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -118,6 +119,7 @@ func (m *metricSystemDiskIoTime) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -162,7 +164,7 @@ func (m *metricSystemDiskMerged) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -172,6 +174,7 @@ func (m *metricSystemDiskMerged) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
 	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -216,7 +219,7 @@ func (m *metricSystemDiskOperationTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -226,6 +229,7 @@ func (m *metricSystemDiskOperationTime) recordDataPoint(start pcommon.Timestamp,
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
 	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -270,7 +274,7 @@ func (m *metricSystemDiskOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string) {
+func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -280,6 +284,7 @@ func (m *metricSystemDiskOperations) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
 	dp.Attributes().PutStr("direction", directionAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -324,7 +329,7 @@ func (m *metricSystemDiskPendingOperations) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
+func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, deviceAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -333,6 +338,7 @@ func (m *metricSystemDiskPendingOperations) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -377,7 +383,7 @@ func (m *metricSystemDiskWeightedIoTime) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
+func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, deviceAttributeValue string, serialNumberAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -386,6 +392,7 @@ func (m *metricSystemDiskWeightedIoTime) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("device", deviceAttributeValue)
+	dp.Attributes().PutStr("serial_number", serialNumberAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -538,38 +545,38 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordSystemDiskIoDataPoint adds a data point to system.disk.io metric.
-func (mb *MetricsBuilder) RecordSystemDiskIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricSystemDiskIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemDiskIoDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection, serialNumberAttributeValue string) {
+	mb.metricSystemDiskIo.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String(), serialNumberAttributeValue)
 }
 
 // RecordSystemDiskIoTimeDataPoint adds a data point to system.disk.io_time metric.
-func (mb *MetricsBuilder) RecordSystemDiskIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
-	mb.metricSystemDiskIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemDiskIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, serialNumberAttributeValue string) {
+	mb.metricSystemDiskIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, serialNumberAttributeValue)
 }
 
 // RecordSystemDiskMergedDataPoint adds a data point to system.disk.merged metric.
-func (mb *MetricsBuilder) RecordSystemDiskMergedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricSystemDiskMerged.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemDiskMergedDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection, serialNumberAttributeValue string) {
+	mb.metricSystemDiskMerged.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String(), serialNumberAttributeValue)
 }
 
 // RecordSystemDiskOperationTimeDataPoint adds a data point to system.disk.operation_time metric.
-func (mb *MetricsBuilder) RecordSystemDiskOperationTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricSystemDiskOperationTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemDiskOperationTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, directionAttributeValue AttributeDirection, serialNumberAttributeValue string) {
+	mb.metricSystemDiskOperationTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String(), serialNumberAttributeValue)
 }
 
 // RecordSystemDiskOperationsDataPoint adds a data point to system.disk.operations metric.
-func (mb *MetricsBuilder) RecordSystemDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection) {
-	mb.metricSystemDiskOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String())
+func (mb *MetricsBuilder) RecordSystemDiskOperationsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, directionAttributeValue AttributeDirection, serialNumberAttributeValue string) {
+	mb.metricSystemDiskOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, directionAttributeValue.String(), serialNumberAttributeValue)
 }
 
 // RecordSystemDiskPendingOperationsDataPoint adds a data point to system.disk.pending_operations metric.
-func (mb *MetricsBuilder) RecordSystemDiskPendingOperationsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string) {
-	mb.metricSystemDiskPendingOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemDiskPendingOperationsDataPoint(ts pcommon.Timestamp, val int64, deviceAttributeValue string, serialNumberAttributeValue string) {
+	mb.metricSystemDiskPendingOperations.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, serialNumberAttributeValue)
 }
 
 // RecordSystemDiskWeightedIoTimeDataPoint adds a data point to system.disk.weighted_io_time metric.
-func (mb *MetricsBuilder) RecordSystemDiskWeightedIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string) {
-	mb.metricSystemDiskWeightedIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue)
+func (mb *MetricsBuilder) RecordSystemDiskWeightedIoTimeDataPoint(ts pcommon.Timestamp, val float64, deviceAttributeValue string, serialNumberAttributeValue string) {
+	mb.metricSystemDiskWeightedIoTime.recordDataPoint(mb.startTime, ts, val, deviceAttributeValue, serialNumberAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

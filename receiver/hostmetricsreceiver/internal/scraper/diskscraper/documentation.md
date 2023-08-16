@@ -28,6 +28,7 @@ Disk bytes transferred.
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 | direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.io_time
 
@@ -42,6 +43,7 @@ Time disk spent activated. On Windows, this is calculated as the inverse of disk
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.merged
 
@@ -57,6 +59,7 @@ The number of disk reads/writes merged into single physical disk access operatio
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 | direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.operation_time
 
@@ -72,6 +75,7 @@ Time spent in disk operations.
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 | direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.operations
 
@@ -87,6 +91,7 @@ Disk operations count.
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
 | direction | Direction of flow of bytes/operations (read or write). | Str: ``read``, ``write`` |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.pending_operations
 
@@ -101,6 +106,7 @@ The queue size of pending I/O operations.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
+| serial_number | The serial number of the disk. | Any Str |
 
 ### system.disk.weighted_io_time
 
@@ -115,3 +121,4 @@ Time disk spent activated multiplied by the queue length.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | device | Name of the disk. | Any Str |
+| serial_number | The serial number of the disk. | Any Str |
