@@ -23,7 +23,7 @@ func NewMultilineFactory(splitter helper.SplitterConfig) Factory {
 
 // Build builds Multiline Splitter struct
 func (factory *multilineFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	enc, err := helper.LookupEncoding(factory.EncodingConfig.Encoding)
+	enc, err := helper.LookupEncoding(factory.Encoding)
 	if err != nil {
 		return nil, err
 	}
