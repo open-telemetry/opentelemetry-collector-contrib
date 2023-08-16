@@ -11,7 +11,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 )
 
 // Config Defaults
@@ -241,12 +240,12 @@ type Attribute struct {
 func (cfg *Config) Validate() error {
 	var combinedErr error
 
-	combinedErr = multierr.Append(combinedErr, validateEndpoint(cfg))
-	combinedErr = multierr.Append(combinedErr, validateVersion(cfg))
+	combinedErr = errors.Join(combinedErr, validateEndpoint(cfg))
+	combinedErr = errors.Join(combinedErr, validateVersion(cfg))
 	if strings.ToUpper(cfg.Version) == "V3" {
-		combinedErr = multierr.Append(combinedErr, validateSecurity(cfg))
+		combinedErr = errors.Join(combinedErr, validateSecurity(cfg))
 	}
-	combinedErr = multierr.Append(combinedErr, validateMetricConfigs(cfg))
+	combinedErr = errors.Join(combinedErr, validateMetricConfigs(cfg))
 
 	return combinedErr
 }
@@ -298,11 +297,11 @@ func validateSecurity(cfg *Config) error {
 
 	// Ensure valid user
 	if cfg.User == "" {
-		combinedErr = multierr.Append(combinedErr, errEmptyUser)
+		combinedErr = errors.Join(combinedErr, errEmptyUser)
 	}
 
 	if cfg.SecurityLevel == "" {
-		return multierr.Append(combinedErr, errEmptySecurityLevel)
+		return errors.Join(combinedErr, errEmptySecurityLevel)
 	}
 
 	// Ensure valid security level
@@ -311,13 +310,13 @@ func validateSecurity(cfg *Config) error {
 		return combinedErr
 	case "AUTH_NO_PRIV":
 		// Ensure valid auth configs
-		return multierr.Append(combinedErr, validateAuth(cfg))
+		return errors.Join(combinedErr, validateAuth(cfg))
 	case "AUTH_PRIV": // ok
 		// Ensure valid auth and privacy configs
-		combinedErr = multierr.Append(combinedErr, validateAuth(cfg))
-		return multierr.Append(combinedErr, validatePrivacy(cfg))
+		combinedErr = errors.Join(combinedErr, validateAuth(cfg))
+		return errors.Join(combinedErr, validatePrivacy(cfg))
 	default:
-		return multierr.Append(combinedErr, errBadSecurityLevel)
+		return errors.Join(combinedErr, errBadSecurityLevel)
 	}
 }
 
@@ -327,18 +326,18 @@ func validateAuth(cfg *Config) error {
 
 	// Ensure valid auth password
 	if cfg.AuthPassword == "" {
-		combinedErr = multierr.Append(combinedErr, errEmptyAuthPassword)
+		combinedErr = errors.Join(combinedErr, errEmptyAuthPassword)
 	}
 
 	// Ensure valid auth type
 	if cfg.AuthType == "" {
-		return multierr.Append(combinedErr, errEmptyAuthType)
+		return errors.Join(combinedErr, errEmptyAuthType)
 	}
 
 	switch strings.ToUpper(cfg.AuthType) {
 	case "MD5", "SHA", "SHA224", "SHA256", "SHA384", "SHA512": // ok
 	default:
-		combinedErr = multierr.Append(combinedErr, errBadAuthType)
+		combinedErr = errors.Join(combinedErr, errBadAuthType)
 	}
 
 	return combinedErr
@@ -350,18 +349,18 @@ func validatePrivacy(cfg *Config) error {
 
 	// Ensure valid privacy password
 	if cfg.PrivacyPassword == "" {
-		combinedErr = multierr.Append(combinedErr, errEmptyPrivacyPassword)
+		combinedErr = errors.Join(combinedErr, errEmptyPrivacyPassword)
 	}
 
 	// Ensure valid privacy type
 	if cfg.PrivacyType == "" {
-		return multierr.Append(combinedErr, errEmptyPrivacyType)
+		return errors.Join(combinedErr, errEmptyPrivacyType)
 	}
 
 	switch strings.ToUpper(cfg.PrivacyType) {
 	case "DES", "AES", "AES192", "AES192C", "AES256", "AES256C": // ok
 	default:
-		combinedErr = multierr.Append(combinedErr, errBadPrivacyType)
+		combinedErr = errors.Join(combinedErr, errBadPrivacyType)
 	}
 
 	return combinedErr
@@ -372,43 +371,43 @@ func validateMetricConfigs(cfg *Config) error {
 	var combinedErr error
 
 	// Validate the Attribute and ResourceAttribute configs up front
-	combinedErr = multierr.Append(combinedErr, validateAttributeConfigs(cfg))
-	combinedErr = multierr.Append(combinedErr, validateResourceAttributeConfigs(cfg))
+	combinedErr = errors.Join(combinedErr, validateAttributeConfigs(cfg))
+	combinedErr = errors.Join(combinedErr, validateResourceAttributeConfigs(cfg))
 
 	// Ensure there is at least one MetricConfig
 	metrics := cfg.Metrics
 	if len(metrics) == 0 {
-		return multierr.Append(combinedErr, errMetricRequired)
+		return errors.Join(combinedErr, errMetricRequired)
 	}
 
 	// Make sure each MetricConfig has valid info
 	for metricName, metricCfg := range metrics {
 		if metricCfg.Unit == "" {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMetricNoUnit, metricName))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMetricNoUnit, metricName))
 		}
 
 		if metricCfg.Gauge == nil && metricCfg.Sum == nil {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMetricNoGaugeOrSum, metricName))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMetricNoGaugeOrSum, metricName))
 		}
 
 		if len(metricCfg.ScalarOIDs) == 0 && len(metricCfg.ColumnOIDs) == 0 {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMetricNoOIDs, metricName))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMetricNoOIDs, metricName))
 		}
 
 		if metricCfg.Gauge != nil {
-			combinedErr = multierr.Append(combinedErr, validateGauge(metricName, metricCfg.Gauge))
+			combinedErr = errors.Join(combinedErr, validateGauge(metricName, metricCfg.Gauge))
 		}
 
 		if metricCfg.Sum != nil {
-			combinedErr = multierr.Append(combinedErr, validateSum(metricName, metricCfg.Sum))
+			combinedErr = errors.Join(combinedErr, validateSum(metricName, metricCfg.Sum))
 		}
 
 		for _, scalarOID := range metricCfg.ScalarOIDs {
-			combinedErr = multierr.Append(combinedErr, validateScalarOID(metricName, scalarOID, cfg))
+			combinedErr = errors.Join(combinedErr, validateScalarOID(metricName, scalarOID, cfg))
 		}
 
 		for _, columnOID := range metricCfg.ColumnOIDs {
-			combinedErr = multierr.Append(combinedErr, validateColumnOID(metricName, columnOID, cfg))
+			combinedErr = errors.Join(combinedErr, validateColumnOID(metricName, columnOID, cfg))
 		}
 	}
 
@@ -421,7 +420,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 
 	// Ensure that it contains an OID
 	if columnOID.OID == "" {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnOIDNoOID, metricName))
+		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnOIDNoOID, metricName))
 	}
 
 	// Keep track of whether the different indexed values can be differentiated by either attribute within the same metric
@@ -432,19 +431,19 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 	if len(columnOID.Attributes) > 0 {
 		for _, attribute := range columnOID.Attributes {
 			if attribute.Name == "" {
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeNoName, metricName))
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnAttributeNoName, metricName))
 				continue
 			}
 
 			attrCfg, ok := cfg.Attributes[attribute.Name]
 			if !ok {
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadName, metricName, attribute.Name))
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnAttributeBadName, metricName, attribute.Name))
 				continue
 			}
 
 			if len(attrCfg.Enum) > 0 {
 				if !contains(attrCfg.Enum, attribute.Value) {
-					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
+					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnAttributeBadValue, metricName, attribute.Name, attribute.Value))
 				}
 				continue
 			}
@@ -457,7 +456,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 	for _, name := range columnOID.ResourceAttributes {
 		resourceAttribute, ok := cfg.ResourceAttributes[name]
 		if !ok {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
 			continue
 		} 
 
@@ -468,7 +467,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 
 	// Check that there is either a column based attribute or resource attribute associated with it
 	if !hasIndexedIdentifier {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnIndexedIdentifierRequired, metricName))
+		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnIndexedIdentifierRequired, metricName))
 	}
 
 	return combinedErr
@@ -480,7 +479,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 
 	// Ensure that it contains an OID
 	if scalarOID.OID == "" {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarOIDNoOID, metricName))
+		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarOIDNoOID, metricName))
 	}
 
 	if len(scalarOID.Attributes) == 0 {
@@ -490,23 +489,23 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 	// Check that any Attributes have a valid Name and a valid Value
 	for _, attribute := range scalarOID.Attributes {
 		if attribute.Name == "" {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeNoName, metricName))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarAttributeNoName, metricName))
 			continue
 		}
 
 		attrCfg, ok := cfg.Attributes[attribute.Name]
 		if !ok {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadName, metricName, attribute.Name))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarAttributeBadName, metricName, attribute.Name))
 			continue
 		}
 
 		if len(attrCfg.Enum) == 0 {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarOIDBadAttribute, metricName, attribute.Name))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarOIDBadAttribute, metricName, attribute.Name))
 			continue
 		}
 
 		if !contains(attrCfg.Enum, attribute.Value) {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarAttributeBadValue, metricName, attribute.Name, attribute.Value))
 		}
 	}
 
@@ -531,13 +530,13 @@ func validateSum(metricName string, sum *SumMetric) error {
 	// Ensure valid values for ValueType
 	upperValType := strings.ToUpper(sum.ValueType)
 	if upperValType != "INT" && upperValType != "DOUBLE" {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgSumBadValueType, metricName))
+		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgSumBadValueType, metricName))
 	}
 
 	// Ensure valid values for Aggregation
 	upperAggregation := strings.ToUpper(sum.Aggregation)
 	if upperAggregation != "CUMULATIVE" && upperAggregation != "DELTA" {
-		combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgSumBadAggregation, metricName))
+		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgSumBadAggregation, metricName))
 	}
 
 	return combinedErr
@@ -555,7 +554,7 @@ func validateAttributeConfigs(cfg *Config) error {
 	// Make sure each Attribute has either an OID, Enum, or IndexedValuePrefix
 	for attrName, attrCfg := range attributes {
 		if len(attrCfg.Enum) == 0 && attrCfg.OID == "" && attrCfg.IndexedValuePrefix == "" {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgAttributeConfigNoEnumOIDOrPrefix, attrName))
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgAttributeConfigNoEnumOIDOrPrefix, attrName))
 		}
 	}
 
