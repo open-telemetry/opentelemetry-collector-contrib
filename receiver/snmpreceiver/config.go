@@ -48,9 +48,9 @@ var (
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
 	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
-	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute %s has too many keys set, must have only one of oid, scalar_oid, or indexed_value_prefix`
-	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute %s has key scalar_oid %s that ends in a nonzero digit (scalar oids should not be indexed)`
-	errColumnOIDResourceAttributeEndsInZero = `resource attribute %s has key oid %s that ends in a zero (column oids should be indexed)`
+	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute %s must have only one of oid, scalar_oid, or indexed_value_prefix`
+	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute %s has scalar_oid %s that ends in a nonzero digit (scalar oids should not be indexed)`
+	errColumnOIDResourceAttributeEndsInZero = `resource attribute %s has oid %s that ends in a zero (column oids should be indexed)`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -454,23 +454,15 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 	}
 
 	// Check that any ResourceAttributes have a valid value
-	if len(columnOID.ResourceAttributes) > 0 {
-		for _, name := range columnOID.ResourceAttributes {
-			resourceAttribute, ok := cfg.ResourceAttributes[name]
-			if !ok {
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
-				continue
-			} 
+	for _, name := range columnOID.ResourceAttributes {
+		resourceAttribute, ok := cfg.ResourceAttributes[name]
+		if !ok {
+			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
+			continue
+		} 
 
-			if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" { hasIndexedIdentifier = true }
-			
-			numKeys := 0
-			if resourceAttribute.OID != "" {numKeys++}
-			if resourceAttribute.ScalarOID != "" {numKeys++}
-			if resourceAttribute.IndexedValuePrefix != "" {numKeys++}
-			if numKeys > 1 {
-				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, name))
-			}
+		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
+			hasIndexedIdentifier = true
 		}
 	}
 
@@ -581,22 +573,36 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 
 	// Make sure each Resource Attribute has either an OID or ScalarOID or IndexedValuePrefix
 	for attrName, attrCfg := range resourceAttributes {
-		if attrCfg.OID == "" && attrCfg.ScalarOID == "" && attrCfg.IndexedValuePrefix == "" {
-			combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
-			continue
-		}
-		// Check if scalar and column oid resource attribute values end in the right digit
-		if attrCfg.ScalarOID != "" {
-			nums := strings.Split(attrCfg.ScalarOID, ".")
-			if nums[len(nums) - 1] != "0" {combinedErr = multierr.Append(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))}
-			continue
-		}
-		if attrCfg.OID != "" {
-			nums := strings.Split(attrCfg.OID, ".")
-			if nums[len(nums) - 1] == "0" {combinedErr = multierr.Append(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))}
+
+		hasOID := attrCfg.OID != ""
+		hasScalarOID := attrCfg.ScalarOID != ""
+		hasIVP := attrCfg.IndexedValuePrefix != ""
+
+		switch {
+			case hasOID:
+				if hasScalarOID || hasIVP {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+				}
+				nums := strings.Split(attrCfg.OID, ".")
+				if nums[len(nums) - 1] == "0" {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))
+				}
+			case hasScalarOID:
+				if hasOID || hasIVP {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+				}
+				nums := strings.Split(attrCfg.ScalarOID, ".")
+				if nums[len(nums) - 1] != "0" {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))
+				}
+			case hasIVP:
+				if hasScalarOID || hasOID {
+					combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+				}
+			default:
+				combinedErr = multierr.Append(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
 		}
 	}
-
 	return combinedErr
 }
 
