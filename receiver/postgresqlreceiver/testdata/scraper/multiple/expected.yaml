@@ -215,10 +215,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
-                  startTimeUnixNano: "1687780218605916000"
-                  timeUnixNano: "1687780218606035000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -282,10 +282,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "3"
-                  startTimeUnixNano: "1687780218605916000"
-                  timeUnixNano: "1687780218606035000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -349,10 +349,10 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "5"
-                  startTimeUnixNano: "1687780218605916000"
-                  timeUnixNano: "1687780218606035000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{deadlock}"
+            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
