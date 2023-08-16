@@ -61,6 +61,7 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, pod
 	listOptions := metav1.ListOptions{LabelSelector: SelectorFromMap(podLabels).String()}
 	podTimeoutMinutes := 3
 	var podPhase string
+	var podStatus map[string]interface{}
 	require.Eventually(t, func() bool {
 		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
 		require.NoError(t, err, "failed to list collector pods")
@@ -68,7 +69,8 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, pod
 			return false
 		}
 		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
+		podStatus = list.Items[0].Object["status"].(map[string]interface{})
 		return podPhase == "Running"
 	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
-		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod phase is %s", workload, dataType, podTimeoutMinutes, podPhase)
+		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod status is %v", workload, dataType, podTimeoutMinutes, podStatus)
 }
