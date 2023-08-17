@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -121,6 +122,14 @@ func Run(c *Config, logger *zap.Logger) error {
 		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
 	}
 
+	var statusCode codes.Code
+	if c.StatusCode == "" {
+		statusCode = codes.Unset
+	} else {
+		if err := statusCode.UnmarshalJSON([]byte(c.StatusCode)); err != nil {
+			return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
+		}
+	}
 	wg := sync.WaitGroup{}
 
 	running := &atomic.Bool{}
@@ -131,6 +140,7 @@ func Run(c *Config, logger *zap.Logger) error {
 		w := worker{
 			numTraces:        c.NumTraces,
 			propagateContext: c.PropagateContext,
+			statusCode:       statusCode,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
 			running:          running,

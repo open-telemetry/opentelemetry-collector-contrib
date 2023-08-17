@@ -7,7 +7,10 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:
-
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 jobs:
   docker-build:
     runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
         uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.12
+          go-version: ~1.20.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -32,15 +35,23 @@ jobs:
         run: make -j2 gomoddownload
       - name: Build Docker Image
         run: |
-          make docker-otelcontribcol
-      - name: export image to tar
+          make docker-otelcontribcol docker-telemetrygen
+      - name: export otelcontribcol image to tar
         run: |
           docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
-      - name: Upload artifact
+      - name: export telemetrygen image to tar
+        run: |
+          docker save telemetrygen:latest > /tmp/telemetrygen.tar
+      - name: Upload otelcontribcol artifact
         uses: actions/upload-artifact@v3
         with:
           name: otelcontribcol
           path: /tmp/otelcontribcol.tar
+      - name: Upload telemetrygen artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: telemetrygen
+          path: /tmp/telemetrygen.tar
   kubernetes-test:
     env:
       KUBECONFIG: /tmp/kube-config-otelcol-e2e-testing
@@ -53,7 +64,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.12
+          go-version: ~1.20.7
           cache: false
       - name: Cache Go
         id: go-cache
@@ -78,12 +89,23 @@ jobs:
         with:
           name: otelcontribcol
           path: /tmp
-      - name: Load Docker image
+      - name: Load otelcontribcol Docker image
         run: |
           docker load --input /tmp/otelcontribcol.tar
       - name: Kind load image
         run: |
           kind load docker-image otelcontribcol:latest --name kind
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: telemetrygen
+          path: /tmp
+      - name: Load telemetrygen Docker image
+        run: |
+          docker load --input /tmp/telemetrygen.tar
+      - name: Kind load image
+        run: |
+          kind load docker-image telemetrygen:latest --name kind
       - name: run k8sclusterreceiver e2e tests
         run: |
           cd receiver/k8sclusterreceiver
