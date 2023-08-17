@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
 jobs:
   setup-environment:
     # disabling until permission issues is resolved
