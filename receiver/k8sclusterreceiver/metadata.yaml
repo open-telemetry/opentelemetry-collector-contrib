@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, TylerHelmuth]
 
 sem_conv_version: 1.18.0
 
