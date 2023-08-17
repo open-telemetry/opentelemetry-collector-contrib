@@ -54,9 +54,8 @@ func newExpectedValue(mode int, value string) *expectedValue {
 // `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
 //
 //	kind create cluster --kubeconfig=/tmp/kube-config-otelcol-e2e-testing
-//	make docker-otelcontribcol docker-telemetrygen
+//	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
-//	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image telemetrygen:latest
 func TestE2E(t *testing.T) {
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
 	require.NoError(t, err)
@@ -105,7 +104,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-traces-job"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -127,7 +126,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-traces-statefulset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -151,7 +150,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-traces-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -173,7 +172,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-traces-daemonset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -195,7 +194,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-job"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -217,7 +216,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-statefulset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -241,7 +240,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -263,7 +262,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-metrics-daemonset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -285,7 +284,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-logs-job"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -307,7 +306,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-logs-statefulset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -331,7 +330,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-logs-deployment"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
@@ -353,7 +352,7 @@ func TestE2E(t *testing.T) {
 				"k8s.labels.app":           newExpectedValue(equal, "telemetrygen-"+testID+"-logs-daemonset"),
 				"k8s.container.name":       newExpectedValue(equal, "telemetrygen"),
 				"k8s.cluster.uid":          newExpectedValue(exist, ""),
-				"container.image.name":     newExpectedValue(equal, "telemetrygen"),
+				"container.image.name":     newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.tag":      newExpectedValue(equal, "latest"),
 				"container.id":             newExpectedValue(exist, ""),
 			},
