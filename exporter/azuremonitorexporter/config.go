@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Azure Monitor
 type Config struct {
-	Endpoint           string              `mapstructure:"endpoint"`
-	InstrumentationKey configopaque.String `mapstructure:"instrumentation_key"`
-	MaxBatchSize       int                 `mapstructure:"maxbatchsize"`
-	MaxBatchInterval   time.Duration       `mapstructure:"maxbatchinterval"`
-	SpanEventsEnabled  bool                `mapstructure:"spaneventsenabled"`
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	Endpoint                     string              `mapstructure:"endpoint"`
+	InstrumentationKey           configopaque.String `mapstructure:"instrumentation_key"`
+	MaxBatchSize                 int                 `mapstructure:"maxbatchsize"`
+	MaxBatchInterval             time.Duration       `mapstructure:"maxbatchinterval"`
+	SpanEventsEnabled            bool                `mapstructure:"spaneventsenabled"`
 }

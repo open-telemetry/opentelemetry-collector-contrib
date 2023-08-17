@@ -27,6 +27,11 @@ The following settings can be optionally configured:
 - `maxbatchsize` (default = 1024): The maximum number of telemetry items that can be submitted in each request. If this many items are buffered, the buffer will be flushed before `maxbatchinterval` expires.
 - `maxbatchinterval` (default = 10s): The maximum time to wait before sending a batch of telemetry.
 - `spaneventsenabled` (default = false): Enables export of span events.
+- `sending_queue`
+  - `enabled` (default = false)
+  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
+  - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`
+  - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 
 Example:
 

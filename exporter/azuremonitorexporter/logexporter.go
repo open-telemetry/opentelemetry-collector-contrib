@@ -47,5 +47,11 @@ func newLogsExporter(config *Config, transportChannel transportChannel, set expo
 		logger:           set.Logger,
 	}
 
-	return exporterhelper.NewLogsExporter(context.TODO(), set, config, exporter.onLogData)
+	return exporterhelper.NewLogsExporter(
+		context.TODO(),
+		set,
+		config,
+		exporter.onLogData,
+		exporterhelper.WithQueue(config.QueueSettings),
+	)
 }
