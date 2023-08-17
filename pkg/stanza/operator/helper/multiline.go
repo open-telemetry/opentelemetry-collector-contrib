@@ -18,7 +18,7 @@ type Multiline struct {
 	Force     *Flusher
 }
 
-// NewBasicConfig creates a new Multiline config
+// NewMultilineConfig creates a new Multiline config
 func NewMultilineConfig() MultilineConfig {
 	return MultilineConfig{
 		LineStartPattern: "",
