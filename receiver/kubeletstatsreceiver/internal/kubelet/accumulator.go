@@ -4,6 +4,7 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,12 +42,20 @@ type metricDataAccumulator struct {
 	mbs                   *metadata.MetricsBuilders
 }
 
+func addUptimeMetric(mb *metadata.MetricsBuilder, uptimeMetric metadata.RecordIntDataPointFunc, startTime v1.Time, currentTime pcommon.Timestamp) {
+	if !startTime.IsZero() {
+		value := int64(time.Since(startTime.Time).Seconds())
+		uptimeMetric(mb, currentTime, value)
+	}
+}
+
 func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	if !a.metricGroupsToCollect[NodeMetricGroup] {
 		return
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addUptimeMetric(a.mbs.NodeMetricsBuilder, metadata.NodeUptimeMetrics.Uptime, s.StartTime, currentTime)
 	addCPUMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeCPUMetrics, s.CPU, currentTime)
 	addMemoryMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeFilesystemMetrics, s.Fs, currentTime)
@@ -66,6 +75,7 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addUptimeMetric(a.mbs.PodMetricsBuilder, metadata.PodUptimeMetrics.Uptime, s.StartTime, currentTime)
 	addCPUMetrics(a.mbs.PodMetricsBuilder, metadata.PodCPUMetrics, s.CPU, currentTime)
 	addMemoryMetrics(a.mbs.PodMetricsBuilder, metadata.PodMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
@@ -98,6 +108,7 @@ func (a *metricDataAccumulator) containerStats(sPod stats.PodStats, s stats.Cont
 	}
 
 	currentTime := pcommon.NewTimestampFromTime(a.time)
+	addUptimeMetric(a.mbs.ContainerMetricsBuilder, metadata.ContainerUptimeMetrics.Uptime, s.StartTime, currentTime)
 	addCPUMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerCPUMetrics, s.CPU, currentTime)
 	addMemoryMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerMemoryMetrics, s.Memory, currentTime)
 	addFilesystemMetrics(a.mbs.ContainerMetricsBuilder, metadata.ContainerFilesystemMetrics, s.Rootfs, currentTime)
