@@ -95,7 +95,9 @@ func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
 	kr.mu.Unlock()
 
 	lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, func(_ context.Context) {
-		kr.logger.Info("this instance of the component was selected as the current leader")
+		kr.logger.Info("this instance of the component was selected as the current leader",
+			zap.String("lock name", kr.leaderElection.LockName))
+
 		kr.startFunc(ctx)
 	},
 		func() {

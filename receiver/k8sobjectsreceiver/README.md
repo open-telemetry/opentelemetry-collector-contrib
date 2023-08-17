@@ -61,7 +61,7 @@ Brief description of configuration properties:
   - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.
   - `lease_duration` (default = `15s`): the duration that non-leader candidates will wait to force acquire leadership.
   - `renew_deadline` (default = `10s`): the duration that the acting master will retry refreshing leadership before giving up.
-  - `retry_period` (default = `2s`): the duration the LeaderElector clients should wait between tries of actions. 
+  - `retry_period` (default = `2s`): the duration that non-leader candidates should wait between tries of actions.
 - `auth_type` (default = `serviceAccount`): Determines how to authenticate to
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
