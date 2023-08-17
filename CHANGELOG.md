@@ -70,6 +70,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `webhookreceiver`: Add an optional config setting to set a required header that all incoming requests must provide (#24270)
 - `extension/jaegerremotesampling`: gRPC remote source usage in jaegerremotesampling extension propagates HTTP headers if set in gRPC client config (#24414)
 - `extension/jaegerremotesampling`: gRPC remote source usage in jaegerremotesampling extension supports optional caching via existing `reload_interval` config (#24840)
+- `pkg/translator/signalfx`: Drop histogram buckets from conversion to sfx datapoints when `drop_histogram_bucket` is true. (#25845)
 
 ### 🧰 Bug fixes 🧰
 
