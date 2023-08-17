@@ -13,6 +13,7 @@ type configHelper struct {
 	metricScalarOIDs            []string
 	metricColumnOIDs            []string
 	attributeColumnOIDs         []string
+	resourceAttributeScalarOIDs []string
 	resourceAttributeColumnOIDs []string
 	metricNamesByOID            map[string]string
 	metricAttributesByOID       map[string][]Attribute
@@ -26,6 +27,7 @@ func newConfigHelper(cfg *Config) *configHelper {
 		metricScalarOIDs:            []string{},
 		metricColumnOIDs:            []string{},
 		attributeColumnOIDs:         []string{},
+		resourceAttributeScalarOIDs: []string{},
 		resourceAttributeColumnOIDs: []string{},
 		metricNamesByOID:            map[string]string{},
 		metricAttributesByOID:       map[string][]Attribute{},
@@ -77,6 +79,21 @@ func newConfigHelper(cfg *Config) *configHelper {
 		ch.attributeColumnOIDs = append(ch.attributeColumnOIDs, attributeCfg.OID)
 	}
 
+	// Find all resource attribute scalar OIDs
+	for name, resourceAttributeCfg := range cfg.ResourceAttributes {
+		if resourceAttributeCfg.ScalarOID == "" {
+			continue
+		}
+
+		// Data is returned by the client with '.' prefix on the OIDs.
+		// Making sure the prefix exists here in the configs so we can match it up with returned data later
+		if !strings.HasPrefix(resourceAttributeCfg.ScalarOID, ".") {
+			resourceAttributeCfg.ScalarOID = "." + resourceAttributeCfg.ScalarOID
+			cfg.ResourceAttributes[name] = resourceAttributeCfg
+		}
+		ch.resourceAttributeScalarOIDs = append(ch.resourceAttributeScalarOIDs, resourceAttributeCfg.ScalarOID)
+	}
+
 	// Find all resource attribute column OIDs
 	for name, resourceAttributeCfg := range cfg.ResourceAttributes {
 		if resourceAttributeCfg.OID == "" {
@@ -108,6 +125,11 @@ func (h configHelper) getMetricColumnOIDs() []string {
 // getAttributeColumnOIDs returns all of the attribute column OIDs in the attribute configs
 func (h configHelper) getAttributeColumnOIDs() []string {
 	return h.attributeColumnOIDs
+}
+
+// getResourceAttributeScalarOIDs returns all of the resource attribute scalar OIDs in the resource attribute configs
+func (h configHelper) getResourceAttributeScalarOIDs() []string {
+	return h.resourceAttributeScalarOIDs
 }
 
 // getResourceAttributeColumnOIDs returns all of the resource attribute column OIDs in the resource attribute configs
@@ -173,6 +195,16 @@ func (h configHelper) getResourceAttributeConfigOID(name string) string {
 	}
 
 	return attrConfig.OID
+}
+
+// getResourceAttributeConfigScalarOID returns the scalar OID of a resource attribute config
+func (h configHelper) getResourceAttributeConfigScalarOID(name string) string {
+	attrConfig := h.cfg.ResourceAttributes[name]
+	if attrConfig == nil {
+		return ""
+	}
+
+	return attrConfig.ScalarOID
 }
 
 // getMetricConfigAttributes returns the metric config attributes for a given OID
