@@ -65,6 +65,7 @@ func newReceiverTemplate(name string, cfg userConfigMap) (receiverTemplate, erro
 			config:     cfg,
 			endpointID: observer.EndpointID("endpoint.id"),
 		},
+		ResourceAttributes: map[string]any{},
 	}, nil
 }
 
@@ -78,6 +79,9 @@ type Config struct {
 	// ResourceAttributes is a map of default resource attributes to add to each resource
 	// object received by this receiver from dynamically created receivers.
 	ResourceAttributes resourceAttributes `mapstructure:"resource_attributes"`
+	// AcceptEndpointProperties determines whether properties specified in observer.EndpointEnv
+	// should be used in determining receiver runtime configuration for a given endpoint.
+	AcceptEndpointProperties bool `mapstructure:"accept_endpoint_properties"`
 }
 
 func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
@@ -134,4 +138,24 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+func (rt receiverTemplate) copy() receiverTemplate {
+	cp := receiverTemplate{
+		receiverConfig: receiverConfig{
+			id: rt.id, endpointID: rt.endpointID,
+			config: map[string]any{},
+		},
+		Rule:               rt.Rule,
+		ResourceAttributes: map[string]any{},
+		rule:               rt.rule,
+	}
+
+	for k, v := range rt.config {
+		cp.config[k] = v
+	}
+	for k, v := range rt.ResourceAttributes {
+		cp.ResourceAttributes[k] = v
+	}
+	return cp
 }

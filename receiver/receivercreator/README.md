@@ -143,6 +143,86 @@ receivers:
 
 Similar to the per-endpoint type `resource_attributes` described above but for individual receiver instances. Duplicate attribute entries (including the empty string) in this receiver-specific mapping take precedence. These attribute values also support expansion from endpoint environment content. At this time their values must be strings.
 
+**accept_endpoint_properties**
+
+```yaml
+accept_endpoint_properties: true
+```
+
+Enabling this feature will allow observer endpoints to embed receiver configuration entries for both modifying existing entries and creating new ones during the evaluation of the containing endpoint. Endpoint properties will not extend to any other observed endpoint or instantiated receiver. The default value is `false`.
+
+Endpoint properties are key-value pairs of the form `<Prefix><Property Key>: <Property Value>`. The prefix is either the RFC 1123 compatible or reverse DNS variant:
+
+`receiver-creator.collector.opentelemetry.io/` or `io.opentelemetry.collector.receiver-creator.`
+
+The property key is of the form `<receiver type>(/<optional receiver name>)(.<optional field type>(.<optional mapping key>))`. For Kubernetes qualified names where only a lone prefix-separating `/` is allowed, `__` can be used to signify `/` for specifying name references. The optional field types are `config`, `resources_attributes`, and `rule`, which can be used in any combination in a full mapping value. The optional mapping key is the first-level mapping field name. The `::` field separator is supported in values, and where compatible with metadata carriers (generally container labels), the `::` field separator can also be used in the `config` field type's optional mapping key.
+
+Currently, endpoint properties are only parsed from `pod`, `port`, `k8s.node` endpoint types' `annotations` maps, as well as `container` endpoint types' `labels` maps.
+
+Examples:
+
+Redis receiver full mapping endpoint property via kubernetes pod annotation:
+
+Collector configuration segment:
+
+```yaml
+extensions:
+  k8s_observer:
+
+receivers:
+  receiver_creator:
+    accept_endpoint_properties: true
+    watch_observers: [k8s_observer]
+```
+
+Redis pod manifest:
+
+``` yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  annotations:
+    receiver-creator.collector.opentelemetry.io/redis: |
+      rule: type == "port" and port == 6379
+      config:
+        collection_interval: 5s
+      resource_attributes:
+        some_attribute: attribute_value
+spec:
+  containers:
+  - name: redis
+    image: redis
+    ports:
+    - containerPort: 6379
+```
+
+
+Simple prometheus receiver `config`, `resource_attributes`, and `rule` endpoint properties via docker container labels:
+
+Collector configuration segment:
+
+```yaml
+extensions:
+  docker_observer:
+
+receivers:
+  receiver_creator:
+    accept_endpoint_properties: true
+    watch_observers: [docker_observer]
+```
+
+docker run command:
+
+```bash
+docker run \
+  -l io.opentelemetry.collector.receiver-creator.prometheus_simple/bitnami.config.collection_interval=30s \
+  -l io.opentelemetry.collector.receiver-creator.prometheus_simple/bitnami.config.labels::a.label=label_value \
+  -l io.opentelemetry.collector.receiver-creator.prometheus_simple/bitnami.resource_attributes.some_attribute=attribute_value \
+  -l io.opentelemetry.collector.receiver-creator.prometheus_simple/bitnami.rule='type == "container" and port == 9090' \
+  bitnami/prometheus
+```
+
 ## Rule Expressions
 
 Each rule must start with `type == ("pod"|"port"|"hostport"|"container"|"k8s.node") &&` such that the rule matches

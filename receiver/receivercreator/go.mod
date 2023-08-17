@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiv
 go 1.20
 
 require (
+	github.com/alecthomas/participle/v2 v2.0.0
 	github.com/antonmedv/expr v1.15.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.86.1-0.20231006161201-d364ad61c4d7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.1-0.20231006161201-d364ad61c4d7
@@ -19,6 +20,8 @@ require (
 	go.opentelemetry.io/collector/semconv v0.86.1-0.20231006161201-d364ad61c4d7
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
+	gopkg.in/yaml.v3 v3.0.1
+	k8s.io/apimachinery v0.27.4
 )
 
 require (
@@ -97,7 +100,7 @@ require (
 	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	k8s.io/utils v0.0.0-20230209194617-a36077c30491 // indirect
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer => ../../extension/observer

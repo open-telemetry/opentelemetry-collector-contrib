@@ -1,5 +1,6 @@
 receiver_creator:
 receiver_creator/1:
+  accept_endpoint_properties: true
   watch_observers:
     - mock_observer
     - mock_observer/with_name

@@ -78,6 +78,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "1"),
 			expected: &Config{
+				AcceptEndpointProperties: true,
 				receiverTemplates: map[string]receiverTemplate{
 					"examplereceiver/1": {
 						receiverConfig: receiverConfig{
@@ -161,8 +162,19 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 }
 
 type nopWithEndpointConfig struct {
-	Endpoint string `mapstructure:"endpoint"`
-	IntField int    `mapstructure:"int_field"`
+	Endpoint   string  `mapstructure:"endpoint"`
+	IntField   int     `mapstructure:"int_field"`
+	FloatField float64 `mapstructure:"float_field"`
+	Nested     nested  `mapstructure:"nested"`
+}
+
+type nested struct {
+	BoolField    bool         `mapstructure:"bool_field"`
+	DoublyNested doublyNested `mapstructure:"doubly_nested"`
+}
+
+type doublyNested struct {
+	MapField map[string]any `mapstructure:"map_field"`
 }
 
 type nopWithEndpointFactory struct {

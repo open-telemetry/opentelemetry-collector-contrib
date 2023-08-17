@@ -53,7 +53,8 @@ func createDefaultConfig() component.Config {
 				conventions.AttributeK8SNodeUID:  "`uid`",
 			},
 		},
-		receiverTemplates: map[string]receiverTemplate{},
+		receiverTemplates:        map[string]receiverTemplate{},
+		AcceptEndpointProperties: false,
 	}
 }
 

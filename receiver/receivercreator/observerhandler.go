@@ -8,12 +8,14 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator/internal"
 )
 
 var (
@@ -25,6 +27,9 @@ const (
 	// in resolved configuration. Used to determine if the field should be removed when the created receiver
 	// doesn't expose such a field.
 	tmpSetEndpointConfigKey = "<tmp.receiver.creator.automatically.set.endpoint.field>"
+	// tmpPropertyCreatedTemplate denotes that a receiver template was created from endpoint properties alone.
+	// Used to determine if a template shouldn't be processed in error conditions
+	tmpPropertyCreatedTemplate = "<tmp.property.created.template>"
 )
 
 // observerHandler manages endpoint change notifications.
@@ -76,6 +81,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 	defer obs.Unlock()
 
 	for _, e := range added {
+		details := e.Details
 		var env observer.EndpointEnv
 		var err error
 		if env, err = e.Env(); err != nil {
@@ -85,11 +91,21 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 		obs.params.TelemetrySettings.Logger.Debug("handling added endpoint", zap.Any("env", env))
 
-		for _, template := range obs.config.receiverTemplates {
-			if matches, e := template.rule.eval(env); e != nil {
-				obs.params.TelemetrySettings.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(e))
+		var receiverTemplates []receiverTemplate
+		if obs.config.AcceptEndpointProperties {
+			receiverTemplates = obs.updatedReceiverTemplatesFromEndpointProperties(details)
+		} else {
+			for _, template := range obs.config.receiverTemplates {
+				receiverTemplates = append(receiverTemplates, template)
+			}
+		}
+
+		for _, template := range receiverTemplates {
+			if matches, ee := template.rule.eval(env); ee != nil {
+				obs.params.TelemetrySettings.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(ee))
 				continue
 			} else if !matches {
+				obs.params.TelemetrySettings.Logger.Debug("rule doesn't match endpoint", zap.String("endpoint", string(e.ID)), zap.String("receiver", template.id.String()), zap.String("rule", template.Rule))
 				continue
 			}
 
@@ -198,4 +214,128 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 	// TODO: optimize to only restart if effective config has changed.
 	obs.OnRemove(changed)
 	obs.OnAdd(changed)
+}
+
+// templateToUpdate contains endpoint properties from an endpoint env and the user configured receiverTemplate to enhance
+type templateToUpdate struct {
+	propsConf *confmap.Conf
+	template  *receiverTemplate
+}
+
+func (obs *observerHandler) updatedReceiverTemplatesFromEndpointProperties(details observer.EndpointDetails) []receiverTemplate {
+	logger := obs.params.TelemetrySettings.Logger
+	// final templates to return for evaluation
+	var receiverTemplates []receiverTemplate
+
+	properties := internal.PropertyConfFromEndpointEnv(details, logger)
+	if properties == nil {
+		for _, template := range obs.config.receiverTemplates {
+			receiverTemplates = append(receiverTemplates, template)
+		}
+		return receiverTemplates
+	}
+
+	// forward inapplicable templates without enhancement
+	propertiesSM := properties.ToStringMap()
+	for receiver, template := range obs.config.receiverTemplates {
+		if _, ok := propertiesSM[receiver]; !ok {
+			logger.Debug("receiver template unchanged by endpoint properties", zap.String("receiver", receiver))
+			receiverTemplates = append(receiverTemplates, template)
+		}
+	}
+
+	var templatesToUpdate []templateToUpdate
+
+	for receiver := range propertiesSM {
+		rProps, err := properties.Sub(receiver)
+		if err != nil {
+			logger.Info("failed extracting expected receiver properties", zap.String("receiver", receiver), zap.Error(err))
+			if template, ok := obs.config.receiverTemplates[receiver]; ok {
+				// fallback by not modifying existing template
+				receiverTemplates = append(receiverTemplates, template)
+			}
+			continue
+		}
+
+		var template receiverTemplate
+		var ok bool
+		if template, ok = obs.config.receiverTemplates[receiver]; ok {
+			// copy because we will be modifying from properties for only this endpoint
+			template = template.copy()
+			logger.Debug("existing receiver template updated by endpoint properties", zap.String("receiver", receiver))
+		} else {
+			if template, err = newReceiverTemplate(receiver, map[string]any{tmpPropertyCreatedTemplate: struct{}{}}); err != nil {
+				logger.Info("failed creating new receiver template for property values", zap.String("receiver", receiver), zap.Error(err))
+				continue
+			}
+			logger.Debug("receiver template created by endpoint properties", zap.String("receiver", receiver))
+		}
+
+		templatesToUpdate = append(templatesToUpdate, templateToUpdate{
+			propsConf: rProps, template: &template,
+		})
+	}
+
+	for _, toUpdate := range templatesToUpdate {
+		rProps := toUpdate.propsConf
+		rPropsSM := rProps.ToStringMap()
+		template := *toUpdate.template
+
+		var propertyCreated bool
+		if _, propertyCreated = template.config[tmpPropertyCreatedTemplate]; propertyCreated {
+			delete(template.config, tmpPropertyCreatedTemplate)
+		}
+
+		if propsConf, err := rProps.Sub(configKey); err != nil {
+			logger.Info("failed creating conf property values", zap.String("receiver", template.id.String()), zap.Error(err))
+		} else {
+			templateConf := confmap.NewFromStringMap(template.config)
+			if err = templateConf.Merge(propsConf); err != nil {
+				logger.Info("failed merging conf property values", zap.String("receiver", template.id.String()), zap.Error(err))
+			} else {
+				template.config = templateConf.ToStringMap()
+			}
+		}
+
+		if propRule, hasRule := rPropsSM[internal.RuleType]; hasRule {
+			if receiverRule, ok := propRule.(string); !ok || receiverRule == "" {
+				logger.Debug(
+					"invalid property rule",
+					zap.String("receiver", template.id.String()),
+					zap.Any("rule", propRule),
+					zap.String("type", fmt.Sprintf("%T", propRule)),
+				)
+				if propertyCreated || template.Rule == "" {
+					// there's nothing we can do without a valid rule for partial or property-created templates
+					continue
+				}
+			} else {
+				if exprRule, e := newRule(receiverRule); e != nil {
+					logger.Info("failed determining valid rule for property-created template", zap.String("receiver", template.id.String()), zap.Error(e))
+					if propertyCreated || template.Rule == "" {
+						// there's nothing we can do without a valid rule for property-created templates
+						continue
+					}
+				} else {
+					template.Rule = receiverRule
+					template.rule = exprRule
+				}
+			}
+		} else if propertyCreated {
+			logger.Info("missing rule for property-created template", zap.String("receiver", template.id.String()))
+			continue
+		}
+
+		if _, hasResourceAttrs := rPropsSM["resource_attributes"]; hasResourceAttrs {
+			if propAttrConf, e := rProps.Sub("resource_attributes"); e != nil {
+				logger.Info("failed retrieving property-provided resource attributes", zap.String("receiver", template.id.String()), zap.Error(e))
+			} else {
+				for k, v := range propAttrConf.ToStringMap() {
+					template.ResourceAttributes[k] = v
+				}
+			}
+		}
+		receiverTemplates = append(receiverTemplates, template)
+	}
+	return receiverTemplates
 }
