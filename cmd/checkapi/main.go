@@ -1,6 +1,10 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"go/ast"
@@ -8,16 +12,15 @@ import (
 	"go/token"
 	"io/fs"
 	"log"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
-	"os"
-	"errors"
 )
 
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for modules")
-	allowlistFilePath := flag.String("allowlist", "cmd/checkpi/allowlist.txt", "path to a file containing an allowlist of paths to ignore")
+	allowlistFilePath := flag.String("allowlist", "cmd/checkapi/allowlist.txt", "path to a file containing an allowlist of paths to ignore")
 	flag.Parse()
 	if err := run(*folder, *allowlistFilePath); err != nil {
 		log.Fatal(err)
