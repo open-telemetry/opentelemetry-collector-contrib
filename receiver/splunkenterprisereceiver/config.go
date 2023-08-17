@@ -6,6 +6,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 import (
 	"errors"
 	"net/url"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -34,8 +35,7 @@ type Config struct {
 	MaxSearchWaitTime time.Duration `mapstructure:"max_search_wait_time"`
 }
 
-func (cfg *Config) Validate() error {
-	var errors error
+func (cfg *Config) Validate() (errors error) {
 	var targetURL *url.URL
 
 	if cfg.Endpoint == "" {
@@ -49,7 +49,7 @@ func (cfg *Config) Validate() error {
 			errors = multierr.Append(errors, errBadOrMissingEndpoint)
 		}
 
-		if targetURL.Scheme != "http" && targetURL.Scheme != "https" {
+		if !strings.HasPrefix(targetURL.Scheme, "http") {
 			errors = multierr.Append(errors, errBadScheme)
 		}
 	}

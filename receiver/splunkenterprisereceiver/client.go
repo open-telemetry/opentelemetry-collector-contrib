@@ -4,6 +4,7 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
@@ -42,11 +43,10 @@ func newSplunkEntClient(cfg *Config) splunkEntClient {
 }
 
 // For running ad hoc searches only
-func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, error) {
+func (c *splunkEntClient) createRequest(ctx context.Context, sr *searchResponse) (*http.Request, error) {
 	// Running searches via Splunk's REST API is a two step process: First you submit the job to run
 	// this returns a jobid which is then used in the second part to retrieve the search results
 	if sr.Jobid == nil {
-		method := "POST"
 		path := "/services/search/jobs/"
 		url, _ := url.JoinPath(c.endpoint.String(), path)
 
@@ -54,7 +54,7 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 		data := strings.NewReader(sr.search)
 
 		// return the build request, ready to be run by makeRequest
-		req, err := http.NewRequest(method, url, data)
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
 		if err != nil {
 			return nil, err
 		}
@@ -65,11 +65,10 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 
 		return req, nil
 	}
-	method := "GET"
 	path := fmt.Sprintf("/services/search/jobs/%s/results", *sr.Jobid)
 	url, _ := url.JoinPath(c.endpoint.String(), path)
 
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -81,11 +80,10 @@ func (c *splunkEntClient) createRequest(sr *searchResponse) (*http.Request, erro
 	return req, nil
 }
 
-func (c *splunkEntClient) createAPIRequest(apiEndpoint string) (*http.Request, error) {
-	method := "GET"
+func (c *splunkEntClient) createAPIRequest(ctx context.Context, apiEndpoint string) (*http.Request, error) {
 	url := c.endpoint.String() + apiEndpoint
 
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

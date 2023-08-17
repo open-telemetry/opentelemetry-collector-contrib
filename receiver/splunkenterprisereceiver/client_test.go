@@ -4,6 +4,7 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"net/http"
@@ -105,9 +106,10 @@ func TestClientCreateRequest(t *testing.T) {
 		},
 	}
 
+	ctx := context.Background()
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			req, err := test.client.createRequest(test.sr)
+			req, err := test.client.createRequest(ctx, test.sr)
 			require.NoError(t, err)
 			// have to test specific parts since individual fields are pointers
 			require.Equal(t, test.expected.URL, req.URL)
@@ -133,7 +135,8 @@ func TestAPIRequestCreate(t *testing.T) {
 		},
 	})
 
-	req, err := client.createAPIRequest("/test/endpoint")
+	ctx := context.Background()
+	req, err := client.createAPIRequest(ctx, "/test/endpoint")
 	require.NoError(t, err)
 
 	expectedURL := client.endpoint.String() + "/test/endpoint"

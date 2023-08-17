@@ -25,9 +25,7 @@ func TestValidateConfig(t *testing.T) {
 
 	var multipleErrors error
 
-	multipleErrors = multierr.Append(multipleErrors, errBadOrMissingEndpoint)
-	multipleErrors = multierr.Append(multipleErrors, errMissingUsername)
-	multipleErrors = multierr.Append(multipleErrors, errMissingPassword)
+	multipleErrors = multierr.Combine(multipleErrors, errBadOrMissingEndpoint, errMissingUsername, errMissingPassword)
 
 	tests := []struct {
 		desc   string

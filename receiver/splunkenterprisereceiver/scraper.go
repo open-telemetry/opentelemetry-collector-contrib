@@ -60,20 +60,20 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 // Each metric has its own scrape function associated with it
-func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	var sr searchResponse
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
+		return
+	} else {
 		sr = searchResponse{
 			search: searchDict[`SplunkLicenseIndexUsageSearch`],
 		}
-	} else {
-		return
 	}
 
 	start := time.Now()
-	req, err := s.splunkClient.createRequest(&sr)
+	req, err := s.splunkClient.createRequest(ctx, &sr)
 	if err != nil {
 		errs.Add(err)
 	}
@@ -90,7 +90,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(_ context.Context, now pcommon
 	}
 
 	for ok := true; ok; ok = (sr.Return == 204) {
-		req, err = s.splunkClient.createRequest(&sr)
+		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
 			errs.Add(err)
 		}
@@ -160,17 +160,17 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 }
 
 // Scrape index throughput introspection endpoint
-func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	var it indexThroughput
 	var ept string
 
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled {
-		ept = apiDict[`SplunkIndexerThroughput`]
-	} else {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled {
 		return
+	} else {
+		ept = apiDict[`SplunkIndexerThroughput`]
 	}
 
-	req, err := s.splunkClient.createAPIRequest(ept)
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
 	}
