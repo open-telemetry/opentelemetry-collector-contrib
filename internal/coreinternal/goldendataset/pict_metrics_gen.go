@@ -16,7 +16,7 @@ func GenerateMetrics(metricPairsFile string) ([]pmetric.Metrics, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []pmetric.Metrics
+	out := make([]pmetric.Metrics, 0, len(pictData))
 	for i, values := range pictData {
 		if i == 0 {
 			continue
