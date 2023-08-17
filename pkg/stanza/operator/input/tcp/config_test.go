@@ -31,8 +31,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.MaxLogSize = 1000000
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
-					cfg.Encoding = helper.NewEncodingConfig()
-					cfg.Encoding.Encoding = "utf-8"
+					cfg.Encoding = "utf-8"
 					cfg.Multiline = helper.NewMultilineConfig()
 					cfg.Multiline.LineStartPattern = "ABC"
 					cfg.TLS = &configtls.TLSServerSetting{

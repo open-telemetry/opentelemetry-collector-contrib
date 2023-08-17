@@ -10,6 +10,7 @@ import (
 	"runtime"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -23,7 +24,7 @@ type readerFactory struct {
 	readerConfig    *readerConfig
 	fromBeginning   bool
 	splitterFactory splitter.Factory
-	encodingConfig  helper.EncodingConfig
+	encoding        encoding.Encoding
 	headerConfig    *header.Config
 }
 
@@ -86,11 +87,7 @@ func (b readerBuilder) build() (r *reader, err error) {
 		}
 	}
 
-	encoding, err := helper.LookupEncoding(b.encodingConfig.Encoding)
-	if err != nil {
-		return nil, err
-	}
-	r.decoder = helper.NewDecoder(encoding)
+	r.decoder = helper.NewDecoder(b.encoding)
 
 	if b.headerConfig == nil || b.readerMetadata.HeaderFinalized {
 		r.splitFunc = r.lineSplitFunc
