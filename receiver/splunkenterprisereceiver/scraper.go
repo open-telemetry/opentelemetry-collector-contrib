@@ -69,8 +69,8 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	}
 
 	sr = searchResponse{
-        search: searchDict[`SplunkLicenseIndexUsageSearch`],
-    }
+		search: searchDict[`SplunkLicenseIndexUsageSearch`],
+	}
 
 	start := time.Now()
 	req, err := s.splunkClient.createRequest(ctx, &sr)
@@ -168,7 +168,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 		return
 	}
 
-    ept = apiDict[`SplunkIndexerThroughput`]
+	ept = apiDict[`SplunkIndexerThroughput`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
