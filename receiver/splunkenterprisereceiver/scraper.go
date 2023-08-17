@@ -164,8 +164,6 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled {
 		return
-	} else {
-		ept = apiDict[`SplunkIndexerThroughput`]
 	}
 
 	ept = apiDict[`SplunkIndexerThroughput`]
