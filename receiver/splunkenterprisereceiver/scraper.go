@@ -66,11 +66,11 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	// is enabled before proceeding
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled {
 		return
-	} else {
-		sr = searchResponse{
-			search: searchDict[`SplunkLicenseIndexUsageSearch`],
-		}
 	}
+
+	sr = searchResponse{
+        search: searchDict[`SplunkLicenseIndexUsageSearch`],
+    }
 
 	start := time.Now()
 	req, err := s.splunkClient.createRequest(ctx, &sr)
@@ -166,9 +166,9 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled {
 		return
-	} else {
-		ept = apiDict[`SplunkIndexerThroughput`]
 	}
+
+    ept = apiDict[`SplunkIndexerThroughput`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
