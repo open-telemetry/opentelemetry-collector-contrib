@@ -39,8 +39,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 				Resource: "pods",
 			},
 		}
-		logs := pullObjectsToLogData(&objects, time.Now(), config)
-
+		logs, err := pullObjectsToLogData(&objects, time.Now(), config, "")
+		assert.NoError(t, err)
 		assert.Equal(t, logs.LogRecordCount(), 4)
 
 		resourceLogs := logs.ResourceLogs()
@@ -76,8 +76,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs := pullObjectsToLogData(&objects, time.Now(), config)
-
+		logs, err := pullObjectsToLogData(&objects, time.Now(), config, "")
+		assert.NoError(t, err)
 		assert.Equal(t, logs.LogRecordCount(), 3)
 
 		resourceLogs := logs.ResourceLogs()
@@ -113,7 +113,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 			},
 		}
 
-		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		logs, err := watchObjectsToLogData(event, time.Now(), config, "")
 		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
@@ -154,7 +154,7 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		observedAt := time.Now()
-		logs, err := watchObjectsToLogData(event, observedAt, config)
+		logs, err := watchObjectsToLogData(event, observedAt, config, "json")
 		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
@@ -169,4 +169,66 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
+	t.Run("Test event objects with raw json body", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		logs, err := watchObjectsToLogData(event, time.Now(), config, "json")
+		assert.NoError(t, err)
+
+		resourceLogs := logs.ResourceLogs()
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		body := logRecords.At(0).Body()
+		assert.Equal(t, `{"object":{"apiVersion":"v1","kind":"Event","metadata":{"name":"generic-name"}},"type":"ADDED"}`, body.AsString())
+	})
+	t.Run("Test event objects with map body", func(t *testing.T) {
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "v1",
+				Resource: "events",
+			},
+		}
+		event := &watch.Event{
+			Type: watch.Added,
+			Object: &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       "Event",
+					"apiVersion": "v1",
+					"metadata": map[string]interface{}{
+						"name": "generic-name",
+					},
+				},
+			},
+		}
+
+		logs, err := watchObjectsToLogData(event, time.Now(), config, "")
+		assert.NoError(t, err)
+
+		resourceLogs := logs.ResourceLogs()
+		rl := resourceLogs.At(0)
+		logRecords := rl.ScopeLogs().At(0).LogRecords()
+		body := logRecords.At(0).Body()
+		v, ok := body.Map().Get("type")
+		assert.Equal(t, true, ok)
+		assert.Equal(t, "ADDED", v.AsString())
+	})
 }

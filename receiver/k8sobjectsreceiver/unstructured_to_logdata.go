@@ -4,6 +4,7 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 
 type attrUpdaterFunc func(pcommon.Map)
 
-func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig) (plog.Logs, error) {
+func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8sObjectsConfig, bodyType string) (plog.Logs, error) {
 	udata, ok := event.Object.(*unstructured.Unstructured)
 	if !ok {
 		return plog.Logs{}, fmt.Errorf("received data that wasnt unstructure, %v", event)
@@ -31,21 +32,21 @@ func watchObjectsToLogData(event *watch.Event, observedAt time.Time, config *K8s
 		}},
 	}
 
-	return unstructuredListToLogData(&ul, observedAt, config, func(attrs pcommon.Map) {
+	return unstructuredListToLogData(&ul, observedAt, config, bodyType, func(attrs pcommon.Map) {
 		objectMeta := udata.Object["metadata"].(map[string]interface{})
 		name := objectMeta["name"].(string)
 		if name != "" {
 			attrs.PutStr("event.domain", "k8s")
 			attrs.PutStr("event.name", name)
 		}
-	}), nil
+	})
 }
 
-func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig) plog.Logs {
-	return unstructuredListToLogData(event, observedAt, config)
+func pullObjectsToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, bodyType string) (plog.Logs, error) {
+	return unstructuredListToLogData(event, observedAt, config, bodyType)
 }
 
-func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, attrUpdaters ...attrUpdaterFunc) plog.Logs {
+func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt time.Time, config *K8sObjectsConfig, bodyType string, attrUpdaters ...attrUpdaterFunc) (plog.Logs, error) {
 	out := plog.NewLogs()
 	resourceLogs := out.ResourceLogs()
 	namespaceResourceMap := make(map[string]plog.LogRecordSlice)
@@ -73,9 +74,19 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 		}
 
 		dest := record.Body()
-		destMap := dest.SetEmptyMap()
-		//nolint:errcheck
-		destMap.FromRaw(e.Object)
+		if bodyType == "json" {
+			jsonData, err := json.Marshal(e.Object)
+			if err != nil {
+				return plog.Logs{}, err
+			}
+			dest.SetStr(string(jsonData))
+		} else {
+			destMap := dest.SetEmptyMap()
+			err := destMap.FromRaw(e.Object)
+			if err != nil {
+				return plog.Logs{}, err
+			}
+		}
 	}
-	return out
+	return out, nil
 }

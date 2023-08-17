@@ -26,6 +26,7 @@ The following is example configuration
 ```yaml
   k8sobjects:
     auth_type: serviceAccount
+    body_type: json
     objects:
       - name: pods
         mode: pull
@@ -43,6 +44,8 @@ Brief description of configuration properties:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
+- `body_type` (default is empty) define how to convert k8s object. current support set `json` or empty string.
+if it's `json`, body will save k8s object's raw json, otherwise it will convert to a [map](https://pkg.go.dev/go.opentelemetry.io/collector/pdata/pcommon#Map).
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "poll" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.

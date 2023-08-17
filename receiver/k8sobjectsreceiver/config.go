@@ -48,6 +48,8 @@ type Config struct {
 
 	Objects []*K8sObjectsConfig `mapstructure:"objects"`
 
+	BodyType string `mapstructure:"body_type"`
+
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
 	makeDynamicClient   func() (dynamic.Interface, error)
