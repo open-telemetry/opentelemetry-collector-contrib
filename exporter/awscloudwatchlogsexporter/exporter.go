@@ -72,7 +72,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, e
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session)
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, session, false)
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {

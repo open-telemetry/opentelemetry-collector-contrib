@@ -75,10 +75,13 @@ type Config struct {
 	// TODO: we can support directing output to a file (in the future) while customer specifies a file path here.
 	OutputDestination string `mapstructure:"output_destination"`
 
-	// EKSFargateContainerInsightsEnabled is an option to reformat certin metric labels so that they take the form of a high level object
+	// EKSFargateContainerInsightsEnabled is an option to reformat certain metric labels so that they take the form of a high level object
 	// The end result will make the labels look like those coming out of ECS and be more easily injected into cloudwatch
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
 	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
+
+	// EnhancedContainerInsights indicates payloads will include enhanced container insights metrics
+	EnhancedContainerInsights bool `mapstructure:"enhanced_container_insights"`
 
 	// DisableMetricExtraction is an option to disable the extraction of metrics from the EMF logs.
 	// Setting this to true essentially skips generating and setting the _aws / CloudWatchMetrics section of the EMF log, thus effectively

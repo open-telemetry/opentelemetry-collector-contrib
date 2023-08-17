@@ -133,6 +133,28 @@ func TestLoadConfig(t *testing.T) {
 				logger:                  zap.NewNop(),
 			},
 		},
+		{
+			id: component.NewIDWithName(typeStr, "enhanced_container_insights"),
+			expected: &Config{
+				AWSSessionSettings: awsutil.AWSSessionSettings{
+					NumberOfWorkers:       8,
+					Endpoint:              "",
+					RequestTimeoutSeconds: 30,
+					MaxRetries:            2,
+					NoVerifySSL:           false,
+					ProxyAddress:          "",
+					Region:                "",
+					RoleARN:               "",
+				},
+				LogGroupName:              "",
+				LogStreamName:             "",
+				DimensionRollupOption:     "ZeroAndSingleDimensionRollup",
+				OutputDestination:         "cloudwatch",
+				Version:                   "1",
+				EnhancedContainerInsights: true,
+				logger:                    zap.NewNop(),
+			},
+		},
 	}
 
 	for _, tt := range tests {

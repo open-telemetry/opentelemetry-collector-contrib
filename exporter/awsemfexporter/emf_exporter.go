@@ -66,7 +66,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, session)
+	svcStructuredLog := cwlogs.NewClient(set.Logger, awsConfig, set.BuildInfo, config.LogGroupName, config.LogRetention, session, isEnhancedContainerInsights(config))
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
@@ -197,4 +197,8 @@ func wrapErrorIfBadRequest(err error) error {
 		return consumererror.NewPermanent(err)
 	}
 	return err
+}
+
+func isEnhancedContainerInsights(config *Config) bool {
+	return config.EnhancedContainerInsights && !config.DisableMetricExtraction
 }

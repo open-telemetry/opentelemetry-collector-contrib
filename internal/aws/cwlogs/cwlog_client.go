@@ -37,6 +37,11 @@ const (
 	errCodeThrottlingException = "ThrottlingException"
 )
 
+var (
+	containerInsightsRegexPattern       = regexp.MustCompile(`^/aws/.*containerinsights/.*/(performance|prometheus)$`)
+	enhancedContainerInsightsEKSPattern = regexp.MustCompile(`^/aws/containerinsights/\S+/performance$`)
+)
+
 // Possible exceptions are combination of common errors (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/CommonErrors.html)
 // and API specific erros (e.g. https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutLogEvents.html#API_PutLogEvents_Errors)
 type Client struct {
@@ -54,11 +59,12 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, sess *session.Session, enhancedContainerInsights bool) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.NewRequestCompressionHandler([]string{"PutLogEvents"}, logger))
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
-	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName))
+	client.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo, logGroupName, enhancedContainerInsights))
+
 	return newCloudWatchLogClient(client, logRetention, logger)
 }
 
@@ -191,19 +197,15 @@ func (client *Client) CreateStream(logGroup, streamName *string) (token string, 
 	return "", nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string) request.NamedHandler {
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, enhancedContainerInsights bool) request.NamedHandler {
 	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version)
-	if matchContainerInsightsPattern(logGroupName) {
+	if enhancedContainerInsights && enhancedContainerInsightsEKSPattern.MatchString(logGroupName) {
+		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "EnhancedEKSContainerInsights")
+	} else if containerInsightsRegexPattern.MatchString(logGroupName) {
 		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, "ContainerInsights")
 	}
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
 		Fn:   fn,
 	}
-}
-
-func matchContainerInsightsPattern(logGroupName string) bool {
-	regexP := "^/aws/.*containerinsights/.*/(performance|prometheus)$"
-	r, _ := regexp.Compile(regexP)
-	return r.MatchString(logGroupName)
 }

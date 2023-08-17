@@ -15,3 +15,5 @@ awsemf/metric_descriptors:
       overwrite: true
 awsemf/disable_metric_extraction:
   disable_metric_extraction: true
+awsemf/enhanced_container_insights:
+  enhanced_container_insights: true
