@@ -12,7 +12,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -59,17 +58,17 @@ var (
 // Validate the clickhouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
-		err = multierr.Append(err, errConfigNoEndpoint)
+		err = errors.Join(err, errConfigNoEndpoint)
 	}
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
-		err = multierr.Append(err, e)
+		err = errors.Join(err, e)
 	}
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
 	if _, e := clickhouse.ParseDSN(dsn); e != nil {
-		err = multierr.Append(err, e)
+		err = errors.Join(err, e)
 	}
 
 	return err

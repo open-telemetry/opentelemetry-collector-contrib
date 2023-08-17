@@ -1,0 +1,9 @@
+change_type: enhancement
+
+component: opensearchexporter
+
+note: implement [OpenSearch](https://opensearch.org/) exporter.
+
+issues: [23611]
+
+subtext:
