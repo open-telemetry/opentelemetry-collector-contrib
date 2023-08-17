@@ -218,6 +218,54 @@ Node network IO
 | interface | Name of the network interface. | Any Str |
 | direction | Direction of flow of bytes/operations (receive or transmit). | Str: ``receive``, ``transmit`` |
 
+### k8s.node.runtime.image_fs.available
+
+Node runtime image_fs available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.image_fs.capacity
+
+Node runtime image_fs capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.image_fs.inodes
+
+Node runtime image_fs inodes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.image_fs.inodes_free
+
+Node runtime image_fs inodes_free
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.image_fs.inodes_used
+
+Node runtime image_fs inodes_used
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.image_fs.used
+
+Node runtime image_fs used
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ### k8s.pod.cpu.time
 
 Pod CPU time

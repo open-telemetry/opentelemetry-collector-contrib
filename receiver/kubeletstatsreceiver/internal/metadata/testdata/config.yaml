@@ -49,6 +49,18 @@ all_set:
       enabled: true
     k8s.node.network.io:
       enabled: true
+    k8s.node.runtime.image_fs.available:
+      enabled: true
+    k8s.node.runtime.image_fs.capacity:
+      enabled: true
+    k8s.node.runtime.image_fs.inodes:
+      enabled: true
+    k8s.node.runtime.image_fs.inodes_free:
+      enabled: true
+    k8s.node.runtime.image_fs.inodes_used:
+      enabled: true
+    k8s.node.runtime.image_fs.used:
+      enabled: true
     k8s.pod.cpu.time:
       enabled: true
     k8s.pod.cpu.utilization:
@@ -165,6 +177,18 @@ none_set:
     k8s.node.network.errors:
       enabled: false
     k8s.node.network.io:
+      enabled: false
+    k8s.node.runtime.image_fs.available:
+      enabled: false
+    k8s.node.runtime.image_fs.capacity:
+      enabled: false
+    k8s.node.runtime.image_fs.inodes:
+      enabled: false
+    k8s.node.runtime.image_fs.inodes_free:
+      enabled: false
+    k8s.node.runtime.image_fs.inodes_used:
+      enabled: false
+    k8s.node.runtime.image_fs.used:
       enabled: false
     k8s.pod.cpu.time:
       enabled: false

@@ -128,3 +128,19 @@ var K8sVolumeMetrics = VolumeMetrics{
 	InodesFree: (*MetricsBuilder).RecordK8sVolumeInodesFreeDataPoint,
 	InodesUsed: (*MetricsBuilder).RecordK8sVolumeInodesUsedDataPoint,
 }
+
+type RuntimeImageFsMetrics struct {
+	Available  RecordIntDataPointFunc
+	Capacity   RecordIntDataPointFunc
+	Inodes     RecordIntDataPointFunc
+	InodesFree RecordIntDataPointFunc
+	InodesUsed RecordIntDataPointFunc
+}
+
+var NodeRuntimeImageFsMetrics = RuntimeImageFsMetrics{
+	Available:  (*MetricsBuilder).RecordK8sNodeRuntimeImageFsAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sNodeRuntimeImageFsCapacityDataPoint,
+	Inodes:     (*MetricsBuilder).RecordK8sNodeRuntimeImageFsInodesDataPoint,
+	InodesFree: (*MetricsBuilder).RecordK8sNodeRuntimeImageFsInodesFreeDataPoint,
+	InodesUsed: (*MetricsBuilder).RecordK8sNodeRuntimeImageFsInodesUsedDataPoint,
+}

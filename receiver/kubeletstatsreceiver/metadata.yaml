@@ -3,10 +3,10 @@ type: kubeletstats
 status:
   class: receiver
   stability:
-    beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo]
+    beta: [ metrics ]
+  distributions: [ contrib, observiq, splunk, sumo ]
   codeowners:
-    active: [dmitryax]
+    active: [ dmitryax ]
 
 resource_attributes:
   k8s.node.name:
@@ -78,7 +78,7 @@ attributes:
   direction:
     description: Direction of flow of bytes/operations (receive or transmit).
     type: string
-    enum: [receive, transmit]
+    enum: [ receive, transmit ]
 
 metrics:
   k8s.node.cpu.utilization:
@@ -87,7 +87,7 @@ metrics:
     unit: 1
     gauge:
       value_type: double
-    attributes: []
+    attributes: [ ]
   k8s.node.cpu.time:
     enabled: true
     description: "Node CPU time"
@@ -96,70 +96,70 @@ metrics:
       value_type: double
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.available:
     enabled: true
     description: "Node memory available"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.usage:
     enabled: true
     description: "Node memory usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.rss:
     enabled: true
     description: "Node memory rss"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.working_set:
     enabled: true
     description: "Node memory working_set"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.page_faults:
     enabled: true
     description: "Node memory page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.memory.major_page_faults:
     enabled: true
     description: "Node memory major_page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.filesystem.available:
     enabled: true
     description: "Node filesystem available"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.filesystem.capacity:
     enabled: true
     description: "Node filesystem capacity"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.filesystem.usage:
     enabled: true
     description: "Node filesystem usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.node.network.io:
     enabled: true
     description: "Node network IO"
@@ -168,7 +168,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: ["interface", "direction"]
+    attributes: [ "interface", "direction" ]
   k8s.node.network.errors:
     enabled: true
     description: "Node network errors"
@@ -177,7 +177,49 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: ["interface", "direction"]
+    attributes: [ "interface", "direction" ]
+  k8s.node.runtime.image_fs.available:
+    enabled: true
+    description: Node runtime image_fs available
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+  k8s.node.runtime.image_fs.capacity:
+    enabled: true
+    description: Node runtime image_fs capacity
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+  k8s.node.runtime.image_fs.used:
+    enabled: true
+    description: Node runtime image_fs used
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+  k8s.node.runtime.image_fs.inodes_free:
+    enabled: true
+    description: Node runtime image_fs inodes_free
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+  k8s.node.runtime.image_fs.inodes:
+    enabled: true
+    description: Node runtime image_fs inodes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
+  k8s.node.runtime.image_fs.inodes_used:
+    enabled: true
+    description: Node runtime image_fs inodes_used
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [ ]
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"
@@ -200,63 +242,63 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.memory.usage:
     enabled: true
     description: "Pod memory usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.memory.rss:
     enabled: true
     description: "Pod memory rss"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.memory.working_set:
     enabled: true
     description: "Pod memory working_set"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.memory.page_faults:
     enabled: true
     description: "Pod memory page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.memory.major_page_faults:
     enabled: true
     description: "Pod memory major_page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.filesystem.available:
     enabled: true
     description: "Pod filesystem available"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.filesystem.capacity:
     enabled: true
     description: "Pod filesystem capacity"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.filesystem.usage:
     enabled: true
     description: "Pod filesystem usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.pod.network.io:
     enabled: true
     description: "Pod network IO"
@@ -265,7 +307,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: ["interface", "direction"]
+    attributes: [ "interface", "direction" ]
   k8s.pod.network.errors:
     enabled: true
     description: "Pod network errors"
@@ -274,7 +316,7 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
-    attributes: ["interface", "direction"]
+    attributes: [ "interface", "direction" ]
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"
@@ -297,95 +339,95 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.memory.usage:
     enabled: true
     description: "Container memory usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.memory.rss:
     enabled: true
     description: "Container memory rss"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.memory.working_set:
     enabled: true
     description: "Container memory working_set"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.memory.page_faults:
     enabled: true
     description: "Container memory page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.memory.major_page_faults:
     enabled: true
     description: "Container memory major_page_faults"
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.filesystem.available:
     enabled: true
     description: "Container filesystem available"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.filesystem.capacity:
     enabled: true
     description: "Container filesystem capacity"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   container.filesystem.usage:
     enabled: true
     description: "Container filesystem usage"
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.volume.available:
     enabled: true
     description: "The number of available bytes in the volume."
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.volume.capacity:
     enabled: true
     description: "The total capacity in bytes of the volume."
     unit: By
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.volume.inodes:
     enabled: true
     description: "The total inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.volume.inodes.free:
     enabled: true
     description: "The free inodes in the filesystem."
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
   k8s.volume.inodes.used:
     enabled: true
     description: "The inodes used by the filesystem. This may not equal inodes - free because filesystem may share inodes with other filesystems."
     unit: 1
     gauge:
       value_type: int
-    attributes: []
+    attributes: [ ]
