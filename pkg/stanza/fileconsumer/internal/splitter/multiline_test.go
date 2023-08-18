@@ -32,9 +32,7 @@ func TestMultilineBuild(t *testing.T) {
 		{
 			name: "eoncoding error",
 			splitterConfig: helper.SplitterConfig{
-				EncodingConfig: helper.EncodingConfig{
-					Encoding: "error",
-				},
+				Encoding:  "error",
 				Flusher:   helper.NewFlusherConfig(),
 				Multiline: helper.NewMultilineConfig(),
 			},
@@ -46,8 +44,8 @@ func TestMultilineBuild(t *testing.T) {
 		{
 			name: "Multiline  error",
 			splitterConfig: helper.SplitterConfig{
-				EncodingConfig: helper.NewEncodingConfig(),
-				Flusher:        helper.NewFlusherConfig(),
+				Encoding: "utf-8",
+				Flusher:  helper.NewFlusherConfig(),
 				Multiline: helper.MultilineConfig{
 					LineStartPattern: "START",
 					LineEndPattern:   "END",

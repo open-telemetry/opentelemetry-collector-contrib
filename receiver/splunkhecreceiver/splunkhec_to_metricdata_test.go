@@ -17,6 +17,7 @@ import (
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -301,6 +302,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 }
 
 func TestGroupMetricsByResource(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6

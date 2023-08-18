@@ -146,6 +146,16 @@ resourceMetrics:
                   startTimeUnixNano: "1687780262696586000"
                   timeUnixNano: "1687780263696969000"
             unit: By
+          - description: The number of deadlocks.
+            name: postgresql.deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687780262696586000"
+                  timeUnixNano: "1687780263696969000"
+              isMonotonic: true
+            unit: "{deadlock}"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -194,6 +204,16 @@ resourceMetrics:
                   startTimeUnixNano: "1687780262696586000"
                   timeUnixNano: "1687780263696969000"
             unit: By
+          - description: The number of deadlocks.
+            name: postgresql.deadlocks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687780262696586000"
+                  timeUnixNano: "1687780263696969000"
+              isMonotonic: true
+            unit: "{deadlock}"
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:

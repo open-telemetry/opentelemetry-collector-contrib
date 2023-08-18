@@ -23,6 +23,8 @@ all_set:
       enabled: true
     postgresql.db_size:
       enabled: true
+    postgresql.deadlocks:
+      enabled: true
     postgresql.index.scans:
       enabled: true
     postgresql.index.size:
@@ -75,6 +77,8 @@ none_set:
     postgresql.database.count:
       enabled: false
     postgresql.db_size:
+      enabled: false
+    postgresql.deadlocks:
       enabled: false
     postgresql.index.scans:
       enabled: false
