@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib, observiq, splunk, sumo]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, TylerHelmuth]
 
 resource_attributes:
   k8s.node.name:
