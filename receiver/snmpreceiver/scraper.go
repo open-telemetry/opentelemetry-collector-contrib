@@ -140,7 +140,7 @@ func (s *snmpScraper) scrapeIndexedMetrics(
 	columnOIDIndexedResourceAttributeValues := s.scrapeIndexedAttributes(configHelper.getResourceAttributeColumnOIDs(), scraperErrors)
 
 	// Retrieve scalar OID SNMP data for resource attributes
-	columnOIDScalarOIDResourceAttributeValues := s.scrapeScalarAttributes(configHelper.getResourceAttributeScalarOIDs(), scraperErrors)
+	columnOIDScalarOIDResourceAttributeValues := s.scrapeScalarResourceAttributes(configHelper.getResourceAttributeScalarOIDs(), scraperErrors)
 
 	// Retrieve all SNMP indexed data from column metric OIDs
 	indexedData := s.client.GetIndexedData(metricColumnOIDs, scraperErrors)
@@ -342,9 +342,9 @@ func getResourceAttributes(
 	return resourceAttributes, nil
 }
 
-// scrapeScalarAttributes retrieves all SNMP data from attribute (or resource attribute)
+// scrapeScalarResourceAttributes retrieves all SNMP data from resource attribute
 // config scalar OIDs and stores the returned data for later use by metrics
-func (s *snmpScraper) scrapeScalarAttributes(
+func (s *snmpScraper) scrapeScalarResourceAttributes(
 	scalarOIDs []string,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) map[string]string {
@@ -360,16 +360,16 @@ func (s *snmpScraper) scrapeScalarAttributes(
 
 	// For each piece of SNMP data, store the necessary info to help create resources later if needed
 	for _, data := range scalarData {
-		if err := scalarDataToAttribute(data, scalarOIDAttributeValues); err != nil {
+		if err := scalarDataToResourceAttribute(data, scalarOIDAttributeValues); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgScalarAttributeOIDProcessing, data.oid, err))
 		}
 	}
 	return scalarOIDAttributeValues
 }
 
-// scalarDataToAttribute provides a function which will take one piece of scalar OID SNMP data
-// (for either an attribute or resource attribute) and store it in a map for later use 
-func scalarDataToAttribute(
+// scalarDataToResourceAttribute provides a function which will take one piece of scalar OID SNMP data
+// (for a resource attribute) and store it in a map for later use 
+func scalarDataToResourceAttribute(
 	data SNMPData,
 	scalarOIDAttributeValues map[string]string,
 ) error {
