@@ -75,7 +75,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 	// If useThreadPool is enabled, kick off the worker threads
 	if useThreadPool.IsEnabled() {
-		m.kickOffThreads(ctx)
+		m.kickoffThreads(ctx)
 	}
 
 	// Start polling goroutine
