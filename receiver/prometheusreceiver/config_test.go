@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 )
@@ -119,8 +121,8 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 	require.Error(t, component.UnmarshalConfig(sub, cfg))
 }
 
-// Renaming is not allowed
-func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
+// Renaming emits a warning
+func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-relabel.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -129,8 +131,10 @@ func TestLoadConfigFailsOnRenameDisallowed(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	assert.Error(t, component.ValidateConfig(cfg))
-
+	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
+	logger := zap.New(observedZapCore)
+	configWarnings(logger, cfg.(*Config))
+	assert.Equal(t, 1, observedLogs.Len())
 }
 
 func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {

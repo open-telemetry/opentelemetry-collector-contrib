@@ -18,6 +18,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
 
@@ -138,13 +139,6 @@ func (cfg *Config) validatePromConfig(promConfig *promconfig.Config) error {
 	}
 
 	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
-		for _, rc := range sc.MetricRelabelConfigs {
-			if rc.TargetLabel == "__name__" {
-				// TODO(#2297): Remove validation after renaming is fixed
-				return fmt.Errorf("error validating scrapeconfig for job %v: %w", sc.JobName, errRenamingDisallowed)
-			}
-		}
-
 		if sc.HTTPClientConfig.Authorization != nil {
 			if err := checkFile(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
 				return fmt.Errorf("error checking authorization credentials file %q: %w", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
@@ -236,4 +230,14 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	return nil
+}
+
+func configWarnings(logger *zap.Logger, cfg *Config) {
+	for _, sc := range cfg.PrometheusConfig.ScrapeConfigs {
+		for _, rc := range sc.MetricRelabelConfigs {
+			if rc.TargetLabel == "__name__" {
+				logger.Warn("metric renaming using metric_relabel_configs will result in unknown-typed metrics without a unit or description", zap.String("job", sc.JobName))
+			}
+		}
+	}
 }
