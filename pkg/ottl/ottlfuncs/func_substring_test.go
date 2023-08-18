@@ -61,8 +61,7 @@ func Test_substring(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := substring(tt.target, tt.start, tt.length)
-			assert.NoError(t, err)
+			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, result)
@@ -116,8 +115,7 @@ func Test_substring_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := substring(tt.target, tt.start, tt.length)
-			assert.NoError(t, err)
+			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
 			assert.Nil(t, result)
@@ -207,8 +205,7 @@ func Test_substring_error(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := substring(tt.target, tt.start, tt.length)
-			assert.NoError(t, err)
+			exprFunc := substring(tt.target, tt.start, tt.length)
 			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
 			assert.Equal(t, nil, result)

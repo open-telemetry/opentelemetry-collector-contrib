@@ -27,10 +27,10 @@ func createSubstringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 		return nil, fmt.Errorf("SubstringFactory args must be of type *SubstringArguments[K]")
 	}
 
-	return substring(args.Target, args.Start, args.Length)
+	return substring(args.Target, args.Start, args.Length), nil
 }
 
-func substring[K any](target ottl.StringGetter[K], startGetter ottl.IntGetter[K], lengthGetter ottl.IntGetter[K]) (ottl.ExprFunc[K], error) {
+func substring[K any](target ottl.StringGetter[K], startGetter ottl.IntGetter[K], lengthGetter ottl.IntGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		start, err := startGetter.Get(ctx, tCtx)
 		if err != nil {
@@ -54,5 +54,5 @@ func substring[K any](target ottl.StringGetter[K], startGetter ottl.IntGetter[K]
 			return nil, fmt.Errorf("invalid range for substring function, %d cannot be greater than the length of target string(%d)", start+length, len(val))
 		}
 		return val[start : start+length], nil
-	}, nil
+	}
 }
