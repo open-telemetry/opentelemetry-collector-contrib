@@ -154,7 +154,6 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 		reader := m.knownFiles[i]
 		if reader.generation >= 3 {
 			oldReaders = append(oldReaders, reader)
-			i += 1
 		} else {
 			break
 		}
