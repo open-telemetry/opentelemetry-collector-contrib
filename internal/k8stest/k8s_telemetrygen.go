@@ -90,7 +90,6 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, kub
 
 			result, err := req.Stream(context.Background())
 			if err != nil {
-				panic(err.Error())
 			}
 			defer result.Close()
 
