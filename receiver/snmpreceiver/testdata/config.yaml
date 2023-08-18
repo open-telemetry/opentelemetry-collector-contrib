@@ -865,3 +865,74 @@ snmp/column_oid_resource_attribute_ends_in_zero:
         - oid: "1"
           resource_attributes:
             - ra1
+snmp/scalar_oid_single_scalar_resource_attribute_is_valid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "1"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_multiple_scalar_resource_attribute_is_valid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      scalar_oid: "0"
+    ra2:
+      scalar_oid: "0"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1
+            - ra2
+snmp/scalar_oid_with_coid_resource_attribute_is_invalid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      oid: "2"
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1
+snmp/scalar_oid_with_ivp_resource_attribute_is_invalid:
+  collection_interval: 10s
+  endpoint: udp://localhost:161
+  version: v2c
+  community: public
+  resource_attributes:
+    ra1:
+      indexed_value_prefix: p
+  metrics:
+    m3:
+      unit: "By"
+      gauge:
+        value_type: "double"
+      scalar_oids:
+        - oid: "0"
+          resource_attributes:
+            - ra1

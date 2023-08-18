@@ -41,15 +41,16 @@ var (
 	errMsgScalarAttributeBadName           = `metric '%s' scalar_oid attribute name '%s' must match an attribute config`
 	errMsgScalarOIDBadAttribute            = `metric '%s' scalar_oid attribute name '%s' must match attribute config with enum values`
 	errMsgScalarAttributeBadValue          = `metric '%s' scalar_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
+	errMsgScalarMetricHasIndexedResourceAttribute = `scalar oid metric '%s' has resource attribute '%s' which has indexed value`
 	errMsgColumnOIDNoOID                   = `metric '%s' column_oid must contain an oid`
 	errMsgColumnAttributeNoName            = `metric '%s' column_oid attribute must contain a name`
 	errMsgColumnAttributeBadName           = `metric '%s' column_oid attribute name '%s' must match an attribute config`
 	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
 	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
 	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
-	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute %s must have only one of oid, scalar_oid, or indexed_value_prefix`
-	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute %s has scalar_oid %s that ends in a nonzero digit (scalar oids should not be indexed)`
-	errColumnOIDResourceAttributeEndsInZero = `resource attribute %s has oid %s that ends in a zero (column oids should be indexed)`
+	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
+	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute '%s' has scalar_oid '%s' that ends in a nonzero digit (scalar oids should not be indexed)`
+	errColumnOIDResourceAttributeEndsInZero = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -202,11 +203,13 @@ type SumMetric struct {
 	ValueType string `mapstructure:"value_type"`
 }
 
-// ScalarOID holds OID info for a scalar metric as well as any attributes
+// ScalarOID holds OID info for a scalar metric as well as any {resource} attributes
 // that are attached to it
 type ScalarOID struct {
 	// OID is required and is the scalar OID that is associated with a metric
 	OID string `mapstructure:"oid"`
+	// ResourceAttributes is optional and may contain values of Scalar OIDs to associate this metric with
+	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is optional and may contain names and values associated with enum
 	// AttributeConfigs to associate with the value of the scalar OID
 	Attributes []Attribute `mapstructure:"attributes"`
@@ -482,10 +485,27 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarOIDNoOID, metricName))
 	}
 
+	// Check that any Resource Attributes have a valid Value
+	for _, name := range scalarOID.ResourceAttributes {
+		resourceAttribute, ok := cfg.ResourceAttributes[name]
+		if !ok {
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
+			continue
+		} 
+
+		// Scalar OID metrics should only have Scalar OID resource attributes 
+		// ResourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
+		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarMetricHasIndexedResourceAttribute, metricName, name))
+			continue
+		}
+
+	}
+
 	if len(scalarOID.Attributes) == 0 {
 		return combinedErr
 	}
-
+	
 	// Check that any Attributes have a valid Name and a valid Value
 	for _, attribute := range scalarOID.Attributes {
 		if attribute.Name == "" {
