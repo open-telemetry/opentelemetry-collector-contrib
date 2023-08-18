@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build e2e
-// +build e2e
-
 package k8sattributesprocessor
 
 import (
@@ -81,7 +78,7 @@ func TestE2E(t *testing.T) {
 	metricsConsumer := new(consumertest.MetricsSink)
 	tracesConsumer := new(consumertest.TracesSink)
 	logsConsumer := new(consumertest.LogsSink)
-	wantEntries := 128 // Minimal number of metrics/traces/logs to wait for.
+	wantEntries := 256 // Minimal number of metrics/traces/logs to wait for.
 	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
 
 	tcs := []struct {
@@ -392,7 +389,7 @@ func scanTracesForAttributes(t *testing.T, ts *consumertest.TracesSink, expected
 			if service.AsString() != expectedService {
 				continue
 			}
-			assert.NoError(t, resourceHasAttributes(resource, kvs))
+			assert.NoError(t, resourceHasAttributes(resource, kvs), "current attributes [%v]", resource.Attributes())
 			return
 		}
 	}
