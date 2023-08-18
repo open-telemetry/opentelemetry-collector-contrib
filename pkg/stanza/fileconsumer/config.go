@@ -9,13 +9,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -34,7 +35,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
@@ -58,7 +59,7 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	MatchingCriteria        `mapstructure:",squash"`
+	matcher.Criteria        `mapstructure:",squash"`
 	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
 	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
 	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
@@ -86,7 +87,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := newMultilineSplitterFactory(c.Splitter)
+	factory := splitter.NewMultilineFactory(c.Splitter)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -105,7 +106,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
+	factory := splitter.NewCustomFactory(c.Splitter.Flusher, splitFunc)
 	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
 		return nil, err
 	}
@@ -113,7 +114,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -129,15 +130,25 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := c.Splitter.EncodingConfig.Build()
+		enc, err := helper.LookupEncoding(c.Splitter.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding)
+		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
+	}
+
+	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := helper.LookupEncoding(c.Splitter.Encoding)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Manager{
@@ -156,16 +167,16 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
+			encoding:        enc,
 			headerConfig:    hCfg,
 		},
-		finder:          c.MatchingCriteria,
+		fileMatcher:     fileMatcher,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*Reader, 0, 10),
+		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
@@ -179,34 +190,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
 	}
 
-	if len(c.Include) == 0 {
-		return fmt.Errorf("required argument `include` is empty")
-	}
-
-	// Ensure includes can be parsed as globs
-	for _, include := range c.Include {
-		_, err := doublestar.PathMatch(include, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse include glob: %w", err)
-		}
-	}
-
-	// Ensure excludes can be parsed as globs
-	for _, exclude := range c.Exclude {
-		_, err := doublestar.PathMatch(exclude, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse exclude glob: %w", err)
-		}
-	}
-
-	if len(c.OrderingCriteria.SortBy) != 0 && c.OrderingCriteria.Regex == "" {
-		return fmt.Errorf("`regex` must be specified when `sort_by` is specified")
-	}
-
-	for _, sr := range c.OrderingCriteria.SortBy {
-		if err := sr.validate(); err != nil {
-			return err
-		}
+	if _, err := matcher.New(c.Criteria); err != nil {
+		return err
 	}
 
 	if c.MaxLogSize <= 0 {
@@ -233,13 +218,13 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := c.Splitter.EncodingConfig.Build()
+	enc, err := helper.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return err
 	}
 
 	if c.Header != nil {
-		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc.Encoding); err != nil {
+		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
 			return fmt.Errorf("invalid config for `header`: %w", err)
 		}
 	}

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
@@ -17,6 +17,7 @@ import (
 )
 
 type datadogReceiver struct {
+	address      string
 	config       *Config
 	params       receiver.CreateSettings
 	nextConsumer consumer.Traces
@@ -66,6 +67,8 @@ func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error 
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
 
+	ddr.address = hln.Addr().String()
+
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
@@ -89,8 +92,9 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 
 	ddTraces, err = handlePayload(req)
 	if err != nil {
-		http.Error(w, "Unable to unmarshal reqs", http.StatusInternalServerError)
+		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
+		return
 	}
 
 	otelTraces := toTraces(ddTraces, req)

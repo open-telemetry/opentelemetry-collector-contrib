@@ -24,16 +24,15 @@ type MetricData interface {
 	HasMetricInputType() bool
 }
 
-// Aggregated defines a metric aggregation type.
-// TODO: Rename to AggregationTemporality
-type Aggregated struct {
+// AggregationTemporality defines a metric aggregation type.
+type AggregationTemporality struct {
 	// Aggregation describes if the aggregator reports delta changes
 	// since last report time, or cumulative changes since a fixed start time.
 	Aggregation pmetric.AggregationTemporality
 }
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
-func (agg *Aggregated) UnmarshalText(text []byte) error {
+func (agg *AggregationTemporality) UnmarshalText(text []byte) error {
 	switch vtStr := string(text); vtStr {
 	case "cumulative":
 		agg.Aggregation = pmetric.AggregationTemporalityCumulative
@@ -46,7 +45,7 @@ func (agg *Aggregated) UnmarshalText(text []byte) error {
 }
 
 // String returns string representation of the aggregation temporality.
-func (agg *Aggregated) String() string {
+func (agg *AggregationTemporality) String() string {
 	return agg.Aggregation.String()
 }
 
@@ -142,16 +141,16 @@ func (d gauge) HasAggregated() bool {
 }
 
 type sum struct {
-	Aggregated      `mapstructure:"aggregation"`
-	Mono            `mapstructure:",squash"`
-	MetricValueType `mapstructure:"value_type"`
-	MetricInputType `mapstructure:",squash"`
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
+	Mono                   `mapstructure:",squash"`
+	MetricValueType        `mapstructure:"value_type"`
+	MetricInputType        `mapstructure:",squash"`
 }
 
 // Unmarshal is a custom unmarshaler for sum. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
 func (d *sum) Unmarshal(parser *confmap.Conf) error {
-	if !parser.IsSet("aggregation") {
-		return errors.New("missing required field: `aggregation`")
+	if !parser.IsSet("aggregation_temporality") {
+		return errors.New("missing required field: `aggregation_temporality`")
 	}
 	if err := d.MetricValueType.Unmarshal(parser); err != nil {
 		return err

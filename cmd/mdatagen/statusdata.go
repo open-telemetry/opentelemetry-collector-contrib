@@ -20,6 +20,7 @@ var distros = map[string]string{
 	"redhat":   "https://github.com/os-observability/redhat-opentelemetry-collector",
 	"splunk":   "https://github.com/signalfx/splunk-otel-collector",
 	"sumo":     "https://github.com/SumoLogic/sumologic-otel-collector",
+	"liatrio":  "https://github.com/liatrio/liatrio-otel-collector",
 }
 
 type Codeowners struct {

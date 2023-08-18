@@ -31,6 +31,8 @@ func Test_DataPointFunctions(t *testing.T) {
 
 func Test_MetricFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+	expected["extract_sum_metric"] = newExtractSumMetricFactory()
+	expected["extract_count_metric"] = newExtractCountMetricFactory()
 	actual := MetricFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {

@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -163,17 +164,15 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_timestamp",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.Regex = `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`
-					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
-						{
-							&TimestampSortRule{
-								BaseSortRule: BaseSortRule{
-									SortType:  sortTypeTimestamp,
-									RegexKey:  "rotation_time",
-									Ascending: true,
-								},
-								Location: "utc",
-								Layout:   `%Y%m%d%H`,
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex: `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType:  "timestamp",
+								RegexKey:  "rotation_time",
+								Ascending: true,
+								Location:  "utc",
+								Layout:    `%Y%m%d%H`,
 							},
 						},
 					}
@@ -184,14 +183,12 @@ func TestUnmarshal(t *testing.T) {
 				Name: "sort_by_numeric",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.OrderingCriteria.Regex = `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`
-					cfg.OrderingCriteria.SortBy = []SortRuleImpl{
-						{
-							&NumericSortRule{
-								BaseSortRule: BaseSortRule{
-									SortType: sortTypeNumeric,
-									RegexKey: "file_num",
-								},
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex: `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType: "numeric",
+								RegexKey: "file_num",
 							},
 						},
 					}
@@ -370,7 +367,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_lower",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
+					cfg.Splitter.Encoding = "utf-16le"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -378,7 +375,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_upper",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
+					cfg.Splitter.Encoding = "UTF-16lE"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -432,7 +429,6 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.pollInterval, 10*time.Millisecond)
 			},
 		},
@@ -489,7 +485,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
@@ -575,13 +571,11 @@ func TestBuild(t *testing.T) {
 		{
 			"BadOrderingCriteriaRegex",
 			func(f *Config) {
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
-					{
-						&NumericSortRule{
-							BaseSortRule: BaseSortRule{
-								RegexKey: "value",
-								SortType: sortTypeNumeric,
-							},
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					SortBy: []matcher.Sort{
+						{
+							SortType: "numeric",
+							RegexKey: "value",
 						},
 					},
 				}
@@ -590,16 +584,14 @@ func TestBuild(t *testing.T) {
 			nil,
 		},
 		{
-			"BasicOrderingCriteriaTimetsamp",
+			"OrderingCriteriaTimestampMissingLayout",
 			func(f *Config) {
-				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
-					{
-						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
-								RegexKey: "value",
-								SortType: sortTypeTimestamp,
-							},
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					Regex: ".*",
+					SortBy: []matcher.Sort{
+						{
+							SortType: "timestamp",
+							RegexKey: "value",
 						},
 					},
 				}
@@ -610,15 +602,13 @@ func TestBuild(t *testing.T) {
 		{
 			"GoodOrderingCriteriaTimestamp",
 			func(f *Config) {
-				f.OrderingCriteria.Regex = ".*"
-				f.OrderingCriteria.SortBy = []SortRuleImpl{
-					{
-						&TimestampSortRule{
-							BaseSortRule: BaseSortRule{
-								RegexKey: "value",
-								SortType: sortTypeTimestamp,
-							},
-							Layout: "%Y%m%d%H",
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					Regex: ".*",
+					SortBy: []matcher.Sort{
+						{
+							SortType: "timestamp",
+							RegexKey: "value",
+							Layout:   "%Y%m%d%H",
 						},
 					},
 				}
@@ -668,7 +658,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.pollInterval, 10*time.Millisecond)
 			},
 		},
@@ -691,7 +680,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,

@@ -25,7 +25,7 @@ func TestLoadConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			id:         component.NewID(metadata.Type),
 			expected: &Config{
-				Transforms: []Transform{
+				Transforms: []transform{
 					{
 						MetricIncludeFilter: FilterConfig{
 							Include:   "name",
@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 			configFile: "config_full.yaml",
 			id:         component.NewIDWithName(metadata.Type, "multiple"),
 			expected: &Config{
-				Transforms: []Transform{
+				Transforms: []transform{
 					{
 						MetricIncludeFilter: FilterConfig{
 							Include:   "name1",

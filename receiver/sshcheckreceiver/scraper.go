@@ -124,7 +124,9 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 		}
 	}
 
-	return s.mb.Emit(), nil
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 func newScraper(conf *Config, settings receiver.CreateSettings) *sshcheckScraper {

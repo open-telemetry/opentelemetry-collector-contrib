@@ -29,30 +29,30 @@ type readerConfig struct {
 	includeFilePathResolved bool
 }
 
-// Reader manages a single file
-//
-// Deprecated: [v0.80.0] This will be made internal in a future release, tentatively v0.82.0.
-type Reader struct {
-	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
+type readerMetadata struct {
+	Fingerprint     *fingerprint.Fingerprint
+	Offset          int64
+	FileAttributes  map[string]any
+	HeaderFinalized bool
+}
+
+// reader manages a single file
+type reader struct {
+	*zap.SugaredLogger
 	*readerConfig
+	*readerMetadata
+	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
-	encoding      helper.Encoding
+	decoder       *helper.Decoder
+	headerReader  *header.Reader
 	processFunc   emit.Callback
-
-	Fingerprint    *fingerprint.Fingerprint
-	Offset         int64
-	generation     int
-	file           *os.File
-	FileAttributes map[string]any
-	eof            bool
-
-	HeaderFinalized bool
-	headerReader    *header.Reader
+	generation    int
+	eof           bool
 }
 
 // offsetToEnd sets the starting offset
-func (r *Reader) offsetToEnd() error {
+func (r *reader) offsetToEnd() error {
 	info, err := r.file.Stat()
 	if err != nil {
 		return fmt.Errorf("stat: %w", err)
@@ -62,7 +62,7 @@ func (r *Reader) offsetToEnd() error {
 }
 
 // ReadToEnd will read until the end of the file
-func (r *Reader) ReadToEnd(ctx context.Context) {
+func (r *reader) ReadToEnd(ctx context.Context) {
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.Errorw("Failed to seek", zap.Error(err))
 		return
@@ -89,7 +89,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			break
 		}
 
-		token, err := r.encoding.Decode(s.Bytes())
+		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
 			r.Errorw("decode: %w", zap.Error(err))
 		} else if err := r.processFunc(ctx, token, r.FileAttributes); err != nil {
@@ -116,7 +116,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	}
 }
 
-func (r *Reader) finalizeHeader() {
+func (r *reader) finalizeHeader() {
 	if err := r.headerReader.Stop(); err != nil {
 		r.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
 	}
@@ -125,7 +125,7 @@ func (r *Reader) finalizeHeader() {
 }
 
 // Close will close the file
-func (r *Reader) Close() {
+func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
@@ -140,7 +140,7 @@ func (r *Reader) Close() {
 }
 
 // Read from the file and update the fingerprint if necessary
-func (r *Reader) Read(dst []byte) (int, error) {
+func (r *reader) Read(dst []byte) (int, error) {
 	// Skip if fingerprint is already built
 	// or if fingerprint is behind Offset
 	if len(r.Fingerprint.FirstBytes) == r.fingerprintSize || int(r.Offset) > len(r.Fingerprint.FirstBytes) {

@@ -4,20 +4,16 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/cache"
 
@@ -25,8 +21,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/container"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
@@ -71,24 +68,19 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 	return newPod
 }
 
-func GetMetrics(set receiver.CreateSettings, pod *corev1.Pod) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
-	mbphase.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
+	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	metrics := mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
-		specMetrics := container.GetSpecMetrics(set, c, pod)
-		specMetrics.ResourceMetrics().MoveAndAppendTo(metrics.ResourceMetrics())
+		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
-
-	return metrics
 }
 
 func phaseToInt(phase corev1.PodPhase) int32 {
@@ -127,16 +119,16 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta[constants.K8sKeyWorkLoadName] = or.Name
 	}
 
-	if mc.Services != nil {
-		meta = maps.MergeStringMaps(meta, getPodServiceTags(pod, mc.Services))
+	if store := mc.Get(gvk.Service); store != nil {
+		meta = maps.MergeStringMaps(meta, service.GetPodServiceTags(pod, store))
 	}
 
-	if mc.Jobs != nil {
-		meta = maps.MergeStringMaps(meta, collectPodJobProperties(pod, mc.Jobs, logger))
+	if store := mc.Get(gvk.Job); store != nil {
+		meta = maps.MergeStringMaps(meta, collectPodJobProperties(pod, store, logger))
 	}
 
-	if mc.ReplicaSets != nil {
-		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, mc.ReplicaSets, logger))
+	if store := mc.Get(gvk.ReplicaSet); store != nil {
+		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
@@ -211,21 +203,6 @@ func logError(err error, ref *v1.OwnerReference, podUID types.UID, logger *zap.L
 		zap.String(conventions.AttributeK8SJobUID, string(ref.UID)),
 		zap.Error(err),
 	)
-}
-
-// getPodServiceTags returns a set of services associated with the pod.
-func getPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string {
-	properties := map[string]string{}
-
-	for _, ser := range services.List() {
-		serObj := ser.(*corev1.Service)
-		if serObj.Namespace == pod.Namespace &&
-			labels.Set(serObj.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
-			properties[fmt.Sprintf("%s%s", constants.K8sServicePrefix, serObj.Name)] = ""
-		}
-	}
-
-	return properties
 }
 
 // getWorkloadProperties returns workload metadata for provided owner reference.

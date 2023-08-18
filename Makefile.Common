@@ -34,6 +34,7 @@ TOOLS_MOD_REGEX  := "\s+_\s+\".*\""
 TOOLS_PKG_NAMES  := $(shell grep -E $(TOOLS_MOD_REGEX) < $(TOOLS_MOD_DIR)/tools.go | tr -d " _\"")
 TOOLS_BIN_DIR    := $(SRC_ROOT)/.tools
 TOOLS_BIN_NAMES  := $(addprefix $(TOOLS_BIN_DIR)/, $(notdir $(TOOLS_PKG_NAMES)))
+CHLOGGEN_CONFIG  := .chloggen/config.yaml
 
 .PHONY: install-tools
 install-tools: $(TOOLS_BIN_NAMES)
@@ -173,7 +174,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.19
+	$(GOCMD) mod tidy -compat=1.20
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

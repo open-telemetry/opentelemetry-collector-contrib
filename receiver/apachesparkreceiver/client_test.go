@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	URL = "http://sparkmock.com"
+	testURL = "http://sparkmock.com"
 )
 
 func TestNewApacheSparkClient(t *testing.T) {
@@ -86,7 +86,7 @@ func TestClusterStats(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				tc := createTestClient(t, URL)
+				tc := createTestClient(t, testURL)
 
 				clusterStats, err := tc.ClusterStats()
 				require.NotNil(t, err)
@@ -169,7 +169,7 @@ func TestApplications(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				tc := createTestClient(t, URL)
+				tc := createTestClient(t, testURL)
 
 				apps, err := tc.Applications()
 				require.NotNil(t, err)
@@ -252,7 +252,7 @@ func TestStageStats(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				tc := createTestClient(t, URL)
+				tc := createTestClient(t, testURL)
 
 				stageStats, err := tc.StageStats("some_app_id")
 				require.NotNil(t, err)
@@ -335,7 +335,7 @@ func TestExecutorStats(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				tc := createTestClient(t, URL)
+				tc := createTestClient(t, testURL)
 
 				executorStats, err := tc.ExecutorStats("some_app_id")
 				require.NotNil(t, err)
@@ -418,7 +418,7 @@ func TestJobStats(t *testing.T) {
 				}))
 				defer ts.Close()
 
-				tc := createTestClient(t, URL)
+				tc := createTestClient(t, testURL)
 
 				jobStats, err := tc.JobStats("some_app_id")
 				require.NotNil(t, err)

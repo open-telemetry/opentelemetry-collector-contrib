@@ -4,18 +4,13 @@
 package cronjob // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -24,32 +19,25 @@ const (
 	cronJobKeyConcurrencyPolicy = "concurrency_policy"
 )
 
-func GetMetrics(set receiver.CreateSettings, cj *batchv1.CronJob) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
+func RecordMetrics(mb *metadata.MetricsBuilder, cj *batchv1.CronJob, ts pcommon.Timestamp) {
+	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
 
-	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
-
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-func GetMetricsBeta(set receiver.CreateSettings, cj *batchv1beta1.CronJob) pmetric.Metrics {
-	mbphase := imetadataphase.NewMetricsBuilder(imetadataphase.DefaultMetricsBuilderConfig(), set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
-
-	mbphase.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
-
-	rb := imetadataphase.NewResourceBuilder(imetadataphase.DefaultResourceAttributesConfig())
+func RecordMetricsBeta(mb *metadata.MetricsBuilder, cj *batchv1beta1.CronJob, ts pcommon.Timestamp) {
+	mb.RecordK8sCronjobActiveJobsDataPoint(ts, int64(len(cj.Status.Active)))
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(cj.Namespace)
 	rb.SetK8sCronjobUID(string(cj.UID))
 	rb.SetK8sCronjobName(cj.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(cj *batchv1.CronJob) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
