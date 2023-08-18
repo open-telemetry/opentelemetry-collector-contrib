@@ -356,7 +356,7 @@ func (m *Manager) syncLastPollFiles(ctx context.Context) {
 
 	// Encode each known file
 	for _, fileReader := range m.knownFiles {
-		if err := enc.Encode(fileReader); err != nil {
+		if err := enc.Encode(fileReader.readerMetadata); err != nil {
 			m.Errorw("Failed to encode known files", zap.Error(err))
 		}
 	}
@@ -382,7 +382,7 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 
 	// Decode the number of entries
 	var knownFileCount int
-	if err := dec.Decode(&knownFileCount); err != nil {
+	if err = dec.Decode(&knownFileCount); err != nil {
 		return fmt.Errorf("decoding file count: %w", err)
 	}
 
@@ -394,31 +394,30 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	// Decode each of the known files
 	m.knownFiles = make([]*reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
-		// Only the offset, fingerprint, and splitter
-		// will be used before this reader is discarded
-		unsafeReader, err := m.readerFactory.unsafeReader()
-		if err != nil {
-			return err
-		}
-		if err = dec.Decode(unsafeReader); err != nil {
+		rmd := &readerMetadata{}
+		if err = dec.Decode(rmd); err != nil {
 			return err
 		}
 
 		// Migrate readers that used FileAttributes.HeaderAttributes
 		// This block can be removed in a future release, tentatively v0.90.0
-		if ha, ok := unsafeReader.FileAttributes["HeaderAttributes"]; ok {
+		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
 			switch hat := ha.(type) {
 			case map[string]any:
 				for k, v := range hat {
-					unsafeReader.FileAttributes[k] = v
+					rmd.FileAttributes[k] = v
 				}
-				delete(unsafeReader.FileAttributes, "HeaderAttributes")
+				delete(rmd.FileAttributes, "HeaderAttributes")
 			default:
 				m.Errorw("migrate header attributes: unexpected format")
 			}
 		}
-
-		m.knownFiles = append(m.knownFiles, unsafeReader)
+		r, err := m.readerFactory.newFromMetadata(rmd)
+		if err != nil {
+			m.Errorw("load reader", err)
+		} else {
+			m.knownFiles = append(m.knownFiles, r)
+		}
 	}
 
 	return nil
