@@ -9,12 +9,15 @@ import (
 	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
-	typeError = "target arg must be of type string, []any, map[string]any, pcommon.Map, pcommon.Slice, or pcommon.Value (of type String, Map, Slice)"
+	typeError = `target arg must be of type string, []any, map[string]any, pcommon.Map, pcommon.Slice, pcommon.Value (of type String, Map, Slice), 
+	pmetric.ExemplarSlice, pmetric.ExponentialHistogramDataPointSlice, pmetric.HistogramDataPointSlice, pmetric.MetricSlice, pmetric.NumberDataPointSlice, 
+	pmetric.ResourceMetricsSlice, pmetric.ScopeMetricsSlice, pmetric.SummaryDataPointSlice, pmetric.SummaryDataPointValueAtQuantileSlice`
 )
 
 type LenArguments[K any] struct {
@@ -57,6 +60,25 @@ func computeLen[K any](target ottl.Getter[K]) ottl.ExprFunc[K] {
 		case pcommon.Map:
 			return int64(valType.Len()), nil
 		case pcommon.Slice:
+			return int64(valType.Len()), nil
+
+		case pmetric.ExemplarSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ExponentialHistogramDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.HistogramDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.MetricSlice:
+			return int64(valType.Len()), nil
+		case pmetric.NumberDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ResourceMetricsSlice:
+			return int64(valType.Len()), nil
+		case pmetric.ScopeMetricsSlice:
+			return int64(valType.Len()), nil
+		case pmetric.SummaryDataPointSlice:
+			return int64(valType.Len()), nil
+		case pmetric.SummaryDataPointValueAtQuantileSlice:
 			return int64(valType.Len()), nil
 		}
 

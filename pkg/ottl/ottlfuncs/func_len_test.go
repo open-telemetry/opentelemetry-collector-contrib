@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -37,6 +38,60 @@ func Test_Len(t *testing.T) {
 	err = pcommonValueMap.FromRaw(dummyMap(5))
 	if err != nil {
 		t.Error(err)
+	}
+
+	pmetricExemplarSlice := pmetric.NewExemplarSlice()
+	pmetricExemplarSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricExemplarSlice.AppendEmpty()
+	}
+
+	pmetricExponentialHistogramDataPointSlice := pmetric.NewExponentialHistogramDataPointSlice()
+	pmetricExponentialHistogramDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricExponentialHistogramDataPointSlice.AppendEmpty()
+	}
+
+	pmetricHistogramDataPointSlice := pmetric.NewHistogramDataPointSlice()
+	pmetricHistogramDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricHistogramDataPointSlice.AppendEmpty()
+	}
+
+	pmetricMetricSlice := pmetric.NewMetricSlice()
+	pmetricMetricSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricMetricSlice.AppendEmpty()
+	}
+
+	pmetricNumberDataPointSlice := pmetric.NewNumberDataPointSlice()
+	pmetricNumberDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricNumberDataPointSlice.AppendEmpty()
+	}
+
+	pmetricResourceSlice := pmetric.NewResourceMetricsSlice()
+	pmetricResourceSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricResourceSlice.AppendEmpty()
+	}
+
+	pmetricScopeMetricsSlice := pmetric.NewScopeMetricsSlice()
+	pmetricScopeMetricsSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricScopeMetricsSlice.AppendEmpty()
+	}
+
+	pmetricSummaryDataPointSlice := pmetric.NewSummaryDataPointSlice()
+	pmetricSummaryDataPointSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricSummaryDataPointSlice.AppendEmpty()
+	}
+
+	pmetricSummaryDataPointValueAtQuantileSlice := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+	pmetricSummaryDataPointValueAtQuantileSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		pmetricSummaryDataPointValueAtQuantileSlice.AppendEmpty()
 	}
 
 	tests := []struct {
@@ -87,6 +142,51 @@ func Test_Len(t *testing.T) {
 		{
 			name:     "pcommon value map",
 			value:    pcommonValueMap,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Exemplar slice",
+			value:    pmetricExemplarSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric ExponentialHistogramDataPoint slice",
+			value:    pmetricExponentialHistogramDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric HistogramDataPoint slice",
+			value:    pmetricHistogramDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Metric slice",
+			value:    pmetricMetricSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric NumberDataPoint slice",
+			value:    pmetricNumberDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric Resource slice",
+			value:    pmetricResourceSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric ScopeMetrics slice",
+			value:    pmetricScopeMetricsSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric SummaryDataPoint slice",
+			value:    pmetricSummaryDataPointSlice,
+			expected: 5,
+		},
+		{
+			name:     "pmetric SummaryDataPointValueAtQuantile slice",
+			value:    pmetricSummaryDataPointValueAtQuantileSlice,
 			expected: 5,
 		},
 	}
