@@ -22,6 +22,9 @@ spec:
         - --otlp-insecure
         - --otlp-endpoint={{ .OTLPEndpoint }}
         - --duration=36000s
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
         - --rate=1
         - --otlp-attributes=service.name="test-{{ .DataType }}-deployment"
         - --otlp-attributes=k8s.container.name="telemetrygen"

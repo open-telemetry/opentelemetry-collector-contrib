@@ -17,6 +17,9 @@ spec:
         - {{ .DataType }}
         - --otlp-insecure
         - --otlp-endpoint={{ .OTLPEndpoint }}
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
         - --rate=1
         - --duration=36000s
         - --otlp-attributes=service.name="test-{{ .DataType }}-job"
