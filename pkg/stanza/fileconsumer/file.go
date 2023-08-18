@@ -49,7 +49,6 @@ type Manager struct {
 
 	// Following fields are used only when useThreadPool is enabled
 	workerWg       sync.WaitGroup
-	_workerWg      sync.WaitGroup
 	knownFilesLock sync.RWMutex
 
 	readerChan chan readerWrapper
@@ -116,11 +115,13 @@ func (m *Manager) startPoller(ctx context.Context) {
 				return
 			case <-globTicker.C:
 			}
+
 			m.poll(ctx)
 		}
 	}()
 }
 
+// poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
 	if useThreadPool.IsEnabled() {
 		m.pollConcurrent(ctx)

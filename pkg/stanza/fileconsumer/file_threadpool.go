@@ -16,7 +16,6 @@ import (
 type readerWrapper struct {
 	reader *reader
 	fp     *fingerprint.Fingerprint
-	path   string
 }
 
 func (m *Manager) kickoffThreads(ctx context.Context) {
@@ -126,7 +125,7 @@ func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
 			m.trieLock.Lock()
 			m.trie.Put(fp.FirstBytes)
 			m.trieLock.Unlock()
-			m.readerChan <- readerWrapper{reader: reader, fp: fp, path: path}
+			m.readerChan <- readerWrapper{reader: reader, fp: fp}
 		}
 	}
 }
