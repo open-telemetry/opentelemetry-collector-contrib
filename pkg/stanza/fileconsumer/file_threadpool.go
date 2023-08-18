@@ -149,19 +149,17 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 	// so we can just find the first reader whose poll cycle is less than our
 	// limit i.e. last 3 cycles, and keep every reader after that
 	oldReaders := make([]*reader, 0)
-	for i := 0; i < len(m.knownFiles); i++ {
+	i := 0
+	for ; i < len(m.knownFiles); i++ {
 		reader := m.knownFiles[i]
-		if reader.generation < 3 {
-			oldReaders = m.knownFiles[:i]
-			m.knownFiles = m.knownFiles[i:]
+		if reader.generation >= 3 {
+			oldReaders = append(oldReaders, reader)
+			i += 1
+		} else {
 			break
 		}
 	}
-
-	if len(m.knownFiles) > 0 && m.knownFiles[len(m.knownFiles)-1].generation >= 3 {
-		oldReaders = m.knownFiles[:len(m.knownFiles)]
-		m.knownFiles = m.knownFiles[len(m.knownFiles):]
-	}
+	m.knownFiles = m.knownFiles[i:]
 
 	var lostWG sync.WaitGroup
 	for _, r := range oldReaders {
