@@ -14,37 +14,16 @@ import (
 	"golang.org/x/text/transform"
 )
 
-// NewEncodingConfig creates a new Encoding config
+// Deprecated: [v0.84.0]
 func NewEncodingConfig() EncodingConfig {
 	return EncodingConfig{
 		Encoding: "utf-8",
 	}
 }
 
-// EncodingConfig is the configuration of an Encoding helper
+// Deprecated: [v0.84.0]
 type EncodingConfig struct {
 	Encoding string `mapstructure:"encoding,omitempty"`
-}
-
-// Deprecated: [v0.83.0] Use NewDecoder instead.
-func (c EncodingConfig) Build() (Encoding, error) {
-	enc, err := LookupEncoding(c.Encoding)
-	if err != nil {
-		return Encoding{}, err
-	}
-
-	return Encoding{
-		Encoding:     enc,
-		decodeBuffer: make([]byte, 1<<12),
-		decoder:      enc.NewDecoder(),
-	}, nil
-}
-
-// Deprecated: [v0.83.0] Use Decoder instead.
-type Encoding struct {
-	Encoding     encoding.Encoding
-	decoder      *encoding.Decoder
-	decodeBuffer []byte
 }
 
 type Decoder struct {
