@@ -191,61 +191,49 @@ func walkFolder(folder string, componentType string) error {
 }
 
 func exprToString(expr ast.Expr) string {
-	switch expr.(type) {
+	switch e := expr.(type) {
 	case *ast.MapType:
-		mapExpr := expr.(*ast.MapType)
-		return fmt.Sprintf("map[%s]%s", exprToString(mapExpr.Key), exprToString(mapExpr.Value))
+		return fmt.Sprintf("map[%s]%s", exprToString(e.Key), exprToString(e.Value))
 	case *ast.ArrayType:
-		arrayExpr := expr.(*ast.ArrayType)
-		return fmt.Sprintf("[%s]%s", exprToString(arrayExpr.Len), exprToString(arrayExpr.Elt))
+		return fmt.Sprintf("[%s]%s", exprToString(e.Len), exprToString(e.Elt))
 	case *ast.StructType:
-		structExpr := expr.(*ast.StructType)
 		var fields []string
-		for _, f := range structExpr.Fields.List {
+		for _, f := range e.Fields.List {
 			fields = append(fields, exprToString(f.Type))
 		}
 		return fmt.Sprintf("{%s}", strings.Join(fields, ","))
 	case *ast.InterfaceType:
-		interfaceExpr := expr.(*ast.InterfaceType)
 		var methods []string
-		for _, f := range interfaceExpr.Methods.List {
+		for _, f := range e.Methods.List {
 			methods = append(methods, "func "+exprToString(f.Type))
 		}
 		return fmt.Sprintf("{%s}", strings.Join(methods, ","))
 	case *ast.ChanType:
-		chanExpr := expr.(*ast.ChanType)
-		return fmt.Sprintf("chan(%s)", exprToString(chanExpr.Value))
+		return fmt.Sprintf("chan(%s)", exprToString(e.Value))
 	case *ast.FuncType:
-		funcExpr := expr.(*ast.FuncType)
 		var results []string
-		for _, r := range funcExpr.Results.List {
+		for _, r := range e.Results.List {
 			results = append(results, exprToString(r.Type))
 		}
 		var params []string
-		for _, r := range funcExpr.Params.List {
+		for _, r := range e.Params.List {
 			params = append(params, exprToString(r.Type))
 		}
 		return fmt.Sprintf("func(%s) %s", strings.Join(params, ","), strings.Join(results, ","))
 	case *ast.SelectorExpr:
-		selectorExpr := expr.(*ast.SelectorExpr)
-		return fmt.Sprintf("%s.%s", exprToString(selectorExpr.X), selectorExpr.Sel.Name)
+		return fmt.Sprintf("%s.%s", exprToString(e.X), e.Sel.Name)
 	case *ast.Ident:
-		identExpr := expr.(*ast.Ident)
-		return identExpr.Name
+		return e.Name
 	case nil:
 		return ""
 	case *ast.StarExpr:
-		starExpr := expr.(*ast.StarExpr)
-		return fmt.Sprintf("*%s", exprToString(starExpr.X))
+		return fmt.Sprintf("*%s", exprToString(e.X))
 	case *ast.Ellipsis:
-		ellipsis := expr.(*ast.Ellipsis)
-		return fmt.Sprintf("%s...", exprToString(ellipsis.Elt))
+		return fmt.Sprintf("%s...", exprToString(e.Elt))
 	case *ast.IndexExpr:
-		indexExpr := expr.(*ast.IndexExpr)
-		return fmt.Sprintf("%s[%s]", exprToString(indexExpr.X), exprToString(indexExpr.Index))
+		return fmt.Sprintf("%s[%s]", exprToString(e.X), exprToString(e.Index))
 	case *ast.BasicLit:
-		basicLit := expr.(*ast.BasicLit)
-		return basicLit.Value
+		return e.Value
 	default:
 		panic(fmt.Sprintf("Unsupported expr type: %#v", expr))
 	}
