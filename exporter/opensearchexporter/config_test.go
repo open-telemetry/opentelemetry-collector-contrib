@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,12 +39,12 @@ func TestLoadConfig(t *testing.T) {
 		configValidateAssert assert.ErrorAssertionFunc
 	}{
 		{
-			id:                   component.NewIDWithName(typeStr, ""),
+			id:                   component.NewIDWithName(metadata.Type, ""),
 			expected:             sampleCfg,
 			configValidateAssert: assert.NoError,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "trace"),
+			id: component.NewIDWithName(metadata.Type, "trace"),
 			expected: &Config{
 				Dataset:   "ngnix",
 				Namespace: "eu",
@@ -68,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 			configValidateAssert: assert.NoError,
 		},
 		{
-			id: component.NewIDWithName(typeStr, "empty_dataset"),
+			id: component.NewIDWithName(metadata.Type, "empty_dataset"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.Endpoint = sampleEndpoint
 				config.Dataset = ""
@@ -79,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "empty_namespace"),
+			id: component.NewIDWithName(metadata.Type, "empty_namespace"),
 			expected: withDefaultConfig(func(config *Config) {
 				config.Endpoint = sampleEndpoint
 				config.Dataset = "ngnix"
