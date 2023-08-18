@@ -14,10 +14,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 )
 
 type TelemetrygenObjInfo struct {
@@ -57,7 +59,7 @@ func CreateTelemetryGenObjects(t *testing.T, client *dynamic.DynamicClient, test
 	return createdObjs, telemetrygenObjInfos
 }
 
-func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, podNamespace string, podLabels map[string]any, workload, dataType string) {
+func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, kubeCli *kubernetes.Clientset, podNamespace string, podLabels map[string]any, workload, dataType string) {
 	podGVR := schema.GroupVersionResource{Version: "v1", Resource: "pods"}
 	listOptions := metav1.ListOptions{LabelSelector: SelectorFromMap(podLabels).String()}
 	podTimeoutMinutes := 3
@@ -74,11 +76,35 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, pod
 		fmt.Printf("check pod %v\n", podName)
 
 		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
-		fmt.Printf("check pod %v phase\n", podName, podPhase)
+		fmt.Printf("check pod %v phase %s\n", podName, podPhase)
 
 		containerStatus := list.Items[0].Object["status"].(map[string]interface{})["containerStatuses"]
-		fmt.Printf("check pod %v containerStatus\n", podName, containerStatus)
+		fmt.Printf("check pod %v containerStatus %v\n", podName, containerStatus)
+
+		if podPhase == "Failed" {
+			namespace := "default"
+			logOptions := &v1.PodLogOptions{
+				Container: "telemetrygen",
+			}
+			req := kubeCli.CoreV1().Pods(namespace).GetLogs(podName, logOptions)
+
+			result, err := req.Stream(context.Background())
+			if err != nil {
+				panic(err.Error())
+			}
+			defer result.Close()
+
+			buf := make([]byte, 1024)
+			for {
+				n, err := result.Read(buf)
+				if err != nil {
+					panic(err.Error())
+				}
+				fmt.Println(string(buf[:n]))
+			}
+		}
+
 		return podPhase == "Running"
-	}, time.Duration(podTimeoutMinutes)*time.Minute, 5*time.Second,
+	}, time.Duration(podTimeoutMinutes)*time.Minute, 20*time.Second,
 		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod status is %v", workload, dataType, podTimeoutMinutes, podStatus)
 }

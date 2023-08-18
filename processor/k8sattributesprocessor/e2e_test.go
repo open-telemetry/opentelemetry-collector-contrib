@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
@@ -61,6 +62,7 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, err)
 	dynamicClient, err := dynamic.NewForConfig(kubeConfig)
 	require.NoError(t, err)
+	kubernetesCli, err := kubernetes.NewForConfig(kubeConfig)
 
 	testID := uuid.NewString()[:8]
 	collectorObjs := k8stest.CreateCollectorObjects(t, dynamicClient, testID)
@@ -73,7 +75,7 @@ func TestE2E(t *testing.T) {
 
 	for _, info := range telemetryGenObjInfos {
 		fmt.Printf("WaitForTelemetryGenToStart info.Namespace %v, info.Workload %v, info.DataType %v, info.PodLabelSelectors %v\n", info.Namespace, info.Workload, info.DataType, info.PodLabelSelectors)
-		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
+		k8stest.WaitForTelemetryGenToStart(t, dynamicClient, kubernetesCli, info.Namespace, info.PodLabelSelectors, info.Workload, info.DataType)
 	}
 
 	metricsConsumer := new(consumertest.MetricsSink)
