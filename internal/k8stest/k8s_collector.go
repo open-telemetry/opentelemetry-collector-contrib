@@ -64,4 +64,6 @@ func WaitForCollectorToStart(t *testing.T, client *dynamic.DynamicClient, podNam
 		return podPhase == "Running"
 	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
 		"collector pod haven't started within %d minutes, latest pod phase is %s", podTimeoutMinutes, podPhase)
+
+	time.Sleep(30 * time.Second)
 }
