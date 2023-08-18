@@ -9,29 +9,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type ParseRegexArguments[K any] struct {
+type ExtractPatternArguments[K any] struct {
 	Target  ottl.StringGetter[K] `ottlarg:"0"`
 	Pattern string               `ottlarg:"1"`
 }
 
-func NewParseRegexFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ParseRegex", &ParseRegexArguments[K]{}, createParseRegexFunction[K])
+func NewExtractPatternFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ExtractPattern", &ExtractPatternArguments[K]{}, createExtractPatternFunction[K])
 }
 
-func createParseRegexFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ParseRegexArguments[K])
+func createExtractPatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ExtractPatternArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ParseRegexFactory args must be of type *ParseRegexArguments[K]")
+		return nil, fmt.Errorf("ExtractPatternFactory args must be of type *ExtractPatternArguments[K]")
 	}
 
-	return parseRegex(args.Target, args.Pattern)
+	return extractPattern(args.Target, args.Pattern)
 }
 
-func parseRegex[K any](target ottl.StringGetter[K], pattern string) (ottl.ExprFunc[K], error) {
+func extractPattern[K any](target ottl.StringGetter[K], pattern string) (ottl.ExprFunc[K], error) {
 	r, err := regexp.Compile(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to ParseRegex is not a valid pattern: %w", err)
+		return nil, fmt.Errorf("the pattern supplied to ExtractPattern is not a valid pattern: %w", err)
 	}
 
 	namedCaptureGroups := 0
