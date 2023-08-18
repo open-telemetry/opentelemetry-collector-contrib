@@ -53,7 +53,7 @@ func NewConfigWithID(operatorID string) *Config {
 		BaseConfig: BaseConfig{
 			OneLogPerPacket: false,
 			Multiline:       helper.NewMultilineConfig(),
-			Encoding:        helper.NewEncodingConfig(),
+			Encoding:        "utf-8",
 		},
 	}
 }
@@ -71,7 +71,7 @@ type BaseConfig struct {
 	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
 	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
 	OneLogPerPacket             bool                        `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding                    helper.EncodingConfig       `mapstructure:",squash,omitempty"`
+	Encoding                    string                      `mapstructure:"encoding,omitempty"`
 	Multiline                   helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
 	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
 	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
@@ -113,7 +113,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
+	enc, err := helper.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}

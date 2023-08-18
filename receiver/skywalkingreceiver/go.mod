@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.83.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.83.0
 	go.opentelemetry.io/collector/component v0.83.0

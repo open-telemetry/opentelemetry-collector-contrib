@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsclo
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.319
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.82.0
+	github.com/aws/aws-sdk-go v1.44.323
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/confmap v0.83.0
@@ -29,7 +29,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect

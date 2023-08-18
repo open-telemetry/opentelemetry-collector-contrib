@@ -6,12 +6,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.83.0
 	github.com/shirou/gopsutil/v3 v3.23.7
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
@@ -32,6 +32,7 @@ require (
 )
 
 require (
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -55,6 +56,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect

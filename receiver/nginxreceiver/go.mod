@@ -5,10 +5,10 @@ go 1.20
 require (
 	github.com/google/go-cmp v0.5.9
 	github.com/nginxinc/nginx-prometheus-exporter v0.8.1-0.20201110005315-f5a5f8086c19
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.82.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.82.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.22.0
+	github.com/testcontainers/testcontainers-go v0.23.0
 	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/confighttp v0.83.0
 	go.opentelemetry.io/collector/config/configtls v0.83.0
@@ -55,7 +55,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.82.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.83.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
