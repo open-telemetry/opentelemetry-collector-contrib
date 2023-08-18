@@ -29,24 +29,26 @@ type readerConfig struct {
 	includeFilePathResolved bool
 }
 
+type readerMetadata struct {
+	Fingerprint     *fingerprint.Fingerprint
+	Offset          int64
+	FileAttributes  map[string]any
+	HeaderFinalized bool
+}
+
 // reader manages a single file
 type reader struct {
-	*zap.SugaredLogger `json:"-"` // json tag excludes embedded fields from storage
+	*zap.SugaredLogger
 	*readerConfig
+	*readerMetadata
+	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
 	decoder       *helper.Decoder
+	headerReader  *header.Reader
 	processFunc   emit.Callback
-
-	Fingerprint    *fingerprint.Fingerprint
-	Offset         int64
-	generation     int
-	file           *os.File
-	FileAttributes map[string]any
-	eof            bool
-
-	HeaderFinalized bool
-	headerReader    *header.Reader
+	generation    int
+	eof           bool
 }
 
 // offsetToEnd sets the starting offset
