@@ -16,8 +16,8 @@ func Test_substring(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   ottl.StringGetter[interface{}]
-		start    int64
-		length   int64
+		start    ottl.IntGetter[interface{}]
+		length   ottl.IntGetter[interface{}]
 		expected interface{}
 	}{
 		{
@@ -27,8 +27,16 @@ func Test_substring(t *testing.T) {
 					return "123456789", nil
 				},
 			},
-			start:    3,
-			length:   3,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
 			expected: "456",
 		},
 		{
@@ -38,8 +46,16 @@ func Test_substring(t *testing.T) {
 					return "123456789", nil
 				},
 			},
-			start:    0,
-			length:   9,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(0), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(9), nil
+				},
+			},
 			expected: "123456789",
 		},
 	}
@@ -58,8 +74,8 @@ func Test_substring_validation(t *testing.T) {
 	tests := []struct {
 		name   string
 		target ottl.StringGetter[interface{}]
-		start  int64
-		length int64
+		start  ottl.IntGetter[interface{}]
+		length ottl.IntGetter[interface{}]
 	}{
 		{
 			name: "substring with result of empty string",
@@ -68,8 +84,16 @@ func Test_substring_validation(t *testing.T) {
 					return "123456789", nil
 				},
 			},
-			start:  0,
-			length: 0,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(0), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(0), nil
+				},
+			},
 		},
 		{
 			name: "substring with invalid start index",
@@ -78,14 +102,25 @@ func Test_substring_validation(t *testing.T) {
 					return "123456789", nil
 				},
 			},
-			start:  -1,
-			length: 6,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(-1), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(6), nil
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := substring(tt.target, tt.start, tt.length)
+			exprFunc, err := substring(tt.target, tt.start, tt.length)
+			assert.NoError(t, err)
+			result, err := exprFunc(nil, nil)
 			assert.Error(t, err)
+			assert.Nil(t, result)
 		})
 	}
 }
@@ -94,8 +129,8 @@ func Test_substring_error(t *testing.T) {
 	tests := []struct {
 		name   string
 		target ottl.StringGetter[interface{}]
-		start  int64
-		length int64
+		start  ottl.IntGetter[interface{}]
+		length ottl.IntGetter[interface{}]
 	}{
 		{
 			name: "substring empty string",
@@ -104,8 +139,16 @@ func Test_substring_error(t *testing.T) {
 					return "", nil
 				},
 			},
-			start:  3,
-			length: 6,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(6), nil
+				},
+			},
 		},
 		{
 			name: "substring with invalid length index",
@@ -114,8 +157,16 @@ func Test_substring_error(t *testing.T) {
 					return "123456789", nil
 				},
 			},
-			start:  3,
-			length: 20,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(20), nil
+				},
+			},
 		},
 		{
 			name: "substring non-string",
@@ -124,8 +175,16 @@ func Test_substring_error(t *testing.T) {
 					return 123456789, nil
 				},
 			},
-			start:  3,
-			length: 6,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(6), nil
+				},
+			},
 		},
 		{
 			name: "substring nil string",
@@ -134,8 +193,16 @@ func Test_substring_error(t *testing.T) {
 					return nil, nil
 				},
 			},
-			start:  3,
-			length: 6,
+			start: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(3), nil
+				},
+			},
+			length: &ottl.StandardIntGetter[interface{}]{
+				Getter: func(context.Context, interface{}) (interface{}, error) {
+					return int64(6), nil
+				},
+			},
 		},
 	}
 	for _, tt := range tests {

@@ -12,8 +12,8 @@ import (
 
 type SubstringArguments[K any] struct {
 	Target ottl.StringGetter[K] `ottlarg:"0"`
-	Start  int64                `ottlarg:"1"`
-	Length int64                `ottlarg:"2"`
+	Start  ottl.IntGetter[K]    `ottlarg:"1"`
+	Length ottl.IntGetter[K]    `ottlarg:"2"`
 }
 
 func NewSubstringFactory[K any]() ottl.Factory[K] {
@@ -30,15 +30,22 @@ func createSubstringFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return substring(args.Target, args.Start, args.Length)
 }
 
-func substring[K any](target ottl.StringGetter[K], start int64, length int64) (ottl.ExprFunc[K], error) {
-	if start < 0 {
-		return nil, fmt.Errorf("invalid start for substring function, %d cannot be negative", start)
-	}
-	if length <= 0 {
-		return nil, fmt.Errorf("invalid length for substring function, %d cannot be negative or zero", length)
-	}
-
+func substring[K any](target ottl.StringGetter[K], startGetter ottl.IntGetter[K], lengthGetter ottl.IntGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
+		start, err := startGetter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if start < 0 {
+			return nil, fmt.Errorf("invalid start for substring function, %d cannot be negative", start)
+		}
+		length, err := lengthGetter.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		if length <= 0 {
+			return nil, fmt.Errorf("invalid length for substring function, %d cannot be negative or zero", length)
+		}
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
