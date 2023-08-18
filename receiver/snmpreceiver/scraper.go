@@ -23,14 +23,14 @@ var (
 	// Error messages
 	errMsgBadValueType                   = `returned metric SNMP data type for OID '%s' is not supported`
 	errMsgIndexedAttributesBadValueType  = `returned attribute SNMP data type for OID '%s' from column OID '%s' is not supported`
-	errMsgScalarAttributesBadValueType = `returned attribute SNMP data type for OID '%s' is not supported`
+	errMsgScalarAttributesBadValueType   = `returned attribute SNMP data type for OID '%s' is not supported`
 	errMsgOIDAttributeEmptyValue         = `not creating indexed metric '%s' datapoint: %w`
 	errMsgAttributeEmptyValue            = `metric OID attribute value is blank`
 	errMsgResourceAttributeEmptyValue    = `related resource attribute value is blank`
 	errMsgOIDResourceAttributeEmptyValue = `not creating indexed metric '%s' or resource: %w`
 	errMsgScalarOIDProcessing            = `problem processing scalar metric data for OID '%s': %w`
 	errMsgIndexedMetricOIDProcessing     = `problem processing indexed metric data for OID '%s' from column OID '%s': %w`
-	errMsgScalarAttributeOIDProcessing	 = `problem processing scalar attribute data from scalar OID '%s': %w`
+	errMsgScalarAttributeOIDProcessing   = `problem processing scalar attribute data from scalar OID '%s': %w`
 	errMsgIndexedAttributeOIDProcessing  = `problem processing indexed attribute data for OID '%s' from column OID '%s': %w`
 )
 
@@ -200,7 +200,14 @@ func (s *snmpScraper) indexedDataToMetric(
 	// Create a resource key using all of the relevant resource attribute names along
 	// with the row index of the SNMP data
 	resourceAttributeNames := configHelper.getResourceAttributeNames(data.columnOID)
-	resourceKey := getResourceKey(resourceAttributeNames, indexString)
+
+	var resourceKey string
+	// If we only have scalar resource attributes, we don't need multiple resources
+	if len(resourceAttributes) == len(columnOIDScalarResourceAttributeValues) {
+		resourceKey = getResourceKey(resourceAttributeNames, "0")
+	} else {
+		resourceKey = getResourceKey(resourceAttributeNames, indexString)
+	}
 
 	// Create a new resource if needed
 	resource := metricHelper.getResource(resourceKey)
