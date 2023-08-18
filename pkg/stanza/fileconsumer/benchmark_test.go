@@ -4,13 +4,9 @@
 package fileconsumer
 
 import (
-	"context"
-	"fmt"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -183,69 +179,4 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 		})
 	}
-}
-
-func BenchmarkLogsThroughput(b *testing.B) {
-	getMessage := func(f, m int) string { return fmt.Sprintf("file %d, message %d\n", f, m) }
-	rootDir := b.TempDir()
-	file := openFile(b, filepath.Join(rootDir, "file0.log"))
-	file1 := openFile(b, filepath.Join(rootDir, "file1.log"))
-	cfg := NewConfig().includeDir(rootDir)
-	cfg.StartAt = "beginning"
-	cfg.MaxConcurrentFiles = 8
-	emitCalls := make(chan *emitParams, b.N*5)
-	operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls), withReaderChan())
-	operator.persister = testutil.NewMockPersister("test")
-
-	total := b.N * 100
-	factor := 2000
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		totalLogs := 2*total + 2*(total/factor)
-		for i := 0; i < totalLogs; i++ {
-			<-emitCalls
-			// c := <-emitCalls
-		}
-		// fmt.Println(totalLogs)
-	}()
-	b.ResetTimer()
-
-	// write more logs in one file
-	for i := 0; i < total; i++ {
-		writeString(b, file, getMessage(0, i))
-	}
-	// write less logs in one file
-	for i := 0; i < total/factor; i++ {
-		writeString(b, file1, getMessage(1, i))
-	}
-
-	start := time.Now()
-
-	if useThreadPool.IsEnabled() {
-		operator.pollConcurrent(context.Background())
-	} else {
-		operator.poll(context.Background())
-	}
-	// // create different files for second poll
-	file = openFile(b, filepath.Join(rootDir, "file2.log"))
-	file1 = openFile(b, filepath.Join(rootDir, "file3.log"))
-	// // write more logs in one file
-	for i := 0; i < total; i++ {
-		writeString(b, file, getMessage(2, i))
-	}
-	// write less logs in one file
-	for i := 0; i < total/factor; i++ {
-		writeString(b, file1, getMessage(3, i))
-	}
-	// start2 := time.Now()
-	if useThreadPool.IsEnabled() {
-		operator.pollConcurrent(context.Background())
-	} else {
-		operator.poll(context.Background())
-	}
-	wg.Wait()
-	fmt.Println(time.Now().Sub(start), b.N)
 }
