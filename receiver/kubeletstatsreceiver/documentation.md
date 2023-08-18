@@ -386,6 +386,14 @@ metrics:
     enabled: true
 ```
 
+### container.cpu.usage
+
+Container CPU usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### container.uptime
 
 The time since the container started
@@ -426,6 +434,14 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### k8s.node.cpu.usage
+
+Node CPU usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### k8s.node.uptime
 
 The time since the node started
@@ -433,6 +449,14 @@ The time since the node started
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
+
+### k8s.pod.cpu.usage
+
+Pod CPU usage
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### k8s.pod.cpu_limit_utilization
 
