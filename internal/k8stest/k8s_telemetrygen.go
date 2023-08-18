@@ -70,9 +70,15 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, pod
 			fmt.Printf("list no resources: %v\n")
 			return false
 		}
-		fmt.Printf("list resources status: %v\n", list.Items[0].Object["status"])
+		podName := list.Items[0].Object["metadata"].(map[string]interface{})["name"].(string)
+		fmt.Printf("check pod %v\n", podName)
+
 		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
+		fmt.Printf("check pod %v phase\n", podName, podPhase)
+
+		containerStatus := list.Items[0].Object["status"].(map[string]interface{})["containerStatuses"]
+		fmt.Printf("check pod %v containerStatus\n", podName, containerStatus)
 		return podPhase == "Running"
-	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
+	}, time.Duration(podTimeoutMinutes)*time.Minute, 5*time.Second,
 		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod status is %v", workload, dataType, podTimeoutMinutes, podStatus)
 }
