@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
-// FromPdataConverter converts plog.Logs into a set of entry.Entry
+// FromPdataConverter converts a set of entry.Entry into plog.Logs
 //
 // The diagram below illustrates the internal communication inside the FromPdataConverter:
 //
