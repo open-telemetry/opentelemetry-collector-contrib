@@ -1,0 +1,2 @@
+nodeSelector:
+  alpha.eksctl.io/nodegroup-name: ng-3

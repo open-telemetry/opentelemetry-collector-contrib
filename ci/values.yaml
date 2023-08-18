@@ -47,46 +47,15 @@ extraEnvs:
         name: datadog-secrets
         key: api-key
         optional: false
+  - name: OTEL_K8S_NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace
 config:
   receivers:
     jaeger: null
     zipkin: null
-    docker_stats:
-      metrics:
-        container.network.io.usage.rx_packets:
-          enabled: true
-        container.network.io.usage.tx_packets:
-          enabled: true
-        container.cpu.usage.system:
-          enabled: true
-        container.memory.rss:
-          enabled: true
-        container.blockio.io_serviced_recursive:
-          enabled: true
-        container.uptime:
-          enabled: true
-        container.blockio.io_service_bytes_recursive:
-          enabled: true
-        container.cpu.utilization:
-          enabled: true
-        container.cpu.percent:
-          enabled: true
-        container.memory.hierarchical_memory_limit:
-          enabled: true
-        container.memory.active_anon:
-          enabled: true
-        container.network.io.usage.tx_bytes:
-          enabled: true
-        container.network.io.usage.tx_packets:
-          enabled: true
-        container.network.io.usage.rx_bytes:
-          enabled: true
-        container.network.io.usage.rx_packets:
-          enabled: true
-        container.cpu.usage.total:
-          enabled: true
-        container.cpu.usage.usermode:
-          enabled: true
     hostmetrics:
       scrapers:
         paging:
@@ -113,7 +82,7 @@ config:
       verbosity: detailed
     datadog:
       host_metadata:
-        tags: ['env:otel']
+        tags: ['env:${env:OTEL_K8S_NAMESPACE}']
       metrics:
         resource_attributes_as_tags: true
         histograms:
@@ -223,7 +192,7 @@ config:
           - service: "otel-collector"
     pipelines:
       metrics:
-        receivers: [otlp, hostmetrics, prometheus, docker_stats]
+        receivers: [otlp, hostmetrics, prometheus]
         processors: [resourcedetection, k8sattributes, batch]
         exporters: [datadog]
       traces:
