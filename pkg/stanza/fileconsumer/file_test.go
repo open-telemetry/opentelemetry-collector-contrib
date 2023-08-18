@@ -1535,8 +1535,14 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.FileExists(t, longFile.Name())
 
 	// Verify that only long file is remembered and that (0 < offset < fileSize)
-	require.Equal(t, 1, len(operator.knownFiles))
-	reader := operator.knownFiles[0]
+
+	// Due to the way we manage known files, we expect an empty slice, followed by one with one element.
+	// The intention is to extract this data structure into a separate package and expose a more reasonable api.
+	require.Equal(t, 2, len(operator.knownFiles))
+	require.Equal(t, 0, len(operator.knownFiles[0]))
+	require.Equal(t, 1, len(operator.knownFiles[1]))
+	reader := operator.knownFiles[1][0]
+
 	require.Equal(t, longFile.Name(), reader.file.Name())
 	require.Greater(t, reader.Offset, int64(0))
 	require.Less(t, reader.Offset, int64(longFileSize))

@@ -41,7 +41,7 @@ type Manager struct {
 	maxBatchFiles   int
 	deleteAfterRead bool
 
-	knownFiles []*reader
+	knownFiles [][]*reader
 	seenPaths  map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
@@ -72,8 +72,10 @@ func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
 	m.roller.cleanup()
-	for _, reader := range m.knownFiles {
-		reader.Close()
+	for _, generation := range m.knownFiles {
+		for _, reader := range generation {
+			reader.Close()
+		}
 	}
 	m.knownFiles = nil
 	m.cancel = nil
@@ -103,11 +105,9 @@ func (m *Manager) startPoller(ctx context.Context) {
 
 // poll checks all the watched paths for new entries
 func (m *Manager) poll(ctx context.Context) {
-	// Increment the generation on all known readers
-	// This is done here because the next generation is about to start
-	for i := 0; i < len(m.knownFiles); i++ {
-		m.knownFiles[i].generation++
-	}
+	// Add a new generation of files to represent those encountered during this poll cycle
+	// We do this here so that we can append to this generation while consuming multiple batches if necessary
+	m.knownFiles = append(m.knownFiles, make([]*reader, 0))
 
 	// Used to keep track of the number of batches processed in this poll cycle
 	batchesProcessed := 0
@@ -270,18 +270,7 @@ func (m *Manager) clearCurrentFingerprints() {
 // before clearing out readers that have existed for 3 generations.
 func (m *Manager) saveCurrent(readers []*reader) {
 	// Add readers from the current, completed poll interval to the list of known files
-	m.knownFiles = append(m.knownFiles, readers...)
-
-	// Clear out old readers. They are sorted such that they are oldest first,
-	// so we can just find the first reader whose generation is less than our
-	// max, and keep every reader after that
-	for i := 0; i < len(m.knownFiles); i++ {
-		reader := m.knownFiles[i]
-		if reader.generation <= 3 {
-			m.knownFiles = m.knownFiles[i:]
-			break
-		}
-	}
+	m.knownFiles = append(m.knownFiles, readers)
 }
 
 func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
@@ -297,12 +286,14 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 func (m *Manager) findFingerprintMatch(fp *fingerprint.Fingerprint) (*reader, bool) {
 	// Iterate backwards to match newest first
 	for i := len(m.knownFiles) - 1; i >= 0; i-- {
-		oldReader := m.knownFiles[i]
-		if fp.StartsWith(oldReader.Fingerprint) {
-			// Remove the old reader from the list of known files. We will
-			// add it back in saveCurrent if it is still alive.
-			m.knownFiles = append(m.knownFiles[:i], m.knownFiles[i+1:]...)
-			return oldReader, true
+		for j := len(m.knownFiles[i]) - 1; j >= 0; j-- {
+			oldReader := m.knownFiles[i][j]
+			if fp.StartsWith(oldReader.Fingerprint) {
+				// Remove the old reader from the list of known files. We will
+				// add it back in saveCurrent if it is still alive.
+				m.knownFiles[i] = append(m.knownFiles[i][:j], m.knownFiles[i][j+1:]...)
+				return oldReader, true
+			}
 		}
 	}
 	return nil, false
@@ -315,16 +306,23 @@ func (m *Manager) syncLastPollFiles(ctx context.Context) {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 
+	var numFiles int
+	for _, generation := range m.knownFiles {
+		numFiles += len(generation)
+	}
+
 	// Encode the number of known files
-	if err := enc.Encode(len(m.knownFiles)); err != nil {
+	if err := enc.Encode(numFiles); err != nil {
 		m.Errorw("Failed to encode known files", zap.Error(err))
 		return
 	}
 
 	// Encode each known file
-	for _, fileReader := range m.knownFiles {
-		if err := enc.Encode(fileReader.readerMetadata); err != nil {
-			m.Errorw("Failed to encode known files", zap.Error(err))
+	for _, generation := range m.knownFiles {
+		for _, fileReader := range generation {
+			if err := enc.Encode(fileReader.readerMetadata); err != nil {
+				m.Errorw("Failed to encode known files", zap.Error(err))
+			}
 		}
 	}
 
@@ -339,9 +337,7 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
 	if encoded == nil {
-		m.knownFiles = make([]*reader, 0, 10)
 		return nil
 	}
 
@@ -359,7 +355,7 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	}
 
 	// Decode each of the known files
-	m.knownFiles = make([]*reader, 0, knownFileCount)
+	decoded := make([]*reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
 		rmd := &readerMetadata{}
 		if err = dec.Decode(rmd); err != nil {
@@ -381,8 +377,9 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 		}
 
 		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
-		m.knownFiles = append(m.knownFiles, &reader{readerMetadata: rmd})
+		decoded = append(decoded, &reader{readerMetadata: rmd})
 	}
+	m.knownFiles = append(m.knownFiles, decoded)
 
 	return nil
 }

@@ -177,7 +177,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
