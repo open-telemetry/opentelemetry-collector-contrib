@@ -1,3 +1,4 @@
+// Deprecated: the Tanzu Observability Exporter is deprecated and will be removed in future versions. Please see the README for more information.
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter
 
 go 1.20
