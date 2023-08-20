@@ -5,7 +5,7 @@ name: 'Generate Weekly Report'
 on:
   workflow_dispatch: 
   push:
-    branches: [ main ]
+    branches: [ chore/weekly-report-gen ]
 
 jobs:
   get_issues:
