@@ -1,0 +1,76 @@
+# This action generates a weekly report as a github issue
+# More details in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24672
+
+name: 'Generate Weekly Report'
+on:
+  workflow_dispatch: 
+
+
+jobs:
+  get_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            async function getIssues(github, queryParams, filterPrs = true) {
+              let allIssues = [];
+              try {
+                while (true) {
+                  const response = await github.issues.listForRepo(queryParams);
+                  // filter out pull requests
+                  const issues = filterPrs ? response.data.filter(issue => !issue.pull_request) : response.data;
+                  allIssues = allIssues.concat(issues);
+            
+                  // Check the 'link' header to see if there are more pages
+                  const linkHeader = response.headers.link;
+                  if (!linkHeader || !linkHeader.includes('rel="next"')) {
+                    break;
+                  }
+            
+                  queryParams.page++;
+                }
+                return allIssues;
+              } catch (error) {
+                console.error('Error fetching issues:', error);
+                return [];
+              }
+            }
+            
+            function genLookbackDates() {
+              const now = new Date();
+              const midnightYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+              const sevenDaysAgo = new Date(midnightYesterday);
+              sevenDaysAgo.setDate(midnightYesterday.getDate() - 7);
+              return { sevenDaysAgo, midnightYesterday };
+            }
+            
+            function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
+              const createdAt = new Date(issue.created_at);
+              return createdAt >= sevenDaysAgo && createdAt <= midnightYesterday;
+            }
+            
+            async function getNewIssues(github) {
+              const { sevenDaysAgo, midnightYesterday} = genLookbackDates();
+              const queryParams = {
+                owner: 'open-telemetry',
+                repo: 'opentelemetry-collector-contrib',
+                state: 'all', // To get both open and closed issues
+                per_page: 100, // Number of items per page (maximum allowed)
+                page: 1, // Start with page 1
+                since: sevenDaysAgo.toISOString(),
+              };
+            
+              try {
+                const allIssues = await getIssues(github, queryParams)
+                const filteredIssues = allIssues.filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
+                return filteredIssues;
+              } catch (error) {
+                console.error('Error fetching issues:', error);
+                return [];
+              }
+            }
+
+            const issuesNew = await getNewIssues(github);
+            console.log(JSON.stringify(issuesNew, null, 2));
+            
