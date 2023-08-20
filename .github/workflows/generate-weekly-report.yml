@@ -71,6 +71,6 @@ jobs:
               }
             }
 
-            const issuesNew = await getNewIssues(github);
+            const issuesNew = await getNewIssues(github.rest);
             console.log(JSON.stringify(issuesNew, null, 2));
             
