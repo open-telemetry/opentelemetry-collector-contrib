@@ -148,7 +148,7 @@ processor/deltatorateprocessor/                          @open-telemetry/collect
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
 processor/groupbytraceprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/k8sattributesprocessor/                        @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146
+processor/k8sattributesprocessor/                        @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146 @TylerHelmuth
 processor/logstransformprocessor/                        @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                    @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/metricstransformprocessor/                     @open-telemetry/collector-contrib-approvers @dmitryax
@@ -208,12 +208,12 @@ receiver/influxdbreceiver/                               @open-telemetry/collect
 receiver/jaegerreceiver/                                 @open-telemetry/collector-contrib-approvers @jpkrohling
 receiver/jmxreceiver/                                    @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 receiver/journaldreceiver/                               @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
-receiver/k8sclusterreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/k8seventsreceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/k8sobjectsreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221
+receiver/k8sclusterreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
+receiver/k8seventsreceiver/                              @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
+receiver/k8sobjectsreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth
 receiver/kafkametricsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
 receiver/lokireceiver/                                   @open-telemetry/collector-contrib-approvers @mar4uk @jpkrohling
 receiver/memcachedreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
