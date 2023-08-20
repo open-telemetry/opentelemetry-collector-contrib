@@ -11,6 +11,7 @@ jobs:
   get_issues:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v3
       - uses: actions/github-script@v6
         id: get-issues
         with:
@@ -54,7 +55,7 @@ jobs:
             }
             
             async function getNewIssues(github) {
-              const { sevenDaysAgo, midnightYesterday} = genLookbackDates();
+              const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
               const queryParams = {
                 owner: 'open-telemetry',
                 repo: 'opentelemetry-collector-contrib',
@@ -92,78 +93,117 @@ jobs:
               }
             }
             
-            const targetLabels = {
-              "needs triage": {
-                filterPrs: true,
-                alias: "issuesTriage",
-              },
-              "ready to merge": {
-                filterPrs: false,
-                alias: "issuesReadyToMerge",
-              },
-              "Sponsor Needed": {
-                filterPrs: true,
-                alias: "issuesSponsorNeeded",
-              },
-            };
-          
-            const issuesNew = await getNewIssues(github.rest);
-            const issuesWithLabels = {};
-            for (const lbl of Object.keys(targetLabels)) {
-              const filterPrs = targetLabels[lbl].filterPrs;
-              const resp = await getTargetLabelIssues(github.rest, lbl, filterPrs);
-              issuesWithLabels[lbl] = resp;
-            }
-          
-            // tally results
-            const stats = {
-              issuesNew: {
-                count: 0,
-                data: []
-              },
-              issuesTriage: {
-                count: 0,
-                data: []
-              },
-              issuesReadyToMerge: {
-                count: 0,
-                data: []
-              },
-              issuesSponsorNeeded: {
-                count: 0,
-                data: []
-              },
-              issuesNewSponsorNeeded: {
-                count: 0,
-                data: []
-              },
-            }
-          
-            // add new issues
-            issuesNew.forEach(issue => {
-              stats.issuesNew.count++;
-              const { url, title, number } = issue;
-              stats.issuesNew.data.push({ url, title, number });
-            });
-          
-            // add issues with labels
-            for (const lbl of Object.keys(targetLabels)) {
-              const alias = targetLabels[lbl].alias;
-              stats[alias].count = issuesWithLabels[lbl].length;
-              stats[alias].data = issuesWithLabels[lbl].map(issue => {
+            async function getIssuesData(github) {
+              const targetLabels = {
+                "needs triage": {
+                  filterPrs: true,
+                  alias: "issuesTriage",
+                },
+                "ready to merge": {
+                  filterPrs: false,
+                  alias: "issuesReadyToMerge",
+                },
+                "Sponsor Needed": {
+                  filterPrs: true,
+                  alias: "issuesSponsorNeeded",
+                },
+              };
+            
+              const issuesNew = await getNewIssues(github.rest);
+              const issuesWithLabels = {};
+              for (const lbl of Object.keys(targetLabels)) {
+                const filterPrs = targetLabels[lbl].filterPrs;
+                const resp = await getTargetLabelIssues(github.rest, lbl, filterPrs);
+                issuesWithLabels[lbl] = resp;
+              }
+            
+              // tally results
+              const stats = {
+                issuesNew: {
+                  title: "New issues",
+                  count: 0,
+                  data: []
+                },
+                issuesTriage: {
+                  title: "Issues needing triage",
+                  count: 0,
+                  data: []
+                },
+                issuesReadyToMerge: {
+                  title: "Issues ready to merge",
+                  count: 0,
+                  data: []
+                },
+                issuesSponsorNeeded: {
+                  title: "Issues needing sponsorship",
+                  count: 0,
+                  data: []
+                },
+                issuesNewSponsorNeeded: {
+                  title: "New issues needing sponsorship",
+                  count: 0,
+                  data: []
+                },
+              }
+            
+              // add new issues
+              issuesNew.forEach(issue => {
+                stats.issuesNew.count++;
                 const { url, title, number } = issue;
-                return { url, title, number };
-              })
+                stats.issuesNew.data.push({ url, title, number });
+              });
+            
+              // add issues with labels
+              for (const lbl of Object.keys(targetLabels)) {
+                const alias = targetLabels[lbl].alias;
+                stats[alias].count = issuesWithLabels[lbl].length;
+                stats[alias].data = issuesWithLabels[lbl].map(issue => {
+                  const { url, title, number } = issue;
+                  return { url, title, number };
+                })
+              }
+            
+              // add new issues with sponsor needed label
+              const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
+              const sponsorNeededIssues = issuesWithLabels["Sponsor Needed"].filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
+              sponsorNeededIssues.forEach(issue => {
+                stats.issuesNewSponsorNeeded.count++;
+                const { url, title, number } = issue;
+                stats.issuesNewSponsorNeeded.data.push({ url, title, number });
+              });
+              return stats
             }
-          
-            // add new issues with sponsor needed label
-            const {sevenDaysAgo, midnightYesterday} = genLookbackDates();
-            const sponsorNeededIssues = issuesWithLabels["Sponsor Needed"].filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
-            sponsorNeededIssues.forEach(issue => {
-              stats.issuesNewSponsorNeeded.count++;
-              const { url, title, number } = issue;
-              stats.issuesNewSponsorNeeded.data.push({ url, title, number });
-            });
-            return stats;
-      - name: Get result
-        run: echo "${{steps.get-issues.outputs.result}}"
+            
+            function generateReport({issuesData}) {
+              const out = ['<ul>'];
+            
+              for (const lbl of Object.keys(issuesData)) {
+                const section = [];
+                const title = lbl;
+                const {count, data} = issuesData[lbl];
+                section.push(`<li> ${title}: ${count}`);
+                section.push(`<details>
+                <summary> Issues </summary>
+                <ul>
+                ${data.map((issue) => {
+                  const {url, title, number} = issue;
+                  return `<li><a href="${url}">#${number}</a> ${title}</li>`;
+                }).join('\n')}
+                </ul>
+            </details>`);
+                section.push('</li>');
+                out.push(section.join('\n'));
+              }
+            
+              out.push('</ul>');
+              const report = out.join('\n');
+              return report;
+            }
+            
+            async function main({ github, context }) {
+              const issuesData = await getIssuesData(github)
+              const report = generateReport({issuesData})
+              console.log(report)
+            }
+            
+            await main({github, context})
