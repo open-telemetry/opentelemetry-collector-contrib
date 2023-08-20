@@ -46,7 +46,7 @@ jobs:
               const midnightYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
               const sevenDaysAgo = new Date(midnightYesterday);
               sevenDaysAgo.setDate(midnightYesterday.getDate() - 7);
-              return { sevenDaysAgo, midnightYesterday };
+              return { sevenDaysAgo, midnightYesterday};
             }
             
             function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
@@ -195,14 +195,42 @@ jobs:
               }
             
               out.push('</ul>');
+            
+              // add json data
+              out.push('\n ## JSON Data');
+              out.push('<!-- MACHINE GENERATED: DO NOT EDIT -->');
+              out.push( `<details>
+            <summary>Expand</summary>
+            <pre>
+            {
+              "issuesData": ${JSON.stringify(issuesData, null, 2)}
+            }
+            </pre>
+            </details>`);
               const report = out.join('\n');
               return report;
             }
             
+            async function createIssue({github, lookbackData, report}) {
+              const title = `Weekly Report: ${lookbackData.sevenDaysAgo.toISOString().slice(0, 10)} - ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`;
+              return github.rest.issues.create({
+                // TODO: change
+                owner: "kevinslin",
+                repo: "opentelemetry-collector-contrib",
+                title,
+                body: report,
+                labels: ["report"]
+              })
+            }
+            
             async function main({ github, context }) {
+              const lookbackData = genLookbackDates();
               const issuesData = await getIssuesData(github)
               const report = generateReport({issuesData})
-              console.log(report)
+            
+              // const fs = require('fs');
+              // const report = fs.readFileSync('./fixtures/report.md', 'utf8')
+              await createIssue({github, lookbackData, report});
             }
-
+            
             await main({github, context})
