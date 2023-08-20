@@ -179,8 +179,7 @@ jobs:
             
               for (const lbl of Object.keys(issuesData)) {
                 const section = [];
-                const title = lbl;
-                const {count, data} = issuesData[lbl];
+                const {count, data, title} = issuesData[lbl];
                 section.push(`<li> ${title}: ${count}`);
                 section.push(`<details>
                 <summary> Issues </summary>
@@ -205,5 +204,5 @@ jobs:
               const report = generateReport({issuesData})
               console.log(report)
             }
-            
+
             await main({github, context})
