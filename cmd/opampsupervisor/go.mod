@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
 
-go 1.19
+go 1.20
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.0
@@ -10,7 +10,7 @@ require (
 	github.com/knadh/koanf/v2 v2.0.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.6.0
-	go.opentelemetry.io/collector/config/configtls v0.82.0
+	go.opentelemetry.io/collector/config/configtls v0.83.0
 	go.uber.org/zap v1.25.0
 )
 
@@ -24,7 +24,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.82.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v0.83.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect

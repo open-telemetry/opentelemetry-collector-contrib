@@ -10,9 +10,11 @@ import (
 	"runtime"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -21,32 +23,42 @@ type readerFactory struct {
 	*zap.SugaredLogger
 	readerConfig    *readerConfig
 	fromBeginning   bool
-	splitterFactory splitterFactory
-	encodingConfig  helper.EncodingConfig
+	splitterFactory splitter.Factory
+	encoding        encoding.Encoding
 	headerConfig    *header.Config
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
-	return f.newReaderBuilder().
-		withFile(file).
-		withFingerprint(fp).
-		build()
+	return readerBuilder{
+		readerFactory: f,
+		file:          file,
+		readerMetadata: &readerMetadata{
+			Fingerprint:    fp,
+			FileAttributes: map[string]any{},
+		},
+	}.build()
+}
+
+func (f *readerFactory) newFromMetadata(m *readerMetadata) (*reader, error) {
+	return readerBuilder{
+		readerFactory:  f,
+		readerMetadata: m,
+	}.build()
 }
 
 // copy creates a deep copy of a reader
 func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
-	return f.newReaderBuilder().
-		withFile(newFile).
-		withFingerprint(old.Fingerprint.Copy()).
-		withOffset(old.Offset).
-		withSplitterFunc(old.lineSplitFunc).
-		withFileAttributes(util.MapCopy(old.FileAttributes)).
-		withHeaderFinalized(old.HeaderFinalized).
-		build()
-}
-
-func (f *readerFactory) unsafeReader() (*reader, error) {
-	return f.newReaderBuilder().build()
+	return readerBuilder{
+		readerFactory: f,
+		file:          newFile,
+		splitFunc:     old.lineSplitFunc,
+		readerMetadata: &readerMetadata{
+			Fingerprint:     old.Fingerprint.Copy(),
+			Offset:          old.Offset,
+			FileAttributes:  util.MapCopy(old.FileAttributes),
+			HeaderFinalized: old.HeaderFinalized,
+		},
+	}.build()
 }
 
 func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -55,54 +67,15 @@ func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint,
 
 type readerBuilder struct {
 	*readerFactory
-	file            *os.File
-	fp              *fingerprint.Fingerprint
-	offset          int64
-	splitFunc       bufio.SplitFunc
-	headerFinalized bool
-	fileAttributes  map[string]any
+	file           *os.File
+	readerMetadata *readerMetadata
+	splitFunc      bufio.SplitFunc
 }
 
-func (f *readerFactory) newReaderBuilder() *readerBuilder {
-	return &readerBuilder{readerFactory: f, fileAttributes: map[string]any{}}
-}
-
-func (b *readerBuilder) withSplitterFunc(s bufio.SplitFunc) *readerBuilder {
-	b.splitFunc = s
-	return b
-}
-
-func (b *readerBuilder) withFile(f *os.File) *readerBuilder {
-	b.file = f
-	return b
-}
-
-func (b *readerBuilder) withFingerprint(fp *fingerprint.Fingerprint) *readerBuilder {
-	b.fp = fp
-	return b
-}
-
-func (b *readerBuilder) withOffset(offset int64) *readerBuilder {
-	b.offset = offset
-	return b
-}
-
-func (b *readerBuilder) withHeaderFinalized(finalized bool) *readerBuilder {
-	b.headerFinalized = finalized
-	return b
-}
-
-func (b *readerBuilder) withFileAttributes(attrs map[string]any) *readerBuilder {
-	b.fileAttributes = attrs
-	return b
-}
-
-func (b *readerBuilder) build() (r *reader, err error) {
+func (b readerBuilder) build() (r *reader, err error) {
 	r = &reader{
-		readerConfig:    b.readerConfig,
-		Offset:          b.offset,
-		HeaderFinalized: b.headerFinalized,
-		FileAttributes:  b.fileAttributes,
+		readerConfig:   b.readerConfig,
+		readerMetadata: b.readerMetadata,
 	}
 
 	if b.splitFunc != nil {
@@ -114,12 +87,9 @@ func (b *readerBuilder) build() (r *reader, err error) {
 		}
 	}
 
-	r.encoding, err = b.encodingConfig.Build()
-	if err != nil {
-		return nil, err
-	}
+	r.decoder = helper.NewDecoder(b.encoding)
 
-	if b.headerConfig == nil || b.headerFinalized {
+	if b.headerConfig == nil || b.readerMetadata.HeaderFinalized {
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = b.readerConfig.emit
 	} else {
@@ -132,13 +102,11 @@ func (b *readerBuilder) build() (r *reader, err error) {
 	}
 
 	if b.file == nil {
-		r.SugaredLogger = b.SugaredLogger.With("path", "uninitialized")
 		return r, nil
 	}
 
 	r.file = b.file
 	r.SugaredLogger = b.SugaredLogger.With("path", b.file.Name())
-	r.FileAttributes = b.fileAttributes
 
 	// Resolve file name and path attributes
 	resolved := b.file.Name()
@@ -182,17 +150,6 @@ func (b *readerBuilder) build() (r *reader, err error) {
 			return nil, err
 		}
 	}
-
-	if b.fp != nil {
-		r.Fingerprint = b.fp
-		return r, nil
-	}
-
-	fp, err := b.readerFactory.newFingerprint(r.file)
-	if err != nil {
-		return nil, err
-	}
-	r.Fingerprint = fp
 
 	return r, nil
 }
