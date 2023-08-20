@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/github-script@v6
+        id: get-issues
         with:
           retries: 3
           script: |
@@ -72,7 +73,97 @@ jobs:
                 return [];
               }
             }
-
-            const issuesNew = await getNewIssues(github.rest);
-            console.log(JSON.stringify(issuesNew, null, 2));
             
+            async function getTargetLabelIssues(octokit, labels, filterPrs) {
+              const queryParams = {
+                owner: 'open-telemetry',
+                repo: 'opentelemetry-collector-contrib',
+                state: 'open',
+                per_page: 100, // Number of items per page (maximum allowed)
+                page: 1, // Start with page 1
+                labels
+              };
+              try {
+                const allIssues = await getIssues(octokit, queryParams, filterPrs)
+                return allIssues;
+              } catch (error) {
+                console.error('Error fetching issues:', error);
+                return [];
+              }
+            }
+            
+            const targetLabels = {
+              "needs triage": {
+                filterPrs: true,
+                alias: "issuesTriage",
+              },
+              "ready to merge": {
+                filterPrs: false,
+                alias: "issuesReadyToMerge",
+              },
+              "Sponsor Needed": {
+                filterPrs: true,
+                alias: "issuesSponsorNeeded",
+              },
+            };
+          
+            const issuesNew = await getNewIssues(github.rest);
+            const issuesWithLabels = {};
+            for (const lbl of Object.keys(targetLabels)) {
+              const filterPrs = targetLabels[lbl].filterPrs;
+              const resp = await getTargetLabelIssues(github.rest, lbl, filterPrs);
+              issuesWithLabels[lbl] = resp;
+            }
+          
+            // tally results
+            const stats = {
+              issuesNew: {
+                count: 0,
+                data: []
+              },
+              issuesTriage: {
+                count: 0,
+                data: []
+              },
+              issuesReadyToMerge: {
+                count: 0,
+                data: []
+              },
+              issuesSponsorNeeded: {
+                count: 0,
+                data: []
+              },
+              issuesNewSponsorNeeded: {
+                count: 0,
+                data: []
+              },
+            }
+          
+            // add new issues
+            issuesNew.forEach(issue => {
+              stats.issuesNew.count++;
+              const { url, title, number } = issue;
+              stats.issuesNew.data.push({ url, title, number });
+            });
+          
+            // add issues with labels
+            for (const lbl of Object.keys(targetLabels)) {
+              const alias = targetLabels[lbl].alias;
+              stats[alias].count = issuesWithLabels[lbl].length;
+              stats[alias].data = issuesWithLabels[lbl].map(issue => {
+                const { url, title, number } = issue;
+                return { url, title, number };
+              })
+            }
+          
+            // add new issues with sponsor needed label
+            const {sevenDaysAgo, midnightYesterday} = genLookbackDates();
+            const sponsorNeededIssues = issuesWithLabels["Sponsor Needed"].filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
+            sponsorNeededIssues.forEach(issue => {
+              stats.issuesNewSponsorNeeded.count++;
+              const { url, title, number } = issue;
+              stats.issuesNewSponsorNeeded.data.push({ url, title, number });
+            });
+            return stats;
+      - name: Get result
+        run: echo "${{steps.get-issues.outputs.result}}"
