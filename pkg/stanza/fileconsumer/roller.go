@@ -6,7 +6,7 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import "context"
 
 type roller interface {
-	readLostFiles(context.Context, []*Reader)
-	roll(context.Context, []*Reader)
+	readLostFiles(context.Context, []*reader)
+	roll(context.Context, []*reader)
 	cleanup()
 }

@@ -4,6 +4,7 @@
 package spanmetricsconnector
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
@@ -107,7 +107,7 @@ func TestLoadConfig(t *testing.T) {
 			err = component.UnmarshalConfig(sub, cfg)
 
 			if tt.expected == nil {
-				err = multierr.Append(err, component.ValidateConfig(cfg))
+				err = errors.Join(err, component.ValidateConfig(cfg))
 				assert.ErrorContains(t, err, tt.errorMessage)
 				return
 			}

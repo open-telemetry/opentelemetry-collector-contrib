@@ -74,9 +74,9 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 
 	if conf.AWS.KinesisEndpoint != "" {
 		kinesisOpts = append(kinesisOpts,
-			kinesis.WithEndpointResolver(
-				kinesis.EndpointResolverFromURL(conf.AWS.KinesisEndpoint),
-			),
+			func(o *kinesis.Options) {
+				o.BaseEndpoint = aws.String(conf.AWS.KinesisEndpoint)
+			},
 		)
 	}
 

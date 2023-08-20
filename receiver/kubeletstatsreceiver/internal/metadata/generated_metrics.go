@@ -578,6 +578,57 @@ func newMetricContainerMemoryWorkingSet(cfg MetricConfig) metricContainerMemoryW
 	return m
 }
 
+type metricContainerUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.uptime metric with initial data.
+func (m *metricContainerUptime) init() {
+	m.data.SetName("container.uptime")
+	m.data.SetDescription("The time since the container started")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricContainerUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
+	m := metricContainerUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sNodeCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1220,6 +1271,57 @@ func (m *metricK8sNodeNetworkIo) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeNetworkIo(cfg MetricConfig) metricK8sNodeNetworkIo {
 	m := metricK8sNodeNetworkIo{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.uptime metric with initial data.
+func (m *metricK8sNodeUptime) init() {
+	m.data.SetName("k8s.node.uptime")
+	m.data.SetDescription("The time since the node started")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sNodeUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeUptime(cfg MetricConfig) metricK8sNodeUptime {
+	m := metricK8sNodeUptime{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1876,6 +1978,57 @@ func newMetricK8sPodNetworkIo(cfg MetricConfig) metricK8sPodNetworkIo {
 	return m
 }
 
+type metricK8sPodUptime struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.uptime metric with initial data.
+func (m *metricK8sPodUptime) init() {
+	m.data.SetName("k8s.pod.uptime")
+	m.data.SetDescription("The time since the pod started")
+	m.data.SetUnit("s")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricK8sPodUptime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodUptime) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodUptime) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodUptime(cfg MetricConfig) metricK8sPodUptime {
+	m := metricK8sPodUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricK8sVolumeAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2124,10 +2277,11 @@ func newMetricK8sVolumeInodesUsed(cfg MetricConfig) metricK8sVolumeInodesUsed {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                            pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                      int                 // maximum observed number of metrics per resource.
-	metricsBuffer                        pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                            component.BuildInfo // contains version information
+	config                               MetricsBuilderConfig // config of the metrics builder.
+	startTime                            pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                      int                  // maximum observed number of metrics per resource.
+	metricsBuffer                        pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                            component.BuildInfo  // contains version information.
 	metricContainerCPUTime               metricContainerCPUTime
 	metricContainerCPUUtilization        metricContainerCPUUtilization
 	metricContainerFilesystemAvailable   metricContainerFilesystemAvailable
@@ -2139,6 +2293,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryRss             metricContainerMemoryRss
 	metricContainerMemoryUsage           metricContainerMemoryUsage
 	metricContainerMemoryWorkingSet      metricContainerMemoryWorkingSet
+	metricContainerUptime                metricContainerUptime
 	metricK8sNodeCPUTime                 metricK8sNodeCPUTime
 	metricK8sNodeCPUUtilization          metricK8sNodeCPUUtilization
 	metricK8sNodeFilesystemAvailable     metricK8sNodeFilesystemAvailable
@@ -2152,6 +2307,7 @@ type MetricsBuilder struct {
 	metricK8sNodeMemoryWorkingSet        metricK8sNodeMemoryWorkingSet
 	metricK8sNodeNetworkErrors           metricK8sNodeNetworkErrors
 	metricK8sNodeNetworkIo               metricK8sNodeNetworkIo
+	metricK8sNodeUptime                  metricK8sNodeUptime
 	metricK8sPodCPUTime                  metricK8sPodCPUTime
 	metricK8sPodCPUUtilization           metricK8sPodCPUUtilization
 	metricK8sPodFilesystemAvailable      metricK8sPodFilesystemAvailable
@@ -2165,6 +2321,7 @@ type MetricsBuilder struct {
 	metricK8sPodMemoryWorkingSet         metricK8sPodMemoryWorkingSet
 	metricK8sPodNetworkErrors            metricK8sPodNetworkErrors
 	metricK8sPodNetworkIo                metricK8sPodNetworkIo
+	metricK8sPodUptime                   metricK8sPodUptime
 	metricK8sVolumeAvailable             metricK8sVolumeAvailable
 	metricK8sVolumeCapacity              metricK8sVolumeCapacity
 	metricK8sVolumeInodes                metricK8sVolumeInodes
@@ -2184,6 +2341,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                               mbc,
 		startTime:                            pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                        pmetric.NewMetrics(),
 		buildInfo:                            settings.BuildInfo,
@@ -2198,6 +2356,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerMemoryRss:             newMetricContainerMemoryRss(mbc.Metrics.ContainerMemoryRss),
 		metricContainerMemoryUsage:           newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
 		metricContainerMemoryWorkingSet:      newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
+		metricContainerUptime:                newMetricContainerUptime(mbc.Metrics.ContainerUptime),
 		metricK8sNodeCPUTime:                 newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
 		metricK8sNodeCPUUtilization:          newMetricK8sNodeCPUUtilization(mbc.Metrics.K8sNodeCPUUtilization),
 		metricK8sNodeFilesystemAvailable:     newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
@@ -2211,6 +2370,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sNodeMemoryWorkingSet:        newMetricK8sNodeMemoryWorkingSet(mbc.Metrics.K8sNodeMemoryWorkingSet),
 		metricK8sNodeNetworkErrors:           newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
 		metricK8sNodeNetworkIo:               newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
+		metricK8sNodeUptime:                  newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
 		metricK8sPodCPUTime:                  newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
 		metricK8sPodCPUUtilization:           newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
 		metricK8sPodFilesystemAvailable:      newMetricK8sPodFilesystemAvailable(mbc.Metrics.K8sPodFilesystemAvailable),
@@ -2224,6 +2384,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sPodMemoryWorkingSet:         newMetricK8sPodMemoryWorkingSet(mbc.Metrics.K8sPodMemoryWorkingSet),
 		metricK8sPodNetworkErrors:            newMetricK8sPodNetworkErrors(mbc.Metrics.K8sPodNetworkErrors),
 		metricK8sPodNetworkIo:                newMetricK8sPodNetworkIo(mbc.Metrics.K8sPodNetworkIo),
+		metricK8sPodUptime:                   newMetricK8sPodUptime(mbc.Metrics.K8sPodUptime),
 		metricK8sVolumeAvailable:             newMetricK8sVolumeAvailable(mbc.Metrics.K8sVolumeAvailable),
 		metricK8sVolumeCapacity:              newMetricK8sVolumeCapacity(mbc.Metrics.K8sVolumeCapacity),
 		metricK8sVolumeInodes:                newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
@@ -2234,6 +2395,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -2296,6 +2462,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerMemoryRss.emit(ils.Metrics())
 	mb.metricContainerMemoryUsage.emit(ils.Metrics())
 	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
+	mb.metricContainerUptime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
 	mb.metricK8sNodeCPUUtilization.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
@@ -2309,6 +2476,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
+	mb.metricK8sNodeUptime.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
 	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
 	mb.metricK8sPodFilesystemAvailable.emit(ils.Metrics())
@@ -2322,6 +2490,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sPodMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricK8sPodNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sPodNetworkIo.emit(ils.Metrics())
+	mb.metricK8sPodUptime.emit(ils.Metrics())
 	mb.metricK8sVolumeAvailable.emit(ils.Metrics())
 	mb.metricK8sVolumeCapacity.emit(ils.Metrics())
 	mb.metricK8sVolumeInodes.emit(ils.Metrics())
@@ -2402,6 +2571,11 @@ func (mb *MetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Ti
 	mb.metricContainerMemoryWorkingSet.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordContainerUptimeDataPoint adds a data point to container.uptime metric.
+func (mb *MetricsBuilder) RecordContainerUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordK8sNodeCPUTimeDataPoint adds a data point to k8s.node.cpu.time metric.
 func (mb *MetricsBuilder) RecordK8sNodeCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sNodeCPUTime.recordDataPoint(mb.startTime, ts, val)
@@ -2467,6 +2641,11 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, 
 	mb.metricK8sNodeNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
 }
 
+// RecordK8sNodeUptimeDataPoint adds a data point to k8s.node.uptime metric.
+func (mb *MetricsBuilder) RecordK8sNodeUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sNodeUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.
 func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
@@ -2530,6 +2709,11 @@ func (mb *MetricsBuilder) RecordK8sPodNetworkErrorsDataPoint(ts pcommon.Timestam
 // RecordK8sPodNetworkIoDataPoint adds a data point to k8s.pod.network.io metric.
 func (mb *MetricsBuilder) RecordK8sPodNetworkIoDataPoint(ts pcommon.Timestamp, val int64, interfaceAttributeValue string, directionAttributeValue AttributeDirection) {
 	mb.metricK8sPodNetworkIo.recordDataPoint(mb.startTime, ts, val, interfaceAttributeValue, directionAttributeValue.String())
+}
+
+// RecordK8sPodUptimeDataPoint adds a data point to k8s.pod.uptime metric.
+func (mb *MetricsBuilder) RecordK8sPodUptimeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPodUptime.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sVolumeAvailableDataPoint adds a data point to k8s.volume.available metric.

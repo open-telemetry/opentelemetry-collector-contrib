@@ -6,9 +6,7 @@ OTEL_VERSION=main
 OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -263,19 +261,19 @@ update-codeowners: gengithub generate
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
-	$(CHLOGGEN) new --filename $(FILENAME)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: $(CHLOGGEN)
-	$(CHLOGGEN) validate
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
 chlog-preview: $(CHLOGGEN)
-	$(CHLOGGEN) update --dry
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
 chlog-update: $(CHLOGGEN)
-	$(CHLOGGEN) update --version $(VERSION)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
@@ -286,7 +284,7 @@ genotelcontribcol: $(BUILDER)
 .PHONY: otelcontribcol
 otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
@@ -297,13 +295,13 @@ genoteltestbedcol: $(BUILDER)
 .PHONY: oteltestbedcol
 oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 # Build the telemetrygen executable.
 .PHONY: telemetrygen
 telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:

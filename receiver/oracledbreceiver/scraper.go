@@ -54,7 +54,6 @@ type scraper struct {
 	sessionCountClient         dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
-	rb                         *metadata.ResourceBuilder
 	mb                         *metadata.MetricsBuilder
 	dbProviderFunc             dbProviderFunc
 	logger                     *zap.Logger
@@ -67,7 +66,6 @@ type scraper struct {
 
 func newScraper(id component.ID, metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
 	s := &scraper{
-		rb:                   metadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes),
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
 		scrapeCfg:            scrapeCfg,
@@ -315,8 +313,9 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	s.rb.SetOracledbInstanceName(s.instanceName)
-	out := s.mb.Emit(metadata.WithResource(s.rb.Emit()))
+	rb := s.mb.NewResourceBuilder()
+	rb.SetOracledbInstanceName(s.instanceName)
+	out := s.mb.Emit(metadata.WithResource(rb.Emit()))
 	s.logger.Debug("Done scraping")
 	if len(scrapeErrors) > 0 {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))

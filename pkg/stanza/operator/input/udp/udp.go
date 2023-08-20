@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -39,7 +40,7 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Encoding:        helper.NewEncodingConfig(),
+			Encoding:        "utf-8",
 			OneLogPerPacket: false,
 			Multiline: helper.MultilineConfig{
 				LineStartPattern: "",
@@ -60,7 +61,7 @@ type BaseConfig struct {
 	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
 	OneLogPerPacket             bool                   `mapstructure:"one_log_per_packet,omitempty"`
 	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
-	Encoding                    helper.EncodingConfig  `mapstructure:",squash,omitempty"`
+	Encoding                    string                 `mapstructure:"encoding,omitempty"`
 	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
 	PreserveLeadingWhitespaces  bool                   `mapstructure:"preserve_leading_whitespaces,omitempty"`
 	PreserveTrailingWhitespaces bool                   `mapstructure:"preserve_trailing_whitespaces,omitempty"`
@@ -82,13 +83,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	encoding, err := c.Encoding.Build()
+	enc, err := helper.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(encoding.Encoding, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
+	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +104,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		address:         address,
 		buffer:          make([]byte, MaxUDPSize),
 		addAttributes:   c.AddAttributes,
-		encoding:        encoding,
+		encoding:        enc,
 		splitFunc:       splitFunc,
 		resolver:        resolver,
 		OneLogPerPacket: c.OneLogPerPacket,
@@ -123,7 +124,7 @@ type Input struct {
 	cancel     context.CancelFunc
 	wg         sync.WaitGroup
 
-	encoding  helper.Encoding
+	encoding  encoding.Encoding
 	splitFunc bufio.SplitFunc
 	resolver  *helper.IPResolver
 }
@@ -150,6 +151,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	go func() {
 		defer u.wg.Done()
 
+		decoder := helper.NewDecoder(u.encoding)
 		buf := make([]byte, 0, MaxUDPSize)
 		for {
 			message, remoteAddr, err := u.readMessage()
@@ -165,7 +167,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 
 			if u.OneLogPerPacket {
 				log := truncateMaxLog(message)
-				u.handleMessage(ctx, remoteAddr, log)
+				u.handleMessage(ctx, remoteAddr, decoder, log)
 				continue
 			}
 
@@ -175,7 +177,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 			scanner.Split(u.splitFunc)
 
 			for scanner.Scan() {
-				u.handleMessage(ctx, remoteAddr, scanner.Bytes())
+				u.handleMessage(ctx, remoteAddr, decoder, scanner.Bytes())
 			}
 			if err := scanner.Err(); err != nil {
 				u.Errorw("Scanner error", zap.Error(err))
@@ -196,8 +198,8 @@ func truncateMaxLog(data []byte) (token []byte) {
 	return data
 }
 
-func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, log []byte) {
-	decoded, err := u.encoding.Decode(log)
+func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, decoder *helper.Decoder, log []byte) {
+	decoded, err := decoder.Decode(log)
 	if err != nil {
 		u.Errorw("Failed to decode data", zap.Error(err))
 		return

@@ -15,6 +15,6 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       input_type: double
     attributes:

@@ -106,10 +106,14 @@ const (
 )
 
 var precisions = map[string]lineprotocol.Precision{
-	lineprotocol.Nanosecond.String():  lineprotocol.Nanosecond,
-	lineprotocol.Microsecond.String(): lineprotocol.Microsecond,
-	lineprotocol.Millisecond.String(): lineprotocol.Millisecond,
-	lineprotocol.Second.String():      lineprotocol.Second,
+	"ns": lineprotocol.Nanosecond,
+	"n":  lineprotocol.Nanosecond,
+	"µs": lineprotocol.Microsecond,
+	"µ":  lineprotocol.Microsecond,
+	"us": lineprotocol.Microsecond,
+	"u":  lineprotocol.Microsecond,
+	"ms": lineprotocol.Millisecond,
+	"s":  lineprotocol.Second,
 }
 
 func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) {

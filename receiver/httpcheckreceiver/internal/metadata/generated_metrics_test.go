@@ -67,7 +67,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordHttpcheckStatusDataPoint(ts, 1, "http.url-val", 16, "http.method-val", "http.status_class-val")
 
 			res := pcommon.NewResource()
-			res.Attributes().PutStr("k1", "v1")
 			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {

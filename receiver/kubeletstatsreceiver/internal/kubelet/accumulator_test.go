@@ -202,11 +202,11 @@ func TestMetadataErrorCases(t *testing.T) {
 				metadata:              tt.metadata,
 				logger:                logger,
 				metricGroupsToCollect: tt.metricGroupsToCollect,
-				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 				mbs: &metadata.MetricsBuilders{
-					NodeMetricsBuilder:  metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
-					PodMetricsBuilder:   metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
-					OtherMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					ContainerMetricsBuilder: metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+					OtherMetricsBuilder:     metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 				},
 			}
 
@@ -229,7 +229,6 @@ func TestNilHandling(t *testing.T) {
 			ContainerMetricGroup: true,
 			VolumeMetricGroup:    true,
 		},
-		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
