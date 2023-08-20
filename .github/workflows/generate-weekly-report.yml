@@ -4,7 +4,8 @@
 name: 'Generate Weekly Report'
 on:
   workflow_dispatch: 
-
+  push:
+    branches: [ main ]
 
 jobs:
   get_issues:
@@ -12,6 +13,7 @@ jobs:
     steps:
       - uses: actions/github-script@v6
         with:
+          retries: 3
           script: |
             async function getIssues(github, queryParams, filterPrs = true) {
               let allIssues = [];
