@@ -1,9 +1,9 @@
 name: e2e-tests
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   pull_request:

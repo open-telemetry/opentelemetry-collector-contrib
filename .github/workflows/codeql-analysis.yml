@@ -1,8 +1,8 @@
 name: "CodeQL Analysis"
 
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
 
 jobs:
   CodeQL-Build:
