@@ -74,10 +74,32 @@ func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) Metr
 type pdataTracesMarshaler struct {
 	marshaler ptrace.Marshaler
 	encoding  string
-	keyData   string
 }
 
 func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
+	bts, err := p.marshaler.MarshalTraces(td)
+	if err != nil {
+		return nil, err
+	}
+	return []*sarama.ProducerMessage{
+		{
+			Topic: topic,
+			Value: sarama.ByteEncoder(bts),
+		},
+	}, nil
+}
+
+func (p pdataTracesMarshaler) Encoding() string {
+	return p.encoding
+}
+
+func (p pdataTracesMarshaler) KeyData() string {
+	return "none"
+}
+
+type pdataTracesMarshalerByTraceId pdataTracesMarshaler
+
+func (p pdataTracesMarshalerByTraceId) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
 	var messages []*sarama.ProducerMessage
 
 	for _, tracesById := range batchpersignal.SplitTraces(td) {
@@ -96,18 +118,24 @@ func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama
 	return messages, nil
 }
 
-func (p pdataTracesMarshaler) Encoding() string {
+func (p pdataTracesMarshalerByTraceId) Encoding() string {
 	return p.encoding
 }
 
-func (p pdataTracesMarshaler) KeyData() string {
-	return p.keyData
+func (p pdataTracesMarshalerByTraceId) KeyData() string {
+	return "traceID"
 }
 
 func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, keyData string) TracesMarshaler {
+	if keyData == "traceID" {
+		return pdataTracesMarshalerByTraceId{
+			marshaler: marshaler,
+			encoding:  encoding,
+		}
+	}
+
 	return pdataTracesMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
-		keyData:   keyData,
 	}
 }
