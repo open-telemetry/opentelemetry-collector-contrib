@@ -64,31 +64,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			functionThatHasAnError,
 		),
 		createFactory(
-			"no_struct_tag",
-			&noStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"wrong_struct_tag",
-			&wrongTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"bad_struct_tag",
-			&badStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"negative_struct_tag",
-			&negativeStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"out_of_bounds_struct_tag",
-			&outOfBoundsStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
 			"testing_unknown_function",
 			&functionGetterArguments{},
 			functionWithFunctionGetter,
@@ -347,61 +322,6 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			name: "factory definition uses a non-pointer Arguments value",
 			inv: editor{
 				Function: "non_pointer",
-			},
-		},
-		{
-			name: "no struct tags",
-			inv: editor{
-				Function: "no_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "using the wrong struct tag",
-			inv: editor{
-				Function: "wrong_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "non-integer struct tags",
-			inv: editor{
-				Function: "bad_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "struct tag index too low",
-			inv: editor{
-				Function: "negative_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "struct tag index too high",
-			inv: editor{
-				Function: "out_of_bounds_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
 			},
 		},
 	}
@@ -1514,26 +1434,6 @@ func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
-}
-
-type noStructTagFunctionArguments struct {
-	StringArg string
-}
-
-type badStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"a"`
-}
-
-type negativeStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"-1"`
-}
-
-type outOfBoundsStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"1"`
-}
-
-type wrongTagFunctionArguments struct {
-	StringArg string `argument:"1"`
 }
 
 func createFactory[A any](name string, args A, fn any) Factory[any] {

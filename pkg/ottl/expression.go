@@ -279,15 +279,7 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	}
 	for i := 0; i < fArgsVal.NumField(); i++ {
 		field := argsVal.Field(i)
-		argIndex, err := getArgumentIndex(i, argsVal)
-		if err != nil {
-			return Expr[K]{}, err
-		}
-		fArgIndex, err := getArgumentIndex(argIndex, fArgsVal)
-		if err != nil {
-			return Expr[K]{}, err
-		}
-		fArgsVal.Field(fArgIndex).Set(field)
+		fArgsVal.Field(i).Set(field)
 	}
 	fn, err := g.fact.CreateFunction(g.fCtx, fArgs)
 	if err != nil {

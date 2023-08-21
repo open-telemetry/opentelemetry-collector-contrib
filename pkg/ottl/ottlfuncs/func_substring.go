@@ -12,8 +12,8 @@ import (
 
 type SubstringArguments[K any] struct {
 	Target ottl.StringGetter[K]
-	Start  int64
-	Length int64
+	Start  ottl.IntGetter[K]
+	Length ottl.IntGetter[K]
 }
 
 func NewSubstringFactory[K any]() ottl.Factory[K] {
