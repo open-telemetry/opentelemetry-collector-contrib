@@ -8,8 +8,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 	github.com/DataDog/datadog-api-client-go/v2 v2.14.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.7.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.7.0
+	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.7.1
+	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.7.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.7.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.7.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.7.0
