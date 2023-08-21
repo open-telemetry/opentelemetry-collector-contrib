@@ -53,9 +53,14 @@ func (j jaegerMarshaler) Encoding() string {
 	return j.marshaler.encoding()
 }
 
+func (j jaegerMarshaler) KeyData() string {
+	return j.marshaler.keyData()
+}
+
 type jaegerSpanMarshaler interface {
 	marshal(span *jaegerproto.Span) ([]byte, error)
 	encoding() string
+	keyData() string
 }
 
 type jaegerProtoSpanMarshaler struct {
@@ -69,6 +74,10 @@ func (p jaegerProtoSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error
 
 func (p jaegerProtoSpanMarshaler) encoding() string {
 	return "jaeger_proto"
+}
+
+func (p jaegerProtoSpanMarshaler) keyData() string {
+	return "none"
 }
 
 type jaegerJSONSpanMarshaler struct {
@@ -91,4 +100,8 @@ func (p jaegerJSONSpanMarshaler) marshal(span *jaegerproto.Span) ([]byte, error)
 
 func (p jaegerJSONSpanMarshaler) encoding() string {
 	return "jaeger_json"
+}
+
+func (p jaegerJSONSpanMarshaler) keyData() string {
+	return "none"
 }

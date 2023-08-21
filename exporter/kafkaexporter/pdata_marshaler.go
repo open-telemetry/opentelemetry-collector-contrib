@@ -74,6 +74,7 @@ func newPdataMetricsMarshaler(marshaler pmetric.Marshaler, encoding string) Metr
 type pdataTracesMarshaler struct {
 	marshaler ptrace.Marshaler
 	encoding  string
+	keyData   string
 }
 
 func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama.ProducerMessage, error) {
@@ -99,9 +100,14 @@ func (p pdataTracesMarshaler) Encoding() string {
 	return p.encoding
 }
 
-func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) TracesMarshaler {
+func (p pdataTracesMarshaler) KeyData() string {
+	return p.keyData
+}
+
+func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, keyData string) TracesMarshaler {
 	return pdataTracesMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
+		keyData:   keyData,
 	}
 }

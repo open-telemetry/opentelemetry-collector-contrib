@@ -30,9 +30,16 @@ func TestNewExporter_err_version(t *testing.T) {
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "foo"}
+	c := Config{Encoding: "foo", KeyData: defaultKeyData}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
+	assert.Nil(t, texp)
+}
+
+func TestNewExporter_err_keyData(t *testing.T) {
+	c := Config{Encoding: defaultEncoding, KeyData: "foo"}
+	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	assert.EqualError(t, err, errUnrecognizedKeyData.Error())
 	assert.Nil(t, texp)
 }
 
@@ -133,7 +140,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, defaultKeyData),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -150,7 +157,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, defaultKeyData),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
@@ -294,6 +301,10 @@ func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string) ([]*sarama.Prod
 }
 
 func (e tracesErrorMarshaler) Encoding() string {
+	panic("implement me")
+}
+
+func (e tracesErrorMarshaler) KeyData() string {
 	panic("implement me")
 }
 

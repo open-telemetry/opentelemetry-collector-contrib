@@ -17,6 +17,9 @@ type TracesMarshaler interface {
 
 	// Encoding returns encoding name
 	Encoding() string
+
+	// KeyData returns keyData name
+	KeyData() string
 }
 
 // MetricsMarshaler marshals metrics into Message array
@@ -39,15 +42,19 @@ type LogsMarshaler interface {
 
 // tracesMarshalers returns map of supported encodings with TracesMarshaler.
 func tracesMarshalers() map[string]TracesMarshaler {
-	otlpPb := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding)
-	otlpJSON := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json")
+	otlpPbAndKeyNone := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, "none")
+	otlpPbAndKeyTraceId := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, "traceID")
+	otlpJsonAndKeyNone := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", "none")
+	otlpJsonAndKeyTraceId := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", "traceID")
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
 	return map[string]TracesMarshaler{
-		otlpPb.Encoding():      otlpPb,
-		otlpJSON.Encoding():    otlpJSON,
-		jaegerProto.Encoding(): jaegerProto,
-		jaegerJSON.Encoding():  jaegerJSON,
+		KeyOfTracerMarshaller(otlpPbAndKeyNone):      otlpPbAndKeyNone,
+		KeyOfTracerMarshaller(otlpPbAndKeyTraceId):   otlpPbAndKeyTraceId,
+		KeyOfTracerMarshaller(otlpJsonAndKeyNone):    otlpJsonAndKeyNone,
+		KeyOfTracerMarshaller(otlpJsonAndKeyTraceId): otlpJsonAndKeyTraceId,
+		KeyOfTracerMarshaller(jaegerProto):           jaegerProto,
+		KeyOfTracerMarshaller(jaegerJSON):            jaegerJSON,
 	}
 }
 

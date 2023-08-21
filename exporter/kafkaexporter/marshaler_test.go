@@ -17,15 +17,17 @@ import (
 )
 
 func TestDefaultTracesMarshalers(t *testing.T) {
-	expectedEncodings := []string{
-		"otlp_proto",
-		"otlp_json",
-		"jaeger_proto",
-		"jaeger_json",
+	expectedKeys := []string{
+		KeyOfTracerMarshallerBy("otlp_proto", "none"),
+		KeyOfTracerMarshallerBy("otlp_proto", "traceID"),
+		KeyOfTracerMarshallerBy("otlp_json", "none"),
+		KeyOfTracerMarshallerBy("otlp_json", "traceID"),
+		KeyOfTracerMarshallerBy("jaeger_proto", "none"),
+		KeyOfTracerMarshallerBy("jaeger_json", "none"),
 	}
 	marshalers := tracesMarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
-	for _, e := range expectedEncodings {
+	assert.Equal(t, len(expectedKeys), len(marshalers))
+	for _, e := range expectedKeys {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
 			require.True(t, ok)
@@ -91,7 +93,7 @@ func TestOTLPTracesJsonMarshaling(t *testing.T) {
 	span.SetSpanID([8]byte{0, 1, 2, 3, 4, 5, 6, 7})
 	span.SetParentSpanID([8]byte{8, 9, 10, 11, 12, 13, 14})
 
-	marshaler, ok := tracesMarshalers()["otlp_json"]
+	marshaler, ok := tracesMarshalers()[KeyOfTracerMarshallerBy("otlp_json", defaultKeyData)]
 	require.True(t, ok, "Must have otlp json marshaller")
 
 	msg, err := marshaler.Marshal(traces, t.Name())

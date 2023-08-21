@@ -18,6 +18,7 @@ import (
 )
 
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errUnrecognizedKeyData = fmt.Errorf("unrecognized key_data")
 
 // kafkaTracesProducer uses sarama to produce trace messages to Kafka.
 type kafkaTracesProducer struct {
@@ -178,8 +179,11 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 
 // newTracesExporter creates Kafka exporter.
 func newTracesExporter(config Config, set exporter.CreateSettings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
-	marshaler := marshalers[config.Encoding]
+	marshaler := marshalers[KeyOfTracerMarshallerBy(config.Encoding, config.KeyData)]
 	if marshaler == nil {
+		if config.KeyData != "none" && config.KeyData != "traceID" {
+			return nil, errUnrecognizedKeyData
+		}
 		return nil, errUnrecognizedEncoding
 	}
 	producer, err := newSaramaProducer(config)

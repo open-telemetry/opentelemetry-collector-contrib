@@ -46,7 +46,7 @@ type FactoryOption func(factory *kafkaExporterFactory)
 func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
-			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
+			factory.tracesMarshalers[KeyOfTracerMarshaller(marshaler)] = marshaler
 		}
 	}
 }
@@ -118,6 +118,14 @@ type kafkaExporterFactory struct {
 	tracesMarshalers  map[string]TracesMarshaler
 	metricsMarshalers map[string]MetricsMarshaler
 	logsMarshalers    map[string]LogsMarshaler
+}
+
+func KeyOfTracerMarshaller(marshaler TracesMarshaler) string {
+	return KeyOfTracerMarshallerBy(marshaler.Encoding(), marshaler.KeyData())
+}
+
+func KeyOfTracerMarshallerBy(encoding string, keyData string) string {
+	return encoding + "#" + keyData
 }
 
 func (f *kafkaExporterFactory) createTracesExporter(

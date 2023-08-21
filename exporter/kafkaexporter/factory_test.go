@@ -32,6 +32,8 @@ type mockMarshaler[Data data] struct {
 
 func (mm *mockMarshaler[Data]) Encoding() string { return mm.encoding }
 
+func (mm *mockMarshaler[Data]) KeyData() string { return "none" }
+
 func (mm *mockMarshaler[Data]) Marshal(d Data, topic string) ([]*sarama.ProducerMessage, error) {
 	if mm.consume != nil {
 		return mm.consume(d, topic)
