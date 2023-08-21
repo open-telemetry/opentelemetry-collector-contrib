@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add new `ExtractPattern` converter that extract regex pattern from string.
+note: Add new `ExtractPatterns` converter that extract regex pattern from string.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [25834, 25856]

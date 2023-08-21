@@ -277,7 +277,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
-- [ExtractPattern](#extractpattern)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Duration](#duration)
 - [Int](#int)
@@ -531,20 +531,20 @@ Examples:
 
 - `ParseJSON(body)`
 
-### ExtractPattern
+### ExtractPatterns
 
-`ExtractPattern(target, pattern)`
+`ExtractPatterns(target, pattern)`
 
-The `ExtractPattern` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string
 
 `target` is a Getter that returns a string. `pattern` is a regex string.
-If `target` is not a string, nil, or does not match the pattern, `ExtractPattern` will return an error.
+If `target` is not a string, nil, or does not match the pattern, `ExtractPatterns` will return an error.
 
 Examples:
 
-- `ExtractPattern(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
-- `ExtractPattern(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### SHA1
 

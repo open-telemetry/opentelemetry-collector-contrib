@@ -9,29 +9,29 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-type ExtractPatternArguments[K any] struct {
+type ExtractPatternsArguments[K any] struct {
 	Target  ottl.StringGetter[K] `ottlarg:"0"`
 	Pattern string               `ottlarg:"1"`
 }
 
-func NewExtractPatternFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ExtractPattern", &ExtractPatternArguments[K]{}, createExtractPatternFunction[K])
+func NewExtractPatternsFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("ExtractPatterns", &ExtractPatternsArguments[K]{}, createExtractPatternsFunction[K])
 }
 
-func createExtractPatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ExtractPatternArguments[K])
+func createExtractPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*ExtractPatternsArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ExtractPatternFactory args must be of type *ExtractPatternArguments[K]")
+		return nil, fmt.Errorf("ExtractPatternsFactory args must be of type *ExtractPatternsArguments[K]")
 	}
 
-	return extractPattern(args.Target, args.Pattern)
+	return extractPatterns(args.Target, args.Pattern)
 }
 
-func extractPattern[K any](target ottl.StringGetter[K], pattern string) (ottl.ExprFunc[K], error) {
+func extractPatterns[K any](target ottl.StringGetter[K], pattern string) (ottl.ExprFunc[K], error) {
 	r, err := regexp.Compile(pattern)
 	if err != nil {
-		return nil, fmt.Errorf("the pattern supplied to ExtractPattern is not a valid pattern: %w", err)
+		return nil, fmt.Errorf("the pattern supplied to ExtractPatterns is not a valid pattern: %w", err)
 	}
 
 	namedCaptureGroups := 0

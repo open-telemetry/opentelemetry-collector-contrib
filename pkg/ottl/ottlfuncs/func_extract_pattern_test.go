@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-func Test_extractPattern(t *testing.T) {
+func Test_extractPatterns(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
 		Getter: func(ctx context.Context, tCtx any) (interface{}, error) {
 			return `a=b c=d`, nil
@@ -34,7 +34,7 @@ func Test_extractPattern(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := extractPattern(tt.target, tt.pattern)
+			exprFunc, err := extractPatterns(tt.target, tt.pattern)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -57,7 +57,7 @@ func Test_extractPattern(t *testing.T) {
 	}
 }
 
-func Test_extractPattern_validation(t *testing.T) {
+func Test_extractPatterns_validation(t *testing.T) {
 	tests := []struct {
 		name    string
 		target  ottl.StringGetter[any]
@@ -84,14 +84,14 @@ func Test_extractPattern_validation(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := extractPattern[any](tt.target, tt.pattern)
+			exprFunc, err := extractPatterns[any](tt.target, tt.pattern)
 			assert.Error(t, err)
 			assert.Nil(t, exprFunc)
 		})
 	}
 }
 
-func Test_extractPattern_bad_input(t *testing.T) {
+func Test_extractPatterns_bad_input(t *testing.T) {
 	tests := []struct {
 		name    string
 		target  ottl.StringGetter[any]
@@ -119,7 +119,7 @@ func Test_extractPattern_bad_input(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := extractPattern[any](tt.target, tt.pattern)
+			exprFunc, err := extractPatterns[any](tt.target, tt.pattern)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)
