@@ -1537,8 +1537,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Verify that only long file is remembered and that (0 < offset < fileSize)
 	require.Equal(t, 1, len(operator.knownFiles))
 	reader := operator.knownFiles[0]
-	require.Equal(t, longFile.Name(), reader.file.Name())
-	require.Greater(t, reader.Offset, int64(0))
+	require.Greater(t, reader.Offset, int64(len(shortFileLine)))
 	require.Less(t, reader.Offset, int64(longFileSize))
 }
 
