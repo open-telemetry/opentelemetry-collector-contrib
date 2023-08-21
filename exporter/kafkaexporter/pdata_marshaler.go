@@ -126,15 +126,15 @@ func (p pdataTracesMarshalerByTraceId) KeyData() string {
 	return "traceID"
 }
 
-func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string, keyData string) TracesMarshaler {
-	if keyData == "traceID" {
-		return pdataTracesMarshalerByTraceId{
-			marshaler: marshaler,
-			encoding:  encoding,
-		}
-	}
-
+func newPdataTracesMarshaler(marshaler ptrace.Marshaler, encoding string) TracesMarshaler {
 	return pdataTracesMarshaler{
+		marshaler: marshaler,
+		encoding:  encoding,
+	}
+}
+
+func newPdataTracesMarshalerByTraceId(marshaler ptrace.Marshaler, encoding string) TracesMarshaler {
+	return pdataTracesMarshalerByTraceId{
 		marshaler: marshaler,
 		encoding:  encoding,
 	}

@@ -42,19 +42,19 @@ type LogsMarshaler interface {
 
 // tracesMarshalers returns map of supported encodings with TracesMarshaler.
 func tracesMarshalers() map[string]TracesMarshaler {
-	otlpPbAndKeyNone := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, "none")
-	otlpPbAndKeyTraceId := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, "traceID")
-	otlpJsonAndKeyNone := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", "none")
-	otlpJsonAndKeyTraceId := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json", "traceID")
+	otlpPb := newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding)
+	otlpPbByTraceId := newPdataTracesMarshalerByTraceId(&ptrace.ProtoMarshaler{}, defaultEncoding)
+	otlpJSON := newPdataTracesMarshaler(&ptrace.JSONMarshaler{}, "otlp_json")
+	otlpJsonByTraceId := newPdataTracesMarshalerByTraceId(&ptrace.JSONMarshaler{}, "otlp_json")
 	jaegerProto := jaegerMarshaler{marshaler: jaegerProtoSpanMarshaler{}}
 	jaegerJSON := jaegerMarshaler{marshaler: newJaegerJSONMarshaler()}
 	return map[string]TracesMarshaler{
-		KeyOfTracerMarshaller(otlpPbAndKeyNone):      otlpPbAndKeyNone,
-		KeyOfTracerMarshaller(otlpPbAndKeyTraceId):   otlpPbAndKeyTraceId,
-		KeyOfTracerMarshaller(otlpJsonAndKeyNone):    otlpJsonAndKeyNone,
-		KeyOfTracerMarshaller(otlpJsonAndKeyTraceId): otlpJsonAndKeyTraceId,
-		KeyOfTracerMarshaller(jaegerProto):           jaegerProto,
-		KeyOfTracerMarshaller(jaegerJSON):            jaegerJSON,
+		KeyOfTracerMarshaller(otlpPb):            otlpPb,
+		KeyOfTracerMarshaller(otlpPbByTraceId):   otlpPbByTraceId,
+		KeyOfTracerMarshaller(otlpJSON):          otlpJSON,
+		KeyOfTracerMarshaller(otlpJsonByTraceId): otlpJsonByTraceId,
+		KeyOfTracerMarshaller(jaegerProto):       jaegerProto,
+		KeyOfTracerMarshaller(jaegerJSON):        jaegerJSON,
 	}
 }
 

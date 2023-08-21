@@ -140,7 +140,7 @@ func TestTracesPusher(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, defaultKeyData),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
 	}
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
@@ -157,7 +157,7 @@ func TestTracesPusher_err(t *testing.T) {
 
 	p := kafkaTracesProducer{
 		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, defaultKeyData),
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
 		logger:    zap.NewNop(),
 	}
 	t.Cleanup(func() {
