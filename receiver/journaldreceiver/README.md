@@ -29,6 +29,7 @@ Journald receiver requires that:
 | `files`                             |                                      | A list of journal files to read entries from                                                                                                                                                                                             |
 | `start_at`                          | `end`                                | At startup, where to start reading logs from the file. Options are beginning or end                                                                                                                                                      |
 | `units`                             |                                      | A list of units to read entries from. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                                            |
+| `identifiers`                       |                                      | Filter output by message identifiers (`SYSTEMD_IDENTIFIER`). See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                     |
 | `matches`                           |                                      | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                  |
 | `priority`                          | `info`                               | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                          |
 | `grep`                              |                                      | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                      |
@@ -92,6 +93,8 @@ AND
 AND
 ( units[0] OR units[1] OR units[2] OR ... units[U] )
 AND
+( identifier[0] OR identifier[1] OR identifier[2] OR ... identifier[I] )
+AND
 ( matches[0] OR matches[1] OR matches[2] OR ... matches[M] )
 AND
 ( grep )
@@ -109,14 +112,17 @@ Consider the following example:
     - kubelet
     - systemd
   priority: info
+  identifiers:
+    - systemd
 ```
 
 The above configuration will be passed to `journalctl` as the following arguments
-`journalctl ... --priority=info --unit=kubelet --unit=systemd _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
+`journalctl ... --priority=info --unit=kubelet --unit=systemd --identifier=systemd _SYSTEMD_UNIT=ssh + _SYSTEMD_UNIT=kubelet _UID=1000`,
 which is going to effectively retrieve all entries which matches the following set of rules:
 
 - `_PRIORITY` is `6`, and
 - `_SYSTEMD_UNIT` is `kubelet` or `systemd`, and
+- `SYSLOG_IDENTIFIER` `systemd`, and
 - entry matches at least one of the following rules:
 
   - `_SYSTEMD_UNIT` is `ssh`

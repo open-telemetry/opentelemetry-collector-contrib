@@ -184,6 +184,13 @@ func TestBuildConfig(t *testing.T) {
 			Expected: []string{"--utc", "--output=json", "--follow", "--unit", "ssh", "--priority", "info", "_SYSTEMD_UNIT=dbus.service"},
 		},
 		{
+			Name: "identifiers",
+			Config: func(cfg *Config) {
+				cfg.Identifiers = []string{"wireplumber", "systemd"}
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--identifier", "wireplumber", "--identifier", "systemd", "--priority", "info"},
+		},
+		{
 			Name: "grep",
 			Config: func(cfg *Config) {
 				cfg.Grep = "test_grep"
