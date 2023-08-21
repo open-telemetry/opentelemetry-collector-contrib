@@ -157,10 +157,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			r.ReadToEnd(ctx)
 			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
 			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
+				r.Delete()
 			}
 		}(r)
 	}
@@ -379,12 +376,9 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 				m.Errorw("migrate header attributes: unexpected format")
 			}
 		}
-		r, err := m.readerFactory.newFromMetadata(rmd)
-		if err != nil {
-			m.Errorw("load reader", err)
-		} else {
-			m.knownFiles = append(m.knownFiles, r)
-		}
+
+		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
+		m.knownFiles = append(m.knownFiles, &reader{readerMetadata: rmd})
 	}
 
 	return nil
