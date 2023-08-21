@@ -61,6 +61,7 @@ type Config struct {
 	Matches     []MatchConfig `mapstructure:"matches,omitempty"`
 	Identifiers []string      `mapstructure:"identifiers,omitempty"`
 	Grep        string        `mapstructure:"grep,omitempty"`
+	Dmesg       bool          `mapstructure:"dmesg,omitempty"`
 }
 
 type MatchConfig map[string]string
@@ -122,6 +123,10 @@ func (c Config) buildArgs() ([]string, error) {
 
 	if len(c.Grep) > 0 {
 		args = append(args, "--grep", c.Grep)
+	}
+
+	if c.Dmesg {
+		args = append(args, "--dmesg")
 	}
 
 	switch {

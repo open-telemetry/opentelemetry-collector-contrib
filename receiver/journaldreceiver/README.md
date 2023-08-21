@@ -33,6 +33,7 @@ Journald receiver requires that:
 | `matches`                           |                                      | A list of matches to read entries from. See [Matches](#matches) and [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                  |
 | `priority`                          | `info`                               | Filter output by message priorities or priority ranges. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                                                          |
 | `grep`                              |                                      | Filter output to entries where the MESSAGE= field matches the specified regular expression. See [Multiple filtering options](#multiple-filtering-options) examples.                                                                      |
+| `dmesg`                             | 'false'                              | Show only kernel messages. This shows logs from current boot and adds the match `_TRANSPORT=kernel`. See [Multiple filtering options](#multiple-filtering-options) examples.                                                             |
 | `storage`                           | none                                 | The ID of a storage extension to be used to store cursors. Cursors allow the receiver to pick up where it left off in the case of a collector restart. If no storage extension is used, the receiver will manage cursors in memory only. |
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                  |
 | `retry_on_failure.initial_interval` | `1 second`                           | Time to wait after the first failure before retrying.                                                                                                                                                                                    |
@@ -86,6 +87,8 @@ which is going to retrieve all entries which match at least one of the following
 In case of using multiple following options, conditions between them are logically `AND`ed and within them are logically `OR`ed:
 
 ```text
+( dmesg )
+AND
 ( priority )
 AND
 ( units[0] OR units[1] OR units[2] OR ... units[U] )

@@ -197,6 +197,13 @@ func TestBuildConfig(t *testing.T) {
 			},
 			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--grep", "test_grep"},
 		},
+		{
+			Name: "dmesg",
+			Config: func(cfg *Config) {
+				cfg.Dmesg = true
+			},
+			Expected: []string{"--utc", "--output=json", "--follow", "--priority", "info", "--dmesg"},
+		},
 	}
 
 	for _, tt := range testCases {
