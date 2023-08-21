@@ -89,6 +89,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			},
 		},
 		Encoding: defaultEncoding,
+		KeyData:  defaultKeyData,
 		Metadata: Metadata{
 			Full: false,
 		},
@@ -114,6 +115,7 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 func TestNewExporter_err_compression(t *testing.T) {
 	c := Config{
 		Encoding: defaultEncoding,
+		KeyData:  defaultKeyData,
 		Producer: Producer{
 			Compression: "idk",
 		},

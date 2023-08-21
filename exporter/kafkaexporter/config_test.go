@@ -55,6 +55,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Topic:    "spans",
 				Encoding: "otlp_proto",
+				KeyData:  "none",
 				Brokers:  []string{"foo:123", "bar:456"},
 				Authentication: Authentication{
 					PlainText: &PlainTextConfig{
@@ -107,6 +108,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Topic:    "spans",
 				Encoding: "otlp_proto",
+				KeyData:  "none",
 				Brokers:  []string{"foo:123", "bar:456"},
 				Authentication: Authentication{
 					PlainText: &PlainTextConfig{

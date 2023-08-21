@@ -28,6 +28,9 @@ type Config struct {
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 
+	// KeyData of messages (default "none")
+	KeyData string `mapstructure:"key_data"`
+
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
 	Metadata Metadata `mapstructure:"metadata"`

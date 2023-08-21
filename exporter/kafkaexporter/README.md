@@ -34,6 +34,9 @@ The following settings can be optionally configured:
     - `jaeger_json`: the payload is serialized to a single Jaeger JSON Span using `jsonpb`, and keyed by TraceID.\
   - The following encodings are valid *only* for **logs**.
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
+- `key_data` (default = none): the key of the traces sent to kafka. All available key options:
+  - `none`:    no use of key
+  - `traceID`: taking the TraceID from `ExportTraceServiceRequest` and use it as a string key 
 - `auth`
   - `plain_text`
     - `username`: The username to use.
