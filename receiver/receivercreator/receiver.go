@@ -93,6 +93,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		nextMetricsConsumer:   rc.nextMetricsConsumer,
 		nextTracesConsumer:    rc.nextTracesConsumer,
 		runner:                newReceiverRunner(rc.params, &loggingHost{host, rc.params.Logger}),
+		logger:                rc.params.TelemetrySettings.Logger,
 	}
 
 	observers := map[component.ID]observer.Observable{}

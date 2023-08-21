@@ -508,6 +508,7 @@ func newObserverHandler(
 		nextLogsConsumer:      nextLogs,
 		nextMetricsConsumer:   nextMetrics,
 		nextTracesConsumer:    nextTraces,
+		logger:                set.TelemetrySettings.Logger,
 	}, mr
 }
 
@@ -789,7 +790,7 @@ func TestReceiverInvalidEndpointEnvContents(t *testing.T) {
 			core, obs := zapObserver.New(zap.DebugLevel)
 			logger := zap.New(core)
 
-			handler.params.TelemetrySettings.Logger = logger
+			handler.logger = logger
 			handler.OnAdd([]observer.Endpoint{tt.endpoint})
 
 			rcvr := mr.startedComponent

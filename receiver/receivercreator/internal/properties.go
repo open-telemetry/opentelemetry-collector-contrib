@@ -29,11 +29,11 @@ const (
 var doubleUnderscoreRE = regexp.MustCompile("__")
 
 // Receiver creator endpoint properties are the method of configuring individual receivers from a given observer endpoint environment.
-// (io.opentelemetry.collector.receiver-creator|receiver-creator.collector.opentelemetry.io).<receiver-type(/name)>: <full mapping value>
-// (io.opentelemetry.collector.receiver-creator|receiver-creator.collector.opentelemetry.io).<receiver-type(/name)>.config.<field>(<::subfield>)*: value
-// (io.opentelemetry.collector.receiver-creator|receiver-creator.collector.opentelemetry.io).<receiver-type(/name)>.rule: value
-// (io.opentelemetry.collector.receiver-creator|receiver-creator.collector.opentelemetry.io).<receiver-type(/name)>.resoureceiver-creatore_attributes.<resoureceiver-creatore_attribute>: value
-// (io.opentelemetry.collector.receiver-creator|receiver-creator.collector.opentelemetry.io).<receiver-type(/name)>.resoureceiver-creatore_attributes: "attribute: value"
+// (io.opentelemetry.collector.receiver-creator.|receiver-creator.collector.opentelemetry.io/)<receiver-type(/name)>: <full mapping value>
+// (io.opentelemetry.collector.receiver-creator.|receiver-creator.collector.opentelemetry.io/)<receiver-type(/name)>.config.<field>(<::subfield>)*: value
+// (io.opentelemetry.collector.receiver-creator.|receiver-creator.collector.opentelemetry.io/)<receiver-type(/name)>.rule: value
+// (io.opentelemetry.collector.receiver-creator.|receiver-creator.collector.opentelemetry.io/)<receiver-type(/name)>.resource_attributes.<resource_attribute>: value
+// (io.opentelemetry.collector.receiver-creator.|receiver-creator.collector.opentelemetry.io/)<receiver-type(/name)>.resource_attributes: "attribute: value"
 // Parsing properties requires lookaheads (backtracking) so we use participle instead of re2.
 
 var lex = lexer.MustSimple([]lexer.SimpleRule{
