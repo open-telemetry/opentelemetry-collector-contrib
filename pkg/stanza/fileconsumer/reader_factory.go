@@ -83,7 +83,7 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata) (r *reader, err 
 	// Resolve file name and path attributes
 	resolved := file.Name()
 
-	// Dirty solution, waiting for this permanent fix https://githuf.com/golang/go/issues/39786
+	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
 	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
 	if runtime.GOOS != "windows" {
 		resolved, err = filepath.EvalSymlinks(file.Name())
