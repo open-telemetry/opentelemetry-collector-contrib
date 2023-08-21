@@ -114,10 +114,8 @@ func (c *Cluster) DescribeTasksWithContext(_ context.Context, input *ecs.Describ
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		failures []*ecs.Failure
-		tasks    []*ecs.Task
-	)
+	var failures []*ecs.Failure
+	tasks := make([]*ecs.Task, 0, len(input.Tasks))
 	for i, taskArn := range input.Tasks {
 		arn := aws.StringValue(taskArn)
 		task, ok := c.taskMap[arn]
@@ -149,10 +147,8 @@ func (c *Cluster) DescribeContainerInstancesWithContext(_ context.Context, input
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		instances []*ecs.ContainerInstance
-		failures  []*ecs.Failure
-	)
+	var failures []*ecs.Failure
+	instances := make([]*ecs.ContainerInstance, 0, len(input.ContainerInstances))
 	for _, cid := range input.ContainerInstances {
 		ci, ok := c.containerInstanceMap[aws.StringValue(cid)]
 		if !ok {
@@ -230,10 +226,8 @@ func (c *Cluster) DescribeServicesWithContext(_ context.Context, input *ecs.Desc
 	if err := checkCluster(input.Cluster, c.name); err != nil {
 		return nil, err
 	}
-	var (
-		failures []*ecs.Failure
-		services []*ecs.Service
-	)
+	var failures []*ecs.Failure
+	services := make([]*ecs.Service, 0, len(input.Services))
 	for i, serviceArn := range input.Services {
 		arn := aws.StringValue(serviceArn)
 		svc, ok := c.serviceMap[arn]

@@ -213,7 +213,7 @@ receiver/k8seventsreceiver/                              @open-telemetry/collect
 receiver/k8sobjectsreceiver/                             @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth
 receiver/kafkametricsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax
+receiver/kubeletstatsreceiver/                           @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth
 receiver/lokireceiver/                                   @open-telemetry/collector-contrib-approvers @mar4uk @jpkrohling
 receiver/memcachedreceiver/                              @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/mongodbatlasreceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
