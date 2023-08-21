@@ -81,7 +81,6 @@ func (m *Manager) worker(ctx context.Context) {
 			}
 			m.removePath(fp)
 		}
-
 	}
 }
 
