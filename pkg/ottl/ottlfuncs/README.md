@@ -358,7 +358,7 @@ Examples:
 
 `ExtractPatterns(target, pattern)`
 
-The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string.
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
 
 `target` is a Getter that returns a string. `pattern` is a regex string. 
 
