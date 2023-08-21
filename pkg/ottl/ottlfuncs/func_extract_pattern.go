@@ -42,7 +42,7 @@ func extractPatterns[K any](target ottl.StringGetter[K], pattern string) (ottl.E
 	}
 
 	if namedCaptureGroups == 0 {
-		return nil, fmt.Errorf("no named capture groups in regex pattern")
+		return nil, fmt.Errorf("at least 1 named capture group must be supplied in the given regex")
 	}
 
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
