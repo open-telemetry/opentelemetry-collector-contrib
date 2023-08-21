@@ -36,7 +36,7 @@ The following settings can be optionally configured:
     - `raw`: if the log record body is a byte array, it is sent as is. Otherwise, it is serialized to JSON. Resource and record attributes are discarded.
 - `key_data` (default = none): the key of the traces sent to kafka. All available key options:
   - `none`:    no use of key
-  - `traceID`: taking the TraceID from `ExportTraceServiceRequest` and use it as a string key 
+  - `traceID`: taking the TraceID from `ExportTraceServiceRequest` and use it as a string key. note that it affects the partition number, and allows concurrent consumers
 - `auth`
   - `plain_text`
     - `username`: The username to use.
