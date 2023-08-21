@@ -130,7 +130,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
+		enc, err := helper.LookupEncoding(c.Splitter.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
@@ -142,6 +142,11 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	}
 
 	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := helper.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +167,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
+			encoding:        enc,
 			headerConfig:    hCfg,
 		},
 		fileMatcher:     fileMatcher,
@@ -213,7 +218,7 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
+	enc, err := helper.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return err
 	}

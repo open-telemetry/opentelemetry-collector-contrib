@@ -140,9 +140,9 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
 	f.splitterFactory = splitter.NewMultilineFactory(helper.SplitterConfig{
-		EncodingConfig: helper.NewEncodingConfig(),
-		Flusher:        helper.NewFlusherConfig(),
-		Multiline:      mlc,
+		Encoding:  "utf-8",
+		Flusher:   helper.NewFlusherConfig(),
+		Multiline: mlc,
 	})
 	f.readerConfig.maxLogSize = 15
 
@@ -173,10 +173,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	encodingConf := helper.EncodingConfig{
-		Encoding: "utf-8",
-	}
-	enc, err := helper.LookupEncoding(encodingConf.Encoding)
+	enc, err := helper.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
 	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
@@ -202,6 +199,8 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	splitterConfig := helper.NewSplitterConfig()
+	enc, err := helper.LookupEncoding(splitterConfig.Encoding)
+	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -211,7 +210,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 		},
 		fromBeginning:   true,
 		splitterFactory: splitter.NewMultilineFactory(splitterConfig),
-		encodingConfig:  splitterConfig.EncodingConfig,
+		encoding:        enc,
 	}, emitChan
 }
 
