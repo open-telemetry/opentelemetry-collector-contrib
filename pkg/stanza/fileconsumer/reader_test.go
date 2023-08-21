@@ -16,14 +16,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	sCfg := helper.NewSplitterConfig()
+	sCfg := tokenize.NewSplitterConfig()
 	sCfg.Flusher.Period = flushPeriod
 	f, emitChan := testReaderFactoryWithSplitter(t, sCfg)
 
@@ -174,11 +174,11 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	f, emitChan := testReaderFactory(t)
 
-	mlc := helper.NewMultilineConfig()
+	mlc := tokenize.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = splitter.NewMultilineFactory(helper.SplitterConfig{
+	f.splitterFactory = splitter.NewMultilineFactory(tokenize.SplitterConfig{
 		Encoding:  "utf-8",
-		Flusher:   helper.NewFlusherConfig(),
+		Flusher:   tokenize.NewFlusherConfig(),
 		Multiline: mlc,
 	})
 	f.readerConfig.maxLogSize = 15
@@ -234,10 +234,10 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 }
 
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
-	return testReaderFactoryWithSplitter(t, helper.NewSplitterConfig())
+	return testReaderFactoryWithSplitter(t, tokenize.NewSplitterConfig())
 }
 
-func testReaderFactoryWithSplitter(t *testing.T, splitterConfig helper.SplitterConfig) (*readerFactory, chan *emitParams) {
+func testReaderFactoryWithSplitter(t *testing.T, splitterConfig tokenize.SplitterConfig) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	enc, err := decoder.LookupEncoding(splitterConfig.Encoding)
 	require.NoError(t, err)

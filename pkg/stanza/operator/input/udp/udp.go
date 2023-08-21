@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 const (
@@ -43,7 +44,7 @@ func NewConfigWithID(operatorID string) *Config {
 		BaseConfig: BaseConfig{
 			Encoding:        "utf-8",
 			OneLogPerPacket: false,
-			Multiline: helper.MultilineConfig{
+			Multiline: tokenize.MultilineConfig{
 				LineStartPattern: "",
 				LineEndPattern:   ".^", // Use never matching regex to not split data by default
 			},
@@ -59,13 +60,13 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress               string                 `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket             bool                   `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes               bool                   `mapstructure:"add_attributes,omitempty"`
-	Encoding                    string                 `mapstructure:"encoding,omitempty"`
-	Multiline                   helper.MultilineConfig `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                   `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                   `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	ListenAddress               string                   `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket             bool                     `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes               bool                     `mapstructure:"add_attributes,omitempty"`
+	Encoding                    string                   `mapstructure:"encoding,omitempty"`
+	Multiline                   tokenize.MultilineConfig `mapstructure:"multiline,omitempty"`
+	PreserveLeadingWhitespaces  bool                     `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailingWhitespaces bool                     `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // Build will build a udp input operator.
