@@ -104,16 +104,12 @@ func (s *snmpScraper) scrapeScalarMetrics(
 	if len(scalarData) == 0 {
 		return
 	}
-
-	// Create general resource if we're about to make scalar metrics
-	resource := metricHelper.getResource(generalResourceKey)
-	if resource == nil {
-		metricHelper.createResource(generalResourceKey, map[string]string{})
-	}
+	// Retrieve scalar OID SNMP data for resource attributes
+	scalarOIDScalarResourceAttributeValues := s.scrapeScalarResourceAttributes(configHelper.getResourceAttributeScalarOIDs(), scraperErrors)
 
 	// For each piece of SNMP data, attempt to create the necessary OTEL structures (resources/metrics/datapoints)
 	for _, data := range scalarData {
-		if err := s.scalarDataToMetric(data, metricHelper, configHelper); err != nil {
+		if err := s.scalarDataToMetric(data, metricHelper, configHelper, scalarOIDScalarResourceAttributeValues); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgScalarOIDProcessing, data.oid, err))
 		}
 	}
@@ -158,6 +154,7 @@ func (s *snmpScraper) scalarDataToMetric(
 	data SNMPData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
+	scalarOIDScalarResourceAttributeValues map[string]string, 
 ) error {
 	// Get the related metric name for this SNMP indexed data
 	metricName := configHelper.getMetricName(data.oid)
@@ -166,7 +163,35 @@ func (s *snmpScraper) scalarDataToMetric(
 	// the metric config's attribute values.
 	dataPointAttributes := getScalarDataPointAttributes(configHelper, data.oid)
 
-	return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, generalResourceKey, dataPointAttributes)
+	// Get resource attributes
+	resourceAttributes, err := getResourceAttributes(configHelper, data.oid, "0", map[string]indexedAttributeValues{}, scalarOIDScalarResourceAttributeValues)
+	if err != nil {
+		return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
+	}
+
+	// Create a resource key using all of the relevant resource attribute names 
+	resourceAttributeNames := configHelper.getResourceAttributeNames(data.oid)
+
+	if len(resourceAttributeNames) > 0 {
+		resourceKey := getResourceKey(resourceAttributeNames, "0")
+
+		// Create a new resource if needed
+		resource := metricHelper.getResource(resourceKey)
+		if resource == nil {
+			metricHelper.createResource(resourceKey, resourceAttributes)
+		}
+	
+		return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, resourceKey, dataPointAttributes)	
+	} else {
+		// Create general resource if we don't have any resource attributes
+		resource := metricHelper.getResource(generalResourceKey)
+		if resource == nil {
+			metricHelper.createResource(generalResourceKey, map[string]string{})
+		}
+
+		return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, generalResourceKey, dataPointAttributes)
+	}
+
 }
 
 // indexedDataToMetric will take one piece of column OID SNMP indexed metric data and turn it

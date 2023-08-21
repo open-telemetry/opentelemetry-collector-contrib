@@ -48,6 +48,7 @@ func newConfigHelper(cfg *Config) *configHelper {
 			ch.metricScalarOIDs = append(ch.metricScalarOIDs, oid.OID)
 			ch.metricNamesByOID[oid.OID] = name
 			ch.metricAttributesByOID[oid.OID] = oid.Attributes
+			ch.resourceAttributesByOID[oid.OID] = oid.ResourceAttributes
 		}
 
 		for i, oid := range metricCfg.ColumnOIDs {
