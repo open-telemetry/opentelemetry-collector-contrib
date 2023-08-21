@@ -362,7 +362,7 @@ The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result 
 
 `target` is a Getter that returns a string. `pattern` is a regex string. 
 
-If `target` is not a string, nil, `ExtractPatterns` will return an error.
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup. 
 
 Examples:
 
