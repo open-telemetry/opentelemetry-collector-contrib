@@ -23,13 +23,19 @@ func Test_extractPatterns(t *testing.T) {
 		want    func(pcommon.Map)
 	}{
 		{
-			name:    "parse regex",
+			name:    "extract patterns",
 			target:  target,
 			pattern: `^a=(?P<a>\w+)\s+c=(?P<c>\w+)$`,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("a", "b")
 				expectedMap.PutStr("c", "d")
 			},
+		},
+		{
+			name:    "no pattern found",
+			target:  target,
+			pattern: `^a=(?P<a>\w+)$`,
+			want:    func(expectedMap pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {

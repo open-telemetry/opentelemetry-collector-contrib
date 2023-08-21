@@ -1,4 +1,7 @@
-package ottlfuncs
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
@@ -53,22 +56,19 @@ func extractPatterns[K any](target ottl.StringGetter[K], pattern string) (ottl.E
 
 		matches := r.FindStringSubmatch(val)
 		if matches == nil {
-			return nil, fmt.Errorf("regex pattern does not match")
+			return pcommon.NewMap(), nil
 		}
 
-		parsedValues := map[string]interface{}{}
+		result := pcommon.NewMap()
 		for i, subexp := range r.SubexpNames() {
 			if i == 0 {
 				// Skip whole match
 				continue
 			}
 			if subexp != "" {
-				parsedValues[subexp] = matches[i]
+				result.PutStr(subexp, matches[i])
 			}
 		}
-
-		result := pcommon.NewMap()
-		err = result.FromRaw(parsedValues)
 		return result, err
 	}, nil
 }
