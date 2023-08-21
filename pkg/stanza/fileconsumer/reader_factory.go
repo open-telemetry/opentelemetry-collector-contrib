@@ -11,11 +11,11 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerFactory struct {
@@ -54,7 +54,7 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata) (r *reader, err 
 		readerMetadata: m,
 		file:           file,
 		SugaredLogger:  f.SugaredLogger.With("path", file.Name()),
-		decoder:        helper.NewDecoder(f.encoding),
+		decoder:        decoder.New(f.encoding),
 	}
 
 	if !f.fromBeginning {
