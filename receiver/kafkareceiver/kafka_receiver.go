@@ -98,6 +98,9 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	} else {
 		return nil, err
 	}
+	if config.ResolveCanonicalBootstrapServersOnly {
+		c.Net.ResolveCanonicalBootstrapServers = true
+	}
 	if config.ProtocolVersion != "" {
 		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
 		if err != nil {
