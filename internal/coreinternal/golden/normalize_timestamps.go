@@ -19,6 +19,7 @@ func normalizeTimestamps(metrics pmetric.Metrics) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					normalizeDataPointSlice(dataPointSlice[pmetric.NumberDataPoint](m.Gauge().DataPoints()))
