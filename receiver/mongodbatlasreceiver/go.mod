@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/go-cmp v0.5.9
-	github.com/mongodb-forks/digest v1.0.4
+	github.com/mongodb-forks/digest v1.0.5
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
