@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -334,7 +335,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
-			cfg.Splitter.EncodingConfig.Encoding = "nop"
+			cfg.Splitter.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -418,7 +419,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
-			cfg.Splitter.EncodingConfig.Encoding = "nop"
+			cfg.Splitter.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -730,13 +731,12 @@ func TestMultiFileSort(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.MatchingCriteria.OrderingCriteria.Regex = `.*(?P<value>\d)`
-	cfg.MatchingCriteria.OrderingCriteria.SortBy = []sortRuleImpl{
-		{
-			&NumericSortRule{
-				baseSortRule: baseSortRule{
-					RegexKey: `value`,
-				},
+	cfg.OrderingCriteria = matcher.OrderingCriteria{
+		Regex: `.*(?P<value>\d)`,
+		SortBy: []matcher.Sort{
+			{
+				SortType: "numeric",
+				RegexKey: "value",
 			},
 		},
 	}
@@ -764,15 +764,13 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.MatchingCriteria.OrderingCriteria.Regex = `.(?P<value>\d{10})\.log`
-	cfg.MatchingCriteria.OrderingCriteria.SortBy = []sortRuleImpl{
-		{
-			&TimestampSortRule{
-				baseSortRule: baseSortRule{
-					RegexKey: `value`,
-					SortType: "timestamp",
-				},
-				Layout: "%Y%m%d%H",
+	cfg.OrderingCriteria = matcher.OrderingCriteria{
+		Regex: `.(?P<value>\d{10})\.log`,
+		SortBy: []matcher.Sort{
+			{
+				SortType: "timestamp",
+				RegexKey: `value`,
+				Layout:   "%Y%m%d%H",
 			},
 		},
 	}
@@ -1289,7 +1287,7 @@ func TestEncodings(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: tc.encoding}
+			cfg.Splitter.Encoding = tc.encoding
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Populate the file

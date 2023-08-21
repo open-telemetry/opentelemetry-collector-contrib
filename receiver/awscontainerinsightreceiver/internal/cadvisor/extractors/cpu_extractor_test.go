@@ -6,6 +6,8 @@ package extractors
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
@@ -36,6 +38,7 @@ func TestCPUStats(t *testing.T) {
 
 	// test node type
 	containerType = TypeNode
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -54,6 +57,7 @@ func TestCPUStats(t *testing.T) {
 
 	// test instance type
 	containerType = TypeInstance
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewCPUMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -69,4 +73,5 @@ func TestCPUStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_cpu_usage_system", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_cpu_utilization", 0.5, 0)
 	AssertContainsTaggedInt(t, cMetrics[0], "instance_cpu_limit", 2000)
+	require.NoError(t, extractor.Shutdown())
 }

@@ -23,19 +23,21 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
 			rb.SetGcpCloudRunJobTaskIndex("gcp.cloud_run.job.task_index-val")
+			rb.SetGcpGceInstanceHostname("gcp.gce.instance.hostname-val")
+			rb.SetGcpGceInstanceName("gcp.gce.instance.name-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostName("host.name-val")
 			rb.SetHostType("host.type-val")
 			rb.SetK8sClusterName("k8s.cluster.name-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
 				assert.Equal(t, 14, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 14, res.Attributes().Len())
+				assert.Equal(t, 16, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -92,6 +94,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "gcp.cloud_run.job.task_index-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance.hostname")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance.hostname-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("gcp.gce.instance.name")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "gcp.gce.instance.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)

@@ -15,7 +15,7 @@ import (
 type bufferedResetWriter interface {
 	Write(p []byte) (int, error)
 	Flush() error
-	Reset(new io.Writer)
+	Reset(newWriter io.Writer)
 }
 
 type Compressor interface {

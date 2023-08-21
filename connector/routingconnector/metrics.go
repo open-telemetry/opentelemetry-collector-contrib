@@ -5,12 +5,12 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -95,7 +95,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 	}
 
 	for consumer, group := range groups {
-		errs = multierr.Append(errs, consumer.ConsumeMetrics(ctx, group))
+		errs = errors.Join(errs, consumer.ConsumeMetrics(ctx, group))
 	}
 	return errs
 }

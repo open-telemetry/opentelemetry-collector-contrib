@@ -235,7 +235,7 @@ func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {
 		config["otel.resource.attributes"] = strings.Join(attributes, ",")
 	}
 
-	var content []string
+	content := make([]string, 0, len(config))
 	for k, v := range config {
 		// Documentation of Java Properties format & escapes: https://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 
