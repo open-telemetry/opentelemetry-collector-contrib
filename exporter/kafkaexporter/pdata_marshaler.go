@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
@@ -83,8 +84,8 @@ func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*sarama
 		if err != nil {
 			return nil, err
 		}
-		var traceId = tracesById.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
-		key := []byte(traceId.String())
+		var traceID = tracesById.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID()
+		key := traceutil.TraceIDToHexOrEmptyString(traceID)
 		messages = append(messages, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
