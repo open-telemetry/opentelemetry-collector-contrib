@@ -354,6 +354,22 @@ Examples:
 - `Duration("333ms")`
 - `Duration("1000000h")`
 
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string.
+
+`target` is a Getter that returns a string. `pattern` is a regex string. 
+
+If `target` is not a string, nil, `ExtractPatterns` will return an error.
+
+Examples:
+
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
 ### FNV
 
 `FNV(value)`
@@ -530,21 +546,6 @@ Examples:
 
 
 - `ParseJSON(body)`
-
-### ExtractPatterns
-
-`ExtractPatterns(target, pattern)`
-
-The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string
-
-`target` is a Getter that returns a string. `pattern` is a regex string.
-If `target` is not a string, nil, or does not match the pattern, `ExtractPatterns` will return an error.
-
-Examples:
-
-- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
-
-- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### SHA1
 
