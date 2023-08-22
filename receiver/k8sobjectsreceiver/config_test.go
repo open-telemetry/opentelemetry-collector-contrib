@@ -50,6 +50,7 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
+						ExcludeDeleted:  true,
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
 							Version:  "v1",
@@ -129,6 +130,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "invalid_resource"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exclude_deleted_with_pull"),
 		},
 	}
 

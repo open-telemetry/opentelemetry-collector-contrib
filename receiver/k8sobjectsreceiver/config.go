@@ -40,6 +40,7 @@ type K8sObjectsConfig struct {
 	FieldSelector   string        `mapstructure:"field_selector"`
 	Interval        time.Duration `mapstructure:"interval"`
 	ResourceVersion string        `mapstructure:"resource_version"`
+	ExcludeDeleted  bool          `mapstructure:"exclude_deleted"`
 	gvr             *schema.GroupVersionResource
 }
 
@@ -85,6 +86,10 @@ func (c *Config) Validate() error {
 
 		if object.Mode == PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
+		}
+		
+		if object.Mode == PullMode && object.ExcludeDeleted {
+			return fmt.Errorf("ExcludeDeleted can only be enabled for watch mode")
 		}
 
 		object.gvr = gvr

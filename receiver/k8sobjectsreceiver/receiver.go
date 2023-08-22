@@ -172,6 +172,11 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
+
+			if data.Type == apiWatch.Deleted && config.ExcludeDeleted {
+				continue
+			}
+
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
