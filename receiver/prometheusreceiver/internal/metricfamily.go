@@ -320,7 +320,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	}
 	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
-	metric.SetUnit(mf.metadata.Unit)
+	metric.SetUnit(prometheus.UnitWordToUCUM(mf.metadata.Unit))
 
 	pointCount := 0
 
