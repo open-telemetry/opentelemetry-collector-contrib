@@ -2,18 +2,6 @@ mode: daemonset
 image:
   repository: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
   tag: ""
-extraVolumes:
-  - name: cgroups
-    hostPath:
-      path: /sys/fs/cgroup
-  - name: docker-sock
-    hostPath:
-      path: /var/run/docker.sock
-extraVolumeMounts:
-  - name: cgroups
-    mountPath: /sys/fs/cgroup
-  - name: docker-sock
-    mountPath: /var/run/docker.sock
 securityContext:
   runAsUser: 0
   runAsGroup: 0

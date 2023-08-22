@@ -1,0 +1,7 @@
+mode: deployment
+nodeSelector:
+  alpha.eksctl.io/nodegroup-name: ng-5
+clusterRole:
+  name: "opentelemetry-collector-gateway"
+  clusterRoleBinding:
+    name: opentelemetry-collector-gateway
