@@ -28,6 +28,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter v0.83.0
@@ -783,6 +784,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaege
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ./exporter/jaegerthrifthttpexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter => ./exporter/kineticaexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ./exporter/loadbalancingexporter
 
