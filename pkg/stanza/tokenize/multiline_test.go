@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package helper
+package tokenize
 
 import (
 	"bufio"
@@ -16,8 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
 )
 
 const (
@@ -27,14 +25,14 @@ const (
 )
 
 type MultiLineTokenizerTestCase struct {
-	internal.TokenizerTestCase
+	TokenizerTestCase
 	Flusher *Flusher
 }
 
 func TestLineStartSplitFunc(t *testing.T) {
 	testCases := []MultiLineTokenizerTestCase{
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "OneLogSimple",
 				Pattern: `LOGSTART \d+ `,
 				Raw:     []byte("LOGSTART 123 log1LOGSTART 123 a"),
@@ -45,7 +43,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "TwoLogsSimple",
 				Pattern: `LOGSTART \d+ `,
 				Raw:     []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
@@ -57,7 +55,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "TwoLogsLineStart",
 				Pattern: `^LOGSTART \d+ `,
 				Raw:     []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
@@ -69,7 +67,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "NoMatches",
 				Pattern: `LOGSTART \d+ `,
 				Raw:     []byte(`file that has no matches in it`),
@@ -77,7 +75,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "PrecedingNonMatches",
 				Pattern: `LOGSTART \d+ `,
 				Raw:     []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
@@ -89,44 +87,44 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "HugeLog100",
 				Pattern: `LOGSTART \d+ `,
 				Raw: func() []byte {
 					newRaw := []byte(`LOGSTART 123 `)
-					newRaw = append(newRaw, internal.GeneratedByteSliceOfLength(100)...)
+					newRaw = append(newRaw, GeneratedByteSliceOfLength(100)...)
 					newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					`LOGSTART 123 ` + string(internal.GeneratedByteSliceOfLength(100)),
+					`LOGSTART 123 ` + string(GeneratedByteSliceOfLength(100)),
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "HugeLog10000",
 				Pattern: `LOGSTART \d+ `,
 				Raw: func() []byte {
 					newRaw := []byte(`LOGSTART 123 `)
-					newRaw = append(newRaw, internal.GeneratedByteSliceOfLength(10000)...)
+					newRaw = append(newRaw, GeneratedByteSliceOfLength(10000)...)
 					newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					`LOGSTART 123 ` + string(internal.GeneratedByteSliceOfLength(10000)),
+					`LOGSTART 123 ` + string(GeneratedByteSliceOfLength(10000)),
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "ErrTooLong",
 				Pattern: `LOGSTART \d+ `,
 				Raw: func() []byte {
 					newRaw := []byte(`LOGSTART 123 `)
-					newRaw = append(newRaw, internal.GeneratedByteSliceOfLength(1000000)...)
+					newRaw = append(newRaw, GeneratedByteSliceOfLength(1000000)...)
 					newRaw = append(newRaw, []byte(`LOGSTART 234 endlog`)...)
 					return newRaw
 				}(),
@@ -135,7 +133,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "MultipleMultilineLogs",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
@@ -147,7 +145,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithoutFlusher",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
@@ -155,7 +153,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusher",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
@@ -171,7 +169,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
@@ -187,7 +185,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithLongFlusherWithMultipleLogsInBuffer",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
@@ -202,7 +200,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
 				Pattern: `^LOGSTART \d+`,
 				Raw:     []byte("\nLOGSTART 333"),
@@ -252,7 +250,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 func TestLineEndSplitFunc(t *testing.T) {
 	testCases := []MultiLineTokenizerTestCase{
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "OneLogSimple",
 				Pattern: `LOGEND \d+`,
 				Raw:     []byte(`my log LOGEND 123`),
@@ -263,7 +261,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "TwoLogsSimple",
 				Pattern: `LOGEND \d+`,
 				Raw:     []byte(`log1 LOGEND 123log2 LOGEND 234`),
@@ -275,7 +273,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "TwoLogsLineEndSimple",
 				Pattern: `LOGEND$`,
 				Raw:     []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
@@ -287,7 +285,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "NoMatches",
 				Pattern: `LOGEND \d+`,
 				Raw:     []byte(`file that has no matches in it`),
@@ -295,7 +293,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "NonMatchesAfter",
 				Pattern: `LOGEND \d+`,
 				Raw:     []byte(`part that matches LOGEND 123 part that doesn't match`),
@@ -306,41 +304,41 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "HugeLog100",
 				Pattern: `LOGEND \d`,
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(100)
+					newRaw := GeneratedByteSliceOfLength(100)
 					newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					string(internal.GeneratedByteSliceOfLength(100)) + `LOGEND 1`,
+					string(GeneratedByteSliceOfLength(100)) + `LOGEND 1`,
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "HugeLog10000",
 				Pattern: `LOGEND \d`,
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(10000)
+					newRaw := GeneratedByteSliceOfLength(10000)
 					newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					string(internal.GeneratedByteSliceOfLength(10000)) + `LOGEND 1`,
+					string(GeneratedByteSliceOfLength(10000)) + `LOGEND 1`,
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "HugeLog1000000",
 				Pattern: `LOGEND \d`,
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(1000000)
+					newRaw := GeneratedByteSliceOfLength(1000000)
 					newRaw = append(newRaw, []byte(`LOGEND 1 `)...)
 					return newRaw
 				}(),
@@ -349,7 +347,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "MultipleMultilineLogs",
 				Pattern: `^LOGEND.*$`,
 				Raw:     []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
@@ -361,7 +359,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithoutFlusher",
 				Pattern: `^LOGEND.*$`,
 				Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
@@ -369,7 +367,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			&Flusher{},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusher",
 				Pattern: `^LOGEND.*$`,
 				Raw:     []byte("LOGPART log1\nLOGPART log1\t   \n"),
@@ -385,7 +383,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusherWithMultipleLogsInBuffer",
 				Pattern: `^LOGEND.*$`,
 				Raw:     []byte("LOGPART log1\nLOGEND\nLOGPART log1\t   \n"),
@@ -402,7 +400,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithLongFlusherWithMultipleLogsInBuffer",
 				Pattern: `^LOGEND.*$`,
 				Raw:     []byte("LOGPART log1\nLOGEND\nLOGPART log1\t   \n"),
@@ -418,7 +416,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{
+			TokenizerTestCase{
 				Name:    "LogsWithFlusherWithLogStartingWithWhiteChars",
 				Pattern: `LOGEND \d+$`,
 				Raw:     []byte("\nLOGEND 333"),
@@ -449,7 +447,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 func TestNewlineSplitFunc(t *testing.T) {
 	testCases := []MultiLineTokenizerTestCase{
 		{
-			internal.TokenizerTestCase{Name: "OneLogSimple",
+			TokenizerTestCase{Name: "OneLogSimple",
 				Raw: []byte("my log\n"),
 				ExpectedTokenized: []string{
 					`my log`,
@@ -457,7 +455,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			}, nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "OneLogCarriageReturn",
+			TokenizerTestCase{Name: "OneLogCarriageReturn",
 				Raw: []byte("my log\r\n"),
 				ExpectedTokenized: []string{
 					`my log`,
@@ -466,7 +464,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "TwoLogsSimple",
+			TokenizerTestCase{Name: "TwoLogsSimple",
 				Raw: []byte("log1\nlog2\n"),
 				ExpectedTokenized: []string{
 					`log1`,
@@ -476,7 +474,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "TwoLogsCarriageReturn",
+			TokenizerTestCase{Name: "TwoLogsCarriageReturn",
 				Raw: []byte("log1\r\nlog2\r\n"),
 				ExpectedTokenized: []string{
 					`log1`,
@@ -486,41 +484,41 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "NoTailingNewline",
+			TokenizerTestCase{Name: "NoTailingNewline",
 				Raw: []byte(`foo`),
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "HugeLog100",
+			TokenizerTestCase{Name: "HugeLog100",
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(100)
+					newRaw := GeneratedByteSliceOfLength(100)
 					newRaw = append(newRaw, '\n')
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					string(internal.GeneratedByteSliceOfLength(100)),
+					string(GeneratedByteSliceOfLength(100)),
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "HugeLog10000",
+			TokenizerTestCase{Name: "HugeLog10000",
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(10000)
+					newRaw := GeneratedByteSliceOfLength(10000)
 					newRaw = append(newRaw, '\n')
 					return newRaw
 				}(),
 				ExpectedTokenized: []string{
-					string(internal.GeneratedByteSliceOfLength(10000)),
+					string(GeneratedByteSliceOfLength(10000)),
 				},
 			},
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "HugeLog1000000",
+			TokenizerTestCase{Name: "HugeLog1000000",
 				Raw: func() []byte {
-					newRaw := internal.GeneratedByteSliceOfLength(1000000)
+					newRaw := GeneratedByteSliceOfLength(1000000)
 					newRaw = append(newRaw, '\n')
 					return newRaw
 				}(),
@@ -529,14 +527,14 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "LogsWithoutFlusher",
+			TokenizerTestCase{Name: "LogsWithoutFlusher",
 				Raw: []byte("LOGPART log1"),
 			},
 
 			&Flusher{},
 		},
 		{
-			internal.TokenizerTestCase{Name: "LogsWithFlusher",
+			TokenizerTestCase{Name: "LogsWithFlusher",
 				Raw: []byte("LOGPART log1"),
 				ExpectedTokenized: []string{
 					"LOGPART log1",
@@ -549,7 +547,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			internal.TokenizerTestCase{Name: "DefaultFlusherSplits",
+			TokenizerTestCase{Name: "DefaultFlusherSplits",
 				Raw: []byte("log1\nlog2\n"),
 				ExpectedTokenized: []string{
 					"log1",
@@ -559,7 +557,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "LogsWithLogStartingWithWhiteChars",
+			TokenizerTestCase{Name: "LogsWithLogStartingWithWhiteChars",
 				Raw: []byte("\nLOGEND 333\nAnother one"),
 				ExpectedTokenized: []string{
 					"",
@@ -569,7 +567,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "PreserveLeadingWhitespaces",
+			TokenizerTestCase{Name: "PreserveLeadingWhitespaces",
 				Raw: []byte("\n LOGEND 333 \nAnother one "),
 				ExpectedTokenized: []string{
 					"",
@@ -580,7 +578,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "PreserveTrailingWhitespaces",
+			TokenizerTestCase{Name: "PreserveTrailingWhitespaces",
 				Raw: []byte("\n LOGEND 333 \nAnother one "),
 				ExpectedTokenized: []string{
 					"",
@@ -591,7 +589,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			nil,
 		},
 		{
-			internal.TokenizerTestCase{Name: "PreserveBothLeadingAndTrailingWhitespaces",
+			TokenizerTestCase{Name: "PreserveBothLeadingAndTrailingWhitespaces",
 				Raw: []byte("\n LOGEND 333 \nAnother one "),
 				ExpectedTokenized: []string{
 					"",
@@ -669,16 +667,16 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Raw: func() []byte {
-				return internal.GeneratedByteSliceOfLength(largeLogSize)
+				return GeneratedByteSliceOfLength(largeLogSize)
 			}(),
 			ExpectedTokenized: [][]byte{
-				internal.GeneratedByteSliceOfLength(100),
+				GeneratedByteSliceOfLength(100),
 			},
 		},
 		{
 			Name: "HugeLog300",
 			Raw: func() []byte {
-				return internal.GeneratedByteSliceOfLength(largeLogSize * 3)
+				return GeneratedByteSliceOfLength(largeLogSize * 3)
 			}(),
 			ExpectedTokenized: [][]byte{
 				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
@@ -689,7 +687,7 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "EOFBeforeMaxLogSize",
 			Raw: func() []byte {
-				return internal.GeneratedByteSliceOfLength(largeLogSize * 3.5)
+				return GeneratedByteSliceOfLength(largeLogSize * 3.5)
 			}(),
 			ExpectedTokenized: [][]byte{
 				[]byte("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
