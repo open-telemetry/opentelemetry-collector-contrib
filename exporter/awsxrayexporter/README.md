@@ -26,7 +26,12 @@ propagated by them using the `X-Amzn-Trace-Id` HTTP header. However, other gener
 supported by replacing fully-random Trace IDs with X-Ray formatted Trace IDs where necessary:
 
 > AWS X-Ray IDs are the same size as W3C Trace Context IDs but differ in that the first 32 bits of a Trace ID
-> is the Unix epoch time when the trace was started.
+> is the Unix epoch time when the trace was started. Note that X-Ray only allows submission of Trace IDs from
+> the past 30 days, while the Exporter will not validate this timestamp.
+
+This means in order for spans to appear in X-Ray, the client SDK MUST use an X-Ray ID generator. For more
+information, see
+[configuring the X-Ray exporter](https://aws-otel.github.io/docs/getting-started/x-ray#configuring-the-aws-x-ray-exporter).
 
 The `http` object is populated when the `component` attribute value is `grpc` as well as `http`. Other
 synchronous call types should also result in the `http` object being populated.
