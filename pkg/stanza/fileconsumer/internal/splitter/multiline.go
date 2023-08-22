@@ -6,6 +6,7 @@ package splitter // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
@@ -23,7 +24,7 @@ func NewMultilineFactory(splitter helper.SplitterConfig) Factory {
 
 // Build builds Multiline Splitter struct
 func (factory *multilineFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	enc, err := helper.LookupEncoding(factory.Encoding)
+	enc, err := decoder.LookupEncoding(factory.Encoding)
 	if err != nil {
 		return nil, err
 	}
