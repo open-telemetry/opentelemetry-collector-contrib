@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.13.0
+	github.com/antonmedv/expr v1.14.2
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.83.0
@@ -24,7 +24,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
-	github.com/google/uuid v1.3.0 // indirect
+	github.com/google/uuid v1.3.1 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf v1.5.0 // indirect
