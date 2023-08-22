@@ -44,6 +44,7 @@ func verifyExternalLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	doCompare(t, "scrape-externalLabels", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -74,6 +75,7 @@ func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []pmetric.ResourceM
 	doCompare(t, "scrape-labelLimit", want, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -165,6 +167,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 	e1 := []testExpectation{
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -177,6 +180,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 			}),
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -188,6 +192,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 			}),
 		assertMetricPresent("test_histogram0",
 			compareMetricType(pmetric.MetricTypeHistogram),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -200,6 +205,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 			}),
 		assertMetricPresent("test_summary0",
 			compareMetricType(pmetric.MetricTypeSummary),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -324,6 +330,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 	e1 := []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -335,6 +342,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -346,6 +354,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_histogram0",
 			compareMetricType(pmetric.MetricTypeHistogram),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
@@ -358,6 +367,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_summary0",
 			compareMetricType(pmetric.MetricTypeSummary),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -395,6 +405,7 @@ func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.Res
 	e1 := []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -413,6 +424,7 @@ func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -469,6 +481,7 @@ func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []pmetric.ResourceMe
 	doCompare(t, "honor_labels_false", want, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -504,6 +517,7 @@ func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 		assertMetricPresent(
 			"test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -517,6 +531,7 @@ func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 		assertMetricPresent(
 			"test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -574,6 +589,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	doCompare(t, "honor_labels_true", expectedAttributes, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -660,6 +676,7 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("jvm_memory_bytes_used",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -708,6 +725,7 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("jvm_memory_bytes_used",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
