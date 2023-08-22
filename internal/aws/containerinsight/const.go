@@ -83,6 +83,8 @@ const (
 	ContainerRestartCount = "number_of_container_restarts"
 	RunningTaskCount      = "number_of_running_tasks"
 
+	// the following triggers G101: Potential hardcoded credentials
+	// nolint:gosec 
 	DiskIOServiceBytesPrefix = "diskio_io_service_bytes_"
 	DiskIOServicedPrefix     = "diskio_io_serviced_"
 	DiskIOAsync              = "Async"
