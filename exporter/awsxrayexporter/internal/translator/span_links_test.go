@@ -4,10 +4,8 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
-	"encoding/binary"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -28,7 +26,7 @@ func TestSpanLinkSimple(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	var convertedTraceID, _ = convertToAmazonTraceID(traceID)
+	var convertedTraceID = convertToAmazonTraceID(traceID)
 
 	assert.Equal(t, 1, len(segment.Links))
 	assert.Equal(t, spanLink.SpanID().String(), *segment.Links[0].SpanID)
@@ -59,32 +57,6 @@ func TestSpanLinkEmpty(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "links"))
 }
 
-func TestOldSpanLinkError(t *testing.T) {
-	spanName := "ProcessingMessage"
-	parentSpanID := newSegmentID()
-	attributes := make(map[string]interface{})
-	resource := constructDefaultResource()
-	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeOk, "OK", attributes)
-
-	const maxAge = 60 * 60 * 24 * 30
-	ExpiredEpoch := time.Now().Unix() - maxAge - 1
-
-	var traceID = newTraceID()
-	binary.BigEndian.PutUint32(traceID[0:4], uint32(ExpiredEpoch))
-
-	spanLink := span.Links().AppendEmpty()
-	spanLink.SetTraceID(traceID)
-	spanLink.SetSpanID(newSegmentID())
-
-	_, error1 := MakeSegment(span, resource, nil, false, nil)
-
-	assert.NotNil(t, error1)
-
-	_, error2 := MakeSegmentDocumentString(span, resource, nil, false, nil)
-
-	assert.NotNil(t, error2)
-}
-
 func TestTwoSpanLinks(t *testing.T) {
 	spanName := "ProcessingMessage"
 	parentSpanID := newSegmentID()
@@ -108,8 +80,8 @@ func TestTwoSpanLinks(t *testing.T) {
 
 	segment, _ := MakeSegment(span, resource, nil, false, nil)
 
-	var convertedTraceID1, _ = convertToAmazonTraceID(traceID1)
-	var convertedTraceID2, _ = convertToAmazonTraceID(traceID2)
+	var convertedTraceID1 = convertToAmazonTraceID(traceID1)
+	var convertedTraceID2 = convertToAmazonTraceID(traceID2)
 
 	assert.Equal(t, 2, len(segment.Links))
 	assert.Equal(t, spanLink1.SpanID().String(), *segment.Links[0].SpanID)

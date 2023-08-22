@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"net/url"
 	"regexp"
 	"strings"
@@ -89,10 +88,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	// convert trace id
-	traceID, err := convertToAmazonTraceID(span.TraceID())
-	if err != nil {
-		return nil, err
-	}
+	traceID := convertToAmazonTraceID(span.TraceID())
 
 	attributes := span.Attributes()
 
@@ -107,14 +103,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
-		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
+		spanLinks                                          = makeSpanLinks(span.Links())
 		name                                               string
 		namespace                                          string
 	)
-
-	if makeSpanLinkErr != nil {
-		return nil, makeSpanLinkErr
-	}
 
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
@@ -291,36 +283,19 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 //   - A trace_id consists of three numbers separated by hyphens. For example,
 //     1-58406520-a006649127e371903a2de979. This includes:
 //   - The version number, that is, 1.
-//   - The time of the original request, in Unix epoch time, in 8 hexadecimal digits.
+//   - 8 hexadecimal digits. If the trace ID originated from XRay SDK or XRay ID generator,
+//     it will represent the time of the original request, in Unix epoch time.
 //   - For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //     or 58406520 in hexadecimal.
+//   - Otherwise, the 8 hexadecimal digits will be random.
 //   - A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
-	const (
-		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
-		// hit the limit
-		maxAge = 60 * 60 * 24 * 28
-
-		// maxSkew allows for 5m of clock skew
-		maxSkew = 60 * 5
-	)
-
+func convertToAmazonTraceID(traceID pcommon.TraceID) string {
 	var (
 		content      = [traceIDLength]byte{}
-		epochNow     = time.Now().Unix()
 		traceIDBytes = traceID
 		epoch        = int64(binary.BigEndian.Uint32(traceIDBytes[0:4]))
 		b            = [4]byte{}
 	)
-
-	// If AWS traceID originally came from AWS, no problem.  However, if oc generated
-	// the traceID, then the epoch may be outside the accepted AWS range of within the
-	// past 30 days.
-	//
-	// In that case, we return invalid traceid error
-	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", fmt.Errorf("invalid xray traceid: %s", traceID)
-	}
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))
 
@@ -330,7 +305,7 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 	content[10] = '-'
 	hex.Encode(content[identifierOffset:], traceIDBytes[4:16]) // overwrite with identifier
 
-	return string(content[0:traceIDLength]), nil
+	return string(content[0:traceIDLength])
 }
 
 func timestampToFloatSeconds(ts pcommon.Timestamp) float64 {
