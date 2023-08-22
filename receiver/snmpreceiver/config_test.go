@@ -722,7 +722,7 @@ func TestLoadConfigMetricConfigs(t *testing.T) {
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.ResourceAttributes["ra2"] = &ResourceAttributeConfig{OID: "1"}
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithColumnOIDResourceAttribute.Metrics["m3"].ColumnOIDs[0].ResourceAttributes = []string{"ra1", "ra2"}
-	
+
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute := factory.CreateDefaultConfig().(*Config)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.Metrics = getBaseMetricConfig(true, false)
 	expectedConfigScalarOIDResourceAttributeOnColumnOIDMetricWithIndexedValuePrefixResourceAttribute.ResourceAttributes = getBaseResourceAttrConfig("scalar_oid")

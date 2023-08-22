@@ -26,31 +26,31 @@ const (
 
 var (
 	// Config error messages
-	errMsgInvalidEndpointWError            = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format: %w`
-	errMsgInvalidEndpoint                  = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
-	errMsgAttributeConfigNoEnumOIDOrPrefix = `attribute '%s' must contain one of either an enum, oid, or indexed_value_prefix`
-	errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix   = `resource_attribute '%s' must contain one of either an oid, scalar_oid, or indexed_value_prefix`
-	errMsgMetricNoUnit                     = `metric '%s' must have a unit`
-	errMsgMetricNoGaugeOrSum               = `metric '%s' must have one of either a gauge or sum`
-	errMsgMetricNoOIDs                     = `metric '%s' must have one of either scalar_oids or indexed_oids`
-	errMsgGaugeBadValueType                = `metric '%s' gauge value_type must be either int or double`
-	errMsgSumBadValueType                  = `metric '%s' sum value_type must be either int or double`
-	errMsgSumBadAggregation                = `metric '%s' sum aggregation value must be either cumulative or delta`
-	errMsgScalarOIDNoOID                   = `metric '%s' scalar_oid must contain an oid`
-	errMsgScalarAttributeNoName            = `metric '%s' scalar_oid attribute must contain a name`
-	errMsgScalarAttributeBadName           = `metric '%s' scalar_oid attribute name '%s' must match an attribute config`
-	errMsgScalarOIDBadAttribute            = `metric '%s' scalar_oid attribute name '%s' must match attribute config with enum values`
-	errMsgScalarAttributeBadValue          = `metric '%s' scalar_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
-	errMsgScalarMetricHasIndexedResourceAttribute = `scalar oid metric '%s' has resource attribute '%s' which has indexed value`
-	errMsgColumnOIDNoOID                   = `metric '%s' column_oid must contain an oid`
-	errMsgColumnAttributeNoName            = `metric '%s' column_oid attribute must contain a name`
-	errMsgColumnAttributeBadName           = `metric '%s' column_oid attribute name '%s' must match an attribute config`
-	errMsgColumnAttributeBadValue          = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
-	errMsgColumnResourceAttributeBadName   = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
-	errMsgColumnIndexedIdentifierRequired   = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
-	errMsgMultipleKeysSetOnResourceAttribute = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
+	errMsgInvalidEndpointWError                     = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format: %w`
+	errMsgInvalidEndpoint                           = `invalid endpoint '%s': must be in '[scheme]://[host]:[port]' format`
+	errMsgAttributeConfigNoEnumOIDOrPrefix          = `attribute '%s' must contain one of either an enum, oid, or indexed_value_prefix`
+	errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix = `resource_attribute '%s' must contain one of either an oid, scalar_oid, or indexed_value_prefix`
+	errMsgMetricNoUnit                              = `metric '%s' must have a unit`
+	errMsgMetricNoGaugeOrSum                        = `metric '%s' must have one of either a gauge or sum`
+	errMsgMetricNoOIDs                              = `metric '%s' must have one of either scalar_oids or indexed_oids`
+	errMsgGaugeBadValueType                         = `metric '%s' gauge value_type must be either int or double`
+	errMsgSumBadValueType                           = `metric '%s' sum value_type must be either int or double`
+	errMsgSumBadAggregation                         = `metric '%s' sum aggregation value must be either cumulative or delta`
+	errMsgScalarOIDNoOID                            = `metric '%s' scalar_oid must contain an oid`
+	errMsgScalarAttributeNoName                     = `metric '%s' scalar_oid attribute must contain a name`
+	errMsgScalarAttributeBadName                    = `metric '%s' scalar_oid attribute name '%s' must match an attribute config`
+	errMsgScalarOIDBadAttribute                     = `metric '%s' scalar_oid attribute name '%s' must match attribute config with enum values`
+	errMsgScalarAttributeBadValue                   = `metric '%s' scalar_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
+	errMsgScalarMetricHasIndexedResourceAttribute   = `scalar oid metric '%s' has resource attribute '%s' which has indexed value`
+	errMsgColumnOIDNoOID                            = `metric '%s' column_oid must contain an oid`
+	errMsgColumnAttributeNoName                     = `metric '%s' column_oid attribute must contain a name`
+	errMsgColumnAttributeBadName                    = `metric '%s' column_oid attribute name '%s' must match an attribute config`
+	errMsgColumnAttributeBadValue                   = `metric '%s' column_oid attribute '%s' value '%s' must match one of the possible enum values for the attribute config`
+	errMsgColumnResourceAttributeBadName            = `metric '%s' column_oid resource_attribute '%s' must match a resource_attribute config`
+	errMsgColumnIndexedIdentifierRequired           = `metric '%s' column_oid must either have an indexed resource_attribute or an indexed_value_prefix/oid attribute`
+	errMsgMultipleKeysSetOnResourceAttribute        = `resource attribute '%s' must have only one of oid, scalar_oid, or indexed_value_prefix`
 	errScalarOIDResourceAttributeEndsInNonzeroDigit = `resource attribute '%s' has scalar_oid '%s' that ends in a nonzero digit (scalar oids should not be indexed)`
-	errColumnOIDResourceAttributeEndsInZero = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
+	errColumnOIDResourceAttributeEndsInZero         = `resource attribute '%s' has oid '%s' that ends in a zero (column oids should be indexed)`
 
 	// Config errors
 	errEmptyEndpoint        = errors.New("endpoint must be specified")
@@ -141,7 +141,7 @@ type ResourceAttributeConfig struct {
 	// will ultimately each be associated with a different "resource" as an attribute on that resource. Indexed metric values
 	// will then be used to associate metric datapoints to the matching "resource" (based on matching indexes).
 	OID string `mapstructure:"oid"`
-	// ScalarOID is required only if OID or IndexedValuePrefix is not set. 
+	// ScalarOID is required only if OID or IndexedValuePrefix is not set.
 	// This is the scalar OID which will provide a value to be used for this resource attribute.
 	// Single or indexed metrics can then be associated with the resource. (Indexed metrics also need an indexed attribute or resource attribute to associate with a scalar metric resource attribute)
 	ScalarOID string `mapstructure:"scalar_oid"`
@@ -461,7 +461,7 @@ func validateColumnOID(metricName string, columnOID ColumnOID, cfg *Config) erro
 		if !ok {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
 			continue
-		} 
+		}
 
 		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
 			hasIndexedIdentifier = true
@@ -491,9 +491,9 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 		if !ok {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgColumnResourceAttributeBadName, metricName, name))
 			continue
-		} 
+		}
 
-		// Scalar OID metrics should only have Scalar OID resource attributes 
+		// Scalar OID metrics should only have Scalar OID resource attributes
 		// ResourceAttributeConfig validation ensures that (only) one of ScalarOID, OID, or IndexedValuePrefix is set before reaching this
 		if resourceAttribute.OID != "" || resourceAttribute.IndexedValuePrefix != "" {
 			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgScalarMetricHasIndexedResourceAttribute, metricName, name))
@@ -505,7 +505,7 @@ func validateScalarOID(metricName string, scalarOID ScalarOID, cfg *Config) erro
 	if len(scalarOID.Attributes) == 0 {
 		return combinedErr
 	}
-	
+
 	// Check that any Attributes have a valid Name and a valid Value
 	for _, attribute := range scalarOID.Attributes {
 		if attribute.Name == "" {
@@ -590,7 +590,7 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		return nil
 	}
 
-	// Make sure each Resource Attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit 
+	// Make sure each Resource Attribute has exactly one of OID or ScalarOID or IndexedValuePrefix, and check that scalar and column OIDs end in the right digit
 	for attrName, attrCfg := range resourceAttributes {
 
 		hasOID := attrCfg.OID != ""
@@ -598,28 +598,28 @@ func validateResourceAttributeConfigs(cfg *Config) error {
 		hasIVP := attrCfg.IndexedValuePrefix != ""
 
 		switch {
-			case hasOID:
-				if hasScalarOID || hasIVP {
-					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
-				}
-				nums := strings.Split(attrCfg.OID, ".")
-				if nums[len(nums) - 1] == "0" {
-					combinedErr = errors.Join(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))
-				}
-			case hasScalarOID:
-				if hasOID || hasIVP {
-					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
-				}
-				nums := strings.Split(attrCfg.ScalarOID, ".")
-				if nums[len(nums) - 1] != "0" {
-					combinedErr = errors.Join(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))
-				}
-			case hasIVP:
-				if hasScalarOID || hasOID {
-					combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
-				}
-			default:
-				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
+		case hasOID:
+			if hasScalarOID || hasIVP {
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+			}
+			nums := strings.Split(attrCfg.OID, ".")
+			if nums[len(nums)-1] == "0" {
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errColumnOIDResourceAttributeEndsInZero, attrName, attrCfg.OID))
+			}
+		case hasScalarOID:
+			if hasOID || hasIVP {
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+			}
+			nums := strings.Split(attrCfg.ScalarOID, ".")
+			if nums[len(nums)-1] != "0" {
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errScalarOIDResourceAttributeEndsInNonzeroDigit, attrName, attrCfg.ScalarOID))
+			}
+		case hasIVP:
+			if hasScalarOID || hasOID {
+				combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgMultipleKeysSetOnResourceAttribute, attrName))
+			}
+		default:
+			combinedErr = errors.Join(combinedErr, fmt.Errorf(errMsgResourceAttributeNoOIDOrScalarOIDOrPrefix, attrName))
 		}
 	}
 	return combinedErr

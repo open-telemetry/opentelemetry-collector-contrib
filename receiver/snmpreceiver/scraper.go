@@ -154,7 +154,7 @@ func (s *snmpScraper) scalarDataToMetric(
 	data SNMPData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
-	scalarResourceAttributes map[string]string, 
+	scalarResourceAttributes map[string]string,
 ) error {
 	// Get the related metric name for this SNMP indexed data
 	metricName := configHelper.getMetricName(data.oid)
@@ -169,7 +169,7 @@ func (s *snmpScraper) scalarDataToMetric(
 		return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
 	}
 
-	// Create a resource key using all of the relevant resource attribute names 
+	// Create a resource key using all of the relevant resource attribute names
 	resourceAttributeNames := configHelper.getResourceAttributeNames(data.oid)
 
 	var resourceKey string
@@ -186,7 +186,7 @@ func (s *snmpScraper) scalarDataToMetric(
 		metricHelper.createResource(resourceKey, resourceAttributes)
 	}
 
-	return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, resourceKey, dataPointAttributes)	
+	return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, resourceKey, dataPointAttributes)
 }
 
 // indexedDataToMetric will take one piece of column OID SNMP indexed metric data and turn it
@@ -375,10 +375,10 @@ func (s *snmpScraper) scrapeScalarResourceAttributes(
 	scalarOIDs []string,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) map[string]string {
-	scalarOIDAttributeValues :=  make(map[string]string, len(scalarOIDs))
+	scalarOIDAttributeValues := make(map[string]string, len(scalarOIDs))
 
 	// If no scalar OID resource attribute configs, nothing else to do
-	if len (scalarOIDs) == 0 {
+	if len(scalarOIDs) == 0 {
 		return scalarOIDAttributeValues
 	}
 
@@ -395,7 +395,7 @@ func (s *snmpScraper) scrapeScalarResourceAttributes(
 }
 
 // scalarDataToResourceAttribute provides a function which will take one piece of scalar OID SNMP data
-// (for a resource attribute) and store it in a map for later use 
+// (for a resource attribute) and store it in a map for later use
 func scalarDataToResourceAttribute(
 	data SNMPData,
 	scalarOIDAttributeValues map[string]string,
