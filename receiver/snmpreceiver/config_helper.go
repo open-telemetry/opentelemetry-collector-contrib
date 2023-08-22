@@ -80,36 +80,28 @@ func newConfigHelper(cfg *Config) *configHelper {
 		ch.attributeColumnOIDs = append(ch.attributeColumnOIDs, attributeCfg.OID)
 	}
 
-	// Find all resource attribute scalar OIDs
+	// Find all resource attribute scalar and column OIDs
 	for name, resourceAttributeCfg := range cfg.ResourceAttributes {
-		if resourceAttributeCfg.ScalarOID == "" {
+		if resourceAttributeCfg.ScalarOID != "" {
+			// Data is returned by the client with '.' prefix on the OIDs.
+			// Making sure the prefix exists here in the configs so we can match it up with returned data later
+			if !strings.HasPrefix(resourceAttributeCfg.ScalarOID, ".") {
+				resourceAttributeCfg.ScalarOID = "." + resourceAttributeCfg.ScalarOID
+				cfg.ResourceAttributes[name] = resourceAttributeCfg
+			}
+			ch.resourceAttributeScalarOIDs = append(ch.resourceAttributeScalarOIDs, resourceAttributeCfg.ScalarOID)
 			continue
 		}
-
-		// Data is returned by the client with '.' prefix on the OIDs.
-		// Making sure the prefix exists here in the configs so we can match it up with returned data later
-		if !strings.HasPrefix(resourceAttributeCfg.ScalarOID, ".") {
-			resourceAttributeCfg.ScalarOID = "." + resourceAttributeCfg.ScalarOID
-			cfg.ResourceAttributes[name] = resourceAttributeCfg
+		if resourceAttributeCfg.OID != "" {
+			// Data is returned by the client with '.' prefix on the OIDs.
+			// Making sure the prefix exists here in the configs so we can match it up with returned data later
+			if !strings.HasPrefix(resourceAttributeCfg.OID, ".") {
+				resourceAttributeCfg.OID = "." + resourceAttributeCfg.OID
+				cfg.ResourceAttributes[name] = resourceAttributeCfg
+			}
+			ch.resourceAttributeColumnOIDs = append(ch.resourceAttributeColumnOIDs, resourceAttributeCfg.OID)
 		}
-		ch.resourceAttributeScalarOIDs = append(ch.resourceAttributeScalarOIDs, resourceAttributeCfg.ScalarOID)
 	}
-
-	// Find all resource attribute column OIDs
-	for name, resourceAttributeCfg := range cfg.ResourceAttributes {
-		if resourceAttributeCfg.OID == "" {
-			continue
-		}
-
-		// Data is returned by the client with '.' prefix on the OIDs.
-		// Making sure the prefix exists here in the configs so we can match it up with returned data later
-		if !strings.HasPrefix(resourceAttributeCfg.OID, ".") {
-			resourceAttributeCfg.OID = "." + resourceAttributeCfg.OID
-			cfg.ResourceAttributes[name] = resourceAttributeCfg
-		}
-		ch.resourceAttributeColumnOIDs = append(ch.resourceAttributeColumnOIDs, resourceAttributeCfg.OID)
-	}
-
 	return &ch
 }
 

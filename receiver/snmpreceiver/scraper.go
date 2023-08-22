@@ -172,26 +172,21 @@ func (s *snmpScraper) scalarDataToMetric(
 	// Create a resource key using all of the relevant resource attribute names 
 	resourceAttributeNames := configHelper.getResourceAttributeNames(data.oid)
 
+	var resourceKey string
 	if len(resourceAttributeNames) > 0 {
-		resourceKey := getResourceKey(resourceAttributeNames, "0")
-
-		// Create a new resource if needed
-		resource := metricHelper.getResource(resourceKey)
-		if resource == nil {
-			metricHelper.createResource(resourceKey, resourceAttributes)
-		}
-	
-		return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, resourceKey, dataPointAttributes)	
+		resourceKey = getResourceKey(resourceAttributeNames, "")
 	} else {
 		// Create general resource if we don't have any resource attributes
-		resource := metricHelper.getResource(generalResourceKey)
-		if resource == nil {
-			metricHelper.createResource(generalResourceKey, map[string]string{})
-		}
-
-		return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, generalResourceKey, dataPointAttributes)
+		resourceKey = generalResourceKey
 	}
 
+	// Create a new resource if needed
+	resource := metricHelper.getResource(resourceKey)
+	if resource == nil {
+		metricHelper.createResource(resourceKey, resourceAttributes)
+	}
+
+	return addMetricDataPointToResource(data, metricHelper, configHelper, metricName, resourceKey, dataPointAttributes)	
 }
 
 // indexedDataToMetric will take one piece of column OID SNMP indexed metric data and turn it
@@ -229,7 +224,7 @@ func (s *snmpScraper) indexedDataToMetric(
 	var resourceKey string
 	// If we only have scalar resource attributes, we don't need multiple resources
 	if len(resourceAttributes) == len(columnOIDScalarResourceAttributeValues) {
-		resourceKey = getResourceKey(resourceAttributeNames, "0")
+		resourceKey = getResourceKey(resourceAttributeNames, "")
 	} else {
 		resourceKey = getResourceKey(resourceAttributeNames, indexString)
 	}

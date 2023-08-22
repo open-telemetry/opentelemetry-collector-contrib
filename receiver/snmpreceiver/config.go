@@ -208,7 +208,7 @@ type SumMetric struct {
 type ScalarOID struct {
 	// OID is required and is the scalar OID that is associated with a metric
 	OID string `mapstructure:"oid"`
-	// ResourceAttributes is optional and may contain values of Scalar OIDs to associate this metric with
+	// ResourceAttributes is optional and may contain values of (Scalar OIDs only) to associate this metric with
 	ResourceAttributes []string `mapstructure:"resource_attributes"`
 	// Attributes is optional and may contain names and values associated with enum
 	// AttributeConfigs to associate with the value of the scalar OID
