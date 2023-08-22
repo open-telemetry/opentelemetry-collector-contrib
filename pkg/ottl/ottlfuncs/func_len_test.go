@@ -10,7 +10,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -39,6 +41,24 @@ func Test_Len(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+
+	plogLogRecordSlice := plog.NewLogRecordSlice()
+	plogLogRecordSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		plogLogRecordSlice.AppendEmpty()
+	}
+
+	plogResourceLogsSlice := plog.NewResourceLogsSlice()
+	plogResourceLogsSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		plogResourceLogsSlice.AppendEmpty()
+	}
+
+	plogScopeLogsSlice := plog.NewScopeLogsSlice()
+	for i := 0; i < 5; i++ {
+		plogScopeLogsSlice.AppendEmpty()
+	}
+	plogScopeLogsSlice.EnsureCapacity(5)
 
 	pmetricExemplarSlice := pmetric.NewExemplarSlice()
 	pmetricExemplarSlice.EnsureCapacity(5)
@@ -94,6 +114,36 @@ func Test_Len(t *testing.T) {
 		pmetricSummaryDataPointValueAtQuantileSlice.AppendEmpty()
 	}
 
+	ptraceResourceSpansSlice := ptrace.NewResourceSpansSlice()
+	ptraceResourceSpansSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceResourceSpansSlice.AppendEmpty()
+	}
+
+	ptraceScopeSpansSlice := ptrace.NewScopeSpansSlice()
+	ptraceScopeSpansSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceScopeSpansSlice.AppendEmpty()
+	}
+
+	ptraceSpanEventSlice := ptrace.NewSpanEventSlice()
+	ptraceSpanEventSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanEventSlice.AppendEmpty()
+	}
+
+	ptraceSpanLinkSlice := ptrace.NewSpanLinkSlice()
+	ptraceSpanLinkSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanLinkSlice.AppendEmpty()
+	}
+
+	ptraceSpanSlice := ptrace.NewSpanSlice()
+	ptraceSpanSlice.EnsureCapacity(5)
+	for i := 0; i < 5; i++ {
+		ptraceSpanSlice.AppendEmpty()
+	}
+
 	tests := []struct {
 		name     string
 		value    interface{}
@@ -145,6 +195,21 @@ func Test_Len(t *testing.T) {
 			expected: 5,
 		},
 		{
+			name:     "plog LogRecord slice",
+			value:    plogLogRecordSlice,
+			expected: 5,
+		},
+		{
+			name:     "plog ResourceLogs slice",
+			value:    plogResourceLogsSlice,
+			expected: 5,
+		},
+		{
+			name:     "plog ScopeLogs slice",
+			value:    plogScopeLogsSlice,
+			expected: 5,
+		},
+		{
 			name:     "pmetric Exemplar slice",
 			value:    pmetricExemplarSlice,
 			expected: 5,
@@ -187,6 +252,32 @@ func Test_Len(t *testing.T) {
 		{
 			name:     "pmetric SummaryDataPointValueAtQuantile slice",
 			value:    pmetricSummaryDataPointValueAtQuantileSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace ResourceSpans slice",
+			value:    ptraceResourceSpansSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace ScopeSpans slice",
+			value:    ptraceScopeSpansSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace SpanEvent slice",
+			value:    ptraceSpanEventSlice,
+			expected: 5,
+		},
+
+		{
+			name:     "ptrace SpanLink slice",
+			value:    ptraceSpanLinkSlice,
+			expected: 5,
+		},
+		{
+			name:     "ptrace Span slice",
+			value:    ptraceSpanSlice,
 			expected: 5,
 		},
 	}

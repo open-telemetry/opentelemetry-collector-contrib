@@ -9,7 +9,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for Metrics Slices to `Len` converter 
+note: Add support for Log, Metric and Trace Slices to `Len` converter 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [25868]
