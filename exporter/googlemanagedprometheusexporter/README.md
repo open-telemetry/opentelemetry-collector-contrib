@@ -34,11 +34,6 @@ The following configuration options are supported:
   - `resource_filters` (optional): Provides a list of filters to match resource attributes which will be included in metric labels.
     - `prefix` (optional): Match resource attribute keys by prefix.
     - `regex` (optional): Match resource attribute keys by regex.
-- `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = false)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
@@ -47,7 +42,7 @@ The following configuration options are supported:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 
-Note: These `retry_on_failure` and `sending_queue` are provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
+Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 
 ## Example Configuration
 

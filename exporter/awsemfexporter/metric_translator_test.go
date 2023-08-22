@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -256,6 +257,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(t, translator.Shutdown())
 
 	noInstrLibMetric := createTestResourceMetrics()
 	instrLibMetric := createTestResourceMetrics()
@@ -345,7 +347,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			setupDataPointCache()
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
@@ -1976,6 +1977,7 @@ func BenchmarkTranslateOtToGroupedMetricWithInstrLibrary(b *testing.B) {
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -1998,6 +2000,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutConfigReplacePattern(b *testing.B
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2020,6 +2023,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithResource(b *testing
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2042,6 +2046,7 @@ func BenchmarkTranslateOtToGroupedMetricWithConfigReplaceWithLabel(b *testing.B)
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2059,6 +2064,7 @@ func BenchmarkTranslateOtToGroupedMetricWithoutInstrLibrary(b *testing.B) {
 		logger:                zap.NewNop(),
 	}
 	translator := newMetricTranslator(*config)
+	defer require.NoError(b, translator.Shutdown())
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
@@ -2318,6 +2324,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			}
 
 			translator := newMetricTranslator(*config)
+			defer require.NoError(t, translator.Shutdown())
 
 			groupedMetrics := make(map[interface{}]*groupedMetric)
 
@@ -2331,6 +2338,36 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 			for _, actual := range groupedMetrics {
 				assert.Equal(t, test.outLogGroupName, actual.metadata.logGroup)
 				assert.Equal(t, test.outLogStreamName, actual.metadata.logStream)
+			}
+		})
+	}
+}
+
+func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
+	for _, test := range logGroupStreamTestCases {
+		t.Run(test.name, func(t *testing.T) {
+			config := &Config{
+				Namespace:                       "",
+				LogGroupName:                    test.inLogGroupName,
+				LogStreamName:                   test.inLogStreamName,
+				DimensionRollupOption:           zeroAndSingleDimensionRollup,
+				logger:                          zap.NewNop(),
+				RetainInitialValueOfDeltaMetric: true,
+			}
+
+			translator := newMetricTranslator(*config)
+
+			groupedMetrics := make(map[interface{}]*groupedMetric)
+
+			rm := test.inputMetrics.ResourceMetrics().At(0)
+			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
+			assert.Nil(t, err)
+
+			assert.NotNil(t, groupedMetrics)
+			assert.Equal(t, 1, len(groupedMetrics))
+
+			for _, actual := range groupedMetrics {
+				assert.True(t, actual.metadata.retainInitialValueForDelta)
 			}
 		})
 	}

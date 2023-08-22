@@ -46,7 +46,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	var toBody toBodyFunc = func(token []byte) interface{} {
 		return string(token)
 	}
-	if helper.IsNop(c.Config.Splitter.EncodingConfig.Encoding) {
+	if helper.IsNop(c.Config.Splitter.Encoding) {
 		toBody = func(token []byte) interface{} {
 			copied := make([]byte, len(token))
 			copy(copied, token)
