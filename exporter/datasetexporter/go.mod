@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datase
 go 1.20
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/scalyr/dataset-go v0.12.1
