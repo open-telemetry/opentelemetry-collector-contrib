@@ -254,3 +254,5 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 		t.Run(tc.Name, tc.RunFunc(splitFunc))
 	}
 }
+
+// TODO refactor test dependency away from internal?
