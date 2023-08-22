@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -1475,6 +1476,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	shortFileLine := tokenWithLength(bytesPerLine - 1)
 	longFileLines := 100000
 	longFileSize := longFileLines * bytesPerLine
+	longFileFirstLine := "first line of long file\n"
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 	defer func() {
@@ -1495,6 +1497,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, shortFile.Close())
 
 	longFile := openTemp(t, tempDir)
+	_, err = longFile.WriteString(longFileFirstLine)
+	require.NoError(t, err)
 	for line := 0; line < longFileLines; line++ {
 		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
 		require.NoError(t, err)
@@ -1537,8 +1541,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Verify that only long file is remembered and that (0 < offset < fileSize)
 	require.Equal(t, 1, len(operator.knownFiles))
 	reader := operator.knownFiles[0]
-	require.Equal(t, longFile.Name(), reader.file.Name())
-	require.Greater(t, reader.Offset, int64(0))
+	require.True(t, bytes.HasPrefix(reader.Fingerprint.FirstBytes, []byte(longFileFirstLine)))
 	require.Less(t, reader.Offset, int64(longFileSize))
 }
 

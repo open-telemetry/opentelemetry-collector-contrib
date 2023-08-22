@@ -124,12 +124,25 @@ func (r *reader) finalizeHeader() {
 	r.HeaderFinalized = true
 }
 
+// Delete will close and delete the file
+func (r *reader) Delete() {
+	if r.file == nil {
+		return
+	}
+	f := r.file
+	r.Close()
+	if err := os.Remove(f.Name()); err != nil {
+		r.Errorf("could not delete %s", f.Name())
+	}
+}
+
 // Close will close the file
 func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
+		r.file = nil
 	}
 
 	if r.headerReader != nil {
