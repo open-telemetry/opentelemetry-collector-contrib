@@ -105,11 +105,11 @@ func (s *snmpScraper) scrapeScalarMetrics(
 		return
 	}
 	// Retrieve scalar OID SNMP data for resource attributes
-	scalarOIDScalarResourceAttributeValues := s.scrapeScalarResourceAttributes(configHelper.getResourceAttributeScalarOIDs(), scraperErrors)
+	scalarResourceAttributes := s.scrapeScalarResourceAttributes(configHelper.getResourceAttributeScalarOIDs(), scraperErrors)
 
 	// For each piece of SNMP data, attempt to create the necessary OTEL structures (resources/metrics/datapoints)
 	for _, data := range scalarData {
-		if err := s.scalarDataToMetric(data, metricHelper, configHelper, scalarOIDScalarResourceAttributeValues); err != nil {
+		if err := s.scalarDataToMetric(data, metricHelper, configHelper, scalarResourceAttributes); err != nil {
 			scraperErrors.AddPartial(1, fmt.Errorf(errMsgScalarOIDProcessing, data.oid, err))
 		}
 	}
@@ -154,7 +154,7 @@ func (s *snmpScraper) scalarDataToMetric(
 	data SNMPData,
 	metricHelper *otelMetricHelper,
 	configHelper *configHelper,
-	scalarOIDScalarResourceAttributeValues map[string]string, 
+	scalarResourceAttributes map[string]string, 
 ) error {
 	// Get the related metric name for this SNMP indexed data
 	metricName := configHelper.getMetricName(data.oid)
@@ -164,7 +164,7 @@ func (s *snmpScraper) scalarDataToMetric(
 	dataPointAttributes := getScalarDataPointAttributes(configHelper, data.oid)
 
 	// Get resource attributes
-	resourceAttributes, err := getResourceAttributes(configHelper, data.oid, "0", map[string]indexedAttributeValues{}, scalarOIDScalarResourceAttributeValues)
+	resourceAttributes, err := getResourceAttributes(configHelper, data.oid, "0", map[string]indexedAttributeValues{}, scalarResourceAttributes)
 	if err != nil {
 		return fmt.Errorf(errMsgOIDResourceAttributeEmptyValue, metricName, err)
 	}
@@ -375,7 +375,7 @@ func (s *snmpScraper) scrapeScalarResourceAttributes(
 	scalarOIDs []string,
 	scraperErrors *scrapererror.ScrapeErrors,
 ) map[string]string {
-	scalarOIDAttributeValues :=  map[string]string{}
+	scalarOIDAttributeValues :=  make(map[string]string, len(scalarOIDs))
 
 	// If no scalar OID resource attribute configs, nothing else to do
 	if len (scalarOIDs) == 0 {
