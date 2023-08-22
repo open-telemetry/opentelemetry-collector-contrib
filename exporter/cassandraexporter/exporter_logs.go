@@ -92,7 +92,10 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes().AsRaw())
-				bodyByte, _ := json.Marshal(r.Body().AsRaw())
+				bodyByte, err := json.Marshal(r.Body().AsRaw())
+				if err != nil {
+					return err
+				}
 
 				insertLogError := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),

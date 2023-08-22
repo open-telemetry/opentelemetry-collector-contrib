@@ -37,8 +37,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.MaxLogSize = 1000000
 					cfg.TCP.ListenAddress = "10.0.0.1:9000"
 					cfg.TCP.AddAttributes = true
-					cfg.TCP.Encoding = helper.NewEncodingConfig()
-					cfg.TCP.Encoding.Encoding = "utf-16"
+					cfg.TCP.Encoding = "utf-16"
 					cfg.TCP.Multiline = helper.NewMultilineConfig()
 					cfg.TCP.Multiline.LineStartPattern = "ABC"
 					cfg.TCP.TLS = &configtls.TLSServerSetting{
@@ -62,8 +61,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.UDP = &udp.NewConfig().BaseConfig
 					cfg.UDP.ListenAddress = "10.0.0.1:9000"
 					cfg.UDP.AddAttributes = true
-					cfg.UDP.Encoding = helper.NewEncodingConfig()
-					cfg.UDP.Encoding.Encoding = "utf-16"
+					cfg.UDP.Encoding = "utf-16"
 					cfg.UDP.Multiline = helper.NewMultilineConfig()
 					cfg.UDP.Multiline.LineStartPattern = "ABC"
 					return cfg
