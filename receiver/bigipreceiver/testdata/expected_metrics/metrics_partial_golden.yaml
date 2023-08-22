@@ -20,19 +20,19 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: available
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: offline
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.availability
             unit: "1"
           - description: Current number of connections to the virtual server.
@@ -41,7 +41,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Amount of data transmitted to and from the virtual server.
             name: bigip.virtual_server.data.transmitted
@@ -53,13 +53,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: Enabled state of of the virtual server.
@@ -70,13 +70,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: disabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: status
                       value:
                         stringValue: enabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.enabled
             unit: "1"
           - description: Number of packets transmitted to and from the virtual server.
@@ -89,13 +89,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of requests to the virtual server.
@@ -104,7 +104,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
         scope:
@@ -131,19 +131,19 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: available
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: status
                       value:
                         stringValue: offline
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.availability
             unit: "1"
           - description: Current number of connections to the virtual server.
@@ -152,7 +152,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Amount of data transmitted to and from the virtual server.
             name: bigip.virtual_server.data.transmitted
@@ -164,13 +164,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: Enabled state of of the virtual server.
@@ -181,13 +181,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: disabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: status
                       value:
                         stringValue: enabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.enabled
             unit: "1"
           - description: Number of packets transmitted to and from the virtual server.
@@ -200,13 +200,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of requests to the virtual server.
@@ -215,7 +215,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
         scope:
@@ -242,19 +242,19 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: available
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: offline
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.availability
             unit: "1"
           - description: Current number of connections to the virtual server.
@@ -263,7 +263,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Amount of data transmitted to and from the virtual server.
             name: bigip.virtual_server.data.transmitted
@@ -275,13 +275,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: Enabled state of of the virtual server.
@@ -292,13 +292,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: disabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: enabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.enabled
             unit: "1"
           - description: Number of packets transmitted to and from the virtual server.
@@ -311,13 +311,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of requests to the virtual server.
@@ -326,7 +326,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
         scope:
@@ -353,19 +353,19 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: available
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: offline
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: unknown
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.availability
             unit: "1"
           - description: Current number of connections to the virtual server.
@@ -374,7 +374,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             unit: '{connections}'
           - description: Amount of data transmitted to and from the virtual server.
             name: bigip.virtual_server.data.transmitted
@@ -386,13 +386,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: By
           - description: Enabled state of of the virtual server.
@@ -403,13 +403,13 @@ resourceMetrics:
                     - key: status
                       value:
                         stringValue: disabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: status
                       value:
                         stringValue: enabled
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: bigip.virtual_server.enabled
             unit: "1"
           - description: Number of packets transmitted to and from the virtual server.
@@ -422,13 +422,13 @@ resourceMetrics:
                     - key: direction
                       value:
                         stringValue: received
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "0"
                   attributes:
                     - key: direction
                       value:
                         stringValue: sent
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{packets}'
           - description: Number of requests to the virtual server.
@@ -437,7 +437,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
               isMonotonic: true
             unit: '{requests}'
         scope:

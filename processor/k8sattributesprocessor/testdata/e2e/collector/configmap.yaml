@@ -40,6 +40,7 @@ data:
           - k8s.job.name
           - k8s.job.uid
           - k8s.node.name
+          - k8s.cluster.uid
           - container.id
           - container.image.name
           - container.image.tag

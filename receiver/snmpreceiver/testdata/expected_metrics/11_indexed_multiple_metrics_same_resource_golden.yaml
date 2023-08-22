@@ -10,13 +10,13 @@ resourceMetrics:
                     - key: attr1
                       value:
                         stringValue: attrPrefix.1
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "1"
                   attributes:
                     - key: attr1
                       value:
                         stringValue: attrPrefix.2
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: metric0
             unit: By
           - description: test description1
@@ -27,13 +27,13 @@ resourceMetrics:
                     - key: attr1
                       value:
                         stringValue: attrPrefix.1
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
                 - asInt: "3"
                   attributes:
                     - key: attr1
                       value:
                         stringValue: attrPrefix.2
-                  timeUnixNano: "1651783494931319000"
+                  timeUnixNano: "1000000"
             name: metric1
             unit: By
         scope:

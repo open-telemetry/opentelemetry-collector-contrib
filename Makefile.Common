@@ -174,7 +174,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.19
+	$(GOCMD) mod tidy -compat=1.20
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

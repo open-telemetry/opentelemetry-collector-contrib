@@ -69,7 +69,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		return nil, err
 	}
 
-	var policies []*policy
+	policies := make([]*policy, len(cfg.PolicyCfgs))
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
@@ -85,7 +85,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 			evaluator: eval,
 			ctx:       policyCtx,
 		}
-		policies = append(policies, p)
+		policies[i] = p
 	}
 
 	tsp := &tailSamplingSpanProcessor{
