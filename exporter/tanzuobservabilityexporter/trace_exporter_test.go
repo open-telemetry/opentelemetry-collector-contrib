@@ -301,7 +301,7 @@ func (m *mockSender) SendSpan(
 	name string,
 	startMillis, durationMillis int64,
 	source, traceID, spanID string,
-	parents, followsFrom []string,
+	parents, _ []string,
 	spanTags []senders.SpanTag,
 	spanLogs []senders.SpanLog,
 ) error {

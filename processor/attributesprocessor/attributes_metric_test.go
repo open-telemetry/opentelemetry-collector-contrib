@@ -297,7 +297,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 				"user.email": "john.doe@example.com",
 			},
 			expectedAttributes: map[string]interface{}{
-				"user.email": "73ec53c4ba1747d485ae2a0d7bfafa6cda80a5a9",
+				"user.email": "836f82db99121b3481011f16b49dfa5fbc714a0d1b1b9f784a1ebbbf5b39577f",
 			},
 		},
 		{
@@ -306,7 +306,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 				"user.id": 10,
 			},
 			expectedAttributes: map[string]interface{}{
-				"user.id": "71aa908aff1548c8c6cdecf63545261584738a25",
+				"user.id": "a111f275cc2e7588000001d300a31e76336d15b9d314cd1a1d8f3d3556975eed",
 			},
 		},
 		{
@@ -315,7 +315,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 				"user.balance": 99.1,
 			},
 			expectedAttributes: map[string]interface{}{
-				"user.balance": "76429edab4855b03073f9429fd5d10313c28655e",
+				"user.balance": "05fabd78b01be9692863cb0985f600c99da82979af18db5c55173c2a30adb924",
 			},
 		},
 		{
@@ -324,7 +324,7 @@ func TestMetricAttributes_Hash(t *testing.T) {
 				"user.authenticated": true,
 			},
 			expectedAttributes: map[string]interface{}{
-				"user.authenticated": "bf8b4530d8d246dd74ac53a13471bba17941dff7",
+				"user.authenticated": "4bf5122f344554c53bde2ebb8cd2b7e3d1600ad631c385a5d7cce23c7785459a",
 			},
 		},
 	}

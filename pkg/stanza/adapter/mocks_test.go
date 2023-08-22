@@ -52,7 +52,7 @@ func (o *UnstartableOperator) Start(_ operator.Persister) error {
 }
 
 // Process will return nil
-func (o *UnstartableOperator) Process(ctx context.Context, entry *entry.Entry) error {
+func (o *UnstartableOperator) Process(_ context.Context, _ *entry.Entry) error {
 	return nil
 }
 

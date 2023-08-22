@@ -4,7 +4,6 @@
 package fileconsumer
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/featuregate"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -157,6 +157,41 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					cfg.Include = append(cfg.Include, "*.log")
 					cfg.Exclude = append(cfg.Exclude, "aString")
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_timestamp",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex: `err\.[a-zA-Z]\.\d+\.(?P<rotation_time>\d{10})\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType:  "timestamp",
+								RegexKey:  "rotation_time",
+								Ascending: true,
+								Location:  "utc",
+								Layout:    `%Y%m%d%H`,
+							},
+						},
+					}
+					return newMockOperatorConfig(cfg)
+				}(),
+			},
+			{
+				Name: "sort_by_numeric",
+				Expect: func() *mockOperatorConfig {
+					cfg := NewConfig()
+					cfg.OrderingCriteria = matcher.OrderingCriteria{
+						Regex: `err\.(?P<file_num>[a-zA-Z])\.\d+\.\d{10}\.log`,
+						SortBy: []matcher.Sort{
+							{
+								SortType: "numeric",
+								RegexKey: "file_num",
+							},
+						},
+					}
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -332,7 +367,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_lower",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "utf-16le"}
+					cfg.Splitter.Encoding = "utf-16le"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -340,7 +375,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_upper",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-16lE"}
+					cfg.Splitter.Encoding = "UTF-16lE"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -394,7 +429,6 @@ func TestBuild(t *testing.T) {
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.pollInterval, 10*time.Millisecond)
 			},
 		},
@@ -451,7 +485,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
@@ -534,6 +568,54 @@ func TestBuild(t *testing.T) {
 			require.Error,
 			nil,
 		},
+		{
+			"BadOrderingCriteriaRegex",
+			func(f *Config) {
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					SortBy: []matcher.Sort{
+						{
+							SortType: "numeric",
+							RegexKey: "value",
+						},
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"OrderingCriteriaTimestampMissingLayout",
+			func(f *Config) {
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					Regex: ".*",
+					SortBy: []matcher.Sort{
+						{
+							SortType: "timestamp",
+							RegexKey: "value",
+						},
+					},
+				}
+			},
+			require.Error,
+			nil,
+		},
+		{
+			"GoodOrderingCriteriaTimestamp",
+			func(f *Config) {
+				f.OrderingCriteria = matcher.OrderingCriteria{
+					Regex: ".*",
+					SortBy: []matcher.Sort{
+						{
+							SortType: "timestamp",
+							RegexKey: "value",
+							Layout:   "%Y%m%d%H",
+						},
+					},
+				}
+			},
+			require.NoError,
+			func(t *testing.T, f *Manager) {},
+		},
 	}
 
 	for _, tc := range cases {
@@ -543,9 +625,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -578,7 +658,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			func(f *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.finder.Include, []string{"/var/log/testpath.*"})
 				require.Equal(t, f.pollInterval, 10*time.Millisecond)
 			},
 		},
@@ -601,7 +680,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.EncodingConfig = helper.EncodingConfig{Encoding: "UTF-3233"}
+				f.Splitter.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
@@ -615,7 +694,6 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
 			splitNone := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 				if !atEOF {
 					return 0, nil, nil
@@ -626,7 +704,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 				return len(data), data, nil
 			}
 
-			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmit, splitNone)
+			input, err := cfg.BuildWithSplitFunc(testutil.Logger(t), nopEmitFunc, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -701,10 +779,7 @@ func TestBuildWithHeader(t *testing.T) {
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {
-				require.NotNil(t, f.readerFactory.headerSettings)
-				require.NotNil(t, f.readerFactory.headerSettings.matchRegex)
-				require.NotNil(t, f.readerFactory.headerSettings.splitFunc)
-				require.NotNil(t, f.readerFactory.headerSettings.config)
+				require.NotNil(t, f.readerFactory.headerConfig.SplitFunc)
 			},
 		},
 	}
@@ -716,14 +791,11 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			nopEmit := func(_ context.Context, _ *FileAttributes, _ []byte) {}
-
-			input, err := cfg.Build(testutil.Logger(t), nopEmit)
+			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
 			}
-
 			tc.validate(t, input)
 		})
 	}

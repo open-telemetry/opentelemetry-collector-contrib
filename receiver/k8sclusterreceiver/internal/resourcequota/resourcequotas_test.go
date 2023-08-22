@@ -4,60 +4,35 @@
 package resourcequota
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestRequestQuotaMetrics(t *testing.T) {
-	rq := newResourceQuota("1")
+	rq := testutils.NewResourceQuota("1")
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, rq, ts)
+	m := mb.Emit()
 
-	actualResourceMetrics := GetMetrics(rq)
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 2, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.resourcequota.uid":  "test-resourcequota-1-uid",
-			"k8s.resourcequota.name": "test-resourcequota-1",
-			"k8s.namespace.name":     "test-namespace",
-		},
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[0], "k8s.resource_quota.hard_limit",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 2000)
-
-	testutils.AssertMetricsWithLabels(t, actualResourceMetrics[0].Metrics[1], "k8s.resource_quota.used",
-		metricspb.MetricDescriptor_GAUGE_INT64, map[string]string{"resource": "requests.cpu"}, 1000)
-}
-
-func newResourceQuota(id string) *corev1.ResourceQuota {
-	return &corev1.ResourceQuota{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-resourcequota-" + id,
-			UID:       types.UID("test-resourcequota-" + id + "-uid"),
-			Namespace: "test-namespace",
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Status: corev1.ResourceQuotaStatus{
-			Hard: corev1.ResourceList{
-				"requests.cpu": *resource.NewQuantity(2, resource.DecimalSI),
-			},
-			Used: corev1.ResourceList{
-				"requests.cpu": *resource.NewQuantity(1, resource.DecimalSI),
-			},
-		},
-	}
 }

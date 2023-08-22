@@ -153,7 +153,16 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "severity_text":
 		return accessSeverityText(), nil
 	case "body":
-		return accessBody(), nil
+		if len(path) == 1 {
+			keys := path[0].Keys
+			if keys == nil {
+				return accessBody(), nil
+			}
+			return accessBodyKey(keys), nil
+		}
+		if path[1].Name == "string" {
+			return accessStringBody(), nil
+		}
 	case "attributes":
 		mapKey := path[0].Keys
 		if mapKey == nil {
@@ -271,6 +280,47 @@ func accessBody() ottl.StandardGetSetter[TransformContext] {
 		},
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			return internal.SetValue(tCtx.GetLogRecord().Body(), val)
+		},
+	}
+}
+
+func accessBodyKey(keys []ottl.Key) ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.GetMapValue(tCtx.GetLogRecord().Body().Map(), keys)
+			case pcommon.ValueTypeSlice:
+				return internal.GetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys)
+			default:
+				return nil, fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			body := tCtx.GetLogRecord().Body()
+			switch body.Type() {
+			case pcommon.ValueTypeMap:
+				return internal.SetMapValue(tCtx.GetLogRecord().Body().Map(), keys, val)
+			case pcommon.ValueTypeSlice:
+				return internal.SetSliceValue(tCtx.GetLogRecord().Body().Slice(), keys, val)
+			default:
+				return fmt.Errorf("log bodies of type %s cannot be indexed", body.Type().String())
+			}
+		},
+	}
+}
+
+func accessStringBody() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetLogRecord().Body().AsString(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if str, ok := val.(string); ok {
+				tCtx.GetLogRecord().Body().SetStr(str)
+			}
+			return nil
 		},
 	}
 }

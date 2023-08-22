@@ -102,7 +102,7 @@ type fakeFilesystemWriter struct {
 	configFiles, fileContents []string
 }
 
-func (wr *fakeFilesystemWriter) writeFile(filename string, data []byte, perm os.FileMode) error {
+func (wr *fakeFilesystemWriter) writeFile(filename string, data []byte, _ os.FileMode) error {
 	wr.configFiles = append(wr.configFiles, filename)
 	wr.fileContents = append(wr.fileContents, string(data))
 	return nil

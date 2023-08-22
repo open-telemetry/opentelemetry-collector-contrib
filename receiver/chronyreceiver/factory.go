@@ -13,20 +13,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/chrony"
-)
-
-const (
-	typeStr = "chrony"
-
-	// The stability level of the receiver.
-	stability = component.StabilityLevelAlpha
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultCongfig,
-		receiver.WithMetrics(newMetricsReceiver, stability),
+		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
@@ -45,7 +39,7 @@ func newMetricsReceiver(
 		return nil, err
 	}
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		newScraper(ctx, chronyc, cfg, set).scrape,
 	)
 	if err != nil {

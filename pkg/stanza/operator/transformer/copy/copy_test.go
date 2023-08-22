@@ -290,11 +290,11 @@ func TestBuildAndProcess(t *testing.T) {
 			op, err := cfg.Build(testutil.Logger(t))
 			require.NoError(t, err)
 
-			copy := op.(*Transformer)
+			cp := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, copy.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, cp.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = copy.Process(context.Background(), val)
+			err = cp.Process(context.Background(), val)
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {

@@ -49,7 +49,7 @@ func (r *staticResolver) start(ctx context.Context) error {
 	return err
 }
 
-func (r *staticResolver) shutdown(ctx context.Context) error {
+func (r *staticResolver) shutdown(_ context.Context) error {
 	return nil
 }
 

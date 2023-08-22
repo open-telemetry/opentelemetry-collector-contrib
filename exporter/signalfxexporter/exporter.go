@@ -83,6 +83,7 @@ func newSignalFxExporter(
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
+		config.DropHistogramBuckets,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %w", err)
@@ -238,7 +239,7 @@ func (se *signalfxExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	return err
 }
 
-func (se *signalfxExporter) shutdown(ctx context.Context) error {
+func (se *signalfxExporter) shutdown(_ context.Context) error {
 	if se.cancelFn != nil {
 		se.cancelFn()
 	}

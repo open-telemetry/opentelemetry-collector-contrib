@@ -23,14 +23,16 @@ type lokiEntry struct {
 	TraceID              string                 `json:"traceid,omitempty"`
 	SpanID               string                 `json:"spanid,omitempty"`
 	Severity             string                 `json:"severity,omitempty"`
+	Flags                uint32                 `json:"flags,omitempty"`
 	Attributes           map[string]interface{} `json:"attributes,omitempty"`
 	Resources            map[string]interface{} `json:"resources,omitempty"`
 	InstrumentationScope *instrumentationScope  `json:"instrumentation_scope,omitempty"`
 }
 
 type instrumentationScope struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name       string                 `json:"name,omitempty"`
+	Version    string                 `json:"version,omitempty"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
@@ -53,17 +55,16 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 		Severity:   lr.SeverityText(),
 		Attributes: lr.Attributes().AsRaw(),
 		Resources:  res.Attributes().AsRaw(),
+		Flags:      uint32(lr.Flags()),
 	}
 
 	scopeName := scope.Name()
-	scopeVersion := scope.Version()
 	if scopeName != "" {
 		logRecord.InstrumentationScope = &instrumentationScope{
 			Name: scopeName,
 		}
-		if scopeVersion != "" {
-			logRecord.InstrumentationScope.Version = scopeVersion
-		}
+		logRecord.InstrumentationScope.Version = scope.Version()
+		logRecord.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
 	}
 
 	jsonRecord, err = json.Marshal(logRecord)
@@ -92,6 +93,11 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 		keyvals = keyvalsReplaceOrAppend(keyvals, "severity", severity)
 	}
 
+	flags := lr.Flags()
+	if flags != 0 {
+		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
+	}
+
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
 		return true
@@ -105,11 +111,16 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 
 	scopeName := scope.Name()
 	scopeVersion := scope.Version()
+
 	if scopeName != "" {
 		keyvals = append(keyvals, "instrumentation_scope_name", scopeName)
 		if scopeVersion != "" {
 			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
 		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("instrumentation_scope_attribute_%s", k), v)...)
+			return true
+		})
 	}
 
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)

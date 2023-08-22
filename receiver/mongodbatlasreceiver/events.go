@@ -57,7 +57,7 @@ type eventRecord struct {
 
 func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consumer.Logs) *eventsReceiver {
 	r := &eventsReceiver{
-		client:        internal.NewMongoDBAtlasClient(c.PublicKey, c.PrivateKey, c.RetrySettings, settings.Logger),
+		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.RetrySettings, settings.Logger),
 		cfg:           c,
 		logger:        settings.Logger,
 		consumer:      consumer,
@@ -83,7 +83,7 @@ func newEventsReceiver(settings rcvr.CreateSettings, c *Config, consumer consume
 	return r
 }
 
-func (er *eventsReceiver) Start(ctx context.Context, host component.Host, storageClient storage.Client) error {
+func (er *eventsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {
 	er.logger.Debug("Starting up events receiver")
 	cancelCtx, cancel := context.WithCancel(ctx)
 	er.cancel = cancel

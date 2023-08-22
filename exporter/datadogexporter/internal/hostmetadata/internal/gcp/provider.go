@@ -45,6 +45,8 @@ func platformDescription(platform gcp.Platform) string {
 		return "Google Cloud Functions"
 	case gcp.AppEngineStandard, gcp.AppEngineFlex:
 		return "Google AppEngine"
+	case gcp.CloudRunJob:
+		return "Cloud Run Job"
 	}
 	return "Unrecognized platform"
 }
@@ -73,7 +75,7 @@ func (p *Provider) Source(context.Context) (source.Source, error) {
 	return source.Source{Kind: source.HostnameKind, Identifier: fmt.Sprintf("%s.%s", name, cloudAccount)}, nil
 }
 
-func (p *Provider) ClusterName(ctx context.Context) (string, error) {
+func (p *Provider) ClusterName(_ context.Context) (string, error) {
 	return p.detector.GKEClusterName()
 }
 

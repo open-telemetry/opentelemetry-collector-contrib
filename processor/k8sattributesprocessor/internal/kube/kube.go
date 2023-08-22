@@ -22,6 +22,7 @@ const (
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
 	tagHostName             = "k8s.pod.hostname"
+	tagClusterUID           = "k8s.cluster.uid"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -203,9 +204,33 @@ type ExtractionRules struct {
 	ContainerID        bool
 	ContainerImageName bool
 	ContainerImageTag  bool
+	ClusterUID         bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+}
+
+// IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
+func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
+	rulesNeedingOwnerMetadata := []bool{
+		rules.CronJobName,
+		rules.DeploymentName,
+		rules.DeploymentUID,
+		rules.DaemonSetUID,
+		rules.DaemonSetName,
+		rules.JobName,
+		rules.JobUID,
+		rules.ReplicaSetID,
+		rules.ReplicaSetName,
+		rules.StatefulSetUID,
+		rules.StatefulSetName,
+	}
+	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
+		if ruleEnabled {
+			return true
+		}
+	}
+	return false
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

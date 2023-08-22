@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 
 import (
@@ -8,18 +10,17 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-// The value of extension "type" in configuration.
-const typeStr component.Type = "db_storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage/internal/metadata"
+)
 
 // NewFactory creates a factory for DBStorage extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelAlpha,
+		metadata.ExtensionStability,
 	)
 }
 

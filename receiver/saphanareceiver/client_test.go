@@ -42,7 +42,7 @@ func (m *testResultWrapper) Close() error {
 
 type testDBWrapper struct{ mock.Mock }
 
-func (m *testDBWrapper) PingContext(ctx context.Context) error {
+func (m *testDBWrapper) PingContext(_ context.Context) error {
 	args := m.Called()
 	return args.Error(0)
 }
@@ -52,7 +52,7 @@ func (m *testDBWrapper) Close() error {
 	return args.Error(0)
 }
 
-func (m *testDBWrapper) QueryContext(ctx context.Context, query string) (resultWrapper, error) {
+func (m *testDBWrapper) QueryContext(_ context.Context, query string) (resultWrapper, error) {
 	args := m.Called(query)
 	result := args.Get(0).(*testResultWrapper)
 	err := args.Error(1)
@@ -85,7 +85,7 @@ type testConnectionFactory struct {
 	dbWrapper *testDBWrapper
 }
 
-func (m *testConnectionFactory) getConnection(c driver.Connector) dbWrapper {
+func (m *testConnectionFactory) getConnection(_ driver.Connector) dbWrapper {
 	return m.dbWrapper
 }
 

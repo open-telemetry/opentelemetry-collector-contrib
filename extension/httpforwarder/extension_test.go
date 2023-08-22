@@ -240,9 +240,8 @@ func TestExtension(t *testing.T) {
 					// Content-Length, Content-Type, X-Content-Type-Options and Date are certain headers added by default.
 					// Assertion for Via is done above.
 					continue
-				} else {
-					t.Error("unexpected header found in response: ", k)
 				}
+				t.Error("unexpected header found in response: ", k)
 			}
 
 			require.NoError(t, hf.Shutdown(ctx))

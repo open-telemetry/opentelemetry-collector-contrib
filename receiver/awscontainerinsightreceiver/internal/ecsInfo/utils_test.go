@@ -19,7 +19,7 @@ type mockHTTPClient struct {
 	err      error
 }
 
-func (m *mockHTTPClient) Do(reqest *http.Request) (*http.Response, error) {
+func (m *mockHTTPClient) Do(_ *http.Request) (*http.Response, error) {
 	return m.response, m.err
 }
 

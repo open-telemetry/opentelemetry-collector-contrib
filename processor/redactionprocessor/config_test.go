@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -21,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, ""),
+			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				AllowAllKeys:  false,
 				AllowedKeys:   []string{"description", "group", "id", "name"},
@@ -31,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id:       component.NewIDWithName(typeStr, "empty"),
+			id:       component.NewIDWithName(metadata.Type, "empty"),
 			expected: createDefaultConfig(),
 		},
 	}

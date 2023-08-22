@@ -60,6 +60,7 @@ type MetricsConfig struct {
 	VcenterVMMemorySwapped          MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
 	VcenterVMMemorySwappedSsd       MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
 	VcenterVMMemoryUsage            MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
+	VcenterVMMemoryUtilization      MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
 	VcenterVMNetworkPacketCount     MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
 	VcenterVMNetworkThroughput      MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage           MetricConfig `mapstructure:"vcenter.vm.network.usage"`
@@ -172,6 +173,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterVMMemoryUsage: MetricConfig{
 			Enabled: true,
 		},
+		VcenterVMMemoryUtilization: MetricConfig{
+			Enabled: false,
+		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
 		},
@@ -191,12 +195,13 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for vcenter resource attributes.
 type ResourceAttributesConfig struct {
-	VcenterClusterName      ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
-	VcenterDatastoreName    ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
-	VcenterHostName         ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
-	VcenterResourcePoolName ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
-	VcenterVMID             ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
-	VcenterVMName           ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
+	VcenterClusterName               ResourceAttributeConfig `mapstructure:"vcenter.cluster.name"`
+	VcenterDatastoreName             ResourceAttributeConfig `mapstructure:"vcenter.datastore.name"`
+	VcenterHostName                  ResourceAttributeConfig `mapstructure:"vcenter.host.name"`
+	VcenterResourcePoolInventoryPath ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.inventory_path"`
+	VcenterResourcePoolName          ResourceAttributeConfig `mapstructure:"vcenter.resource_pool.name"`
+	VcenterVMID                      ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
+	VcenterVMName                    ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -208,6 +213,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterHostName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		VcenterResourcePoolInventoryPath: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		VcenterResourcePoolName: ResourceAttributeConfig{

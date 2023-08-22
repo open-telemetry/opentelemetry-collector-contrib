@@ -6,6 +6,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -74,6 +75,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span) ([
 	document.AddAttributes("Attributes", span.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddEvents("Events", span.Events())
+	document.AddInt("Duration", DurationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 
 	if m.dedup {
 		document.Dedup()
@@ -98,4 +100,10 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	}
 	linkArrayBytes, _ := json.Marshal(&linkArray)
 	return string(linkArrayBytes)
+}
+
+// DurationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
+// which is the format the Duration field is stored in the Span.
+func DurationAsMicroseconds(start, end time.Time) int64 {
+	return (end.UnixNano() - start.UnixNano()) / 1000
 }

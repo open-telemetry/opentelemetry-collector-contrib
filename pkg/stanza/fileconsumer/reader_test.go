@@ -8,9 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -78,7 +80,10 @@ func TestTokenization(t *testing.T) {
 			_, err := temp.Write(tc.fileContent)
 			require.NoError(t, err)
 
-			r, err := f.newReaderBuilder().withFile(temp).build()
+			fp, err := f.newFingerprint(temp)
+			require.NoError(t, err)
+
+			r, err := f.newReader(temp, fp)
 			require.NoError(t, err)
 
 			r.ReadToEnd(context.Background())
@@ -106,7 +111,10 @@ func TestTokenizationTooLong(t *testing.T) {
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
@@ -131,10 +139,10 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 
 	mlc := helper.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
-		EncodingConfig: helper.NewEncodingConfig(),
-		Flusher:        helper.NewFlusherConfig(),
-		Multiline:      mlc,
+	f.splitterFactory = splitter.NewMultilineFactory(helper.SplitterConfig{
+		Encoding:  "utf-8",
+		Flusher:   helper.NewFlusherConfig(),
+		Multiline: mlc,
 	})
 	f.readerConfig.maxLogSize = 15
 
@@ -142,7 +150,10 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
@@ -162,27 +173,19 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	headerConf := &HeaderConfig{
-		Pattern: "^#",
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexConf,
-			},
-		},
-	}
-
-	enc, err := helper.EncodingConfig{
-		Encoding: "utf-8",
-	}.Build()
+	enc, err := helper.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc.Encoding)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
-	f.headerSettings = h
+	f.headerConfig = h
 
 	temp := openTemp(t, t.TempDir())
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	_, err = temp.Write(fileContent)
@@ -196,16 +199,18 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	splitterConfig := helper.NewSplitterConfig()
+	enc, err := helper.LookupEncoding(splitterConfig.Encoding)
+	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
+			fingerprintSize: fingerprint.DefaultSize,
 			maxLogSize:      defaultMaxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: newMultilineSplitterFactory(splitterConfig),
-		encodingConfig:  splitterConfig.EncodingConfig,
+		splitterFactory: splitter.NewMultilineFactory(splitterConfig),
+		encoding:        enc,
 	}, emitChan
 }
 
@@ -217,25 +222,4 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 		require.FailNow(t, "Timed out waiting for token")
 	}
 	return nil
-}
-
-func TestMapCopy(t *testing.T) {
-	initMap := map[string]any{
-		"mapVal": map[string]any{
-			"nestedVal": "value1",
-		},
-		"intVal": 1,
-		"strVal": "OrigStr",
-	}
-
-	copyMap := mapCopy(initMap)
-	// Mutate values on the copied map
-	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
-	copyMap["intVal"] = 2
-	copyMap["strVal"] = "CopyString"
-
-	// Assert that the original map should have the same values
-	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
-	assert.Equal(t, 1, initMap["intVal"])
-	assert.Equal(t, "OrigStr", initMap["strVal"])
 }

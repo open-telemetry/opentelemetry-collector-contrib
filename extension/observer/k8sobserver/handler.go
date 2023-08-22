@@ -41,7 +41,7 @@ func (h *handler) ListEndpoints() []observer.Endpoint {
 }
 
 // OnAdd is called in response to a new pod or node being detected.
-func (h *handler) OnAdd(objectInterface interface{}, isInitialList bool) {
+func (h *handler) OnAdd(objectInterface interface{}, _ bool) {
 	var endpoints []observer.Endpoint
 
 	switch object := objectInterface.(type) {

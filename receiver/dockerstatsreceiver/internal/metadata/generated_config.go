@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for dockerstatsreceiver metrics.
+// MetricsConfig provides config for docker_stats metrics.
 type MetricsConfig struct {
 	ContainerBlockioIoMergedRecursive          MetricConfig `mapstructure:"container.blockio.io_merged_recursive"`
 	ContainerBlockioIoQueuedRecursive          MetricConfig `mapstructure:"container.blockio.io_queued_recursive"`
@@ -42,10 +42,13 @@ type MetricsConfig struct {
 	ContainerCPUUsageSystem                    MetricConfig `mapstructure:"container.cpu.usage.system"`
 	ContainerCPUUsageTotal                     MetricConfig `mapstructure:"container.cpu.usage.total"`
 	ContainerCPUUsageUsermode                  MetricConfig `mapstructure:"container.cpu.usage.usermode"`
+	ContainerCPUUtilization                    MetricConfig `mapstructure:"container.cpu.utilization"`
 	ContainerMemoryActiveAnon                  MetricConfig `mapstructure:"container.memory.active_anon"`
 	ContainerMemoryActiveFile                  MetricConfig `mapstructure:"container.memory.active_file"`
+	ContainerMemoryAnon                        MetricConfig `mapstructure:"container.memory.anon"`
 	ContainerMemoryCache                       MetricConfig `mapstructure:"container.memory.cache"`
 	ContainerMemoryDirty                       MetricConfig `mapstructure:"container.memory.dirty"`
+	ContainerMemoryFile                        MetricConfig `mapstructure:"container.memory.file"`
 	ContainerMemoryHierarchicalMemoryLimit     MetricConfig `mapstructure:"container.memory.hierarchical_memory_limit"`
 	ContainerMemoryHierarchicalMemswLimit      MetricConfig `mapstructure:"container.memory.hierarchical_memsw_limit"`
 	ContainerMemoryInactiveAnon                MetricConfig `mapstructure:"container.memory.inactive_anon"`
@@ -58,7 +61,6 @@ type MetricsConfig struct {
 	ContainerMemoryPgpgout                     MetricConfig `mapstructure:"container.memory.pgpgout"`
 	ContainerMemoryRss                         MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryRssHuge                     MetricConfig `mapstructure:"container.memory.rss_huge"`
-	ContainerMemorySwap                        MetricConfig `mapstructure:"container.memory.swap"`
 	ContainerMemoryTotalActiveAnon             MetricConfig `mapstructure:"container.memory.total_active_anon"`
 	ContainerMemoryTotalActiveFile             MetricConfig `mapstructure:"container.memory.total_active_file"`
 	ContainerMemoryTotalCache                  MetricConfig `mapstructure:"container.memory.total_cache"`
@@ -72,7 +74,6 @@ type MetricsConfig struct {
 	ContainerMemoryTotalPgpgout                MetricConfig `mapstructure:"container.memory.total_pgpgout"`
 	ContainerMemoryTotalRss                    MetricConfig `mapstructure:"container.memory.total_rss"`
 	ContainerMemoryTotalRssHuge                MetricConfig `mapstructure:"container.memory.total_rss_huge"`
-	ContainerMemoryTotalSwap                   MetricConfig `mapstructure:"container.memory.total_swap"`
 	ContainerMemoryTotalUnevictable            MetricConfig `mapstructure:"container.memory.total_unevictable"`
 	ContainerMemoryTotalWriteback              MetricConfig `mapstructure:"container.memory.total_writeback"`
 	ContainerMemoryUnevictable                 MetricConfig `mapstructure:"container.memory.unevictable"`
@@ -90,6 +91,7 @@ type MetricsConfig struct {
 	ContainerNetworkIoUsageTxPackets           MetricConfig `mapstructure:"container.network.io.usage.tx_packets"`
 	ContainerPidsCount                         MetricConfig `mapstructure:"container.pids.count"`
 	ContainerPidsLimit                         MetricConfig `mapstructure:"container.pids.limit"`
+	ContainerUptime                            MetricConfig `mapstructure:"container.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -145,10 +147,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerCPUUsageUsermode: MetricConfig{
 			Enabled: true,
 		},
+		ContainerCPUUtilization: MetricConfig{
+			Enabled: false,
+		},
 		ContainerMemoryActiveAnon: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryActiveFile: MetricConfig{
+			Enabled: false,
+		},
+		ContainerMemoryAnon: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryCache: MetricConfig{
@@ -156,6 +164,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		ContainerMemoryDirty: MetricConfig{
 			Enabled: false,
+		},
+		ContainerMemoryFile: MetricConfig{
+			Enabled: true,
 		},
 		ContainerMemoryHierarchicalMemoryLimit: MetricConfig{
 			Enabled: false,
@@ -191,9 +202,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemorySwap: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryTotalActiveAnon: MetricConfig{
@@ -233,9 +241,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		ContainerMemoryTotalRssHuge: MetricConfig{
-			Enabled: false,
-		},
-		ContainerMemoryTotalSwap: MetricConfig{
 			Enabled: false,
 		},
 		ContainerMemoryTotalUnevictable: MetricConfig{
@@ -289,6 +294,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerPidsLimit: MetricConfig{
 			Enabled: false,
 		},
+		ContainerUptime: MetricConfig{
+			Enabled: false,
+		},
 	}
 }
 
@@ -297,22 +305,30 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for dockerstatsreceiver resource attributes.
+// ResourceAttributesConfig provides config for docker_stats resource attributes.
 type ResourceAttributesConfig struct {
-	ContainerHostname  ResourceAttributeConfig `mapstructure:"container.hostname"`
-	ContainerID        ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageName ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerName      ResourceAttributeConfig `mapstructure:"container.name"`
-	ContainerRuntime   ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerCommandLine ResourceAttributeConfig `mapstructure:"container.command_line"`
+	ContainerHostname    ResourceAttributeConfig `mapstructure:"container.hostname"`
+	ContainerID          ResourceAttributeConfig `mapstructure:"container.id"`
+	ContainerImageID     ResourceAttributeConfig `mapstructure:"container.image.id"`
+	ContainerImageName   ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerName        ResourceAttributeConfig `mapstructure:"container.name"`
+	ContainerRuntime     ResourceAttributeConfig `mapstructure:"container.runtime"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		ContainerCommandLine: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		ContainerHostname: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		ContainerID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ContainerImageID: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		ContainerImageName: ResourceAttributeConfig{
 			Enabled: true,
@@ -326,7 +342,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for dockerstatsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for docker_stats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

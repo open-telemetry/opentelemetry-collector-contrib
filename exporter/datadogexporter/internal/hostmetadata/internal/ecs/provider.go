@@ -27,7 +27,7 @@ type Provider struct {
 }
 
 // OnECSFargate determines if the application is running on ECS Fargate.
-func (p *Provider) OnECSFargate(ctx context.Context) (bool, error) {
+func (p *Provider) OnECSFargate(_ context.Context) (bool, error) {
 	if p.missingEndpoint {
 		// No ECS metadata endpoint, therefore not on ECS Fargate
 		return false, nil

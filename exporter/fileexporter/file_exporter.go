@@ -102,12 +102,8 @@ func exportMessageAsBuffer(e *fileExporter, buf []byte) error {
 	// each encoded object is preceded by 4 bytes (an unsigned 32 bit integer)
 	data := make([]byte, 4, 4+len(buf))
 	binary.BigEndian.PutUint32(data, uint32(len(buf)))
-	data = append(data, buf...)
-	if err := binary.Write(e.file, binary.BigEndian, data); err != nil {
-		return err
-	}
 
-	return nil
+	return binary.Write(e.file, binary.BigEndian, append(data, buf...))
 }
 
 // startFlusher starts the flusher.

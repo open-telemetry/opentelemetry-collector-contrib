@@ -38,7 +38,7 @@ var (
 
 func newDefaultCongfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 
 		Endpoint: "unix:///var/run/chrony/chronyd.sock",

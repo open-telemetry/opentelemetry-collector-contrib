@@ -24,12 +24,12 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		Brokers:                   []string{"10.10.10.10:9092"},
 		ProtocolVersion:           "2.0.0",
 		TopicMatch:                "test_\\w+",

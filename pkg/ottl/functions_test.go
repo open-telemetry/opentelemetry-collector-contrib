@@ -88,6 +88,16 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			&outOfBoundsStructTagFunctionArguments{},
 			functionThatHasAnError,
 		),
+		createFactory(
+			"testing_unknown_function",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
+		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
 	)
 
 	p, _ := NewParser(
@@ -106,6 +116,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			inv: editor{
 				Function:  "unknownfunc",
 				Arguments: []value{},
+			},
+		},
+		{
+			name: "Invalid Function Name",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						String: (ottltest.Strp("SHA256")),
+					},
+				},
 			},
 		},
 		{
@@ -307,6 +328,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Arguments: []value{
 					{
 						Enum: (*EnumSymbol)(ottltest.Strp("SYMBOL_NOT_FOUND")),
+					},
+				},
+			},
+		},
+		{
+			name: "Unknown Function",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("SHA256")),
 					},
 				},
 			},
@@ -660,6 +692,31 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "intgetter slice arg",
+			inv: editor{
+				Function: "testing_intgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(1),
+									},
+								},
+								{
+									Literal: &mathExprLiteral{
+										Int: ottltest.Intp(2),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
 			name: "pmapgetter slice arg",
 			inv: editor{
 				Function: "testing_pmapgetter_slice",
@@ -729,6 +786,29 @@ func Test_NewFunctionCall(t *testing.T) {
 							Values: []value{
 								{
 									String: ottltest.Strp("1.1"),
+								},
+								{
+									Literal: &mathExprLiteral{
+										Float: ottltest.Floatp(1.1),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: 2,
+		},
+		{
+			name: "intlikegetter slice arg",
+			inv: editor{
+				Function: "testing_intlikegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("1"),
 								},
 								{
 									Literal: &mathExprLiteral{
@@ -892,6 +972,30 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "functiongetter arg (Uppercase)",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("SHA256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
+			name: "functiongetter arg",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("Sha256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
 			name: "stringlikegetter arg",
 			inv: editor{
 				Function: "testing_stringlikegetter",
@@ -935,6 +1039,20 @@ func Test_NewFunctionCall(t *testing.T) {
 					{
 						Literal: &mathExprLiteral{
 							Int: ottltest.Intp(1),
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "intlikegetter arg",
+			inv: editor{
+				Function: "testing_intgetter",
+				Arguments: []value{
+					{
+						Literal: &mathExprLiteral{
+							Float: ottltest.Floatp(1.1),
 						},
 					},
 				},
@@ -1090,6 +1208,12 @@ func functionWithNoArguments() (ExprFunc[any], error) {
 	}, nil
 }
 
+func functionWithErr() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return nil, nil
+	}, fmt.Errorf("error")
+}
+
 type stringSliceArguments struct {
 	Strings []string `ottlarg:"0"`
 }
@@ -1160,6 +1284,16 @@ func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[
 	}, nil
 }
 
+type intGetterSliceArguments struct {
+	IntGetters []IntGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
 type pMapGetterSliceArguments struct {
 	PMapGetters []PMapGetter[any] `ottlarg:"0"`
 }
@@ -1185,6 +1319,16 @@ type floatLikeGetterSliceArguments struct {
 }
 
 func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return len(getters), nil
+	}, nil
+}
+
+type intLikeGetterSliceArguments struct {
+	IntLikeGetters []IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return len(getters), nil
 	}, nil
@@ -1230,6 +1374,16 @@ func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}],
 	}, nil
 }
 
+type functionGetterArguments struct {
+	FunctionGetterArg FunctionGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "hashstring", nil
+	}, nil
+}
+
 type stringLikeGetterArguments struct {
 	StringLikeGetterArg StringLikeGetter[any] `ottlarg:"0"`
 }
@@ -1265,6 +1419,16 @@ type intGetterArguments struct {
 }
 
 func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type intLikeGetterArguments struct {
+	IntLikeGetterArg IntLikeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1460,6 +1624,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithFloatLikeGetterSlice,
 		),
 		createFactory[any](
+			"testing_intgetter_slice",
+			&intGetterSliceArguments{},
+			functionWithIntGetterSlice,
+		),
+		createFactory[any](
+			"testing_intlikegetter_slice",
+			&intLikeGetterSliceArguments{},
+			functionWithIntLikeGetterSlice,
+		),
+		createFactory[any](
 			"testing_pmapgetter_slice",
 			&pMapGetterSliceArguments{},
 			functionWithPMapGetterSlice,
@@ -1485,6 +1659,21 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringGetter,
 		),
 		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
+		createFactory[any](
+			"SHA256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"Sha256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
 			"testing_stringlikegetter",
 			&stringLikeGetterArguments{},
 			functionWithStringLikeGetter,
@@ -1503,6 +1692,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_intgetter",
 			&intGetterArguments{},
 			functionWithIntGetter,
+		),
+		createFactory[any](
+			"testing_intlikegetter",
+			&intLikeGetterArguments{},
+			functionWithIntLikeGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",

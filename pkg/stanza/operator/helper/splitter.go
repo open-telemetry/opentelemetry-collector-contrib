@@ -7,7 +7,7 @@ import "bufio"
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	EncodingConfig              EncodingConfig  `mapstructure:",squash,omitempty"`
+	Encoding                    string          `mapstructure:"encoding,omitempty"`
 	Flusher                     FlusherConfig   `mapstructure:",squash,omitempty"`
 	Multiline                   MultilineConfig `mapstructure:"multiline,omitempty"`
 	PreserveLeadingWhitespaces  bool            `mapstructure:"preserve_leading_whitespaces,omitempty"`
@@ -17,27 +17,27 @@ type SplitterConfig struct {
 // NewSplitterConfig returns default SplitterConfig
 func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
-		EncodingConfig: NewEncodingConfig(),
-		Multiline:      NewMultilineConfig(),
-		Flusher:        NewFlusherConfig(),
+		Encoding:  "utf-8",
+		Multiline: NewMultilineConfig(),
+		Flusher:   NewFlusherConfig(),
 	}
 }
 
 // Build builds Splitter struct
 func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
-	enc, err := c.EncodingConfig.Build()
+	enc, err := LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc.Encoding, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
+	splitFunc, err := c.Multiline.Build(enc, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Splitter{
-		Encoding:  enc,
+		Decoder:   NewDecoder(enc),
 		Flusher:   flusher,
 		SplitFunc: splitFunc,
 	}, nil
@@ -45,7 +45,7 @@ func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, erro
 
 // Splitter consolidates Flusher and dependent splitFunc
 type Splitter struct {
-	Encoding  Encoding
+	Decoder   *Decoder
 	SplitFunc bufio.SplitFunc
 	Flusher   *Flusher
 }

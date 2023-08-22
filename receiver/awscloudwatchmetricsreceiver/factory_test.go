@@ -9,12 +9,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscloudwatchmetricsreceiver/internal/metadata"
 )
 
 func TestFactoryType(t *testing.T) {
 	factory := NewFactory()
 	ft := factory.Type()
-	require.EqualValues(t, typeStr, ft)
+	require.EqualValues(t, metadata.Type, ft)
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {

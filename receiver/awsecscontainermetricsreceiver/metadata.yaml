@@ -4,5 +4,6 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
-
+  distributions: [contrib, aws, observiq, sumo]
+  codeowners:
+    active: [Aneurysm9]

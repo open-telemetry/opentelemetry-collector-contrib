@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -26,11 +28,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				TCPAddr: confignet.TCPAddr{
 					Endpoint: "localhost:8080",

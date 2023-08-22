@@ -255,7 +255,7 @@ func (m *mockPoller) SegmentsChan() <-chan udppoller.RawSegment {
 	return make(chan udppoller.RawSegment, 1)
 }
 
-func (m *mockPoller) Start(ctx context.Context) {}
+func (m *mockPoller) Start(_ context.Context) {}
 
 func (m *mockPoller) Close() error {
 	if m.closeErr != nil {
@@ -272,7 +272,7 @@ func (m *mockProxy) ListenAndServe() error {
 	return errors.New("returning from ListenAndServe() always errors out")
 }
 
-func (m *mockProxy) Shutdown(ctx context.Context) error {
+func (m *mockProxy) Shutdown(_ context.Context) error {
 	if m.closeErr != nil {
 		return m.closeErr
 	}

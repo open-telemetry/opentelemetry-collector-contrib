@@ -30,17 +30,12 @@ var (
 		v, _ := version.NewVersion("7.13")
 		return v
 	}()
-)
 
-const (
-	readmeURL = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/elasticsearchreceiver/README.md"
-)
-
-var (
-	emitNodeVersionAttr = featuregate.GlobalRegistry().MustRegister(
+	_ = featuregate.GlobalRegistry().MustRegister(
 		"receiver.elasticsearch.emitNodeVersionAttr",
-		featuregate.StageBeta,
-		featuregate.WithRegisterDescription("When enabled, all node metrics will be enriched with the node version resource attribute."),
+		featuregate.StageStable,
+		featuregate.WithRegisterToVersion("0.82.0"),
+		featuregate.WithRegisterDescription("All node metrics will be enriched with the node version resource attribute."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16847"),
 	)
 )
@@ -54,29 +49,17 @@ type elasticsearchScraper struct {
 	mb          *metadata.MetricsBuilder
 	version     *version.Version
 	clusterName string
-
-	// Feature gates
-	emitNodeVersionAttr bool
 }
 
 func newElasticSearchScraper(
 	settings receiver.CreateSettings,
 	cfg *Config,
 ) *elasticsearchScraper {
-	e := &elasticsearchScraper{
-		settings:            settings.TelemetrySettings,
-		cfg:                 cfg,
-		mb:                  metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
-		emitNodeVersionAttr: emitNodeVersionAttr.IsEnabled(),
+	return &elasticsearchScraper{
+		settings: settings.TelemetrySettings,
+		cfg:      cfg,
+		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
-
-	if !e.emitNodeVersionAttr {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", emitNodeVersionAttr.ID(), readmeURL),
-		)
-	}
-
-	return e
 }
 
 func (r *elasticsearchScraper) start(_ context.Context, host component.Host) (err error) {
@@ -128,15 +111,12 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		return
 	}
 
-	var nodesInfo *model.Nodes
-	if r.emitNodeVersionAttr {
-		// Certain node metadata is not available from the /_nodes/stats endpoint. Therefore, we need to get this metadata
-		// from the /_nodes endpoint. The metadata may or may not be used depending on feature gates.
-		nodesInfo, err = r.client.Nodes(ctx, r.cfg.Nodes)
-		if err != nil {
-			errs.AddPartial(26, err)
-			return
-		}
+	// Certain node metadata is not available from the /_nodes/stats endpoint. Therefore, we need to get this metadata
+	// from the /_nodes endpoint.
+	nodesInfo, err := r.client.Nodes(ctx, r.cfg.Nodes)
+	if err != nil {
+		errs.AddPartial(26, err)
+		return
 	}
 
 	for id, info := range nodeStats.Nodes {
@@ -340,19 +320,15 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 			now, info.Indices.SegmentsStats.TermsMemoryInBy, metadata.AttributeSegmentsMemoryObjectTypeTerm,
 		)
 
-		// Define nodeMetadata slice to store all metadata. New metadata can be easily introduced by appending to the slice.
-		nodeMetadata := []metadata.ResourceMetricsOption{
-			metadata.WithElasticsearchClusterName(nodeStats.ClusterName),
-			metadata.WithElasticsearchNodeName(info.Name),
+		rb := r.mb.NewResourceBuilder()
+		rb.SetElasticsearchClusterName(nodeStats.ClusterName)
+		rb.SetElasticsearchNodeName(info.Name)
+
+		if node, ok := nodesInfo.Nodes[id]; ok {
+			rb.SetElasticsearchNodeVersion(node.Version)
 		}
 
-		if r.emitNodeVersionAttr {
-			if node, ok := nodesInfo.Nodes[id]; ok {
-				nodeMetadata = append(nodeMetadata, metadata.WithElasticsearchNodeVersion(node.Version))
-			}
-		}
-
-		r.mb.EmitForResource(nodeMetadata...)
+		r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -364,7 +340,9 @@ func (r *elasticsearchScraper) scrapeClusterMetrics(ctx context.Context, now pco
 	r.scrapeClusterHealthMetrics(ctx, now, errs)
 	r.scrapeClusterStatsMetrics(ctx, now, errs)
 
-	r.mb.EmitForResource(metadata.WithElasticsearchClusterName(r.clusterName))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetElasticsearchClusterName(r.clusterName)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (r *elasticsearchScraper) scrapeClusterStatsMetrics(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -699,5 +677,8 @@ func (r *elasticsearchScraper) scrapeOneIndexMetrics(now pcommon.Timestamp, name
 		now, stats.Total.DocumentStats.ActiveCount, metadata.AttributeDocumentStateActive, metadata.AttributeIndexAggregationTypeTotal,
 	)
 
-	r.mb.EmitForResource(metadata.WithElasticsearchIndexName(name), metadata.WithElasticsearchClusterName(r.clusterName))
+	rb := r.mb.NewResourceBuilder()
+	rb.SetElasticsearchIndexName(name)
+	rb.SetElasticsearchClusterName(r.clusterName)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }

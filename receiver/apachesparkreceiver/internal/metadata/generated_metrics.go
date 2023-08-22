@@ -171,6 +171,32 @@ var MapAttributePoolMemoryType = map[string]AttributePoolMemoryType{
 	"mapped": AttributePoolMemoryTypeMapped,
 }
 
+// AttributeSchedulerStatus specifies the a value scheduler_status attribute.
+type AttributeSchedulerStatus int
+
+const (
+	_ AttributeSchedulerStatus = iota
+	AttributeSchedulerStatusWaiting
+	AttributeSchedulerStatusRunning
+)
+
+// String returns the string representation of the AttributeSchedulerStatus.
+func (av AttributeSchedulerStatus) String() string {
+	switch av {
+	case AttributeSchedulerStatusWaiting:
+		return "waiting"
+	case AttributeSchedulerStatusRunning:
+		return "running"
+	}
+	return ""
+}
+
+// MapAttributeSchedulerStatus is a helper map of string to AttributeSchedulerStatus attribute value.
+var MapAttributeSchedulerStatus = map[string]AttributeSchedulerStatus{
+	"waiting": AttributeSchedulerStatusWaiting,
+	"running": AttributeSchedulerStatusRunning,
+}
+
 // AttributeSource specifies the a value source attribute.
 type AttributeSource int
 
@@ -877,7 +903,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schedulerWaitingAttributeValue bool, schedulerRunningAttributeValue bool) {
+func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -885,8 +911,7 @@ func (m *metricSparkDriverDagSchedulerStageCount) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutBool("waiting", schedulerWaitingAttributeValue)
-	dp.Attributes().PutBool("running", schedulerRunningAttributeValue)
+	dp.Attributes().PutStr("status", schedulerStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3505,12 +3530,11 @@ func newMetricSparkStageTaskResultSize(cfg MetricConfig) metricSparkStageTaskRes
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                                pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                          int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                         int                 // maximum observed number of resource attributes.
-	metricsBuffer                                            pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                                component.BuildInfo // contains version information
-	resourceAttributesConfig                                 ResourceAttributesConfig
+	config                                                   MetricsBuilderConfig // config of the metrics builder.
+	startTime                                                pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                          int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                            pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                                component.BuildInfo  // contains version information.
 	metricSparkDriverBlockManagerDiskUsage                   metricSparkDriverBlockManagerDiskUsage
 	metricSparkDriverBlockManagerMemoryUsage                 metricSparkDriverBlockManagerMemoryUsage
 	metricSparkDriverCodeGeneratorCompilationAverageTime     metricSparkDriverCodeGeneratorCompilationAverageTime
@@ -3588,10 +3612,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                            pmetric.NewMetrics(),
 		buildInfo:                                settings.BuildInfo,
-		resourceAttributesConfig:                 mbc.ResourceAttributes,
 		metricSparkDriverBlockManagerDiskUsage:   newMetricSparkDriverBlockManagerDiskUsage(mbc.Metrics.SparkDriverBlockManagerDiskUsage),
 		metricSparkDriverBlockManagerMemoryUsage: newMetricSparkDriverBlockManagerMemoryUsage(mbc.Metrics.SparkDriverBlockManagerMemoryUsage),
 		metricSparkDriverCodeGeneratorCompilationAverageTime:     newMetricSparkDriverCodeGeneratorCompilationAverageTime(mbc.Metrics.SparkDriverCodeGeneratorCompilationAverageTime),
@@ -3662,77 +3686,33 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	return mb
 }
 
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithSparkApplicationID sets provided value as "spark.application.id" attribute for current resource.
-func WithSparkApplicationID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkApplicationID.Enabled {
-			rm.Resource().Attributes().PutStr("spark.application.id", val)
-		}
-	}
-}
-
-// WithSparkApplicationName sets provided value as "spark.application.name" attribute for current resource.
-func WithSparkApplicationName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkApplicationName.Enabled {
-			rm.Resource().Attributes().PutStr("spark.application.name", val)
-		}
-	}
-}
-
-// WithSparkExecutorID sets provided value as "spark.executor.id" attribute for current resource.
-func WithSparkExecutorID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkExecutorID.Enabled {
-			rm.Resource().Attributes().PutStr("spark.executor.id", val)
-		}
-	}
-}
-
-// WithSparkJobID sets provided value as "spark.job.id" attribute for current resource.
-func WithSparkJobID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkJobID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.job.id", val)
-		}
-	}
-}
-
-// WithSparkStageAttemptID sets provided value as "spark.stage.attempt.id" attribute for current resource.
-func WithSparkStageAttemptID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkStageAttemptID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.stage.attempt.id", val)
-		}
-	}
-}
-
-// WithSparkStageID sets provided value as "spark.stage.id" attribute for current resource.
-func WithSparkStageID(val int64) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SparkStageID.Enabled {
-			rm.Resource().Attributes().PutInt("spark.stage.id", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -3756,7 +3736,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/apachesparkreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -3826,7 +3805,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSparkStageTaskResultSize.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -3905,8 +3884,8 @@ func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerJobCountDataPoint(ts pcom
 }
 
 // RecordSparkDriverDagSchedulerStageCountDataPoint adds a data point to spark.driver.dag_scheduler.stage.count metric.
-func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerWaitingAttributeValue bool, schedulerRunningAttributeValue bool) {
-	mb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(mb.startTime, ts, val, schedulerWaitingAttributeValue, schedulerRunningAttributeValue)
+func (mb *MetricsBuilder) RecordSparkDriverDagSchedulerStageCountDataPoint(ts pcommon.Timestamp, val int64, schedulerStatusAttributeValue AttributeSchedulerStatus) {
+	mb.metricSparkDriverDagSchedulerStageCount.recordDataPoint(mb.startTime, ts, val, schedulerStatusAttributeValue.String())
 }
 
 // RecordSparkDriverDagSchedulerStageFailedDataPoint adds a data point to spark.driver.dag_scheduler.stage.failed metric.

@@ -38,7 +38,7 @@ type blobReceiver struct {
 	obsrecv            *obsreport.Receiver
 }
 
-func (b *blobReceiver) Start(ctx context.Context, host component.Host) error {
+func (b *blobReceiver) Start(ctx context.Context, _ component.Host) error {
 	err := b.blobEventHandler.run(ctx)
 
 	return err

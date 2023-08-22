@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filtermetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
@@ -99,8 +100,8 @@ func createMetricsProcessor(
 	}
 
 	skipExpr, err := filtermetric.NewSkipExpr(
-		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Include),
-		filtermetric.CreateMatchPropertiesFromDefault(oCfg.Exclude),
+		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Include),
+		filterconfig.CreateMetricMatchPropertiesFromDefault(oCfg.Exclude),
 	)
 	if err != nil {
 		return nil, err

@@ -336,7 +336,7 @@ func Test_metricTracker_sweeper(t *testing.T) {
 		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
-	for range sweepEvent {
+	for range sweepEvent { // nolint
 	}
 	if !closed.Load() {
 		t.Errorf("Sweeper did not terminate.")

@@ -39,7 +39,7 @@ func buildDSN(cfg Config) string {
 	conf := &sf.Config{
 		Account:   cfg.Account,
 		User:      cfg.Username,
-		Password:  cfg.Password,
+		Password:  string(cfg.Password),
 		Database:  cfg.Database,
 		Schema:    cfg.Schema,
 		Role:      cfg.Role,
@@ -72,8 +72,7 @@ func newDefaultClient(settings component.TelemetrySettings, c Config) (*snowflak
 func (c snowflakeClient) readDB(ctx context.Context, q string) (*sql.Rows, error) {
 	rows, err := c.client.QueryContext(ctx, q)
 	if err != nil {
-		error := fmt.Sprintf("Query failed with %v", err)
-		c.logger.Error(error)
+		c.logger.Error(fmt.Sprintf("Query failed with %v", err))
 		return nil, err
 	}
 

@@ -47,27 +47,35 @@ func WriteMetrics(t *testing.T, filePath string, metrics pmetric.Metrics) error 
 	return nil
 }
 
-// writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
-func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+// MarshalMetricsYAML marshals a pmetric.Metrics to YAML format.
+func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 	unmarshaler := &pmetric.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalMetrics(metrics)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var jsonVal map[string]interface{}
 	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
-		return err
+		return nil, err
 	}
 	b := &bytes.Buffer{}
 	enc := yaml.NewEncoder(b)
 	enc.SetIndent(2)
 	if err := enc.Encode(jsonVal); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+// writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
+func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+	sortMetrics(metrics)
+	normalizeTimestamps(metrics)
+	b, err := MarshalMetricsYAML(metrics)
+	if err != nil {
 		return err
 	}
-	if err := os.WriteFile(filePath, b.Bytes(), 0600); err != nil {
-		return err
-	}
-	return nil
+	return os.WriteFile(filePath, b, 0600)
 }
 
 // ReadLogs reads a plog.Logs from the specified YAML or JSON file.
@@ -91,8 +99,8 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 }
 
 // WriteLogs writes a plog.Logs to the specified file in YAML format.
-func WriteLogs(t *testing.T, filePath string, metrics plog.Logs) error {
-	if err := writeLogs(filePath, metrics); err != nil {
+func WriteLogs(t *testing.T, filePath string, logs plog.Logs) error {
+	if err := writeLogs(filePath, logs); err != nil {
 		return err
 	}
 	t.Logf("Golden file successfully written to %s.", filePath)

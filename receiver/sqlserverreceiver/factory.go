@@ -22,10 +22,10 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: cfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }

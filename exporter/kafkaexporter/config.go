@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -59,7 +59,7 @@ type Producer struct {
 	MaxMessageBytes int `mapstructure:"max_message_bytes"`
 
 	// RequiredAcks Number of acknowledgements required to assume that a message has been sent.
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#RequiredAcks
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
 	// The options are:
 	//   0 -> NoResponse.  doesn't send any response
 	//   1 -> WaitForLocal. waits for only the local commit to succeed before responding ( default )
@@ -67,7 +67,7 @@ type Producer struct {
 	RequiredAcks sarama.RequiredAcks `mapstructure:"required_acks"`
 
 	// Compression Codec used to produce messages
-	// https://pkg.go.dev/github.com/Shopify/sarama@v1.30.0#CompressionCodec
+	// https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
 	// The options are: 'none', 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
@@ -98,6 +98,33 @@ func (cfg *Config) Validate() error {
 	_, err := saramaProducerCompressionCodec(cfg.Producer.Compression)
 	if err != nil {
 		return err
+	}
+
+	return validateSASLConfig(cfg.Authentication.SASL)
+}
+
+func validateSASLConfig(c *SASLConfig) error {
+	if c == nil {
+		return nil
+	}
+
+	if c.Username == "" {
+		return fmt.Errorf("auth.sasl.username is required")
+	}
+
+	if c.Password == "" {
+		return fmt.Errorf("auth.sasl.password is required")
+	}
+
+	switch c.Mechanism {
+	case "PLAIN", "AWS_MSK_IAM", "SCRAM-SHA-256", "SCRAM-SHA-512":
+		// Do nothing, valid mechanism
+	default:
+		return fmt.Errorf("auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v", c.Mechanism)
+	}
+
+	if c.Version < 0 || c.Version > 1 {
+		return fmt.Errorf("auth.sasl.version has to be either 0 or 1. configured value %v", c.Version)
 	}
 
 	return nil

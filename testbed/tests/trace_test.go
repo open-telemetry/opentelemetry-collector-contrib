@@ -75,7 +75,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), ""),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 20,
@@ -84,7 +84,7 @@ func TestTrace10kSPS(t *testing.T) {
 		},
 		{
 			"OTLP-HTTP-gzip",
-			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t)),
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "gzip"),
 			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("gzip"),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 25,
@@ -92,12 +92,39 @@ func TestTrace10kSPS(t *testing.T) {
 			},
 		},
 		{
+			"OTLP-HTTP-zstd",
+			testbed.NewOTLPHTTPTraceDataSender(testbed.DefaultHost, testbed.GetAvailablePort(t), "zstd"),
+			testbed.NewOTLPHTTPDataReceiver(testbed.GetAvailablePort(t)).WithCompression("zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 22,
+				ExpectedMaxRAM: 220,
+			},
+		},
+		{
 			"SAPM",
-			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
-			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
+			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), ""),
 			testbed.ResourceSpec{
 				ExpectedMaxCPU: 32,
 				ExpectedMaxRAM: 100,
+			},
+		},
+		{
+			"SAPM-gzip",
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), "gzip"),
+			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), "gzip"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 35,
+				ExpectedMaxRAM: 110,
+			},
+		},
+		{
+			"SAPM-zstd",
+			datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), "zstd"),
+			datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), "zstd"),
+			testbed.ResourceSpec{
+				ExpectedMaxCPU: 32,
+				ExpectedMaxRAM: 300,
 			},
 		},
 		{

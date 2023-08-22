@@ -54,8 +54,8 @@ func TestStabilityTracesOpenCensus(t *testing.T) {
 func TestStabilityTracesSAPM(t *testing.T) {
 	scenarios.Scenario10kItemsPerSecond(
 		t,
-		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t)),
-		datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t)),
+		datasenders.NewSapmDataSender(testbed.GetAvailablePort(t), ""),
+		datareceivers.NewSapmDataReceiver(testbed.GetAvailablePort(t), ""),
 		testbed.ResourceSpec{
 			ExpectedMaxCPU:      40,
 			ExpectedMaxRAM:      100,

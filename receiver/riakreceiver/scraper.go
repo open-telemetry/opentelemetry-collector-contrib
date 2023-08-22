@@ -41,7 +41,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
-func (r *riakScraper) start(ctx context.Context, host component.Host) (err error) {
+func (r *riakScraper) start(_ context.Context, host component.Host) (err error) {
 	r.client, err = newClient(r.cfg, host, r.settings, r.logger)
 	return
 }
@@ -89,5 +89,7 @@ func (r *riakScraper) collectStats(stat *model.Stats) (pmetric.Metrics, error) {
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexWrites, metadata.AttributeOperationWrite)
 	r.mb.RecordRiakVnodeIndexOperationCountDataPoint(now, stat.VnodeIndexDeletes, metadata.AttributeOperationDelete)
 
-	return r.mb.Emit(metadata.WithRiakNodeName(stat.Node)), errors.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRiakNodeName(stat.Node)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errors.Combine()
 }

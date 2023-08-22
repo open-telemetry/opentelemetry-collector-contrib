@@ -12,10 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
@@ -92,7 +91,9 @@ func (u *udpServer) handlePacket(
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
 	var numReceivedMetricPoints int
-	var metrics []*metricspb.Metric
+	metrics := pmetric.NewMetrics()
+	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
 	buf := bytes.NewBuffer(data)
 	for {
 		bytes, err := buf.ReadBytes((byte)('\n'))
@@ -110,11 +111,11 @@ func (u *udpServer) handlePacket(
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-
-			metrics = append(metrics, metric)
+			newMetric := sm.Metrics().AppendEmpty()
+			metric.MoveTo(newMetric)
 		}
 	}
 
-	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
+	err := nextConsumer.ConsumeMetrics(ctx, metrics)
 	u.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 }

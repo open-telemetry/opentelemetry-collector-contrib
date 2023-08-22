@@ -184,9 +184,9 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.TCPAddr.Endpoint = tcpAddr
 
-	real := newAWSSession
+	origSession := newAWSSession
 	defer func() {
-		newAWSSession = real
+		newAWSSession = origSession
 	}()
 
 	expectedErr := errors.New("expected newAWSSessionError")

@@ -4,14 +4,23 @@
 package prometheusreceiver
 
 import (
+	"context"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
+	gokitlog "github.com/go-kit/log"
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/featuregate"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -25,8 +34,8 @@ var target1Page1 = `
 # TYPE go_threads gauge
 go_threads 19
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 
@@ -53,8 +62,8 @@ var target1Page2 = `
 # TYPE go_threads gauge
 go_threads 18
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 199
 http_requests_total{method="post",code="400"} 12
 
@@ -83,8 +92,8 @@ var target1Page3 = `
 # TYPE go_threads gauge
 go_threads 16
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 99
 http_requests_total{method="post",code="400"} 3
 
@@ -128,7 +137,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -190,7 +199,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -253,7 +262,7 @@ func verifyTarget1(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -322,8 +331,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 50
 http_request_duration_seconds_sum{method="post",code="400"} 25
 http_request_duration_seconds_count{method="post",code="400"} 50
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 10
 http_requests_total{method="post",code="400"} 50
 
@@ -357,8 +366,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 60
@@ -396,8 +405,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 60
 http_request_duration_seconds_sum{method="post",code="400"} 30
 http_request_duration_seconds_count{method="post",code="400"} 60
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 60
@@ -435,8 +444,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 49
 http_requests_total{method="post",code="300"} 3
 http_requests_total{method="post",code="400"} 59
@@ -474,8 +483,8 @@ http_request_duration_seconds_bucket{method="post",code="400",le="+Inf"} 59
 http_request_duration_seconds_sum{method="post",code="400"} 29
 http_request_duration_seconds_count{method="post",code="400"} 59
 
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 50
 http_requests_total{method="post",code="300"} 5
 http_requests_total{method="post",code="400"} 59
@@ -534,7 +543,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -622,7 +631,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -726,7 +735,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -830,7 +839,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -934,7 +943,7 @@ func verifyTarget2(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricPresent("http_requests",
+		assertMetricPresent("http_requests_total",
 			compareMetricType(pmetric.MetricTypeSum),
 			[]dataPointExpectation{
 				{
@@ -1069,14 +1078,17 @@ rpc_duration_seconds_count{foo="no_quantile"} 55
 var target4Page1 = `
 # A simple counter
 # TYPE foo counter
+foo 0
+# Another counter with the same name but also _total suffix
+# TYPE foo_total counter
 foo_total 1
 `
 
 func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
-	// m1 has 3 metrics + 5 internal scraper metrics
-	assert.Equal(t, 8, metricsCount(m1))
+	// m1 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m1))
 
 	wantAttributes := td.attributes
 
@@ -1104,7 +1116,17 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("corrupted_hist",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts1),
+						compareHistogram(10, 100, []uint64{10}),
+					},
+				},
+			}),
 		assertMetricPresent("rpc_duration_seconds",
 			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
@@ -1129,8 +1151,8 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	doCompare(t, "scrape1", wantAttributes, m1, e1)
 
 	m2 := resourceMetrics[1]
-	// m2 has 3 metrics + 5 internal scraper metrics
-	assert.Equal(t, 8, metricsCount(m2))
+	// m2 has 4 metrics + 5 internal scraper metrics
+	assert.Equal(t, 9, metricsCount(m2))
 
 	metricsScrape2 := m2.ScopeMetrics().At(0).Metrics()
 	ts2 := getTS(metricsScrape2)
@@ -1156,7 +1178,17 @@ func verifyTarget3(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 					},
 				},
 			}),
-		assertMetricAbsent("corrupted_hist"),
+		assertMetricPresent("corrupted_hist",
+			compareMetricType(pmetric.MetricTypeHistogram),
+			[]dataPointExpectation{
+				{
+					histogramPointComparator: []histogramPointComparator{
+						compareHistogramStartTimestamp(ts1),
+						compareHistogramTimestamp(ts2),
+						compareHistogram(15, 101, []uint64{15}),
+					},
+				},
+			}),
 		assertMetricPresent("rpc_duration_seconds",
 			compareMetricType(pmetric.MetricTypeSummary),
 			[]dataPointExpectation{
@@ -1185,8 +1217,8 @@ func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	verifyNumValidScrapeResults(t, td, resourceMetrics)
 	m1 := resourceMetrics[0]
 
-	// m1 has 1 metric + 5 internal scraper metrics
-	assert.Equal(t, 6, metricsCount(m1))
+	// m1 has 2 metrics + 5 internal scraper metrics
+	assert.Equal(t, 7, metricsCount(m1))
 
 	wantAttributes := td.attributes
 
@@ -1194,6 +1226,16 @@ func verifyTarget4(t *testing.T, td *testData, resourceMetrics []pmetric.Resourc
 	ts1 := getTS(metrics1)
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
+			compareMetricIsMonotonic(true),
+			[]dataPointExpectation{
+				{
+					numberPointComparator: []numberPointComparator{
+						compareTimestamp(ts1),
+						compareDoubleValue(0),
+					},
+				},
+			}),
+		assertMetricPresent("foo_total",
 			compareMetricIsMonotonic(true),
 			[]dataPointExpectation{
 				{
@@ -1252,15 +1294,15 @@ func TestCoreMetricsEndToEnd(t *testing.T) {
 			validateScrapes: true,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
 var startTimeMetricPage = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
 go_threads 19
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 # HELP http_request_duration_seconds A histogram of the request duration.
@@ -1321,6 +1363,7 @@ func verifyStartTimeMetricPage(t *testing.T, td *testData, result []pmetric.Reso
 					assert.Equal(t, timestamp.AsTime(), metrics[i].Summary().DataPoints().At(j).StartTimestamp().AsTime())
 					numTimeseries++
 				}
+			case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
 			}
 		}
 		assert.Equal(t, numStartTimeMetricPageTimeseries, numTimeseries)
@@ -1338,15 +1381,15 @@ func TestStartTimeMetric(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "")
 }
 
 var startTimeMetricRegexPage = `
 # HELP go_threads Number of OS threads created
 # TYPE go_threads gauge
 go_threads 19
-# HELP http_requests The total number of HTTP requests.
-# TYPE http_requests counter
+# HELP http_requests_total The total number of HTTP requests.
+# TYPE http_requests_total counter
 http_requests_total{method="post",code="200"} 100
 http_requests_total{method="post",code="400"} 5
 # HELP http_request_duration_seconds A histogram of the request duration.
@@ -1387,7 +1430,7 @@ func TestStartTimeMetricRegex(t *testing.T) {
 			validateFunc: verifyStartTimeMetricPage,
 		},
 	}
-	testComponent(t, targets, true, "^(.+_)*process_start_time_seconds$", featuregate.GlobalRegistry())
+	testComponent(t, targets, true, false, "^(.+_)*process_start_time_seconds$")
 }
 
 // metric type is defined as 'untyped' in the first metric
@@ -1416,8 +1459,7 @@ func TestUntypedMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
-
+	testComponent(t, targets, false, false, "")
 }
 
 func verifyUntypedMetrics(t *testing.T, td *testData, resourceMetrics []pmetric.ResourceMetrics) {
@@ -1511,4 +1553,41 @@ func TestGCInterval(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUserAgent(t *testing.T) {
+	uaCh := make(chan string, 1)
+	svr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case uaCh <- r.UserAgent():
+		default:
+		}
+	}))
+	defer svr.Close()
+
+	cfg, err := promConfig.Load(fmt.Sprintf(`
+scrape_configs:
+- job_name: foo
+  scrape_interval: 100ms
+  static_configs:
+    - targets:
+      - %s
+        `, strings.TrimPrefix(svr.URL, "http://")), false, gokitlog.NewNopLogger())
+	require.NoError(t, err)
+	set := receivertest.NewNopCreateSettings()
+	receiver := newPrometheusReceiver(set, &Config{
+		PrometheusConfig: cfg,
+	}, new(consumertest.MetricsSink))
+
+	ctx := context.Background()
+
+	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	})
+
+	gotUA := <-uaCh
+
+	require.Contains(t, gotUA, set.BuildInfo.Command)
+	require.Contains(t, gotUA, set.BuildInfo.Version)
 }

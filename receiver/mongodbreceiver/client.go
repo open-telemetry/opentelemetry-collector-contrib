@@ -83,7 +83,7 @@ func (c *mongodbClient) TopStats(ctx context.Context) (bson.M, error) {
 // more information can be found here: https://pkg.go.dev/go.mongodb.org/mongo-driver@v1.9.0/mongo#Database.ListCollectionNames
 func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string) ([]string, error) {
 	lcOpts := options.ListCollections().SetAuthorizedCollections(true)
-	return c.Database(database).ListCollectionNames(context.Background(), bson.D{}, lcOpts)
+	return c.Database(database).ListCollectionNames(ctx, bson.D{}, lcOpts)
 }
 
 // IndexStats returns the index stats per collection for a given database

@@ -25,8 +25,8 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 	internalErr "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/tracesegment"
 )
 
@@ -138,7 +138,7 @@ func TestSuccessfullyPollPacket(t *testing.T) {
 			})
 			require.NoError(t, err)
 			ctx := obsrecv.StartMetricsOp(seg.Ctx)
-			obsrecv.EndTracesOp(ctx, awsxray.TypeStr, 1, nil)
+			obsrecv.EndTracesOp(ctx, metadata.Type, 1, nil)
 			return open && randString.String() == string(seg.Payload)
 		default:
 			return false

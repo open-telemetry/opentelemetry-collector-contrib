@@ -30,7 +30,7 @@ func NewProvider(client *api.Client, allowedLabels map[string]interface{}) Provi
 	return &consulMetadataImpl{consulClient: client, allowedLabels: allowedLabels}
 }
 
-func (d *consulMetadataImpl) Metadata(ctx context.Context) (*Metadata, error) {
+func (d *consulMetadataImpl) Metadata(_ context.Context) (*Metadata, error) {
 	var metadata Metadata
 	self, err := d.consulClient.Agent().Self()
 	if err != nil {

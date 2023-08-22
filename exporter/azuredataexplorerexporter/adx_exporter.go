@@ -6,6 +6,7 @@ package azuredataexplorerexporter // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/Azure/azure-kusto-go/kusto"
@@ -69,7 +70,7 @@ func (e *adxDataProducer) ingestData(b []string) error {
 	return nil
 }
 
-func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs) error {
+func (e *adxDataProducer) logsDataPusher(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	var logsBuffer []string
 	for i := 0; i < resourceLogs.Len(); i++ {
@@ -97,7 +98,7 @@ func (e *adxDataProducer) logsDataPusher(ctx context.Context, logData plog.Logs)
 	return nil
 }
 
-func (e *adxDataProducer) tracesDataPusher(ctx context.Context, traceData ptrace.Traces) error {
+func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.Traces) error {
 	resourceSpans := traceData.ResourceSpans()
 	var spanBuffer []string
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -205,10 +206,25 @@ func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
 }
 
 func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
-	kcsb := kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
-	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{})
-	client, err := kusto.New(kcsb)
+	client, err := kusto.New(createKcsb(config, version))
 	return client, err
+}
+
+func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
+	var kcsb *kusto.ConnectionStringBuilder
+	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
+	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
+	// If the user has managed identity done, use it. For System managed identity use the MI as system
+	switch {
+	case !isManagedIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+	case isManagedIdentity && isSystemManagedIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
+	case isManagedIdentity && !isSystemManagedIdentity:
+		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
+	}
+	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
+	return kcsb
 }
 
 // Depending on the table, create separate ingestors

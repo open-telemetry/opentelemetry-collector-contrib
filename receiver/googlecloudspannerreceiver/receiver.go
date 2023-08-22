@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
 )
 
-//go:embed "internal/metadataconfig/metadata.yaml"
+//go:embed "internal/metadataconfig/metrics.yaml"
 var metadataYaml []byte
 
 var _ receiver.Metrics = (*googleCloudSpannerReceiver)(nil)
@@ -104,6 +104,7 @@ func (r *googleCloudSpannerReceiver) initializeProjectReaders(ctx context.Contex
 		BackfillEnabled:                   r.config.BackfillEnabled,
 		TopMetricsQueryMaxRows:            r.config.TopMetricsQueryMaxRows,
 		HideTopnLockstatsRowrangestartkey: r.config.HideTopnLockstatsRowrangestartkey,
+		TruncateText:                      r.config.TruncateText,
 	}
 
 	for _, project := range r.config.Projects {

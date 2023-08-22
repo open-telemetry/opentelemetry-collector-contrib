@@ -8,10 +8,10 @@
 
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/hostmetadata"
 
-func fillPlatformSpecificOSData(info *hostOS) error {
+func fillPlatformSpecificOSData(_ *hostOS) error {
 	return nil
 }
 
-func fillPlatformSpecificCPUData(info *hostCPU) error {
+func fillPlatformSpecificCPUData(_ *hostCPU) error {
 	return nil
 }

@@ -112,7 +112,7 @@ func (s *Store) Expire() {
 	defer s.mtx.Unlock()
 
 	// Iterates until no more items can be evicted
-	for s.tryEvictHead() {
+	for s.tryEvictHead() { // nolint
 	}
 }
 

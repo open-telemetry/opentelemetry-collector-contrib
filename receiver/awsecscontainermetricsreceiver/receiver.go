@@ -48,7 +48,7 @@ func newAWSECSContainermetrics(
 }
 
 // Start begins collecting metrics from Amazon ECS task metadata endpoint.
-func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, host component.Host) error {
+func (aecmr *awsEcsContainerMetricsReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, aecmr.cancel = context.WithCancel(ctx)
 	go func() {
 		ticker := time.NewTicker(aecmr.config.CollectionInterval)

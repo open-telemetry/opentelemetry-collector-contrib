@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesReceiver(ctx context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
+func createTracesReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, consumer consumer.Traces) (r receiver.Traces, err error) {
 	rcfg := cfg.(*Config)
 	r = receivers.GetOrAdd(cfg, func() component.Component {
 		dd, _ := newDataDogReceiver(rcfg, consumer, params)

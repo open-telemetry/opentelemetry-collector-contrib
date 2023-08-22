@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -17,42 +16,35 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver/internal/metadata"
 )
 
-const (
-	typeStr = "httpcheck"
-)
-
 var errConfigNotHTTPCheck = errors.New("config was not a HTTP check receiver config")
 
 // NewFactory creates a new receiver factory
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 60 * time.Second
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
-			Endpoint: defaultEndpoint,
-			Timeout:  10 * time.Second,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Method:               "GET",
+		ScraperControllerSettings: cfg,
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		Targets:                   []*targetConfig{},
 	}
 }
 
-func createMetricsReceiver(ctx context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rConf.(*Config)
 	if !ok {
 		return nil, errConfigNotHTTPCheck
 	}
 
 	httpcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(typeStr, httpcheckScraper.scrape, scraperhelper.WithStart(httpcheckScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type, httpcheckScraper.scrape, scraperhelper.WithStart(httpcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}

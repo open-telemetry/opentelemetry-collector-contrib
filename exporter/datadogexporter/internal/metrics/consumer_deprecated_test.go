@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,7 +42,8 @@ func TestZorkianRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	_, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	var runningHostnames []string
 	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
@@ -86,7 +87,8 @@ func TestZorkianTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewZorkianConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	_, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
 	var runningTags []string
@@ -113,7 +115,7 @@ func TestZorkianConsumeAPMStats(t *testing.T) {
 	_, _, out := c.All(0, component.BuildInfo{}, []string{})
 	require.ElementsMatch(t, out, testutil.StatsPayloads)
 	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
-	var copies []pb.ClientStatsPayload
+	var copies []*pb.ClientStatsPayload
 	for _, sp := range testutil.StatsPayloads {
 		sp.Tags = append(sp.Tags, "extra:key")
 		copies = append(copies, sp)

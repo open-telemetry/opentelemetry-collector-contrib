@@ -53,7 +53,7 @@ func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSetting
 }
 
 // start gets the client ready
-func (s *snmpScraper) start(_ context.Context, host component.Host) (err error) {
+func (s *snmpScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.client, err = newClient(s.cfg, s.logger)
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	return err

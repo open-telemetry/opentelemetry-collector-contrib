@@ -21,14 +21,14 @@ type jaegerMarshaler struct {
 
 var _ TracesMarshaler = (*jaegerMarshaler)(nil)
 
-func (j jaegerMarshaler) Marshal(traces ptrace.Traces, topic string) ([]*pulsar.ProducerMessage, error) {
+func (j jaegerMarshaler) Marshal(traces ptrace.Traces, _ string) ([]*pulsar.ProducerMessage, error) {
 	batches, err := jaeger.ProtoFromTraces(traces)
 	if err != nil {
 		return nil, err
 	}
 
 	var errs error
-	var messages []*pulsar.ProducerMessage
+	messages := make([]*pulsar.ProducerMessage, 0, len(batches))
 
 	for _, batch := range batches {
 		bts, err := j.marshaler.marshal(batch)

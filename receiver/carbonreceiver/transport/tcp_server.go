@@ -14,11 +14,10 @@ import (
 	"sync"
 	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
@@ -137,6 +136,8 @@ func (t *tcpServer) handleConnection(
 	defer conn.Close()
 	var span *trace.Span
 	reader := bufio.NewReader(conn)
+	reporterActive := false
+	var ctx context.Context
 	for {
 		if span != nil {
 			span.End()
@@ -162,21 +163,26 @@ func (t *tcpServer) handleConnection(
 		// this case).
 		bytes, err := reader.ReadBytes((byte)('\n'))
 
-		// It is possible to have new data in bytes and err to be io.EOF
-		ctx := t.reporter.OnDataReceived(context.Background())
 		var numReceivedMetricPoints int
 		line := strings.TrimSpace(string(bytes))
 		if line != "" {
+			if !reporterActive {
+				ctx = t.reporter.OnDataReceived(context.Background())
+				reporterActive = true
+			}
 			numReceivedMetricPoints++
-			var metric *metricspb.Metric
+			var metric pmetric.Metric
 			metric, err = p.Parse(line)
 			if err != nil {
 				t.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-
-			err = nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, []*metricspb.Metric{metric}))
+			metrics := pmetric.NewMetrics()
+			newMetric := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+			metric.MoveTo(newMetric)
+			err = nextConsumer.ConsumeMetrics(ctx, metrics)
 			t.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
+			reporterActive = false
 			if err != nil {
 				// The protocol doesn't account for returning errors.
 				// Since this is a TCP connection it seems reasonable to close the
@@ -192,6 +198,9 @@ func (t *tcpServer) handleConnection(
 			t.reporter.OnDebugf("TCP Transport (%s) - net.OpError: %v", t.ln.Addr(), netErr)
 			if netErr.Timeout() {
 				// We want to end on timeout so idle connections are purged.
+				if reporterActive {
+					t.reporter.OnMetricsProcessed(ctx, 0, err)
+				}
 				span.End()
 				return
 			}
@@ -202,6 +211,10 @@ func (t *tcpServer) handleConnection(
 				"TCP Transport (%s) - error: %v",
 				t.ln.Addr(),
 				err)
+
+			if reporterActive {
+				t.reporter.OnMetricsProcessed(ctx, 0, err)
+			}
 			span.End()
 			return
 		}

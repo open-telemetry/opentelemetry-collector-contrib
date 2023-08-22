@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 
-	assert.Equal(t, component.Type(awsxray.TypeStr), factory.Type())
+	assert.Equal(t, component.Type(metadata.Type), factory.Type())
 }
 
 func TestCreateTracesReceiver(t *testing.T) {

@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build windows
-// +build windows
-
 package windows
 
 import (
@@ -17,9 +14,7 @@ func TestBufferReadBytes(t *testing.T) {
 	buffer := NewBuffer()
 	utf8 := []byte("test")
 	utf16, _ := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().Bytes(utf8)
-	for i, b := range utf16 {
-		buffer.buffer[i] = b
-	}
+	copy(buffer.buffer, utf16)
 	offset := uint32(len(utf16))
 	bytes, err := buffer.ReadBytes(offset)
 	require.NoError(t, err)
@@ -30,9 +25,7 @@ func TestBufferReadWideBytes(t *testing.T) {
 	buffer := NewBuffer()
 	utf8 := []byte("test")
 	utf16, _ := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().Bytes(utf8)
-	for i, b := range utf16 {
-		buffer.buffer[i] = b
-	}
+	copy(buffer.buffer, utf16)
 	offset := uint32(len(utf16) / 2)
 	bytes, err := buffer.ReadWideChars(offset)
 	require.NoError(t, err)
@@ -43,9 +36,7 @@ func TestBufferReadString(t *testing.T) {
 	buffer := NewBuffer()
 	utf8 := []byte("test")
 	utf16, _ := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().Bytes(utf8)
-	for i, b := range utf16 {
-		buffer.buffer[i] = b
-	}
+	copy(buffer.buffer, utf16)
 	offset := uint32(len(utf16))
 	result, err := buffer.ReadString(offset)
 	require.NoError(t, err)

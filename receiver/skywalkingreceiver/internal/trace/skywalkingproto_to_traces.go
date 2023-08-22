@@ -106,9 +106,13 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 	// so use segmentId to convert to an unique otel-span
 	dest.SetSpanID(segmentIDToSpanID(segmentID, uint32(span.GetSpanId())))
 
-	// parent spanid = -1, means(root span) no parent span in skywalking,so just make otlp's parent span id empty.
+	// parent spanid = -1, means(root span) no parent span in current skywalking segment, so it is necessary to search for the parent segment.
 	if span.ParentSpanId != -1 {
 		dest.SetParentSpanID(segmentIDToSpanID(segmentID, uint32(span.GetParentSpanId())))
+	} else if len(span.Refs) == 1 {
+		// TODO: SegmentReference references usually have only one element, but in batch consumer case, such as in MQ or async batch process, it could be multiple.
+		// We only handle one element for now.
+		dest.SetParentSpanID(segmentIDToSpanID(span.Refs[0].GetParentTraceSegmentId(), uint32(span.Refs[0].GetParentSpanId())))
 	}
 
 	dest.SetName(span.OperationName)

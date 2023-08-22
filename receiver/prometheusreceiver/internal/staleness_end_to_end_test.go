@@ -186,6 +186,7 @@ service:
 		switch state {
 		case otelcol.StateRunning, otelcol.StateClosed, otelcol.StateClosing:
 			notYetStarted = false
+		case otelcol.StateStarting:
 		}
 		time.Sleep(10 * time.Millisecond)
 	}

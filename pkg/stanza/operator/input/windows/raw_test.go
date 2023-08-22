@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build windows
-// +build windows
-
 package windows
 
 import (
@@ -65,10 +62,10 @@ func TestParseSeverityRaw(t *testing.T) {
 
 func TestParseBodyRaw(t *testing.T) {
 	raw := EventRaw{
-		bytes: []byte("foo"),
+		Body: "foo",
 	}
 
-	require.Equal(t, []byte("foo"), raw.parseBody())
+	require.Equal(t, "foo", raw.parseBody())
 }
 
 func TestInvalidUnmarshalRaw(t *testing.T) {
@@ -89,7 +86,7 @@ func TestUnmarshalRaw(t *testing.T) {
 			SystemTime: "2022-04-22T10:20:52.3778625Z",
 		},
 		Level: "4",
-		bytes: data,
+		Body:  string(data),
 	}
 
 	require.Equal(t, raw, event)

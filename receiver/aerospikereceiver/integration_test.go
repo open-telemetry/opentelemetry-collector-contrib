@@ -17,7 +17,7 @@ import (
 
 	as "github.com/aerospike/aerospike-client-go/v6"
 	"github.com/docker/go-connections/nat"
-	testcontainers "github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
 
@@ -27,7 +27,7 @@ import (
 
 var aerospikePort = "3000"
 
-func TestAerospikeIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	t.Run("6.2", integrationTest(func(*Config) {}))
 	t.Run("6.2-cluster", integrationTest(func(cfg *Config) {
 		cfg.CollectClusterMetrics = true
@@ -142,8 +142,7 @@ func recordsWaitAndCheck(f aeroRecordsFunc) error {
 	}
 
 	// consume all records
-	for range chk.Results() {
-	}
+	chk.Results()
 	return nil
 }
 
@@ -382,10 +381,7 @@ func populateMetrics(host *as.Host) error {
 	if sferr := geoStm1.SetFilter(geoFilt1); sferr != nil {
 		return errSetFilter
 	}
-	if err := recordsWaitAndCheck(func() (recordsCheckable, as.Error) {
+	return recordsWaitAndCheck(func() (recordsCheckable, as.Error) {
 		return c.Query(queryPolicy, geoStm1)
-	}); err != nil {
-		return err
-	}
-	return nil
+	})
 }

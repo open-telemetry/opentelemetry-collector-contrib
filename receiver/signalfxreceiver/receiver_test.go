@@ -807,7 +807,7 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(p []byte) (n int, err error) {
+func (b badReqBody) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 

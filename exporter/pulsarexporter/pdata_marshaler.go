@@ -15,7 +15,7 @@ type pdataLogsMarshaler struct {
 	encoding  string
 }
 
-func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*pulsar.ProducerMessage, error) {
+func (p pdataLogsMarshaler) Marshal(ld plog.Logs, _ string) ([]*pulsar.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalLogs(ld)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ type pdataMetricsMarshaler struct {
 	encoding  string
 }
 
-func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, topic string) ([]*pulsar.ProducerMessage, error) {
+func (p pdataMetricsMarshaler) Marshal(ld pmetric.Metrics, _ string) ([]*pulsar.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalMetrics(ld)
 	if err != nil {
 		return nil, err
@@ -71,7 +71,7 @@ type pdataTracesMarshaler struct {
 	encoding  string
 }
 
-func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, topic string) ([]*pulsar.ProducerMessage, error) {
+func (p pdataTracesMarshaler) Marshal(td ptrace.Traces, _ string) ([]*pulsar.ProducerMessage, error) {
 	bts, err := p.marshaler.MarshalTraces(td)
 	if err != nil {
 		return nil, err

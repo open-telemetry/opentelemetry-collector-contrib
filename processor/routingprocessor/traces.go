@@ -20,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 var _ processor.Traces = (*tracesProcessor)(nil)
@@ -44,7 +45,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "traces")
 	nonRoutedSpansCounter, err := meter.Int64Counter(
-		typeStr+metricSep+processorKey+metricSep+nonRoutedSpansKey,
+		metadata.Type+metricSep+processorKey+metricSep+nonRoutedSpansKey,
 		metric.WithDescription("Number of spans that were not routed to some or all exporters."),
 	)
 	if err != nil {
@@ -67,7 +68,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces])
+	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces]) //nolint:staticcheck
 	if err != nil {
 		return err
 	}

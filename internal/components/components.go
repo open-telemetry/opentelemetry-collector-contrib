@@ -69,6 +69,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
@@ -151,7 +152,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusexecreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver"
@@ -178,6 +178,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/udplogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
@@ -201,6 +202,7 @@ func Components() (otelcol.Factories, error) {
 		healthcheckextension.NewFactory(),
 		hostobserver.NewFactory(),
 		httpforwarder.NewFactory(),
+		jaegerremotesampling.NewFactory(),
 		k8sobserver.NewFactory(),
 		pprofextension.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
@@ -268,7 +270,6 @@ func Components() (otelcol.Factories, error) {
 		otlpreceiver.NewFactory(),
 		podmanreceiver.NewFactory(),
 		postgresqlreceiver.NewFactory(),
-		prometheusexecreceiver.NewFactory(),
 		prometheusreceiver.NewFactory(),
 		pulsarreceiver.NewFactory(),
 		purefareceiver.NewFactory(),
@@ -291,6 +292,7 @@ func Components() (otelcol.Factories, error) {
 		sshcheckreceiver.NewFactory(),
 		statsdreceiver.NewFactory(),
 		wavefrontreceiver.NewFactory(),
+		webhookeventreceiver.NewFactory(),
 		windowseventlogreceiver.NewFactory(),
 		windowsperfcountersreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),

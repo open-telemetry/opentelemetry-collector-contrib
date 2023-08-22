@@ -17,8 +17,6 @@ import (
 )
 
 const (
-	typeStr         = "expvar"
-	stability       = component.StabilityLevelBeta
 	defaultPath     = "/debug/vars"
 	defaultEndpoint = "http://localhost:8000" + defaultPath
 	defaultTimeout  = 3 * time.Second
@@ -26,9 +24,9 @@ const (
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultConfig,
-		receiver.WithMetrics(newMetricsReceiver, stability))
+		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability))
 }
 
 func newMetricsReceiver(
@@ -41,7 +39,7 @@ func newMetricsReceiver(
 
 	expVar := newExpVarScraper(cfg, set)
 	scraper, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		expVar.scrape,
 		scraperhelper.WithStart(expVar.start),
 	)
@@ -59,7 +57,7 @@ func newMetricsReceiver(
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(typeStr),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultTimeout,

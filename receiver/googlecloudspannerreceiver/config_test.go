@@ -35,11 +35,13 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 				CollectionInterval: 120 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			TopMetricsQueryMaxRows:            10,
 			BackfillEnabled:                   true,
 			CardinalityTotalLimit:             200000,
 			HideTopnLockstatsRowrangestartkey: true,
+			TruncateText:                      true,
 			Projects: []Project{
 				{
 					ID:                "spanner project 1",

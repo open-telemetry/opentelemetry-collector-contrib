@@ -4,44 +4,26 @@
 package replicationcontroller // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicationcontroller"
 
 import (
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replica"
 )
 
-func GetMetrics(rc *corev1.ReplicationController) []*agentmetricspb.ExportMetricsServiceRequest {
-	if rc.Spec.Replicas == nil {
-		return nil
+func RecordMetrics(mb *metadata.MetricsBuilder, rc *corev1.ReplicationController, ts pcommon.Timestamp) {
+	if rc.Spec.Replicas != nil {
+		mb.RecordK8sReplicationControllerDesiredDataPoint(ts, int64(*rc.Spec.Replicas))
+		mb.RecordK8sReplicationControllerAvailableDataPoint(ts, int64(rc.Status.AvailableReplicas))
 	}
 
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResource(rc),
-			Metrics: replica.GetMetrics(
-				"replication_controller",
-				*rc.Spec.Replicas,
-				rc.Status.AvailableReplicas,
-			),
-		},
-	}
-
-}
-
-func getResource(rc *corev1.ReplicationController) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			constants.K8sKeyReplicationControllerUID:  string(rc.UID),
-			constants.K8sKeyReplicationControllerName: rc.Name,
-			conventions.AttributeK8SNamespaceName:     rc.Namespace,
-		},
-	}
+	rb := mb.NewResourceBuilder()
+	rb.SetK8sNamespaceName(rc.Namespace)
+	rb.SetK8sReplicationcontrollerName(rc.Name)
+	rb.SetK8sReplicationcontrollerUID(string(rc.UID))
+	rb.SetOpencensusResourcetype("k8s")
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(rc *corev1.ReplicationController) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

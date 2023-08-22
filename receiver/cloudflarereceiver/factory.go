@@ -24,7 +24,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,

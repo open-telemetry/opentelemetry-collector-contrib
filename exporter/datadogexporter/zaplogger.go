@@ -13,10 +13,10 @@ import (
 type zaplogger struct{ logger *zap.Logger }
 
 // Trace implements Logger.
-func (z *zaplogger) Trace(v ...interface{}) { /* N/A */ }
+func (z *zaplogger) Trace(_ ...interface{}) { /* N/A */ }
 
 // Tracef implements Logger.
-func (z *zaplogger) Tracef(format string, params ...interface{}) { /* N/A */ }
+func (z *zaplogger) Tracef(_ string, _ ...interface{}) { /* N/A */ }
 
 // Debug implements Logger.
 func (z *zaplogger) Debug(v ...interface{}) {

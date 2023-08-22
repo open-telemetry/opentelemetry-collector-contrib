@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for zookeeperreceiver metrics.
+// MetricsConfig provides config for zookeeper metrics.
 type MetricsConfig struct {
 	ZookeeperConnectionActive            MetricConfig `mapstructure:"zookeeper.connection.active"`
 	ZookeeperDataTreeEphemeralNodeCount  MetricConfig `mapstructure:"zookeeper.data_tree.ephemeral_node.count"`
@@ -37,6 +37,7 @@ type MetricsConfig struct {
 	ZookeeperLatencyMin                  MetricConfig `mapstructure:"zookeeper.latency.min"`
 	ZookeeperPacketCount                 MetricConfig `mapstructure:"zookeeper.packet.count"`
 	ZookeeperRequestActive               MetricConfig `mapstructure:"zookeeper.request.active"`
+	ZookeeperRuok                        MetricConfig `mapstructure:"zookeeper.ruok"`
 	ZookeeperSyncPending                 MetricConfig `mapstructure:"zookeeper.sync.pending"`
 	ZookeeperWatchCount                  MetricConfig `mapstructure:"zookeeper.watch.count"`
 	ZookeeperZnodeCount                  MetricConfig `mapstructure:"zookeeper.znode.count"`
@@ -80,6 +81,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ZookeeperRequestActive: MetricConfig{
 			Enabled: true,
 		},
+		ZookeeperRuok: MetricConfig{
+			Enabled: true,
+		},
 		ZookeeperSyncPending: MetricConfig{
 			Enabled: true,
 		},
@@ -97,7 +101,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for zookeeperreceiver resource attributes.
+// ResourceAttributesConfig provides config for zookeeper resource attributes.
 type ResourceAttributesConfig struct {
 	ServerState ResourceAttributeConfig `mapstructure:"server.state"`
 	ZkVersion   ResourceAttributeConfig `mapstructure:"zk.version"`
@@ -114,7 +118,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for zookeeperreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for zookeeper metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

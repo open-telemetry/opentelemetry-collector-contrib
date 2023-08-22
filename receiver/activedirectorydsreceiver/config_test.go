@@ -40,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Minute,
+					InitialDelay:       time.Second,
 				},
 				MetricsBuilderConfig: overriddenMetricsBuilderConfig,
 			},

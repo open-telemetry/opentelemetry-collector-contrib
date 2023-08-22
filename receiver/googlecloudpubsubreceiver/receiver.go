@@ -267,6 +267,8 @@ func (receiver *pubsubReceiver) createReceiverHandler(ctx context.Context) error
 				}
 			case rawTextLog:
 				return receiver.handleLogStrings(ctx, message)
+			case unknown:
+				return errors.New("unknown encoding")
 			}
 			return errors.New("unknown encoding")
 		})

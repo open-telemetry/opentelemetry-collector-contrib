@@ -48,9 +48,9 @@ func TestAddFileResolvedFields(t *testing.T) {
 	writeString(t, file, "testlog\n")
 
 	// Resolve path
-	real, err := filepath.EvalSymlinks(file.Name())
+	realPath, err := filepath.EvalSymlinks(file.Name())
 	require.NoError(t, err)
-	resolved, err := filepath.Abs(real)
+	resolved, err := filepath.Abs(realPath)
 	require.NoError(t, err)
 
 	require.NoError(t, operator.Start(testutil.NewMockPersister("test")))
@@ -133,7 +133,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
-				cfg.Splitter.EncodingConfig.Encoding = "nop"
+				cfg.Splitter.Encoding = "nop"
 			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)

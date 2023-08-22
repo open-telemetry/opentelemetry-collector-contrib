@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
@@ -25,13 +26,14 @@ const (
 var _ receiver.Metrics = (*kubernetesReceiver)(nil)
 
 type kubernetesReceiver struct {
+	dataCollector   *collection.DataCollector
 	resourceWatcher *resourceWatcher
 
-	config   *Config
-	settings receiver.CreateSettings
-	consumer consumer.Metrics
-	cancel   context.CancelFunc
-	obsrecv  *obsreport.Receiver
+	config          *Config
+	settings        receiver.CreateSettings
+	metricsConsumer consumer.Metrics
+	cancel          context.CancelFunc
+	obsrecv         *obsreport.Receiver
 }
 
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
@@ -41,7 +43,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	exporters := host.GetExporters()
+	exporters := host.GetExporters() //nolint:staticcheck
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
@@ -97,33 +99,78 @@ func (kr *kubernetesReceiver) Shutdown(context.Context) error {
 }
 
 func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
-	now := time.Now()
-	mds := kr.resourceWatcher.dataCollector.CollectMetricData(now)
+	if kr.metricsConsumer == nil {
+		// Metric collection is not enabled.
+		return
+	}
+
+	mds := kr.dataCollector.CollectMetricData(time.Now())
 
 	c := kr.obsrecv.StartMetricsOp(ctx)
 
 	numPoints := mds.DataPointCount()
-	err := kr.consumer.ConsumeMetrics(c, mds)
+	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
 	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
 }
 
-// newReceiver creates the Kubernetes cluster receiver with the given configuration.
-func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	rCfg := cfg.(*Config)
-
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
-		ReceiverID:             set.ID,
-		Transport:              transport,
-		ReceiverCreateSettings: set,
-	})
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newMetricsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
 	if err != nil {
 		return nil, err
 	}
+	r.Unwrap().(*kubernetesReceiver).metricsConsumer = consumer
+	return r, nil
+}
+
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newLogsReceiver(
+	ctx context.Context, set receiver.CreateSettings, cfg component.Config, consumer consumer.Logs,
+) (receiver.Logs, error) {
+	var err error
+	r := receivers.GetOrAdd(
+		cfg, func() component.Component {
+			var rcv component.Component
+			rcv, err = newReceiver(ctx, set, cfg)
+			return rcv
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	r.Unwrap().(*kubernetesReceiver).resourceWatcher.entityLogConsumer = consumer
+	return r, nil
+}
+
+// newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.
+func newReceiver(_ context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+	rCfg := cfg.(*Config)
+	obsrecv, err := obsreport.NewReceiver(
+		obsreport.ReceiverSettings{
+			ReceiverID:             set.ID,
+			Transport:              transport,
+			ReceiverCreateSettings: set,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	ms := metadata.NewStore()
 	return &kubernetesReceiver{
-		resourceWatcher: newResourceWatcher(set.Logger, rCfg),
+		dataCollector: collection.NewDataCollector(set, ms, rCfg.MetricsBuilderConfig,
+			rCfg.NodeConditionTypesToReport, rCfg.AllocatableTypesToReport),
+		resourceWatcher: newResourceWatcher(set, rCfg, ms),
 		settings:        set,
 		config:          rCfg,
-		consumer:        consumer,
 		obsrecv:         obsrecv,
 	}, nil
 }

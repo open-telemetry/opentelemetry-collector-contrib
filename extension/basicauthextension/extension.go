@@ -62,7 +62,7 @@ func newServerAuthExtension(cfg *Config) (auth.Server, error) {
 	), nil
 }
 
-func (ba *basicAuth) serverStart(ctx context.Context, host component.Host) error {
+func (ba *basicAuth) serverStart(_ context.Context, _ component.Host) error {
 	var rs []io.Reader
 
 	if ba.htpasswd.File != "" {

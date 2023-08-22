@@ -18,7 +18,7 @@ type TestWriter struct {
 	t *testing.T
 }
 
-func (testWriter *TestWriter) writeBuffer(ctx context.Context, buf []byte, config *Config, metadata string, format string) error {
+func (testWriter *TestWriter) writeBuffer(_ context.Context, buf []byte, _ *Config, _ string, _ string) error {
 	assert.Equal(testWriter.t, testLogs, buf)
 	return nil
 }

@@ -6,9 +6,7 @@ OTEL_VERSION=main
 OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -73,15 +71,13 @@ all-common:
 e2e-test: otelcontribcol oteltestbedcol
 	$(MAKE) -C testbed run-tests
 
-.PHONY: unit-tests-with-cover
-unit-tests-with-cover:
-	@echo Verifying that all packages have test files to count in coverage
-	@internal/buildscripts/check-test-files.sh $(subst github.com/open-telemetry/opentelemetry-collector-contrib/,./,$(ALL_PKGS))
-	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="do-unit-tests-with-cover"
+.PHONY: integration-test
+integration-test:
+	@$(MAKE) for-integration-target TARGET="mod-integration-test"
 
-TARGET="do-integration-tests-with-cover"
 .PHONY: integration-tests-with-cover
-integration-tests-with-cover: $(INTEGRATION_MODS)
+integration-tests-with-cover:
+	@$(MAKE) for-integration-target TARGET="do-integration-tests-with-cover"
 
 # Long-running e2e tests
 .PHONY: stability-tests
@@ -100,6 +96,11 @@ gomoddownload:
 .PHONY: gotest
 gotest:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="test"
+
+.PHONY: gotest-with-cover
+gotest-with-cover:
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-cover"
+	$(GOCMD) tool covdata textfmt -i=./coverage/unit -o ./$(GROUP)-coverage.txt
 
 .PHONY: gofmt
 gofmt:
@@ -206,6 +207,9 @@ for-pkg-target: $(PKG_MODS)
 .PHONY: for-other-target
 for-other-target: $(OTHER_MODS)
 
+.PHONY: for-integration-target
+for-integration-target: $(INTEGRATION_MODS)
+
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -247,22 +251,29 @@ mdatagen-test:
 	cd cmd/mdatagen && $(GOCMD) generate ./...
 	cd cmd/mdatagen && $(GOCMD) test ./...
 
+.PHONY: gengithub
+gengithub:
+	$(GOCMD) run cmd/githubgen/main.go .
+
+.PHONY: update-codeowners
+update-codeowners: gengithub generate
+
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new
 chlog-new: $(CHLOGGEN)
-	$(CHLOGGEN) new --filename $(FILENAME)
+	$(CHLOGGEN) new --config $(CHLOGGEN_CONFIG) --filename $(FILENAME)
 
 .PHONY: chlog-validate
 chlog-validate: $(CHLOGGEN)
-	$(CHLOGGEN) validate
+	$(CHLOGGEN) validate --config $(CHLOGGEN_CONFIG)
 
 .PHONY: chlog-preview
 chlog-preview: $(CHLOGGEN)
-	$(CHLOGGEN) update --dry
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --dry
 
 .PHONY: chlog-update
 chlog-update: $(CHLOGGEN)
-	$(CHLOGGEN) update --version $(VERSION)
+	$(CHLOGGEN) update --config $(CHLOGGEN_CONFIG) --version $(VERSION)
 
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
@@ -273,7 +284,7 @@ genotelcontribcol: $(BUILDER)
 .PHONY: otelcontribcol
 otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
@@ -284,13 +295,13 @@ genoteltestbedcol: $(BUILDER)
 .PHONY: oteltestbedcol
 oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 # Build the telemetrygen executable.
 .PHONY: telemetrygen
 telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:
@@ -332,8 +343,13 @@ build-examples:
 
 # Verify existence of READMEs for components specified as default components in the collector.
 .PHONY: checkdoc
-checkdoc: $(CHECKDOC)
-	$(CHECKDOC) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME)
+checkdoc: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "README.md"
+
+# Verify existence of metadata.yaml for components specified as default components in the collector.
+.PHONY: checkmetadata
+checkmetadata: $(CHECKFILE)
+	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -385,6 +401,7 @@ clean:
 	@echo "Removing coverage files"
 	find . -type f -name 'coverage.txt' -delete
 	find . -type f -name 'coverage.html' -delete
+	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
 

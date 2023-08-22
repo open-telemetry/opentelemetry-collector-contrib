@@ -22,7 +22,7 @@ func newConvertGaugeToSumFactory() ottl.Factory[ottldatapoint.TransformContext] 
 	return ottl.NewFactory("convert_gauge_to_sum", &convertGaugeToSumArguments{}, createConvertGaugeToSumFunction)
 }
 
-func createConvertGaugeToSumFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createConvertGaugeToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	args, ok := oArgs.(*convertGaugeToSumArguments)
 
 	if !ok {

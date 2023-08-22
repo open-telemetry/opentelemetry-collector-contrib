@@ -23,9 +23,8 @@ type fileReceiver struct {
 	throttle float64
 }
 
-func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
-	var ctx context.Context
-	ctx, r.cancel = context.WithCancel(context.Background())
+func (r *fileReceiver) Start(ctx context.Context, _ component.Host) error {
+	ctx, r.cancel = context.WithCancel(ctx)
 
 	file, err := os.Open(r.path)
 	if err != nil {
@@ -46,7 +45,7 @@ func (r *fileReceiver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *fileReceiver) Shutdown(ctx context.Context) error {
+func (r *fileReceiver) Shutdown(_ context.Context) error {
 	if r.cancel != nil {
 		r.cancel()
 	}

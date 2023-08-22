@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks/internal/metadata"
 )
 
 const (
@@ -24,12 +25,14 @@ const (
 )
 
 type Detector struct {
-	provider azure.Provider
+	provider           azure.Provider
+	resourceAttributes metadata.ResourceAttributesConfig
 }
 
 // NewDetector creates a new AKS detector
-func NewDetector(processor.CreateSettings, internal.DetectorConfig) (internal.Detector, error) {
-	return &Detector{provider: azure.NewProvider()}, nil
+func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+	return &Detector{provider: azure.NewProvider(), resourceAttributes: cfg.ResourceAttributes}, nil
 }
 
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -45,8 +48,12 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	}
 
 	attrs := res.Attributes()
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
+	if d.resourceAttributes.CloudProvider.Enabled {
+		attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+	}
+	if d.resourceAttributes.CloudPlatform.Enabled {
+		attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAzureAKS)
+	}
 
 	return res, conventions.SchemaURL, nil
 }

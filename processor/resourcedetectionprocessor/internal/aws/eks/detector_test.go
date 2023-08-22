@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
 )
 
 type MockDetectorUtils struct {
@@ -24,7 +26,8 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 }
 
 func TestNewDetector(t *testing.T) {
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), nil)
+	dcfg := CreateDefaultConfig()
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), dcfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, detector)
 }
@@ -37,7 +40,7 @@ func TestEKS(t *testing.T) {
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
 	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{"cluster.name": "my-cluster"}, nil)
 	// Call EKS Resource detector to detect resources
-	eksResourceDetector := &detector{utils: detectorUtils, err: nil}
+	eksResourceDetector := &detector{utils: detectorUtils, err: nil, rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, _, err := eksResourceDetector.Detect(ctx)
 	require.NoError(t, err)
 

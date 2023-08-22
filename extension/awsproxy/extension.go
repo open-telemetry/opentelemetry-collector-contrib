@@ -23,7 +23,7 @@ type xrayProxy struct {
 
 var _ extension.Extension = (*xrayProxy)(nil)
 
-func (x xrayProxy) Start(ctx context.Context, host component.Host) error {
+func (x xrayProxy) Start(_ context.Context, host component.Host) error {
 	go func() {
 		if err := x.server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) && err != nil {
 			host.ReportFatalError(err)

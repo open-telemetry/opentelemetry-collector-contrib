@@ -19,7 +19,7 @@ import (
 
 type errorRoundTripper struct{}
 
-func (ert *errorRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
+func (ert *errorRoundTripper) RoundTrip(_ *http.Request) (*http.Response, error) {
 	return nil, errors.New("error")
 }
 

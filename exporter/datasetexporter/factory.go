@@ -25,11 +25,13 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		BufferSettings:  newDefaultBufferSettings(),
-		TracesSettings:  newDefaultTracesSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		BufferSettings:     newDefaultBufferSettings(),
+		TracesSettings:     newDefaultTracesSettings(),
+		LogsSettings:       newDefaultLogsSettings(),
+		ServerHostSettings: newDefaultServerHostSettings(),
+		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 	}
 }
 

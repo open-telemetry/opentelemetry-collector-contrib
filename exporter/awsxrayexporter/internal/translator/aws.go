@@ -157,14 +157,19 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		queueURL = value.Str()
 	}
 	if value, ok := attributes[conventions.AttributeAWSDynamoDBTableNames]; ok {
-		if value.Slice().Len() == 1 {
-			tableName = value.Slice().At(0).Str()
-		} else if value.Slice().Len() > 1 {
-			tableName = ""
-			tableNames = []string{}
-			for i := 0; i < value.Slice().Len(); i++ {
-				tableNames = append(tableNames, value.Slice().At(i).Str())
+		switch value.Type() {
+		case pcommon.ValueTypeSlice:
+			if value.Slice().Len() == 1 {
+				tableName = value.Slice().At(0).Str()
+			} else if value.Slice().Len() > 1 {
+				tableName = ""
+				tableNames = []string{}
+				for i := 0; i < value.Slice().Len(); i++ {
+					tableNames = append(tableNames, value.Slice().At(i).Str())
+				}
 			}
+		case pcommon.ValueTypeStr:
+			tableName = value.Str()
 		}
 	}
 

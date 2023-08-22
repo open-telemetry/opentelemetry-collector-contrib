@@ -27,30 +27,35 @@ type Cadvisor struct {
 
 type Decorator interface {
 	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+	Shutdown() error
 }
 
 // Option is a function that can be used to configure Cadvisor struct
 type Option func(*Cadvisor)
 
 // WithDecorator constructs an option for configuring the metric decorator
-func WithDecorator(d interface{}) Option {
+func WithDecorator(_ interface{}) Option {
 	return func(c *Cadvisor) {
 		// do nothing
 	}
 }
 
-func WithECSInfoCreator(f interface{}) Option {
+func WithECSInfoCreator(_ interface{}) Option {
 	return func(c *Cadvisor) {
 		// do nothing
 	}
 }
 
 // New is a dummy function to construct a dummy Cadvisor struct for windows
-func New(containerOrchestrator string, hostInfo HostInfo, logger *zap.Logger, options ...Option) (*Cadvisor, error) {
+func New(_ string, _ HostInfo, _ *zap.Logger, _ ...Option) (*Cadvisor, error) {
 	return &Cadvisor{}, nil
 }
 
 // GetMetrics is a dummy function that always returns empty metrics for windows
 func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	return []pmetric.Metrics{}
+}
+
+func (c *Cadvisor) Shutdown() error {
+	return nil
 }

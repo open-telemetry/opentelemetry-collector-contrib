@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package routingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 
 import (
@@ -12,14 +14,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor/internal/metadata"
 )
 
 const (
-	// The value of "type" key in configuration.
-	typeStr = "routing"
-	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
-
 	scopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor"
 	nameSep   = "/"
 
@@ -33,11 +31,11 @@ const (
 // NewFactory creates a factory for the routing processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
-		processor.WithMetrics(createMetricsProcessor, stability),
-		processor.WithLogs(createLogsProcessor, stability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
 	)
 }
 

@@ -21,12 +21,13 @@ import (
 // SapmDataReceiver implements Sapm format receiver.
 type SapmDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.Traces
+	receiver    receiver.Traces
+	compression string
 }
 
 // NewSapmDataReceiver creates a new SapmDataReceiver.
-func NewSapmDataReceiver(port int) *SapmDataReceiver {
-	return &SapmDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}}
+func NewSapmDataReceiver(port int, compression string) *SapmDataReceiver {
+	return &SapmDataReceiver{DataReceiverBase: testbed.DataReceiverBase{Port: port}, compression: compression}
 }
 
 // Start the receiver.
@@ -57,12 +58,17 @@ func (sr *SapmDataReceiver) Stop() error {
 
 // GenConfigYAMLStr returns exporter config for the agent.
 func (sr *SapmDataReceiver) GenConfigYAMLStr() string {
+	disableCompression := false
+	if sr.compression == "" {
+		disableCompression = true
+	}
 	// Note that this generates an exporter config for agent.
 	return fmt.Sprintf(`
   sapm:
     endpoint: "http://127.0.0.1:%d/v2/trace"
-    disable_compression: true
-    access_token_passthrough: true`, sr.Port)
+    disable_compression: %v
+    compression: %s
+    access_token_passthrough: true`, sr.Port, disableCompression, sr.compression)
 }
 
 // ProtocolName returns protocol name as it is specified in Collector config.

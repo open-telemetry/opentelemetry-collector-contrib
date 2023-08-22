@@ -4,4 +4,10 @@ status:
   class: exporter
   stability:
     deprecated: [traces]
-  distributions: [core, contrib]
+  distributions:
+  - core
+  - contrib
+  - grafana
+  - redhat
+  codeowners:
+    active: [jpkrohling, frzifus]

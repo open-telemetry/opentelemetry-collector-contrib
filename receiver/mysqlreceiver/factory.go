@@ -24,12 +24,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 10 * time.Second,
-		},
-		AllowNativePasswords: true,
-		Username:             "root",
+		ScraperControllerSettings: cfg,
+		AllowNativePasswords:      true,
+		Username:                  "root",
 		NetAddr: confignet.NetAddr{
 			Endpoint:  "localhost:3306",
 			Transport: "tcp",

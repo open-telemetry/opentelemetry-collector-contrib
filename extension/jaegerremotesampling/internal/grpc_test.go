@@ -86,6 +86,6 @@ type grpcServerMock struct {
 	timeToGracefulStop time.Duration
 }
 
-func (g *grpcServerMock) Serve(lis net.Listener) error { return nil }
-func (g *grpcServerMock) Stop()                        {}
-func (g *grpcServerMock) GracefulStop()                { time.Sleep(g.timeToGracefulStop) }
+func (g *grpcServerMock) Serve(_ net.Listener) error { return nil }
+func (g *grpcServerMock) Stop()                      {}
+func (g *grpcServerMock) GracefulStop()              { time.Sleep(g.timeToGracefulStop) }

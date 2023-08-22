@@ -486,7 +486,7 @@ func verifyConsumeMetricsInputCumulative(t testing.TB, input pmetric.Metrics) bo
 	return verifyConsumeMetricsInput(t, input, pmetric.AggregationTemporalityCumulative, 1)
 }
 
-func verifyBadMetricsOkay(t testing.TB, input pmetric.Metrics) bool {
+func verifyBadMetricsOkay(_ testing.TB, _ pmetric.Metrics) bool {
 	return true // Validating no exception
 }
 

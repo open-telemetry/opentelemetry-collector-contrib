@@ -5,6 +5,8 @@ status:
   stability: 
     development: [metrics]
   distributions: [contrib]
+  codeowners:
+    active: [djaglowski, Caleb-Hurshman, mrsillydog]
 
 resource_attributes:
   spark.application.id:
@@ -95,14 +97,13 @@ attributes:
     enum:
       - used
       - free
-  scheduler_waiting:
-    name_override: waiting
-    description: Whether the stages for which the metric was recorded are waiting to be run by the DAGScheduler.
-    type: bool
-  scheduler_running:
-    name_override: running
-    description: Whether the stages for which the metric was recorded are currently being run by the DAGScheduler.
-    type: bool
+  scheduler_status:
+    name_override: status
+    description: The status of the DAGScheduler stages for which the metric was recorded.
+    type: string
+    enum:
+      - waiting
+      - running
   pool_memory_type:
     name_override: type
     description: The type of pool memory for which the metric was recorded.
@@ -124,7 +125,7 @@ metrics:
     enabled: true
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "{ status }"
     attributes:
@@ -133,7 +134,7 @@ metrics:
     description: Number of active tasks in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ task }"
@@ -142,7 +143,7 @@ metrics:
     description: Number of tasks with a specific result in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ task }"
@@ -152,7 +153,7 @@ metrics:
     description: Amount of time spent by the executor in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms
@@ -161,7 +162,7 @@ metrics:
     description: CPU time spent by the executor in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ns
@@ -170,7 +171,7 @@ metrics:
     description: The amount of data transmitted back to the driver by all the tasks in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -179,7 +180,7 @@ metrics:
     description: The amount of time the JVM spent on garbage collection in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms
@@ -188,7 +189,7 @@ metrics:
     description: The amount of memory moved to disk due to size constraints (spilled) in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -197,7 +198,7 @@ metrics:
     description: The amount of disk space used for storing portions of overly large data chunks that couldn't fit in memory in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -206,7 +207,7 @@ metrics:
     description: Peak memory used by internal data structures created during shuffles, aggregations and joins in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -215,7 +216,7 @@ metrics:
     description: Amount of data written and read at this stage.
     enabled: true
     sum: 
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -225,7 +226,7 @@ metrics:
     description: Number of records written and read in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ record }"
@@ -235,7 +236,7 @@ metrics:
     description: Number of blocks fetched in shuffle operations in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ block }"
@@ -245,7 +246,7 @@ metrics:
     description: Time spent in this stage waiting for remote shuffle blocks.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms
@@ -254,7 +255,7 @@ metrics:
     description: Amount of data read to disk in shuffle operations (sometimes required for large blocks, as opposed to the default behavior of reading into memory).
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -263,7 +264,7 @@ metrics:
     description: Amount of data read in shuffle operations in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -273,7 +274,7 @@ metrics:
     description: Amount of data written in shuffle operations in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -283,7 +284,7 @@ metrics:
     description: Number of records written or read in shuffle operations in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ record }"
@@ -293,7 +294,7 @@ metrics:
     description: Time spent blocking on writes to disk or buffer cache in this stage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ns
@@ -303,7 +304,7 @@ metrics:
     description: Storage memory used by this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -312,7 +313,7 @@ metrics:
     description: Disk space used by this executor for RDD storage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -321,7 +322,7 @@ metrics:
     description: Maximum number of tasks that can run concurrently in this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ task }"
@@ -330,7 +331,7 @@ metrics:
     description: Number of tasks currently running in this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ task }"
@@ -339,7 +340,7 @@ metrics:
     description: Number of tasks with a specific result in this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ task }"
@@ -348,7 +349,7 @@ metrics:
     description: Elapsed time the JVM spent executing tasks in this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms
@@ -357,7 +358,7 @@ metrics:
     description: Elapsed time the JVM spent in garbage collection in this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms
@@ -366,7 +367,7 @@ metrics:
     description: Amount of data input for this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -375,7 +376,7 @@ metrics:
     description: Amount of data written and read during shuffle operations for this executor.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: bytes
@@ -384,7 +385,7 @@ metrics:
     description: The executor's storage memory usage.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -394,7 +395,7 @@ metrics:
     description: Number of active tasks in this job.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ task }"
@@ -403,7 +404,7 @@ metrics:
     description: Number of tasks with a specific result in this job.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ task }"
@@ -412,7 +413,7 @@ metrics:
     description: Number of active stages in this job.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ task }"
@@ -421,7 +422,7 @@ metrics:
     description: Number of stages with a specific result in this job.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ task }"
@@ -431,7 +432,7 @@ metrics:
     description: Disk space used by the BlockManager.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: mb
@@ -440,7 +441,7 @@ metrics:
     description: Memory usage for the driver's BlockManager.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: mb
@@ -449,7 +450,7 @@ metrics:
     description: Number of file cache hits on the HiveExternalCatalog.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ hit }"
@@ -458,7 +459,7 @@ metrics:
     description: Number of files discovered while listing the partitions of a table in the Hive metastore
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ file }"
@@ -467,7 +468,7 @@ metrics:
     description: Number of calls to the underlying Hive Metastore client made by the Spark application.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ call }"
@@ -476,7 +477,7 @@ metrics:
     description: Number of parallel listing jobs initiated by the HiveExternalCatalog when listing partitions of a table.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ listing_job }"
@@ -485,7 +486,7 @@ metrics:
     description: Table partitions fetched by the HiveExternalCatalog.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ partition }"
@@ -494,7 +495,7 @@ metrics:
     description: Number of source code compilation operations performed by the CodeGenerator.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ compilation }"
@@ -510,7 +511,7 @@ metrics:
     description: Number of classes generated by the CodeGenerator.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ class }"
@@ -526,7 +527,7 @@ metrics:
     description: Number of methods generated by the CodeGenerator.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ method }"
@@ -542,7 +543,7 @@ metrics:
     description: Number of source code generation operations performed by the CodeGenerator.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ operation }"
@@ -558,7 +559,7 @@ metrics:
     description: Number of active jobs currently being processed by the DAGScheduler.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ job }"
@@ -567,7 +568,7 @@ metrics:
     description: Number of jobs that have been submitted to the DAGScheduler.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ job }"
@@ -576,7 +577,7 @@ metrics:
     description: Number of failed stages run by the DAGScheduler.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ stage }"
@@ -585,16 +586,16 @@ metrics:
     description: Number of stages the DAGScheduler is either running or needs to run.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ stage }"
-    attributes: [scheduler_waiting, scheduler_running]
+    attributes: [scheduler_status]
   spark.driver.live_listener_bus.posted:
     description: Number of events that have been posted on the LiveListenerBus.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ event }"
@@ -610,7 +611,7 @@ metrics:
     description: Number of events that have been dropped by the LiveListenerBus.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ event }"
@@ -619,7 +620,7 @@ metrics:
     description: Number of events currently waiting to be processed by the LiveListenerBus.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{ event }"
@@ -628,7 +629,7 @@ metrics:
     description: Current CPU time taken by the Spark driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ns
@@ -637,7 +638,7 @@ metrics:
     description: Amount of memory used by the driver's JVM.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -646,7 +647,7 @@ metrics:
     description: Amount of execution memory currently used by the driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -655,7 +656,7 @@ metrics:
     description: Amount of storage memory currently used by the driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -664,7 +665,7 @@ metrics:
     description: Amount of pool memory currently used by the driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: bytes
@@ -673,7 +674,7 @@ metrics:
     description: Number of garbage collection operations performed by the driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{ gc_operation }"
@@ -682,7 +683,7 @@ metrics:
     description: Total elapsed time during garbage collection operations performed by the driver.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: ms

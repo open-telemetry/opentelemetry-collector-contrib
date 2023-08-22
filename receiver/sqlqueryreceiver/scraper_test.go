@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
@@ -397,4 +398,85 @@ func TestScraper_FakeDB_MultiRows_Error(t *testing.T) {
 	// a partial scrape error though so it shouldn't cause a scraper shutdown.
 	assert.Error(t, err)
 	assert.True(t, scrapererror.IsPartialScrapeError(err))
+}
+
+func TestScraper_StartAndTSColumn(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "1682417791",
+				"Ts":      "1682418264",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				TsColumn:      "Ts",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	metrics, err := scrpr.Scrape(context.Background())
+	require.NoError(t, err)
+	metric := metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+	assert.Equal(t, pcommon.Timestamp(1682417791), metric.Sum().DataPoints().At(0).StartTimestamp())
+	assert.Equal(t, pcommon.Timestamp(1682418264), metric.Sum().DataPoints().At(0).Timestamp())
+}
+
+func TestScraper_StartAndTS_ErrorOnColumnNotFound(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "1682417791",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				TsColumn:      "Ts",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	assert.Error(t, err)
+}
+
+func TestScraper_StartAndTS_ErrorOnParse(t *testing.T) {
+	client := &fakeDBClient{
+		stringMaps: [][]stringMap{{
+			{
+				"mycol":   "42",
+				"StartTs": "blah",
+			},
+		}},
+	}
+	scrpr := scraper{
+		client: client,
+		query: Query{
+			Metrics: []MetricCfg{{
+				MetricName:    "my.name",
+				ValueColumn:   "mycol",
+				StartTsColumn: "StartTs",
+				DataType:      MetricTypeSum,
+				Aggregation:   MetricAggregationCumulative,
+			}},
+		},
+	}
+	_, err := scrpr.Scrape(context.Background())
+	assert.Error(t, err)
 }

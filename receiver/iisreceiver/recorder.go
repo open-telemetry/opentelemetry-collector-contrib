@@ -101,9 +101,10 @@ var appPoolPerfCounterRecorders = []perfCounterRecorderConf{
 			"CurrentQueueSize": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
 				mb.RecordIisRequestQueueCountDataPoint(ts, int64(val))
 			},
-			"MaxQueueItemAge": func(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
-				mb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(val))
-			},
 		},
 	},
+}
+
+func recordMaxQueueItemAge(mb *metadata.MetricsBuilder, ts pcommon.Timestamp, val float64) {
+	mb.RecordIisRequestQueueAgeMaxDataPoint(ts, int64(val))
 }

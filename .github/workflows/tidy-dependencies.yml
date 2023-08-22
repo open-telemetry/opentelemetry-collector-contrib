@@ -1,15 +1,23 @@
 name: "Project: Tidy"
 on:
   pull_request_target:
-    types: [labeled]
+    types: [opened, ready_for_review, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
 
+env:
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
 jobs:
   setup-environment:
+    # disabling until permission issues is resolved
+    # see: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22953
+    if: ${{ false }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'dependencies' }}
+    # if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -18,10 +26,11 @@ jobs:
           token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.7
           cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |

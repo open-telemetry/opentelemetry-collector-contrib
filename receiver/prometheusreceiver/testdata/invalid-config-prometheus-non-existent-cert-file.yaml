@@ -5,3 +5,4 @@ prometheus:
         scrape_interval: 5s
         tls_config:
           cert_file: /nonexistentcertfile
+          key_file: ./testdata/dummy-tls-key-file
