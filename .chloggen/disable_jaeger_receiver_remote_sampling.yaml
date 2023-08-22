@@ -17,7 +17,7 @@ issues: [24186]
 # Use pipe (|) for multiline entries.
 subtext: > 
   The jaeger receiver will fail to start if remote_sampling config is specified in it. 
-  The `receiver.jaeger.DisableRemoteSampling` feature gate can be disabled to let the receiver start and treat 
+  The `receiver.jaeger.DisableRemoteSampling` feature gate can be set to let the receiver start and treat 
   remote_sampling config as no-op. In a future version this feature gate will be removed and the receiver will always 
   fail when remote_sampling config is specified.
 
