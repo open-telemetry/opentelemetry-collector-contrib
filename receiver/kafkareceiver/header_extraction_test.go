@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package kafkareceiver
 
 import (
@@ -21,6 +24,7 @@ import (
 
 func TestHeaderExtractionTraces(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
 		unmarshaler:  newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -80,6 +84,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 
 func TestHeaderExtractionLogs(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
 	unmarshaler := newTextLogsUnmarshaler()
 	unmarshaler, err = unmarshaler.WithEnc("utf-8")
@@ -136,6 +141,7 @@ func TestHeaderExtractionLogs(t *testing.T) {
 
 func TestHeaderExtractionMetrics(t *testing.T) {
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
 		unmarshaler:  newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),

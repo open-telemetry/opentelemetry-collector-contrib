@@ -84,11 +84,11 @@ func getHeaderValue(headers []*sarama.RecordHeader, header string) (string, bool
 
 type nopHeaderExtractor struct{}
 
-func (he *nopHeaderExtractor) extractHeadersTraces(traces ptrace.Traces, message *sarama.ConsumerMessage) {
+func (he *nopHeaderExtractor) extractHeadersTraces(_ ptrace.Traces, _ *sarama.ConsumerMessage) {
 }
 
-func (he *nopHeaderExtractor) extractHeadersLogs(logs plog.Logs, message *sarama.ConsumerMessage) {
+func (he *nopHeaderExtractor) extractHeadersLogs(_ plog.Logs, _ *sarama.ConsumerMessage) {
 }
 
-func (he *nopHeaderExtractor) extractHeadersMetrics(metrics pmetric.Metrics, message *sarama.ConsumerMessage) {
+func (he *nopHeaderExtractor) extractHeadersMetrics(_ pmetric.Metrics, _ *sarama.ConsumerMessage) {
 }
