@@ -103,7 +103,7 @@ Learn more about [AWS PrivateLink in the documentation page](https://coralogix.c
 ### Application and SubSystem attributes
 
 v0.62.0 release of OpenTelemetry Collector allows you to map Application name and Subsystem name to Resource attributes. 
-You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used.
+You need to set `application_name_attributes` and `subsystem_name_attributes` fields with a list of potential Resource attributes for the AppName and Subsystem values. The first not-empty Resource attribute is going to be used. If multiple resource attributes are available, **the order of the attributes in the list determines their priority.**
 
 ### Kubernetes attributes
 
@@ -114,16 +114,17 @@ exporters:
   coralogix:
     domain: "coralogix.com"
     application_name_attributes:
-      - "service.namespace"
       - "k8s.namespace.name" 
+      - "service.namespace"
     subsystem_name_attributes:
-      - "service.name"
+      - "k8s.job.name"
       - "k8s.deployment.name"
       - "k8s.statefulset.name"
       - "k8s.daemonset.name"
       - "k8s.cronjob.name"
-      - "k8s.job.name"
-      - "k8s.container.name"
+      - "k8s.pod.name"
+      - "k8s.node.name"
+      - "service.name"
 ```
 ### Host Attributes
 

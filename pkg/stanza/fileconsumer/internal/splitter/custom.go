@@ -6,18 +6,18 @@ package splitter // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 type customFactory struct {
-	Flusher  helper.FlusherConfig
+	Flusher  tokenize.FlusherConfig
 	Splitter bufio.SplitFunc
 }
 
 var _ Factory = (*customFactory)(nil)
 
 func NewCustomFactory(
-	flusher helper.FlusherConfig,
+	flusher tokenize.FlusherConfig,
 	splitter bufio.SplitFunc) Factory {
 	return &customFactory{
 		Flusher:  flusher,
