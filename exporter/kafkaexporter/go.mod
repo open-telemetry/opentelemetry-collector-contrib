@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/IBM/sarama v1.40.1
-	github.com/aws/aws-sdk-go v1.44.323
+	github.com/aws/aws-sdk-go v1.44.328
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.41.0

@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywal
 go 1.20
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/gorilla/mux v1.8.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.83.0
 	github.com/stretchr/testify v1.8.4

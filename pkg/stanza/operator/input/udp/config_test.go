@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -29,7 +29,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
 					cfg.Encoding = "utf-8"
-					cfg.Multiline = helper.NewMultilineConfig()
+					cfg.Multiline = tokenize.NewMultilineConfig()
 					cfg.Multiline.LineStartPattern = "ABC"
 					return cfg
 				}(),
