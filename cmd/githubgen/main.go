@@ -148,7 +148,7 @@ func run(folder string, allowlistFilePath string) error {
 	components := map[string]metadata{}
 	var foldersList []string
 	maxLength := 0
-	allCodeowners := make(map[string]struct{}, 24)
+	allCodeowners := map[string]struct{}{}
 	err = filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
