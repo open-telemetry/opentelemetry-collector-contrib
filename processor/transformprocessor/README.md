@@ -116,7 +116,7 @@ transform:
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+        - replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
 ```
 
@@ -365,7 +365,7 @@ transform:
     - context: resource
       statements:
         # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs
