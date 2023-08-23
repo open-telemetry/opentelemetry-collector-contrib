@@ -61,7 +61,7 @@ attributes:
   operation:
     description: The database operation.
     type: string
-    enum: [ins, upd, del, hot_upd]
+    enum: [ins, upd, del, hot_upd, seq_scan]
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string

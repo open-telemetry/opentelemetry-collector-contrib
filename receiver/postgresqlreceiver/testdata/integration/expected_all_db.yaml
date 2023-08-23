@@ -439,6 +439,13 @@ resourceMetrics:
                         stringValue: upd
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -587,6 +594,13 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: upd
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
               isMonotonic: true
@@ -739,6 +753,13 @@ resourceMetrics:
                         stringValue: upd
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -887,6 +908,13 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: upd
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
+                - asInt: "1"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
               isMonotonic: true

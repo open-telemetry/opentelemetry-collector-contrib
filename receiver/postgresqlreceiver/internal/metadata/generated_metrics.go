@@ -106,6 +106,7 @@ const (
 	AttributeOperationUpd
 	AttributeOperationDel
 	AttributeOperationHotUpd
+	AttributeOperationSeqScan
 )
 
 // String returns the string representation of the AttributeOperation.
@@ -119,16 +120,19 @@ func (av AttributeOperation) String() string {
 		return "del"
 	case AttributeOperationHotUpd:
 		return "hot_upd"
+	case AttributeOperationSeqScan:
+		return "seq_scan"
 	}
 	return ""
 }
 
 // MapAttributeOperation is a helper map of string to AttributeOperation attribute value.
 var MapAttributeOperation = map[string]AttributeOperation{
-	"ins":     AttributeOperationIns,
-	"upd":     AttributeOperationUpd,
-	"del":     AttributeOperationDel,
-	"hot_upd": AttributeOperationHotUpd,
+	"ins":      AttributeOperationIns,
+	"upd":      AttributeOperationUpd,
+	"del":      AttributeOperationDel,
+	"hot_upd":  AttributeOperationHotUpd,
+	"seq_scan": AttributeOperationSeqScan,
 }
 
 // AttributeSource specifies the a value source attribute.

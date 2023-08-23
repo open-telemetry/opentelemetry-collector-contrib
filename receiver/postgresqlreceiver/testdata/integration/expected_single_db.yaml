@@ -294,6 +294,13 @@ resourceMetrics:
                         stringValue: upd
                   startTimeUnixNano: "1687780251831660000"
                   timeUnixNano: "1687780252833095000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
+                  startTimeUnixNano: "1687780251831660000"
+                  timeUnixNano: "1687780252833095000"
               isMonotonic: true
             unit: "1"
           - description: The number of rows in the database.
@@ -442,6 +449,13 @@ resourceMetrics:
                     - key: operation
                       value:
                         stringValue: upd
+                  startTimeUnixNano: "1687780251831660000"
+                  timeUnixNano: "1687780252833095000"
+                - asInt: "0"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: seq_scan
                   startTimeUnixNano: "1687780251831660000"
                   timeUnixNano: "1687780252833095000"
               isMonotonic: true

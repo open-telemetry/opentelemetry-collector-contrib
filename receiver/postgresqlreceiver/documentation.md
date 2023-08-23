@@ -152,7 +152,7 @@ The number of db row operations.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` |
+| operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd``, ``seq_scan`` |
 
 ### postgresql.replication.data_delay
 
