@@ -14,7 +14,6 @@ import (
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go/aws"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -62,21 +61,9 @@ var (
 	writers = newWriterPool(2048)
 )
 
-var (
-	skipTimestampValidation bool
-)
-
-func init() {
-	skipTimestampValidation = featuregate.GlobalRegistry().MustRegister(
-		"exporter.awsxray.skiptimestampvalidation",
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
-		featuregate.WithRegisterFromVersion("v0.84.0")).IsEnabled()
-}
-
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
 	if err != nil {
 		return "", err
 	}
@@ -90,7 +77,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -102,7 +89,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	// convert trace id
-	traceID, err := convertToAmazonTraceID(span.TraceID())
+	traceID, err := convertToAmazonTraceID(span.TraceID(), skipTimestampValidation)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +107,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
-		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links())
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links(), skipTimestampValidation)
 		name                                               string
 		namespace                                          string
 	)
@@ -308,7 +295,7 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 //   - For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //     or 58406520 in hexadecimal.
 //   - A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
+func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation bool) (string, error) {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
 		// hit the limit
