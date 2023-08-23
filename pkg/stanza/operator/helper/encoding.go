@@ -20,6 +20,7 @@ type EncodingConfig struct {
 // Deprecated: [v0.84.0] Use decoder.Decoder instead
 type Decoder = decoder.Decoder
 
+// Deprecated: [v0.84.0] Use decoder.New instead
 var NewDecoder = decoder.New
 
 // Deprecated: [v0.84.0] Use decoder.LookupEncoding instead
