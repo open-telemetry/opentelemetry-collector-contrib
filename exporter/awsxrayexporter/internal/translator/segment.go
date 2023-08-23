@@ -23,11 +23,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-var allowRandomTimestamp = featuregate.GlobalRegistry().MustRegister(
-	"exporter.awsxray.allowrandomtimestamp",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"))
-
 // AWS X-Ray acceptable values for origin field.
 const (
 	OriginEC2        = "AWS::EC2::Instance"
@@ -66,6 +61,18 @@ const (
 var (
 	writers = newWriterPool(2048)
 )
+
+var (
+	skipTimestampValidation bool
+)
+
+func init() {
+	skipTimestampValidation = featuregate.GlobalRegistry().MustRegister(
+		"exporter.awsxray.skiptimestampvalidation",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
+		featuregate.WithRegisterFromVersion("v0.84.0")).IsEnabled()
+}
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
 func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
@@ -320,7 +327,7 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 	)
 
 	// If feature gate is enabled, skip the timestamp validation logic
-	if !allowRandomTimestamp.IsEnabled() {
+	if !skipTimestampValidation {
 		// If AWS traceID originally came from AWS, no problem.  However, if oc generated
 		// the traceID, then the epoch may be outside the accepted AWS range of within the
 		// past 30 days.
