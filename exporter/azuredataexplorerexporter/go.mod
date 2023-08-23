@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Azure/azure-kusto-go v0.13.1
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/stretchr/testify v1.8.4
