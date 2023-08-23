@@ -55,7 +55,9 @@ func run(folder string, allowlistFilePath string) error {
 				return err
 			}
 			componentType := strings.Split(relativeBase, string(os.PathSeparator))[0]
-			if componentType != "receiver" && componentType != "processor" && componentType != "exporter" && componentType != "connector" && componentType != "extension" {
+			switch componentType {
+			case "receiver", "processor", "exporter", "connector", "extension":
+			default:
 				return nil
 			}
 
@@ -80,6 +82,70 @@ func run(folder string, allowlistFilePath string) error {
 	return nil
 }
 
+func handleFile(f *ast.File, result *api) {
+	for _, d := range f.Decls {
+		if str, isStr := d.(*ast.GenDecl); isStr {
+			for _, s := range str.Specs {
+				if values, ok := s.(*ast.ValueSpec); ok {
+					for _, v := range values.Names {
+						if v.IsExported() {
+							result.Values = append(result.Values, v.Name)
+						}
+					}
+				}
+				if t, ok := s.(*ast.TypeSpec); ok {
+					if t.Name.IsExported() {
+						result.Structs = append(result.Structs, t.Name.String())
+					}
+				}
+
+			}
+		}
+		if fn, isFn := d.(*ast.FuncDecl); isFn {
+			if !fn.Name.IsExported() {
+				continue
+			}
+			exported := false
+			receiver := ""
+			if fn.Recv.NumFields() == 0 && !strings.HasPrefix(fn.Name.String(), "Test") && !strings.HasPrefix(fn.Name.String(), "Benchmark") {
+				exported = true
+			}
+			if fn.Recv.NumFields() > 0 {
+
+				for _, t := range fn.Recv.List {
+					for _, n := range t.Names {
+						exported = exported || n.IsExported()
+						if n.IsExported() {
+							receiver = n.Name
+						}
+					}
+				}
+			}
+			if exported {
+				var returnTypes []string
+				if fn.Type.Results.NumFields() > 0 {
+					for _, r := range fn.Type.Results.List {
+						returnTypes = append(returnTypes, exprToString(r.Type))
+					}
+				}
+				var params []string
+				if fn.Type.Params.NumFields() > 0 {
+					for _, r := range fn.Type.Params.List {
+						params = append(params, exprToString(r.Type))
+					}
+				}
+				f := &function{
+					Name:        fn.Name.Name,
+					Receiver:    receiver,
+					ParamTypes:  params,
+					ReturnTypes: returnTypes,
+				}
+				result.Functions = append(result.Functions, f)
+			}
+		}
+	}
+}
+
 func walkFolder(folder string, componentType string) error {
 	result := &api{}
 	set := token.NewFileSet()
@@ -90,67 +156,7 @@ func walkFolder(folder string, componentType string) error {
 
 	for _, pack := range packs {
 		for _, f := range pack.Files {
-			for _, d := range f.Decls {
-				if str, isStr := d.(*ast.GenDecl); isStr {
-					for _, s := range str.Specs {
-						if values, ok := s.(*ast.ValueSpec); ok {
-							for _, v := range values.Names {
-								if v.IsExported() {
-									result.Values = append(result.Values, v.Name)
-								}
-							}
-						}
-						if t, ok := s.(*ast.TypeSpec); ok {
-							if t.Name.IsExported() {
-								result.Structs = append(result.Structs, t.Name.String())
-							}
-						}
-
-					}
-				}
-				if fn, isFn := d.(*ast.FuncDecl); isFn {
-					if !fn.Name.IsExported() {
-						continue
-					}
-					exported := false
-					receiver := ""
-					if fn.Recv.NumFields() == 0 && !strings.HasPrefix(fn.Name.String(), "Test") && !strings.HasPrefix(fn.Name.String(), "Benchmark") {
-						exported = true
-					}
-					if fn.Recv.NumFields() > 0 {
-
-						for _, t := range fn.Recv.List {
-							for _, n := range t.Names {
-								exported = exported || n.IsExported()
-								if n.IsExported() {
-									receiver = n.Name
-								}
-							}
-						}
-					}
-					if exported {
-						var returnTypes []string
-						if fn.Type.Results.NumFields() > 0 {
-							for _, r := range fn.Type.Results.List {
-								returnTypes = append(returnTypes, exprToString(r.Type))
-							}
-						}
-						var params []string
-						if fn.Type.Params.NumFields() > 0 {
-							for _, r := range fn.Type.Params.List {
-								params = append(params, exprToString(r.Type))
-							}
-						}
-						f := &function{
-							Name:        fn.Name.Name,
-							Receiver:    receiver,
-							ParamTypes:  params,
-							ReturnTypes: returnTypes,
-						}
-						result.Functions = append(result.Functions, f)
-					}
-				}
-			}
+			handleFile(f, result)
 		}
 	}
 	sort.Strings(result.Structs)
