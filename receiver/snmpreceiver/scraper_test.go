@@ -2509,111 +2509,111 @@ func TestScrape(t *testing.T) {
 				require.NoError(t, err)
 			},
 		},
-		// {
-		// 	// desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
-		// 	testFunc: func (t *testing.T) {
-		// 		mockClient := new(MockClient)
-		// 		scalarRA1 := SNMPData{
-		// 			oid: ".5.0",
-		// 			value: "scalar",
-		// 			valueType: stringVal,
-		// 		}
-		// 		scalarRA2 := SNMPData{
-		// 			oid: ".6.0",
-		// 			value: "also scalar",
-		// 			valueType: stringVal,
-		// 		}
-		// 		coidRA11 := SNMPData{
-		// 			columnOID: ".1",
-		// 			oid: ".1.1",
-		// 			value: "string1",
-		// 			valueType: stringVal,
-		// 		}
-		// 		coidRA12 := SNMPData{
-		// 			columnOID: ".1",
-		// 			oid: ".1.2",
-		// 			value: "string2",
-		// 			valueType: stringVal,
-		// 		}
-		// 		coidRA21 := SNMPData{
-		// 			columnOID: ".2",
-		// 			oid: ".2.1",
-		// 			value: "also a string1",
-		// 			valueType: stringVal,
-		// 		}
-		// 		coidRA22 := SNMPData{
-		// 			columnOID: ".2",
-		// 			oid: ".2.2",
-		// 			value: "also a string2",
-		// 			valueType: stringVal,
-		// 		}
-		// 		coid31 := SNMPData{
-		// 			columnOID: ".3",
-		// 			oid: ".3.1",
-		// 			value: int64(3),
-		// 			valueType: integerVal,
-		// 		}
-		// 		coid32 := SNMPData{
-		// 			columnOID: ".3",
-		// 			oid: ".3.2",
-		// 			value: int64(4),
-		// 			valueType: integerVal,
-		// 		}
-		// 		mockClient.On("Connect").Return(nil)
-		// 		mockClient.On("Close").Return(nil)
-		// 		mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
-		// 		mockClient.On("GetIndexedData", []string{".1", ".2"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12, coidRA21, coidRA22}).Once()
-		// 		mockClient.On("GetIndexedData", []string{".3"}, mock.Anything).Return([]SNMPData{coid31, coid32}).Once()
-		// 		scraper := &snmpScraper{
-		// 			cfg: &Config{
-		// 				ResourceAttributes: map[string]*ResourceAttributeConfig{
-		// 					"rattr1": {
-		// 						ScalarOID: ".5.0",
-		// 					},
-		// 					"rattr2": {
-		// 						ScalarOID: ".6.0",
-		// 					},
-		// 					"rattr3": {
-		// 						OID: ".1",
-		// 					},
-		// 					"rattr4": {
-		// 						OID: ".2",
-		// 					},
-		// 				},
-		// 				Metrics: map[string]*MetricConfig{
-		// 					"metric1": {
-		// 						Description: "test description",
-		// 						Unit: "By",
-		// 						Gauge: &GaugeMetric{
-		// 							ValueType: "int",
-		// 						},
-		// 						ColumnOIDs: []ColumnOID{
-		// 							{
-		// 								OID: ".3",
-		// 								ResourceAttributes: []string{"rattr1", "rattr2", "rattr3", "rattr4"},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			settings: receivertest.NewNopCreateSettings(),
-		// 			client:   mockClient,
-		// 			logger:   zap.NewNop(),
-		// 		}
+		{
+			desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
+			testFunc: func (t *testing.T) {
+				mockClient := new(MockClient)
+				scalarRA1 := SNMPData{
+					oid: ".5.0",
+					value: "scalar",
+					valueType: stringVal,
+				}
+				scalarRA2 := SNMPData{
+					oid: ".6.0",
+					value: "also scalar",
+					valueType: stringVal,
+				}
+				coidRA11 := SNMPData{
+					columnOID: ".1",
+					oid: ".1.1",
+					value: "string1",
+					valueType: stringVal,
+				}
+				coidRA12 := SNMPData{
+					columnOID: ".1",
+					oid: ".1.2",
+					value: "string2",
+					valueType: stringVal,
+				}
+				coidRA21 := SNMPData{
+					columnOID: ".2",
+					oid: ".2.1",
+					value: "also a string1",
+					valueType: stringVal,
+				}
+				coidRA22 := SNMPData{
+					columnOID: ".2",
+					oid: ".2.2",
+					value: "also a string2",
+					valueType: stringVal,
+				}
+				coid31 := SNMPData{
+					columnOID: ".3",
+					oid: ".3.1",
+					value: int64(3),
+					valueType: integerVal,
+				}
+				coid32 := SNMPData{
+					columnOID: ".3",
+					oid: ".3.2",
+					value: int64(4),
+					valueType: integerVal,
+				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
+				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetIndexedData", []string{".1", ".2"}, mock.Anything).Return([]SNMPData{coidRA11, coidRA12, coidRA21, coidRA22}).Once()
+				mockClient.On("GetIndexedData", []string{".3"}, mock.Anything).Return([]SNMPData{coid31, coid32}).Once()
+				scraper := &snmpScraper{
+					cfg: &Config{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
+							"rattr1": {
+								ScalarOID: ".5.0",
+							},
+							"rattr2": {
+								ScalarOID: ".6.0",
+							},
+							"rattr3": {
+								OID: ".1",
+							},
+							"rattr4": {
+								OID: ".2",
+							},
+						},
+						Metrics: map[string]*MetricConfig{
+							"metric1": {
+								Description: "test description",
+								Unit: "By",
+								Gauge: &GaugeMetric{
+									ValueType: "int",
+								},
+								ColumnOIDs: []ColumnOID{
+									{
+										OID: ".3",
+										ResourceAttributes: []string{"rattr1", "rattr2", "rattr3", "rattr4"},
+									},
+								},
+							},
+						},
+					},
+					settings: receivertest.NewNopCreateSettings(),
+					client:   mockClient,
+					logger:   zap.NewNop(),
+				}
 
-		// 		expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-		// 			 goldenPath := filepath.Join("testdata", "expected_metrics", "23_multiple_scalar_oid_string_with_multiple_coid_ra_string_on_coid_metric_golden.yaml")
-		// 			 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		// 			 require.NoError(t, err)
-		// 			 return expectedMetrics
-		// 		}
-		// 		expectedMetrics := expectedMetricGen(t)
-		// 		metrics, err := scraper.scrape(context.Background())
-		// 		require.NoError(t, err)
-		// 		err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricDataPointsOrder())
-		// 		require.NoError(t, err)
-		// 	},
-		// },
+				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
+					 goldenPath := filepath.Join("testdata", "expected_metrics", "23_multiple_scalar_oid_string_with_multiple_coid_ra_string_on_coid_metric_golden.yaml")
+					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					 require.NoError(t, err)
+					 return expectedMetrics
+				}
+				expectedMetrics := expectedMetricGen(t)
+				metrics, err := scraper.scrape(context.Background())
+				require.NoError(t, err)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
+				require.NoError(t, err)
+			},
+		},
 		{
 			desc: "ScalarOID (string) resource attribute attached to ColumnOID metric alongside a ColumnOID (string) attribute creates metric (24)",
 			testFunc: func(t *testing.T) {
@@ -2838,150 +2838,150 @@ func TestScrape(t *testing.T) {
 				require.NoError(t, err)
 			},
 		},
-		// {
-		// desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
-		// 	testFunc: func (t *testing.T) {
-		// 		mockClient := new(MockClient)
-		// 		scalarRA1 := SNMPData{
-		// 			oid: ".5.0",
-		// 			value: "scalar",
-		// 			valueType: stringVal,
-		// 		}
-		// 		scalarRA2 := SNMPData{
-		// 			oid: ".7.0",
-		// 			value: "also scalar",
-		// 			valueType: stringVal,
-		// 		}
-		// 		scalarOID := SNMPData{
-		// 			oid: ".6.0",
-		// 			value: int64(6),
-		// 			valueType: integerVal,
-		// 		}
-		// 		mockClient.On("Connect").Return(nil)
-		// 		mockClient.On("Close").Return(nil)
-		// 		mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
-		// 		mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]SNMPData{scalarOID}).Once()
-		// 		scraper := &snmpScraper{
-		// 			cfg: &Config{
-		// 				ResourceAttributes: map[string]*ResourceAttributeConfig{
-		// 					"rattr1": {
-		// 						ScalarOID: ".5.0",
-		// 					},
-		// 					"rattr2": {
-		// 						ScalarOID: ".7.0",
-		// 					},
-		// 				},
-		// 				Metrics: map[string]*MetricConfig{
-		// 					"metric1": {
-		// 						Description: "test description",
-		// 						Unit: "By",
-		// 						Gauge: &GaugeMetric{
-		// 							ValueType: "int",
-		// 						},
-		// 						ScalarOIDs: []ScalarOID{
-		// 							{
-		// 								OID: ".6.0",
-		// 								ResourceAttributes: []string{"rattr1", "rattr2"},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			settings: receivertest.NewNopCreateSettings(),
-		// 			client:   mockClient,
-		// 			logger:   zap.NewNop(),
-		// 		}
+		{
+		desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
+			testFunc: func (t *testing.T) {
+				mockClient := new(MockClient)
+				scalarRA1 := SNMPData{
+					oid: ".5.0",
+					value: "scalar",
+					valueType: stringVal,
+				}
+				scalarRA2 := SNMPData{
+					oid: ".7.0",
+					value: "also scalar",
+					valueType: stringVal,
+				}
+				scalarOID := SNMPData{
+					oid: ".6.0",
+					value: int64(6),
+					valueType: integerVal,
+				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
+				mockClient.On("GetScalarData", []string{".5.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetScalarData", []string{".6.0"}, mock.Anything).Return([]SNMPData{scalarOID}).Once()
+				scraper := &snmpScraper{
+					cfg: &Config{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
+							"rattr1": {
+								ScalarOID: ".5.0",
+							},
+							"rattr2": {
+								ScalarOID: ".7.0",
+							},
+						},
+						Metrics: map[string]*MetricConfig{
+							"metric1": {
+								Description: "test description",
+								Unit: "By",
+								Gauge: &GaugeMetric{
+									ValueType: "int",
+								},
+								ScalarOIDs: []ScalarOID{
+									{
+										OID: ".6.0",
+										ResourceAttributes: []string{"rattr1", "rattr2"},
+									},
+								},
+							},
+						},
+					},
+					settings: receivertest.NewNopCreateSettings(),
+					client:   mockClient,
+					logger:   zap.NewNop(),
+				}
 
-		// 		expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-		// 			 goldenPath := filepath.Join("testdata", "expected_metrics", "27_multiple_scalar_ra_string_on_scalar_metric_golden.yaml")
-		// 			 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		// 			 require.NoError(t, err)
-		// 			 return expectedMetrics
-		// 		}
-		// 		expectedMetrics := expectedMetricGen(t)
-		// 		metrics, err := scraper.scrape(context.Background())
-		// 		require.NoError(t, err)
-		// 		err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
-		// 		require.NoError(t, err)
-		// 	},
-		// },
-		// {
-		// desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
-		// 	testFunc: func (t *testing.T) {
-		// 		mockClient := new(MockClient)
-		// 		scalarRA := SNMPData{
-		// 			oid: ".5.0",
-		// 			value: "scalar",
-		// 			valueType: stringVal,
-		// 		}
-		// 		scalarOID1 := SNMPData{
-		// 			oid: ".6.0",
-		// 			value: int64(6),
-		// 			valueType: integerVal,
-		// 		}
-		// 		scalarOID2 := SNMPData{
-		// 			oid: ".7.0",
-		// 			value: int64(7),
-		// 			valueType: integerVal,
-		// 		}
-		// 		mockClient.On("Connect").Return(nil)
-		// 		mockClient.On("Close").Return(nil)
-		// 		mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
-		// 		mockClient.On("GetScalarData", []string{".6.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarOID1, scalarOID2}).Once()
-		// 		scraper := &snmpScraper{
-		// 			cfg: &Config{
-		// 				ResourceAttributes: map[string]*ResourceAttributeConfig{
-		// 					"rattr1": {
-		// 						ScalarOID: ".5.0",
-		// 					},
-		// 				},
-		// 				Metrics: map[string]*MetricConfig{
-		// 					"metric1": {
-		// 						Description: "test description",
-		// 						Unit: "By",
-		// 						Gauge: &GaugeMetric{
-		// 							ValueType: "int",
-		// 						},
-		// 						ScalarOIDs: []ScalarOID{
-		// 							{
-		// 								OID: ".6.0",
-		// 								ResourceAttributes: []string{"rattr1"},
-		// 							},
-		// 						},
-		// 					},
-		// 					"metric2": {
-		// 						Description: "test description",
-		// 						Unit: "By",
-		// 						Gauge: &GaugeMetric{
-		// 							ValueType: "int",
-		// 						},
-		// 						ScalarOIDs: []ScalarOID{
-		// 							{
-		// 								OID: ".7.0",
-		// 								ResourceAttributes: []string{"rattr1"},
-		// 							},
-		// 						},
-		// 					},
-		// 				},
-		// 			},
-		// 			settings: receivertest.NewNopCreateSettings(),
-		// 			client:   mockClient,
-		// 			logger:   zap.NewNop(),
-		// 		}
+				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
+					 goldenPath := filepath.Join("testdata", "expected_metrics", "27_multiple_scalar_ra_string_on_scalar_metric_golden.yaml")
+					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					 require.NoError(t, err)
+					 return expectedMetrics
+				}
+				expectedMetrics := expectedMetricGen(t)
+				metrics, err := scraper.scrape(context.Background())
+				require.NoError(t, err)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
+				require.NoError(t, err)
+			},
+		},
+		{
+		desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
+			testFunc: func (t *testing.T) {
+				mockClient := new(MockClient)
+				scalarRA := SNMPData{
+					oid: ".5.0",
+					value: "scalar",
+					valueType: stringVal,
+				}
+				scalarOID1 := SNMPData{
+					oid: ".6.0",
+					value: int64(6),
+					valueType: integerVal,
+				}
+				scalarOID2 := SNMPData{
+					oid: ".7.0",
+					value: int64(7),
+					valueType: integerVal,
+				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
+				mockClient.On("GetScalarData", []string{".5.0"}, mock.Anything).Return([]SNMPData{scalarRA}).Once()
+				mockClient.On("GetScalarData", []string{".6.0", ".7.0"}, mock.Anything).Return([]SNMPData{scalarOID1, scalarOID2}).Once()
+				scraper := &snmpScraper{
+					cfg: &Config{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
+							"rattr1": {
+								ScalarOID: ".5.0",
+							},
+						},
+						Metrics: map[string]*MetricConfig{
+							"metric1": {
+								Description: "test description",
+								Unit: "By",
+								Gauge: &GaugeMetric{
+									ValueType: "int",
+								},
+								ScalarOIDs: []ScalarOID{
+									{
+										OID: ".6.0",
+										ResourceAttributes: []string{"rattr1"},
+									},
+								},
+							},
+							"metric2": {
+								Description: "test description",
+								Unit: "By",
+								Gauge: &GaugeMetric{
+									ValueType: "int",
+								},
+								ScalarOIDs: []ScalarOID{
+									{
+										OID: ".7.0",
+										ResourceAttributes: []string{"rattr1"},
+									},
+								},
+							},
+						},
+					},
+					settings: receivertest.NewNopCreateSettings(),
+					client:   mockClient,
+					logger:   zap.NewNop(),
+				}
 
-		// 		expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-		// 			 goldenPath := filepath.Join("testdata", "expected_metrics", "28_two_scalar_oid_metrics_with_same_resource_attribute_golden.yaml")
-		// 			 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-		// 			 require.NoError(t, err)
-		// 			 return expectedMetrics
-		// 		}
-		// 		expectedMetrics := expectedMetricGen(t)
-		// 		metrics, err := scraper.scrape(context.Background())
-		// 		require.NoError(t, err)
-		// 		err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
-		// 		require.NoError(t, err)
-		// 	},
-		// },
+				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
+					 goldenPath := filepath.Join("testdata", "expected_metrics", "28_two_scalar_oid_metrics_with_same_resource_attribute_golden.yaml")
+					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					 require.NoError(t, err)
+					 return expectedMetrics
+				}
+				expectedMetrics := expectedMetricGen(t)
+				metrics, err := scraper.scrape(context.Background())
+				require.NoError(t, err)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
+				require.NoError(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {

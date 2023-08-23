@@ -4,6 +4,7 @@
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -102,6 +103,14 @@ func newConfigHelper(cfg *Config) *configHelper {
 			ch.resourceAttributeColumnOIDs = append(ch.resourceAttributeColumnOIDs, resourceAttributeCfg.OID)
 		}
 	}
+
+	// We expect these []string to be sorted later (i.e. mocks and resourceKey)
+	sort.Strings(ch.metricScalarOIDs)
+	sort.Strings(ch.metricColumnOIDs)
+	sort.Strings(ch.attributeColumnOIDs)
+	sort.Strings(ch.resourceAttributeScalarOIDs)
+	sort.Strings(ch.resourceAttributeColumnOIDs)
+
 	return &ch
 }
 
