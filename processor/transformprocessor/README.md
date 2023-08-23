@@ -365,7 +365,7 @@ transform:
     - context: resource
       statements:
         # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs
