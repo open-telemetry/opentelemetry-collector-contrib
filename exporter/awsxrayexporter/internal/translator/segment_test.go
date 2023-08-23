@@ -315,6 +315,39 @@ func TestClientSpanWithRpcHost(t *testing.T) {
 	assert.Equal(t, "com.foo.AnimalService", *segment.Name)
 }
 
+func TestSpanWithInvalidTraceId(t *testing.T) {
+	spanName := "platformapi.widgets.searchWidgets"
+	attributes := make(map[string]interface{})
+	attributes[conventions.AttributeHTTPMethod] = "GET"
+	attributes[conventions.AttributeHTTPScheme] = "ipv6"
+	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
+	attributes[conventions.AttributeNetPeerPort] = "9443"
+	attributes[conventions.AttributeHTTPTarget] = spanName
+	resource := constructDefaultResource()
+	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
+	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
+	timeEvents.CopyTo(span.Events())
+	traceID := span.TraceID()
+	traceID[0] = 0x11
+	span.SetTraceID(traceID)
+
+	_, err := MakeSegmentDocumentString(span, resource, nil, false, nil)
+
+	assert.NotNil(t, err)
+}
+
+func TestSpanWithExpiredTraceId(t *testing.T) {
+	// First Build expired TraceId
+	const maxAge = 60 * 60 * 24 * 30
+	ExpiredEpoch := time.Now().Unix() - maxAge - 1
+
+	tempTraceID := newTraceID()
+	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
+
+	_, err := convertToAmazonTraceID(tempTraceID)
+	assert.NotNil(t, err)
+}
+
 func TestFixSegmentName(t *testing.T) {
 	validName := "EP @ test_15.testing-d\u00F6main.org#GO"
 	fixedName := fixSegmentName(validName)
