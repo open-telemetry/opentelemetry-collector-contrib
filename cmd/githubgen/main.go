@@ -138,10 +138,15 @@ func run(folder string, allowlistFilePath string) error {
 	if err != nil {
 		return err
 	}
-	allowlist := strings.Split(string(allowlistData), "\n")
+	allowlistLines := strings.Split(string(allowlistData), "\n")
+
+	allowlist := make(map[string]struct{}, len(allowlistLines))
+	for _, line := range allowlistLines {
+		allowlist[line] = struct{}{}
+	}
 
 	components := map[string]metadata{}
-	foldersList := []string{}
+	var foldersList []string
 	maxLength := 0
 	allCodeowners := make(map[string]struct{}, 24)
 	err = filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
@@ -178,14 +183,15 @@ func run(folder string, allowlistFilePath string) error {
 	var missingCodeowners []string
 	var duplicateCodeowners []string
 	for codeowner := range allCodeowners {
-		present := inList(members, codeowner)
+		_, present := members[codeowner]
 
 		if !present {
-			allowed := inList(allowlist, codeowner) || strings.HasPrefix(codeowner, "open-telemetry/")
+			_, allowed := allowlist[codeowner]
+			allowed = allowed || strings.HasPrefix(codeowner, "open-telemetry/")
 			if !allowed {
 				missingCodeowners = append(missingCodeowners, codeowner)
 			}
-		} else if inList(allowlist, codeowner) {
+		} else if _, ok := allowlist[codeowner]; ok {
 			duplicateCodeowners = append(duplicateCodeowners, codeowner)
 		}
 	}
@@ -246,26 +252,17 @@ LOOP:
 	return nil
 }
 
-func inList(list []string, id string) bool {
-	for _, m := range list {
-		if id == m {
-			return true
-		}
-	}
-	return false
-}
-
-func getGithubMembers() ([]string, error) {
+func getGithubMembers() (map[string]struct{}, error) {
 	client := github.NewTokenClient(context.Background(), os.Getenv("GITHUB_TOKEN"))
 	var allUsers []*github.User
-	i := 0
+	pageIndex := 0
 	for {
 		users, resp, err := client.Organizations.ListMembers(context.Background(), "open-telemetry",
 			&github.ListMembersOptions{
 				PublicOnly: false,
 				ListOptions: github.ListOptions{
 					PerPage: 50,
-					Page:    i,
+					Page:    pageIndex,
 				},
 			},
 		)
@@ -277,12 +274,12 @@ func getGithubMembers() ([]string, error) {
 			break
 		}
 		allUsers = append(allUsers, users...)
-		i++
+		pageIndex++
 	}
 
-	usernames := make([]string, len(allUsers))
-	for i, u := range allUsers {
-		usernames[i] = *u.Login
+	usernames := make(map[string]struct{}, len(allUsers))
+	for _, u := range allUsers {
+		usernames[*u.Login] = struct{}{}
 	}
 	return usernames, nil
 }
