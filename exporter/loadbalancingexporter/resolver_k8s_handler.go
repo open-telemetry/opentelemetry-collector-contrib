@@ -44,15 +44,24 @@ func (h handler) OnAdd(obj interface{}, _ bool) {
 }
 
 func (h handler) OnUpdate(oldObj, newObj interface{}) {
-	switch oldObj.(type) {
+	switch oldEps := oldObj.(type) {
 	case *corev1.Endpoints:
+		epRemove := convertToEndpoints(oldEps)
+		for _, ep := range epRemove {
+			h.endpoints.Delete(ep)
+		}
+		if len(epRemove) > 0 {
+			_, _ = h.callback(context.Background())
+		}
+
 		newEps, ok := newObj.(*corev1.Endpoints)
 		if !ok {
+			h.logger.Warn("Got an unexpected Kubernetes data type during the update of the pods for a service", zap.Any("obj", newObj))
+			_ = stats.RecordWithTags(context.Background(), k8sResolverSuccessFalseMutators, mNumResolutions.M(1))
 			return
 		}
-		endpoints := convertToEndpoints(newEps)
 		changed := false
-		for _, ep := range endpoints {
+		for _, ep := range convertToEndpoints(newEps) {
 			if _, loaded := h.endpoints.LoadOrStore(ep, true); !loaded {
 				changed = true
 			}

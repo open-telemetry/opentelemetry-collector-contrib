@@ -181,7 +181,7 @@ func (emf *emfExporter) shutdown(_ context.Context) error {
 		}
 	}
 
-	return nil
+	return emf.metricTranslator.Shutdown()
 }
 
 func wrapErrorIfBadRequest(err error) error {

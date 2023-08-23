@@ -189,10 +189,39 @@ func TestMatcher(t *testing.T) {
 	}{
 		{
 			name:      "NoMatch",
-			files:     []string{"err.2023020611.log", "err.2023020612.log", "err.2023020610.log", "err.2023020609.log"},
-			include:   []string{"err.*.log"},
-			exclude:   []string{"err.*.log"},
+			files:     []string{},
+			include:   []string{"*.log"},
 			expectErr: "no files match the configured criteria",
+			expected:  []string{},
+		},
+		{
+			name:     "OneMatch",
+			files:    []string{"a.log"},
+			include:  []string{"*.log"},
+			expected: []string{"a.log"},
+		},
+		{
+			name:      "AllExcluded",
+			files:     []string{"2023020611.log", "2023020612.log", "2023020610.log", "2023020609.log"},
+			include:   []string{"*.log"},
+			exclude:   []string{"*.log"},
+			expectErr: "no files match the configured criteria",
+			expected:  []string{},
+		},
+		{
+			name:    "AllFiltered",
+			files:   []string{"4567.log"},
+			include: []string{"*.log"},
+			filterCriteria: OrderingCriteria{
+				Regex: `(?P<value>\d{4}).*log`, // input will match this
+				SortBy: []Sort{
+					{
+						SortType: sortTypeNumeric,
+						RegexKey: "wrong", // but will have this regex key
+					},
+				},
+			},
+			expectErr: `strconv.Atoi: parsing "": invalid syntax`,
 			expected:  []string{},
 		},
 		{
@@ -559,7 +588,7 @@ func TestMatcher(t *testing.T) {
 				Exclude:          tc.exclude,
 				OrderingCriteria: tc.filterCriteria,
 			})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			files, err := matcher.MatchFiles()
 			if tc.expectErr != "" {
