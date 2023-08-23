@@ -349,24 +349,35 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 }
 
 func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
-	spanName := "platformapi.widgets.searchWidgets"
+	spanName := "ABC.payment"
+	parentSpanID := newSegmentID()
+	user := "testingT"
 	attributes := make(map[string]interface{})
-	attributes[conventions.AttributeHTTPMethod] = "GET"
-	attributes[conventions.AttributeHTTPScheme] = "ipv6"
-	attributes[conventions.AttributeNetPeerIP] = "2607:f8b0:4000:80c::2004"
-	attributes[conventions.AttributeNetPeerPort] = "9443"
-	attributes[conventions.AttributeHTTPTarget] = spanName
+	attributes[conventions.AttributeHTTPMethod] = "POST"
+	attributes[conventions.AttributeHTTPScheme] = "https"
+	attributes[conventions.AttributeHTTPHost] = "payment.amazonaws.com"
+	attributes[conventions.AttributeHTTPTarget] = "/"
+	attributes[conventions.AttributeRPCService] = "ABC"
+	attributes[awsRemoteService] = "ProducerService"
+
 	resource := constructDefaultResource()
-	span := constructClientSpan(pcommon.NewSpanIDEmpty(), spanName, ptrace.StatusCodeUnset, "OK", attributes)
-	timeEvents := constructTimedEventsWithSentMessageEvent(span.StartTimestamp())
-	timeEvents.CopyTo(span.Events())
+	span := constructProducerSpan(parentSpanID, spanName, 0, "OK", attributes)
 	traceID := span.TraceID()
 	traceID[0] = 0x11
 	span.SetTraceID(traceID)
 
-	_, err := MakeSegmentDocumentString(span, resource, nil, false, nil, true)
+	segment, err := MakeSegment(span, resource, nil, false, nil, true)
+	require.Nil(t, err)
+	assert.Equal(t, "ProducerService", *segment.Name)
+	assert.Equal(t, "subsegment", *segment.Type)
 
-	assert.Nil(t, err)
+	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, true)
+
+	require.Nil(t, err)
+	assert.NotNil(t, jsonStr)
+	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
+	assert.False(t, strings.Contains(jsonStr, user))
+	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
 func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
@@ -377,8 +388,10 @@ func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
 	tempTraceID := newTraceID()
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
-	_, err := convertToAmazonTraceID(tempTraceID, true)
+	amazonTraceID, err := convertToAmazonTraceID(tempTraceID, true)
 	assert.Nil(t, err)
+	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
+	assert.Equal(t, expectedTraceID, amazonTraceID)
 }
 
 func TestFixSegmentName(t *testing.T) {
