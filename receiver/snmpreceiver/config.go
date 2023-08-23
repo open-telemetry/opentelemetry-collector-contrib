@@ -17,6 +17,7 @@ import (
 // Config Defaults
 const (
 	defaultCollectionInterval = 10 * time.Second // In seconds
+	defaultTimeout            = 5 * time.Second  // In seconds
 	defaultEndpoint           = "udp://localhost:161"
 	defaultVersion            = "v2c"
 	defaultCommunity          = "public"
@@ -75,6 +76,10 @@ type Config struct {
 	// If no scheme is given, udp4 is assumed.
 	// If no port is given, 161 is assumed.
 	Endpoint string `mapstructure:"endpoint"`
+
+	// Timeout for each SNMP request.
+	// Default: 5 seconds
+	Timeout time.Duration `mapstructure:"timeout"`
 
 	// Version is the version of SNMP to use for this connection.
 	// Valid options: v1, v2c, v3.

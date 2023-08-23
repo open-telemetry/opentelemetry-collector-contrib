@@ -38,6 +38,7 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: defaultCollectionInterval,
 					},
 					Endpoint:      defaultEndpoint,
+					Timeout:       defaultTimeout,
 					Version:       defaultVersion,
 					Community:     defaultCommunity,
 					SecurityLevel: "no_auth_no_priv",

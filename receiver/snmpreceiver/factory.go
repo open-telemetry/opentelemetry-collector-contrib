@@ -35,6 +35,7 @@ func createDefaultConfig() component.Config {
 			CollectionInterval: defaultCollectionInterval,
 		},
 		Endpoint:      defaultEndpoint,
+		Timeout:       defaultTimeout,
 		Version:       defaultVersion,
 		Community:     defaultCommunity,
 		SecurityLevel: defaultSecurityLevel,
@@ -68,7 +69,7 @@ func createMetricsReceiver(
 	return scraperhelper.NewScraperControllerReceiver(&snmpConfig.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
 }
 
-// addMissingConfigDefaults adds any missing comfig parameters that have defaults
+// addMissingConfigDefaults adds any missing config parameters that have defaults
 func addMissingConfigDefaults(cfg *Config) error {
 	// Add the schema prefix to the endpoint if it doesn't contain one
 	if !strings.Contains(cfg.Endpoint, "://") {
