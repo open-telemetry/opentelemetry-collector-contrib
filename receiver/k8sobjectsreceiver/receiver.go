@@ -6,6 +6,9 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"net/http"
 	"sync"
 	"time"
 
@@ -141,37 +144,65 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 }
 
 func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
-
 	stopperChan := make(chan struct{})
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
-	resourceVersion, err := getResourceVersion(ctx, config, resource)
-	if err != nil {
-		kr.setting.Logger.Error("could not retrieve an initial resourceVersion", zap.String("resource", config.gvr.String()), zap.Error(err))
-		return
-	}
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
 		options.FieldSelector = config.FieldSelector
 		options.LabelSelector = config.LabelSelector
 		return resource.Watch(ctx, options)
 	}
 
+	_, cancel := context.WithCancel(ctx)
+	cfgCopy := config
+	wait.UntilWithContext(ctx, func(newCtx context.Context) {
+		resourceVersion, err := getResourceVersion(ctx, cfgCopy, resource)
+		if err != nil {
+			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
+			cancel()
+			return
+		}
+
+		done := kr.doWatch(newCtx, cfgCopy, resourceVersion, watchFunc, stopperChan)
+		if done {
+			cancel()
+			return
+		}
+
+		// got a 410 and need to restart with a fresh resource version
+		cfgCopy.ResourceVersion = ""
+	}, 0)
+}
+
+func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
-		return
+		return true
 	}
 
+	defer watcher.Stop()
 	res := watcher.ResultChan()
 	for {
 		select {
 		case data, ok := <-res:
+			if data.Type == apiWatch.Error {
+				errObject := apierrors.FromObject(data.Object)
+				statusErr, ok := errObject.(*apierrors.StatusError)
+				if ok && statusErr.ErrStatus.Code == http.StatusGone {
+					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
+					// we received a 410 so we need to restart
+					return false
+				}
+			}
+
 			if !ok {
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
-				return
+				return true
 			}
+
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
@@ -182,10 +213,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 			}
 		case <-stopperChan:
 			watcher.Stop()
-			return
+			return true
 		}
 	}
-
 }
 
 func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
