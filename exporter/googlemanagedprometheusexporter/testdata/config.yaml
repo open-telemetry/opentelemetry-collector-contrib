@@ -14,9 +14,12 @@ exporters:
       enabled: true
       num_consumers: 2
       queue_size: 10
-  googlemanagedprometheus/customprefix:
     metric:
       prefix: my-metric-domain.com
+      add_metric_suffixes: false
+      extra_metrics_config:
+        enable_target_info: false
+        enable_scope_info: false
 
 
 service:
