@@ -171,11 +171,12 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 			return
 		}
 
-		// got a 410 and need to restart with a fresh resource version
+		// need to restart with a fresh resource version
 		cfgCopy.ResourceVersion = ""
 	}, 0)
 }
 
+// doWatch returns true when watching is done, false when watching should be restarted.
 func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
