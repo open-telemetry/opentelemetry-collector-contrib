@@ -184,6 +184,8 @@ jobs:
         run: make checkdoc
       - name: CheckMetadata
         run: make checkmetadata
+      - name: CheckApi
+        run: make checkapi
       - name: Porto
         run: |
           make -j2 goporto
