@@ -589,7 +589,7 @@ type TimeGetter[K any] interface {
 	Get(ctx context.Context, tCtx K) (time.Time, error)
 }
 
-// StandardIntGetter is a basic implementation of IntGetter
+// StandardTimeGetter is a basic implementation of IntGetter
 type StandardTimeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
