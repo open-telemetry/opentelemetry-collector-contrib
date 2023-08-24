@@ -46,6 +46,8 @@ jobs:
           repository: prometheus/compliance
           path: compliance
       - name: Copy binary to compliance directory
+        #The actual name of downloaded artifact at https://github.com/prometheus/compliance/blob/main/remote_write_sender/targets/otel.go#L8 is `otelcol_0.42.0_linux_amd64`,
+        #so we place the collector contrib artefact under the same name in the bin folder to run.
         run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_0.42.0_linux_amd64
       - name: Run compliance tests
         run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
