@@ -6,9 +6,7 @@ OTEL_VERSION=main
 OTEL_RC_VERSION=main
 OTEL_STABLE_VERSION=main
 
-BUILD_INFO_IMPORT_PATH=github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelcontribcore/internal/version
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
-BUILD_INFO=-ldflags "-X $(BUILD_INFO_IMPORT_PATH).Version=$(VERSION)"
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -255,7 +253,8 @@ mdatagen-test:
 
 .PHONY: gengithub
 gengithub:
-	$(GOCMD) run cmd/githubgen/main.go .
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -286,7 +285,7 @@ genotelcontribcol: $(BUILDER)
 .PHONY: otelcontribcol
 otelcontribcol:
 	cd ./cmd/otelcontribcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/otelcontribcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
@@ -297,13 +296,13 @@ genoteltestbedcol: $(BUILDER)
 .PHONY: oteltestbedcol
 oteltestbedcol:
 	cd ./cmd/oteltestbedcol && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/oteltestbedcol_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 # Build the telemetrygen executable.
 .PHONY: telemetrygen
 telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
-		$(BUILD_INFO) -tags $(GO_BUILD_TAGS) .
+		-tags $(GO_BUILD_TAGS) .
 
 .PHONY: update-dep
 update-dep:
@@ -352,6 +351,10 @@ checkdoc: $(CHECKFILE)
 .PHONY: checkmetadata
 checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
+
+.PHONY: checkapi
+checkapi:
+	$(GOCMD) run cmd/checkapi/main.go .
 
 .PHONY: all-checklinks
 all-checklinks:

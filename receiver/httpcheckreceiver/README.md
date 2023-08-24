@@ -27,15 +27,16 @@ httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 
 ## Configuration
 
-The following configuration settings are required:
+The following configuration settings are available:
 
-- `endpoint`: The URL of the endpoint to be monitored.
+- `targets` (required): The list of targets to be monitored.
+- `collection_interval` (optional, default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (optional, default = `1s`): defines how long this receiver waits before starting.
 
-The following configuration settings are optional:
+Each target has the following properties:
 
-- `method` (default: `GET`): The method used to call the endpoint.
-- `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `endpoint` (required): the URL to be monitored
+- `method` (optional, default: `GET`): The HTTP method used to call the endpoint
 
 ### Example Configuration
 

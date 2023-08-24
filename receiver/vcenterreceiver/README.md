@@ -57,3 +57,38 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+### Feature gates
+
+#### Performance metrics dimensions
+
+These metrics were incorrectly dimensioned previously but the desired fix is a breaking change. To avoid breaking existing users, this feature gate is used to control whether the dimensions are fixed or not. This feature gate is planned to removed in two months.
+
+- `vcenter.vm.network.throughput`
+- `vcenter.vm.network.usage`
+- `vcenter.vm.network.packet.count`
+- `vcenter.vm.disk.latency.avg`
+- `vcenter.vm.disk.latency.max`
+- `vcenter.host.network.usage`
+- `vcenter.host.network.throughput`
+- `vcenter.host.network.packet.count`
+- `vcenter.host.network.packet.errors`
+- `vcenter.host.disk.latency.avg`
+- `vcenter.host.disk.latency.max`
+- `vcenter.host.disk.throughput`
+
+These metrics were improperly dimensioned and needed another metric attribute `object` in order to properly dimension the data.
+
+1. v0.84.0, August 2023:
+
+- The version of the receiver will keep default behavior.
+- `receiver.vcenter.emitPerfMetricsWithObjects` is *disabled* by default.
+
+2. v0.86.0, September 2023:
+
+- The receiver will emit the `object` metric attribute by default
+- `receiver.vcenter.emitPerfMetricsWithObjects` is *enabled* by default.
+
+3. v0.88.0, October 2023:
+
+- The feature gates are removed.
+- Performance metrics will always include the `object` metric attribute.

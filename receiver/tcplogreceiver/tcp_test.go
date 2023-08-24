@@ -98,7 +98,7 @@ func TestDecodeInputConfigFailure(t *testing.T) {
 		},
 		InputConfig: func() tcp.Config {
 			c := tcp.NewConfig()
-			c.Encoding.Encoding = "fake"
+			c.Encoding = "fake"
 			return *c
 		}(),
 	}
