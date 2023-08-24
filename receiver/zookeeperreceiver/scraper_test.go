@@ -299,7 +299,8 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-			ctx, _ := context.WithTimeout(context.Background(), z.config.Timeout)
+			ctx, cancel := context.WithTimeout(context.Background(), z.config.Timeout)
+			defer cancel()
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
