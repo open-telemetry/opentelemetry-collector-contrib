@@ -288,8 +288,6 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, "zookeeper", z.Name())
 
-			ctx := context.Background()
-
 			if tt.setConnectionDeadline != nil {
 				z.setConnectionDeadline = tt.setConnectionDeadline
 			}
@@ -301,7 +299,7 @@ func TestZookeeperMetricsScraperScrape(t *testing.T) {
 			if tt.sendCmd != nil {
 				z.sendCmd = tt.sendCmd
 			}
-
+			ctx, _ := context.WithTimeout(context.Background(), z.config.Timeout)
 			actualMetrics, err := z.scrape(ctx)
 			require.NoError(t, z.shutdown(ctx))
 
