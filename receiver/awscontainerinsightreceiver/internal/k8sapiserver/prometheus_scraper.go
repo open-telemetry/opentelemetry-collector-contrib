@@ -43,7 +43,7 @@ const (
 
 var (
 	controlPlaneMetricAllowList = []string{
-		"apiserver_storage_oapiserver_storage_objectsbjects",
+		"apiserver_storage_objects",
 		"apiserver_request_total",
 		"apiserver_request_duration_seconds.*",
 		"apiserver_admission_controller_admission_duration_seconds.*",
