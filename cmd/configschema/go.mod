@@ -559,7 +559,7 @@ require (
 	github.com/relvacode/iso8601 v1.3.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.15 // indirect
-	github.com/scalyr/dataset-go v0.12.1 // indirect
+	github.com/scalyr/dataset-go v0.14.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
