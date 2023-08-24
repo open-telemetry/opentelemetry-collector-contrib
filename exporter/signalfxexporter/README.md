@@ -140,7 +140,7 @@ will be replaced with a `_`.
   api_tls:
       ca_file: "/etc/opt/certs/ca.pem"
   ```
-
+- `drop_histogram_buckets`:  (default = `false`) if set to true, histogram buckets will not be translated into datapoints with `_bucket` suffix but will be dropped instead, only datapoints with `_sum`, `_count`, `_min` (optional) and `_max` (optional) suffixes will be sent.
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).

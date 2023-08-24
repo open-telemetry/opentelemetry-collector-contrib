@@ -1,0 +1,96 @@
+resourceMetrics:
+  - resource:
+    scopeMetrics:
+      - metrics:
+          - description: Timestamp normalization with attributes
+            name: test.first
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "3333333333333333333"
+                  timeUnixNano: "5555555555555555555"
+                - asInt: "0"
+                  attributes:
+                    - key: b
+                      value:
+                        stringValue: b
+                  startTimeUnixNano: "3333333333333333333"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "0"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "0"
+                  attributes:
+                    - key: d
+                      value:
+                        stringValue: d
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: a
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "8888888888888888888"
+              isMonotonic: true
+            unit: By
+          - description: Timestamp normalization without attributes
+            name: test.second
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1111111111111111111"
+                  timeUnixNano: "5555555555555555555"
+                - asInt: "1"
+                  startTimeUnixNano: "3333333333333333333"
+                  timeUnixNano: "3333333333333333333"
+                - asInt: "5"
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "10"
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "50"
+                  startTimeUnixNano: "1924857624581089658"
+                  timeUnixNano: "8888888888888888888"
+              isMonotonic: true
+            unit: By
+          - description: Timestamp normalization without startTimeUnixNano
+            name: test.second
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  timeUnixNano: "5555555555555555555"
+                - asInt: "1"
+                  timeUnixNano: "3333333333333333333"
+                - asInt: "5"
+                  timeUnixNano: "2222222222222222222"
+                - asInt: "10"
+                  timeUnixNano: "1111111111111111111"
+                - asInt: "50"
+                  timeUnixNano: "8888888888888888888"
+              isMonotonic: true
+            unit: By
+        scope:
+          name: otelcol/timestampNormalization
+          version: latest
+          

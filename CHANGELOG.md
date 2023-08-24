@@ -7,6 +7,109 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.83.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/k8scluster`: Unify predefined and custom node metrics. (#24776)
+  - Update metrics description and units to be consistent
+  - Remove predefined metrics definitions from metadata.yaml because they are controlled by `node_conditions_to_report` 
+    and `allocatable_types_to_report` config options.
+  
+- `prometheusexporter`: Remove invalid unit translations from the prometheus exporters (#24647)
+- `receiver/prometheusexec`: Removes the deprecated prometheus_exec receiver (#24740)
+
+### 🚀 New components 🚀
+
+- `datadogconnector`: This is a new component that computes Datadog APM Stats in the event that trace pipelines are sampled. (#19740)
+  This component replaces the Datadog processor
+  
+- `gitproviderreceiver`: Add the skeleton for the new gitproviderreceiver in development with accompanying github scraper. (#22028)
+
+### 💡 Enhancements 💡
+
+- `azuredataexplorerexporter`: Add support for managed identity. This enables users to not use Key based authentication (#21924)
+- `awsemfexporter`: Add awsemf.nodimrollupdefault feature gate to aws emf exporter (#23997)
+  Enabling the awsemf.nodimrollupdefault will cause the AWS EMF Exporter to use the NoDimensionRollup configuration
+  setting by default instead of ZeroAndSingleDimensionRollup.
+  
+- `awss3exporter`: add Sumo Logic Installed Collector marshaler (#23212)
+- `receiver/collectdreceiver`: Migrate from opencensus to pdata, change collectd, test to match pdata format. (#20760)
+- `datasetexporter`: Make duration of shutdown procedure configurable to minimise data losses. (#24415)
+- `datasetexporter`: Make sure serverHost field is correctly and always populated on the DataSet events. For more information and available configuration options, please refer to the plugin readme file. (#20660, #24415)
+- `datadogreceiver`: add datadog trace and span id (#23057)
+- `pkg/ottl`: Add support for using addition and subtraction with time and duration (#22009)
+- `transformprocessor`: Add extract_count_metric OTTL function to transform processor (#22853)
+- `transformprocessor`: Add extract_sum_metric OTTL function to transform processor (#22853)
+- `prometheusreceiver`: Don't drop histograms without buckets (#22070)
+- `pkg/ottl`: Add a new Function Getter to the OTTL package, to allow passing Converters as literal parameters. (#22961)
+  Currently OTTL provides no way to use any defined Converter within another Editor/Converter.
+  Although Converters can be passed as a parameter, they are always executed and the result is what is actually passed as the parameter.
+  This allows OTTL to pass Converters themselves as a parameter so they can be executed within the function.
+  
+- `resourcedetectionprocessor`: GCP resource detection processor can automatically add `gcp.gce.instance.hostname` and `gcp.gce.instance.name` attributes. (#24598)
+- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account. (#24411)
+- `hostmetricsreceiver`: Report  logical and physical number of CPUs as metric. (#22099)
+  Use the `system.cpu.logical.count::enabled` and `system.cpu.physical.count::enabled` flags to enable them
+  
+- `k8sclusterreceiver`: Allows disabling metrics and resource attributes (#24568)
+- `k8sclusterreceiver`: Reduce memory utilization (#24769)
+- `k8sattributes`: Added k8s.cluster.uid to k8sattributes processor to add cluster uid (#21974)
+- `resourcedetectionprocessor`: Collect heroku metadata available instead of exiting early. Log at debug level if metadata is missing to help troubleshooting. (#25059)
+- `hostmetricsreceiver`: Improved description of the system.cpu.utilization metrics. (#25115)
+- `cmd/mdatagen`: Avoid reusing the same ResourceBuilder instance for multiple ResourceMetrics (#24762)
+- `resourcedetectionprocessor`: Add detection of os.description to system detector (#24541)
+- `filelogreceiver`: Bump 'filelog.allowHeaderMetadataParsing' feature gate to beta (#18198)
+- `receiver/purefareceiver`: implement the custom label `fa_array_name` to act as a pretty label for metrics received. (#23889, #21248, #22027)
+- `receiver/prometheusreceiver`: Add config `report-extra-scrape-metrics` to report additional prometheus scraping metrics (#21040)
+  Emits additional metrics - scrape_body_size_bytes, scrape_sample_limit, scrape_timeout_seconds. scrape_body_size_bytes metric can be used for checking failed scrapes due to body-size-limit.
+- `receiver/sqlquery`: Set ObservedTimestamp on collected logs (#23776)
+- `exporter/awss3exporter`: Allow custom endpoints to be configured for exporting spans (#21833)
+- `cmd/telemetrygen`: Add ability to set custom path to endpoint. (#24551)
+- `telemetrygen`: Adds batch option to configure whether to batch traces, and size option to configure minimum size in MB of each trace for load testing. (#9597)
+- `webhookreceiver`: Add an optional config setting to set a required header that all incoming requests must provide (#24270)
+- `extension/jaegerremotesampling`: gRPC remote source usage in jaegerremotesampling extension propagates HTTP headers if set in gRPC client config (#24414)
+- `extension/jaegerremotesampling`: gRPC remote source usage in jaegerremotesampling extension supports optional caching via existing `reload_interval` config (#24840)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/sshcheck`: Add the SSH endpoint as a resource attribute (#24441)
+- `awsemfexporter`: Enforce time to live on metric data that is stored for the purpose of cumulative to delta conversions within EMF Exporter (#25058)
+  This change fixes a bug where the cache used to store metric information for cumulative to delta
+  conversions was not enforcing its time to live. This could cause excessive memory growth in certain scenarios which could
+  lead to OOM failures for Collector. To properly fix this issue package global metric caches were removed and replaced
+  with caches that are unique per emf exporter. A byproduct of this change is that no two emf exporters within an 
+  Collector will share a caches leading to more accurate cumulative to delta conversions. 
+  
+- `awsemfexporter`: Add retain_initial_value_of_delta_metric to translateOTelToGroupedMetric, allowing the initial set of metrics to be published (#24051)
+- `carbonreceiver`: Fix Carbon receiver obsrecv operations memory leak (#24275)
+  The carbonreceiver has a memory leak where it will repeatedly open new obsrecv operations but not close them afterwards. Those operations eventually create a burden.
+  
+  The fix is to make sure the receiver only creates an operation per interaction over TCP.
+  
+- `datadogexporter`: Populate OTLP resource attributes in Datadog logs. Changes mapping for `jvm.loaded_classes` from `process.runtime.jvm.classes.loaded` to `process.runtime.jvm.classes.current_loaded`. (#24674)
+- `datadogexporter`: Fix the population of Datadog `system.*` metrics. Ensure the average is within [min, max] in histograms. (#25071)
+  The minimum and maximum estimation is only used when the minimum and maximum are not available in the OTLP payload or this is a cumulative payload.
+- `pkg/stanza`: Create a new decoder for each TCP/UDP connection to prevent concurrent write to buffer. (#24980)
+- `exporter/kafkaexporter`: Fixes a panic when SASL configuration is not present (#24797)
+- `lokitranslator, lokiexporter`: Fixes a panic that occurred during the promotion of nested attributes containing dots to labels (#25125)
+- `awsxrayexporter`: Fix X-Ray Segment status code and exception translations. (#24381)
+- `receiver/haproxy`: Make sure emitted resource metrics have distinct resources by default (#24921)
+  This is done by enabling and renaming the following resource attributes:
+    - proxy_name -> haproxy.proxy_name
+    - service_name -> haproxy.service_name
+  
+- `receiver/k8sobjects`: Fix bug where duplicate data would be ingested for watch mode if the client connection got reset. (#24806)
+- `datadogreceiver`: Fixed NPE on failed to decode message path (#24562)
+- `zipkinreceiver`: Respects zipkin's serialised status tags to be converted to span status (#14965)
+- `datadogexporter`: Correctly set metrics exporter capabilities to state that it mutates data (#24908)
+  This could lead to random panics if using more than one metrics exporter.
+  
+- `processor/resourcedetection`: Do not drop all system attributes if `host.id` cannot be fetched. (#24669)
+- `signalfxexporter`: convert vmpage_io* translated metrics to pages (#25064)
+- `splunkhecreceiver`: aligns success resp body w/ splunk enterprise (#19219)
+  changes resp from plaintext "ok" to json {"text"："success", "code"：0}
+
 ## v0.82.0
 
 ### 🛑 Breaking changes 🛑

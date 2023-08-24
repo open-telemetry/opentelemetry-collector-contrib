@@ -13,6 +13,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/githubgen"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
       interval: "weekly"
@@ -44,6 +49,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/datadogconnector"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -1089,16 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkhecreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 
-go 1.19
+go 1.20
 
 require (
 	github.com/docker/docker v24.0.5+incompatible
