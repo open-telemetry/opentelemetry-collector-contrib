@@ -521,7 +521,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 			err: nil,
@@ -543,7 +543,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 		},
@@ -565,7 +565,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 		},
