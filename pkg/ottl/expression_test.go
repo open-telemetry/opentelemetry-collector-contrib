@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -1549,4 +1551,86 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
+}
+
+func Test_StandardDurationGetter(t *testing.T) {
+	oneHourOneMinuteOneSecond, err := time.ParseDuration("1h1m1s")
+	require.NoError(t, err)
+
+	oneHundredNsecs, err := time.ParseDuration("100ns")
+	require.NoError(t, err)
+
+	tenMilliseconds, err := time.ParseDuration("10ms66us7000ns")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name             string
+		getter           StandardDurationGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "complex duration",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("1h1m1s")
+				},
+			},
+			want:  oneHourOneMinuteOneSecond,
+			valid: true,
+		},
+		{
+			name: "simple duration",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("100ns")
+				},
+			},
+			want:  oneHundredNsecs,
+			valid: true,
+		},
+		{
+			name: "complex duation values less than 1 seconc",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("10ms66us7000ns")
+				},
+			},
+			want:  tenMilliseconds,
+			valid: true,
+		},
+		{
+			name: "invalid duration units",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("70ps")
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unknown unit",
+		},
+		{
+			name: "wrong type - int",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected duration but got int",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
 }
