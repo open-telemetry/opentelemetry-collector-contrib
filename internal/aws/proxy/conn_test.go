@@ -37,7 +37,7 @@ type mock struct {
 	sn              *session.Session
 }
 
-func (m *mock) getEC2Region(s *session.Session) (string, error) {
+func (m *mock) getEC2Region(s *session.Session, imdsRetries int) (string, error) {
 	if m.getEC2RegionErr != nil {
 		return "", m.getEC2RegionErr
 	}
@@ -53,7 +53,7 @@ func logSetup() (*zap.Logger, *observer.ObservedLogs) {
 	return zap.New(core), recorded
 }
 
-func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, error),
+func setupMock(sess *session.Session) (f1 func(s *session.Session, imdsRetries int) (string, error),
 	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error)) {
 	f1 = getEC2Region
 	f2 = newAWSSession
@@ -64,7 +64,7 @@ func setupMock(sess *session.Session) (f1 func(s *session.Session) (string, erro
 }
 
 func tearDownMock(
-	f1 func(s *session.Session) (string, error),
+	f1 func(s *session.Session, imdsRetries int) (string, error),
 	f2 func(roleArn string, region string, logger *zap.Logger) (*session.Session, error),
 ) {
 	getEC2Region = f1

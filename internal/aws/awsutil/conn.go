@@ -16,7 +16,6 @@
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -41,7 +40,7 @@ import (
 
 type ConnAttr interface {
 	newAWSSession(logger *zap.Logger, cfg *AWSSessionSettings, region string) (*session.Session, error)
-	getEC2Region(s *session.Session) (string, error)
+	getEC2Region(s *session.Session, imdsRetries int) (string, error)
 }
 
 // Conn implements connAttr interface.
@@ -76,19 +75,15 @@ func (s *stsCredentialProvider) Retrieve() (credentials.Value, error) {
 	return v, err
 }
 
-func (c *Conn) getEC2Region(s *session.Session) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
-	defer cancel()
+func (c *Conn) getEC2Region(s *session.Session, imdsRetries int) (string, error) {
 	region, err := ec2metadata.New(s, &aws.Config{
-		Retryer:                   override.IMDSRetryer,
+		Retryer:                   override.NewIMDSRetryer(imdsRetries),
 		EC2MetadataEnableFallback: aws.Bool(false),
-	}).RegionWithContext(ctx)
+	}).Region()
 	if err == nil {
 		return region, err
 	}
-	ctxFallbackEnable, cancelFallbackEnable := context.WithTimeout(context.Background(), override.TimePerCall)
-	defer cancelFallbackEnable()
-	return ec2metadata.New(s, &aws.Config{}).RegionWithContext(ctxFallbackEnable)
+	return ec2metadata.New(s, &aws.Config{}).Region()
 }
 
 // AWS STS endpoint constants
@@ -213,7 +208,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		if err != nil {
 			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {
-			awsRegion, err = cn.getEC2Region(es)
+			awsRegion, err = cn.getEC2Region(es, cfg.IMDSRetries)
 			if err != nil {
 				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
 			} else {

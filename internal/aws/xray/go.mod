@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 go 1.19
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409
 	github.com/aws/aws-sdk-go v1.44.309
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.77.0
 	go.uber.org/zap v1.24.0
 )

@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.77.0
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/confmap v0.77.0
@@ -27,7 +27,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83 // indirect
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

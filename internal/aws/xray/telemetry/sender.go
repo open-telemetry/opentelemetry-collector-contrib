@@ -15,7 +15,6 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
-	"context"
 	"os"
 	"sync"
 	"time"
@@ -170,14 +169,10 @@ type ec2MetadataProvider struct {
 }
 
 func (p ec2MetadataProvider) get() string {
-	ctx, cancel := context.WithTimeout(context.Background(), override.TimePerCall)
-	defer cancel()
-	if result, err := p.client.GetMetadataWithContext(ctx, p.metadataKey); err == nil {
+	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
 		return result
 	}
-	childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(context.Background(), override.TimePerCall)
-	defer cancelRetryEnable()
-	if result, err := p.clientFallbackEnable.GetMetadataWithContext(childCtxFallbackEnable, p.metadataKey); err == nil {
+	if result, err := p.clientFallbackEnable.GetMetadata(p.metadataKey); err == nil {
 		return result
 	}
 	return ""
@@ -198,7 +193,7 @@ func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSe
 	}
 	if !settings.LocalMode {
 		metadataClient := ec2metadata.New(sess, &aws.Config{
-			Retryer:                   override.IMDSRetryer,
+			Retryer:                   override.NewIMDSRetryer(settings.IMDSRetries),
 			EC2MetadataEnableFallback: aws.Bool(false),
 		})
 		metadataClientFallbackEnable := ec2metadata.New(sess, &aws.Config{})

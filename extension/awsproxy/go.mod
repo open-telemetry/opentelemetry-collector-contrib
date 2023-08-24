@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.77.0
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/confmap v0.77.0
@@ -13,7 +13,7 @@ require (
 )
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83 // indirect
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409 // indirect
 	github.com/aws/aws-sdk-go v1.44.309 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

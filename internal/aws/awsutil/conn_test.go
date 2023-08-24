@@ -32,7 +32,7 @@ type mockConn struct {
 	sn *session.Session
 }
 
-func (c *mockConn) getEC2Region(s *session.Session) (string, error) {
+func (c *mockConn) getEC2Region(s *session.Session, imdsRetries int) (string, error) {
 	args := c.Called(nil)
 	errorStr := args.String(0)
 	var err error
@@ -137,7 +137,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 		Region: aws.String("us-east-1"),
 	})
 	assert.NotNil(t, se)
-	_, err = conn.getEC2Region(se)
+	_, err = conn.getEC2Region(se, aWSSessionSettings.IMDSRetries)
 	assert.NotNil(t, err)
 }
 

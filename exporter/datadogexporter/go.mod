@@ -14,7 +14,6 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.2.0
 	github.com/DataDog/sketches-go v1.4.2
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.13.1
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83
 	github.com/aws/aws-sdk-go v1.44.309
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.77.0
@@ -26,7 +25,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.77.0
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/confmap v0.77.0
@@ -62,6 +61,7 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409 // indirect
 	github.com/antonmedv/expr v1.12.5 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect

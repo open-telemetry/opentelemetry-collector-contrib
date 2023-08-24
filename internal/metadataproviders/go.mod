@@ -6,12 +6,12 @@ replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/
 
 require (
 	github.com/Showmax/go-fqdn v1.0.0
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409
 	github.com/aws/aws-sdk-go v1.44.309
 	github.com/docker/docker v23.0.5+incompatible
 	github.com/hashicorp/consul/api v1.20.0
 	github.com/panta/machineid v1.0.2
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 )
 
 require (

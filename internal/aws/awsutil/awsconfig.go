@@ -43,6 +43,8 @@ type AWSSessionSettings struct {
 	SharedCredentialsFile []string `mapstructure:"shared_credentials_file"`
 	// Add a custom certificates file
 	CertificateFilePath string `mapstructure:"certificate_file_path"`
+	// How many times should we retry imds v2
+	IMDSRetries int `mapstructure:"imds_retries"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {

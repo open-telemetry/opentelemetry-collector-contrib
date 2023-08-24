@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.77.0
 	go.opentelemetry.io/collector/confmap v0.77.0
 	go.opentelemetry.io/collector/consumer v0.77.0
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83 // indirect
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect

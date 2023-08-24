@@ -30,8 +30,8 @@ type Provider interface {
 }
 
 type metadataClient struct {
-	metadata            *ec2metadata.EC2Metadata
-	metadataRetryEnable *ec2metadata.EC2Metadata
+	metadata               *ec2metadata.EC2Metadata
+	metadataFallbackEnable *ec2metadata.EC2Metadata
 }
 
 var _ Provider = (*metadataClient)(nil)
@@ -39,45 +39,33 @@ var _ Provider = (*metadataClient)(nil)
 func NewProvider(sess *session.Session) Provider {
 	return &metadataClient{
 		metadata: ec2metadata.New(sess, &aws.Config{
-			Retryer:                   override.IMDSRetryer,
+			Retryer:                   override.NewIMDSRetryer(override.DefaultIMDSRetries),
 			EC2MetadataEnableFallback: aws.Bool(false),
 		}),
-		metadataRetryEnable: ec2metadata.New(sess, &aws.Config{}),
+		metadataFallbackEnable: ec2metadata.New(sess, &aws.Config{}),
 	}
 }
 
 func (c *metadataClient) InstanceID(ctx context.Context) (string, error) {
-	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancel()
-	instanceID, err := c.metadata.GetMetadataWithContext(childCtx, "instance-id")
+	instanceID, err := c.metadata.GetMetadata("instance-id")
 	if err == nil {
 		return instanceID, err
 	}
-	childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancelRetryEnable()
-	return c.metadataRetryEnable.GetMetadataWithContext(childCtxFallbackEnable, "instance-id")
+	return c.metadataFallbackEnable.GetMetadata("instance-id")
 }
 
 func (c *metadataClient) Hostname(ctx context.Context) (string, error) {
-	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancel()
-	hostname, err := c.metadata.GetMetadataWithContext(childCtx, "hostname")
+	hostname, err := c.metadata.GetMetadata("hostname")
 	if err == nil {
 		return hostname, err
 	}
-	childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancelRetryEnable()
-	return c.metadataRetryEnable.GetMetadataWithContext(childCtxFallbackEnable, "hostname")
+	return c.metadataFallbackEnable.GetMetadata("hostname")
 }
 
 func (c *metadataClient) Get(ctx context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
-	childCtx, cancel := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancel()
-	document, err := c.metadata.GetInstanceIdentityDocumentWithContext(childCtx)
+	document, err := c.metadata.GetInstanceIdentityDocument()
 	if err == nil {
 		return document, err
 	}
-	childCtxFallbackEnable, cancelRetryEnable := context.WithTimeout(ctx, override.TimePerCall)
-	defer cancelRetryEnable()
-	return c.metadataRetryEnable.GetInstanceIdentityDocumentWithContext(childCtxFallbackEnable)
+	return c.metadataFallbackEnable.GetInstanceIdentityDocument()
 }

@@ -49,6 +49,8 @@ type Config struct {
 	// will be called or not. Set to `true` to skip EC2 instance
 	// metadata check.
 	LocalMode bool `mapstructure:"local_mode"`
+	// How many times should we retry imds v2
+	IMDSRetries int `mapstructure:"imds_retries"`
 }
 
 func DefaultConfig() *Config {

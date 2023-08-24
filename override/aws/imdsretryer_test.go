@@ -22,6 +22,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_IMDSRetryer_ShouldRetry(t *testing.T) {
@@ -81,10 +82,36 @@ func Test_IMDSRetryer_ShouldRetry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := IMDSRetryer
-			if got := r.ShouldRetry(tt.req); got != tt.want {
+			if got := NewIMDSRetryer(1).ShouldRetry(tt.req); got != tt.want {
 				t.Errorf("ShouldRetry() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestNumberOfRetryTest(t *testing.T) {
+	tests := []struct {
+		name                  string
+		expectedRetriesInput  int
+		expectedRetriesOutput int
+	}{
+		{
+			name:                  "expect 0 for 0",
+			expectedRetriesInput:  0,
+			expectedRetriesOutput: 0,
+		},
+		{
+			name:                  "expect 5 for 5",
+			expectedRetriesInput:  5,
+			expectedRetriesOutput: 5,
+		},
+	}
+	for _, tt := range tests {
+		func() {
+			t.Run(tt.name, func(t *testing.T) {
+				newIMDSRetryer := NewIMDSRetryer(tt.expectedRetriesInput)
+				assert.Equal(t, newIMDSRetryer.MaxRetries(), tt.expectedRetriesOutput)
+			})
+		}()
 	}
 }

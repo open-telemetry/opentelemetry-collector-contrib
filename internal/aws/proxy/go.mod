@@ -5,10 +5,10 @@ go 1.19
 replace github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws => ../../../override/aws
 
 require (
-	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230727225902-317222bcea83
+	github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws v0.0.0-20230818193829-04a761abd409
 	github.com/aws/aws-sdk-go v1.44.309
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.77.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.77.0
 	go.uber.org/zap v1.24.0
 )
