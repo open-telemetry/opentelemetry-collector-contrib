@@ -10,24 +10,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type DurationToMinsArguments[K any] struct {
+type MinutesArguments[K any] struct {
 	Duration ottl.DurationGetter[K] `ottlarg:"0"`
 }
 
-func NewDurationToMinsFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("DurationToMins", &DurationToMinsArguments[K]{}, createDurationToMinsFunction[K])
+func NewMinutesFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("Minutes", &MinutesArguments[K]{}, createMinutesFunction[K])
 }
-func createDurationToMinsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*DurationToMinsArguments[K])
+func createMinutesFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*MinutesArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("DurationToMinsFactory args must be of type *DurationToMinsArguments[K]")
+		return nil, fmt.Errorf("MinutesFactory args must be of type *MinutesArguments[K]")
 	}
 
-	return DurationToMins(args.Duration)
+	return Minutes(args.Duration)
 }
 
-func DurationToMins[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
+func Minutes[K any](duration ottl.DurationGetter[K]) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (interface{}, error) {
 		d, err := duration.Get(ctx, tCtx)
 		if err != nil {

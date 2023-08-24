@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_DurationToMins(t *testing.T) {
+func Test_Minutes(t *testing.T) {
 	tests := []struct {
 		name     string
 		duration ottl.DurationGetter[interface{}]
@@ -58,7 +58,7 @@ func Test_DurationToMins(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := DurationToMins(tt.duration)
+			exprFunc, err := Minutes(tt.duration)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
