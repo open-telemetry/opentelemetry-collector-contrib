@@ -46,7 +46,7 @@ jobs:
               const midnightYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
               const sevenDaysAgo = new Date(midnightYesterday);
               sevenDaysAgo.setDate(midnightYesterday.getDate() - 7);
-              return { sevenDaysAgo, midnightYesterday};
+              return { sevenDaysAgo, midnightYesterday };
             }
             
             function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
@@ -174,22 +174,32 @@ jobs:
               return stats
             }
             
-            function generateReport({issuesData}) {
-              const out = ['<ul>'];
+            function generateReport({ issuesData, previousReport }) {
+              const out = [
+                `## Format`,
+                "- `{CATEGORY}: {COUNT} ({CHANGE_FROM_PREVIOUS_WEEK})`",
+                "## Report",
+                '<ul>'];
             
               for (const lbl of Object.keys(issuesData)) {
-                const section = [];
-                const {count, data, title} = issuesData[lbl];
-                section.push(`<li> ${title}: ${count}`);
-                section.push(`<details>
+                const section = [``];
+                const { count, data, title } = issuesData[lbl];
+                const previousCount = previousReport.issuesData[lbl].count;
+                section.push(`<li> ${title}: ${count} (${count - previousCount})`);
+            
+                // generate summary if issues exist
+                if (data.length !== 0) {
+                  section.push(`<details>
                 <summary> Issues </summary>
                 <ul>
                 ${data.map((issue) => {
-                  const {url, title, number} = issue;
-                  return `<li><a href="${url}">#${number}</a> ${title}</li>`;
-                }).join('\n')}
+                    const { url, title, number } = issue;
+                    return `<li><a href="${url}">#${number}</a> ${title}</li>`;
+                  }).join('\n')}
                 </ul>
             </details>`);
+                }
+            
                 section.push('</li>');
                 out.push(section.join('\n'));
               }
@@ -199,7 +209,7 @@ jobs:
               // add json data
               out.push('\n ## JSON Data');
               out.push('<!-- MACHINE GENERATED: DO NOT EDIT -->');
-              out.push( `<details>
+              out.push(`<details>
             <summary>Expand</summary>
             <pre>
             {
@@ -211,11 +221,11 @@ jobs:
               return report;
             }
             
-            async function createIssue({github, lookbackData, report}) {
+            async function createIssue({ github, lookbackData, report, context }) {
               const title = `Weekly Report: ${lookbackData.sevenDaysAgo.toISOString().slice(0, 10)} - ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`;
               return github.rest.issues.create({
                 // TODO: change
-                owner: "kevinslin",
+                owner: context.repository_owner,
                 repo: "opentelemetry-collector-contrib",
                 title,
                 body: report,
@@ -223,14 +233,78 @@ jobs:
               })
             }
             
+            async function getLastWeeksReport({ github, since, context }) {
+              const issues = await github.rest.issues.listForRepo({
+                owner: context.repository_owner,
+                repo: 'opentelemetry-collector-contrib',
+                state: 'all', // To get both open and closed issues
+                labels: ["report"],
+                since: since.toISOString(),
+                per_page: 1,
+                direction: "asc"
+              });
+              if (issues.data.length === 0) {
+                throw new Error("no report found since " + since.toISOString());
+              } 
+              // grab earliest issue if multiple
+              return issues.data[0];
+            }
+            
+            function parseJsonFromText(text) {
+              // Use regex to find the JSON data within the <pre></pre> tags
+              const regex = /<pre>\s*([\s\S]*?)\s*<\/pre>/;
+              const match = text.match(regex);
+            
+              if (match && match[1]) {
+                // Parse the found string to JSON
+                return JSON.parse(match[1]);
+              } else {
+                throw new Error("JSON data not found");
+              }
+            }
+            
             async function main({ github, context }) {
               const lookbackData = genLookbackDates();
-              const issuesData = await getIssuesData(github)
-              const report = generateReport({issuesData})
+              const issuesData = await getIssuesData(github);
             
-              // const fs = require('fs');
-              // const report = fs.readFileSync('./fixtures/report.md', 'utf8')
-              await createIssue({github, lookbackData, report});
+              // BEGIN_DEBUG
+              // writeJSONSync('./fixtures/lastweek-issues.json', issuesData);
+              // issuesData = readJSONSync('./fixtures/lastweek-issues.json')
+              // END_DEBUG
+            
+            
+              const prevReportLookback = new Date(lookbackData.sevenDaysAgo)
+              prevReportLookback.setDate(prevReportLookback.getDate() - 7)
+              const previousReportIssue = await getLastWeeksReport({github, since: prevReportLookback, context});
+              const {created_at, id, url, title} = previousReportIssue;
+              debug({ msg: "previous issue", created_at, id, url, title })
+            
+              // BEGIN_DEBUG
+              // previousReportIssue = JSON.parse(fs.readFileSync("./fixtures/issues.json", "utf8"))
+              // END_DEBUG
+            
+              const previousReport = parseJsonFromText(previousReportIssue.body)
+              // debug({ issuesData, previousReport })
+            
+              const report = generateReport({ issuesData, previousReport })
+            
+              // BEGIN_DEBUG
+              // fs.writeFileSync('./fixtures/report.2.md', report);
+              // END_DEBUG
+              await createIssue({github, lookbackData, report, context});
             }
+            
+            function debug(msg) {
+              console.log(JSON.stringify(msg, null, 2))
+            }
+            
+            function readJSONSync(path) {
+              return JSON.parse(fs.readFileSync(path, 'utf8'))
+            }
+            
+            function writeJSONSync(path, data) {
+              fs.writeFileSync(path, JSON.stringify(data, null, 2));
+            }
+            
             
             await main({github, context})
