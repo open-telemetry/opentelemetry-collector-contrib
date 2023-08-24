@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -1549,4 +1550,67 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	assert.Error(t, err)
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
+}
+
+func Test_StandardTimeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardTimeGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "2023 time",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.Date(2023, 8, 17, 1, 1, 1, 1, time.UTC), nil
+				},
+			},
+			want:  time.Date(2023, 8, 17, 1, 1, 1, 1, time.UTC),
+			valid: true,
+		},
+		{
+			name: "before 2000 time",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.Date(1999, 12, 1, 10, 59, 58, 57, time.UTC), nil
+				},
+			},
+			want:  time.Date(1999, 12, 1, 10, 59, 58, 57, time.UTC),
+			valid: true,
+		},
+		{
+			name: "wrong type - duration",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("70ns")
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got time.Duration",
+		},
+		{
+			name: "wrong type - bool",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got bool",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
 }
