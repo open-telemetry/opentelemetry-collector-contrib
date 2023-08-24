@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/builtin"
 	"github.com/antonmedv/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -36,7 +37,15 @@ func newRule(ruleStr string) (rule, error) {
 
 	// TODO: Maybe use https://godoc.org/github.com/antonmedv/expr#Env in type checking
 	// depending on type == specified.
-	v, err := expr.Compile(ruleStr)
+	v, err := expr.Compile(
+		ruleStr,
+		// expr v1.14.1 introduced a `type` builtin whose implementation we relocate to `typeOf`
+		// to avoid collision
+		expr.DisableBuiltin("type"),
+		expr.Function("typeOf", func(params ...interface{}) (interface{}, error) {
+			return builtin.Type(params[0]), nil
+		}, new(func(interface{}) string)),
+	)
 	if err != nil {
 		return rule{}, err
 	}

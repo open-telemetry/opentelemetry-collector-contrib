@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/internal"
+package tokenizetest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
 
 import (
 	"bufio"
@@ -12,21 +12,21 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// state is going to keep processing state of the TestReader
+// state is going to keep processing state of the testReader
 type state struct {
 	ReadFrom  int
 	Processed int
 }
 
-// TestReader is a TestReader which keeps state of readed and processed data
-type TestReader struct {
+// testReader is a testReader which keeps state of readed and processed data
+type testReader struct {
 	State *state
 	Data  []byte
 }
 
-// NewTestReader creates TestReader with empty state
-func NewTestReader(data []byte) TestReader {
-	return TestReader{
+// newTestReader creates testReader with empty state
+func newTestReader(data []byte) testReader {
+	return testReader{
 		State: &state{
 			ReadFrom:  0,
 			Processed: 0,
@@ -35,8 +35,8 @@ func NewTestReader(data []byte) TestReader {
 	}
 }
 
-// Read reads data from TestReader and remebers where reading has been finished
-func (r TestReader) Read(p []byte) (n int, err error) {
+// Read reads data from testReader and remebers where reading has been finished
+func (r testReader) Read(p []byte) (n int, err error) {
 	// return eof if data has been fully readed
 	if len(r.Data)-r.State.ReadFrom == 0 {
 		return 0, io.EOF
@@ -57,24 +57,24 @@ func (r TestReader) Read(p []byte) (n int, err error) {
 	return i, nil
 }
 
-// Reset resets TestReader state (sets last readed position to last processed position)
-func (r *TestReader) Reset() {
+// Reset resets testReader state (sets last readed position to last processed position)
+func (r *testReader) Reset() {
 	r.State.ReadFrom = r.State.Processed
 }
 
-func (r *TestReader) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
+func (r *testReader) splitFunc(split bufio.SplitFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		advance, token, err = splitFunc(data, atEOF)
+		advance, token, err = split(data, atEOF)
 		r.State.Processed += advance
 		return
 	}
 }
 
-type TokenizerTestCase struct {
+type TestCase struct {
 	Name                        string
 	Pattern                     string
-	Raw                         []byte
-	ExpectedTokenized           []string
+	Input                       []byte
+	ExpectedTokens              []string
 	ExpectedError               error
 	Sleep                       time.Duration
 	AdditionalIterations        int
@@ -82,11 +82,11 @@ type TokenizerTestCase struct {
 	PreserveTrailingWhitespaces bool
 }
 
-func (tc TokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T) {
-	reader := NewTestReader(tc.Raw)
+func (tc TestCase) Run(split bufio.SplitFunc) func(t *testing.T) {
+	reader := newTestReader(tc.Input)
 
 	return func(t *testing.T) {
-		var tokenized []string
+		var tokens []string
 		for i := 0; i < 1+tc.AdditionalIterations; i++ {
 			// sleep before next iterations
 			if i > 0 {
@@ -94,22 +94,22 @@ func (tc TokenizerTestCase) RunFunc(splitFunc bufio.SplitFunc) func(t *testing.T
 			}
 			reader.Reset()
 			scanner := bufio.NewScanner(reader)
-			scanner.Split(reader.SplitFunc(splitFunc))
+			scanner.Split(reader.splitFunc(split))
 			for {
 				ok := scanner.Scan()
 				if !ok {
 					assert.Equal(t, tc.ExpectedError, scanner.Err())
 					break
 				}
-				tokenized = append(tokenized, scanner.Text())
+				tokens = append(tokens, scanner.Text())
 			}
 		}
 
-		assert.Equal(t, tc.ExpectedTokenized, tokenized)
+		assert.Equal(t, tc.ExpectedTokens, tokens)
 	}
 }
 
-func GeneratedByteSliceOfLength(length int) []byte {
+func GenerateBytes(length int) []byte {
 	chars := []byte(`abcdefghijklmnopqrstuvwxyz`)
 	newSlice := make([]byte, length)
 	for i := 0; i < length; i++ {

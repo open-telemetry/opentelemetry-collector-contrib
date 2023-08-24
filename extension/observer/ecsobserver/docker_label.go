@@ -54,11 +54,11 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 }
 
 func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
-	var matchers []matcherConfig
-	for _, cfg := range cfgs {
+	matchers := make([]matcherConfig, len(cfgs))
+	for i, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg
-		matchers = append(matchers, &copied)
+		matchers[i] = &copied
 	}
 	return matchers
 }
