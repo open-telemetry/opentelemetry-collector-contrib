@@ -6,8 +6,6 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"net/http"
 	"sync"
 	"time"
@@ -17,7 +15,9 @@ import (
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
@@ -191,7 +191,10 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 		case data, ok := <-res:
 			if data.Type == apiWatch.Error {
 				errObject := apierrors.FromObject(data.Object)
-				statusErr, ok := errObject.(*apierrors.StatusError)
+				var statusErr *apierrors.StatusError
+				// FromObject guarantees an unwrapped StatusError or UnexpectedObjectError so this type checking is best
+				// nolint:errorlint
+				statusErr, ok = errObject.(*apierrors.StatusError)
 				if ok && statusErr.ErrStatus.Code == http.StatusGone {
 					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
 					// we received a 410 so we need to restart
