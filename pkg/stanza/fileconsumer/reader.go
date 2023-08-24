@@ -12,11 +12,11 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerConfig struct {
@@ -44,7 +44,7 @@ type reader struct {
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
-	decoder       *helper.Decoder
+	decoder       *decoder.Decoder
 	headerReader  *header.Reader
 	processFunc   emit.Callback
 	generation    int

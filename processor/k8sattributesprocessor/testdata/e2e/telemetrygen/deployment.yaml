@@ -25,7 +25,10 @@ spec:
         - --rate=1
         - --otlp-attributes=service.name="test-{{ .DataType }}-deployment"
         - --otlp-attributes=k8s.container.name="telemetrygen"
-        image: telemetrygen:latest
-        imagePullPolicy: Never
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+        imagePullPolicy: IfNotPresent
         name: telemetrygen
       restartPolicy: Always

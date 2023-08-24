@@ -21,7 +21,9 @@ spec:
         - --duration=36000s
         - --otlp-attributes=service.name="test-{{ .DataType }}-job"
         - --otlp-attributes=k8s.container.name="telemetrygen"
-        image: telemetrygen:latest
-        imagePullPolicy: Never
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
         name: telemetrygen
-      restartPolicy: OnFailure
+      restartPolicy: Never
