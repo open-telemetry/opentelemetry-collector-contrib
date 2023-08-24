@@ -116,7 +116,7 @@ transform:
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+        - replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
 ```
 
@@ -217,6 +217,30 @@ Examples:
 
 
 - `convert_gauge_to_sum("delta", true)`
+
+### extract_count_metric
+
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
+
+`extract_count_metric(is_monotonic)`
+
+The `extract_count_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's count value. A metric will only be created if there is at least one data point.
+
+`is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+> [!WARNING]  
+> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
+
+Examples:
+
+- `extract_count_metric(true)`
+
+- `extract_count_metric(false)`
 
 ### extract_sum_metric
 
@@ -341,7 +365,7 @@ transform:
     - context: resource
       statements:
         # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs

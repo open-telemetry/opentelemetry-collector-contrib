@@ -368,7 +368,7 @@ func assertCPUMetricHasLinuxSpecificStateLabels(t *testing.T, metric pmetric.Met
 func assertCPUUtilizationMetricValid(t *testing.T, metric pmetric.Metric, startTime pcommon.Timestamp) {
 	expected := pmetric.NewMetric()
 	expected.SetName("system.cpu.utilization")
-	expected.SetDescription("Difference in system.cpu.time since the last measurement, divided by the elapsed time and number of logical CPUs.")
+	expected.SetDescription("Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).")
 	expected.SetUnit("1")
 	expected.SetEmptyGauge()
 	internal.AssertDescriptorEqual(t, expected, metric)
