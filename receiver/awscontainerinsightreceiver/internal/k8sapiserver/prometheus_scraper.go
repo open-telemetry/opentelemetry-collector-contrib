@@ -119,7 +119,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 							"Version":          model.LabelValue("0"),
 							"Sources":          model.LabelValue("[\"apiserver\"]"),
 							"NodeName":         model.LabelValue(os.Getenv("HOST_NAME")),
-							"Type":             model.LabelValue("control_plane"),
+							"Type":             model.LabelValue("ControlPlane"),
 						},
 					},
 				},
@@ -131,6 +131,16 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 				SourceLabels: model.LabelNames{"__name__"},
 				Regex:        relabel.MustNewRegexp(controlPlaneMetricsAllowRegex),
 				Action:       relabel.Keep,
+			},
+			// type conflicts with the log Type in the container insights output format, it needs to be replaced and dropped
+			{
+				Regex:       relabel.MustNewRegexp("^type$"),
+				Replacement: "kubernetes_type",
+				Action:      relabel.LabelMap,
+			},
+			{
+				Regex:  relabel.MustNewRegexp("^type$"),
+				Action: relabel.LabelDrop,
 			},
 		},
 	}
