@@ -117,14 +117,14 @@ const (
 	ReplicasDesired                   = "replicas_desired"
 	ReplicasReady                     = "replicas_ready"
 
-	RunningPodCount       = "number_of_running_pods"
-	RunningContainerCount = "number_of_running_containers"
-	ContainerCount        = "number_of_containers"
-	NodeCount             = "node_count"
-	FailedNodeCount       = "failed_node_count"
-	ContainerRestartCount = "number_of_container_restarts"
-	RunningTaskCount      = "number_of_running_tasks"
-
+	RunningPodCount          = "number_of_running_pods"
+	RunningContainerCount    = "number_of_running_containers"
+	ContainerCount           = "number_of_containers"
+	NodeCount                = "node_count"
+	FailedNodeCount          = "failed_node_count"
+	ContainerRestartCount    = "number_of_container_restarts"
+	RunningTaskCount         = "number_of_running_tasks"
+	Age                      = "age"
 	DiskIOServiceBytesPrefix = "diskio_io_service_bytes_"
 	DiskIOServicedPrefix     = "diskio_io_serviced_"
 	DiskIOAsync              = "Async"
@@ -162,6 +162,7 @@ const (
 	// unit
 	UnitBytes       = "Bytes"
 	UnitMegaBytes   = "Megabytes"
+	UnitSeconds     = "Seconds"
 	UnitNanoSecond  = "Nanoseconds"
 	UnitBytesPerSec = "Bytes/Second"
 	UnitCount       = "Count"
@@ -280,5 +281,6 @@ func init() {
 		ContainerCount:        UnitCount,
 		ContainerRestartCount: UnitCount,
 		RunningTaskCount:      UnitCount,
+		Age:                   UnitSeconds,
 	}
 }

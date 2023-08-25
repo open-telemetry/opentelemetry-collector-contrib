@@ -735,6 +735,12 @@ kubectl apply -f config.yaml
 | pod_status_ready                      | Count        |
 | pod_status_scheduled                  | Count        |
 | pod_status_unknown                    | Count        |
+| pod_status_failed                     | Count        |
+| pod_status_pending                    | Count        |
+| pod_status_running                    | Count        |
+| pod_status_succeeded                  | Count        |
+| pod_age                               | Seconds      |
+
 
 | Resource Attribute   |
 |----------------------|

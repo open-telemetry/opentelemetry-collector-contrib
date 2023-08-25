@@ -478,6 +478,8 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 		if p.includeEnhancedMetrics {
 			p.addPodStatusMetrics(metric, pod)
 			p.addPodConditionMetrics(metric, pod)
+			podAge := time.Since(pod.CreationTimestamp.Time)
+			metric.AddField(ci.MetricName(ci.TypePod, ci.Age), podAge.Seconds())
 		}
 
 		var curContainerRestarts int
