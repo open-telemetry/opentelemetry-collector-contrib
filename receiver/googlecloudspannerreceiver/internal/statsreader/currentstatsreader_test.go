@@ -20,12 +20,13 @@ const (
 	projectID    = "ProjectID"
 	instanceID   = "InstanceID"
 	databaseName = "DatabaseName"
+	databaseRole = "DatabaseRole"
 
 	name = "name"
 )
 
 func TestCurrentStatsReader_Name(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -43,7 +44,7 @@ func TestCurrentStatsReader_Name(t *testing.T) {
 }
 
 func TestNewCurrentStatsReader(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)

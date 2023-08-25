@@ -8,16 +8,15 @@ import (
 	_ "embed"
 	"fmt"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/filterfactory"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/metadataparser"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/statsreader"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 )
 
 //go:embed "internal/metadataconfig/metrics.yaml"
@@ -164,10 +163,17 @@ func newProjectReader(ctx context.Context, logger *zap.Logger, project Project, 
 	databaseReaderIndex := 0
 	for _, instance := range project.Instances {
 		for _, database := range instance.Databases {
-			logger.Debug("Constructing database reader for combination of project, instance, database",
-				zap.String("project id", project.ID), zap.String("instance id", instance.ID), zap.String("database", database))
+			fields := []zap.Field{
+				zap.String("project id", project.ID),
+				zap.String("instance id", instance.ID),
+				zap.String("database", database.Name),
+			}
+			if database.DatabaseRole != "" {
+				fields = append(fields, zap.String("fgac database role", database.DatabaseRole))
+			}
+			logger.Debug("Constructing database reader for", fields...)
 
-			databaseID := datasource.NewDatabaseID(project.ID, instance.ID, database)
+			databaseID := datasource.NewDatabaseID(project.ID, instance.ID, database.Name, database.DatabaseRole)
 
 			databaseReader, err := statsreader.NewDatabaseReader(ctx, parsedMetadata, databaseID,
 				project.ServiceAccountKey, readerConfig, logger)

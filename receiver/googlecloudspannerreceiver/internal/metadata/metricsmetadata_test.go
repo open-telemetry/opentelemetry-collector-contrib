@@ -18,10 +18,11 @@ const (
 	projectID    = "ProjectID"
 	instanceID   = "InstanceID"
 	databaseName = "DatabaseName"
+	databaseRole = "DatabaseRole"
 )
 
 func databaseID() *datasource.DatabaseID {
-	return datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	return datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 }
 
 func TestMetricsMetadata_Timestamp(t *testing.T) {

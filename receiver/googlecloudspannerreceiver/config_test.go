@@ -48,12 +48,27 @@ func TestLoadConfig(t *testing.T) {
 					ServiceAccountKey: "path to spanner project 1 service account json key",
 					Instances: []Instance{
 						{
-							ID:        "id1",
-							Databases: []string{"db11", "db12"},
+							ID: "id1",
+							Databases: []Database{
+								{
+									Name:         "db11",
+									DatabaseRole: "spanner_sys_reader",
+								},
+								{
+									Name: "db12",
+								},
+							},
 						},
 						{
-							ID:        "id2",
-							Databases: []string{"db21", "db22"},
+							ID: "id2",
+							Databases: []Database{
+								{
+									Name: "db21",
+								},
+								{
+									Name: "db22",
+								},
+							},
 						},
 					},
 				},
@@ -62,12 +77,26 @@ func TestLoadConfig(t *testing.T) {
 					ServiceAccountKey: "path to spanner project 2 service account json key",
 					Instances: []Instance{
 						{
-							ID:        "id3",
-							Databases: []string{"db31", "db32"},
+							ID: "id3",
+							Databases: []Database{
+								{
+									Name: "db31",
+								},
+								{
+									Name: "db32",
+								},
+							},
 						},
 						{
-							ID:        "id4",
-							Databases: []string{"db41", "db42"},
+							ID: "id4",
+							Databases: []Database{
+								{
+									Name: "db41",
+								},
+								{
+									Name: "db42",
+								},
+							},
 						},
 					},
 				},
@@ -80,13 +109,14 @@ func TestLoadConfig(t *testing.T) {
 func TestValidateInstance(t *testing.T) {
 	testCases := map[string]struct {
 		id           string
-		databases    []string
+		databases    []Database
 		requireError bool
 	}{
-		"All required fields are populated": {"id", []string{"name"}, false},
-		"No id":                             {"", []string{"name"}, true},
+		"All required fields are populated": {"id", []Database{{Name: "name"}}, false},
+		"Database role is populated":        {"id", []Database{{Name: "name", DatabaseRole: "spanner_sys_reader"}}, false},
+		"No id":                             {"", []Database{{Name: "name"}}, true},
 		"No databases":                      {"id", nil, true},
-		"Databases have empty names":        {"id", []string{""}, true},
+		"Databases have empty names":        {"id", []Database{{Name: ""}}, true},
 	}
 
 	for name, testCase := range testCases {
@@ -110,7 +140,7 @@ func TestValidateInstance(t *testing.T) {
 func TestValidateProject(t *testing.T) {
 	instance := Instance{
 		ID:        "id",
-		Databases: []string{"name"},
+		Databases: []Database{{Name: "name"}},
 	}
 
 	testCases := map[string]struct {
@@ -148,7 +178,7 @@ func TestValidateProject(t *testing.T) {
 func TestValidateConfig(t *testing.T) {
 	instance := Instance{
 		ID:        "id",
-		Databases: []string{"name"},
+		Databases: []Database{{Name: "name"}},
 	}
 
 	project := Project{

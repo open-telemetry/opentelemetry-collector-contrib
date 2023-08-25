@@ -33,7 +33,7 @@ func (r *mockReader) Read(ctx context.Context) ([]*metadata.MetricsDataPoint, er
 
 func TestNewDatabaseReader(t *testing.T) {
 	ctx := context.Background()
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	serviceAccountPath := "../../testdata/serviceAccount.json"
 	readerConfig := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
@@ -55,7 +55,7 @@ func TestNewDatabaseReader(t *testing.T) {
 
 func TestNewDatabaseReaderWithError(t *testing.T) {
 	ctx := context.Background()
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	serviceAccountPath := "does not exist"
 	readerConfig := ReaderConfig{
 		TopMetricsQueryMaxRows: topMetricsQueryMaxRows,
@@ -72,7 +72,7 @@ func TestNewDatabaseReaderWithError(t *testing.T) {
 }
 
 func TestInitializeReaders(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	logger := zaptest.NewLogger(t)
 	var client *spanner.Client
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -100,7 +100,7 @@ func TestInitializeReaders(t *testing.T) {
 }
 
 func TestDatabaseReader_Name(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -116,7 +116,7 @@ func TestDatabaseReader_Name(t *testing.T) {
 }
 
 func TestDatabaseReader_Shutdown(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -131,7 +131,7 @@ func TestDatabaseReader_Shutdown(t *testing.T) {
 }
 
 func TestDatabaseReader_Read(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, databaseName)
 	database := datasource.NewDatabaseFromClient(client, databaseID)

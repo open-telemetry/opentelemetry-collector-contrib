@@ -79,7 +79,7 @@ func createConfig(serviceAccountPath string) *Config {
 
 	instance := Instance{
 		ID:        "instanceID",
-		Databases: []string{"databaseName"},
+		Databases: []Database{{Name: "databaseName", DatabaseRole: "databaseRole"}},
 	}
 
 	project := Project{

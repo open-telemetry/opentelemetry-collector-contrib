@@ -10,14 +10,16 @@ type DatabaseID struct {
 	instanceID   string
 	databaseName string
 	id           string
+	databaseRole string
 }
 
-func NewDatabaseID(projectID string, instanceID string, databaseName string) *DatabaseID {
+func NewDatabaseID(projectID string, instanceID string, databaseName string, databaseRole string) *DatabaseID {
 	return &DatabaseID{
 		projectID:    projectID,
 		instanceID:   instanceID,
 		databaseName: databaseName,
 		id:           fmt.Sprintf("projects/%v/instances/%v/databases/%v", projectID, instanceID, databaseName),
+		databaseRole: databaseRole,
 	}
 }
 
@@ -34,4 +36,8 @@ func (databaseID *DatabaseID) DatabaseName() string {
 }
 func (databaseID *DatabaseID) ID() string {
 	return databaseID.id
+}
+
+func (databaseID *DatabaseID) DatabaseRole() string {
+	return databaseID.databaseRole
 }
