@@ -585,7 +585,7 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 
 // TimeGetter is a Getter that must return an int64.
 type TimeGetter[K any] interface {
-	// Get retrieves an int64 value.
+	// Get retrieves an time.Time value.
 	Get(ctx context.Context, tCtx K) (time.Time, error)
 }
 
