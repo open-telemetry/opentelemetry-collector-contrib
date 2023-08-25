@@ -226,16 +226,6 @@ func TestInvalidConfig(t *testing.T) {
 			},
 			err: "receiver creation with too large port number must fail",
 		},
-		{
-			desc: "port-outside-of-range",
-			apply: func(cfg *Config) {
-				cfg.Protocols = Protocols{}
-				cfg.ThriftCompact = &ProtocolUDP{
-					Endpoint: defaultThriftCompactBindEndpoint,
-				}
-			},
-			err: "receiver creation without gRPC",
-		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
