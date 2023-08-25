@@ -47,7 +47,7 @@ function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
 async function getNewIssues({github, context}) {
   const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
   const queryParams = {
-    owner: context.repository_owner,
+    owner: 'open-telemetry',
     repo: 'opentelemetry-collector-contrib',
     state: 'all', // To get both open and closed issues
     per_page: 100, // Number of items per page (maximum allowed)
@@ -65,9 +65,9 @@ async function getNewIssues({github, context}) {
   }
 }
 
-async function getTargetLabelIssues(octokit, labels, filterPrs) {
+async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
   const queryParams = {
-    owner: 'open-telemetry',
+    owner: context.repository_owner,
     repo: 'opentelemetry-collector-contrib',
     state: 'open',
     per_page: 100, // Number of items per page (maximum allowed)
@@ -103,7 +103,7 @@ async function getIssuesData({github, context}) {
   const issuesWithLabels = {};
   for (const lbl of Object.keys(targetLabels)) {
     const filterPrs = targetLabels[lbl].filterPrs;
-    const resp = await getTargetLabelIssues(github.rest, lbl, filterPrs);
+    const resp = await getTargetLabelIssues({octokit: github.rest, labels: lbl, filterPrs, context});
     issuesWithLabels[lbl] = resp;
   }
 
