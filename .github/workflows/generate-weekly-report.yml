@@ -4,8 +4,9 @@
 name: 'Generate Weekly Report'
 on:
   workflow_dispatch: 
-  push:
-    branches: [ chore/weekly-report-gen ]
+  schedule:
+    # run every tuesday at 1am UTC
+    - cron: "0 1 * * 2"
 
 jobs:
   get_issues:
