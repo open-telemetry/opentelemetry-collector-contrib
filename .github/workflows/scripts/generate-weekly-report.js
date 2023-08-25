@@ -44,10 +44,10 @@ function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
   return createdAt >= sevenDaysAgo && createdAt <= midnightYesterday;
 }
 
-async function getNewIssues(github) {
+async function getNewIssues({github, context}) {
   const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
   const queryParams = {
-    owner: 'open-telemetry',
+    owner: context.repository_owner,
     repo: 'opentelemetry-collector-contrib',
     state: 'all', // To get both open and closed issues
     per_page: 100, // Number of items per page (maximum allowed)
@@ -83,7 +83,7 @@ async function getTargetLabelIssues(octokit, labels, filterPrs) {
   }
 }
 
-async function getIssuesData(github) {
+async function getIssuesData({github, context}) {
   const targetLabels = {
     "needs triage": {
       filterPrs: true,
@@ -99,7 +99,7 @@ async function getIssuesData(github) {
     },
   };
 
-  const issuesNew = await getNewIssues(github.rest);
+  const issuesNew = await getNewIssues({github: github.rest, context});
   const issuesWithLabels = {};
   for (const lbl of Object.keys(targetLabels)) {
     const filterPrs = targetLabels[lbl].filterPrs;
@@ -283,7 +283,7 @@ function parseJsonFromText(text) {
 }
 
 async function processIssues({ github, context, lookbackData }) {
-  const issuesData = await getIssuesData(github);
+  const issuesData = await getIssuesData({github, context});
 
   const prevReportLookback = new Date(lookbackData.sevenDaysAgo)
   prevReportLookback.setDate(prevReportLookback.getDate() - 7)
