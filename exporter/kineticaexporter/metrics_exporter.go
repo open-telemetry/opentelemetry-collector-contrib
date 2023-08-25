@@ -5,11 +5,9 @@ package kineticaexporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -17,16 +15,11 @@ type kineticaMetricsExporter struct {
 	logger *zap.Logger
 }
 
-func newMetricsExporter(_ *zap.Logger, cfg *Config) (*kineticaMetricsExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	kineticaLogger := cfg.createLogger()
+func newMetricsExporter(_ *zap.Logger, _ *Config) *kineticaMetricsExporter {
 	metricsExp := &kineticaMetricsExporter{
-		logger: kineticaLogger,
+		logger: nil,
 	}
-	return metricsExp, nil
+	return metricsExp
 }
 
 func (e *kineticaMetricsExporter) start(_ context.Context, _ component.Host) error {
@@ -45,50 +38,7 @@ func (e *kineticaMetricsExporter) shutdown(_ context.Context) error {
 //	@param _ ctx unused
 //	@param md
 //	@return error
-func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) error {
-	var metricType pmetric.MetricType
-	var errs []error
+func (e *kineticaMetricsExporter) pushMetricsData(_ context.Context, _ pmetric.Metrics) error {
 
-	e.logger.Debug("Resource metrics ", zap.Int("count = ", md.ResourceMetrics().Len()))
-
-	for i := 0; i < md.ResourceMetrics().Len(); i++ {
-		metrics := md.ResourceMetrics().At(i)
-
-		e.logger.Debug("Scope metrics ", zap.Int("count = ", metrics.ScopeMetrics().Len()))
-
-		for j := 0; j < metrics.ScopeMetrics().Len(); j++ {
-			metricSlice := metrics.ScopeMetrics().At(j).Metrics()
-
-			e.logger.Debug("metrics ", zap.Int("count = ", metricSlice.Len()))
-
-			for k := 0; k < metricSlice.Len(); k++ {
-
-				metric := metricSlice.At(k)
-				metricType = metric.Type()
-				switch metric.Type() {
-				case pmetric.MetricTypeGauge:
-					e.logger.Debug("Added gauge")
-				case pmetric.MetricTypeSum:
-					e.logger.Debug("Added sum")
-				case pmetric.MetricTypeHistogram:
-					e.logger.Debug("Added histogram")
-				case pmetric.MetricTypeExponentialHistogram:
-					e.logger.Debug("Added exp histogram")
-				case pmetric.MetricTypeSummary:
-					e.logger.Debug("Added summary")
-				default:
-					return fmt.Errorf("Unsupported metrics type")
-				}
-
-				e.logger.Debug("Metric ", zap.String("count = ", metricType.String()))
-
-				if len(errs) > 0 {
-					e.logger.Error(multierr.Combine(errs...).Error())
-					return multierr.Combine(errs...)
-				}
-			}
-		}
-	}
-
-	return multierr.Combine(errs...)
+	return nil
 }

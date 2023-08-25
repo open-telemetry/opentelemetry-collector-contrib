@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -22,15 +21,11 @@ type kineticaLogsExporter struct {
 //	@param cfg
 //	@return *kineticaLogsExporter
 //	@return error
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*kineticaLogsExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
+func newLogsExporter(logger *zap.Logger, _ *Config) *kineticaLogsExporter {
 	logsExp := &kineticaLogsExporter{
 		logger: logger,
 	}
-	return logsExp, nil
+	return logsExp
 }
 
 func (e *kineticaLogsExporter) start(_ context.Context, _ component.Host) error {
@@ -50,6 +45,5 @@ func (e *kineticaLogsExporter) shutdown(_ context.Context) error {
 //	@param ld
 //	@return error
 func (e *kineticaLogsExporter) pushLogsData(_ context.Context, _ plog.Logs) error {
-	var errs []error
-	return multierr.Combine(errs...)
+	return nil
 }

@@ -5,7 +5,6 @@ package kineticaexporter
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -32,8 +31,8 @@ func CreateDefaultConfig() component.Config {
 	return &Config{
 		Host:               "http://localhost:9191/",
 		Schema:             "",
-		Username:           "admin",
-		Password:           "password",
+		Username:           "",
+		Password:           "",
 		BypassSslCertCheck: true,
 	}
 }
@@ -52,10 +51,7 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	exporter, err := newLogsExporter(set.Logger, cf)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot configure Kinetica logs exporter: %w", err)
-	}
+	exporter := newLogsExporter(set.Logger, cf)
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -79,10 +75,8 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
-	exporter, err := newTracesExporter(set.Logger, cf)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot configure Kinetica traces exporter: %w", err)
-	}
+	exporter := newTracesExporter(set.Logger, cf)
+
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -105,10 +99,7 @@ func createMetricsExporter(ctx context.Context,
 	cfg component.Config) (exporter.Metrics, error) {
 
 	cf := cfg.(*Config)
-	exporter, err := newMetricsExporter(set.Logger, cf)
-	if err != nil {
-		return nil, fmt.Errorf("Cannot configure Kinetica metrics exporter: %w", err)
-	}
+	exporter := newMetricsExporter(set.Logger, cf)
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,

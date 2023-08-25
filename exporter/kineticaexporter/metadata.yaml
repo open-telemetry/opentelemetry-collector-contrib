@@ -4,4 +4,4 @@ status:
   class: exporter
   stability:
     development: [metrics, traces, logs]
-  distributions: [contrib]
+  distributions: []

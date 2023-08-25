@@ -8,7 +8,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -23,15 +22,11 @@ type kineticaTracesExporter struct {
 //	@param cfg
 //	@return *kineticaTracesExporter
 //	@return error
-func newTracesExporter(logger *zap.Logger, cfg *Config) (*kineticaTracesExporter, error) {
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
+func newTracesExporter(logger *zap.Logger, _ *Config) *kineticaTracesExporter {
 	tracesExp := &kineticaTracesExporter{
 		logger: logger,
 	}
-	return tracesExp, nil
+	return tracesExp
 }
 
 func (e *kineticaTracesExporter) start(_ context.Context, _ component.Host) error {
@@ -49,19 +44,6 @@ func (e *kineticaTracesExporter) shutdown(_ context.Context) error {
 //	@param ctx
 //	@param td
 //	@return error
-func (e *kineticaTracesExporter) pushTraceData(_ context.Context, td ptrace.Traces) error {
-	var errs []error
-	resourceSpans := td.ResourceSpans()
-	for i := 0; i < resourceSpans.Len(); i++ {
-		resourceSpan := resourceSpans.At(i)
-		scopeSpans := resourceSpan.ScopeSpans()
-		for j := 0; j < scopeSpans.Len(); j++ {
-			spans := scopeSpans.At(j).Spans()
-			for k := 0; k < spans.Len(); k++ {
-				e.logger.Debug("Added record")
-			}
-		}
-	}
-
-	return multierr.Combine(errs...)
+func (e *kineticaTracesExporter) pushTraceData(_ context.Context, _ ptrace.Traces) error {
+	return nil
 }
