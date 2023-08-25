@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
