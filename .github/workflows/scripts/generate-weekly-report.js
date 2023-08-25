@@ -74,6 +74,7 @@ async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
     page: 1, // Start with page 1
     labels
   };
+  debug({msg: "fetching issues", queryParams})
   try {
     const allIssues = await getIssues(octokit, queryParams, filterPrs)
     return allIssues;
