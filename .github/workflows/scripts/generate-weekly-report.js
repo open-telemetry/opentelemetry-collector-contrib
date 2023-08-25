@@ -399,6 +399,7 @@ async function processComponents() {
 }
 
 async function main({ github, context }) {
+  debug({msg: "running main", context})
   const lookbackData = genLookbackDates();
   const {issuesData, previousReport} = await processIssues({ github, context, lookbackData })
   const componentData = await processComponents()
