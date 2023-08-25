@@ -67,7 +67,7 @@ async function getNewIssues({github, context}) {
 
 async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
   const queryParams = {
-    owner: context.repository_owner,
+    owner: context.payload.repository.owner.login,
     repo: 'opentelemetry-collector-contrib',
     state: 'open',
     per_page: 100, // Number of items per page (maximum allowed)
@@ -245,7 +245,7 @@ function generateReport({ issuesData, previousReport, componentData }) {
 async function createIssue({ github, lookbackData, report, context }) {
   const title = `Weekly Report: ${lookbackData.sevenDaysAgo.toISOString().slice(0, 10)} - ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`;
   return github.rest.issues.create({
-    owner: context.repository_owner,
+    owner: context.payload.repository.owner.login,
     repo: "opentelemetry-collector-contrib",
     title,
     body: report,
@@ -255,7 +255,7 @@ async function createIssue({ github, lookbackData, report, context }) {
 
 async function getLastWeeksReport({ github, since, context }) {
   const issues = await github.rest.issues.listForRepo({
-    owner: context.repository_owner,
+    owner: context.payload.repository.owner.login,
     repo: 'opentelemetry-collector-contrib',
     state: 'all', // To get both open and closed issues
     labels: ["report"],
