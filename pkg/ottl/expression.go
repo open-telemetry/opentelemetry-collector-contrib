@@ -594,8 +594,8 @@ type StandardTimeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
 
-// Get retrieves an int64 value.
-// If the value is not an int64 a new TypeError is returned.
+// Get retrieves an time.Time value.
+// If the value is not an time.Time a new TypeError is returned.
 // If there is an error getting the value it will be returned.
 func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, error) {
 	val, err := g.Getter(ctx, tCtx)
