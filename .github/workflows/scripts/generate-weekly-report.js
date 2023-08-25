@@ -78,11 +78,6 @@ async function getNewIssues({github, context}) {
   }
 }
 
-/**
- * 
- * @param {*} param0 
- * @returns 
- */
 async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
   const queryParams = {
     owner: REPO_OWNER,
