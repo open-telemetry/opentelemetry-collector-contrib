@@ -35,8 +35,15 @@ async function getIssues(github, queryParams, filterPrs = true) {
 }
 
 function genLookbackDates() {
-  const now = new Date();
-  const midnightYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  const now = new Date()
+  const midnightYesterday = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0, 0, 0, 0
+    )
+  );
   const sevenDaysAgo = new Date(midnightYesterday);
   sevenDaysAgo.setDate(midnightYesterday.getDate() - 7);
   return { sevenDaysAgo, midnightYesterday };
