@@ -33,9 +33,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: defaultCollectionInterval,
+			Timeout:            defaultTimeout,
 		},
 		Endpoint:      defaultEndpoint,
-		Timeout:       defaultTimeout,
 		Version:       defaultVersion,
 		Community:     defaultCommunity,
 		SecurityLevel: defaultSecurityLevel,

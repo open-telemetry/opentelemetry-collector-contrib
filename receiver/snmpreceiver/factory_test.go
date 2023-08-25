@@ -36,9 +36,9 @@ func TestNewFactory(t *testing.T) {
 				var expectedCfg component.Config = &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: defaultCollectionInterval,
+						Timeout:            defaultTimeout,
 					},
 					Endpoint:      defaultEndpoint,
-					Timeout:       defaultTimeout,
 					Version:       defaultVersion,
 					Community:     defaultCommunity,
 					SecurityLevel: "no_auth_no_priv",

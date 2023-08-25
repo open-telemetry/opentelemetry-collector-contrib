@@ -77,10 +77,6 @@ type Config struct {
 	// If no port is given, 161 is assumed.
 	Endpoint string `mapstructure:"endpoint"`
 
-	// Timeout for each SNMP request.
-	// Default: 5 seconds
-	Timeout time.Duration `mapstructure:"timeout"`
-
 	// Version is the version of SNMP to use for this connection.
 	// Valid options: v1, v2c, v3.
 	// Default: v2c
