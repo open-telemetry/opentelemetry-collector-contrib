@@ -261,6 +261,14 @@ The number of deadlocks.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {deadlock} | Sum | Int | Cumulative | true |
 
+### postgresql.temp_files
+
+The number of temp files.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {temp_file} | Sum | Int | Cumulative | true |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

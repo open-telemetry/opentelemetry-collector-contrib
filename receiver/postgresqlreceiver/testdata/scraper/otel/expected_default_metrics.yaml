@@ -209,16 +209,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: The number of deadlocks.
-            name: postgresql.deadlocks
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "3"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{deadlock}'
           - description: The number of rollbacks.
             name: postgresql.rollbacks
             sum:
@@ -238,16 +228,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{table}'
-          - description: The number of temp files.
-            name: postgresql.temp_files
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "4"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: '{temp_file}' 
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
