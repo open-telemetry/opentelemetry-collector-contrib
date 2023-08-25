@@ -14,6 +14,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/google/go-github/v53/github"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 )
 
@@ -79,9 +80,10 @@ const unmaintainedStatus = "unmaintained"
 // .github/CODEOWNERS
 // .github/ALLOWLIST
 func main() {
+	folder := flag.String("folder", ".", "folder investigated for codeowners")
+	allowlistFilePath := flag.String("allowlist", "cmd/githubgen/allowlist.txt", "path to a file containing an allowlist of members outside the OpenTelemetry organization")
 	flag.Parse()
-	folder := flag.Arg(0)
-	if err := run(folder); err != nil {
+	if err := run(*folder, *allowlistFilePath); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -127,11 +129,27 @@ func loadMetadata(filePath string) (metadata, error) {
 	return md, nil
 }
 
-func run(folder string) error {
+func run(folder string, allowlistFilePath string) error {
+	members, err := getGithubMembers()
+	if err != nil {
+		return err
+	}
+	allowlistData, err := os.ReadFile(allowlistFilePath)
+	if err != nil {
+		return err
+	}
+	allowlistLines := strings.Split(string(allowlistData), "\n")
+
+	allowlist := make(map[string]struct{}, len(allowlistLines))
+	for _, line := range allowlistLines {
+		allowlist[line] = struct{}{}
+	}
+
 	components := map[string]metadata{}
-	foldersList := []string{}
+	var foldersList []string
 	maxLength := 0
-	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	allCodeowners := map[string]struct{}{}
+	err = filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
 			if err != nil {
@@ -149,16 +167,43 @@ func run(folder string) error {
 					return nil
 				}
 			}
+			for _, id := range m.Status.Codeowners.Active {
+				allCodeowners[id] = struct{}{}
+			}
 			if len(key) > maxLength {
 				maxLength = len(key)
 			}
 		}
 		return nil
 	})
-	sort.Strings(foldersList)
 	if err != nil {
 		return err
 	}
+	sort.Strings(foldersList)
+	var missingCodeowners []string
+	var duplicateCodeowners []string
+	for codeowner := range allCodeowners {
+		_, present := members[codeowner]
+
+		if !present {
+			_, allowed := allowlist[codeowner]
+			allowed = allowed || strings.HasPrefix(codeowner, "open-telemetry/")
+			if !allowed {
+				missingCodeowners = append(missingCodeowners, codeowner)
+			}
+		} else if _, ok := allowlist[codeowner]; ok {
+			duplicateCodeowners = append(duplicateCodeowners, codeowner)
+		}
+	}
+	if len(missingCodeowners) > 0 {
+		sort.Strings(missingCodeowners)
+		return fmt.Errorf("codeowners are not members: %s", strings.Join(missingCodeowners, ", "))
+	}
+	if len(duplicateCodeowners) > 0 {
+		sort.Strings(duplicateCodeowners)
+		return fmt.Errorf("codeowners members duplicate in allowlist: %s", strings.Join(duplicateCodeowners, ", "))
+	}
+
 	codeowners := codeownersHeader
 	deprecatedList := "## DEPRECATED components\n"
 	unmaintainedList := "\n## UNMAINTAINED components\n"
@@ -205,4 +250,36 @@ LOOP:
 	}
 
 	return nil
+}
+
+func getGithubMembers() (map[string]struct{}, error) {
+	client := github.NewTokenClient(context.Background(), os.Getenv("GITHUB_TOKEN"))
+	var allUsers []*github.User
+	pageIndex := 0
+	for {
+		users, resp, err := client.Organizations.ListMembers(context.Background(), "open-telemetry",
+			&github.ListMembersOptions{
+				PublicOnly: false,
+				ListOptions: github.ListOptions{
+					PerPage: 50,
+					Page:    pageIndex,
+				},
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		if len(users) == 0 {
+			break
+		}
+		allUsers = append(allUsers, users...)
+		pageIndex++
+	}
+
+	usernames := make(map[string]struct{}, len(allUsers))
+	for _, u := range allUsers {
+		usernames[*u.Login] = struct{}{}
+	}
+	return usernames, nil
 }

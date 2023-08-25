@@ -13,10 +13,12 @@ import (
 type Config struct {
 	common.Config
 	NumLogs int
+	Body    string
 }
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.CommonFlags(fs)
 	fs.IntVar(&c.NumLogs, "logs", 1, "Number of logs to generate in each worker (ignored if duration is provided)")
+	fs.StringVar(&c.Body, "body", "the message", "Body of the log")
 }

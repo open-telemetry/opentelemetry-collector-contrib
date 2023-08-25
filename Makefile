@@ -253,7 +253,8 @@ mdatagen-test:
 
 .PHONY: gengithub
 gengithub:
-	$(GOCMD) run cmd/githubgen/main.go .
+	cd cmd/githubgen && $(GOCMD) install .
+	githubgen
 
 .PHONY: update-codeowners
 update-codeowners: gengithub generate
@@ -350,6 +351,10 @@ checkdoc: $(CHECKFILE)
 .PHONY: checkmetadata
 checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
+
+.PHONY: checkapi
+checkapi:
+	$(GOCMD) run cmd/checkapi/main.go .
 
 .PHONY: all-checklinks
 all-checklinks:

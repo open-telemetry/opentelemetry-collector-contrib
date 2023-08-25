@@ -9,12 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestCustomFactory(t *testing.T) {
 	type fields struct {
-		Flusher  helper.FlusherConfig
+		Flusher  tokenize.FlusherConfig
 		Splitter bufio.SplitFunc
 	}
 	type args struct {
@@ -29,7 +29,7 @@ func TestCustomFactory(t *testing.T) {
 		{
 			name: "default configuration",
 			fields: fields{
-				Flusher: helper.NewFlusherConfig(),
+				Flusher: tokenize.NewFlusherConfig(),
 				Splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 					return len(data), data, nil
 				},
