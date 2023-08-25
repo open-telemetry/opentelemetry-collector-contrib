@@ -58,7 +58,7 @@ func createMetricsMetadataFromTimestampColumn(query string, timestampColumn stri
 
 func createCurrentStatsReaderWithCorruptedMetadata(client *spanner.Client) Reader { //nolint
 	query := "SELECT * FROM STATS"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 
 	return newCurrentStatsReader(zap.NewNop(), databaseFromClient,
@@ -67,7 +67,7 @@ func createCurrentStatsReaderWithCorruptedMetadata(client *spanner.Client) Reade
 
 func createCurrentStatsReader(client *spanner.Client) Reader { //nolint
 	query := "SELECT * FROM STATS"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 
 	return newCurrentStatsReader(zap.NewNop(), databaseFromClient, createMetricsMetadata(query), ReaderConfig{})
@@ -75,7 +75,7 @@ func createCurrentStatsReader(client *spanner.Client) Reader { //nolint
 
 func createCurrentStatsReaderWithMaxRowsLimit(client *spanner.Client) Reader { //nolint
 	query := "SELECT * FROM STATS"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: maxRowsLimit,
@@ -86,7 +86,7 @@ func createCurrentStatsReaderWithMaxRowsLimit(client *spanner.Client) Reader { /
 
 func createIntervalStatsReaderWithCorruptedMetadata(client *spanner.Client, backfillEnabled bool) Reader { //nolint
 	query := "SELECT * FROM STATS WHERE INTERVAL_END = @pullTimestamp"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 	config := ReaderConfig{
 		BackfillEnabled: backfillEnabled,
@@ -98,7 +98,7 @@ func createIntervalStatsReaderWithCorruptedMetadata(client *spanner.Client, back
 
 func createIntervalStatsReader(client *spanner.Client, backfillEnabled bool) Reader { //nolint
 	query := "SELECT * FROM STATS WHERE INTERVAL_END = @pullTimestamp"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 	config := ReaderConfig{
 		BackfillEnabled: backfillEnabled,
@@ -109,7 +109,7 @@ func createIntervalStatsReader(client *spanner.Client, backfillEnabled bool) Rea
 
 func createIntervalStatsReaderWithMaxRowsLimit(client *spanner.Client, backfillEnabled bool) Reader { //nolint
 	query := "SELECT * FROM STATS WHERE INTERVAL_END = @pullTimestamp"
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	databaseFromClient := datasource.NewDatabaseFromClient(client, databaseID)
 	config := ReaderConfig{
 		TopMetricsQueryMaxRows: maxRowsLimit,

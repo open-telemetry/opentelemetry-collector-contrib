@@ -17,7 +17,7 @@ import (
 )
 
 func TestIntervalStatsReader_Name(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -37,7 +37,7 @@ func TestIntervalStatsReader_Name(t *testing.T) {
 }
 
 func TestNewIntervalStatsReader(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	ctx := context.Background()
 	client, _ := spanner.NewClient(ctx, "")
 	database := datasource.NewDatabaseFromClient(client, databaseID)
@@ -65,7 +65,7 @@ func TestNewIntervalStatsReader(t *testing.T) {
 }
 
 func TestIntervalStatsReader_NewPullStatement(t *testing.T) {
-	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName)
+	databaseID := datasource.NewDatabaseID(projectID, instanceID, databaseName, databaseRole)
 	timestamp := time.Now().UTC()
 	logger := zaptest.NewLogger(t)
 	config := ReaderConfig{

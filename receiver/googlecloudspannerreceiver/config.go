@@ -33,8 +33,13 @@ type Project struct {
 }
 
 type Instance struct {
-	ID        string   `mapstructure:"instance_id"`
-	Databases []string `mapstructure:"databases"`
+	ID        string     `mapstructure:"instance_id"`
+	Databases []Database `mapstructure:"databases"`
+}
+
+type Database struct {
+	Name         string `mapstructure:"database_name"`
+	DatabaseRole string `mapstructure:"fgac_database_role"`
 }
 
 func (config *Config) Validate() error {
@@ -95,9 +100,17 @@ func (instance Instance) Validate() error {
 	}
 
 	for _, database := range instance.Databases {
-		if database == "" {
-			return errors.New("field \"databases\" contains empty database names")
+		if err := database.Validate(); err != nil {
+			return err
 		}
+	}
+
+	return nil
+}
+
+func (database Database) Validate() error {
+	if database.Name == "" {
+		return errors.New("field \"databases\" contains empty database names")
 	}
 
 	return nil
