@@ -15,88 +15,148 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	sub, err := cm.Sub("k8sobjects")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	require.NotNil(t, cfg)
-
-	err = component.ValidateConfig(cfg)
-	require.Error(t, err)
-
-	cfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = component.ValidateConfig(cfg)
-	require.NoError(t, err)
-
-	expectedObjects := []*K8sObjectsConfig{
+	tests := []struct {
+		id       component.ID
+		expected *Config
+	}{
 		{
-			Name:          "pods",
-			Mode:          PullMode,
-			Interval:      time.Hour,
-			FieldSelector: "status.phase=Running",
-			LabelSelector: "environment in (production),tier in (frontend)",
-			gvr: &schema.GroupVersionResource{
-				Group:    "",
-				Version:  "v1",
-				Resource: "pods",
+			id: component.NewIDWithName(metadata.Type, ""),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:          "pods",
+						Mode:          PullMode,
+						Interval:      time.Hour,
+						FieldSelector: "status.phase=Running",
+						LabelSelector: "environment in (production),tier in (frontend)",
+						gvr: &schema.GroupVersionResource{
+							Group:    "",
+							Version:  "v1",
+							Resource: "pods",
+						},
+					},
+					{
+						Name:            "events",
+						Mode:            WatchMode,
+						Namespaces:      []string{"default"},
+						Group:           "events.k8s.io",
+						ResourceVersion: "",
+						gvr: &schema.GroupVersionResource{
+							Group:    "events.k8s.io",
+							Version:  "v1",
+							Resource: "events",
+						},
+					},
+				},
+				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
-			Name:            "events",
-			Mode:            WatchMode,
-			Namespaces:      []string{"default"},
-			Group:           "events.k8s.io",
-			ResourceVersion: "",
-			gvr: &schema.GroupVersionResource{
-				Group:    "events.k8s.io",
-				Version:  "v1",
-				Resource: "events",
+			id: component.NewIDWithName(metadata.Type, "pull_with_resource"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:            "pods",
+						Mode:            PullMode,
+						ResourceVersion: "1",
+						Interval:        time.Hour,
+						gvr: &schema.GroupVersionResource{
+							Group:    "",
+							Version:  "v1",
+							Resource: "pods",
+						},
+					},
+					{
+						Name:     "events",
+						Mode:     PullMode,
+						Interval: time.Hour,
+						gvr: &schema.GroupVersionResource{
+							Group:    "",
+							Version:  "v1",
+							Resource: "events",
+						},
+					},
+				},
+				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "watch_with_resource"),
+			expected: &Config{
+				APIConfig: k8sconfig.APIConfig{
+					AuthType: k8sconfig.AuthTypeServiceAccount,
+				},
+				Objects: []*K8sObjectsConfig{
+					{
+						Name:            "events",
+						Mode:            WatchMode,
+						Namespaces:      []string{"default"},
+						Group:           "events.k8s.io",
+						ResourceVersion: "",
+						gvr: &schema.GroupVersionResource{
+							Group:    "events.k8s.io",
+							Version:  "v1",
+							Resource: "events",
+						},
+					},
+					{
+						Name:            "events",
+						Mode:            WatchMode,
+						Namespaces:      []string{"default"},
+						Group:           "events.k8s.io",
+						ResourceVersion: "2",
+						gvr: &schema.GroupVersionResource{
+							Group:    "events.k8s.io",
+							Version:  "v1",
+							Resource: "events",
+						},
+					},
+				},
+				makeDiscoveryClient: getMockDiscoveryClient,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_resource"),
+		},
 	}
-	expectedLeaderElection := k8sconfig.LeaderElectionConfig{
-		Enabled: false,
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.makeDiscoveryClient = getMockDiscoveryClient
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			if tt.expected == nil {
+				err = component.ValidateConfig(cfg)
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
+			assert.Equal(t, tt.expected.Objects, cfg.Objects)
+		})
 	}
-
-	assert.EqualValues(t, expectedObjects, cfg.Objects)
-	assert.EqualValues(t, expectedLeaderElection, cfg.LeaderElection)
-
-}
-
-func TestValidConfigs(t *testing.T) {
-	t.Parallel()
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid_config.yaml"))
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	sub, err := cm.Sub("k8sobjects/invalid_resource")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-
-	cfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = component.ValidateConfig(cfg)
-	assert.ErrorContains(t, err, "resource fake_resource not found")
-
 }
 
 func TestValidateResourceConflict(t *testing.T) {
-	t.Parallel()
-
 	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
@@ -128,75 +188,8 @@ func TestValidateResourceConflict(t *testing.T) {
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }
 
-func TestPullResourceVersion(t *testing.T) {
-	t.Parallel()
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "pull_resource_version_config.yaml"))
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	sub, err := cm.Sub("k8sobjects")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	require.NotNil(t, cfg)
-
-	err = component.ValidateConfig(cfg)
+func TestClientRequired(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	err := rCfg.Validate()
 	require.Error(t, err)
-
-	require.Equal(t, "1", cfg.Objects[0].ResourceVersion)
-	require.Equal(t, "", cfg.Objects[1].ResourceVersion)
-}
-
-func TestWatchResourceVersion(t *testing.T) {
-	t.Parallel()
-
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_watch_resource_version.yaml"))
-	require.NoError(t, err)
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	sub, err := cm.Sub("k8sobjects")
-	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	require.NotNil(t, cfg)
-
-	err = component.ValidateConfig(cfg)
-	require.Error(t, err)
-
-	cfg.makeDiscoveryClient = getMockDiscoveryClient
-
-	err = component.ValidateConfig(cfg)
-	require.NoError(t, err)
-
-	expected := []*K8sObjectsConfig{
-		{
-			Name:            "events",
-			Mode:            WatchMode,
-			Namespaces:      []string{"default"},
-			Group:           "events.k8s.io",
-			ResourceVersion: "",
-			gvr: &schema.GroupVersionResource{
-				Group:    "events.k8s.io",
-				Version:  "v1",
-				Resource: "events",
-			},
-		},
-		{
-			Name:            "events",
-			Mode:            WatchMode,
-			Namespaces:      []string{"default"},
-			Group:           "events.k8s.io",
-			ResourceVersion: "2",
-			gvr: &schema.GroupVersionResource{
-				Group:    "events.k8s.io",
-				Version:  "v1",
-				Resource: "events",
-			},
-		},
-	}
-	assert.EqualValues(t, expected, cfg.Objects)
-
 }
