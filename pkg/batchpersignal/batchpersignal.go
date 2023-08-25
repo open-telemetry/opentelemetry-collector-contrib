@@ -6,6 +6,7 @@ package batchpersignal // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -96,6 +97,56 @@ func SplitLogs(batch plog.Logs) []plog.Logs {
 				// there is only one instrumentation library per batch
 				tgt := batches[key].ScopeLogs().At(0).LogRecords().AppendEmpty()
 				log.CopyTo(tgt)
+			}
+		}
+	}
+
+	return result
+}
+
+// SplitMetrics returns one pmetric.Metrics for each metric in the given pmetric.Metrics input. Each of the resulting pmetric.Metrics contains exactly one metric.
+func SplitMetrics(batch pmetric.Metrics) []pmetric.Metrics {
+	// for each label in the resource labels, we group them into batches of rs/ils/metricName.
+	// if the same metricName exists in different ils, they land in different batches.
+	var result []pmetric.Metrics
+
+	for i := 0; i < batch.ResourceMetrics().Len(); i++ {
+		rs := batch.ResourceMetrics().At(i)
+
+		for j := 0; j < rs.ScopeMetrics().Len(); j++ {
+			// the batches for this ILS
+			batches := map[pcommon.ByteSlice]pmetric.ResourceMetrics{}
+
+			ils := rs.ScopeMetrics().At(j)
+			for k := 0; k < ils.Metrics().Len(); k++ {
+				metric := ils.Metrics().At(k)
+
+				key := pcommon.NewByteSlice()
+				key.FromRaw([]byte(metric.Name()))
+
+				// for the first metric in the ILS, initialize the map entry
+				// and add the singleMetricBatch to the result list
+				if _, ok := batches[key]; !ok {
+					// qual deve ser aqui: Gauge, Histogram, Exemplar, ExponentialHistogram, ???
+					metric := pmetric.NewMetrics()
+					newRS := metric.ResourceMetrics().AppendEmpty()
+					// currently, the ResourceMetrics implementation has only a Resource and an ILS. We'll copy the Resource
+					// and set our own ILS
+					rs.Resource().CopyTo(newRS.Resource())
+					newRS.SetSchemaUrl(rs.SchemaUrl())
+					newILS := newRS.ScopeMetrics().AppendEmpty()
+					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
+					// and set our own spans
+					ils.Scope().CopyTo(newILS.Scope())
+					newILS.SetSchemaUrl(ils.SchemaUrl())
+					batches[key] = newRS
+
+					result = append(result, metric)
+				}
+
+				// there is only one instrumentation library per batch
+				tgt := batches[key].ScopeMetrics().At(0).Metrics().AppendEmpty()
+				metric.CopyTo(tgt)
 			}
 		}
 	}
