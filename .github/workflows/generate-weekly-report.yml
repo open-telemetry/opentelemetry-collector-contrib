@@ -24,4 +24,4 @@ jobs:
           retries: 3
           script: |
             const script = require('.github/workflows/scripts/generate-weekly-report.js')
-            console.log(script({github, context}))
+            await script({github, context})
