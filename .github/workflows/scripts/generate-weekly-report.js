@@ -3,6 +3,9 @@ const path = require('path');
 const yaml = require('js-yaml');
 
 
+const REPO_NAME = "opentelemetry-collector-contrib"
+const REPO_OWNER = "open-telemetry"
+
 function debug(msg) {
   console.log(JSON.stringify(msg, null, 2))
 }
@@ -47,8 +50,8 @@ function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
 async function getNewIssues({github, context}) {
   const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
   const queryParams = {
-    owner: 'open-telemetry',
-    repo: 'opentelemetry-collector-contrib',
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     state: 'all', // To get both open and closed issues
     per_page: 100, // Number of items per page (maximum allowed)
     page: 1, // Start with page 1
@@ -65,10 +68,15 @@ async function getNewIssues({github, context}) {
   }
 }
 
+/**
+ * 
+ * @param {*} param0 
+ * @returns 
+ */
 async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
   const queryParams = {
-    owner: context.payload.repository.owner.login,
-    repo: 'opentelemetry-collector-contrib',
+    owner: REPO_OWNER,
+    repo: REPO_NAME,
     state: 'open',
     per_page: 100, // Number of items per page (maximum allowed)
     page: 1, // Start with page 1
@@ -84,6 +92,9 @@ async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
   }
 }
 
+/**
+ * Get data required for issues report
+ */
 async function getIssuesData({github, context}) {
   const targetLabels = {
     "needs triage": {
@@ -399,7 +410,7 @@ async function processComponents() {
 }
 
 async function main({ github, context }) {
-  debug({msg: "running main", context})
+  debug({msg: "running..."})
   const lookbackData = genLookbackDates();
   const {issuesData, previousReport} = await processIssues({ github, context, lookbackData })
   const componentData = await processComponents()
