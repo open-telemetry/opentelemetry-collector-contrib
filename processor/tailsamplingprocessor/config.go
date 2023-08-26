@@ -17,6 +17,8 @@ const (
 	AlwaysSample PolicyType = "always_sample"
 	// Latency sample traces that are longer than a given threshold.
 	Latency PolicyType = "latency"
+	// Duration sample traces that are longer than a given threshold.
+	Duration PolicyType = "duration"
 	// NumericAttribute sample traces that have a given numeric attribute in a specified
 	// range, e.g.: attribute "http.status_code" >= 399 and <= 999.
 	NumericAttribute PolicyType = "numeric_attribute"
@@ -54,6 +56,8 @@ type sharedPolicyCfg struct {
 	Type PolicyType `mapstructure:"type"`
 	// Configs for latency filter sampling policy evaluator.
 	LatencyCfg LatencyCfg `mapstructure:"latency"`
+	// Configs for duration filter sampling policy evaluator.
+	DurationCfg DurationCfg `mapstructure:"duration"`
 	// Configs for numeric attribute filter sampling policy evaluator.
 	NumericAttributeCfg NumericAttributeCfg `mapstructure:"numeric_attribute"`
 	// Configs for probabilistic sampling policy evaluator.
@@ -128,6 +132,15 @@ type PolicyCfg struct {
 type LatencyCfg struct {
 	// ThresholdMs in milliseconds.
 	ThresholdMs int64 `mapstructure:"threshold_ms"`
+}
+
+// DurationCfg holds the configurable settings to create a duration filter sampling policy
+// evaluator, which is essentially a latency sampler with two bounds
+type DurationCfg struct {
+	// Lower bound in milliseconds.
+	LowerDurationMs int64 `mapstructure:"lower_bound_ms"`
+	// Upper bound in milliseconds.
+	UpperDurationMs int64 `mapstructure:"upper_bound_ms"`
 }
 
 // NumericAttributeCfg holds the configurable settings to create a numeric attribute filter

@@ -29,6 +29,7 @@ The following configuration options are required:
 Multiple policies exist today and it is straight forward to add more. These include:
 - `always_sample`: Sample all traces
 - `latency`: Sample based on the duration of the trace. The duration is determined by looking at the earliest start time and latest end time, without taking into consideration what happened in between.
+- `duration`: Sample based on the *bounded* duration of the trace. Otherwise identical to latency
 - `numeric_attribute`: Sample based on number attributes (resource and record)
 - `probabilistic`: Sample a percentage of traces. Read [a comparison with the Probabilistic Sampling Processor](#probabilistic-sampling-processor-compared-to-the-tail-sampling-processor-with-the-probabilistic-policy).
 - `status_code`: Sample based upon the status code (`OK`, `ERROR` or `UNSET`)
@@ -77,6 +78,11 @@ processors:
             name: test-policy-2,
             type: latency,
             latency: {threshold_ms: 5000}
+          },
+          {
+            name: test-policy-2a,
+            type: duration,
+            latency: {lower_bound_ms: 5000, upper_bound_ms: 10000}
           },
           {
             name: test-policy-3,
