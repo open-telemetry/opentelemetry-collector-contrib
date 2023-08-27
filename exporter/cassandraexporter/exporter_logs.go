@@ -28,6 +28,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	session, err := cluster.CreateSession()
 	cluster.Keyspace = cfg.Keyspace
 	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
 
 	if err != nil {
 		return nil, err
@@ -40,6 +41,8 @@ func initializeLogKernel(cfg *Config) error {
 	ctx := context.Background()
 	cluster := gocql.NewCluster(cfg.DSN)
 	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return err
