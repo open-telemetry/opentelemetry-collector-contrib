@@ -166,6 +166,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted)
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
+		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
 	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)

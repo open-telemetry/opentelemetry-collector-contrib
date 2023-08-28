@@ -175,6 +175,16 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
+              isMonotonic: true
+            unit: "{temp_file}" 
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -233,6 +243,16 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
+              isMonotonic: true
+            unit: "{temp_file}"  
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -300,6 +320,16 @@ resourceMetrics:
                   startTimeUnixNano: "1687780273472170000"
                   timeUnixNano: "1687780274490198000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1687780273472170000"
+                  timeUnixNano: "1687780274490198000"
+              isMonotonic: true
+            unit: "{temp_file}"  
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
