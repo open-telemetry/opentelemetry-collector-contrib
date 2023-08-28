@@ -30,10 +30,10 @@ github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXl
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/collector v0.83.0 h1:rKFch1CANepajPwBTvzYj/hKz7RsMyUkPPPNjRCpJ/I=
-go.opentelemetry.io/collector/consumer v0.83.0 h1:8wg0UfFxxaGYsTkQGWuf1pE7C/dTvPkkYmBtR6N5BKc=
-go.opentelemetry.io/collector/consumer v0.83.0/go.mod h1:YLbmTqvgIOYUlEeWun8wQ4RZ0HaYjsABWKw7nwU9F3c=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 h1:iT5qH0NLmkGeIdDtnBogYDx7L58t6CaWGL378DEo2QY=
-go.opentelemetry.io/collector/pdata v1.0.0-rcv0014/go.mod h1:BRvDrx43kiSoUx3mr7SoA7h9B8+OY99mUK+CZSQFWW4=
+go.opentelemetry.io/collector/consumer v0.83.1-0.20230828160024-0af1c111bd79 h1:EoxlXsT5mOeNRhhr1dRYiLD2wWQM6MqTghgMJDNMVE8=
+go.opentelemetry.io/collector/consumer v0.83.1-0.20230828160024-0af1c111bd79/go.mod h1:YLbmTqvgIOYUlEeWun8wQ4RZ0HaYjsABWKw7nwU9F3c=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230828160024-0af1c111bd79 h1:Uaapy+1loLR/fhjYEjwGqf3MMApSgiKkrWwiH0Yl8TE=
+go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230828160024-0af1c111bd79/go.mod h1:GjXosB/NyBa7H+T7K0kI2Tmo5gdtfqAcRdDYZEONXyI=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
 go.uber.org/multierr v1.11.0/go.mod h1:20+QtiLqy0Nd6FdQB9TLXag12DsQkrbs3htMFfDN80Y=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
