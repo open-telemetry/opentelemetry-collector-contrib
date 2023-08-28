@@ -119,7 +119,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewCustomFactory(splitFunc, c.FlushPeriod)
+	factory := splitter.NewCustomSplitFuncFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
 	if _, err := factory.SplitFunc(); err != nil {
 		return nil, err
 	}

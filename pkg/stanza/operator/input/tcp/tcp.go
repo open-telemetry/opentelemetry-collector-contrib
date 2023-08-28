@@ -81,9 +81,8 @@ type BaseConfig struct {
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), trimFunc)
+func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), c.TrimConfig.Func())
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +120,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.SplitFuncBuilder == nil {
-		c.SplitFuncBuilder = c.defaultMultilineBuilder
+		c.SplitFuncBuilder = c.defaultSplitFuncBuilder
 	}
 
 	// Build split func

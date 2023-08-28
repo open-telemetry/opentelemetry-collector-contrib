@@ -71,15 +71,13 @@ func (r *testReader) splitFunc(split bufio.SplitFunc) bufio.SplitFunc {
 }
 
 type TestCase struct {
-	Name                        string
-	Pattern                     string
-	Input                       []byte
-	ExpectedTokens              []string
-	ExpectedError               error
-	Sleep                       time.Duration
-	AdditionalIterations        int
-	PreserveLeadingWhitespaces  bool
-	PreserveTrailingWhitespaces bool
+	Name                 string
+	Pattern              string
+	Input                []byte
+	ExpectedTokens       []string
+	ExpectedError        error
+	Sleep                time.Duration
+	AdditionalIterations int
 }
 
 func (tc TestCase) Run(split bufio.SplitFunc) func(t *testing.T) {

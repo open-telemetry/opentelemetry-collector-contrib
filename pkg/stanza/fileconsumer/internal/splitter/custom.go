@@ -13,14 +13,16 @@ import (
 
 type customFactory struct {
 	splitFunc   bufio.SplitFunc
+	trimFunc    trim.Func
 	flushPeriod time.Duration
 }
 
 var _ Factory = (*customFactory)(nil)
 
-func NewCustomFactory(splitFunc bufio.SplitFunc, flushPeriod time.Duration) Factory {
+func NewCustomSplitFuncFactory(splitFunc bufio.SplitFunc, trimFunc trim.Func, flushPeriod time.Duration) Factory {
 	return &customFactory{
 		splitFunc:   splitFunc,
+		trimFunc:    trimFunc,
 		flushPeriod: flushPeriod,
 	}
 }

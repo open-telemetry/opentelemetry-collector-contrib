@@ -45,7 +45,7 @@ func TestSplitFuncFactory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewSplitFuncFactory(tt.splitConfig, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
+			factory := NewSplitFuncFactory(tt.splitConfig, tt.encoding, tt.maxLogSize, trim.Whitespace, tt.flushPeriod)
 			got, err := factory.SplitFunc()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("SplitFunc() error = %v, wantErr %v", err, tt.wantErr)

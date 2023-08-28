@@ -75,6 +75,13 @@ func TestConfigFunc(t *testing.T) {
 		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
 		assert.EqualError(t, err, "compile line end regex: error parsing regexp: missing closing ]: `[`")
 	})
+
+	t.Run("EncodeNewlineDstTooShort", func(t *testing.T) {
+		cfg := &Config{}
+		enc := errEncoding{}
+		_, err := cfg.Func(&enc, false, maxLogSize, trim.Nop)
+		assert.EqualError(t, err, "strange encoding")
+	})
 }
 
 func TestLineStartSplitFunc(t *testing.T) {
@@ -92,8 +99,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
 			ExpectedTokens: []string{
-				`LOGSTART 123 log1`,
-				`LOGSTART 234 log2`,
+				`LOGSTART 123 log1 `,
+				`LOGSTART 234 log2 `,
 			},
 		},
 		{
@@ -101,8 +108,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `^LOGSTART \d+ `,
 			Input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
 			ExpectedTokens: []string{
-				"LOGSTART 123 LOGSTART 345 log1",
-				"LOGSTART 234 log2",
+				"LOGSTART 123 LOGSTART 345 log1\n",
+				"LOGSTART 234 log2\n",
 			},
 		},
 		{
@@ -115,7 +122,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input:   []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
 			ExpectedTokens: []string{
-				`part that doesn't match`,
+				`part that doesn't match `,
 				`LOGSTART 123 part that matches`,
 			},
 		},
@@ -157,28 +164,24 @@ func TestLineStartSplitFunc(t *testing.T) {
 			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:    "MultipleMultilineLogs",
+			Name:    "MultiplesplitLogs",
 			Pattern: `^LOGSTART \d+`,
 			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
 			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
-				"LOGSTART 17 log2\nLOGPART log2\nanother line",
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
+				"LOGSTART 17 log2\nLOGPART log2\nanother line\n",
 			},
 		},
 		{
-			Name:    "LogsWithoutFlusher",
+			Name:    "NoMatch",
 			Pattern: `^LOGSTART \d+`,
 			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 	}
 
 	for _, tc := range testCases {
-		cfg := Config{LineStartPattern: tc.Pattern}
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
+		cfg := &Config{LineStartPattern: tc.Pattern}
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trim.Nop)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -288,7 +291,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
 			ExpectedTokens: []string{
 				"log1 LOGEND LOGEND",
-				"log2 LOGEND",
+				"\nlog2 LOGEND",
 			},
 		},
 		{
@@ -339,16 +342,16 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:    "MultipleMultilineLogs",
+			Name:    "MultiplesplitLogs",
 			Pattern: `^LOGEND.*$`,
 			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
 			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1",
-				"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   ",
+				"\nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
 			},
 		},
 		{
-			Name:    "LogsWithoutFlusher",
+			Name:    "NoMatch",
 			Pattern: `^LOGEND.*$`,
 			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
@@ -356,12 +359,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := Config{LineEndPattern: tc.Pattern}
-
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trim.Nop)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -484,7 +482,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			Input: []byte("LOGPART log1"),
 		},
 		{
-			Name:  "DefaultFlusherSplits",
+			Name:  "DefaultSplits",
 			Input: []byte("log1\nlog2\n"),
 			ExpectedTokens: []string{
 				"log1",
@@ -499,42 +497,10 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"LOGEND 333",
 			},
 		},
-		{
-			Name:  "PreserveLeadingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				" LOGEND 333",
-			},
-			PreserveLeadingWhitespaces: true,
-		},
-		{
-			Name:  "PreserveTrailingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				"LOGEND 333 ",
-			},
-			PreserveTrailingWhitespaces: true,
-		},
-		{
-			Name:  "PreserveBothLeadingAndTrailingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				" LOGEND 333 ",
-			},
-			PreserveLeadingWhitespaces:  true,
-			PreserveTrailingWhitespaces: true,
-		},
 	}
 
 	for _, tc := range testCases {
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, trimFunc)
+		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, trim.Nop)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -623,6 +589,7 @@ func TestNoSplitFunc(t *testing.T) {
 				"stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn",
 			},
 		},
+
 		{
 			Name: "EOFBeforeMaxLogSize",
 			Input: func() []byte {
@@ -645,12 +612,10 @@ func TestNoSplitFunc(t *testing.T) {
 
 func TestNoopEncodingError(t *testing.T) {
 	endCfg := Config{LineEndPattern: "\n"}
-
 	_, err := endCfg.Func(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	startCfg := Config{LineStartPattern: "\n"}
-
 	_, err = startCfg.Func(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
@@ -689,6 +654,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
 			},
 		},
+
 		{
 			"MultiCarriageReturnUTF16",
 			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
@@ -732,3 +698,26 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 		})
 	}
 }
+
+// TODO the only error case is when an encoding requires more than 10
+// bytes to represent a newline or carriage return. This is very unlikely to happen
+// and doesn't seem to warrant error handling in more than one place.
+// Therefore, move error case into decoder.LookupEncoding?
+type errEncoding struct{}
+type errEncoder struct{}
+
+func (e errEncoding) NewEncoder() *encoding.Encoder {
+	return &encoding.Encoder{
+		Transformer: &errEncoder{},
+	}
+}
+
+func (e errEncoding) NewDecoder() *encoding.Decoder {
+	return &encoding.Decoder{}
+}
+
+func (e errEncoder) Transform(_, _ []byte, _ bool) (int, int, error) {
+	return 0, 0, errors.New("strange encoding")
+}
+
+func (e errEncoder) Reset() {}
