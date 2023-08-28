@@ -1600,6 +1600,16 @@ func Test_StandardTimeGetter(t *testing.T) {
 			valid:            false,
 			expectedErrorMsg: "expected time but got bool",
 		},
+		{
+			name: "nil",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got nil",
+		},
 	}
 
 	for _, tt := range tests {
@@ -1613,4 +1623,17 @@ func Test_StandardTimeGetter(t *testing.T) {
 			}
 		})
 	}
+}
+
+// nolint:errorlint
+func Test_StandardTimeGetter_WrappedError(t *testing.T) {
+	getter := StandardTimeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
 }
