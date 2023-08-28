@@ -259,7 +259,7 @@ github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5t
 go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dYz5A=
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
-go.opentelemetry.io/collector v0.83.0 h1:rKFch1CANepajPwBTvzYj/hKz7RsMyUkPPPNjRCpJ/I=
+go.opentelemetry.io/collector v0.83.1-0.20230828160024-0af1c111bd79 h1:fy4wBdF1tQoIepY9WJ4LxHDynldJtolr7zb8siqAa4s=
 go.opentelemetry.io/collector/component v0.83.1-0.20230828160024-0af1c111bd79 h1:Nl24AiYCok2xs3opHOqcLhMPlmxvnPLq1ly7eUU10lo=
 go.opentelemetry.io/collector/component v0.83.1-0.20230828160024-0af1c111bd79/go.mod h1:DhepSc34Dyeuc1NU1AoYm/8KfdUCZzByutmWJ3lP0Oc=
 go.opentelemetry.io/collector/config/configtelemetry v0.83.1-0.20230828160024-0af1c111bd79 h1:yrPm8crkwbDLPkJtQ0Rwz+4jFdM4zf4LaMinAWqvxxk=
