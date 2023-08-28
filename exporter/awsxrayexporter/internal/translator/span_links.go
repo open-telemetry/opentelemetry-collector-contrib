@@ -10,7 +10,7 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-func makeSpanLinks(links ptrace.SpanLinkSlice) ([]awsxray.SpanLinkData, error) {
+func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]awsxray.SpanLinkData, error) {
 	var spanLinkDataArray []awsxray.SpanLinkData
 
 	for i := 0; i < links.Len(); i++ {
@@ -18,7 +18,7 @@ func makeSpanLinks(links ptrace.SpanLinkSlice) ([]awsxray.SpanLinkData, error) {
 		var link = links.At(i)
 
 		var spanID = link.SpanID().String()
-		traceID, err := convertToAmazonTraceID(link.TraceID())
+		traceID, err := convertToAmazonTraceID(link.TraceID(), skipTimestampValidation)
 
 		if err != nil {
 			return nil, err
