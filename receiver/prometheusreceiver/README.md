@@ -149,3 +149,13 @@ This receiver accepts exemplars coming in Prometheus format and converts it to O
 
 [sc]: https://github.com/prometheus/prometheus/blob/v2.28.1/docs/configuration/configuration.md#scrape_config
 
+## Resource and Scope
+
+This receiver drops the `target_info` prometheus metric, if present, and uses attributes on
+that metric to populate the OpenTelemetry Resource.
+
+It drops `otel_scope_name` and `otel_scope_version` labels, if present, from metrics, and uses them to populate
+the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_scope_info` metric,
+and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
+Attributes.
+

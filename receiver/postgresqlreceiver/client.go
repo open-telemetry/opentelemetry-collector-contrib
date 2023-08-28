@@ -132,10 +132,11 @@ type databaseStats struct {
 	transactionCommitted int64
 	transactionRollback  int64
 	deadlocks            int64
+	tempFiles            int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks FROM pg_stat_database", databases, false)
+	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files FROM pg_stat_database", databases, false)
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
@@ -144,8 +145,8 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 	dbStats := map[databaseName]databaseStats{}
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks)
+		var transactionCommitted, transactionRollback, deadlocks, tempFiles int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -155,6 +156,7 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionCommitted: transactionCommitted,
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
+				tempFiles:            tempFiles,
 			}
 		}
 	}

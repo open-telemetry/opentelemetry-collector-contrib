@@ -59,6 +59,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Password = "otelp"
 				rCfg.Insecure = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
+				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
