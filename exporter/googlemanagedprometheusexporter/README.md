@@ -158,7 +158,7 @@ processors:
   resource:
     attributes:
     - key: "location"
-      value: "us-east-1"
+      value: "us-east1"
       action: upsert
 ```
 
