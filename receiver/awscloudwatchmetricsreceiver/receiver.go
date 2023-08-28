@@ -86,13 +86,14 @@ func chunkSlice(requests []request, maxSize int) [][]request {
 }
 
 // divide up into slices of 500, then execute
-// Split metricNamedRequest slices into small slicer no longer than 500 elements
+// Split requests slices into small slices no longer than 500 elements
 // GetMetricData only allows 500 elements in a slice, otherwise we'll get validation error
 // Avoids making a network call for each metric configured
 func (m *metricReceiver) request(st, et time.Time) []cloudwatch.GetMetricDataInput {
-	metricDataInput := make([]cloudwatch.GetMetricDataInput, len(m.requests))
 
 	chunks := chunkSlice(m.requests, maxNumberOfElements)
+	metricDataInput := make([]cloudwatch.GetMetricDataInput, len(chunks))
+
 	for idx, chunk := range chunks {
 		for ydx := range chunk {
 			metricDataInput[idx].StartTime, metricDataInput[idx].EndTime = aws.Time(st), aws.Time(et)
@@ -178,7 +179,6 @@ func (m *metricReceiver) startPolling(ctx context.Context) {
 			return
 		case <-t.C:
 			if m.autoDiscover != nil {
-				m.logger.Debug("autodiscover != nil")
 				requests, err := m.autoDiscoverRequests(ctx, m.autoDiscover)
 				if err != nil {
 					m.logger.Debug("couldn't discover metrics", zap.Error(err))
