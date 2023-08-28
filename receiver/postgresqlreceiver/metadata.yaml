@@ -248,6 +248,14 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
+  postgresql.temp_files:
+    enabled: false
+    description: The number of temp files.
+    unit: "{temp_file}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative   
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |
