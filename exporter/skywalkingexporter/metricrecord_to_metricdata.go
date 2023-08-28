@@ -185,6 +185,7 @@ func doubleSummaryMetricsToData(name string, data pmetric.SummaryDataPointSlice,
 }
 
 func metricDataToSwMetricData(md pmetric.Metric, defaultLabels []*metricpb.Label) (metrics []*metricpb.MeterData) {
+	//exhaustive:enforce
 	switch md.Type() {
 	case pmetric.MetricTypeEmpty:
 		break
@@ -196,6 +197,8 @@ func metricDataToSwMetricData(md pmetric.Metric, defaultLabels []*metricpb.Label
 		return doubleHistogramMetricsToData(md.Name(), md.Histogram().DataPoints(), defaultLabels)
 	case pmetric.MetricTypeSummary:
 		return doubleSummaryMetricsToData(md.Name(), md.Summary().DataPoints(), defaultLabels)
+	case pmetric.MetricTypeExponentialHistogram:
+		return nil
 	}
 	return nil
 }

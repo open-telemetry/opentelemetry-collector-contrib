@@ -46,7 +46,7 @@ func TestReadMetrics(t *testing.T) {
 	metricslice := testMetrics()
 	expectedMetrics := pmetric.NewMetrics()
 	metricslice.CopyTo(expectedMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics())
-
+	normalizeTimestamps(expectedMetrics)
 	expectedFile := filepath.Join("testdata", "roundtrip", "expected.yaml")
 	actualMetrics, err := ReadMetrics(expectedFile)
 	require.NoError(t, err)
@@ -285,4 +285,18 @@ func CreateTestTraces() ptrace.Traces {
 	event.SetName("Sub span event")
 
 	return traces
+}
+
+func TestSortAndNormalizeMetrics(t *testing.T) {
+	dir := filepath.Join("testdata", "standardize-metrics")
+	before, err := ReadMetrics(filepath.Join(dir, "before.yaml"))
+	require.NoError(t, err)
+
+	after, err := ReadMetrics(filepath.Join(dir, "after.yaml"))
+	require.NoError(t, err)
+
+	sortMetrics(before)
+	normalizeTimestamps(before)
+
+	require.Equal(t, before, after)
 }
