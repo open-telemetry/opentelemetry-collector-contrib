@@ -32,7 +32,7 @@ type Option func(*ottl.Parser[TransformContext])
 
 func NewTransformContext(dataPoint interface{}, metric pmetric.Metric, metrics pmetric.MetricSlice, instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
 	return TransformContext{
-		dataPoint:            dataPoint,
+		dataPoint:            dataPoint,s
 		metric:               metric,
 		metrics:              metrics,
 		instrumentationScope: instrumentationScope,
@@ -145,9 +145,9 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 			return accessAttributes(), nil
 		}
 		return accessAttributesKey(mapKey), nil
-	case "start_time_unix_nano":
-		return accessStartTimeUnixNano(), nil
-	case "time_unix_nano":
+	case "start_time":
+		return accessStartTime(), nil
+	case "time_unix":
 		return accessTimeUnixNano(), nil
 	case "value_double":
 		return accessDoubleValue(), nil
@@ -316,6 +316,39 @@ func accessStartTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 					tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
 				case pmetric.SummaryDataPoint:
 					tCtx.GetDataPoint().(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, newTime)))
+				}
+			}
+			return nil
+		},
+	}
+}
+
+func accessStartTime() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			switch tCtx.GetDataPoint().(type) {
+			case pmetric.NumberDataPoint:
+				return tCtx.GetDataPoint().(pmetric.NumberDataPoint).StartTimestamp().AsTime(), nil
+			case pmetric.HistogramDataPoint:
+				return tCtx.GetDataPoint().(pmetric.HistogramDataPoint).StartTimestamp().AsTime(), nil
+			case pmetric.ExponentialHistogramDataPoint:
+				return tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).StartTimestamp().AsTime(), nil
+			case pmetric.SummaryDataPoint:
+				return tCtx.GetDataPoint().(pmetric.SummaryDataPoint).StartTimestamp().AsTime(), nil
+			}
+			return nil, nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if newTime, ok := val.(time.Time); ok {
+				switch tCtx.GetDataPoint().(type) {
+				case pmetric.NumberDataPoint:
+					tCtx.GetDataPoint().(pmetric.NumberDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(newTime))
+				case pmetric.HistogramDataPoint:
+					tCtx.GetDataPoint().(pmetric.HistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(newTime))
+				case pmetric.ExponentialHistogramDataPoint:
+					tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(newTime))
+				case pmetric.SummaryDataPoint:
+					tCtx.GetDataPoint().(pmetric.SummaryDataPoint).SetStartTimestamp(pcommon.NewTimestampFromTime(newTime))
 				}
 			}
 			return nil
