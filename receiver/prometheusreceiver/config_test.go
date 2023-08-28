@@ -4,6 +4,7 @@
 package prometheusreceiver
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
@@ -123,7 +125,8 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 
 // Renaming emits a warning
 func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "invalid-config-prometheus-relabel.yaml"))
+	// Construct the config that should emit a warning
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "warning-config-prometheus-relabel.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -131,9 +134,13 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	// Use a fake logger
+	creationSet := receivertest.NewNopCreateSettings()
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-	logger := zap.New(observedZapCore)
-	configWarnings(logger, cfg.(*Config))
+	creationSet.Logger = zap.New(observedZapCore)
+	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
+	require.NoError(t, err)
+	// We should have received a warning
 	assert.Equal(t, 1, observedLogs.Len())
 }
 
