@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
+    "fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -81,13 +81,14 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
 		errs.Add(err)
+        return
 	}
-	defer res.Body.Close()
 
 	err = unmarshallSearchReq(res, &sr)
 	if err != nil {
 		errs.Add(err)
 	}
+    res.Body.Close()
 
 	for ok := true; ok; ok = (sr.Return == 204) {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
@@ -98,16 +99,17 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
 			errs.Add(err)
+            res.Body.Close()
+			return
 		}
-		defer res.Body.Close()
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
 			errs.Add(err)
-			return
 		}
+		res.Body.Close()
 
 		if sr.Return == 204 {
 			time.Sleep(2 * time.Second)
@@ -178,11 +180,12 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
 		errs.Add(err)
+        return
 	}
+    defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		fmt.Println("Failed to read response")
 		errs.Add(err)
 	}
 
@@ -191,7 +194,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 		errs.Add(err)
 	}
 
-	fmt.Printf("\n%v\n", it.Entries)
-
-	s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, it.Entries[0].Content.AvgKb, it.Entries[0].Content.Status)
+    for _, entry := range it.Entries {
+	    s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, entry.Content.AvgKb, entry.Content.Status)
+    }
 }
