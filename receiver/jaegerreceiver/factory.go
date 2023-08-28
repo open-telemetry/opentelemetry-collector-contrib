@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
@@ -30,6 +31,12 @@ const (
 	defaultHTTPBindEndpoint          = "0.0.0.0:14268"
 	defaultThriftCompactBindEndpoint = "0.0.0.0:6831"
 	defaultThriftBinaryBindEndpoint  = "0.0.0.0:6832"
+)
+
+var disableJaegerReceiverRemoteSampling = featuregate.GlobalRegistry().MustRegister(
+	"receiver.jaeger.DisableRemoteSampling",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, the Jaeger Receiver will fail to start when it is configured with remote_sampling config. When disabled, the receiver will start and the remote_sampling config will be no-op."),
 )
 
 // NewFactory creates a new Jaeger receiver factory.
@@ -95,6 +102,10 @@ func createTracesReceiver(
 
 	if rCfg.Protocols.ThriftCompact != nil {
 		config.AgentCompactThrift = *rCfg.ThriftCompact
+	}
+
+	if rCfg.RemoteSampling != nil {
+		set.Logger.Warn("You are using a deprecated no-op `remote_sampling` option which will be removed soon; use a `jaegerremotesampling` extension instead")
 	}
 
 	// Create the receiver.

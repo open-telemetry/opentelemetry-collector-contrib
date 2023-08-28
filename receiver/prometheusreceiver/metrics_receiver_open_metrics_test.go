@@ -246,6 +246,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -264,6 +265,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 			}),
 		assertMetricPresent("bar",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{

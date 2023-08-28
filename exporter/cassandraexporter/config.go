@@ -5,6 +5,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 
 type Config struct {
 	DSN         string      `mapstructure:"dsn"`
+	Port        int         `mapstructure:"port"`
 	Keyspace    string      `mapstructure:"keyspace"`
 	TraceTable  string      `mapstructure:"trace_table"`
 	LogsTable   string      `mapstructure:"logs_table"`
