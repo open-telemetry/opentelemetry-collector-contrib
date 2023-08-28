@@ -2511,52 +2511,52 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			desc: "Multiple ScalarOID (string) resource attributes attached to ColumnOID metric alongside multiple Column OID (string) resource attributes creates metrics (23)",
-			testFunc: func (t *testing.T) {
+			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				scalarRA1 := SNMPData{
-					oid: ".5.0",
-					value: "scalar",
+					oid:       ".5.0",
+					value:     "scalar",
 					valueType: stringVal,
 				}
 				scalarRA2 := SNMPData{
-					oid: ".6.0",
-					value: "also scalar",
+					oid:       ".6.0",
+					value:     "also scalar",
 					valueType: stringVal,
 				}
 				coidRA11 := SNMPData{
 					columnOID: ".1",
-					oid: ".1.1",
-					value: "string1",
+					oid:       ".1.1",
+					value:     "string1",
 					valueType: stringVal,
 				}
 				coidRA12 := SNMPData{
 					columnOID: ".1",
-					oid: ".1.2",
-					value: "string2",
+					oid:       ".1.2",
+					value:     "string2",
 					valueType: stringVal,
 				}
 				coidRA21 := SNMPData{
 					columnOID: ".2",
-					oid: ".2.1",
-					value: "also a string1",
+					oid:       ".2.1",
+					value:     "also a string1",
 					valueType: stringVal,
 				}
 				coidRA22 := SNMPData{
 					columnOID: ".2",
-					oid: ".2.2",
-					value: "also a string2",
+					oid:       ".2.2",
+					value:     "also a string2",
 					valueType: stringVal,
 				}
 				coid31 := SNMPData{
 					columnOID: ".3",
-					oid: ".3.1",
-					value: int64(3),
+					oid:       ".3.1",
+					value:     int64(3),
 					valueType: integerVal,
 				}
 				coid32 := SNMPData{
 					columnOID: ".3",
-					oid: ".3.2",
-					value: int64(4),
+					oid:       ".3.2",
+					value:     int64(4),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
@@ -2583,13 +2583,13 @@ func TestScrape(t *testing.T) {
 						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
-								Unit: "By",
+								Unit:        "By",
 								Gauge: &GaugeMetric{
 									ValueType: "int",
 								},
 								ColumnOIDs: []ColumnOID{
 									{
-										OID: ".3",
+										OID:                ".3",
 										ResourceAttributes: []string{"rattr1", "rattr2", "rattr3", "rattr4"},
 									},
 								},
@@ -2602,10 +2602,10 @@ func TestScrape(t *testing.T) {
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					 goldenPath := filepath.Join("testdata", "expected_metrics", "23_multiple_scalar_oid_string_with_multiple_coid_ra_string_on_coid_metric_golden.yaml")
-					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-					 require.NoError(t, err)
-					 return expectedMetrics
+					goldenPath := filepath.Join("testdata", "expected_metrics", "23_multiple_scalar_oid_string_with_multiple_coid_ra_string_on_coid_metric_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					require.NoError(t, err)
+					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
@@ -2839,22 +2839,22 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-		desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
-			testFunc: func (t *testing.T) {
+			desc: "Multiple ScalarOID (string) resource attributes attached to ScalarOID metric creates single resource for metric (27)",
+			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				scalarRA1 := SNMPData{
-					oid: ".5.0",
-					value: "scalar",
+					oid:       ".5.0",
+					value:     "scalar",
 					valueType: stringVal,
 				}
 				scalarRA2 := SNMPData{
-					oid: ".7.0",
-					value: "also scalar",
+					oid:       ".7.0",
+					value:     "also scalar",
 					valueType: stringVal,
 				}
 				scalarOID := SNMPData{
-					oid: ".6.0",
-					value: int64(6),
+					oid:       ".6.0",
+					value:     int64(6),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
@@ -2874,13 +2874,13 @@ func TestScrape(t *testing.T) {
 						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
-								Unit: "By",
+								Unit:        "By",
 								Gauge: &GaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
 									{
-										OID: ".6.0",
+										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1", "rattr2"},
 									},
 								},
@@ -2893,10 +2893,10 @@ func TestScrape(t *testing.T) {
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					 goldenPath := filepath.Join("testdata", "expected_metrics", "27_multiple_scalar_ra_string_on_scalar_metric_golden.yaml")
-					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-					 require.NoError(t, err)
-					 return expectedMetrics
+					goldenPath := filepath.Join("testdata", "expected_metrics", "27_multiple_scalar_ra_string_on_scalar_metric_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					require.NoError(t, err)
+					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
@@ -2906,22 +2906,22 @@ func TestScrape(t *testing.T) {
 			},
 		},
 		{
-		desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
-			testFunc: func (t *testing.T) {
+			desc: "Two scalar oid metrics with the same resource attribute get added to a single resource (28)",
+			testFunc: func(t *testing.T) {
 				mockClient := new(MockClient)
 				scalarRA := SNMPData{
-					oid: ".5.0",
-					value: "scalar",
+					oid:       ".5.0",
+					value:     "scalar",
 					valueType: stringVal,
 				}
 				scalarOID1 := SNMPData{
-					oid: ".6.0",
-					value: int64(6),
+					oid:       ".6.0",
+					value:     int64(6),
 					valueType: integerVal,
 				}
 				scalarOID2 := SNMPData{
-					oid: ".7.0",
-					value: int64(7),
+					oid:       ".7.0",
+					value:     int64(7),
 					valueType: integerVal,
 				}
 				mockClient.On("Connect").Return(nil)
@@ -2938,26 +2938,26 @@ func TestScrape(t *testing.T) {
 						Metrics: map[string]*MetricConfig{
 							"metric1": {
 								Description: "test description",
-								Unit: "By",
+								Unit:        "By",
 								Gauge: &GaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
 									{
-										OID: ".6.0",
+										OID:                ".6.0",
 										ResourceAttributes: []string{"rattr1"},
 									},
 								},
 							},
 							"metric2": {
 								Description: "test description",
-								Unit: "By",
+								Unit:        "By",
 								Gauge: &GaugeMetric{
 									ValueType: "int",
 								},
 								ScalarOIDs: []ScalarOID{
 									{
-										OID: ".7.0",
+										OID:                ".7.0",
 										ResourceAttributes: []string{"rattr1"},
 									},
 								},
@@ -2970,10 +2970,10 @@ func TestScrape(t *testing.T) {
 				}
 
 				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
-					 goldenPath := filepath.Join("testdata", "expected_metrics", "28_two_scalar_oid_metrics_with_same_resource_attribute_golden.yaml")
-					 expectedMetrics, err := golden.ReadMetrics(goldenPath)
-					 require.NoError(t, err)
-					 return expectedMetrics
+					goldenPath := filepath.Join("testdata", "expected_metrics", "28_two_scalar_oid_metrics_with_same_resource_attribute_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					require.NoError(t, err)
+					return expectedMetrics
 				}
 				expectedMetrics := expectedMetricGen(t)
 				metrics, err := scraper.scrape(context.Background())
