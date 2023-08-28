@@ -168,7 +168,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.83.0
 	go.opentelemetry.io/collector v0.83.0
-	go.opentelemetry.io/collector/confmap v0.83.0
 	go.opentelemetry.io/collector/exporter v0.83.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.83.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.83.0
@@ -559,7 +558,7 @@ require (
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/samber/lo v1.37.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.15 // indirect
-	github.com/scalyr/dataset-go v0.12.1 // indirect
+	github.com/scalyr/dataset-go v0.14.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
@@ -627,6 +626,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.83.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.83.0 // indirect
+	go.opentelemetry.io/collector/confmap v0.83.0 // indirect
 	go.opentelemetry.io/collector/connector v0.83.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.83.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.83.0 // indirect
