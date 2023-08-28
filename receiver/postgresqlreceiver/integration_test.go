@@ -60,6 +60,7 @@ func integrationTest(name string, databases []string) func(*testing.T) {
 				rCfg.Insecure = true
 				rCfg.Metrics.PostgresqlDeadlocks.Enabled = true
 				rCfg.Metrics.PostgresqlTempFiles.Enabled = true
+				rCfg.Metrics.PostgresqlSequentialScans.Enabled = true
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
 		scraperinttest.WithCompareOptions(
