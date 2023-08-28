@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-    "fmt"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
