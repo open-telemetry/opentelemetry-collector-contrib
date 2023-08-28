@@ -5,6 +5,7 @@ package awscloudwatchmetricsreceiver // import "github.com/open-telemetry/opente
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"sync"
@@ -19,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -200,7 +200,7 @@ func (m *metricReceiver) poll(ctx context.Context) error {
 	startTime := m.nextStartTime
 	endTime := time.Now()
 	if err := m.pollForMetrics(ctx, m.requests, startTime, endTime); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	m.nextStartTime = endTime
 	return errs
