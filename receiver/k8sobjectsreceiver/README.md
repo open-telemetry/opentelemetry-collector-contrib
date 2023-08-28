@@ -58,7 +58,7 @@ Brief description of configuration properties:
 - `leader_election`: Leader election mode helps to ensure that only one instance (as leader instance) is collecting `k8sobjects` data, and if the leader instance fails, another one is elected as leader and takes its place. 
 *Note*: You need to add additional RBAC to perform the leader election mode. See below [Leader Election RBAC](#RBAC-Leader-Election) for more information.
   - `enabled` (default = `false`): whether run in leader election mode.
-  - `lock_name` (default = `k8sobjects`): the identity name of holder, will use component's ID if not set.
+  - `lock_name` (no default): the identity name of holder and must not be empty if LeaderElection enabled.
   - `lease_duration` (default = `15s`): the duration that non-leader candidates will wait to force acquire leadership.
   - `renew_deadline` (default = `10s`): the duration that the acting master will retry refreshing leadership before giving up.
   - `retry_period` (default = `2s`): the duration that non-leader candidates should wait between tries of actions.

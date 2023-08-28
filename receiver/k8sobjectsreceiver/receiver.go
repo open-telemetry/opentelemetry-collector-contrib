@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -67,14 +68,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}
 
 	if config.LeaderElection.Enabled {
+		if objReceiver.leaderElection.LockName == "" {
+			return nil, errors.New("luckName must not be empty if LeaderElection enabled")
+		}
+
 		objReceiver.leaderElectionClient, err = config.getClient()
 		if err != nil {
 			return nil, err
-		}
-
-		// use component "type-name" if resource lock name not set.
-		if objReceiver.leaderElection.LockName == "" {
-			objReceiver.leaderElection.LockName = getLeaderElectionLockName(params.ID)
 		}
 	}
 
@@ -114,7 +114,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 
 	kr.setting.Logger.Info("Object Receiver started")
 
-	if kr.leaderElection.Enabled && kr.leaderElectionClient != nil {
+	if kr.leaderElectionClient != nil {
 		kr.startInLeaderElectionMode(ctx)
 	} else {
 		kr.startFunc(ctx)
