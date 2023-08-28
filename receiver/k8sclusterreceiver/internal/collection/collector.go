@@ -4,31 +4,24 @@
 package collection // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 
 import (
-	"reflect"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	quotav1 "github.com/openshift/api/quota/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
 	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/cache"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/cronjob"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/gvk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/hpa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
@@ -44,143 +37,82 @@ import (
 // TODO: Consider moving some of these constants to
 // https://go.opentelemetry.io/collector/blob/main/model/semconv/opentelemetry.go.
 
-// DataCollector wraps around a metricsStore and a metadaStore exposing
-// methods to perform on the underlying stores. DataCollector also provides
-// an interface to interact with refactored code from SignalFx Agent which is
-// confined to the collection package.
+// DataCollector emits metrics with CollectMetricData based on the Kubernetes API objects in the metadata store.
 type DataCollector struct {
 	settings                 receiver.CreateSettings
-	metricsStore             *metricsStore
 	metadataStore            *metadata.Store
 	nodeConditionsToReport   []string
 	allocatableTypesToReport []string
+	metricsBuilder           *metadata.MetricsBuilder
 }
 
 // NewDataCollector returns a DataCollector.
-func NewDataCollector(set receiver.CreateSettings, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
+func NewDataCollector(set receiver.CreateSettings, ms *metadata.Store,
+	metricsBuilderConfig metadata.MetricsBuilderConfig, nodeConditionsToReport, allocatableTypesToReport []string) *DataCollector {
 	return &DataCollector{
-		settings: set,
-		metricsStore: &metricsStore{
-			metricsCache: make(map[types.UID]pmetric.Metrics),
-		},
-		metadataStore:            &metadata.Store{},
+		settings:                 set,
+		metadataStore:            ms,
 		nodeConditionsToReport:   nodeConditionsToReport,
 		allocatableTypesToReport: allocatableTypesToReport,
-	}
-}
-
-// SetupMetadataStore initializes a metadata store for the kubernetes kind.
-func (dc *DataCollector) SetupMetadataStore(gvk schema.GroupVersionKind, store cache.Store) {
-	dc.metadataStore.Setup(gvk, store)
-}
-
-func (dc *DataCollector) RemoveFromMetricsStore(obj interface{}) {
-	if err := dc.metricsStore.remove(obj.(runtime.Object)); err != nil {
-		dc.settings.TelemetrySettings.Logger.Error(
-			"failed to remove from metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
-	}
-}
-
-func (dc *DataCollector) UpdateMetricsStore(obj interface{}, md pmetric.Metrics) {
-	if err := dc.metricsStore.update(obj.(runtime.Object), md); err != nil {
-		dc.settings.TelemetrySettings.Logger.Error(
-			"failed to update metric cache",
-			zap.String("obj", reflect.TypeOf(obj).String()),
-			zap.Error(err),
-		)
+		metricsBuilder:           metadata.NewMetricsBuilder(metricsBuilderConfig, set),
 	}
 }
 
 func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metrics {
-	return dc.metricsStore.getMetricData(currentTime)
-}
+	ts := pcommon.NewTimestampFromTime(currentTime)
+	customRMs := pmetric.NewResourceMetricsSlice()
 
-// SyncMetrics updates the metric store with latest metrics from the kubernetes object.
-func (dc *DataCollector) SyncMetrics(obj interface{}) {
-	var md pmetric.Metrics
+	dc.metadataStore.ForEach(gvk.Pod, func(o any) {
+		pod.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*corev1.Pod), ts)
+	})
+	dc.metadataStore.ForEach(gvk.Node, func(o any) {
+		crm := node.CustomMetrics(dc.settings, dc.metricsBuilder.NewResourceBuilder(), o.(*corev1.Node),
+			dc.nodeConditionsToReport, dc.allocatableTypesToReport, ts)
+		if crm.ScopeMetrics().Len() > 0 {
+			crm.MoveTo(customRMs.AppendEmpty())
+		}
+	})
+	dc.metadataStore.ForEach(gvk.Namespace, func(o any) {
+		namespace.RecordMetrics(dc.metricsBuilder, o.(*corev1.Namespace), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ReplicationController, func(o any) {
+		replicationcontroller.RecordMetrics(dc.metricsBuilder, o.(*corev1.ReplicationController), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ResourceQuota, func(o any) {
+		resourcequota.RecordMetrics(dc.metricsBuilder, o.(*corev1.ResourceQuota), ts)
+	})
+	dc.metadataStore.ForEach(gvk.Deployment, func(o any) {
+		deployment.RecordMetrics(dc.metricsBuilder, o.(*appsv1.Deployment), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ReplicaSet, func(o any) {
+		replicaset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.ReplicaSet), ts)
+	})
+	dc.metadataStore.ForEach(gvk.DaemonSet, func(o any) {
+		demonset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.DaemonSet), ts)
+	})
+	dc.metadataStore.ForEach(gvk.StatefulSet, func(o any) {
+		statefulset.RecordMetrics(dc.metricsBuilder, o.(*appsv1.StatefulSet), ts)
+	})
+	dc.metadataStore.ForEach(gvk.Job, func(o any) {
+		jobs.RecordMetrics(dc.metricsBuilder, o.(*batchv1.Job), ts)
+	})
+	dc.metadataStore.ForEach(gvk.CronJob, func(o any) {
+		cronjob.RecordMetrics(dc.metricsBuilder, o.(*batchv1.CronJob), ts)
+	})
+	dc.metadataStore.ForEach(gvk.CronJobBeta, func(o any) {
+		cronjob.RecordMetricsBeta(dc.metricsBuilder, o.(*batchv1beta1.CronJob), ts)
+	})
+	dc.metadataStore.ForEach(gvk.HorizontalPodAutoscaler, func(o any) {
+		hpa.RecordMetrics(dc.metricsBuilder, o.(*autoscalingv2.HorizontalPodAutoscaler), ts)
+	})
+	dc.metadataStore.ForEach(gvk.HorizontalPodAutoscalerBeta, func(o any) {
+		hpa.RecordMetricsBeta(dc.metricsBuilder, o.(*autoscalingv2beta2.HorizontalPodAutoscaler), ts)
+	})
+	dc.metadataStore.ForEach(gvk.ClusterResourceQuota, func(o any) {
+		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
+	})
 
-	switch o := obj.(type) {
-	case *corev1.Pod:
-		md = pod.GetMetrics(dc.settings, o)
-	case *corev1.Node:
-		md = node.GetMetrics(dc.settings, o, dc.nodeConditionsToReport, dc.allocatableTypesToReport)
-	case *corev1.Namespace:
-		md = namespace.GetMetrics(dc.settings, o)
-	case *corev1.ReplicationController:
-		md = replicationcontroller.GetMetrics(dc.settings, o)
-	case *corev1.ResourceQuota:
-		md = resourcequota.GetMetrics(dc.settings, o)
-	case *appsv1.Deployment:
-		md = deployment.GetMetrics(dc.settings, o)
-	case *appsv1.ReplicaSet:
-		md = ocsToMetrics(replicaset.GetMetrics(o))
-	case *appsv1.DaemonSet:
-		md = ocsToMetrics(demonset.GetMetrics(o))
-	case *appsv1.StatefulSet:
-		md = statefulset.GetMetrics(dc.settings, o)
-	case *batchv1.Job:
-		md = jobs.GetMetrics(dc.settings, o)
-	case *batchv1.CronJob:
-		md = cronjob.GetMetrics(dc.settings, o)
-	case *batchv1beta1.CronJob:
-		md = cronjob.GetMetricsBeta(dc.settings, o)
-	case *autoscalingv2.HorizontalPodAutoscaler:
-		md = hpa.GetMetrics(dc.settings, o)
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		md = hpa.GetMetricsBeta(dc.settings, o)
-	case *quotav1.ClusterResourceQuota:
-		md = ocsToMetrics(clusterresourcequota.GetMetrics(o))
-	default:
-		return
-	}
-
-	if md.DataPointCount() == 0 {
-		return
-	}
-
-	dc.UpdateMetricsStore(obj, md)
-}
-
-// SyncMetadata updates the metric store with latest metrics from the kubernetes object
-func (dc *DataCollector) SyncMetadata(obj interface{}) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
-	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
-	switch o := obj.(type) {
-	case *corev1.Pod:
-		km = pod.GetMetadata(o, dc.metadataStore, dc.settings.TelemetrySettings.Logger)
-	case *corev1.Node:
-		km = node.GetMetadata(o)
-	case *corev1.ReplicationController:
-		km = replicationcontroller.GetMetadata(o)
-	case *appsv1.Deployment:
-		km = deployment.GetMetadata(o)
-	case *appsv1.ReplicaSet:
-		km = replicaset.GetMetadata(o)
-	case *appsv1.DaemonSet:
-		km = demonset.GetMetadata(o)
-	case *appsv1.StatefulSet:
-		km = statefulset.GetMetadata(o)
-	case *batchv1.Job:
-		km = jobs.GetMetadata(o)
-	case *batchv1.CronJob:
-		km = cronjob.GetMetadata(o)
-	case *batchv1beta1.CronJob:
-		km = cronjob.GetMetadataBeta(o)
-	case *autoscalingv2.HorizontalPodAutoscaler:
-		km = hpa.GetMetadata(o)
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		km = hpa.GetMetadataBeta(o)
-	}
-
-	return km
-}
-
-func ocsToMetrics(ocs []*agentmetricspb.ExportMetricsServiceRequest) pmetric.Metrics {
-	md := pmetric.NewMetrics()
-	for _, ocm := range ocs {
-		internaldata.OCToMetrics(ocm.Node, ocm.Resource, ocm.Metrics).ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-	}
-	return md
+	m := dc.metricsBuilder.Emit()
+	customRMs.MoveAndAppendTo(m.ResourceMetrics())
+	return m
 }

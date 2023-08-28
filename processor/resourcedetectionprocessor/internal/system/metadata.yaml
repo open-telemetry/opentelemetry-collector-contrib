@@ -11,7 +11,15 @@ resource_attributes:
     description: The host.id
     type: string
     enabled: false
+  os.description:
+    description: Human readable OS version information.
+    type: string
+    enabled: false
   os.type:
     description: The os.type
     type: string
     enabled: true
+  host.arch:
+    description: The host.arch
+    type: string
+    enabled: false

@@ -5,3 +5,5 @@ status:
   stability:
     beta: [extension]
   distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [MovieStoreGuy]

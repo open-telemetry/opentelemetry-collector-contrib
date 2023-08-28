@@ -47,7 +47,7 @@ const (
 // batch or send only the data that could be parsed. The caller can use the PushReport
 // to make this decision, as it includes all of the errors that were encountered,
 // as well as the number of items dropped and submitted.
-func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
+func LogsToLokiRequests(ld plog.Logs, defaultLabelsEnabled map[string]bool) map[string]PushRequest {
 	groups := map[string]pushRequestGroup{}
 
 	rls := ld.ResourceLogs()
@@ -70,7 +70,7 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 					groups[tenant] = group
 				}
 
-				entry, err := LogToLokiEntry(log, resource, scope)
+				entry, err := LogToLokiEntry(log, resource, scope, defaultLabelsEnabled)
 				if err != nil {
 					// Couldn't convert so dropping log.
 					group.report.Errors = append(group.report.Errors, fmt.Errorf("failed to convert, dropping log: %w", err))
@@ -80,16 +80,8 @@ func LogsToLokiRequests(ld plog.Logs) map[string]PushRequest {
 
 				group.report.NumSubmitted++
 
-				processed := model.LabelSet{}
-				for label := range entry.Labels {
-					// Loki doesn't support dots in label names
-					// labelName is normalized label name to follow Prometheus label names standard
-					labelName := prometheustranslator.NormalizeLabel(string(label))
-					processed[model.LabelName(labelName)] = entry.Labels[label]
-				}
-
 				// create the stream name based on the labels
-				labels := processed.String()
+				labels := entry.Labels.String()
 				if stream, ok := group.streams[labels]; ok {
 					stream.Entries = append(stream.Entries, *entry.Entry)
 					continue
@@ -128,8 +120,8 @@ type PushEntry struct {
 	Labels model.LabelSet
 }
 
-// LogToLokiEntry converts LogRecord into Loki log entry enriched with labels and tenant
-func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope) (*PushEntry, error) {
+// LogToLokiEntry converts LogRecord into Loki log entry enriched with normalized labels
+func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.InstrumentationScope, defaultLabelsEnabled map[string]bool) (*PushEntry, error) {
 	// we may remove attributes, so change only our version
 	log := plog.NewLogRecord()
 	lr.CopyTo(log)
@@ -138,12 +130,14 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 	resource := pcommon.NewResource()
 	rl.CopyTo(resource)
 
-	// adds level attribute from log.severityNumber
-	addLogLevelAttributeAndHint(log)
+	if enabled, ok := defaultLabelsEnabled[levelLabel]; !ok || enabled {
+		// adds level attribute from log.severityNumber
+		addLogLevelAttributeAndHint(log)
+	}
 
 	format := getFormatFromFormatHint(log.Attributes(), resource.Attributes())
 
-	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes())
+	mergedLabels := convertAttributesAndMerge(log.Attributes(), resource.Attributes(), defaultLabelsEnabled)
 	// remove the attributes that were promoted to labels
 	removeAttributes(log.Attributes(), mergedLabels)
 	removeAttributes(resource.Attributes(), mergedLabels)
@@ -153,9 +147,17 @@ func LogToLokiEntry(lr plog.LogRecord, rl pcommon.Resource, scope pcommon.Instru
 		return nil, err
 	}
 
+	labels := model.LabelSet{}
+	for label := range mergedLabels {
+		// Loki doesn't support dots in label names
+		// labelName is normalized label name to follow Prometheus label names standard
+		labelName := prometheustranslator.NormalizeLabel(string(label))
+		labels[model.LabelName(labelName)] = mergedLabels[label]
+	}
+
 	return &PushEntry{
 		Entry:  entry,
-		Labels: mergedLabels,
+		Labels: labels,
 	}, nil
 }
 

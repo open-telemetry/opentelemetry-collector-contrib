@@ -37,6 +37,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlConnectionMax:            MetricConfig{Enabled: true},
 					PostgresqlDatabaseCount:            MetricConfig{Enabled: true},
 					PostgresqlDbSize:                   MetricConfig{Enabled: true},
+					PostgresqlDeadlocks:                MetricConfig{Enabled: true},
 					PostgresqlIndexScans:               MetricConfig{Enabled: true},
 					PostgresqlIndexSize:                MetricConfig{Enabled: true},
 					PostgresqlOperations:               MetricConfig{Enabled: true},
@@ -46,6 +47,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableCount:               MetricConfig{Enabled: true},
 					PostgresqlTableSize:                MetricConfig{Enabled: true},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: true},
+					PostgresqlTempFiles:                MetricConfig{Enabled: true},
 					PostgresqlWalAge:                   MetricConfig{Enabled: true},
 					PostgresqlWalLag:                   MetricConfig{Enabled: true},
 				},
@@ -71,6 +73,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlConnectionMax:            MetricConfig{Enabled: false},
 					PostgresqlDatabaseCount:            MetricConfig{Enabled: false},
 					PostgresqlDbSize:                   MetricConfig{Enabled: false},
+					PostgresqlDeadlocks:                MetricConfig{Enabled: false},
 					PostgresqlIndexScans:               MetricConfig{Enabled: false},
 					PostgresqlIndexSize:                MetricConfig{Enabled: false},
 					PostgresqlOperations:               MetricConfig{Enabled: false},
@@ -80,6 +83,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					PostgresqlTableCount:               MetricConfig{Enabled: false},
 					PostgresqlTableSize:                MetricConfig{Enabled: false},
 					PostgresqlTableVacuumCount:         MetricConfig{Enabled: false},
+					PostgresqlTempFiles:                MetricConfig{Enabled: false},
 					PostgresqlWalAge:                   MetricConfig{Enabled: false},
 					PostgresqlWalLag:                   MetricConfig{Enabled: false},
 				},
@@ -107,6 +111,54 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: true},
+				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: true},
+				PostgresqlTableName:    ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				PostgresqlDatabaseName: ResourceAttributeConfig{Enabled: false},
+				PostgresqlIndexName:    ResourceAttributeConfig{Enabled: false},
+				PostgresqlTableName:    ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

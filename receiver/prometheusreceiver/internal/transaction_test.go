@@ -22,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 const (
@@ -175,7 +177,18 @@ func TestTransactionAppendDuplicateLabels(t *testing.T) {
 
 func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -184,12 +197,28 @@ func TestTransactionAppendHistogramNoLe(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyLeLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
 }
 
 func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, nil, receivertest.NewNopCreateSettings(), nopObsRecv(t), false)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
 
 	goodLabels := labels.FromStrings(
 		model.InstanceLabel, "0.0.0.0:8855",
@@ -198,7 +227,57 @@ func TestTransactionAppendSummaryNoQuantile(t *testing.T) {
 	)
 
 	_, err := tr.Append(0, goodLabels, 1917, 1.0)
-	require.ErrorIs(t, err, errEmptyQuantileLabel)
+	require.NoError(t, err)
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	assert.Len(t, sink.AllMetrics(), 0)
+}
+
+func TestTransactionAppendValidAndInvalid(t *testing.T) {
+	sink := new(consumertest.MetricsSink)
+	receiverSettings := receivertest.NewNopCreateSettings()
+	core, observedLogs := observer.New(zap.InfoLevel)
+	receiverSettings.Logger = zap.New(core)
+	tr := newTransaction(
+		scrapeCtx,
+		&startTimeAdjuster{startTime: startTimestamp},
+		sink,
+		nil,
+		receiverSettings,
+		nopObsRecv(t),
+		false,
+	)
+
+	// a valid counter
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.InstanceLabel:   "localhost:8080",
+		model.JobLabel:        "test",
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+
+	// summary without quantiles, should be ignored
+	summarylabels := labels.FromStrings(
+		model.InstanceLabel, "0.0.0.0:8855",
+		model.JobLabel, "test",
+		model.MetricNameLabel, "summary_test",
+	)
+
+	_, err = tr.Append(0, summarylabels, 1917, 1.0)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, observedLogs.Len())
+	assert.Equal(t, 1, observedLogs.FilterMessage("failed to add datapoint").Len())
+
+	assert.NoError(t, tr.Commit())
+	expectedResource := CreateResource("test", "localhost:8080", labels.FromStrings(model.SchemeLabel, "http"))
+	mds := sink.AllMetrics()
+	require.Len(t, mds, 1)
+	gotResource := mds[0].ResourceMetrics().At(0).Resource()
+	require.Equal(t, expectedResource, gotResource)
+	require.Equal(t, 1, mds[0].MetricCount())
 }
 
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
@@ -1139,6 +1218,20 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			},
 			wants: func() []pmetric.Metrics {
 				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				hist0 := m0.SetEmptyHistogram()
+				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(3)
+				pt0.SetSum(100)
+				pt0.BucketCounts().FromRaw([]uint64{3, 0})
+				pt0.ExplicitBounds().FromRaw([]float64{20})
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.Attributes().PutStr("foo", "bar")
+
 				return []pmetric.Metrics{md0}
 			},
 		},
@@ -1177,13 +1270,27 @@ func TestMetricBuilderHistogram(t *testing.T) {
 			inputs: []*testScrapedPage{
 				{
 					pts: []*testDataPoint{
-						createDataPoint("hist_test_sum", 99, nil),
-						createDataPoint("hist_test_count", 10, nil),
+						createDataPoint("hist_test_sum", 99, nil, "foo", "bar"),
+						createDataPoint("hist_test_count", 10, nil, "foo", "bar"),
 					},
 				},
 			},
 			wants: func() []pmetric.Metrics {
-				return []pmetric.Metrics{pmetric.NewMetrics()}
+				md0 := pmetric.NewMetrics()
+				mL0 := md0.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
+				m0 := mL0.AppendEmpty()
+				m0.SetName("hist_test")
+				hist0 := m0.SetEmptyHistogram()
+				hist0.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				pt0 := hist0.DataPoints().AppendEmpty()
+				pt0.SetCount(10)
+				pt0.SetSum(99)
+				pt0.BucketCounts().FromRaw([]uint64{10})
+				pt0.SetTimestamp(tsNanos)
+				pt0.SetStartTimestamp(startTimestamp)
+				pt0.Attributes().PutStr("foo", "bar")
+
+				return []pmetric.Metrics{md0}
 			},
 		},
 		{

@@ -45,17 +45,17 @@ resource_attributes:
     enabled: true
   aws.log.group.names:
     description: The aws.log.group.names
-    type: string
+    type: slice
     enabled: true
   aws.log.group.arns:
     description: The aws.log.group.arns
-    type: string
+    type: slice
     enabled: true
   aws.log.stream.names:
     description: The aws.log.stream.names
-    type: string
+    type: slice
     enabled: true
   aws.log.stream.arns:
     description: The aws.log.stream.arns
-    type: string
+    type: slice
     enabled: true

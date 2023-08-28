@@ -37,11 +37,6 @@ var unitMap = map[string]string{
 	"MBy":  "megabytes",
 	"GBy":  "gigabytes",
 	"TBy":  "terabytes",
-	"B":    "bytes",
-	"KB":   "kilobytes",
-	"MB":   "megabytes",
-	"GB":   "gigabytes",
-	"TB":   "terabytes",
 
 	// SI
 	"m": "meters",
@@ -56,7 +51,6 @@ var unitMap = map[string]string{
 	"Hz":  "hertz",
 	"1":   "",
 	"%":   "percent",
-	"$":   "dollars",
 }
 
 // The map that translates the "per" unit
@@ -78,7 +72,12 @@ var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/8950"),
 )
 
-// Build a Prometheus-compliant metric name for the specified metric
+// Deprecated: use BuildCompliantName instead.
+func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
+	return BuildCompliantName(metric, namespace, true)
+}
+
+// BuildCompliantName builds a Prometheus-compliant metric name for the specified metric
 //
 // Metric name is prefixed with specified namespace and underscore (if any).
 // Namespace is not cleaned up. Make sure specified namespace follows Prometheus
@@ -86,11 +85,11 @@ var normalizeNameGate = featuregate.GlobalRegistry().MustRegister(
 //
 // See rules at https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
 // and https://prometheus.io/docs/practices/naming/#metric-and-label-naming
-func BuildPromCompliantName(metric pmetric.Metric, namespace string) string {
+func BuildCompliantName(metric pmetric.Metric, namespace string, addMetricSuffixes bool) string {
 	var metricName string
 
 	// Full normalization following standard Prometheus naming conventions
-	if normalizeNameGate.IsEnabled() {
+	if addMetricSuffixes && normalizeNameGate.IsEnabled() {
 		return normalizeName(metric, namespace)
 	}
 

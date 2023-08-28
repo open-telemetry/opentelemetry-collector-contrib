@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
@@ -52,6 +53,7 @@ func TestDiskIOStats(t *testing.T) {
 
 	// for ecs node-level metrics
 	containerType = TypeInstance
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewDiskIOMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -85,8 +87,9 @@ func TestDiskIOStats(t *testing.T) {
 
 	// for non supported type
 	containerType = TypeContainerDiskIO
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewDiskIOMetricExtractor(nil)
-
+	defer require.NoError(t, extractor.Shutdown())
 	if extractor.HasValue(result[0]) {
 		cMetrics = extractor.GetValue(result[0], nil, containerType)
 	}

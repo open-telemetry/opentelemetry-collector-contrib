@@ -37,6 +37,8 @@ func TestScraper(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -55,6 +57,10 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -66,6 +72,21 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = false
+	cfg.Metrics.PostgresqlTempFiles.Enabled = false
+
+	scraper = newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
+	actualMetrics, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile = filepath.Join("testdata", "scraper", "otel", "expected_default_metrics.yaml")
+	expectedMetrics, err = golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
 }
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
@@ -73,6 +94,10 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -91,12 +116,16 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected_with_resource.yaml")
+	expectedFile := filepath.Join("testdata", "scraper", "multiple", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -109,12 +138,16 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected_with_resource.yaml")
+	expectedFile := filepath.Join("testdata", "scraper", "otel", "expected.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
@@ -210,20 +243,22 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 	if database == "" {
 		m.On("listDatabases").Return(databases, nil)
 
-		commitsAndRollbacks := map[databaseName]databaseStats{}
+		dbStats := map[databaseName]databaseStats{}
 		dbSize := map[databaseName]int64{}
 		backends := map[databaseName]int64{}
 
 		for idx, db := range databases {
-			commitsAndRollbacks[databaseName(db)] = databaseStats{
+			dbStats[databaseName(db)] = databaseStats{
 				transactionCommitted: int64(idx + 1),
 				transactionRollback:  int64(idx + 2),
+				deadlocks:            int64(idx + 3),
+				tempFiles:            int64(idx + 4),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
 		}
 
-		m.On("getDatabaseStats", databases).Return(commitsAndRollbacks, nil)
+		m.On("getDatabaseStats", databases).Return(dbStats, nil)
 		m.On("getDatabaseSize", databases).Return(dbSize, nil)
 		m.On("getBackends", databases).Return(backends, nil)
 		m.On("getBGWriterStats", mock.Anything).Return(&bgStat{

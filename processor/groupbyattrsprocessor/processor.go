@@ -110,6 +110,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 
+				//exhaustive:enforce
 				switch metric.Type() {
 
 				case pmetric.MetricTypeGauge:
@@ -205,6 +206,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetUnit(searchedMetric.Unit())
 
 	// Move other special type specific values
+	//exhaustive:enforce
 	switch searchedMetric.Type() {
 
 	case pmetric.MetricTypeHistogram:
