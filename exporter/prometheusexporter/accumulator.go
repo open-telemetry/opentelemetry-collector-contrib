@@ -230,13 +230,13 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
-		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs)
+		signature := timeseriesSignature(il.Name(), metric, ip.Attributes(), resourceAttrs) // uniquely idenity this time series you are accumulating for
 		if ip.Flags().NoRecordedValue() {
 			a.registeredMetrics.Delete(signature)
 			return 0
 		}
 
-		v, ok := a.registeredMetrics.Load(signature)
+		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
 		if !ok {
 			// first data point
 			m := copyMetricMetadata(metric)
