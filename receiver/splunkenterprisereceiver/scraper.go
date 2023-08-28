@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-    "fmt"
+	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -81,14 +81,14 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
 		errs.Add(err)
-        return
+		return
 	}
 
 	err = unmarshallSearchReq(res, &sr)
 	if err != nil {
 		errs.Add(err)
 	}
-    res.Body.Close()
+	res.Body.Close()
 
 	for ok := true; ok; ok = (sr.Return == 204) {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
@@ -99,7 +99,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
 			errs.Add(err)
-            res.Body.Close()
+			res.Body.Close()
 			return
 		}
 
@@ -180,9 +180,9 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
 		errs.Add(err)
-        return
+		return
 	}
-    defer res.Body.Close()
+	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -194,7 +194,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 		errs.Add(err)
 	}
 
-    for _, entry := range it.Entries {
-	    s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, entry.Content.AvgKb, entry.Content.Status)
-    }
+	for _, entry := range it.Entries {
+		s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, entry.Content.AvgKb, entry.Content.Status)
+	}
 }
