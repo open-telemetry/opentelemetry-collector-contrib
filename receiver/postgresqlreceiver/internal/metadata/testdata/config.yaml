@@ -43,6 +43,8 @@ all_set:
       enabled: true
     postgresql.table.vacuum.count:
       enabled: true
+    postgresql.temp_files:
+      enabled: true
     postgresql.wal.age:
       enabled: true
     postgresql.wal.lag:
@@ -97,6 +99,8 @@ none_set:
     postgresql.table.size:
       enabled: false
     postgresql.table.vacuum.count:
+      enabled: false
+    postgresql.temp_files:
       enabled: false
     postgresql.wal.age:
       enabled: false
