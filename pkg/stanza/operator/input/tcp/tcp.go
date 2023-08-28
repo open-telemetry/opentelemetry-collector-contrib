@@ -81,13 +81,8 @@ type BaseConfig struct {
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), trimFunc)
-	if err != nil {
-		return nil, err
-	}
-	return splitFunc, nil
+func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	return c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
 }
 
 // Build will build a tcp input operator.
@@ -121,7 +116,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	if c.SplitFuncBuilder == nil {
-		c.SplitFuncBuilder = c.defaultMultilineBuilder
+		c.SplitFuncBuilder = c.defaultSplitFuncBuilder
 	}
 
 	// Build split func
@@ -129,6 +124,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	if err != nil {
 		return nil, err
 	}
+	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
 	var resolver *helper.IPResolver
 	if c.AddAttributes {
