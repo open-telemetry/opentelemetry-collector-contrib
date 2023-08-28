@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
-	"fmt"
+    "fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -92,13 +92,11 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 			errs.Add(err)
 			return
 		}
-		defer res.Body.Close()
 
 		// if its a 204 the body will be empty because we are still waiting on search results
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
 			errs.Add(err)
-			return
 		}
 		res.Body.Close()
 
