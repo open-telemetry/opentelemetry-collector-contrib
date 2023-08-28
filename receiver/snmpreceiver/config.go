@@ -16,6 +16,7 @@ import (
 // Config Defaults
 const (
 	defaultCollectionInterval = 10 * time.Second // In seconds
+	defaultTimeout            = 5 * time.Second  // In seconds
 	defaultEndpoint           = "udp://localhost:161"
 	defaultVersion            = "v2c"
 	defaultCommunity          = "public"
