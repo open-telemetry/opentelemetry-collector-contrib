@@ -1,0 +1,2 @@
+parquet:
+  path: /var/output/log.parquet

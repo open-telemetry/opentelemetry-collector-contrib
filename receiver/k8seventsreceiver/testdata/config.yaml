@@ -1,0 +1,3 @@
+k8s_events:
+k8s_events/all_settings:
+  namespaces: [ default, my_namespace ]

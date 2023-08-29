@@ -1,0 +1,9 @@
+type: http_forwarder
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [atoulme, rmfitzpatrick]

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Name }}-{{ .DataType }}-daemonset
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Name }}-{{ .DataType }}-daemonset
+  template:
+    metadata:
+      annotations:
+        workload: daemonset
+      labels:
+        app: {{ .Name }}-{{ .DataType }}-daemonset
+    spec:
+      containers:
+      - command:
+        - /telemetrygen
+        - {{ .DataType  }}
+        - --otlp-insecure
+        - --otlp-endpoint={{ .OTLPEndpoint }}
+        - --duration=36000s
+        - --rate=1
+        - --otlp-attributes=service.name="test-{{ .DataType }}-daemonset"
+        - --otlp-attributes=k8s.container.name="telemetrygen"
+{{- if eq .DataType "traces" }}
+        - --status-code=
+{{- end }}
+        image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+        name: telemetrygen
+      restartPolicy: Always

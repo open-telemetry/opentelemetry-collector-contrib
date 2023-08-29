@@ -1,0 +1,9 @@
+type: telemetrygen
+
+status:
+  class: cmd
+  stability:
+    alpha: [traces]
+    development: [metrics, logs]
+  codeowners:
+    active: [mx-psi, codeboten]

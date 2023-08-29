@@ -1,0 +1,21 @@
+receivers:
+  nop:
+
+exporters:
+  awss3:
+    s3uploader:
+        region: 'us-east-1'
+        s3_bucket: 'foo'
+        s3_prefix: 'bar'
+        s3_partition: 'minute'
+        endpoint: "http://endpoint.com"
+
+processors:
+  nop:
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [awss3]

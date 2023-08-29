@@ -1,0 +1,9 @@
+type: oidc
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [jpkrohling]
