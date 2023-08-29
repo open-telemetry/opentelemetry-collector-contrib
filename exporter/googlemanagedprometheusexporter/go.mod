@@ -79,6 +79,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.83.1-0.20230828160024-0af1c111bd79 // indirect
 	go.opentelemetry.io/collector/extension v0.83.1-0.20230828160024-0af1c111bd79 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230828160024-0af1c111bd79 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230828160024-0af1c111bd79 // indirect
 	go.opentelemetry.io/collector/processor v0.83.1-0.20230828160024-0af1c111bd79 // indirect
 	go.opentelemetry.io/collector/receiver v0.83.1-0.20230828160024-0af1c111bd79 // indirect
 	go.opentelemetry.io/collector/semconv v0.83.1-0.20230828160024-0af1c111bd79 // indirect
