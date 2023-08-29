@@ -222,6 +222,7 @@ type tableStats struct {
 	upd         int64
 	del         int64
 	hotUpd      int64
+	seqScans    int64
 	size        int64
 	vacuumCount int64
 }
@@ -234,6 +235,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	n_tup_upd AS upd,
 	n_tup_del AS del,
 	n_tup_hot_upd AS hot_upd,
+	seq_scan AS seq_scans,
 	pg_relation_size(relid) AS table_size,
 	vacuum_count
 	FROM pg_stat_user_tables;`
@@ -246,8 +248,8 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 	}
 	for rows.Next() {
 		var table string
-		var live, dead, ins, upd, del, hotUpd, tableSize, vacuumCount int64
-		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &tableSize, &vacuumCount)
+		var live, dead, ins, upd, del, hotUpd, seqScans, tableSize, vacuumCount int64
+		err = rows.Scan(&table, &live, &dead, &ins, &upd, &del, &hotUpd, &seqScans, &tableSize, &vacuumCount)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			continue
@@ -260,6 +262,7 @@ func (c *postgreSQLClient) getDatabaseTableMetrics(ctx context.Context, db strin
 			upd:         upd,
 			del:         del,
 			hotUpd:      hotUpd,
+			seqScans:    seqScans,
 			size:        tableSize,
 			vacuumCount: vacuumCount,
 		}

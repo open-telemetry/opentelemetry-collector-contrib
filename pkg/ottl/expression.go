@@ -610,5 +610,35 @@ func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, erro
 		return v, nil
 	default:
 		return time.Time{}, TypeError(fmt.Sprintf("expected time but got %T", val))
+  }
+}
+
+// DurationGetter is a Getter that must return an time.Duration.
+type DurationGetter[K any] interface {
+	// Get retrieves an int64 value.
+	Get(ctx context.Context, tCtx K) (time.Duration, error)
+}
+
+// StandardDurationGetter is a basic implementation of DurationGetter
+type StandardDurationGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves an time.Duration value.
+// If the value is not an time.Duration a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardDurationGetter[K]) Get(ctx context.Context, tCtx K) (time.Duration, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return 0, TypeError("expected duration but got nil")
+	}
+	switch v := val.(type) {
+	case time.Duration:
+		return v, nil
+	default:
+		return 0, TypeError(fmt.Sprintf("expected duration but got %T", val))
 	}
 }
