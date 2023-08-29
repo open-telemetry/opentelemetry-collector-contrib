@@ -379,6 +379,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "45"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -529,6 +539,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "49"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
