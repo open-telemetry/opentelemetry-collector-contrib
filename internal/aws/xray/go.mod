@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aws/aws-sdk-go v1.44.333
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.84.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.84.0
 	go.uber.org/zap v1.25.0
