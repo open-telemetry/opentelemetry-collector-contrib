@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/google/uuid v1.3.1
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
 	github.com/scalyr/dataset-go v0.14.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.84.0
