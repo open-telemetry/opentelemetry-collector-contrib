@@ -112,7 +112,9 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		}
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
-			if putLogEvent.InputLogEvent.Message != nil {
+			if putLogEvent != nil &&
+				putLogEvent.InputLogEvent != nil &&
+				putLogEvent.InputLogEvent.Message != nil {
 				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
