@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230828160024-0af1c111bd79
-	go.opentelemetry.io/collector/semconv v0.83.1-0.20230828160024-0af1c111bd79
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230829165513-4f94232c20a9
+	go.opentelemetry.io/collector/semconv v0.83.1-0.20230829165513-4f94232c20a9
 )
 
 require (

@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.11.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.11.0
 	go.opentelemetry.io/build-tools/multimod v0.11.0
-	go.opentelemetry.io/collector/cmd/builder v0.83.0
+	go.opentelemetry.io/collector/cmd/builder v0.83.1-0.20230829171930-d0c4a2520b50
 	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846
 	golang.org/x/vuln v1.0.1
 )
@@ -134,7 +134,7 @@ require (
 	github.com/mgechev/revive v1.3.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moricho/tparallel v0.3.1 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
