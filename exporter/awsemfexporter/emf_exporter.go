@@ -106,7 +106,10 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 
 	for _, groupedMetric := range groupedMetrics {
 		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
-		putLogEvent := translateCWMetricToEMF(cWMetric, emf.config)
+		putLogEvent, err := translateCWMetricToEMF(cWMetric, emf.config)
+		if err != nil {
+			return err
+		}
 		// Currently we only support two options for "OutputDestination".
 		if strings.EqualFold(outputDestination, outputDestinationStdout) {
 			fmt.Println(*putLogEvent.InputLogEvent.Message)
