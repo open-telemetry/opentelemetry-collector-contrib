@@ -54,7 +54,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.83.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.39.0 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.17.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	golang.org/x/net v0.14.0 // indirect

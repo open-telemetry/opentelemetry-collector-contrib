@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerosp
 go 1.20
 
 require (
-	github.com/aerospike/aerospike-client-go/v6 v6.13.0
+	github.com/aerospike/aerospike-client-go/v6 v6.14.0
 	github.com/docker/go-connections v0.4.0
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
@@ -66,9 +66,9 @@ require (
 	go.opentelemetry.io/collector/exporter v0.83.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.83.0 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.10.0 // indirect

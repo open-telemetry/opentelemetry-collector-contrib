@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.83.0
-	github.com/snowflakedb/gosnowflake v1.6.23
+	github.com/snowflakedb/gosnowflake v1.6.24
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.83.0
 	go.opentelemetry.io/collector/config/configopaque v0.83.0
@@ -82,9 +82,9 @@ require (
 	go.opentelemetry.io/collector/exporter v0.83.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.83.0 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
 	golang.org/x/mod v0.12.0 // indirect

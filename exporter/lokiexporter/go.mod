@@ -66,10 +66,10 @@ require (
 	go.opentelemetry.io/collector/processor v0.83.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.83.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.83.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.43.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect

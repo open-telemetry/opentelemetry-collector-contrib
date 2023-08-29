@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsclo
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.329
+	github.com/aws/aws-sdk-go v1.44.333
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.83.0
@@ -40,9 +40,9 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/processor v0.83.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.83.0 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect

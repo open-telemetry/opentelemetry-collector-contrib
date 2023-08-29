@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.329
+	github.com/aws/aws-sdk-go v1.44.333
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.83.0
@@ -28,9 +28,9 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
