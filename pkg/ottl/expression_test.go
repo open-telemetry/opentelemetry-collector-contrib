@@ -1554,9 +1554,10 @@ func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 
 func Test_StandardTimeGetter(t *testing.T) {
 	tests := []struct {
-		name             string
-		getter           StandardTimeGetter[interface{}]
-		want             interface{}
+		name   string
+		getter StandardTimeGetter[interface{}]
+		// want             time.Time
+		want             string
 		valid            bool
 		expectedErrorMsg string
 	}{
@@ -1567,7 +1568,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 					return time.Date(2023, 8, 17, 1, 1, 1, 1, time.UTC), nil
 				},
 			},
-			want:  time.Date(2023, 8, 17, 1, 1, 1, 1, time.UTC),
+			want:  "2023-08-17T01:01:01.000000001Z",
 			valid: true,
 		},
 		{
@@ -1577,7 +1578,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 					return time.Date(1999, 12, 1, 10, 59, 58, 57, time.UTC), nil
 				},
 			},
-			want:  time.Date(1999, 12, 1, 10, 59, 58, 57, time.UTC),
+			want:  "1999-12-01T10:59:58.000000057Z",
 			valid: true,
 		},
 		{
@@ -1617,7 +1618,9 @@ func Test_StandardTimeGetter(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
 			if tt.valid {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.want, val)
+				want, err := time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
+				assert.NoError(t, err)
+				assert.Equal(t, want, val)
 			} else {
 				assert.ErrorContains(t, err, tt.expectedErrorMsg)
 			}
