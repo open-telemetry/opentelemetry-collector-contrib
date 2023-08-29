@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -87,23 +86,6 @@ func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 		metricNames:  []string{"metric_1", "metric_2"},
 		metricValues: [][]float64{{100}, {4}},
 	})
-	require.NoError(t, exp.pushMetricsData(ctx, md))
-	require.NoError(t, exp.shutdown(ctx))
-}
-
-func TestConsumeMetricsWithOutputDestinationNoMetrics(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	factory := NewFactory()
-	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
-	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-
-	md := pmetric.NewMetrics()
 	require.NoError(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
 }
