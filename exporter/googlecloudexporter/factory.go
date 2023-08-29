@@ -55,7 +55,7 @@ func createLogsExporter(
 	params exporter.CreateSettings,
 	cfg component.Config) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
-	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
+	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}

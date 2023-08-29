@@ -238,6 +238,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "5"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}' 
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -305,6 +315,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}'      
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -372,6 +392,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{table}'
+          - description: The number of temp files.
+            name: postgresql.temp_files
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "6"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: '{temp_file}'  
         scope:
           name: otelcol/postgresqlreceiver
           version: latest
@@ -503,6 +533,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "46"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -653,6 +693,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "50"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -803,6 +853,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "45"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -953,6 +1013,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "49"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -1103,6 +1173,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "47"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
@@ -1253,6 +1333,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: "1"
+          - description: The number of sequential scans.
+            name: postgresql.sequential_scans
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "51"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "{sequential_scan}"
           - description: Disk space used by a table.
             name: postgresql.table.size
             sum:
