@@ -3,8 +3,8 @@ type: loadbalancing
 status:
   class: exporter
   stability:
-    beta: [traces, logs, metrics]
-    alpha: [metrics]
+    beta: [traces, logs]
+    development: [metrics]
   distributions:
   - contrib
   - grafana
