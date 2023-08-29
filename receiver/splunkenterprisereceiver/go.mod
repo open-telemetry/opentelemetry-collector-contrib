@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunk
 
 go 1.20
 
-require go.opentelemetry.io/collector/component v0.83.1-0.20230829165513-4f94232c20a9
+require go.opentelemetry.io/collector/component v0.83.1-0.20230829171930-d0c4a2520b50
 
 require (
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -12,8 +12,8 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.83.1-0.20230829165513-4f94232c20a9 // indirect
-	go.opentelemetry.io/collector/confmap v0.83.1-0.20230829165513-4f94232c20a9 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.83.1-0.20230829171930-d0c4a2520b50 // indirect
+	go.opentelemetry.io/collector/confmap v0.83.1-0.20230829171930-d0c4a2520b50 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230829165513-4f94232c20a9 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230829165513-4f94232c20a9 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect

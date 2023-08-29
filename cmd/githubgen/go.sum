@@ -33,8 +33,8 @@ github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
-go.opentelemetry.io/collector/confmap v0.83.1-0.20230829165513-4f94232c20a9 h1:H2hRCdR4ha/0Tt+xEbJQxEns7aQgtnp9mm+NCGQbKvA=
-go.opentelemetry.io/collector/confmap v0.83.1-0.20230829165513-4f94232c20a9/go.mod h1:/SNHqYkLagF0TjBjQyCy2Gt3ZF6hTK8VKbaan/ZHuJs=
+go.opentelemetry.io/collector/confmap v0.83.1-0.20230829171930-d0c4a2520b50 h1:Cu9Ol+VPyHBaSTTO+Ui26a4z9uu5nmojkLH4kKRIrww=
+go.opentelemetry.io/collector/confmap v0.83.1-0.20230829171930-d0c4a2520b50/go.mod h1:/SNHqYkLagF0TjBjQyCy2Gt3ZF6hTK8VKbaan/ZHuJs=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230829165513-4f94232c20a9 h1:43M4zrZy1t2rdb+gWzMKOvQKUDoWY9P/ds95rtLNnaY=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230829165513-4f94232c20a9/go.mod h1:fLmJMf1AoHttkF8p5oJAc4o5ZpHu8yO5XYJ7gbLCLzo=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=

@@ -55,7 +55,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
-	go.opentelemetry.io/collector/semconv v0.83.1-0.20230829165513-4f94232c20a9 // indirect
+	go.opentelemetry.io/collector/semconv v0.83.1-0.20230829171930-d0c4a2520b50 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.24.0 // indirect
