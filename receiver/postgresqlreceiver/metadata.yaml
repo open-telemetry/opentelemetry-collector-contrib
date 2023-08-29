@@ -224,6 +224,14 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.sequential_scans:
+    enabled: false
+    description: The number of sequential scans.
+    unit: "{sequential_scan}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.table.count:
     description: Number of user tables in a database.
     enabled: true
@@ -248,6 +256,14 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
+  postgresql.temp_files:
+    enabled: false
+    description: The number of temp files.
+    unit: "{temp_file}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative   
   postgresql.wal.age:
     description: Age of the oldest WAL file.
     extended_documentation: |

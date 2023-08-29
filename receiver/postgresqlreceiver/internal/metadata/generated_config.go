@@ -43,9 +43,11 @@ type MetricsConfig struct {
 	PostgresqlReplicationDataDelay     MetricConfig `mapstructure:"postgresql.replication.data_delay"`
 	PostgresqlRollbacks                MetricConfig `mapstructure:"postgresql.rollbacks"`
 	PostgresqlRows                     MetricConfig `mapstructure:"postgresql.rows"`
+	PostgresqlSequentialScans          MetricConfig `mapstructure:"postgresql.sequential_scans"`
 	PostgresqlTableCount               MetricConfig `mapstructure:"postgresql.table.count"`
 	PostgresqlTableSize                MetricConfig `mapstructure:"postgresql.table.size"`
 	PostgresqlTableVacuumCount         MetricConfig `mapstructure:"postgresql.table.vacuum.count"`
+	PostgresqlTempFiles                MetricConfig `mapstructure:"postgresql.temp_files"`
 	PostgresqlWalAge                   MetricConfig `mapstructure:"postgresql.wal.age"`
 	PostgresqlWalLag                   MetricConfig `mapstructure:"postgresql.wal.lag"`
 }
@@ -106,6 +108,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		PostgresqlRows: MetricConfig{
 			Enabled: true,
 		},
+		PostgresqlSequentialScans: MetricConfig{
+			Enabled: false,
+		},
 		PostgresqlTableCount: MetricConfig{
 			Enabled: true,
 		},
@@ -114,6 +119,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		PostgresqlTableVacuumCount: MetricConfig{
 			Enabled: true,
+		},
+		PostgresqlTempFiles: MetricConfig{
+			Enabled: false,
 		},
 		PostgresqlWalAge: MetricConfig{
 			Enabled: true,

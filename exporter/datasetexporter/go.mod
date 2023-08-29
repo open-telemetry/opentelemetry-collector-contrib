@@ -6,11 +6,11 @@ require (
 	github.com/google/uuid v1.3.1
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.77.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
-	github.com/scalyr/dataset-go v0.12.1
+	github.com/scalyr/dataset-go v0.14.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.83.0
-	go.opentelemetry.io/collector/confmap v0.83.0
-	go.opentelemetry.io/collector/exporter v0.83.0
+	go.opentelemetry.io/collector/component v0.84.0
+	go.opentelemetry.io/collector/confmap v0.84.0
+	go.opentelemetry.io/collector/exporter v0.84.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.uber.org/zap v1.25.0
 	golang.org/x/time v0.3.0
@@ -19,7 +19,7 @@ require (
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
-	go.opentelemetry.io/collector/config/configopaque v0.83.0
+	go.opentelemetry.io/collector/config/configopaque v0.84.0
 )
 
 require (
@@ -38,19 +38,19 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.83.0 // indirect
-	go.opentelemetry.io/collector/extension v0.83.0 // indirect
+	go.opentelemetry.io/collector v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.84.0 // indirect
+	go.opentelemetry.io/collector/consumer v0.84.0 // indirect
+	go.opentelemetry.io/collector/extension v0.84.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
-	go.opentelemetry.io/collector/processor v0.83.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.83.0 // indirect
+	go.opentelemetry.io/collector/processor v0.84.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.84.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230626212559-97b1e661b5df // indirect
+	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
