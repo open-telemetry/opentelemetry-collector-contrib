@@ -224,6 +224,14 @@ metrics:
       value_type: int
       monotonic: true
       aggregation_temporality: cumulative
+  postgresql.sequential_scans:
+    enabled: false
+    description: The number of sequential scans.
+    unit: "{sequential_scan}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.table.count:
     description: Number of user tables in a database.
     enabled: true
