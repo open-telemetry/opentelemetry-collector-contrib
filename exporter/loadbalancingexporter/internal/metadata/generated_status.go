@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	Type            = "loadbalancing"
-	TracesStability = component.StabilityLevelBeta
-	LogsStability   = component.StabilityLevelBeta
+	Type             = "loadbalancing"
+	TracesStability  = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
 )

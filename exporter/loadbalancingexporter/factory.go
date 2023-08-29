@@ -25,7 +25,7 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
