@@ -224,7 +224,7 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 
 func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) (n int) {
 	histogram := metric.Histogram()
-
+	a.logger.Debug("Accumulate histogram.....")
 	dps := histogram.DataPoints()
 
 	for i := 0; i < dps.Len(); i++ {
@@ -239,6 +239,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		v, ok := a.registeredMetrics.Load(signature) // a accumulates metric values for all times series. Get value for particular time series
 		if !ok {
 			// first data point
+			a.logger.Debug("Accumulate first histogram data point")
 			m := copyMetricMetadata(metric)
 			ip.CopyTo(m.SetEmptyHistogram().DataPoints().AppendEmpty())
 			m.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -254,9 +255,16 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
 			pp := mv.value.Histogram().DataPoints().At(0) // previous aggregated value for time range
-			if ip.StartTimestamp().AsTime() != pp.StartTimestamp().AsTime() {
+			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
 				// treat misalgnment as restart and reset, or violation of single-writer principle and drop
+				a.logger.With(
+					zap.String("ip_start_time", ip.StartTimestamp().String()),
+					zap.String("pp_start_time", pp.StartTimestamp().String()),
+					zap.String("pp_timestamp", pp.Timestamp().String()),
+					zap.String("ip_timestamp", ip.Timestamp().String()),
+				).Warn("Misaligned starting timestamps")
 				if ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
+					a.logger.Debug("treating it like reset")
 					ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 				} else {
 					a.logger.With(
@@ -265,6 +273,7 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 					continue
 				}
 			} else {
+				a.logger.Debug("Accumulate another histogram datapoint")
 				accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())
 			}
 		case pmetric.AggregationTemporalityCumulative:
@@ -358,6 +367,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	}
 
 	if match {
+
 		dest.SetCount(newer.Count() + older.Count())
 		dest.SetSum(newer.Sum() + older.Sum())
 
