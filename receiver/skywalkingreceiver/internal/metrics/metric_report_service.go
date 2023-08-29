@@ -62,7 +62,7 @@ func consumeMetrics(ctx context.Context, collection *agent.JVMMetricCollection, 
 	if collection == nil {
 		return nil
 	}
-	pmd := SkywalingToMetrics(collection)
+	pmd := SwMetricsToMetrics(collection)
 	return nextConsumer.ConsumeMetrics(ctx, pmd)
 
 }
