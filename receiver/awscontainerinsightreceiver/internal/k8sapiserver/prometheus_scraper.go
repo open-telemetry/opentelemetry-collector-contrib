@@ -43,15 +43,17 @@ const (
 
 var (
 	controlPlaneMetricAllowList = []string{
-		"apiserver_storage_objects",
-		"apiserver_request_total",
-		"apiserver_request_duration_seconds.*",
 		"apiserver_admission_controller_admission_duration_seconds.*",
+		"apiserver_flowcontrol_rejected_requests_total",
+		"apiserver_flowcontrol_request_concurrency_limit",
+		"apiserver_request_duration_seconds.*",
+		"apiserver_request_total",
+		"apiserver_storage_list_duration_seconds.*",
+		"apiserver_storage_objects",
+		"etcd_db_total_size_in_bytes.*",
+		"etcd_request_duration_seconds.*",
 		"rest_client_request_duration_seconds.*",
 		"rest_client_requests_total",
-		"etcd_request_duration_seconds.*",
-		"etcd_db_total_size_in_bytes.*",
-		"apiserver_storage_list_duration_seconds.*",
 	}
 )
 

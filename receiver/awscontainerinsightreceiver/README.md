@@ -345,17 +345,8 @@ kubectl apply -f config.yaml
 | cluster_failed_node_count                                 | Count   |
 | cluster_node_count                                        | Count   |
 | cluster_number_of_running_pods                            | Count   |
-| apiserver_storage_objects                                 | Count   |
-| apiserver_request_total                                   | Count   |
-| apiserver_request_duration_seconds                        | Seconds |
-| apiserver_admission_controller_admission_duration_seconds | Seconds |
-| rest_client_request_duration_seconds                      | Seconds |
-| rest_client_requests_total                                | Count   |
-| etcd_request_duration_seconds                             | Seconds |
 
-
-
-<br/><br/> 
+<br/><br/>
 | Resource Attribute |
 |--------------------|
 | ClusterName        |
@@ -364,6 +355,24 @@ kubectl apply -f config.yaml
 | Timestamp          |
 | Version            |
 | Sources            |
+
+<br/><br/>
+<br/><br/>
+
+### Cluster ControlPlane
+| Metric                                                    | Unit    |
+|-----------------------------------------------------------|---------|
+| apiserver_admission_controller_admission_duration_seconds | Seconds |
+| apiserver_flowcontrol_rejected_requests_total             | Count   |
+| apiserver_flowcontrol_request_concurrency_limit           | Count   |
+| apiserver_request_duration_seconds                        | Seconds |
+| apiserver_request_total                                   | Count   |
+| apiserver_storage_list_duration_seconds                   | Seconds |
+| apiserver_storage_objects                                 | Count   |
+| etcd_db_total_size_in_bytes                               | Count   |
+| etcd_request_duration_seconds                             | Seconds |
+| rest_client_request_duration_seconds                      | Seconds |
+| rest_client_requests_total                                | Count   |
 
 <br/><br/> 
 <br/><br/> 
@@ -407,41 +416,7 @@ kubectl apply -f config.yaml
 | Sources            |
 | kubernete          |
 
-
-<br/><br/> 
-
-### Cluster Endpoint
-| Metric                      | Unit  |
-|-----------------------------|-------|
-| etcd_db_total_size_in_bytes | bytes |
-
 <br/><br/>
-| Resource Attribute |
-|--------------------|
-| ClusterName        |
-| NodeName           |
-| Endpoint           |
-| Type               |
-| Timestamp          |
-| Version            |
-| Sources            |
-
-<br/><br/> 
-
-### Cluster Resources
-| Metric                                  | Unit    |
-|-----------------------------------------|---------|
-| apiserver_storage_list_duration_seconds | Seconds |
-
-<br/><br/>
-| Resource Attribute |
-|--------------------|
-| ClusterName        |
-| NodeName           |
-| Type               |
-| Timestamp          |
-| Version            |
-| Sources            |
 
 ### Cluster Deployment
 | Metric                      | Unit  |
