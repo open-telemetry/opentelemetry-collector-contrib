@@ -6,7 +6,7 @@ require (
 	github.com/DataDog/agent-payload/v5 v5.0.89
 	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
 	github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
-	github.com/DataDog/datadog-api-client-go/v2 v2.14.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.16.0
 	github.com/DataDog/gohai v0.0.0-20220718130825-1776f9beb9cc
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.7.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.7.0
@@ -14,8 +14,8 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.7.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.7.0
 	github.com/DataDog/sketches-go v1.4.2
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.18.0
-	github.com/aws/aws-sdk-go v1.44.329
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.19.1
+	github.com/aws/aws-sdk-go v1.44.333
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.83.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.83.0
@@ -66,7 +66,7 @@ require (
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/Showmax/go-fqdn v1.0.0 // indirect
-	github.com/antonmedv/expr v1.13.0 // indirect
+	github.com/antonmedv/expr v1.14.3 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -95,6 +95,7 @@ require (
 	github.com/go-openapi/jsonreference v0.20.1 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -105,7 +106,7 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.3.1 // indirect
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.2 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1 // indirect
 	github.com/hashicorp/consul/api v1.24.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -210,8 +211,8 @@ require (
 	golang.org/x/tools v0.12.0 // indirect
 	gonum.org/v1/gonum v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230726155614-23370e0ffb3e // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/grpc v1.57.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
