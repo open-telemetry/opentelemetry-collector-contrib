@@ -162,6 +162,44 @@ func TestUptime(t *testing.T) {
 	requireContains(t, metrics, "container.uptime")
 }
 
+func TestRuntimeImagefs(t *testing.T) {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	mgs := map[MetricGroup]bool{
+		NodeMetricGroup: true,
+	}
+
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sNodeRuntimeImagefsCapacity.Enabled = true
+	cfg.Metrics.K8sNodeRuntimeImagefsAvailable.Enabled = true
+	cfg.Metrics.K8sNodeRuntimeImagefsUsed.Enabled = true
+	cfg.Metrics.K8sNodeRuntimeImagefsInodes.Enabled = true
+	cfg.Metrics.K8sNodeRuntimeImagefsInodesFree.Enabled = true
+	cfg.Metrics.K8sNodeRuntimeImagefsInodesUsed.Enabled = true
+
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+	}
+
+	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs))
+
+	metricNameAndVals := map[string]int64{
+		"k8s.node.runtime.imagefs.available":   13717454848,
+		"k8s.node.runtime.imagefs.capacity":    17361125376,
+		"k8s.node.runtime.imagefs.used":        5698399516,
+		"k8s.node.runtime.imagefs.inodes":      9768928,
+		"k8s.node.runtime.imagefs.inodes.free": 9725586,
+		"k8s.node.runtime.imagefs.inodes.used": 43342,
+	}
+
+	for metricName, metricValue := range metricNameAndVals {
+		requireContains(t, metrics, metricName)
+		value := metrics[metricName][0].Gauge().DataPoints().At(0).IntValue()
+		require.Equal(t, metricValue, value)
+	}
+}
+
 func TestEmitMetrics(t *testing.T) {
 	metrics := indexedFakeMetrics(fakeMetrics())
 	metricNames := []string{

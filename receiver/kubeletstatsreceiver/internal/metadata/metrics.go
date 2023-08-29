@@ -144,3 +144,21 @@ var PodUptimeMetrics = UptimeMetrics{
 var ContainerUptimeMetrics = UptimeMetrics{
 	Uptime: (*MetricsBuilder).RecordContainerUptimeDataPoint,
 }
+
+type RuntimeImageFsMetrics struct {
+	Available  RecordIntDataPointFunc
+	Capacity   RecordIntDataPointFunc
+	Used       RecordIntDataPointFunc
+	Inodes     RecordIntDataPointFunc
+	InodesFree RecordIntDataPointFunc
+	InodesUsed RecordIntDataPointFunc
+}
+
+var NodeRuntimeImageFsMetrics = RuntimeImageFsMetrics{
+	Available:  (*MetricsBuilder).RecordK8sNodeRuntimeImagefsAvailableDataPoint,
+	Capacity:   (*MetricsBuilder).RecordK8sNodeRuntimeImagefsCapacityDataPoint,
+	Used:       (*MetricsBuilder).RecordK8sNodeRuntimeImagefsUsedDataPoint,
+	Inodes:     (*MetricsBuilder).RecordK8sNodeRuntimeImagefsInodesDataPoint,
+	InodesFree: (*MetricsBuilder).RecordK8sNodeRuntimeImagefsInodesFreeDataPoint,
+	InodesUsed: (*MetricsBuilder).RecordK8sNodeRuntimeImagefsInodesUsedDataPoint,
+}

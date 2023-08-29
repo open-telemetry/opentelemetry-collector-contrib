@@ -154,6 +154,24 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 
 			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsAvailableDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsInodesDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsInodesFreeDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsInodesUsedDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordK8sNodeRuntimeImagefsUsedDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordK8sNodeUptimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -591,6 +609,78 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.node.runtime.imagefs.available":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.available"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.available")
+					validatedMetrics["k8s.node.runtime.imagefs.available"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs available", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.runtime.imagefs.capacity":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.capacity"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.capacity")
+					validatedMetrics["k8s.node.runtime.imagefs.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs capacity", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.runtime.imagefs.inodes":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.inodes"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.inodes")
+					validatedMetrics["k8s.node.runtime.imagefs.inodes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs inodes", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.runtime.imagefs.inodes.free":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.inodes.free"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.inodes.free")
+					validatedMetrics["k8s.node.runtime.imagefs.inodes.free"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs inodes free", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.runtime.imagefs.inodes.used":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.inodes.used"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.inodes.used")
+					validatedMetrics["k8s.node.runtime.imagefs.inodes.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs inodes used. This may not equal Inodes - InodesFree because this filesystem may share inodes with other filesystems.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.node.runtime.imagefs.used":
+					assert.False(t, validatedMetrics["k8s.node.runtime.imagefs.used"], "Found a duplicate in the metrics slice: k8s.node.runtime.imagefs.used")
+					validatedMetrics["k8s.node.runtime.imagefs.used"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Node runtime imagefs used. This may not equal CapacityBytes - AvailableBytes because there are certain system-level operations or processes that may reserve a portion of the available space for their own use", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.node.uptime":
 					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
 					validatedMetrics["k8s.node.uptime"] = true

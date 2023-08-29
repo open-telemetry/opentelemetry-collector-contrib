@@ -187,6 +187,48 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: []
+  k8s.node.runtime.imagefs.available:
+    enabled: false
+    description: "Node runtime imagefs available"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.runtime.imagefs.capacity:
+    enabled: false
+    description: "Node runtime imagefs capacity"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.runtime.imagefs.used:
+    enabled: false
+    description: "Node runtime imagefs used. This may not equal CapacityBytes - AvailableBytes because there are certain system-level operations or processes that may reserve a portion of the available space for their own use"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.runtime.imagefs.inodes.free:
+    enabled: false
+    description: "Node runtime imagefs inodes free"
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.runtime.imagefs.inodes:
+    enabled: false
+    description: Node runtime imagefs inodes
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
+  k8s.node.runtime.imagefs.inodes.used:
+    enabled: false
+    description: "Node runtime imagefs inodes used. This may not equal Inodes - InodesFree because this filesystem may share inodes with other filesystems."
+    unit: By
+    gauge:
+      value_type: int
+    attributes: []
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"

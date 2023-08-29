@@ -394,6 +394,54 @@ The time since the container started
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
 
+### k8s.node.runtime.imagefs.available
+
+Node runtime imagefs available
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.imagefs.capacity
+
+Node runtime imagefs capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.imagefs.inodes
+
+Node runtime imagefs inodes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.imagefs.inodes.free
+
+Node runtime imagefs inodes free
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.imagefs.inodes.used
+
+Node runtime imagefs inodes used. This may not equal Inodes - InodesFree because this filesystem may share inodes with other filesystems.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+### k8s.node.runtime.imagefs.used
+
+Node runtime imagefs used. This may not equal CapacityBytes - AvailableBytes because there are certain system-level operations or processes that may reserve a portion of the available space for their own use
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ### k8s.node.uptime
 
 The time since the node started
