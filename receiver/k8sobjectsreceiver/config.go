@@ -87,7 +87,7 @@ func (c *Config) Validate() error {
 		if object.Mode == PullMode && object.Interval == 0 {
 			object.Interval = defaultPullInterval
 		}
-		
+
 		if object.Mode == PullMode && object.ExcludeDeleted {
 			return fmt.Errorf("ExcludeDeleted can only be enabled for watch mode")
 		}
