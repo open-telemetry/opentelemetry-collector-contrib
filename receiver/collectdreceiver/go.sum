@@ -259,7 +259,7 @@ go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
 go.opencensus.io v0.24.0 h1:y73uSU6J157QMP2kn2r30vwW1A2W2WFwSCGnAVxeaD0=
 go.opencensus.io v0.24.0/go.mod h1:vNK8G9p7aAivkbmorf4v+7Hgx+Zs0yY+0fOtgBfjQKo=
-go.opentelemetry.io/collector v0.83.1-0.20230828160024-0af1c111bd79 h1:fy4wBdF1tQoIepY9WJ4LxHDynldJtolr7zb8siqAa4s=
+go.opentelemetry.io/collector v0.83.1-0.20230829165513-4f94232c20a9 h1:xVbmOGfXXrSTzCAdsYZQQmGUJbkOdgYboO9vC5N9FQU=
 go.opentelemetry.io/collector/component v0.83.1-0.20230829165513-4f94232c20a9 h1:BE8PBWs68637tJ8ru4/o8RTz7T+xCK3qnj1n9VVtCSI=
 go.opentelemetry.io/collector/component v0.83.1-0.20230829165513-4f94232c20a9/go.mod h1:DhepSc34Dyeuc1NU1AoYm/8KfdUCZzByutmWJ3lP0Oc=
 go.opentelemetry.io/collector/config/confignet v0.83.1-0.20230829165513-4f94232c20a9 h1:D0vjOmKMd2QIu9CyHEQWN+sEu6xwp2yim8lk0cJ+0XM=
