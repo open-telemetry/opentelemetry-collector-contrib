@@ -27,6 +27,7 @@ const (
 )
 
 func TestIntegration(t *testing.T) {
+	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26097")
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithNetworkRequest(

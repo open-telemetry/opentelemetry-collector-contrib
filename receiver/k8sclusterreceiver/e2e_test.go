@@ -36,9 +36,8 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 // `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
 //
 //	kind create cluster --kubeconfig=/tmp/kube-config-otelcol-e2e-testing
-//	make docker-otelcontribcol docker-telemetrygen
+//	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
-//	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image telemetrygen:latest
 func TestE2E(t *testing.T) {
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")

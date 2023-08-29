@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -62,7 +61,7 @@ var _ client = (*snmpClient)(nil)
 func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
-	goSNMP.SetTimeout(5 * time.Second)
+	goSNMP.SetTimeout(cfg.Timeout)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {

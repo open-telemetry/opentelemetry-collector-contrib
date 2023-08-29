@@ -59,6 +59,7 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 
 func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 	var dataPointSlice pmetric.NumberDataPointSlice
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPointSlice = metric.Gauge().DataPoints()
@@ -96,6 +97,7 @@ func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -139,6 +141,7 @@ func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -392,6 +395,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					sortNumberDataPointSlice(m.Gauge().DataPoints())

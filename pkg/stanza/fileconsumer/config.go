@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -19,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 const (
@@ -48,7 +50,7 @@ func NewConfig() *Config {
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
-		Splitter:                helper.NewSplitterConfig(),
+		Splitter:                tokenize.NewSplitterConfig(),
 		StartAt:                 "end",
 		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
@@ -60,19 +62,19 @@ func NewConfig() *Config {
 // Config is the configuration of a file input operator
 type Config struct {
 	matcher.Criteria        `mapstructure:",squash"`
-	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
-	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
-	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"`
-	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"`
-	StartAt                 string                `mapstructure:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
-	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
-	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
-	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
-	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
+	IncludeFileName         bool                    `mapstructure:"include_file_name,omitempty"`
+	IncludeFilePath         bool                    `mapstructure:"include_file_path,omitempty"`
+	IncludeFileNameResolved bool                    `mapstructure:"include_file_name_resolved,omitempty"`
+	IncludeFilePathResolved bool                    `mapstructure:"include_file_path_resolved,omitempty"`
+	PollInterval            time.Duration           `mapstructure:"poll_interval,omitempty"`
+	StartAt                 string                  `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize         `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize         `mapstructure:"max_log_size,omitempty"`
+	MaxConcurrentFiles      int                     `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int                     `mapstructure:"max_batches,omitempty"`
+	DeleteAfterRead         bool                    `mapstructure:"delete_after_read,omitempty"`
+	Splitter                tokenize.SplitterConfig `mapstructure:",squash,omitempty"`
+	Header                  *HeaderConfig           `mapstructure:"header,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -130,7 +132,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
+		enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
@@ -142,6 +144,11 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	}
 
 	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +169,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
+			encoding:        enc,
 			headerConfig:    hCfg,
 		},
 		fileMatcher:     fileMatcher,
@@ -213,7 +220,7 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := helper.LookupEncoding(c.Splitter.EncodingConfig.Encoding)
+	enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return err
 	}

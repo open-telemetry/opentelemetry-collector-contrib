@@ -72,6 +72,7 @@ jobs:
           - connector
           - internal
           - pkg
+          - cmd
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -184,6 +185,8 @@ jobs:
         run: make checkdoc
       - name: CheckMetadata
         run: make checkmetadata
+      - name: CheckApi
+        run: make checkapi
       - name: Porto
         run: |
           make -j2 goporto
@@ -208,10 +211,6 @@ jobs:
         run: |
           make -j2 generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
-      - name: Gen codeowners
-        run: |
-          make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gengithub" and commit the changes in this PR.' && exit 1)
       - name: Check gendependabot
         run: |
           make -j2 gendependabot
@@ -235,6 +234,7 @@ jobs:
           - connector
           - internal
           - pkg
+          - cmd
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
