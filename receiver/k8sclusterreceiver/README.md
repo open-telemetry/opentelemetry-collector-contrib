@@ -19,14 +19,14 @@
 
 The Kubernetes Cluster receiver collects cluster-level metrics and entity events from the Kubernetes
 API server. It uses the K8s API to listen for updates. A single instance of this
-receiver can be used to monitor a cluster.
+receiver should be used to monitor a cluster.
 
-Currently this receiver supports authentication via service accounts only. See [example](#example)
+Currently, this receiver supports authentication via service accounts only. See [example](#example)
 for more information.
 
 ## Metrics
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml and [documentation.md](./documentation.md).
+Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) and [documentation.md](./documentation.md).
 
 ## Configuration
 
@@ -46,7 +46,7 @@ frequency at which metrics are emitted by this receiver.
 - `metadata_collection_interval` (default = `5m`): Collection interval for metadata
 for K8s entities such as pods, nodes, etc.
 Metadata of the particular entity in the cluster is collected when the entity changes.
-In addition metadata of all entities is collected periodically even if no changes happen.
+In addition, metadata of all entities is collected periodically even if no changes happen.
 This setting controls the interval between periodic collections.
 Setting the duration to 0 will disable periodic collection (however will not impact
 metadata collection on changes).
