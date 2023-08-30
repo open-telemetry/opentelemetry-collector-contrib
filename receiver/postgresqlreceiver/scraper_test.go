@@ -345,7 +345,6 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				writeLag:     -1,
 			},
 		}, nil)
-
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"

@@ -156,10 +156,10 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{databases}"
-  postgresql.database_locks:
+  postgresql.database.locks:
     enabled: false
     description: The number of database locks.
-    unit: "{database_lock}"
+    unit: "{lock}"
     gauge:
       value_type: int
     attributes: [relation, mode, lock_type]

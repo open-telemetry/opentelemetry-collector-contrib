@@ -253,13 +253,13 @@ metrics:
     enabled: true
 ```
 
-### postgresql.database_locks
+### postgresql.database.locks
 
 The number of database locks.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {database_lock} | Gauge | Int |
+| {lock} | Gauge | Int |
 
 #### Attributes
 

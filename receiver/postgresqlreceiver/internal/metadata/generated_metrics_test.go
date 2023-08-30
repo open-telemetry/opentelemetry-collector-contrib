@@ -330,13 +330,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "postgresql.database_locks":
-					assert.False(t, validatedMetrics["postgresql.database_locks"], "Found a duplicate in the metrics slice: postgresql.database_locks")
-					validatedMetrics["postgresql.database_locks"] = true
+				case "postgresql.database.locks":
+					assert.False(t, validatedMetrics["postgresql.database.locks"], "Found a duplicate in the metrics slice: postgresql.database.locks")
+					validatedMetrics["postgresql.database.locks"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The number of database locks.", ms.At(i).Description())
-					assert.Equal(t, "{database_lock}", ms.At(i).Unit())
+					assert.Equal(t, "{lock}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

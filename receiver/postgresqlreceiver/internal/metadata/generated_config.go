@@ -35,7 +35,7 @@ type MetricsConfig struct {
 	PostgresqlCommits                  MetricConfig `mapstructure:"postgresql.commits"`
 	PostgresqlConnectionMax            MetricConfig `mapstructure:"postgresql.connection.max"`
 	PostgresqlDatabaseCount            MetricConfig `mapstructure:"postgresql.database.count"`
-	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database_locks"`
+	PostgresqlDatabaseLocks            MetricConfig `mapstructure:"postgresql.database.locks"`
 	PostgresqlDbSize                   MetricConfig `mapstructure:"postgresql.db_size"`
 	PostgresqlDeadlocks                MetricConfig `mapstructure:"postgresql.deadlocks"`
 	PostgresqlIndexScans               MetricConfig `mapstructure:"postgresql.index.scans"`

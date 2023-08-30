@@ -145,8 +145,8 @@ resourceMetrics:
                         stringValue: "relation"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: postgresql.database_locks
-            unit: '{database_lock}'
+            name: postgresql.database.locks
+            unit: '{lock}'
           - description: The amount of data delayed in replication.
             gauge:
               dataPoints:

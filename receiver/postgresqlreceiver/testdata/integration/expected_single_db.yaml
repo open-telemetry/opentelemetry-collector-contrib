@@ -185,8 +185,8 @@ resourceMetrics:
                         stringValue: relation
                   startTimeUnixNano: "1693418281967464598"
                   timeUnixNano: "1693418340968890176"
-            name: postgresql.database_locks
-            unit: '{database_lock}'
+            name: postgresql.database.locks
+            unit: '{lock}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest

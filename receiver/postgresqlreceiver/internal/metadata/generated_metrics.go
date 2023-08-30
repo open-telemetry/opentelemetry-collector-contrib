@@ -759,11 +759,11 @@ type metricPostgresqlDatabaseLocks struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills postgresql.database_locks metric with initial data.
+// init fills postgresql.database.locks metric with initial data.
 func (m *metricPostgresqlDatabaseLocks) init() {
-	m.data.SetName("postgresql.database_locks")
+	m.data.SetName("postgresql.database.locks")
 	m.data.SetDescription("The number of database locks.")
-	m.data.SetUnit("{database_lock}")
+	m.data.SetUnit("{lock}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1807,7 +1807,7 @@ func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Time
 	mb.metricPostgresqlDatabaseCount.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database_locks metric.
+// RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database.locks metric.
 func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
 	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue)
 }
