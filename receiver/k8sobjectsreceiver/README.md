@@ -50,7 +50,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
-- `exclude_deleted`: whether the object's deleted updates should be dropped. Only usable in `watch` mode.
+- `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
