@@ -389,4 +389,4 @@ replace github.com/DataDog/datadog-agent/pkg/proto => github.com/DataDog/datadog
 replace github.com/DataDog/datadog-agent/pkg/trace => github.com/DataDog/datadog-agent/pkg/trace v0.48.0-beta.1
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
-replace cloud.google.com/go => cloud.google.com/go v0.110.2
+replace cloud.google.com/go => cloud.google.com/go v0.110.7
