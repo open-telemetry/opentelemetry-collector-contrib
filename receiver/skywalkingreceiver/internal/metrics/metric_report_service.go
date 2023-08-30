@@ -4,6 +4,7 @@ package metrics
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
