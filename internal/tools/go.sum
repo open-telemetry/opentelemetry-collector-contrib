@@ -511,8 +511,9 @@ github.com/mitchellh/go-testing-interface v1.0.0/go.mod h1:kRemZodwjscx+RGhAo8eI
 github.com/mitchellh/go-wordwrap v1.0.0/go.mod h1:ZXFpozHsX6DPmq2I0TCekCxypsnAUbP2oI0UX1GXzOo=
 github.com/mitchellh/mapstructure v0.0.0-20160808181253-ca63d7c062ee/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
 github.com/mitchellh/mapstructure v1.1.2/go.mod h1:FVVH3fgwuzCH5S8UJGiWEs2h04kUh9fWfEaFds41c1Y=
-github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 h1:BpfhmLKZf+SjVanKKhCgf3bg+511DmU9eDQTen7LLbY=
+github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
@@ -749,8 +750,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.11.0 h1:dIpw76zpecHyS4KZVMd3Dz
 go.opentelemetry.io/build-tools/issuegenerator v0.11.0/go.mod h1:TIySUNvgnJxiqMOLaYRHx2vNqbXmjYtOU9RYFT6mHco=
 go.opentelemetry.io/build-tools/multimod v0.11.0 h1:QMo2Y4BlsTsWUR0LXV4gmiv5yEiX2iPLn2qAdAcCE6k=
 go.opentelemetry.io/build-tools/multimod v0.11.0/go.mod h1:EID7sjEGyk1FWzRdsV6rlWp43IIn8iHXGE5pM4TytyQ=
-go.opentelemetry.io/collector/cmd/builder v0.83.0 h1:qxwO+GZ7BvZu2+nFEy0gJtrq9v70I8xULYoEjyY4k7M=
-go.opentelemetry.io/collector/cmd/builder v0.83.0/go.mod h1:6YT4C/WlJiJanhbfqmskN2l/ckp6eyNwxhFxDhLonqs=
+go.opentelemetry.io/collector/cmd/builder v0.84.0 h1:OKq0BeTfidXdB5vea1NMCG8Mt4lR/NY6D0CAOpRLUiY=
+go.opentelemetry.io/collector/cmd/builder v0.84.0/go.mod h1:dVLzZ3iF3I/O+yr9Pe4mUE5Z0aZgaT7UPr3SY204a+c=
 go.tmz.dev/musttag v0.7.1 h1:9lFmeSFnFfPuMq4IksHGomItE6NgKMNW2Nt2FPOhCfU=
 go.tmz.dev/musttag v0.7.1/go.mod h1:oJLkpR56EsIryktZJk/B0IroSMi37YWver47fibGh5U=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
