@@ -2,7 +2,6 @@ connector/servicegraphconnector
 exporter/alibabacloudlogserviceexporter
 exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
-exporter/awss3exporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/datasetexporter

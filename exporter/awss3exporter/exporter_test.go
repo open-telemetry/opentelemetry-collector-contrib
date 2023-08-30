@@ -31,7 +31,7 @@ func getTestLogs(tb testing.TB) plog.Logs {
 }
 
 func getLogExporter(t *testing.T) *s3Exporter {
-	marshaler, _ := NewMarshaler("otlp_json", zap.NewNop())
+	marshaler, _ := newMarshaler("otlp_json", zap.NewNop())
 	exporter := &s3Exporter{
 		config:     createDefaultConfig().(*Config),
 		dataWriter: &TestWriter{t},
