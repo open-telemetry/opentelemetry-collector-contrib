@@ -37,7 +37,6 @@ receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
 receiver/nsxtreceiver
-receiver/otlpjsonfilereceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
 receiver/statsdreceiver
