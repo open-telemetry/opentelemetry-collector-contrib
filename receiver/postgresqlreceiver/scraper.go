@@ -166,6 +166,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted)
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
+		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
 	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)
@@ -192,6 +193,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
 		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
+		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
 
 		br, ok := blockReads[tableKey]
 		if ok {

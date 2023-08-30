@@ -38,6 +38,8 @@ func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{"otel"}
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -56,7 +58,12 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -68,6 +75,22 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+	cfg.Metrics.PostgresqlDeadlocks.Enabled = false
+	cfg.Metrics.PostgresqlTempFiles.Enabled = false
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = false
+
+	scraper = newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
+	actualMetrics, err = scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile = filepath.Join("testdata", "scraper", "otel", "expected_default_metrics.yaml")
+	expectedMetrics, err = golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
 }
 
 func TestScraperNoDatabaseMultiple(t *testing.T) {
@@ -75,7 +98,12 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -94,7 +122,12 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	factory.initMocks([]string{"otel", "open", "telemetry"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -113,7 +146,12 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	factory.initMocks([]string{"otel"})
 
 	cfg := createDefaultConfig().(*Config)
+	require.True(t, cfg.Metrics.PostgresqlDeadlocks.Enabled == false)
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlTempFiles.Enabled == false)
+	cfg.Metrics.PostgresqlTempFiles.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
+	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -224,6 +262,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				transactionCommitted: int64(idx + 1),
 				transactionRollback:  int64(idx + 2),
 				deadlocks:            int64(idx + 3),
+				tempFiles:            int64(idx + 4),
 			}
 			dbSize[databaseName(db)] = int64(idx + 4)
 			backends[databaseName(db)] = int64(idx + 3)
@@ -278,6 +317,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				hotUpd:      int64(index + 42),
 				size:        int64(index + 43),
 				vacuumCount: int64(index + 44),
+				seqScans:    int64(index + 45),
 			},
 			tableKey(database, table2): {
 				database:    database,
@@ -290,6 +330,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				hotUpd:      int64(index + 46),
 				size:        int64(index + 47),
 				vacuumCount: int64(index + 48),
+				seqScans:    int64(index + 49),
 			},
 		}
 
