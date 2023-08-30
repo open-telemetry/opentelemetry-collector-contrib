@@ -40,5 +40,8 @@ service:
   pipelines:
     traces:
       receivers: [skywalking]
+    metrics:
+      receivers: [skywalking]
+      
 ```
 

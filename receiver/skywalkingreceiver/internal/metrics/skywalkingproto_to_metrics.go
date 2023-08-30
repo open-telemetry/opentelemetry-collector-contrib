@@ -18,7 +18,7 @@ const (
 	MemoryPoolUsedName      = "jvm.memory.used"
 	MemoryPoolCommittedName = "jvm.memory.committed"
 	ThreadCountName         = "jvm.thread.count"
-	CPUUtilizationName      = "jvm.cpu.utilization"
+	CPUUtilizationName      = "jvm.cpu.recent_utilization"
 )
 
 func SwMetricsToMetrics(collection *agent.JVMMetricCollection) pmetric.Metrics {
@@ -54,18 +54,18 @@ func jvmMetricToResourceMetrics(jvmMetric *agent.JVMMetric, sm pmetric.ScopeMetr
 // gcMetricToMetrics translate gc metrics
 func gcMetricToMetrics(timestamp int64, gcList []*agent.GC, dest pmetric.ScopeMetrics) {
 	// gc count and gc duration is not
-	metric := dest.Metrics().AppendEmpty()
-	metric.SetName(gcCountMetricName)
-	metricDps := metric.SetEmptyGauge().DataPoints()
+	metricCount := dest.Metrics().AppendEmpty()
+	metricCount.SetName(gcCountMetricName)
+	metricCountDps := metricCount.SetEmptyGauge().DataPoints()
 
-	metricGcDuration := dest.Metrics().AppendEmpty()
-	metricGcDuration.SetName(gcDurationMetricName)
-	metricGcDuration.SetUnit("s")
-	metricGcDurationDps := metricGcDuration.SetEmptyGauge().DataPoints()
+	metricDuration := dest.Metrics().AppendEmpty()
+	metricDuration.SetName(gcDurationMetricName)
+	metricDuration.SetUnit("ms")
+	metricDurationDps := metricDuration.SetEmptyGauge().DataPoints()
 	for _, gc := range gcList {
 		attrs := buildGCAttrs(gc)
-		fillNumberDataPoint(timestamp, float64(gc.Count), metricDps.AppendEmpty(), attrs)
-		fillNumberDataPoint(timestamp, float64(gc.Time), metricGcDurationDps.AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, gc.Count, metricCountDps.AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, gc.Time, metricDurationDps.AppendEmpty(), attrs)
 	}
 }
 
@@ -77,9 +77,9 @@ func buildGCAttrs(gc *agent.GC) pcommon.Map {
 
 // memoryPoolMetricToMetrics  translate memoryPool metrics
 func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool, sm pmetric.ScopeMetrics) {
-	nameArr := []string{MemoryPoolInitName, MemoryPoolUsedName, MemoryPoolMaxName, MemoryPoolCommittedName}
+	PoolNameArr := []string{MemoryPoolInitName, MemoryPoolUsedName, MemoryPoolMaxName, MemoryPoolCommittedName}
 	dpsMp := make(map[string]pmetric.NumberDataPointSlice)
-	for _, name := range nameArr {
+	for _, name := range PoolNameArr {
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(name)
 		metric.SetUnit("By")
@@ -87,10 +87,10 @@ func memoryPoolMetricToMetrics(timestamp int64, memoryPools []*agent.MemoryPool,
 	}
 	for _, memoryPool := range memoryPools {
 		attrs := buildMemoryPoolAttrs(memoryPool)
-		fillNumberDataPoint(timestamp, float64(memoryPool.Init), dpsMp[MemoryPoolInitName].AppendEmpty(), attrs)
-		fillNumberDataPoint(timestamp, float64(memoryPool.Max), dpsMp[MemoryPoolMaxName].AppendEmpty(), attrs)
-		fillNumberDataPoint(timestamp, float64(memoryPool.Used), dpsMp[MemoryPoolUsedName].AppendEmpty(), attrs)
-		fillNumberDataPoint(timestamp, float64(memoryPool.Committed), dpsMp[MemoryPoolCommittedName].AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, memoryPool.Init, dpsMp[MemoryPoolInitName].AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, memoryPool.Max, dpsMp[MemoryPoolMaxName].AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, memoryPool.Used, dpsMp[MemoryPoolUsedName].AppendEmpty(), attrs)
+		fillNumberDataPointIntValue(timestamp, memoryPool.Committed, dpsMp[MemoryPoolCommittedName].AppendEmpty(), attrs)
 	}
 
 }
@@ -117,13 +117,13 @@ func threadMetricToMetrics(timestamp int64, thread *agent.Thread, dest pmetric.S
 	metric.SetName(ThreadCountName)
 	metric.SetUnit("{thread}")
 	metricDps := metric.SetEmptyGauge().DataPoints()
-	fillNumberDataPoint(timestamp, float64(thread.LiveCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("live"))
-	fillNumberDataPoint(timestamp, float64(thread.DaemonCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("daemon"))
-	fillNumberDataPoint(timestamp, float64(thread.PeakCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("peak"))
-	fillNumberDataPoint(timestamp, float64(thread.RunnableStateThreadCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("runnable"))
-	fillNumberDataPoint(timestamp, float64(thread.BlockedStateThreadCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("blocked"))
-	fillNumberDataPoint(timestamp, float64(thread.WaitingStateThreadCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("waiting"))
-	fillNumberDataPoint(timestamp, float64(thread.TimedWaitingStateThreadCount), metricDps.AppendEmpty(), buildThreadTypeAttrs("time_waiting"))
+	fillNumberDataPointIntValue(timestamp, thread.LiveCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("live"))
+	fillNumberDataPointIntValue(timestamp, thread.DaemonCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("daemon"))
+	fillNumberDataPointIntValue(timestamp, thread.PeakCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("peak"))
+	fillNumberDataPointIntValue(timestamp, thread.RunnableStateThreadCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("runnable"))
+	fillNumberDataPointIntValue(timestamp, thread.BlockedStateThreadCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("blocked"))
+	fillNumberDataPointIntValue(timestamp, thread.WaitingStateThreadCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("waiting"))
+	fillNumberDataPointIntValue(timestamp, thread.TimedWaitingStateThreadCount, metricDps.AppendEmpty(), buildThreadTypeAttrs("time_waiting"))
 }
 
 func buildThreadTypeAttrs(typeValue string) pcommon.Map {
@@ -140,12 +140,19 @@ func buildThreadTypeAttrs(typeValue string) pcommon.Map {
 func cpuMetricToMetrics(timestamp int64, cpu *common.CPU, dest pmetric.ScopeMetrics) {
 	metric := dest.Metrics().AppendEmpty()
 	metric.SetName(CPUUtilizationName)
+	metric.SetUnit("1")
 	metricDps := metric.SetEmptyGauge().DataPoints()
-	fillNumberDataPoint(timestamp, cpu.UsagePercent, metricDps.AppendEmpty(), pcommon.NewMap())
+	fillNumberDataPointDoubleValue(timestamp, cpu.UsagePercent, metricDps.AppendEmpty(), pcommon.NewMap())
 }
 
-func fillNumberDataPoint(dateTime int64, value float64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
+func fillNumberDataPointIntValue(timestamp int64, value int64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
 	attrs.CopyTo(point.Attributes())
-	point.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(dateTime)))
+	point.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(timestamp)))
+	point.SetIntValue(value)
+}
+
+func fillNumberDataPointDoubleValue(timestamp int64, value float64, point pmetric.NumberDataPoint, attrs pcommon.Map) {
+	attrs.CopyTo(point.Attributes())
+	point.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(timestamp)))
 	point.SetDoubleValue(value)
 }
