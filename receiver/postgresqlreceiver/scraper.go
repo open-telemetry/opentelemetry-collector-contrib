@@ -193,6 +193,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
 		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
+		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
 
 		br, ok := blockReads[tableKey]
 		if ok {

@@ -261,6 +261,14 @@ The number of deadlocks.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {deadlock} | Sum | Int | Cumulative | true |
 
+### postgresql.sequential_scans
+
+The number of sequential scans.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sequential_scan} | Sum | Int | Cumulative | true |
+
 ### postgresql.temp_files
 
 The number of temp files.
