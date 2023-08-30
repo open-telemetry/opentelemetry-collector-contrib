@@ -5,6 +5,7 @@ package awsemfexporter
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"testing"
 	"time"
@@ -47,6 +48,22 @@ func generateTestGaugeMetric(name string, valueType metricValueType) pmetric.Met
 	default:
 		gaugeDatapoint.SetIntValue(1)
 	}
+	return otelMetrics
+}
+
+func generateTestGaugeMetricNaN(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Count")
+	gaugeMetric := metric.SetEmptyGauge()
+	gaugeDatapoint := gaugeMetric.DataPoints().AppendEmpty()
+	gaugeDatapoint.Attributes().PutStr("label1", "value1")
+
+	gaugeDatapoint.SetDoubleValue(math.NaN())
+
 	return otelMetrics
 }
 
@@ -183,6 +200,63 @@ func shutdownEmfCalculators(c *emfCalculators) error {
 	errs = multierr.Append(errs, c.delta.Shutdown())
 	return multierr.Append(errs, c.summary.Shutdown())
 
+}
+
+func TestIsStaleOrNaN_NumberDataPointSlice(t *testing.T) {
+	testCases := []struct {
+		name           string
+		metricName     string
+		metricValue    interface{}
+		expectedAssert assert.BoolAssertionFunc
+		setFlagsFunc   func(point pmetric.NumberDataPoint) pmetric.NumberDataPoint
+	}{
+		{
+			name:           fmt.Sprintf("nan"),
+			metricValue:    math.NaN(),
+			metricName:     "NaN",
+			expectedAssert: assert.True,
+		},
+		{
+			name:           fmt.Sprintf("valid float"),
+			metricValue:    0.4,
+			metricName:     "floaty mc-float-face",
+			expectedAssert: assert.False,
+		},
+		{
+			name:           fmt.Sprintf("data point flag set"),
+			metricValue:    0.4,
+			metricName:     "floaty mc-float-face part two",
+			expectedAssert: assert.True,
+			setFlagsFunc: func(point pmetric.NumberDataPoint) pmetric.NumberDataPoint {
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+				return point
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			// Given the number datapoint (including Sum and Gauge OTEL metric type) with data type as int or double
+			numberDPS := pmetric.NewNumberDataPointSlice()
+
+			numberDP := numberDPS.AppendEmpty()
+			if tc.setFlagsFunc != nil {
+				tc.setFlagsFunc(numberDP)
+			}
+
+			switch v := tc.metricValue.(type) {
+			case int64:
+				numberDP.SetIntValue(v)
+			case float64:
+				numberDP.SetDoubleValue(v)
+			}
+
+			numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata{}, numberDPS}
+
+			tc.expectedAssert(t, numberDatapointSlice.IsStaleOrNaN(0))
+		})
+	}
 }
 
 func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {

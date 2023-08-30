@@ -6,6 +6,7 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
+	"math"
 	"os"
 	"testing"
 
@@ -67,6 +68,26 @@ func TestConsumeMetrics(t *testing.T) {
 		metricValues: [][]float64{{100}, {4}},
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
+}
+
+func TestConsumeMetricsWithNaNValues(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.OutputDestination = "stdout"
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+
+	md := generateTestMetrics(testMetric{
+		metricNames:  []string{"metric_1", "metric_2"},
+		metricValues: [][]float64{{math.NaN()}, {2.22}},
+	})
+	require.NoError(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
 }
 

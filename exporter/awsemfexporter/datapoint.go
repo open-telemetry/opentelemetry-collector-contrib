@@ -61,6 +61,7 @@ type dataPoints interface {
 	// retained: indicates whether the data point is valid for further process
 	// NOTE: It is an expensive call as it calculates the metric value.
 	CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) (dataPoint []dataPoint, retained bool)
+	IsStaleOrNaN(i int) bool
 }
 
 // deltaMetricMetadata contains the metadata required to perform rate/delta calculation
@@ -145,6 +146,23 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationS
 	return []dataPoint{{name: dps.metricName, value: metricVal, labels: labels, timestampMs: timestampMs}}, retained
 }
 
+func (dps numberDataPointSlice) IsStaleOrNaN(i int) bool {
+	metric := dps.NumberDataPointSlice.At(i)
+
+	if metric.Flags().NoRecordedValue() {
+		return true
+	}
+
+	switch metric.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		return math.IsNaN(metric.DoubleValue())
+	case pmetric.NumberDataPointValueTypeInt:
+		return math.IsNaN(float64(metric.IntValue()))
+	}
+
+	return false
+}
+
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
@@ -162,6 +180,10 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 		labels:      labels,
 		timestampMs: timestamp,
 	}}, true
+}
+
+func (dps histogramDataPointSlice) IsStaleOrNaN(i int) bool {
+	return false
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
@@ -246,6 +268,10 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 	}}, true
 }
 
+func (dps exponentialHistogramDataPointSlice) IsStaleOrNaN(i int) bool {
+	return false
+}
+
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
@@ -301,6 +327,10 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 	}
 
 	return datapoints, retained
+}
+
+func (dps summaryDataPointSlice) IsStaleOrNaN(i int) bool {
+	return false
 }
 
 // createLabels converts OTel AttributesMap attributes to a map
