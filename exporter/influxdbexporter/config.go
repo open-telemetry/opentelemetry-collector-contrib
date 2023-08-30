@@ -51,6 +51,18 @@ type Config struct {
 	// - https://github.com/open-telemetry/opentelemetry-collector/tree/main/semconv
 	SpanDimensions []string `mapstructure:"span_dimensions"`
 
+	// LogRecordDimensions are log record attributes to be used as line protocol tags.
+	// These are always included as tags, if available:
+	// - trace ID
+	// - span ID
+	// The default values:
+	// - service.name
+	// Other common attributes can be found here:
+	// - https://github.com/open-telemetry/opentelemetry-collector/tree/main/semconv
+	// When using InfluxDB for both logs and traces, be certain that log_record_dimensions
+	// matches the tracing span_dimensions value.
+	LogRecordDimensions []string `mapstructure:"log_record_dimensions"`
+
 	// MetricsSchema indicates the metrics schema to emit to line protocol.
 	// Options:
 	// - telegraf-prometheus-v1
@@ -64,19 +76,33 @@ type Config struct {
 }
 
 func (cfg *Config) Validate() error {
-	uniqueDimensions := make(map[string]struct{}, len(cfg.SpanDimensions))
-	duplicateDimensions := make(map[string]struct{})
+	spanDimensions := make(map[string]struct{}, len(cfg.SpanDimensions))
+	duplicateSpanDimensions := make(map[string]struct{})
 	for _, k := range cfg.SpanDimensions {
-		if _, found := uniqueDimensions[k]; found {
-			duplicateDimensions[k] = struct{}{}
+		if _, found := spanDimensions[k]; found {
+			duplicateSpanDimensions[k] = struct{}{}
 		} else {
-			uniqueDimensions[k] = struct{}{}
+			spanDimensions[k] = struct{}{}
 		}
 	}
-
-	if len(duplicateDimensions) > 0 {
+	if len(duplicateSpanDimensions) > 0 {
 		return fmt.Errorf("duplicate span dimension(s) configured: %s",
-			strings.Join(maps.Keys(duplicateDimensions), ","))
+			strings.Join(maps.Keys(duplicateSpanDimensions), ","))
 	}
+
+	logRecordDimensions := make(map[string]struct{}, len(cfg.LogRecordDimensions))
+	duplicateLogRecordDimensions := make(map[string]struct{})
+	for _, k := range cfg.LogRecordDimensions {
+		if _, found := logRecordDimensions[k]; found {
+			duplicateLogRecordDimensions[k] = struct{}{}
+		} else {
+			logRecordDimensions[k] = struct{}{}
+		}
+	}
+	if len(duplicateLogRecordDimensions) > 0 {
+		return fmt.Errorf("duplicate log record dimension(s) configured: %s",
+			strings.Join(maps.Keys(duplicateLogRecordDimensions), ","))
+	}
+
 	return nil
 }
