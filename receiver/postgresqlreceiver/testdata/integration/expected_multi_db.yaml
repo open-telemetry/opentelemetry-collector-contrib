@@ -117,6 +117,76 @@ resourceMetrics:
                   startTimeUnixNano: "1687780262696586000"
                   timeUnixNano: "1687780263696969000"
             unit: '{databases}'
+          - description: The number of database locks.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_relname_nsp_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1693418281967464598"
+                  timeUnixNano: "1693418340968890176"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_tblspc_relfilenode_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1693418281967464598"
+                  timeUnixNano: "1693418340968890176"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_locks
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1693418281967464598"
+                  timeUnixNano: "1693418340968890176"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1693418281967464598"
+                  timeUnixNano: "1693418340968890176"
+                - asInt: "1"
+                  attributes:
+                    - key: relation
+                      value:
+                        stringValue: pg_class_oid_index
+                    - key: mode
+                      value:
+                        stringValue: AccessShareLock
+                    - key: lock_type
+                      value:
+                        stringValue: relation
+                  startTimeUnixNano: "1693418281967464598"
+                  timeUnixNano: "1693418340968890176"
+            name: postgresql.database_locks
+            unit: '{database_lock}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest

@@ -116,6 +116,37 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{databases}'
+          - description: The number of database locks.
+            gauge:
+              dataPoints:
+                - asInt: "3600"
+                  attributes:
+                    - key: "relation"
+                      value:
+                        stringValue: "pg_locks"
+                    - key: "mode"
+                      value:
+                        stringValue: "AccessShareLock"
+                    - key: "lock_type"
+                      value:
+                        stringValue: "relation"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5600"
+                  attributes:
+                    - key: "relation"
+                      value:
+                        stringValue: "pg_class"
+                    - key: "mode"
+                      value:
+                        stringValue: "AccessShareLock"
+                    - key: "lock_type"
+                      value:
+                        stringValue: "relation"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.database_locks
+            unit: '{database_lock}'
           - description: The amount of data delayed in replication.
             gauge:
               dataPoints:
@@ -247,7 +278,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
-            unit: '{temp_file}' 
+            unit: '{temp_file}'
         scope:
           name: otelcol/postgresqlreceiver
           version: latest

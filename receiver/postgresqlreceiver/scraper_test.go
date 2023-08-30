@@ -40,6 +40,7 @@ func TestScraper(t *testing.T) {
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = true
 	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -64,6 +65,8 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -79,6 +82,7 @@ func TestScraperNoDatabaseSingle(t *testing.T) {
 	cfg.Metrics.PostgresqlDeadlocks.Enabled = false
 	cfg.Metrics.PostgresqlTempFiles.Enabled = false
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = false
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = false
 
 	scraper = newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, factory)
 	actualMetrics, err = scraper.scrape(context.Background())
@@ -104,6 +108,8 @@ func TestScraperNoDatabaseMultiple(t *testing.T) {
 	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -128,6 +134,8 @@ func TestScraperWithResourceAttributeFeatureGate(t *testing.T) {
 	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -152,6 +160,8 @@ func TestScraperWithResourceAttributeFeatureGateSingle(t *testing.T) {
 	cfg.Metrics.PostgresqlTempFiles.Enabled = true
 	require.True(t, cfg.Metrics.PostgresqlSequentialScans.Enabled == false)
 	cfg.Metrics.PostgresqlSequentialScans.Enabled = true
+	require.True(t, cfg.Metrics.PostgresqlDatabaseLocks.Enabled == false)
+	cfg.Metrics.PostgresqlDatabaseLocks.Enabled = true
 	scraper := newPostgreSQLScraper(receivertest.NewNopCreateSettings(), cfg, &factory)
 
 	actualMetrics, err := scraper.scrape(context.Background())
@@ -178,6 +188,11 @@ func (m *mockClient) Close() error {
 func (m *mockClient) getDatabaseStats(_ context.Context, databases []string) (map[databaseName]databaseStats, error) {
 	args := m.Called(databases)
 	return args.Get(0).(map[databaseName]databaseStats), args.Error(1)
+}
+
+func (m *mockClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	args := m.Called(ctx)
+	return args.Get(0).([]databaseLocks), args.Error(1)
 }
 
 func (m *mockClient) getBackends(_ context.Context, databases []string) (map[databaseName]int64, error) {
@@ -286,6 +301,34 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 		}, nil)
 		m.On("getMaxConnections", mock.Anything).Return(int64(100), nil)
 		m.On("getLatestWalAgeSeconds", mock.Anything).Return(int64(3600), nil)
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "pg_locks",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    3600,
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    5600,
+			},
+		}, nil)
+		m.On("getDatabaseLocks", mock.Anything).Return([]databaseLocks{
+			{
+				relation: "abd_table",
+				mode:     "ExplicitLock",
+				lockType: "relation",
+				locks:    1600,
+			},
+			{
+				relation: "pg_class",
+				mode:     "AccessShareLock",
+				lockType: "relation",
+				locks:    5600,
+			},
+		}, fmt.Errorf("some error"))
 		m.On("getReplicationStats", mock.Anything).Return([]replicationStats{
 			{
 				clientAddr:   "unix",
@@ -302,6 +345,7 @@ func (m *mockClient) initMocks(database string, databases []string, index int) {
 				writeLag:     -1,
 			},
 		}, nil)
+
 	} else {
 		table1 := "public.table1"
 		table2 := "public.table2"

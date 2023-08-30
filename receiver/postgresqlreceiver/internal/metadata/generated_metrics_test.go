@@ -94,6 +94,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordPostgresqlDatabaseCountDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordPostgresqlDatabaseLocksDataPoint(ts, 1, "relation-val", "mode-val", "lock_type-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordPostgresqlDbSizeDataPoint(ts, 1)
@@ -327,6 +330,27 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "postgresql.database_locks":
+					assert.False(t, validatedMetrics["postgresql.database_locks"], "Found a duplicate in the metrics slice: postgresql.database_locks")
+					validatedMetrics["postgresql.database_locks"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of database locks.", ms.At(i).Description())
+					assert.Equal(t, "{database_lock}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("relation")
+					assert.True(t, ok)
+					assert.EqualValues(t, "relation-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("mode")
+					assert.True(t, ok)
+					assert.EqualValues(t, "mode-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("lock_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "lock_type-val", attrVal.Str())
 				case "postgresql.db_size":
 					assert.False(t, validatedMetrics["postgresql.db_size"], "Found a duplicate in the metrics slice: postgresql.db_size")
 					validatedMetrics["postgresql.db_size"] = true

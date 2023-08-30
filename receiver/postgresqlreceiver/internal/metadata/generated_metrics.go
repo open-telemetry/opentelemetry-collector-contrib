@@ -753,6 +753,59 @@ func newMetricPostgresqlDatabaseCount(cfg MetricConfig) metricPostgresqlDatabase
 	return m
 }
 
+type metricPostgresqlDatabaseLocks struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.database_locks metric with initial data.
+func (m *metricPostgresqlDatabaseLocks) init() {
+	m.data.SetName("postgresql.database_locks")
+	m.data.SetDescription("The number of database locks.")
+	m.data.SetUnit("{database_lock}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricPostgresqlDatabaseLocks) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("relation", relationAttributeValue)
+	dp.Attributes().PutStr("mode", modeAttributeValue)
+	dp.Attributes().PutStr("lock_type", lockTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlDatabaseLocks) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlDatabaseLocks) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlDatabaseLocks(cfg MetricConfig) metricPostgresqlDatabaseLocks {
+	m := metricPostgresqlDatabaseLocks{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlDbSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1537,6 +1590,7 @@ type MetricsBuilder struct {
 	metricPostgresqlCommits                  metricPostgresqlCommits
 	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
 	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
+	metricPostgresqlDatabaseLocks            metricPostgresqlDatabaseLocks
 	metricPostgresqlDbSize                   metricPostgresqlDbSize
 	metricPostgresqlDeadlocks                metricPostgresqlDeadlocks
 	metricPostgresqlIndexScans               metricPostgresqlIndexScans
@@ -1580,6 +1634,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
 		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
 		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
+		metricPostgresqlDatabaseLocks:            newMetricPostgresqlDatabaseLocks(mbc.Metrics.PostgresqlDatabaseLocks),
 		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
 		metricPostgresqlDeadlocks:                newMetricPostgresqlDeadlocks(mbc.Metrics.PostgresqlDeadlocks),
 		metricPostgresqlIndexScans:               newMetricPostgresqlIndexScans(mbc.Metrics.PostgresqlIndexScans),
@@ -1666,6 +1721,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
 	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
+	mb.metricPostgresqlDatabaseLocks.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
 	mb.metricPostgresqlDeadlocks.emit(ils.Metrics())
 	mb.metricPostgresqlIndexScans.emit(ils.Metrics())
@@ -1749,6 +1805,11 @@ func (mb *MetricsBuilder) RecordPostgresqlConnectionMaxDataPoint(ts pcommon.Time
 // RecordPostgresqlDatabaseCountDataPoint adds a data point to postgresql.database.count metric.
 func (mb *MetricsBuilder) RecordPostgresqlDatabaseCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlDatabaseCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlDatabaseLocksDataPoint adds a data point to postgresql.database_locks metric.
+func (mb *MetricsBuilder) RecordPostgresqlDatabaseLocksDataPoint(ts pcommon.Timestamp, val int64, relationAttributeValue string, modeAttributeValue string, lockTypeAttributeValue string) {
+	mb.metricPostgresqlDatabaseLocks.recordDataPoint(mb.startTime, ts, val, relationAttributeValue, modeAttributeValue, lockTypeAttributeValue)
 }
 
 // RecordPostgresqlDbSizeDataPoint adds a data point to postgresql.db_size metric.

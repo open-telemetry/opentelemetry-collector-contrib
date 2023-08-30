@@ -46,6 +46,12 @@ attributes:
       - sync
       - write
     name_override: type
+  lock_type:
+    description: Type of the lockable object.
+    type: string
+  mode:
+    description: Name of the lock mode held or desired by the process.
+    type: string
   source:
     description: The block read source type.
     type: string
@@ -62,6 +68,9 @@ attributes:
     description: The database operation.
     type: string
     enum: [ins, upd, del, hot_upd]
+  relation:
+    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
+    type: string
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
@@ -147,6 +156,13 @@ metrics:
       monotonic: false
       value_type: int
     unit: "{databases}"
+  postgresql.database_locks:
+    enabled: false
+    description: The number of database locks.
+    unit: "{database_lock}"
+    gauge:
+      value_type: int
+    attributes: [relation, mode, lock_type]
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
