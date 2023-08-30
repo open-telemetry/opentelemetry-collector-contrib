@@ -69,7 +69,7 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 		return nil, fmt.Errorf("failed to compile `pattern`: %w", err)
 	}
 
-	splitFunc, err := tokenize.NewNewlineSplitFunc(enc, false, func(b []byte) []byte {
+	splitFunc, err := tokenize.NewlineSplitFunc(enc, false, func(b []byte) []byte {
 		return bytes.Trim(b, "\r\n")
 	})
 	if err != nil {
