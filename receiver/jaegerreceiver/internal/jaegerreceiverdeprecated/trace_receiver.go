@@ -38,8 +38,8 @@ import (
 
 	jaegertranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/jaegerreceiverdeprecated/internal/configmanager"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/jaegerreceiverdeprecated/internal/httpserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/configmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/httpserver"
 )
 
 // configuration defines the behavior and the ports that

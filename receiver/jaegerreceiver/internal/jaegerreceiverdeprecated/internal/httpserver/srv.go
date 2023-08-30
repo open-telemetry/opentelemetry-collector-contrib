@@ -28,8 +28,8 @@ import (
 
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/jaegerreceiverdeprecated/internal/clientcfghttp"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/jaegerreceiverdeprecated/internal/configmanager"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/clientcfghttp"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/configmanager"
 )
 
 // NewHTTPServer creates a new server that hosts an HTTP/JSON endpoint for clients
