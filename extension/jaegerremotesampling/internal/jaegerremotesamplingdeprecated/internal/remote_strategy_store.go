@@ -15,8 +15,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
-	grpcstore "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/grpc"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
+	grpcstore "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/grpc"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
 type grpcRemoteStrategyStore struct {

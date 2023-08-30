@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated"
 )
 
 // NewFactory creates a factory for the jaeger remote sampling extension.

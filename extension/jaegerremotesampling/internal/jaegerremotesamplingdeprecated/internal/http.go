@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
 var (

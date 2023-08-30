@@ -27,7 +27,7 @@ import (
 	"github.com/jaegertracing/jaeger/plugin"
 	"github.com/jaegertracing/jaeger/storage"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
 var _ plugin.Configurable = (*Factory)(nil)

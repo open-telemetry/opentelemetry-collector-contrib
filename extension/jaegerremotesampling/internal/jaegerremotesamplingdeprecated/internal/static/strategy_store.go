@@ -33,7 +33,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
-	ss "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
+	ss "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
 // null represents "null" JSON value and

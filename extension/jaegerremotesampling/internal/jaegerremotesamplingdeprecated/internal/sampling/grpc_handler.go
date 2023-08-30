@@ -23,7 +23,7 @@ import (
 	"github.com/jaegertracing/jaeger/model/converter/thrift/jaeger"
 	"github.com/jaegertracing/jaeger/proto-gen/api_v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
 // GRPCHandler is sampling strategy handler for gRPC.
