@@ -5,7 +5,6 @@ package k8sobjectsreceiver
 
 import (
 	"context"
-	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 )
 
 func TestNewReceiver(t *testing.T) {
