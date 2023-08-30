@@ -8,5 +8,5 @@ import (
 )
 
 type Factory interface {
-	Build(maxLogSize int) (bufio.SplitFunc, error)
+	Build() (bufio.SplitFunc, error)
 }

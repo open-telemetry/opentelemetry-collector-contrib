@@ -17,13 +17,9 @@ func TestCustomFactory(t *testing.T) {
 		Flusher  tokenize.FlusherConfig
 		Splitter bufio.SplitFunc
 	}
-	type args struct {
-		maxLogSize int
-	}
 	tests := []struct {
 		name    string
 		fields  fields
-		args    args
 		wantErr bool
 	}{
 		{
@@ -34,16 +30,13 @@ func TestCustomFactory(t *testing.T) {
 					return len(data), data, nil
 				},
 			},
-			args: args{
-				maxLogSize: 1024,
-			},
 			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewCustomFactory(tt.fields.Flusher, tt.fields.Splitter)
-			got, err := factory.Build(tt.args.maxLogSize)
+			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
