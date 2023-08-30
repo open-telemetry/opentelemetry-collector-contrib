@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sampling
+package sampling // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/sampling"
 
 import (
 	"context"

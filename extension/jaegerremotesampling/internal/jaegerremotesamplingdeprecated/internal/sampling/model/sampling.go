@@ -16,7 +16,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package model
+package model // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/model"
 
 // Throughput keeps track of the queries an operation received.
 type Throughput struct {

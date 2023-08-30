@@ -4,4 +4,4 @@
 //go:generate mdatagen metadata.yaml
 
 // Package jaegerreceiver receives Jaeger traces.
-package jaegerreceiverdeprecated // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/jaegerreceiverdeprecated"
+package jaegerreceiverdeprecated // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated"
