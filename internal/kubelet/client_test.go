@@ -122,6 +122,7 @@ func TestSvcAcctClient(t *testing.T) {
 		logger:     zap.NewNop(),
 	}
 	client, err := p.BuildClient()
+	require.NoError(t, err)
 	resp, err := client.Get("/")
 	require.NoError(t, err)
 	require.Equal(t, []byte(`OK`), resp)
