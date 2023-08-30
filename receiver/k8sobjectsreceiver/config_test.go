@@ -4,6 +4,7 @@
 package k8sobjectsreceiver
 
 import (
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"path/filepath"
 	"testing"
 	"time"
@@ -50,7 +51,9 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
-						ExcludeDeleted:  true,
+						ExcludeWatchType: []apiWatch.EventType{
+							apiWatch.Deleted,
+						},
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
 							Version:  "v1",

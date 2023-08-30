@@ -5,6 +5,7 @@ package k8sobjectsreceiver
 
 import (
 	"context"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"testing"
 	"time"
 
@@ -165,10 +166,12 @@ func TestExludeDeletedTrue(t *testing.T) {
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name:           "pods",
-			Mode:           WatchMode,
-			Namespaces:     []string{"default"},
-			ExcludeDeleted: true,
+			Name:       "pods",
+			Mode:       WatchMode,
+			Namespaces: []string{"default"},
+			ExcludeWatchType: []apiWatch.EventType{
+				apiWatch.Deleted,
+			},
 		},
 	}
 

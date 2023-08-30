@@ -49,6 +49,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
+	for _, object := range config.Objects {
+		object.exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range object.ExcludeWatchType {
+			object.exclude[item] = true
+		}
+	}
+
 	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
@@ -173,7 +180,8 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				return
 			}
 
-			if data.Type == apiWatch.Deleted && config.ExcludeDeleted {
+			if config.exclude[data.Type] {
+				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
 				continue
 			}
 

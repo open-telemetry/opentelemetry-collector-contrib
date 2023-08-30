@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
@@ -32,16 +33,17 @@ var modeMap = map[mode]bool{
 }
 
 type K8sObjectsConfig struct {
-	Name            string        `mapstructure:"name"`
-	Group           string        `mapstructure:"group"`
-	Namespaces      []string      `mapstructure:"namespaces"`
-	Mode            mode          `mapstructure:"mode"`
-	LabelSelector   string        `mapstructure:"label_selector"`
-	FieldSelector   string        `mapstructure:"field_selector"`
-	Interval        time.Duration `mapstructure:"interval"`
-	ResourceVersion string        `mapstructure:"resource_version"`
-	ExcludeDeleted  bool          `mapstructure:"exclude_deleted"`
-	gvr             *schema.GroupVersionResource
+	Name             string               `mapstructure:"name"`
+	Group            string               `mapstructure:"group"`
+	Namespaces       []string             `mapstructure:"namespaces"`
+	Mode             mode                 `mapstructure:"mode"`
+	LabelSelector    string               `mapstructure:"label_selector"`
+	FieldSelector    string               `mapstructure:"field_selector"`
+	Interval         time.Duration        `mapstructure:"interval"`
+	ResourceVersion  string               `mapstructure:"resource_version"`
+	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
+	exclude          map[apiWatch.EventType]bool
+	gvr              *schema.GroupVersionResource
 }
 
 type Config struct {
@@ -88,8 +90,8 @@ func (c *Config) Validate() error {
 			object.Interval = defaultPullInterval
 		}
 
-		if object.Mode == PullMode && object.ExcludeDeleted {
-			return fmt.Errorf("ExcludeDeleted can only be enabled for watch mode")
+		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
+			return fmt.Errorf("the Exclude config can only be used with watch mode")
 		}
 
 		object.gvr = gvr
