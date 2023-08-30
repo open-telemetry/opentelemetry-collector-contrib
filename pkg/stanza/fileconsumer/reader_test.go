@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
@@ -210,7 +210,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	enc, err := decoder.LookupEncoding("utf-8")
+	enc, err := decode.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
 	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
@@ -239,7 +239,7 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 
 func testReaderFactoryWithSplitter(t *testing.T, splitterConfig tokenize.SplitterConfig) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	enc, err := decoder.LookupEncoding(splitterConfig.Encoding)
+	enc, err := decode.LookupEncoding(splitterConfig.Encoding)
 	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
