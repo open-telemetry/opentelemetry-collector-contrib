@@ -5,7 +5,6 @@ package kineticaexporter // import
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 
 	"go.opentelemetry.io/collector/component"
@@ -39,8 +38,6 @@ func (cfg *Config) Validate() error {
 	if kineticaHost.Scheme != "http" && kineticaHost.Scheme != "https" {
 		return errors.New("Protocol must be either `http` or `https`")
 	}
-
-	fmt.Println("Password = ", string(cfg.Password))
 
 	return nil
 }
