@@ -31,7 +31,6 @@ receiver/dockerstatsreceiver
 receiver/fluentforwardreceiver
 receiver/jaegerreceiver
 receiver/journaldreceiver
-receiver/k8sobjectsreceiver
 receiver/kafkareceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
