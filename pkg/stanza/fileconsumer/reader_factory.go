@@ -4,6 +4,7 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bufio"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -11,11 +12,11 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/util"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerFactory struct {
@@ -28,44 +29,52 @@ type readerFactory struct {
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
+	lineSplitFunc, err := f.splitterFactory.Build()
+	if err != nil {
+		return nil, err
+	}
 	return f.build(file, &readerMetadata{
 		Fingerprint:    fp,
 		FileAttributes: map[string]any{},
-	})
+	}, lineSplitFunc)
 }
 
 // copy creates a deep copy of a reader
 func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
+	var err error
+	lineSplitFunc := old.lineSplitFunc
+	if lineSplitFunc == nil {
+		lineSplitFunc, err = f.splitterFactory.Build()
+		if err != nil {
+			return nil, err
+		}
+	}
 	return f.build(newFile, &readerMetadata{
 		Fingerprint:     old.Fingerprint.Copy(),
 		Offset:          old.Offset,
 		FileAttributes:  util.MapCopy(old.FileAttributes),
 		HeaderFinalized: old.HeaderFinalized,
-	})
+	}, lineSplitFunc)
 }
 
 func (f *readerFactory) newFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
 	return fingerprint.New(file, f.readerConfig.fingerprintSize)
 }
 
-func (f *readerFactory) build(file *os.File, m *readerMetadata) (r *reader, err error) {
+func (f *readerFactory) build(file *os.File, m *readerMetadata, lineSplitFunc bufio.SplitFunc) (r *reader, err error) {
 	r = &reader{
 		readerConfig:   f.readerConfig,
 		readerMetadata: m,
 		file:           file,
 		SugaredLogger:  f.SugaredLogger.With("path", file.Name()),
-		decoder:        helper.NewDecoder(f.encoding),
+		decoder:        decode.New(f.encoding),
+		lineSplitFunc:  lineSplitFunc,
 	}
 
 	if !f.fromBeginning {
 		if err = r.offsetToEnd(); err != nil {
 			return nil, err
 		}
-	}
-
-	r.lineSplitFunc, err = f.splitterFactory.Build(f.readerConfig.maxLogSize)
-	if err != nil {
-		return nil, err
 	}
 
 	if f.headerConfig == nil || m.HeaderFinalized {

@@ -6,6 +6,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -46,7 +47,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	var toBody toBodyFunc = func(token []byte) interface{} {
 		return string(token)
 	}
-	if helper.IsNop(c.Config.Splitter.Encoding) {
+	if decode.IsNop(c.Config.Splitter.Encoding) {
 		toBody = func(token []byte) interface{} {
 			copied := make([]byte, len(token))
 			copy(copied, token)

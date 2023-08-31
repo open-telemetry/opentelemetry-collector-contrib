@@ -9,33 +9,26 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestCustomFactory(t *testing.T) {
 	type fields struct {
-		Flusher  helper.FlusherConfig
+		Flusher  tokenize.FlusherConfig
 		Splitter bufio.SplitFunc
-	}
-	type args struct {
-		maxLogSize int
 	}
 	tests := []struct {
 		name    string
 		fields  fields
-		args    args
 		wantErr bool
 	}{
 		{
 			name: "default configuration",
 			fields: fields{
-				Flusher: helper.NewFlusherConfig(),
+				Flusher: tokenize.NewFlusherConfig(),
 				Splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 					return len(data), data, nil
 				},
-			},
-			args: args{
-				maxLogSize: 1024,
 			},
 			wantErr: false,
 		},
@@ -43,7 +36,7 @@ func TestCustomFactory(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewCustomFactory(tt.fields.Flusher, tt.fields.Splitter)
-			got, err := factory.Build(tt.args.maxLogSize)
+			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return

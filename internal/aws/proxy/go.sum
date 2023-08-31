@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go v1.44.323 h1:97/dn93DWrN1VfhAWQ2tV+xuE6oO/LO9rSsEsuC4PLU=
-github.com/aws/aws-sdk-go v1.44.323/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/aws/aws-sdk-go v1.45.0 h1:qoVOQHuLacxJMO71T49KeE70zm+Tk3vtrl7XO4VUPZc=
+github.com/aws/aws-sdk-go v1.45.0/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/benbjohnson/clock v1.3.0 h1:ip6w0uFQkncKQ979AypyG0ER7mqUSBdKLOgAle/AT8A=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
@@ -20,12 +20,12 @@ github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-go.opentelemetry.io/collector/config/confignet v0.83.0 h1:xaQkMXvId8y7o6ke2qVRZZDqNc315CGkIcZ6LSVxDE0=
-go.opentelemetry.io/collector/config/confignet v0.83.0/go.mod h1:I0iJQDhns1GgXBIumB64WHLPMmJpNdDaEDHQnmaaqsU=
-go.opentelemetry.io/collector/config/configopaque v0.83.0 h1:nhYguW1zVFnQlaZWhwbXJS4/+WEPdQSEL8kTF/j/zeI=
-go.opentelemetry.io/collector/config/configopaque v0.83.0/go.mod h1:Ga1x7xLQXWmwxfW1pPqjI4qT+eNxf9wu2/Mx7O2u01U=
-go.opentelemetry.io/collector/config/configtls v0.83.0 h1:qeAqwvw7qs3fY8wVZzN54E+SNMES7YdATY0ASEbJlUw=
-go.opentelemetry.io/collector/config/configtls v0.83.0/go.mod h1:YMf+YSUhPB/LD5pZSyb3wRi7x6vbiMbONXOWFQnJnZ4=
+go.opentelemetry.io/collector/config/confignet v0.84.0 h1:AGaAdhKgV/lxNxHL/RqqpKjVGuIPSO8whTZyBbP3KK0=
+go.opentelemetry.io/collector/config/confignet v0.84.0/go.mod h1:cpO8JYWGONaViOygKVw+Hd2UoBcn2cUiyi0WWeFTwJY=
+go.opentelemetry.io/collector/config/configopaque v0.84.0 h1:EjALh+TaICWGcHAwTV87niSgWoI3fTQ3h6ureyo8ksw=
+go.opentelemetry.io/collector/config/configopaque v0.84.0/go.mod h1:TPCHaU+QXiEV+JXbgyr6mSErTI9chwQyasDVMdJr3eY=
+go.opentelemetry.io/collector/config/configtls v0.84.0 h1:0rE1cdCLBx98nm6UgHnWFbytY0leZi/dr5bJ+i6Zup0=
+go.opentelemetry.io/collector/config/configtls v0.84.0/go.mod h1:7zgWZBbH1+ZZLxNzDS+Kz0Em9dAXdlYmRqjXTWxZK2o=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 h1:C9o0mbP0MyygqFnKueVQK/v9jef6zvuttmTGlKaqhgw=
 go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014/go.mod h1:0mE3mDLmUrOXVoNsuvj+7dV14h/9HFl/Fy9YTLoLObo=
 go.uber.org/goleak v1.2.0 h1:xqgm/S+aQvhWFTtR0XK3Jvg7z8kGV8P4X14IzwN3Eqk=
