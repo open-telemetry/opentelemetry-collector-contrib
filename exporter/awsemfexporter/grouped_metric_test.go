@@ -192,7 +192,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 	})
 
-	t.Run("Add multiple different metrics with NaN gauges", func(t *testing.T) {
+	t.Run("Add multiple different metrics with NaN types", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
@@ -204,15 +204,18 @@ func TestAddToGroupedMetric(t *testing.T) {
 			generateTestSumMetric("int-sum", intValueType),
 			generateTestSumMetric("double-sum", doubleValueType),
 			generateTestSummaryMetric("summary"),
-			// We do not expect these to be added to the grouped metric. NaN values should be dropped.
+			// We do not expect these to be added to the grouped metric. Metrics with NaN values should be dropped.
 			generateTestGaugeMetricNaN("double-gauge-nan"),
+			generateTestExponentialHistogramMetricWithNaNs("expo-with-nan"),
+			generateTestHistogramMetricNaNBucket("histo-with-nan"),
+			generateTestSummaryMetricWithNaN("sum-with-nan"),
 		}
 
 		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
 		rms := finalOtelMetrics.ResourceMetrics()
 		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
-		require.Equal(t, 10, metrics.Len(), "mock metric creation failed")
+		require.Equal(t, 14, metrics.Len(), "mock metric creation failed")
 
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
