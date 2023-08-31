@@ -534,6 +534,53 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 
 }
 
+func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		histogramDPS   pmetric.HistogramDataPointSlice
+		boolAssertFunc assert.BoolAssertionFunc
+	}{
+		{
+			name: "Histogram with NaNs",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+		{
+			name: "Histogram with min and max",
+			histogramDPS: func() pmetric.HistogramDataPointSlice {
+				histogramDPS := pmetric.NewHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(17.13)
+				histogramDP.SetMin(10)
+				histogramDP.SetMax(30)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.False,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(_ *testing.T) {
+			// Given the histogram datapoints
+			histogramDatapointSlice := histogramDataPointSlice{deltaMetricMetadata{}, tc.histogramDPS}
+			tc.boolAssertFunc(t, histogramDatapointSlice.IsStaleOrNaN(0))
+		})
+	}
+
+}
+
 func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.T) {
 	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
 
@@ -635,6 +682,54 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 
 }
 
+func TestIsStaleOrNaN_ExponentialHistogramDataPointSlice(t *testing.T) {
+
+	testCases := []struct {
+		name           string
+		histogramDPS   pmetric.ExponentialHistogramDataPointSlice
+		boolAssertFunc assert.BoolAssertionFunc
+	}{
+		{
+			name: "Exponential histogram with min and max",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(17.13)
+				histogramDP.SetMin(10)
+				histogramDP.SetMax(30)
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.False,
+		},
+		{
+			name: "Exponential histogram with NaNs",
+			histogramDPS: func() pmetric.ExponentialHistogramDataPointSlice {
+				histogramDPS := pmetric.NewExponentialHistogramDataPointSlice()
+				histogramDP := histogramDPS.AppendEmpty()
+				histogramDP.SetCount(uint64(17))
+				histogramDP.SetSum(math.NaN())
+				histogramDP.SetMin(math.NaN())
+				histogramDP.SetMax(math.NaN())
+				histogramDP.Attributes().PutStr("label1", "value1")
+				return histogramDPS
+			}(),
+			boolAssertFunc: assert.True,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(_ *testing.T) {
+			// Given the histogram datapoints
+			exponentialHistogramDatapointSlice := exponentialHistogramDataPointSlice{deltaMetricMetadata{}, tc.histogramDPS}
+			// When calculate the delta datapoints for histograms
+			tc.boolAssertFunc(t, exponentialHistogramDatapointSlice.IsStaleOrNaN(0))
+		})
+	}
+
+}
+
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
@@ -718,6 +813,50 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 			})
 		}
 	}
+}
+
+func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
+
+	testCases := []struct {
+		name               string
+		summaryMetricValue map[string]interface{}
+		expectedBoolAssert assert.BoolAssertionFunc
+	}{
+		{
+			name:               "summary with no nan values",
+			summaryMetricValue: map[string]interface{}{"sum": float64(17.3), "count": uint64(17), "firstQuantile": float64(1), "secondQuantile": float64(5)},
+			expectedBoolAssert: assert.False,
+		},
+		{
+			name:               "Summary with nan values",
+			summaryMetricValue: map[string]interface{}{"sum": math.NaN(), "count": uint64(25), "firstQuantile": math.NaN(), "secondQuantile": math.NaN()},
+			expectedBoolAssert: assert.True,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given the summary datapoints with quantile 0, quantile 100, sum and count
+			summaryDPS := pmetric.NewSummaryDataPointSlice()
+			summaryDP := summaryDPS.AppendEmpty()
+			summaryDP.SetSum(tc.summaryMetricValue["sum"].(float64))
+			summaryDP.SetCount(tc.summaryMetricValue["count"].(uint64))
+			summaryDP.Attributes().PutStr("label1", "value1")
+
+			summaryDP.QuantileValues().EnsureCapacity(2)
+			firstQuantileValue := summaryDP.QuantileValues().AppendEmpty()
+			firstQuantileValue.SetQuantile(0)
+			firstQuantileValue.SetValue(tc.summaryMetricValue["firstQuantile"].(float64))
+			secondQuantileValue := summaryDP.QuantileValues().AppendEmpty()
+			secondQuantileValue.SetQuantile(100)
+			secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
+
+			summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata{}, summaryDPS}
+
+			tc.expectedBoolAssert(t, summaryDatapointSlice.IsStaleOrNaN(0))
+		})
+	}
+
 }
 
 func TestCreateLabels(t *testing.T) {
