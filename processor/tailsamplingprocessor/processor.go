@@ -52,6 +52,14 @@ type tailSamplingSpanProcessor struct {
 	numTracesOnMap  *atomic.Uint64
 }
 
+// spanAndScope a structure for holding information about span and its instrumentation scope.
+// required for preserving the instrumentation library information while sampling.
+// We use pointers there to fast find the span in the map.
+type spanAndScope struct {
+	span                 *ptrace.Span
+	instrumentationScope *pcommon.InstrumentationScope
+}
+
 const (
 	sourceFormat = "tail_sampling"
 )
@@ -299,16 +307,21 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]*ptrace.Span {
-	idToSpans := make(map[pcommon.TraceID][]*ptrace.Span)
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
-		spans := ilss.At(j).Spans()
+		scope := ilss.At(j)
+		spans := scope.Spans()
+		is := scope.Scope()
 		spansLen := spans.Len()
 		for k := 0; k < spansLen; k++ {
 			span := spans.At(k)
 			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], &span)
+			idToSpans[key] = append(idToSpans[key], spanAndScope{
+				span:                 &span,
+				instrumentationScope: &is,
+			})
 		}
 	}
 	return idToSpans
@@ -316,9 +329,9 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.
 
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
-	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
+	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
-	for id, spans := range idToSpans {
+	for id, spans := range idToSpansAndScope {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -422,12 +435,23 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spans []*ptrace.Span) {
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {
 	rs := dest.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	ils := rs.ScopeSpans().AppendEmpty()
-	for _, span := range spans {
-		sp := ils.Spans().AppendEmpty()
-		span.CopyTo(sp)
+
+	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
+	for _, spanAndScope := range spanAndScopes {
+		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
+		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
+			is := rs.ScopeSpans().AppendEmpty()
+			spanAndScope.instrumentationScope.CopyTo(is.Scope())
+			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
+
+			sp := is.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		} else {
+			sp := scope.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		}
 	}
 }
