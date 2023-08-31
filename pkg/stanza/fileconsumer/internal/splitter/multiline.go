@@ -6,32 +6,21 @@ package splitter // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 type multilineFactory struct {
-	tokenize.SplitterConfig
+	splitterCfg tokenize.SplitterConfig
+	maxLogSize  int
 }
 
 var _ Factory = (*multilineFactory)(nil)
 
-func NewMultilineFactory(splitter tokenize.SplitterConfig) Factory {
-	return &multilineFactory{
-		SplitterConfig: splitter,
-	}
+func NewMultilineFactory(splitterCfg tokenize.SplitterConfig, maxLogSize int) Factory {
+	return &multilineFactory{splitterCfg: splitterCfg, maxLogSize: maxLogSize}
 }
 
 // Build builds Multiline Splitter struct
-func (factory *multilineFactory) Build(maxLogSize int) (bufio.SplitFunc, error) {
-	enc, err := decoder.LookupEncoding(factory.Encoding)
-	if err != nil {
-		return nil, err
-	}
-	flusher := factory.Flusher.Build()
-	splitter, err := factory.Multiline.Build(enc, false, factory.PreserveLeadingWhitespaces, factory.PreserveTrailingWhitespaces, flusher, maxLogSize)
-	if err != nil {
-		return nil, err
-	}
-	return splitter, nil
+func (f *multilineFactory) Build() (bufio.SplitFunc, error) {
+	return f.splitterCfg.Build(false, f.maxLogSize)
 }

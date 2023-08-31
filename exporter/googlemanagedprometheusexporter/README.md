@@ -28,6 +28,7 @@ The following configuration options are supported:
   - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
   - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `use_insecure` (optional): If true, disables gRPC client transport security. Only has applies if Endpoint is not "".
+  - `add_metric_suffixes` (default=`true`): Add type and unit suffixes to metrics.
   - `extra_metrics_config` (optional): Enable or disable additional metrics.
     - `enable_target_info` (default=`true`): Add `target_info` metric based on resource.
     - `enable_scope_info` (default=`true`): Add `otel_scope_info` metric and `scope_name`/`scope_version` attributes to all other metrics.
@@ -158,7 +159,7 @@ processors:
   resource:
     attributes:
     - key: "location"
-      value: "us-east-1"
+      value: "us-east1"
       action: upsert
 ```
 

@@ -7,6 +7,39 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.84.0
+
+### 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26084)
+- `podmanreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26083)
+- `zookeeperreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26082)
+- `jaegerreceiver`: Deprecate remote_sampling config in the jaeger receiver (#24186)
+  The jaeger receiver will fail to start if remote_sampling config is specified in it.  The `receiver.jaeger.DisableRemoteSampling` feature gate can be set to let the receiver start and treat  remote_sampling config as no-op. In a future version this feature gate will be removed and the receiver will always  fail when remote_sampling config is specified.
+  
+- `pkg/ottl`: use IntGetter argument for Substring function (#25852)
+- `pkg/stanza`: Remove deprecated 'helper.Encoding' and 'helper.EncodingConfig.Build' (#25846)
+- `pkg/stanza`: Remove deprecated fileconsumer config structs (#24853)
+  Includes | - MatchingCriteria - OrderingCriteria - NumericSortRule - AlphabeticalSortRule - TimestampSortRule
+- `googlecloudexporter`: remove retry_on_failure from the googlecloud exporter. The exporter itself handles retries, and retrying can cause issues. (#57233)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
+- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+  Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
+- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+  Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
+
+### 💡 Enhancements 💡
+
+- `googlemanagedprometheus`: Add a `add_metric_suffixes` option to the googlemanagedprometheus exporter. When set to false, metric suffixes are not added. (#26071)
+- `receiver/prometheus`: translate units from prometheus to UCUM (#23208)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/influxdb`: add allowable inputs to line protocol precision parameter (#24974)
+
 ## v0.83.0
 
 ### 🛑 Breaking changes 🛑
