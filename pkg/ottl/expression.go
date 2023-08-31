@@ -583,13 +583,13 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 	}, nil
 }
 
-// TimeGetter is a Getter that must return an time.Time.
+// TimeGetter is a Getter that must return a time.Time.
 type TimeGetter[K any] interface {
-	// Get retrieves an time.Time value.
+	// Get retrieves a time.Time value.
 	Get(ctx context.Context, tCtx K) (time.Time, error)
 }
 
-// StandardTimeGetter is a basic implementation of IntGetter
+// StandardTimeGetter is a basic implementation of TimeGetter
 type StandardTimeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (interface{}, error)
 }
@@ -613,9 +613,9 @@ func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, erro
 	}
 }
 
-// DurationGetter is a Getter that must return an time.Duration.
+// DurationGetter is a Getter that must return a time.Duration.
 type DurationGetter[K any] interface {
-	// Get retrieves an int64 value.
+	// Get retrieves an time.Duration value.
 	Get(ctx context.Context, tCtx K) (time.Duration, error)
 }
 
