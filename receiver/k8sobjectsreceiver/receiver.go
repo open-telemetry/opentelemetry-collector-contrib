@@ -103,6 +103,11 @@ func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
 		func() {
 			kr.logger.Error("this instance of the component was previously the leader but was removed as such")
 			leaderLost <- struct{}{}
+			// stop collecting object when it is not the leader anymore, and go back into the candidate
+			err := kr.Shutdown(context.Background())
+			if err != nil {
+				kr.logger.Error("object receiver stopped failed", zap.Error(err))
+			}
 		})
 	if err != nil {
 		kr.logger.Error("create leader elector failed", zap.Error(err))
