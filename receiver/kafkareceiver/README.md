@@ -73,6 +73,7 @@ The following settings can be optionally configured:
     - `password`: The Kerberos password used for authenticate with KDC
     - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
     - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+    - `disable_pafxfast`: Disable PA_FX_FAST. If this is true then pre-authentication FAST negotiation will be disabled  
 - `metadata`
   - `full` (default = true): Whether to maintain a full set of metadata. When
     disabled, the client does not make the initial request to broker at the
