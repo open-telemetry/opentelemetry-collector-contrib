@@ -17,7 +17,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 	tests := []struct {
 		name     string
 		time     ottl.TimeGetter[interface{}]
-		expected int64
+		expected time.Time
 	}{
 		{
 			name: "January 1, 2023",
