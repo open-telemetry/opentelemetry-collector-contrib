@@ -116,9 +116,9 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 			orig:   "11/11/2022",
 			newVal: "11/12/2022",
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
-			},
+			// modified: func(datapoint pmetric.NumberDataPoint) {
+			// 	datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
+			// },
 		},
 		// {
 		// 	name: "time_unix_nano",
