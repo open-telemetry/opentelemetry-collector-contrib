@@ -152,7 +152,7 @@ func (c *nsxClient) doRequest(ctx context.Context, path string) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
-	req.SetBasicAuth(c.config.Username, c.config.Password)
+	req.SetBasicAuth(c.config.Username, string(c.config.Password))
 	h := req.Header
 	h.Add("User-Agent", "opentelemetry-collector")
 	h.Add("Accept", "application/json")

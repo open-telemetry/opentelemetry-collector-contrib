@@ -49,5 +49,5 @@ func createMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer, featuregate.GlobalRegistry()), nil
+	return newPrometheusReceiver(set, cfg.(*Config), nextConsumer), nil
 }

@@ -5,3 +5,5 @@ status:
   stability:
     beta: [extension]
   distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]
+  codeowners:
+    active: [jpkrohling]

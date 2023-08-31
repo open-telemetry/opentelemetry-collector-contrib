@@ -9,11 +9,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 const (
@@ -30,7 +37,7 @@ var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
 
 var AllowHeaderMetadataParsing = featuregate.GlobalRegistry().MustRegister(
 	"filelog.allowHeaderMetadataParsing",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, allows usage of the `header` setting."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18198"),
 )
@@ -43,9 +50,9 @@ func NewConfig() *Config {
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
-		Splitter:                helper.NewSplitterConfig(),
+		Splitter:                tokenize.NewSplitterConfig(),
 		StartAt:                 "end",
-		FingerprintSize:         DefaultFingerprintSize,
+		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
@@ -54,39 +61,36 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	Finder                  `mapstructure:",squash"`
-	IncludeFileName         bool                  `mapstructure:"include_file_name,omitempty"`
-	IncludeFilePath         bool                  `mapstructure:"include_file_path,omitempty"`
-	IncludeFileNameResolved bool                  `mapstructure:"include_file_name_resolved,omitempty"`
-	IncludeFilePathResolved bool                  `mapstructure:"include_file_path_resolved,omitempty"`
-	PollInterval            time.Duration         `mapstructure:"poll_interval,omitempty"`
-	StartAt                 string                `mapstructure:"start_at,omitempty"`
-	FingerprintSize         helper.ByteSize       `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize              helper.ByteSize       `mapstructure:"max_log_size,omitempty"`
-	MaxConcurrentFiles      int                   `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches              int                   `mapstructure:"max_batches,omitempty"`
-	DeleteAfterRead         bool                  `mapstructure:"delete_after_read,omitempty"`
-	Splitter                helper.SplitterConfig `mapstructure:",squash,omitempty"`
-	Header                  *HeaderConfig         `mapstructure:"header,omitempty"`
+	matcher.Criteria        `mapstructure:",squash"`
+	IncludeFileName         bool                    `mapstructure:"include_file_name,omitempty"`
+	IncludeFilePath         bool                    `mapstructure:"include_file_path,omitempty"`
+	IncludeFileNameResolved bool                    `mapstructure:"include_file_name_resolved,omitempty"`
+	IncludeFilePathResolved bool                    `mapstructure:"include_file_path_resolved,omitempty"`
+	PollInterval            time.Duration           `mapstructure:"poll_interval,omitempty"`
+	StartAt                 string                  `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize         `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize         `mapstructure:"max_log_size,omitempty"`
+	MaxConcurrentFiles      int                     `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int                     `mapstructure:"max_batches,omitempty"`
+	DeleteAfterRead         bool                    `mapstructure:"delete_after_read,omitempty"`
+	Splitter                tokenize.SplitterConfig `mapstructure:",squash,omitempty"`
+	Header                  *HeaderConfig           `mapstructure:"header,omitempty"`
+}
+
+type HeaderConfig struct {
+	Pattern           string            `mapstructure:"pattern"`
+	MetadataOperators []operator.Config `mapstructure:"metadata_operators"`
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error) {
-	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
-		return nil, fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
-	}
-
-	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
-		return nil, fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
-	}
-
+func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
 
 	// Ensure that splitter is buildable
-	factory := newMultilineSplitterFactory(c.Splitter)
-	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
+	factory := splitter.NewMultilineFactory(c.Splitter, int(c.MaxLogSize))
+	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
 
@@ -94,8 +98,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit EmitFunc) (*Manager, error
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
-func (c Config) BuildWithSplitFunc(
-	logger *zap.SugaredLogger, emit EmitFunc, splitFunc bufio.SplitFunc) (*Manager, error) {
+func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -105,15 +108,15 @@ func (c Config) BuildWithSplitFunc(
 	}
 
 	// Ensure that splitter is buildable
-	factory := newCustomizeSplitterFactory(c.Splitter.Flusher, splitFunc)
-	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
+	factory := splitter.NewCustomFactory(c.Splitter.Flusher, splitFunc)
+	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
 
 	return c.buildManager(logger, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory splitterFactory) (*Manager, error) {
+func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -127,17 +130,27 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
-	var hs *headerSettings
+	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := c.Splitter.EncodingConfig.Build()
+		enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
 
-		hs, err = c.Header.buildHeaderSettings(enc.Encoding)
+		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
+	}
+
+	fileMatcher, err := matcher.New(c.Criteria)
+	if err != nil {
+		return nil, err
+	}
+
+	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
+	if err != nil {
+		return nil, err
 	}
 
 	return &Manager{
@@ -146,45 +159,41 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit EmitFunc, factory s
 		readerFactory: readerFactory{
 			SugaredLogger: logger.With("component", "fileconsumer"),
 			readerConfig: &readerConfig{
-				fingerprintSize: int(c.FingerprintSize),
-				maxLogSize:      int(c.MaxLogSize),
-				emit:            emit,
+				fingerprintSize:         int(c.FingerprintSize),
+				maxLogSize:              int(c.MaxLogSize),
+				emit:                    emit,
+				includeFileName:         c.IncludeFileName,
+				includeFilePath:         c.IncludeFilePath,
+				includeFileNameResolved: c.IncludeFileNameResolved,
+				includeFilePathResolved: c.IncludeFilePathResolved,
 			},
 			fromBeginning:   startAtBeginning,
 			splitterFactory: factory,
-			encodingConfig:  c.Splitter.EncodingConfig,
-			headerSettings:  hs,
+			encoding:        enc,
+			headerConfig:    hCfg,
 		},
-		finder:          c.Finder,
+		fileMatcher:     fileMatcher,
 		roller:          newRoller(),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
 		deleteAfterRead: c.DeleteAfterRead,
-		knownFiles:      make([]*Reader, 0, 10),
+		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
 	}, nil
 }
 
 func (c Config) validate() error {
-	if len(c.Include) == 0 {
-		return fmt.Errorf("required argument `include` is empty")
+	if c.DeleteAfterRead && !allowFileDeletion.IsEnabled() {
+		return fmt.Errorf("`delete_after_read` requires feature gate `%s`", allowFileDeletion.ID())
 	}
 
-	// Ensure includes can be parsed as globs
-	for _, include := range c.Include {
-		_, err := doublestar.PathMatch(include, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse include glob: %w", err)
-		}
+	if c.Header != nil && !AllowHeaderMetadataParsing.IsEnabled() {
+		return fmt.Errorf("`header` requires feature gate `%s`", AllowHeaderMetadataParsing.ID())
 	}
 
-	// Ensure excludes can be parsed as globs
-	for _, exclude := range c.Exclude {
-		_, err := doublestar.PathMatch(exclude, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse exclude glob: %w", err)
-		}
+	if _, err := matcher.New(c.Criteria); err != nil {
+		return err
 	}
 
 	if c.MaxLogSize <= 0 {
@@ -195,8 +204,8 @@ func (c Config) validate() error {
 		return fmt.Errorf("`max_concurrent_files` must be greater than 1")
 	}
 
-	if c.FingerprintSize < MinFingerprintSize {
-		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", MinFingerprintSize)
+	if c.FingerprintSize < fingerprint.MinSize {
+		return fmt.Errorf("`fingerprint_size` must be at least %d bytes", fingerprint.MinSize)
 	}
 
 	if c.DeleteAfterRead && c.StartAt == "end" {
@@ -211,13 +220,13 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	_, err := c.Splitter.EncodingConfig.Build()
+	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return err
 	}
 
 	if c.Header != nil {
-		if err := c.Header.validate(); err != nil {
+		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
 			return fmt.Errorf("invalid config for `header`: %w", err)
 		}
 	}

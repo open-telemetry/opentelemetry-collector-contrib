@@ -45,6 +45,8 @@ func platformDescription(platform gcp.Platform) string {
 		return "Google Cloud Functions"
 	case gcp.AppEngineStandard, gcp.AppEngineFlex:
 		return "Google AppEngine"
+	case gcp.CloudRunJob:
+		return "Cloud Run Job"
 	}
 	return "Unrecognized platform"
 }

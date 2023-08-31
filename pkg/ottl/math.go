@@ -6,6 +6,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"time"
 )
 
 func (p *Parser[K]) evaluateMathExpression(expr *mathExpression) (Getter[K], error) {
@@ -98,12 +99,66 @@ func attemptMathOperation[K any](lhs Getter[K], op mathOp, rhs Getter[K]) Getter
 					default:
 						return nil, fmt.Errorf("%v must be int64 or float64", y)
 					}
+				case time.Time:
+					return performOpTime(newX, y, op)
+				case time.Duration:
+					return performOpDuration(newX, y, op)
 				default:
-					return nil, fmt.Errorf("%v must be int64 or float64", x)
+					return nil, fmt.Errorf("%v must be int64, float64, time.Time or time.Duration", x)
 				}
 			},
 		},
 	}
+}
+
+func performOpTime(x time.Time, y any, op mathOp) (any, error) {
+	switch op {
+	case ADD:
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x.Add(newY)
+			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Time must be added to time.Duration; found %v instead", y)
+		}
+	case SUB:
+		switch newY := y.(type) {
+		case time.Time:
+			result := x.Sub(newY)
+			return result, nil
+		case time.Duration:
+			result := x.Add(-1 * newY)
+			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Time or time.Duration must be subtracted from time.Time; found %v instead", y)
+		}
+	}
+	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
+}
+
+func performOpDuration(x time.Duration, y any, op mathOp) (any, error) {
+	switch op {
+	case ADD:
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x + newY
+			return result, nil
+		case time.Time:
+			result := newY.Add(x)
+			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Duration must be added to time.Duration or time.Time; found %v instead", y)
+		}
+	case SUB:
+		switch newY := y.(type) {
+		case time.Duration:
+			result := x - newY
+			return result, nil
+		default:
+			return nil, fmt.Errorf("time.Duration must be subtracted from time.Duration; found %v instead", y)
+		}
+	}
+	return nil, fmt.Errorf("only addition and subtraction supported for time.Time and time.Duration")
 }
 
 func performOp[N int64 | float64](x N, y N, op mathOp) (N, error) {

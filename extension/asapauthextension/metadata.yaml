@@ -5,3 +5,5 @@ status:
   stability:
     beta: [extension]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [jamesmoessis, MovieStoreGuy]

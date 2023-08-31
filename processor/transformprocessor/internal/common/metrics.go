@@ -37,7 +37,7 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Scope(), rmetrics.Resource())
+				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource())
 				err := m.Execute(ctx, tCtx)
 				if err != nil {
 					return err
@@ -69,6 +69,7 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 			for k := 0; k < metrics.Len(); k++ {
 				metric := metrics.At(k)
 				var err error
+				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
 					err = d.handleNumberDataPoints(ctx, metric.Sum().DataPoints(), metrics.At(k), metrics, smetrics.Scope(), rmetrics.Resource())

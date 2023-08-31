@@ -31,7 +31,7 @@ func newS3Exporter(config *Config,
 
 	logger := params.Logger
 
-	m, err := NewMarshaler(config.MarshalerName, logger)
+	m, err := newMarshaler(config.MarshalerName, logger)
 	if err != nil {
 		return nil, errors.New("unknown marshaler")
 	}

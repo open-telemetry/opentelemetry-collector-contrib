@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Ffilelog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Ffilelog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Ffilelog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Ffilelog) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -47,13 +49,18 @@ Tails and parses logs from files.
 | `retry_on_failure.enabled`          | `false`                              | If `true`, the receiver will pause reading a file and attempt to resend the current batch of logs if it encounters an error from downstream components.                                                                                                         |
 | `retry_on_failure.initial_interval` | `1s`                                 | [Time](#time-parameters) to wait after the first failure before retrying.                                                                                                                                                                                       |
 | `retry_on_failure.max_interval`     | `30s`                                | Upper bound on retry backoff [interval](#time-parameters). Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                        |
-| `retry_on_failure.max_elapsed_time` | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                               |
+| `retry_on_failure.max_elapsed_time` | `5m`                                 | Maximum amount of [time](#time-parameters) (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.     
+| `ordering_criteria.regex`     |                                      | Regular expression used for sorting, should contain a named capture groups that are to be used in `regex_key`.                                                                                                                               |
+| `ordering_criteria.sort_by.sort_type` |                                      | Type of sorting to be performed (e.g., `numeric`, `alphabetical`, `timestamp`)                                                                                                                                                                                  |
+| `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
+| `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
+| `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                              |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
 ### Operators
 
-Each operator performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
+Each [operator](../../pkg/stanza/docs/operators/README.md#what-is-an-operator) performs a simple responsibility, such as parsing a timestamp or JSON. Chain together operators to process logs into a desired format.
 
 - Every operator has a `type`.
 - Every operator can be given a unique `id`. If you use the same type of operator more than once in a pipeline, you must specify an `id`. Otherwise, the `id` defaults to the value of `type`.

@@ -68,6 +68,9 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+					fallthrough
+
 				default:
 					stma.logger.Warn("Unknown metric type", zap.String("type", metric.Type().String()))
 				}
@@ -99,6 +102,8 @@ func (stma *startTimeMetricAdjuster) getStartTime(metrics pmetric.Metrics) (floa
 						}
 						return metric.Sum().DataPoints().At(0).DoubleValue(), nil
 
+					case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+						fallthrough
 					default:
 						return 0, errUnsupportedTypeStartTimeMetric
 					}

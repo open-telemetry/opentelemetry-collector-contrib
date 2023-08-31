@@ -30,8 +30,9 @@ type lokiEntry struct {
 }
 
 type instrumentationScope struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name       string                 `json:"name,omitempty"`
+	Version    string                 `json:"version,omitempty"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }
 
 // Encode converts an OTLP log record and its resource attributes into a JSON
@@ -58,14 +59,12 @@ func Encode(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrumentati
 	}
 
 	scopeName := scope.Name()
-	scopeVersion := scope.Version()
 	if scopeName != "" {
 		logRecord.InstrumentationScope = &instrumentationScope{
 			Name: scopeName,
 		}
-		if scopeVersion != "" {
-			logRecord.InstrumentationScope.Version = scopeVersion
-		}
+		logRecord.InstrumentationScope.Version = scope.Version()
+		logRecord.InstrumentationScope.Attributes = scope.Attributes().AsRaw()
 	}
 
 	jsonRecord, err = json.Marshal(logRecord)
@@ -112,11 +111,16 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 
 	scopeName := scope.Name()
 	scopeVersion := scope.Version()
+
 	if scopeName != "" {
 		keyvals = append(keyvals, "instrumentation_scope_name", scopeName)
 		if scopeVersion != "" {
 			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
 		}
+		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("instrumentation_scope_attribute_%s", k), v)...)
+			return true
+		})
 	}
 
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)

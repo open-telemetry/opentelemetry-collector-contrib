@@ -5,6 +5,8 @@ status:
   stability:
     alpha: [metrics]
   distributions: [contrib, splunk]
+  codeowners:
+    active: [dmitryax, crobert-1, atoulme]
 
 resource_attributes:
   oracledb.instance.name:
@@ -28,7 +30,7 @@ metrics:
     description: Cumulative CPU time, in seconds
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: double
     unit: s
@@ -37,7 +39,7 @@ metrics:
       sessions.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -48,7 +50,7 @@ metrics:
       are the only operations that perform exchanges.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -57,7 +59,7 @@ metrics:
     description: Total number of calls (user and recursive) that executed SQL statements
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -66,7 +68,7 @@ metrics:
     description: Number of logical reads
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -75,7 +77,7 @@ metrics:
     description: Number of hard parses
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -84,7 +86,7 @@ metrics:
     description: Total number of parse calls.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -93,7 +95,7 @@ metrics:
     description: Session PGA (Program Global Area) memory
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -102,7 +104,7 @@ metrics:
     description: Number of physical reads
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -113,7 +115,7 @@ metrics:
       to disk. Commits often represent the closest thing to a user transaction rate.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -123,7 +125,7 @@ metrics:
       error occurs during a user's transactions
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -236,7 +238,7 @@ metrics:
     description: Number of times a current block was requested from the buffer cache.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -245,7 +247,7 @@ metrics:
     description: Number of times a consistent read was requested for a block from the buffer cache.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string

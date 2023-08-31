@@ -48,8 +48,10 @@ func (md *metadata) validateStatus() error {
 	if err := md.Status.validateClass(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := md.Status.validateStability(); err != nil {
-		errs = multierr.Append(errs, err)
+	if md.Parent == "" {
+		if err := md.Status.validateStability(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	return errs
 }
@@ -77,7 +79,19 @@ func (s *Status) validateStability() error {
 			errs = multierr.Append(errs, fmt.Errorf("missing component for stability: %v", stability))
 		}
 		for _, c := range component {
-			if c != "metrics" && c != "traces" && c != "logs" && c != "traces_to_metrics" && c != "metrics_to_metrics" && c != "logs_to_metrics" && c != "extension" {
+			if c != "metrics" &&
+				c != "traces" &&
+				c != "logs" &&
+				c != "traces_to_traces" &&
+				c != "traces_to_metrics" &&
+				c != "traces_to_logs" &&
+				c != "metrics_to_traces" &&
+				c != "metrics_to_metrics" &&
+				c != "metrics_to_logs" &&
+				c != "logs_to_traces" &&
+				c != "logs_to_metrics" &&
+				c != "logs_to_logs" &&
+				c != "extension" {
 				errs = multierr.Append(errs, fmt.Errorf("invalid component: %v", c))
 			}
 		}
@@ -113,12 +127,9 @@ func (md *metadata) validateMetrics() error {
 				"only one of the following has to be specified: sum, gauge", mn))
 			continue
 		}
-		// TODO: Remove once https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/23573 is merged.
-		if md.Type != "redis" {
-			if err := m.validate(); err != nil {
-				errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
-				continue
-			}
+		if err := m.validate(); err != nil {
+			errs = multierr.Append(errs, fmt.Errorf(`metric "%v": %w`, mn, err))
+			continue
 		}
 		unknownAttrs := make([]attributeName, 0, len(m.Attributes))
 		for _, attr := range m.Attributes {

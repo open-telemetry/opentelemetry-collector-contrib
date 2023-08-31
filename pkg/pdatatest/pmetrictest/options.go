@@ -59,11 +59,14 @@ func maskMetricSliceValues(metrics pmetric.MetricSlice, metricNames ...string) {
 
 func getDataPointSlice(metric pmetric.Metric) pmetric.NumberDataPointSlice {
 	var dataPointSlice pmetric.NumberDataPointSlice
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPointSlice = metric.Gauge().DataPoints()
 	case pmetric.MetricTypeSum:
 		dataPointSlice = metric.Sum().DataPoints()
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeHistogram, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+		fallthrough
 	default:
 		panic(fmt.Sprintf("data type not supported: %s", metric.Type()))
 	}
@@ -94,6 +97,7 @@ func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -115,6 +119,7 @@ func maskTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
 						m.Summary().DataPoints().At(l).SetTimestamp(ts)
 					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -136,6 +141,7 @@ func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 		for j := 0; j < rms.At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < rms.At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := rms.At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for l := 0; l < m.Gauge().DataPoints().Len(); l++ {
@@ -157,6 +163,7 @@ func maskStartTimestamp(metrics pmetric.Metrics, ts pcommon.Timestamp) {
 					for l := 0; l < m.Summary().DataPoints().Len(); l++ {
 						m.Summary().DataPoints().At(l).SetStartTimestamp(ts)
 					}
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
@@ -226,6 +233,8 @@ func maskDataPointSliceAttributeValues(dataPoints pmetric.NumberDataPointSlice, 
 				attribute.SetBool(false)
 			case pcommon.ValueTypeInt:
 				attribute.SetInt(0)
+			case pcommon.ValueTypeEmpty, pcommon.ValueTypeDouble, pcommon.ValueTypeMap, pcommon.ValueTypeSlice, pcommon.ValueTypeBytes:
+				fallthrough
 			default:
 				panic(fmt.Sprintf("data type not supported: %s", attribute.Type()))
 			}
@@ -386,6 +395,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					sortNumberDataPointSlice(m.Gauge().DataPoints())
@@ -397,6 +407,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 					sortExponentialHistogramDataPointSlice(m.ExponentialHistogram().DataPoints())
 				case pmetric.MetricTypeSummary:
 					sortSummaryDataPointSlice(m.Summary().DataPoints())
+				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}

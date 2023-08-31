@@ -277,7 +277,9 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Duration](#duration)
 - [Int](#int)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
@@ -288,6 +290,7 @@ Available Converters:
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [Time](#time)
 - [TraceID](#traceid)
 - [Substring](#substring)
 - [UUID](#UUID)
@@ -334,6 +337,38 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Duration
+
+`Duration(duration)`
+
+The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
+
+`duration` is a string.
+
+If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
+
+Examples:
+
+- `Duration("3s")`
+- `Duration("333ms")`
+- `Duration("1000000h")`
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string. 
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup. 
+
+Examples:
+
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### FNV
 
@@ -440,6 +475,20 @@ Examples:
 - `IsString(body)`
 
 - `IsString(attributes["maybe a string"])`
+
+### Len
+
+`Len(target)`
+
+The `Len` Converter returns the int64 length of the target string or slice.
+
+`target` is either a `string`, `slice`, `map`, `pcommon.Slice`, `pcommon.Map`, or `pcommon.Value` with type `pcommon.ValueTypeStr`, `pcommon.ValueTypeSlice`, or `pcommon.ValueTypeMap`.
+
+If the `target` is not an acceptable type, the `Len` Converter will return an error.
+
+Examples:
+
+- `Len(body)`
 
 ### Log
 
@@ -568,6 +617,18 @@ There is currently a bug with OTTL that does not allow the target string to end 
 Examples:
 
 - ```Split("A|B|C", "|")```
+
+### Time
+
+The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
+
+`time` is a string. `format` is a string.
+
+If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
+
+Examples:
+
+- `Time("02/04/2023", "%m/%d/%Y")`
 
 ### TraceID
 

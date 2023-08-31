@@ -189,7 +189,7 @@ func TestConsumeMetrics(t *testing.T) {
 			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
@@ -729,6 +729,7 @@ func TestConsumeMetadata(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
+		false,
 	)
 	require.NoError(t, err)
 	type args struct {
@@ -1088,7 +1089,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -1281,7 +1282,7 @@ func TestTLSIngestConnection(t *testing.T) {
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
 	require.NoError(t, err)
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1324,7 +1325,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
-	)
+		false)
 	require.NoError(t, err)
 
 	metadata := []*metadata.MetadataUpdate{

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	sign "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"go.uber.org/multierr"

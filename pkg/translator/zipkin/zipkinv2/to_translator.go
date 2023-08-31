@@ -155,8 +155,8 @@ func populateSpanStatus(tags map[string]string, status ptrace.Status) {
 	}
 
 	if val, ok := tags[tracetranslator.TagError]; ok {
+		status.SetCode(ptrace.StatusCodeError)
 		if val == "true" {
-			status.SetCode(ptrace.StatusCodeError)
 			delete(tags, tracetranslator.TagError)
 		}
 	}
@@ -464,4 +464,9 @@ var statusCodeValue = map[string]int32{
 	"STATUS_CODE_UNSET": 0,
 	"STATUS_CODE_OK":    1,
 	"STATUS_CODE_ERROR": 2,
+	// As reported in https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14965
+	// The Zipkin exporter used a different set of names when serializing span state.
+	"Unset": 0,
+	"Ok":    1,
+	"Error": 2,
 }

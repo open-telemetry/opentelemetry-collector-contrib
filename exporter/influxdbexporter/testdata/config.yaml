@@ -18,3 +18,5 @@ influxdb/override-config:
   span_dimensions:
     - service.name
     - span.name
+  payload_max_lines: 72
+  payload_max_bytes: 27

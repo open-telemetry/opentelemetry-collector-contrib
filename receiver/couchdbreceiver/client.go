@@ -99,6 +99,6 @@ func (c *couchDBClient) buildReq(path string) (*http.Request, error) {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.SetBasicAuth(c.cfg.Username, c.cfg.Password)
+	req.SetBasicAuth(c.cfg.Username, string(c.cfg.Password))
 	return req, nil
 }
