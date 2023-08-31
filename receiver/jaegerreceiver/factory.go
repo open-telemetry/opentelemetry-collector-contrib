@@ -104,6 +104,7 @@ func createTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
+	logDeprecation(set.Logger)
 
 	// Convert settings in the source config to configuration struct
 	// that Jaeger receiver understands.

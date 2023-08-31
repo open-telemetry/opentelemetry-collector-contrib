@@ -18,10 +18,9 @@
 package strategystore // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/jaegerreceiverdeprecated/internal/sampling/strategystore"
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/storage"
+	"go.uber.org/zap"
 )
 
 // Factory defines an interface for a factory that can create implementations of different strategy storage components.

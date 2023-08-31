@@ -49,7 +49,7 @@ type ManagerWithMetrics struct {
 // WrapWithMetrics wraps ClientConfigManager and creates metrics for its invocations.
 func WrapWithMetrics(manager ClientConfigManager, mFactory metrics.Factory) *ManagerWithMetrics {
 	m := configManagerMetrics{}
-	metrics.Init(&m, mFactory, nil)
+	_ = metrics.Init(&m, mFactory, nil)
 	return &ManagerWithMetrics{wrapped: manager, metrics: m}
 }
 
