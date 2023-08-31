@@ -1721,15 +1721,15 @@ func Test_StandardTimeGetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
-			assert.NoError(t, err)
 			if tt.valid {
+				assert.NoError(t, err)
 				var want time.Time
 				want, err = time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
 				assert.NoError(t, err)
 				assert.Equal(t, want, val)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
 			}
-			assert.ErrorContains(t, err, tt.expectedErrorMsg)
-
 		})
 	}
 }
