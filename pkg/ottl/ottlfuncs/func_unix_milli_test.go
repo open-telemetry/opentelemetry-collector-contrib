@@ -17,7 +17,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 	tests := []struct {
 		name     string
 		time     ottl.TimeGetter[interface{}]
-		expected int64
+		expected time.Time
 	}{
 		{
 			name: "January 1, 2022",
@@ -26,7 +26,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 					return time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local), nil
 				},
 			},
-			expected: 1641013200000,
+			expected: time.Date(2022, 1, 1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "May 30, 2002, 3pm",
@@ -35,7 +35,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 					return time.Date(2002, 5, 30, 15, 0, 0, 0, time.Local), nil
 				},
 			},
-			expected: 1022785200000,
+			expected: time.Date(2002, 5, 30, 15, 0, 0, 0, time.Local),
 		},
 		{
 			name: "September 12, 1980, 4:35:01am",
@@ -44,7 +44,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 					return time.Date(1980, 9, 12, 4, 35, 1, 0, time.Local), nil
 				},
 			},
-			expected: 337595701000,
+			expected: time.Date(1980, 9, 12, 4, 35, 1, 0, time.Local),
 		},
 		{
 			name: "October 4, 2020, 5:05 5 microseconds 5 nanosecs",
@@ -53,7 +53,7 @@ func Test_TimeUnixMilli(t *testing.T) {
 					return time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local), nil
 				},
 			},
-			expected: 1601802305000,
+			expected: time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local),
 		},
 	}
 	for _, tt := range tests {
@@ -62,7 +62,8 @@ func Test_TimeUnixMilli(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			want := tt.expected.UnixMilli()
+			assert.Equal(t, want, result)
 		})
 	}
 }

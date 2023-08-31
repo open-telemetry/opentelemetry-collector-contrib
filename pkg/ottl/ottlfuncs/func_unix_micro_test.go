@@ -26,7 +26,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 					return time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local), nil
 				},
 			},
-			expected: 1672549200000000,
+			expected: time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local),
 		},
 		{
 			name: "April 30, 2001, 3pm",
@@ -35,7 +35,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 					return time.Date(2001, 4, 30, 15, 0, 0, 0, time.Local), nil
 				},
 			},
-			expected: 988657200000000,
+			expected: time.Date(2001, 4, 30, 15, 0, 0, 0, time.Local),
 		},
 		{
 			name: "November 12, 1980, 4:35:01am",
@@ -44,7 +44,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 					return time.Date(1980, 11, 12, 4, 35, 1, 0, time.Local), nil
 				},
 			},
-			expected: 342869701000000,
+			expected: time.Date(1980, 11, 12, 4, 35, 1, 0, time.Local),
 		},
 		{
 			name: "October 4, 2020, 5:05 5 microseconds 5 nanosecs",
@@ -53,7 +53,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 					return time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local), nil
 				},
 			},
-			expected: 1601802305000000,
+			expected: time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local),
 		},
 	}
 	for _, tt := range tests {
@@ -62,7 +62,8 @@ func Test_TimeUnixMicro(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			want := tt.expected.UnixMilli()
+			assert.Equal(t, want, result)
 		})
 	}
 }
