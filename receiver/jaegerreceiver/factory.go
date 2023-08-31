@@ -64,7 +64,7 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() receiver.Factory {
 	if !protoGate.IsEnabled() {
-		jaegerreceiverdeprecated.NewFactory()
+		return jaegerreceiverdeprecated.NewFactory()
 	}
 	return receiver.NewFactory(
 		metadata.Type,

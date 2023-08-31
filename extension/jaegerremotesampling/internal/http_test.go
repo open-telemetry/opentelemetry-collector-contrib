@@ -53,7 +53,15 @@ func TestEndpointsAreWired(t *testing.T) {
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
-			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{})
+			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.HTTPServerSettings{}, &mockCfgMgr{
+				getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
+					return &api_v2.SamplingStrategyResponse{
+						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
+							SamplingRate: 1,
+						},
+					}, nil
+				},
+			})
 			require.NoError(t, err)
 			require.NotNil(t, s)
 
@@ -72,7 +80,7 @@ func TestEndpointsAreWired(t *testing.T) {
 			resp.Body.Close()
 
 			body := string(samplingStrategiesBytes)
-			assert.Equal(t, `{}`, body)
+			assert.Equal(t, `{"probabilisticSampling":{"samplingRate":1}}`, body)
 		})
 	}
 }
