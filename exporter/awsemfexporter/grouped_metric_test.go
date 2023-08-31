@@ -92,13 +92,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 				},
 			},
 		},
-		{
-			name:               "NaN Gauge",
-			metric:             generateTestGaugeMetric("NaNMetric", doubleValueType),
-			expectedMetricType: pmetric.MetricTypeGauge,
-			expectedLabels:     map[string]string{},
-			expectedMetricInfo: map[string]*metricInfo{},
-		},
 	}
 
 	for _, tc := range testCases {

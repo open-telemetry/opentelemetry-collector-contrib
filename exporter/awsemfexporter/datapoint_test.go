@@ -110,6 +110,23 @@ func generateTestHistogramMetric(name string) pmetric.Metrics {
 	return otelMetrics
 }
 
+func generateTestHistogramMetricNaNBucket(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Seconds")
+	histogramMetric := metric.SetEmptyHistogram()
+	histogramDatapoint := histogramMetric.DataPoints().AppendEmpty()
+	histogramDatapoint.BucketCounts().FromRaw([]uint64{5, 6, 7})
+	histogramDatapoint.ExplicitBounds().FromRaw([]float64{0, math.NaN()})
+	histogramDatapoint.Attributes().PutStr("label1", "value1")
+	histogramDatapoint.SetCount(18)
+	histogramDatapoint.SetSum(math.NaN())
+	return otelMetrics
+}
+
 func generateTestExponentialHistogramMetric(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
@@ -138,6 +155,34 @@ func generateTestExponentialHistogramMetric(name string) pmetric.Metrics {
 	return otelMetrics
 }
 
+func generateTestExponentialHistogramMetricWithNaNs(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+	metric := metrics.AppendEmpty()
+	metric.SetName(name)
+	metric.SetUnit("Seconds")
+	exponentialHistogramMetric := metric.SetEmptyExponentialHistogram()
+
+	exponentialHistogramDatapoint := exponentialHistogramMetric.DataPoints().AppendEmpty()
+	exponentialHistogramDatapoint.SetCount(4)
+	exponentialHistogramDatapoint.SetSum(math.NaN())
+	exponentialHistogramDatapoint.SetMin(math.NaN())
+	exponentialHistogramDatapoint.SetMax(math.NaN())
+	exponentialHistogramDatapoint.SetZeroCount(0)
+	exponentialHistogramDatapoint.SetScale(1)
+	exponentialHistogramDatapoint.Positive().SetOffset(1)
+	exponentialHistogramDatapoint.Positive().BucketCounts().FromRaw([]uint64{
+		1, 0, 1,
+	})
+	exponentialHistogramDatapoint.Negative().SetOffset(1)
+	exponentialHistogramDatapoint.Negative().BucketCounts().FromRaw([]uint64{
+		1, 0, 1,
+	})
+	exponentialHistogramDatapoint.Attributes().PutStr("label1", "value1")
+	return otelMetrics
+}
+
 func generateTestSummaryMetric(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
@@ -152,6 +197,31 @@ func generateTestSummaryMetric(name string) pmetric.Metrics {
 		summaryDatapoint.Attributes().PutStr("label1", "value1")
 		summaryDatapoint.SetCount(uint64(5 * i))
 		summaryDatapoint.SetSum(float64(15.0 * i))
+		firstQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
+		firstQuantile.SetQuantile(0.0)
+		firstQuantile.SetValue(1)
+		secondQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
+		secondQuantile.SetQuantile(100.0)
+		secondQuantile.SetValue(5)
+	}
+
+	return otelMetrics
+}
+
+func generateTestSummaryMetricWithNaN(name string) pmetric.Metrics {
+	otelMetrics := pmetric.NewMetrics()
+	rs := otelMetrics.ResourceMetrics().AppendEmpty()
+	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()
+
+	for i := 0; i < 2; i++ {
+		metric := metrics.AppendEmpty()
+		metric.SetName(name)
+		metric.SetUnit("Seconds")
+		summaryMetric := metric.SetEmptySummary()
+		summaryDatapoint := summaryMetric.DataPoints().AppendEmpty()
+		summaryDatapoint.Attributes().PutStr("label1", "value1")
+		summaryDatapoint.SetCount(uint64(5 * i))
+		summaryDatapoint.SetSum(math.NaN())
 		firstQuantile := summaryDatapoint.QuantileValues().AppendEmpty()
 		firstQuantile.SetQuantile(0.0)
 		firstQuantile.SetValue(1)
@@ -211,19 +281,19 @@ func TestIsStaleOrNaN_NumberDataPointSlice(t *testing.T) {
 		setFlagsFunc   func(point pmetric.NumberDataPoint) pmetric.NumberDataPoint
 	}{
 		{
-			name:           fmt.Sprintf("nan"),
+			name:           "nan",
 			metricValue:    math.NaN(),
 			metricName:     "NaN",
 			expectedAssert: assert.True,
 		},
 		{
-			name:           fmt.Sprintf("valid float"),
+			name:           "valid float",
 			metricValue:    0.4,
 			metricName:     "floaty mc-float-face",
 			expectedAssert: assert.False,
 		},
 		{
-			name:           fmt.Sprintf("data point flag set"),
+			name:           "data point flag set",
 			metricValue:    0.4,
 			metricName:     "floaty mc-float-face part two",
 			expectedAssert: assert.True,

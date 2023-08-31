@@ -91,6 +91,54 @@ func TestConsumeMetricsWithNaNValues(t *testing.T) {
 	require.NoError(t, exp.shutdown(ctx))
 }
 
+func TestConsumeMetricsWithNaNValuesHistogram(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.OutputDestination = "stdout"
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	md := generateTestHistogramMetricNaNBucket("bad-histo")
+	require.NoError(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
+}
+
+func TestConsumeMetricsWithNaNValuesSummary(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.OutputDestination = "stdout"
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	md := generateTestSummaryMetricWithNaN("bad-summmary-nan")
+	require.NoError(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
+}
+
+func TestConsumeMetricsWithNaNValuesExponentialHistogram(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	factory := NewFactory()
+	expCfg := factory.CreateDefaultConfig().(*Config)
+	expCfg.Region = "us-west-2"
+	expCfg.MaxRetries = 0
+	expCfg.OutputDestination = "stdout"
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	assert.Nil(t, err)
+	assert.NotNil(t, exp)
+	md := generateTestExponentialHistogramMetricWithNaNs("bad-expo-nan")
+	require.NoError(t, exp.pushMetricsData(ctx, md))
+	require.NoError(t, exp.shutdown(ctx))
+}
+
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

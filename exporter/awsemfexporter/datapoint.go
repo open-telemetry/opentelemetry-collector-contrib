@@ -153,13 +153,9 @@ func (dps numberDataPointSlice) IsStaleOrNaN(i int) bool {
 		return true
 	}
 
-	switch metric.ValueType() {
-	case pmetric.NumberDataPointValueTypeDouble:
+	if metric.ValueType() == pmetric.NumberDataPointValueTypeDouble {
 		return math.IsNaN(metric.DoubleValue())
-	case pmetric.NumberDataPointValueTypeInt:
-		return math.IsNaN(float64(metric.IntValue()))
 	}
-
 	return false
 }
 
@@ -183,6 +179,13 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentati
 }
 
 func (dps histogramDataPointSlice) IsStaleOrNaN(i int) bool {
+	metric := dps.HistogramDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true
+	}
+	if math.IsNaN(metric.Max()) || math.IsNaN(metric.Sum()) || math.IsNaN(metric.Min()) {
+		return true
+	}
 	return false
 }
 
@@ -269,6 +272,16 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 }
 
 func (dps exponentialHistogramDataPointSlice) IsStaleOrNaN(i int) bool {
+	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true
+	}
+	if math.IsNaN(metric.Max()) ||
+		math.IsNaN(metric.Min()) ||
+		math.IsNaN(metric.Sum()) {
+		return true
+	}
+
 	return false
 }
 
@@ -330,6 +343,13 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentation
 }
 
 func (dps summaryDataPointSlice) IsStaleOrNaN(i int) bool {
+	metric := dps.SummaryDataPointSlice.At(i)
+	if metric.Flags().NoRecordedValue() {
+		return true
+	}
+	if math.IsNaN(metric.Sum()) {
+		return true
+	}
 	return false
 }
 

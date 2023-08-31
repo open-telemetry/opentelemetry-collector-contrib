@@ -35,7 +35,7 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 	}
 
 	for i := 0; i < dps.Len(); i++ {
-		//Drop stale or NaN metric values
+		// Drop stale or NaN metric values
 		if dps.IsStaleOrNaN(i) {
 			continue
 		}
