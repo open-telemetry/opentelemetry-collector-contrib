@@ -610,7 +610,7 @@ func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, erro
 		return v, nil
 	default:
 		return time.Time{}, TypeError(fmt.Sprintf("expected time but got %T", val))
-  }
+	}
 }
 
 // DurationGetter is a Getter that must return an time.Duration.
