@@ -158,14 +158,14 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	cancelCtx, cancel := context.WithCancel(ctx)
 	cfgCopy := *config
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
-		resourceVersion, err := getResourceVersion(newCtx, cfgCopy, resource)
+		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
 			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
 			cancel()
 			return
 		}
 
-		done := kr.doWatch(newCtx, cfgCopy, resourceVersion, watchFunc, stopperChan)
+		done := kr.doWatch(newCtx, &cfgCopy, resourceVersion, watchFunc, stopperChan)
 		if done {
 			cancel()
 			return
