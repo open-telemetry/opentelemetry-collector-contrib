@@ -60,7 +60,7 @@ type KerberosConfig struct {
 	Password        string `mapstructure:"password" json:"-"`
 	ConfigPath      string `mapstructure:"config_file"`
 	KeyTabPath      string `mapstructure:"keytab_file"`
-	DisablePAFXFAST bool   `mapstructure:"disable_pafxfast"`
+	DisablePAFXFAST bool   `mapstructure:"disable_fast_negotiation"`
 }
 
 // ConfigureAuthentication configures authentication in sarama.Config.
