@@ -110,7 +110,7 @@ func generateTestHistogramMetric(name string) pmetric.Metrics {
 	return otelMetrics
 }
 
-func generateTestHistogramMetricNaNBucket(name string) pmetric.Metrics {
+func generateTestHistogramMetricWithNaNs(name string) pmetric.Metrics {
 	otelMetrics := pmetric.NewMetrics()
 	rs := otelMetrics.ResourceMetrics().AppendEmpty()
 	metrics := rs.ScopeMetrics().AppendEmpty().Metrics()

@@ -96,7 +96,7 @@ func TestConsumeMetricsWithNaNValuesHistogram(t *testing.T) {
 	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
-	md := generateTestHistogramMetricNaNBucket("bad-histo")
+	md := generateTestHistogramMetricWithNaNs("bad-histo")
 	require.NoError(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
 }

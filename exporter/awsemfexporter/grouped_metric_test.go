@@ -207,7 +207,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			// We do not expect these to be added to the grouped metric. Metrics with NaN values should be dropped.
 			generateTestGaugeMetricNaN("double-gauge-nan"),
 			generateTestExponentialHistogramMetricWithNaNs("expo-with-nan"),
-			generateTestHistogramMetricNaNBucket("histo-with-nan"),
+			generateTestHistogramMetricWithNaNs("histo-with-nan"),
 			generateTestSummaryMetricWithNaN("sum-with-nan"),
 		}
 
