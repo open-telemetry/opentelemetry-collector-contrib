@@ -1660,8 +1660,8 @@ func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 
 func Test_StandardTimeGetter(t *testing.T) {
 	tests := []struct {
-		name   string
-		getter StandardTimeGetter[interface{}]
+		name             string
+		getter           StandardTimeGetter[interface{}]
 		want             string
 		valid            bool
 		expectedErrorMsg string
@@ -1721,8 +1721,8 @@ func Test_StandardTimeGetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
+			assert.NoError(t, err)
 			if tt.valid {
-				assert.NoError(t, err)
 				want, err := time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
 				assert.NoError(t, err)
 				assert.Equal(t, want, val)
