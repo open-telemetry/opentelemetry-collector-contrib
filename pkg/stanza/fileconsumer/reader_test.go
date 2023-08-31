@@ -180,7 +180,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 		Encoding:  "utf-8",
 		Flusher:   tokenize.NewFlusherConfig(),
 		Multiline: mlc,
-	})
+	}, 15)
 	f.readerConfig.maxLogSize = 15
 
 	temp := openTemp(t, t.TempDir())
@@ -249,7 +249,7 @@ func testReaderFactoryWithSplitter(t *testing.T, splitterConfig tokenize.Splitte
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewMultilineFactory(splitterConfig),
+		splitterFactory: splitter.NewMultilineFactory(splitterConfig, defaultMaxLogSize),
 		encoding:        enc,
 	}, emitChan
 }

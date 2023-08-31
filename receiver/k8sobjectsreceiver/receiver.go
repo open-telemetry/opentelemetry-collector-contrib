@@ -168,7 +168,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
-	ticker := NewTicker(config.Interval)
+	ticker := newTicker(config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
 		LabelSelector: config.LabelSelector,
@@ -279,7 +279,7 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 
 // Start ticking immediately.
 // Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
-func NewTicker(repeat time.Duration) *time.Ticker {
+func newTicker(repeat time.Duration) *time.Ticker {
 	ticker := time.NewTicker(repeat)
 	oc := ticker.C
 	nc := make(chan time.Time, 1)

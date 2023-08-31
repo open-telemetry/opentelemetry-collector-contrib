@@ -89,8 +89,8 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewMultilineFactory(c.Splitter)
-	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
+	factory := splitter.NewMultilineFactory(c.Splitter, int(c.MaxLogSize))
+	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
 
@@ -109,7 +109,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 
 	// Ensure that splitter is buildable
 	factory := splitter.NewCustomFactory(c.Splitter.Flusher, splitFunc)
-	if _, err := factory.Build(int(c.MaxLogSize)); err != nil {
+	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
 
