@@ -37,6 +37,9 @@ func addToGroupedMetric(pmd pmetric.Metric, groupedMetrics map[interface{}]*grou
 	for i := 0; i < dps.Len(); i++ {
 		// Drop stale or NaN metric values
 		if dps.IsStaleOrNaN(i) {
+			if config != nil && config.logger != nil {
+				config.logger.Fatal("dropped metric with nan value", zap.String("metric.name", pmd.Name()))
+			}
 			continue
 		}
 		dps, retained := dps.CalculateDeltaDatapoints(i, metadata.instrumentationScopeName, config.DetailedMetrics, calculators)
