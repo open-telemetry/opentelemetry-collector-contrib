@@ -10,22 +10,17 @@ import (
 )
 
 type customFactory struct {
-	Flusher  tokenize.FlusherConfig
-	Splitter bufio.SplitFunc
+	flusherCfg tokenize.FlusherConfig
+	splitFunc  bufio.SplitFunc
 }
 
 var _ Factory = (*customFactory)(nil)
 
-func NewCustomFactory(
-	flusher tokenize.FlusherConfig,
-	splitter bufio.SplitFunc) Factory {
-	return &customFactory{
-		Flusher:  flusher,
-		Splitter: splitter,
-	}
+func NewCustomFactory(flusherCfg tokenize.FlusherConfig, splitFunc bufio.SplitFunc) Factory {
+	return &customFactory{flusherCfg: flusherCfg, splitFunc: splitFunc}
 }
 
 // Build builds Multiline Splitter struct
-func (factory *customFactory) Build(_ int) (bufio.SplitFunc, error) {
-	return factory.Flusher.Build().SplitFunc(factory.Splitter), nil
+func (f *customFactory) Build() (bufio.SplitFunc, error) {
+	return f.flusherCfg.Wrap(f.splitFunc), nil
 }
