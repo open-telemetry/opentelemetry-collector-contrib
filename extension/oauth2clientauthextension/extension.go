@@ -36,10 +36,10 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 var errFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return nil, errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return nil, errNoClientSecretProvided
 	}
 	if cfg.TokenURL == "" {
@@ -63,6 +63,8 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 				Scopes:         cfg.Scopes,
 				EndpointParams: cfg.EndpointParams,
 			},
+			ClientIDFile:     cfg.ClientIDFile,
+			ClientSecretFile: cfg.ClientSecretFile,
 		},
 		logger: logger,
 		client: &http.Client{
