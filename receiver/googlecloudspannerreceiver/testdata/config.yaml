@@ -12,7 +12,7 @@ googlecloudspanner:
         - instance_id: "id1"
           databases:
             - database_name: "db11"
-              fgac_database_role: "spanner_sys_reader"
+              fgac_database_role: "database_role"
             - database_name: "db12"
         - instance_id: "id2"
           databases:

@@ -52,7 +52,7 @@ func TestLoadConfig(t *testing.T) {
 							Databases: []Database{
 								{
 									Name:         "db11",
-									DatabaseRole: "spanner_sys_reader",
+									DatabaseRole: "database_role",
 								},
 								{
 									Name: "db12",

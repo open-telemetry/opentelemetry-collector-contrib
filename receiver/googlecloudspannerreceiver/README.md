@@ -47,23 +47,24 @@ receivers:
         instances:
           - instance_id: "id1"
             databases:
-              - "db11"
-              - "db12"
+              - database_name: "db11"
+                fgac_database_role: "database_role"
+              - database_name: "db12"
           - instance_id: "id2"
             databases:
-              - "db21"
-              - "db22"
+              - database_name: "db21"
+              - database_name: "db22"
       - project_id: "spanner project 2"
         service_account_key: "path to spanner project 2 service account json key"
         instances:
           - instance_id: "id3"
             databases:
-              - "db31"
-              - "db32"
+              - database_name: "db31"
+              - database_name: "db32"
           - instance_id: "id4"
             databases:
-              - "db41"
-              - "db42"
+              - database_name: "db41"
+              - database_name: "db42"
 ```
 
 Brief description of configuration properties:
@@ -81,4 +82,6 @@ Brief description of configuration properties:
     - **instances** - list of Google Cloud Spanner instance for connection
         - **instance_id** - identifier of Google Cloud Spanner instance
         - **databases** - list of databases used from this instance
+          - **database_name** - name of the database
+          - **fgac_database_role** [optional] - name of the database role if using [Fine Grained Access Control](https://cloud.google.com/spanner/docs/configure-fgac)
 
