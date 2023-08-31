@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -670,6 +672,126 @@ func Test_StandardStringGetter(t *testing.T) {
 				assert.Equal(t, tt.want, val)
 			} else {
 				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+func Test_FunctionGetter(t *testing.T) {
+	functions := CreateFactoryMap(
+		createFactory[any](
+			"SHA256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"test_arg_mismatch",
+			&multipleArgsArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"no_struct_tag",
+			&noStructTagFunctionArguments{},
+			functionWithStringGetter,
+		),
+		NewFactory(
+			"cannot_create_function",
+			&stringGetterArguments{},
+			func(FunctionContext, Arguments) (ExprFunc[any], error) {
+				return functionWithErr()
+			},
+		),
+	)
+	type EditorArguments struct {
+		Replacement StringGetter[any]
+		Function    FunctionGetter[any]
+	}
+	type FuncArgs struct {
+		Input StringGetter[any] `ottlarg:"0"`
+	}
+	tests := []struct {
+		name             string
+		getter           StringGetter[any]
+		function         FunctionGetter[any]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "function getter",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return "str", nil
+				},
+			},
+			function: StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA256"]},
+			want:     "anything",
+			valid:    true,
+		},
+		{
+			name: "function getter nil",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["SHA250"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "undefined function",
+		},
+		{
+			name: "function arg mismatch",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["test_arg_mismatch"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "incorrect number of arguments. Expected: 4 Received: 1",
+		},
+		{
+			name: "Invalid Arguments struct tag",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["no_struct_tag"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "no `ottlarg` struct tag on Arguments field \"StringArg\"",
+		},
+		{
+			name: "Cannot create function",
+			getter: StandardStringGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["cannot_create_function"]},
+			want:             "anything",
+			valid:            false,
+			expectedErrorMsg: "couldn't create function: error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			editorArgs := EditorArguments{
+				Replacement: tt.getter,
+				Function:    tt.function,
+			}
+			fn, err := editorArgs.Function.Get(&FuncArgs{Input: editorArgs.Replacement})
+			if tt.valid {
+				var result interface{}
+				result, err = fn.Eval(context.Background(), nil)
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, result.(string))
+			} else {
 				assert.EqualError(t, err, tt.expectedErrorMsg)
 			}
 		})
@@ -1421,6 +1543,111 @@ func Test_StandardPMapGetter(t *testing.T) {
 // nolint:errorlint
 func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	getter := StandardPMapGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
+func Test_StandardDurationGetter(t *testing.T) {
+	oneHourOneMinuteOneSecond, err := time.ParseDuration("1h1m1s")
+	require.NoError(t, err)
+
+	oneHundredNsecs, err := time.ParseDuration("100ns")
+	require.NoError(t, err)
+
+	tenMilliseconds, err := time.ParseDuration("10ms66us7000ns")
+	require.NoError(t, err)
+
+	tests := []struct {
+		name             string
+		getter           StandardDurationGetter[interface{}]
+		want             interface{}
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "complex duration",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("1h1m1s")
+				},
+			},
+			want:  oneHourOneMinuteOneSecond,
+			valid: true,
+		},
+		{
+			name: "simple duration",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("100ns")
+				},
+			},
+			want:  oneHundredNsecs,
+			valid: true,
+		},
+		{
+			name: "complex duation values less than 1 seconc",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("10ms66us7000ns")
+				},
+			},
+			want:  tenMilliseconds,
+			valid: true,
+		},
+		{
+			name: "invalid duration units",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("70ps")
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unknown unit",
+		},
+		{
+			name: "wrong type - int",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return 1, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected duration but got int",
+		},
+		{
+			name: "nil",
+			getter: StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected duration but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.want, val)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardDurationGetter_WrappedError(t *testing.T) {
+	getter := StandardDurationGetter[interface{}]{
 		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
 			return nil, TypeError("")
 		},

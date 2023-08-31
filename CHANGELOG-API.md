@@ -6,3 +6,71 @@ This changelog includes only developer-facing changes.
 If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG.md).
 
 <!-- next version -->
+
+## v0.84.0
+
+### 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26084)
+- `podmanreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26083)
+- `zookeeperreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26082)
+- `jaegerreceiver`: Deprecate remote_sampling config in the jaeger receiver (#24186)
+  The jaeger receiver will fail to start if remote_sampling config is specified in it.  The `receiver.jaeger.DisableRemoteSampling` feature gate can be set to let the receiver start and treat  remote_sampling config as no-op. In a future version this feature gate will be removed and the receiver will always  fail when remote_sampling config is specified.
+  
+- `pkg/ottl`: use IntGetter argument for Substring function (#25852)
+- `pkg/stanza`: Remove deprecated 'helper.Encoding' and 'helper.EncodingConfig.Build' (#25846)
+- `pkg/stanza`: Remove deprecated fileconsumer config structs (#24853)
+  Includes | - MatchingCriteria - OrderingCriteria - NumericSortRule - AlphabeticalSortRule - TimestampSortRule
+- `googlecloudexporter`: remove retry_on_failure from the googlecloud exporter. The exporter itself handles retries, and retrying can cause issues. (#57233)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
+- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+  Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
+- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+  Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
+
+### 💡 Enhancements 💡
+
+- `googlemanagedprometheus`: Add a `add_metric_suffixes` option to the googlemanagedprometheus exporter. When set to false, metric suffixes are not added. (#26071)
+- `receiver/prometheus`: translate units from prometheus to UCUM (#23208)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/influxdb`: add allowable inputs to line protocol precision parameter (#24974)
+
+## v0.83.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/clickhouse`: Change the type of `Config.Password` to be `configopaque.String` (#17273)
+- `all`: Remove go 1.19 support, bump minimum to go 1.20 and add testing for 1.21 (#8207)
+- `solacereceiver`: Move model package to the internal package (#24890)
+- `receiver/statsdreceiver`: Move protocol and transport packages to internal (#24892)
+- `filterprocessor`: Unexport `Strict` and `Regexp` (#24845)
+- `mdatagen`: Rename the mdatagen sum field `aggregation` to `aggregation_temporality` (#16374)
+- `metricstransformprocessor`: Unexport elements of the Go API of the processor (#24846)
+- `mezmoexporter`: Unexport the `MezmoLogLine` and `MezmoLogBody` structs (#24842)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.FileAttributes' (#24688)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.EmitFunc' (#24688)
+- `pkg/stanza`: Remove deprecated `fileconsumer.Finder` (#24688)
+- `pkg/stanza`: Remove deprecated `fileconsumer.BaseSortRule` and `fileconsumer.SortRuleImpl` (#24688)
+- `pkg/stanza`: Remove deprecated 'fileconsumer.Reader' (#24688)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate helper.Encoding and helper.EncodingConfig.Build (#24980)
+- `pkg/stanza`: Deprecate fileconsumer MatchingCriteria in favor of new matcher package (#24853)
+
+### 💡 Enhancements 💡
+
+- `changelog`: Generate separate changelogs for end users and package consumers (#24014)
+- `splunkhecexporter`: Add heartbeat check while startup and new config param, heartbeat/startup (defaults to false). This is different than the healtcheck_startup, as the latter doesn't take token or index into account. (#24411)
+- `k8sclusterreceiver`: Allows disabling metrics and resource attributes (#24568)
+- `cmd/mdatagen`: Avoid reusing the same ResourceBuilder instance for multiple ResourceMetrics (#24762)
+
+### 🧰 Bug fixes 🧰
+
+- `splunkhecreceiver`: aligns success resp body w/ splunk enterprise (#19219)
+  changes resp from plaintext "ok" to json {"text"："success", "code"：0}

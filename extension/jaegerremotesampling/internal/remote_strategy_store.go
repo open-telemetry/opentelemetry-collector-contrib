@@ -5,6 +5,9 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"time"
 
 	grpcstore "github.com/jaegertracing/jaeger/cmd/agent/app/configmanager/grpc"
 	"github.com/jaegertracing/jaeger/cmd/collector/app/sampling/strategystore"
@@ -18,6 +21,7 @@ import (
 type grpcRemoteStrategyStore struct {
 	headerAdditions map[string]configopaque.String
 	delegate        *grpcstore.SamplingManager
+	cache           serviceStrategyCache
 }
 
 // NewRemoteStrategyStore returns a StrategyStore that delegates to the configured Jaeger gRPC endpoint, making
@@ -27,15 +31,33 @@ type grpcRemoteStrategyStore struct {
 func NewRemoteStrategyStore(
 	conn *grpc.ClientConn,
 	grpcClientSettings *configgrpc.GRPCClientSettings,
-) strategystore.StrategyStore {
+	reloadInterval time.Duration,
+) (strategystore.StrategyStore, io.Closer) {
+	cache := newNoopStrategyCache()
+	if reloadInterval > 0 {
+		cache = newServiceStrategyCache(reloadInterval)
+	}
+
 	return &grpcRemoteStrategyStore{
 		headerAdditions: grpcClientSettings.Headers,
 		delegate:        grpcstore.NewConfigManager(conn),
-	}
+		cache:           cache,
+	}, cache
 }
 
-func (g *grpcRemoteStrategyStore) GetSamplingStrategy(ctx context.Context, serviceName string) (*sampling.SamplingStrategyResponse, error) {
-	return g.delegate.GetSamplingStrategy(g.enhanceContext(ctx), serviceName)
+func (g *grpcRemoteStrategyStore) GetSamplingStrategy(
+	ctx context.Context,
+	serviceName string,
+) (*sampling.SamplingStrategyResponse, error) {
+	if cachedResponse, ok := g.cache.get(ctx, serviceName); ok {
+		return cachedResponse, nil
+	}
+	freshResult, err := g.delegate.GetSamplingStrategy(g.enhanceContext(ctx), serviceName)
+	if err != nil {
+		return nil, fmt.Errorf("remote call failed: %w", err)
+	}
+	g.cache.put(ctx, serviceName, freshResult)
+	return freshResult, nil
 }
 
 // This function is used to add the extension configuration defined HTTP headers to a given outbound gRPC call's context.
@@ -45,4 +67,8 @@ func (g *grpcRemoteStrategyStore) enhanceContext(ctx context.Context) context.Co
 		md.Set(k, string(v))
 	}
 	return metadata.NewOutgoingContext(ctx, md)
+}
+
+func (g *grpcRemoteStrategyStore) Close() error {
+	return g.cache.Close()
 }

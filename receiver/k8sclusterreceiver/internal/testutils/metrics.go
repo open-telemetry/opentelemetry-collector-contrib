@@ -20,6 +20,7 @@ func assertMetric(t testing.TB, m pmetric.Metric, expectedMetric string, expecte
 	require.NotEmpty(t, m.Description(), "empty description on metric")
 	require.Equal(t, expectedType, m.Type(), "mismatching metric types")
 	var dps pmetric.NumberDataPointSlice
+	//exhaustive:enforce
 	switch expectedType {
 	case pmetric.MetricTypeGauge:
 		dps = m.Gauge().DataPoints()
