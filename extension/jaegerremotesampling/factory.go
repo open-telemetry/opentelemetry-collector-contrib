@@ -67,5 +67,6 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 )
 
 func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+	logDeprecation(set.Logger)
 	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

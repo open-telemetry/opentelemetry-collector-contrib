@@ -30,9 +30,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	"go.uber.org/zap"
 
-	"github.com/jaegertracing/jaeger/thrift-gen/sampling"
 	ss "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 )
 
@@ -100,7 +100,7 @@ func (h *strategyStore) Close() {
 
 func (h *strategyStore) downloadSamplingStrategies(url string) ([]byte, error) {
 	h.logger.Info("Downloading sampling strategies", zap.String("url", url))
-	resp, err := http.Get(url)
+	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to download sampling strategies: %w", err)
 	}
@@ -178,7 +178,7 @@ func (h *strategyStore) reloadSamplingStrategy(loadFn strategyLoader, lastValue 
 }
 
 func (h *strategyStore) updateSamplingStrategy(bytes []byte) error {
-	var strategies strategies
+	var strategies strategies //nolint:govet
 	if err := json.Unmarshal(bytes, &strategies); err != nil {
 		return fmt.Errorf("failed to unmarshal sampling strategies: %w", err)
 	}
@@ -328,12 +328,12 @@ func (h *strategyStore) parseStrategy(strategy *strategy) *sampling.SamplingStra
 	}
 }
 
-func deepCopy(s *sampling.SamplingStrategyResponse) *sampling.SamplingStrategyResponse {
+func deepCopy(s *sampling.SamplingStrategyResponse) *sampling.SamplingStrategyResponse { //nolint:unused
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	dec := gob.NewDecoder(&buf)
-	enc.Encode(*s)
-	var copy sampling.SamplingStrategyResponse
-	dec.Decode(&copy)
+	_ = enc.Encode(*s)
+	var copy sampling.SamplingStrategyResponse //nolint:revive
+	_ = dec.Decode(&copy)
 	return &copy
 }

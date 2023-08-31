@@ -18,10 +18,9 @@
 package strategystore // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated/internal/sampling/strategystore"
 
 import (
-	"go.uber.org/zap"
-
 	"github.com/jaegertracing/jaeger/pkg/metrics"
 	"github.com/jaegertracing/jaeger/storage"
+	"go.uber.org/zap"
 )
 
 // Factory defines an interface for a factory that can create implementations of different strategy storage components.
@@ -30,7 +29,7 @@ import (
 // # See also
 //
 // plugin.Configurable
-type Factory interface {
+type Factory interface { //nolint:gci
 	// Initialize performs internal initialization of the factory.
 	Initialize(metricsFactory metrics.Factory, ssFactory storage.SamplingStoreFactory, logger *zap.Logger) error
 
