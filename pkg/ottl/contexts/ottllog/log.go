@@ -148,6 +148,10 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 		return accessTimeUnixNano(), nil
 	case "observed_time_unix_nano":
 		return accessObservedTimeUnixNano(), nil
+	case "time":
+		return accessTime(), nil
+	case "observed_time":
+		return accessObserved(), nil
 	case "severity_number":
 		return accessSeverityNumber(), nil
 	case "severity_text":
@@ -239,6 +243,34 @@ func accessObservedTimeUnixNano() ottl.StandardGetSetter[TransformContext] {
 		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
 			if i, ok := val.(int64); ok {
 				tCtx.GetLogRecord().SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, i)))
+			}
+			return nil
+		},
+	}
+}
+
+func accessTime() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetLogRecord().Timestamp().AsTime(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if i, ok := val.(time.Time); ok {
+				tCtx.GetLogRecord().SetTimestamp(pcommon.NewTimestampFromTime(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessObservedTime() ottl.StandardGetSetter[TransformContext] {
+	return ottl.StandardGetSetter[TransformContext]{
+		Getter: func(ctx context.Context, tCtx TransformContext) (interface{}, error) {
+			return tCtx.GetLogRecord().ObservedTimestamp().AsTime(), nil
+		},
+		Setter: func(ctx context.Context, tCtx TransformContext, val interface{}) error {
+			if i, ok := val.(time.Time); ok {
+				tCtx.GetLogRecord().SetObservedTimestamp(pcommon.NewTimestampFromTime(i))
 			}
 			return nil
 		},

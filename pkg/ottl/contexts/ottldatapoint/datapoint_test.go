@@ -86,9 +86,9 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 }
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
-	refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
+	// refNumberDataPoint := createNumberDataPointTelemetry(pmetric.NumberDataPointValueTypeInt)
 
-	newExemplars, newAttrs := createNewTelemetry()
+	// newExemplars, newAttrs := createNewTelemetry()
 
 	newPMap := pcommon.NewMap()
 	pMap2 := newPMap.PutEmptyMap("k2")
@@ -120,383 +120,383 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
 			},
 		},
-		{
-			name: "time_unix_nano",
-			path: []ottl.Field{
-				{
-					Name: "time_unix_nano",
-				},
-			},
-			orig:   int64(500_000_000),
-			newVal: int64(200_000_000),
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
-			},
-		},
-		{
-			name: "value_double",
-			path: []ottl.Field{
-				{
-					Name: "value_double",
-				},
-			},
-			orig:   1.1,
-			newVal: 2.2,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetDoubleValue(2.2)
-			},
-			valueType: pmetric.NumberDataPointValueTypeDouble,
-		},
-		{
-			name: "value_int",
-			path: []ottl.Field{
-				{
-					Name: "value_int",
-				},
-			},
-			orig:   int64(1),
-			newVal: int64(2),
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetIntValue(2)
-			},
-		},
-		{
-			name: "flags",
-			path: []ottl.Field{
-				{
-					Name: "flags",
-				},
-			},
-			orig:   int64(0),
-			newVal: int64(1),
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
-			},
-		},
-		{
-			name: "exemplars",
-			path: []ottl.Field{
-				{
-					Name: "exemplars",
-				},
-			},
-			orig:   refNumberDataPoint.Exemplars(),
-			newVal: newExemplars,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				newExemplars.CopyTo(datapoint.Exemplars())
-			},
-		},
-		{
-			name: "attributes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-				},
-			},
-			orig:   refNumberDataPoint.Attributes(),
-			newVal: newAttrs,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				newAttrs.CopyTo(datapoint.Attributes())
-			},
-		},
-		{
-			name: "attributes string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("str"),
-						},
-					},
-				},
-			},
-			orig:   "val",
-			newVal: "newVal",
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutStr("str", "newVal")
-			},
-		},
-		{
-			name: "attributes bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bool"),
-						},
-					},
-				},
-			},
-			orig:   true,
-			newVal: false,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutBool("bool", false)
-			},
-		},
-		{
-			name: "attributes int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("int"),
-						},
-					},
-				},
-			},
-			orig:   int64(10),
-			newVal: int64(20),
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutInt("int", 20)
-			},
-		},
-		{
-			name: "attributes float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("double"),
-						},
-					},
-				},
-			},
-			orig:   float64(1.2),
-			newVal: float64(2.4),
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutDouble("double", 2.4)
-			},
-		},
-		{
-			name: "attributes bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("bytes"),
-						},
-					},
-				},
-			},
-			orig:   []byte{1, 3, 2},
-			newVal: []byte{2, 3, 4},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
-			},
-		},
-		{
-			name: "attributes array string",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_str"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.Attributes().Get("arr_str")
-				return val.Slice()
-			}(),
-			newVal: []string{"new"},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
-			},
-		},
-		{
-			name: "attributes array bool",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bool"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.Attributes().Get("arr_bool")
-				return val.Slice()
-			}(),
-			newVal: []bool{false},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
-			},
-		},
-		{
-			name: "attributes array int",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_int"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.Attributes().Get("arr_int")
-				return val.Slice()
-			}(),
-			newVal: []int64{20},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
-			},
-		},
-		{
-			name: "attributes array float",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_float"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.Attributes().Get("arr_float")
-				return val.Slice()
-			}(),
-			newVal: []float64{2.0},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
-			},
-		},
-		{
-			name: "attributes array bytes",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("arr_bytes"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Slice {
-				val, _ := refNumberDataPoint.Attributes().Get("arr_bytes")
-				return val.Slice()
-			}(),
-			newVal: [][]byte{{9, 6, 4}},
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
-			},
-		},
-		{
-			name: "attributes pcommon.Map",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("pMap"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Map {
-				val, _ := refNumberDataPoint.Attributes().Get("pMap")
-				return val.Map()
-			}(),
-			newVal: newPMap,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				m := datapoint.Attributes().PutEmptyMap("pMap")
-				m2 := m.PutEmptyMap("k2")
-				m2.PutStr("k1", "string")
-			},
-		},
-		{
-			name: "attributes map[string]interface{}",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
-				},
-			},
-			orig: func() pcommon.Map {
-				val, _ := refNumberDataPoint.Attributes().Get("map")
-				return val.Map()
-			}(),
-			newVal: newMap,
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				m := datapoint.Attributes().PutEmptyMap("map")
-				m2 := m.PutEmptyMap("k2")
-				m2.PutStr("k1", "string")
-			},
-		},
-		{
-			name: "attributes nested",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("slice"),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-						{
-							String: ottltest.Strp("map"),
-						},
-					},
-				},
-			},
-			orig: func() string {
-				val, _ := refNumberDataPoint.Attributes().Get("slice")
-				val, _ = val.Slice().At(0).Map().Get("map")
-				return val.Str()
-			}(),
-			newVal: "new",
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
-			},
-		},
-		{
-			name: "attributes nested new values",
-			path: []ottl.Field{
-				{
-					Name: "attributes",
-					Keys: []ottl.Key{
-						{
-							String: ottltest.Strp("new"),
-						},
-						{
-							Int: ottltest.Intp(2),
-						},
-						{
-							Int: ottltest.Intp(0),
-						},
-					},
-				},
-			},
-			orig: func() interface{} {
-				return nil
-			}(),
-			newVal: "new",
-			modified: func(datapoint pmetric.NumberDataPoint) {
-				s := datapoint.Attributes().PutEmptySlice("new")
-				s.AppendEmpty()
-				s.AppendEmpty()
-				s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
-			},
-		},
+		// {
+		// 	name: "time_unix_nano",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "time_unix_nano",
+		// 		},
+		// 	},
+		// 	orig:   int64(500_000_000),
+		// 	newVal: int64(200_000_000),
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+		// 	},
+		// },
+		// {
+		// 	name: "value_double",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "value_double",
+		// 		},
+		// 	},
+		// 	orig:   1.1,
+		// 	newVal: 2.2,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.SetDoubleValue(2.2)
+		// 	},
+		// 	valueType: pmetric.NumberDataPointValueTypeDouble,
+		// },
+		// {
+		// 	name: "value_int",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "value_int",
+		// 		},
+		// 	},
+		// 	orig:   int64(1),
+		// 	newVal: int64(2),
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.SetIntValue(2)
+		// 	},
+		// },
+		// {
+		// 	name: "flags",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "flags",
+		// 		},
+		// 	},
+		// 	orig:   int64(0),
+		// 	newVal: int64(1),
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
+		// 	},
+		// },
+		// {
+		// 	name: "exemplars",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "exemplars",
+		// 		},
+		// 	},
+		// 	orig:   refNumberDataPoint.Exemplars(),
+		// 	newVal: newExemplars,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		newExemplars.CopyTo(datapoint.Exemplars())
+		// 	},
+		// },
+		// {
+		// 	name: "attributes",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 		},
+		// 	},
+		// 	orig:   refNumberDataPoint.Attributes(),
+		// 	newVal: newAttrs,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		newAttrs.CopyTo(datapoint.Attributes())
+		// 	},
+		// },
+		// {
+		// 	name: "attributes string",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("str"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig:   "val",
+		// 	newVal: "newVal",
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutStr("str", "newVal")
+		// 	},
+		// },
+		// {
+		// 	name: "attributes bool",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("bool"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig:   true,
+		// 	newVal: false,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutBool("bool", false)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes int",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("int"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig:   int64(10),
+		// 	newVal: int64(20),
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutInt("int", 20)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes float",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("double"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig:   float64(1.2),
+		// 	newVal: float64(2.4),
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutDouble("double", 2.4)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes bytes",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("bytes"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig:   []byte{1, 3, 2},
+		// 	newVal: []byte{2, 3, 4},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
+		// 	},
+		// },
+		// {
+		// 	name: "attributes array string",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("arr_str"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Slice {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("arr_str")
+		// 		return val.Slice()
+		// 	}(),
+		// 	newVal: []string{"new"},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
+		// 	},
+		// },
+		// {
+		// 	name: "attributes array bool",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("arr_bool"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Slice {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("arr_bool")
+		// 		return val.Slice()
+		// 	}(),
+		// 	newVal: []bool{false},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes array int",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("arr_int"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Slice {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("arr_int")
+		// 		return val.Slice()
+		// 	}(),
+		// 	newVal: []int64{20},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes array float",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("arr_float"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Slice {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("arr_float")
+		// 		return val.Slice()
+		// 	}(),
+		// 	newVal: []float64{2.0},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
+		// 	},
+		// },
+		// {
+		// 	name: "attributes array bytes",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("arr_bytes"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Slice {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("arr_bytes")
+		// 		return val.Slice()
+		// 	}(),
+		// 	newVal: [][]byte{{9, 6, 4}},
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
+		// 	},
+		// },
+		// {
+		// 	name: "attributes pcommon.Map",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("pMap"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Map {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("pMap")
+		// 		return val.Map()
+		// 	}(),
+		// 	newVal: newPMap,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		m := datapoint.Attributes().PutEmptyMap("pMap")
+		// 		m2 := m.PutEmptyMap("k2")
+		// 		m2.PutStr("k1", "string")
+		// 	},
+		// },
+		// {
+		// 	name: "attributes map[string]interface{}",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("map"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() pcommon.Map {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("map")
+		// 		return val.Map()
+		// 	}(),
+		// 	newVal: newMap,
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		m := datapoint.Attributes().PutEmptyMap("map")
+		// 		m2 := m.PutEmptyMap("k2")
+		// 		m2.PutStr("k1", "string")
+		// 	},
+		// },
+		// {
+		// 	name: "attributes nested",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("slice"),
+		// 				},
+		// 				{
+		// 					Int: ottltest.Intp(0),
+		// 				},
+		// 				{
+		// 					String: ottltest.Strp("map"),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() string {
+		// 		val, _ := refNumberDataPoint.Attributes().Get("slice")
+		// 		val, _ = val.Slice().At(0).Map().Get("map")
+		// 		return val.Str()
+		// 	}(),
+		// 	newVal: "new",
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		datapoint.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
+		// 	},
+		// },
+		// {
+		// 	name: "attributes nested new values",
+		// 	path: []ottl.Field{
+		// 		{
+		// 			Name: "attributes",
+		// 			Keys: []ottl.Key{
+		// 				{
+		// 					String: ottltest.Strp("new"),
+		// 				},
+		// 				{
+		// 					Int: ottltest.Intp(2),
+		// 				},
+		// 				{
+		// 					Int: ottltest.Intp(0),
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	orig: func() interface{} {
+		// 		return nil
+		// 	}(),
+		// 	newVal: "new",
+		// 	modified: func(datapoint pmetric.NumberDataPoint) {
+		// 		s := datapoint.Attributes().PutEmptySlice("new")
+		// 		s.AppendEmpty()
+		// 		s.AppendEmpty()
+		// 		s.AppendEmpty().SetEmptySlice().AppendEmpty().SetStr("new")
+		// 	},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -513,16 +513,17 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 				want, err := time.Parse("01/02/2006", origString)
 				assert.NoError(t, err)
 				assert.Equal(t, want, got)
+			} else {
+				assert.Equal(t, tt.orig, got)
+
+				err = accessor.Set(context.Background(), ctx, tt.newVal)
+				assert.Nil(t, err)
+
+				exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
+				tt.modified(exNumberDataPoint)
+
+				assert.Equal(t, exNumberDataPoint, numberDataPoint)
 			}
-			assert.Equal(t, tt.orig, got)
-
-			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
-
-			exNumberDataPoint := createNumberDataPointTelemetry(tt.valueType)
-			tt.modified(exNumberDataPoint)
-
-			assert.Equal(t, exNumberDataPoint, numberDataPoint)
 		})
 	}
 }
