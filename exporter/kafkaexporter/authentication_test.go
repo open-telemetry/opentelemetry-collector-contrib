@@ -56,12 +56,21 @@ func TestAuthentication(t *testing.T) {
 	saramaKerberosCfg.Net.SASL.Enable = true
 	saramaKerberosCfg.Net.SASL.GSSAPI.ServiceName = "foobar"
 	saramaKerberosCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
+	saramaKerberosCfg.Net.SASL.GSSAPI.DisablePAFXFAST = false
+
+	saramaKerberosCfgNoFast := &sarama.Config{}
+	saramaKerberosCfgNoFast.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
+	saramaKerberosCfgNoFast.Net.SASL.Enable = true
+	saramaKerberosCfgNoFast.Net.SASL.GSSAPI.ServiceName = "foobar"
+	saramaKerberosCfgNoFast.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
+	saramaKerberosCfgNoFast.Net.SASL.GSSAPI.DisablePAFXFAST = true
 
 	saramaKerberosKeyTabCfg := &sarama.Config{}
 	saramaKerberosKeyTabCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
 	saramaKerberosKeyTabCfg.Net.SASL.Enable = true
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.KeyTabPath = "/path"
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
+	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.DisablePAFXFAST = false
 
 	tests := []struct {
 		auth         Authentication
@@ -86,6 +95,10 @@ func TestAuthentication(t *testing.T) {
 		{
 			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar"}},
 			saramaConfig: saramaKerberosCfg,
+		},
+		{
+			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: true}},
+			saramaConfig: saramaKerberosCfgNoFast,
 		},
 		{
 			auth:         Authentication{Kerberos: &KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},

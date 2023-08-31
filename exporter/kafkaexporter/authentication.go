@@ -51,15 +51,16 @@ type AWSMSKConfig struct {
 	BrokerAddr string `mapstructure:"broker_addr"`
 }
 
-// KerberosConfig defines kereros configuration.
+// KerberosConfig defines kerberos configuration.
 type KerberosConfig struct {
-	ServiceName string `mapstructure:"service_name"`
-	Realm       string `mapstructure:"realm"`
-	UseKeyTab   bool   `mapstructure:"use_keytab"`
-	Username    string `mapstructure:"username"`
-	Password    string `mapstructure:"password" json:"-"`
-	ConfigPath  string `mapstructure:"config_file"`
-	KeyTabPath  string `mapstructure:"keytab_file"`
+	ServiceName     string `mapstructure:"service_name"`
+	Realm           string `mapstructure:"realm"`
+	UseKeyTab       bool   `mapstructure:"use_keytab"`
+	Username        string `mapstructure:"username"`
+	Password        string `mapstructure:"password" json:"-"`
+	ConfigPath      string `mapstructure:"config_file"`
+	KeyTabPath      string `mapstructure:"keytab_file"`
+	DisablePAFXFAST bool   `mapstructure:"disable_pafxfast"`
 }
 
 // ConfigureAuthentication configures authentication in sarama.Config.
@@ -158,4 +159,5 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.GSSAPI.Username = config.Username
 	saramaConfig.Net.SASL.GSSAPI.Realm = config.Realm
 	saramaConfig.Net.SASL.GSSAPI.ServiceName = config.ServiceName
+	saramaConfig.Net.SASL.GSSAPI.DisablePAFXFAST = config.DisablePAFXFAST
 }
