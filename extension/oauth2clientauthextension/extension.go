@@ -19,7 +19,7 @@ import (
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
-	clientCredentials *clientcredentials.Config
+	clientCredentials *clientCredentialsConfig
 	logger            *zap.Logger
 	client            *http.Client
 }
@@ -55,12 +55,14 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	transport.TLSClientConfig = tlsCfg
 
 	return &clientAuthenticator{
-		clientCredentials: &clientcredentials.Config{
-			ClientID:       cfg.ClientID,
-			ClientSecret:   string(cfg.ClientSecret),
-			TokenURL:       cfg.TokenURL,
-			Scopes:         cfg.Scopes,
-			EndpointParams: cfg.EndpointParams,
+		clientCredentials: &clientCredentialsConfig{
+			Config: clientcredentials.Config{
+				ClientID:       cfg.ClientID,
+				ClientSecret:   string(cfg.ClientSecret),
+				TokenURL:       cfg.TokenURL,
+				Scopes:         cfg.Scopes,
+				EndpointParams: cfg.EndpointParams,
+			},
 		},
 		logger: logger,
 		client: &http.Client{
