@@ -5,14 +5,37 @@ package oauth2clientauthextension // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 
+	"go.uber.org/multierr"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// clientCredentialsConfig is a clientcredentials.Config wrapper.
+// clientCredentialsConfig is a clientcredentials.Config wrapper to allow
+// values read from files in the ClientID and ClientSecret fields.
+//
+// Values from files can be retrieved by populating the ClientIDFile or
+// the ClientSecretFile fields with the path to the file.
+//
+// Priority: File > Raw value
+//
+// Example - Retrieve secret from file:
+//
+//	cfg := clientCredentialsConfig{
+//		Config: clientcredentials.Config{
+//			ClientID:     "clientId",
+//			...
+//		},
+//		ClientSecretFile: "/path/to/client/secret",
+//	}
 type clientCredentialsConfig struct {
 	clientcredentials.Config
+
+	ClientIDFile     string
+	ClientSecretFile string
 }
 
 type clientCredentialsTokenSource struct {
@@ -23,12 +46,46 @@ type clientCredentialsTokenSource struct {
 // clientCredentialsTokenSource implements TokenSource
 var _ oauth2.TokenSource = (*clientCredentialsTokenSource)(nil)
 
+func readCredentialsFile(path string) (string, error) {
+	f, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("failed to read credentials file %q: %w", path, err)
+	}
+
+	credential := strings.TrimSpace(string(f))
+	if credential == "" {
+		return "", fmt.Errorf("empty credentials file %q", path)
+	}
+	return credential, nil
+}
+
+func getActualValue(value, filepath string) (string, error) {
+	actualValue := value
+	var err error
+
+	if len(filepath) > 0 {
+		actualValue, err = readCredentialsFile(filepath)
+	}
+
+	return actualValue, err
+}
+
 // createConfig creates a proper clientcredentials.Config with values retrieved
 // from files, if the user has specified a "file:" prefix
 func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, error) {
+	clientID, err := getActualValue(c.ClientID, c.ClientIDFile)
+	if err != nil {
+		return nil, multierr.Combine(errNoClientIDProvided, err)
+	}
+
+	clientSecret, err := getActualValue(c.ClientSecret, c.ClientSecretFile)
+	if err != nil {
+		return nil, multierr.Combine(errNoClientSecretProvided, err)
+	}
+
 	return &clientcredentials.Config{
-		ClientID:       c.ClientID,
-		ClientSecret:   c.ClientSecret,
+		ClientID:       clientID,
+		ClientSecret:   clientSecret,
 		TokenURL:       c.TokenURL,
 		Scopes:         c.Scopes,
 		EndpointParams: c.EndpointParams,
