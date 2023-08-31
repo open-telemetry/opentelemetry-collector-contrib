@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -132,7 +132,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
+		enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding: %w", err)
 		}
@@ -148,7 +148,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		return nil, err
 	}
 
-	enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
+	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := decoder.LookupEncoding(c.Splitter.Encoding)
+	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return err
 	}
