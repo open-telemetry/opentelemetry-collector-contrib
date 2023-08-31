@@ -7,18 +7,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 var _ exporter.Metrics = (*metricExporterImp)(nil)
@@ -117,13 +121,13 @@ func (e *metricExporterImp) consumeMetric(ctx context.Context, md pmetric.Metric
 
 }
 
-func routingIdentifiersFromMetrics(md pmetric.Metrics, key routingKey) (map[string]bool, error) {
+func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[string]bool, error) {
 	ids := make(map[string]bool)
 
 	// no need to test "empty labels"
 	// no need to test "empty resources"
 
-	rs := md.ResourceMetrics()
+	rs := mds.ResourceMetrics()
 	if rs.Len() == 0 {
 		return nil, errors.New("empty resource metrics")
 	}
@@ -138,20 +142,51 @@ func routingIdentifiersFromMetrics(md pmetric.Metrics, key routingKey) (map[stri
 		return nil, errors.New("empty metrics")
 	}
 
-	if key == svcRouting {
-		for i := 0; i < rs.Len(); i++ {
-			svc, ok := rs.At(i).Resource().Attributes().Get("service.name")
+	for i := 0; i < rs.Len(); i++ {
+		sm := rs.At(i).ScopeMetrics()
+		resource := rs.At(i).Resource()
+
+		if key == svcRouting {
+			svc, ok := resource.Attributes().Get("service.name")
 			if !ok {
-				return nil, errors.New("unable to get metric name")
+				return nil, errors.New("unable to get service name")
 			}
 			ids[svc.Str()] = true
+		} else {
+
+			for j := 0; j < sm.Len(); j++ {
+				metrics := sm.At(j).Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					md := metrics.At(k)
+					rKey := metricRoutingKey(md, resource.Attributes())
+					ids[rKey] = true
+				}
+			}
+
 		}
-		return ids, nil
+	}
+	return ids, nil
+
+}
+
+func metricRoutingKey(md pmetric.Metric, attrs pcommon.Map) string {
+
+	keys := make([]string, 0)
+	for k := range attrs.AsRaw() {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	attrsHash := make([]string, 0)
+	for _, k := range keys {
+		attrsHash = append(attrsHash, k)
+		if v, ok := attrs.Get(k); ok {
+			attrsHash = append(attrsHash, v.AsString())
+		}
 	}
 
-	// qual deve ser usado ???
-	tid := metrics.At(0).Name()
+	attrsHash = append(attrsHash, md.Name())
+	routingRef := strings.Join(attrsHash, "")
+	return routingRef
 
-	ids[string(tid[:])] = true
-	return ids, nil
 }

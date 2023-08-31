@@ -11,12 +11,12 @@ import (
 	"net"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -27,9 +27,12 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 const (
@@ -206,16 +209,19 @@ func TestServiceBasedRoutingForSameMetricName(t *testing.T) {
 		res        map[string]bool
 	}{
 		{
-			"same trace id and different services - service based routing",
+			"different services - service based routing",
 			twoServicesWithSameMetricName(),
 			svcRouting,
 			map[string]bool{serviceName1: true, serviceName2: true},
 		},
 		{
-			"same trace id and different services - trace id routing",
+			"different services - trace id routing",
 			twoServicesWithSameMetricName(),
 			traceIDRouting,
-			map[string]bool{string(signalName1[:]): true},
+			map[string]bool{
+				strings.Join([]string{"service.name", serviceName1, signalName1}, ""): true,
+				strings.Join([]string{"service.name", serviceName2, signalName1}, ""): true,
+			},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -394,6 +400,27 @@ func TestNoMetricsInBatch(t *testing.T) {
 			assert.Equal(t, res, map[string]bool(nil))
 		})
 	}
+}
+
+func Test_metricRoutingKey(t *testing.T) {
+
+	md := pmetric.NewMetric()
+	md.SetName("metric")
+	attrs := pcommon.NewMap()
+	if got := metricRoutingKey(md, attrs); got != "metric" {
+		t.Errorf("metricRoutingKey() = %v, want %v", got, "metric")
+	}
+
+	attrs.PutStr("k1", "v1")
+	if got := metricRoutingKey(md, attrs); got != "k1v1metric" {
+		t.Errorf("metricRoutingKey() = %v, want %v", got, "k1v1metric")
+	}
+
+	attrs.PutStr("k2", "v2")
+	if got := metricRoutingKey(md, attrs); got != "k1v1k2v2metric" {
+		t.Errorf("metricRoutingKey() = %v, want %v", got, "k1v1k2v2metric")
+	}
+
 }
 
 func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
