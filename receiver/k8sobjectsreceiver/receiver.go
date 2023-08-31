@@ -156,7 +156,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
-	cfgCopy := config
+	cfgCopy := *config
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, cfgCopy, resource)
 		if err != nil {
