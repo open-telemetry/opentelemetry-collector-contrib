@@ -115,19 +115,19 @@ func SplitMetrics(batch pmetric.Metrics) []pmetric.Metrics {
 
 		for j := 0; j < rs.ScopeMetrics().Len(); j++ {
 			// the batches for this ILS
-			batches := map[pcommon.ByteSlice]pmetric.ResourceMetrics{}
+			batches := map[string]pmetric.ResourceMetrics{}
 
 			ils := rs.ScopeMetrics().At(j)
 			for k := 0; k < ils.Metrics().Len(); k++ {
 				metric := ils.Metrics().At(k)
 
-				key := pcommon.NewByteSlice()
-				key.FromRaw([]byte(metric.Name()))
+				// key := pcommon.NewByteSlice()
+				// key.FromRaw([]byte(metric.Name()))
+				key := metric.Name()
 
 				// for the first metric in the ILS, initialize the map entry
 				// and add the singleMetricBatch to the result list
 				if _, ok := batches[key]; !ok {
-					// qual deve ser aqui: Gauge, Histogram, Exemplar, ExponentialHistogram, ???
 					metric := pmetric.NewMetrics()
 					newRS := metric.ResourceMetrics().AppendEmpty()
 					// currently, the ResourceMetrics implementation has only a Resource and an ILS. We'll copy the Resource
@@ -135,8 +135,8 @@ func SplitMetrics(batch pmetric.Metrics) []pmetric.Metrics {
 					rs.Resource().CopyTo(newRS.Resource())
 					newRS.SetSchemaUrl(rs.SchemaUrl())
 					newILS := newRS.ScopeMetrics().AppendEmpty()
-					// currently, the ILS implementation has only an InstrumentationLibrary and spans. We'll copy the library
-					// and set our own spans
+					// currently, the ILS implementation has only an InstrumentationLibrary and metrics. We'll copy the library
+					// and set our own metrics
 					ils.Scope().CopyTo(newILS.Scope())
 					newILS.SetSchemaUrl(ils.SchemaUrl())
 					batches[key] = newRS
