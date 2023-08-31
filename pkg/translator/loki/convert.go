@@ -16,7 +16,7 @@ import (
 
 const (
 	hintAttributes = "loki.attribute.labels"
-	hintResources  = "loki.resource.labels"
+	hintResource   = "loki.resource.labels"
 	hintTenant     = "loki.tenant"
 	hintFormat     = "loki.format"
 )
@@ -37,7 +37,7 @@ const attrSeparator = "."
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
 	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
-	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
+	if resourcesToLabel, found := resAttrs.Get(hintResource); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
@@ -45,7 +45,7 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defau
 	// get the hint from the log attributes, not from the resource
 	// the value can be a single resource name to use as label
 	// or a slice of string values
-	if resourcesToLabel, found := logAttrs.Get(hintResources); found {
+	if resourcesToLabel, found := logAttrs.Get(hintResource); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
 		out = out.Merge(labels)
 	}
@@ -150,7 +150,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
-		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
+		if s == hintAttributes || s == hintResource || s == hintTenant || s == hintFormat {
 			return true
 		}
 
@@ -161,6 +161,17 @@ func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
 
 func convertLogToJSONEntry(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	line, err := Encode(lr, res, scope)
+	if err != nil {
+		return nil, err
+	}
+	return &push.Entry{
+		Timestamp: timestampFromLogRecord(lr),
+		Line:      line,
+	}, nil
+}
+
+func convertLogToJSONEntryResourceField(lr plog.LogRecord, res pcommon.Resource, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	line, err := EncodeWithResourceField(lr, res, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -200,6 +211,19 @@ func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format strin
 		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
+}
+
+func convertLogToLokiEntryWithResourceFieldInJSONFormat(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
+	switch format {
+	case formatJSON:
+		return convertLogToJSONEntryResourceField(lr, res, scope)
+	case formatLogfmt:
+		return convertLogToLogfmtEntry(lr, res, scope)
+	case formatRaw:
+		return convertLogToLogRawEntry(lr)
+	default:
+		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
+	}
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {

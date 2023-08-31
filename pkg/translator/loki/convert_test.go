@@ -40,7 +40,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 		{
 			desc: "selected resource attribute should be included",
 			logAttrs: map[string]interface{}{
-				hintResources: "host.name",
+				hintResource: "host.name",
 			},
 			resAttrs: map[string]interface{}{
 				"host.name": "guarana",
@@ -55,9 +55,9 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			desc:     "selected attributes from resource attributes should be included",
 			logAttrs: map[string]interface{}{},
 			resAttrs: map[string]interface{}{
-				hintResources: "host.name",
-				"host.name":   "hostname-from-resources",
-				"pod.name":    "should-be-ignored",
+				hintResource: "host.name",
+				"host.name":  "hostname-from-resources",
+				"pod.name":   "should-be-ignored",
 			},
 			expected: model.LabelSet{
 				"exporter":  "OTLP",
@@ -69,7 +69,7 @@ func TestConvertAttributesAndMerge(t *testing.T) {
 			logAttrs: map[string]interface{}{
 				"host.name":    "hostname-from-attributes",
 				hintAttributes: "host.name",
-				hintResources:  "host.name",
+				hintResource:   "host.name",
 			},
 			resAttrs: map[string]interface{}{
 				"host.name": "hostname-from-resources",
@@ -256,7 +256,7 @@ func TestRemoveAttributes(t *testing.T) {
 			desc: "remove hints",
 			attrs: map[string]interface{}{
 				hintAttributes: "some.field",
-				hintResources:  "some.other.field",
+				hintResource:   "some.other.field",
 				hintFormat:     "logfmt",
 				hintTenant:     "some_tenant",
 				"host.name":    "guarana",

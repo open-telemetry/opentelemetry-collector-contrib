@@ -41,6 +41,15 @@ func TestEncodeJsonWithStringBody(t *testing.T) {
 	assert.Equal(t, in, out)
 }
 
+func TestEncodeJsonWithStringBodyWithResourceField(t *testing.T) {
+	in := `{"body":"Example log","traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resource":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
+	log, resource, scope := exampleLog()
+
+	out, err := EncodeWithResourceField(log, resource, scope)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
 func TestEncodeJsonWithMapBody(t *testing.T) {
 	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resources":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
 
@@ -51,6 +60,20 @@ func TestEncodeJsonWithMapBody(t *testing.T) {
 	mapVal.CopyTo(log.Body())
 
 	out, err := Encode(log, resource, scope)
+	assert.NoError(t, err)
+	assert.Equal(t, in, out)
+}
+
+func TestEncodeJsonWithMapBodyWithResourceField(t *testing.T) {
+	in := `{"body":{"key1":"value","key2":"value"},"traceid":"01020304000000000000000000000000","spanid":"0506070800000000","severity":"error","attributes":{"attr1":"1","attr2":"2"},"resource":{"host.name":"something"},"instrumentation_scope":{"name":"example-logger-name","version":"v1"}}`
+
+	log, resource, scope := exampleLog()
+	mapVal := pcommon.NewValueMap()
+	mapVal.Map().PutStr("key1", "value")
+	mapVal.Map().PutStr("key2", "value")
+	mapVal.CopyTo(log.Body())
+
+	out, err := EncodeWithResourceField(log, resource, scope)
 	assert.NoError(t, err)
 	assert.Equal(t, in, out)
 }

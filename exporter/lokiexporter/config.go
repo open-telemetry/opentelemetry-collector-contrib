@@ -17,7 +17,8 @@ type Config struct {
 	exporterhelper.QueueSettings  `mapstructure:"sending_queue"`
 	exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
 
-	DefaultLabelsEnabled map[string]bool `mapstructure:"default_labels_enabled"`
+	DefaultLabelsEnabled                 map[string]bool `mapstructure:"default_labels_enabled"`
+	sendResourceFieldInJSONFormatEnabled bool
 }
 
 func (c *Config) Validate() error {

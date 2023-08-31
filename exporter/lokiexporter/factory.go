@@ -15,8 +15,17 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
+)
+
+var sendResourceInJSONFormat = featuregate.GlobalRegistry().MustRegister(
+	"exporter.loki.sendWithResourceInJSONFormat",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("0.84.0"),
+	featuregate.WithRegisterDescription("When enabled, sends 'resource' instead of 'resources' in JSON format"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21161"),
 )
 
 // NewFactory creates a factory for the legacy Loki exporter.
@@ -47,6 +56,7 @@ func createDefaultConfig() component.Config {
 			"instance": true,
 			"level":    true,
 		},
+		sendResourceFieldInJSONFormatEnabled: sendResourceInJSONFormat.IsEnabled(),
 	}
 }
 

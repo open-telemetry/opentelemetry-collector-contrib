@@ -21,17 +21,19 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 func TestPushLogData(t *testing.T) {
 	testCases := []struct {
-		desc          string
-		hints         map[string]interface{}
-		attrs         map[string]interface{}
-		res           map[string]interface{}
-		expectedLabel string
-		expectedLine  string
+		desc                                 string
+		hints                                map[string]interface{}
+		attrs                                map[string]interface{}
+		res                                  map[string]interface{}
+		expectedLabel                        string
+		expectedLine                         string
+		sendResourceFieldInJSONFormatEnabled bool
 	}{
 		{
 			desc: "with attribute to label and regular attribute",
@@ -57,9 +59,29 @@ func TestPushLogData(t *testing.T) {
 			expectedLabel: `{exporter="OTLP", host_name="guarana"}`,
 			expectedLine:  `{"traceid":"01020304000000000000000000000000","resources":{"region.az":"eu-west-1a"}}`,
 		},
+		{
+			desc: "with resource to label and regular resource and feature gate flag exporter.loki.sendWithResourceInJSONFormat is set to true",
+			res: map[string]interface{}{
+				"host.name": "guarana",
+				"region.az": "eu-west-1a",
+			},
+			hints: map[string]interface{}{
+				"loki.resource.labels": "host.name",
+			},
+			expectedLabel:                        `{exporter="OTLP", host_name="guarana"}`,
+			expectedLine:                         `{"traceid":"01020304000000000000000000000000","resource":{"region.az":"eu-west-1a"}}`,
+			sendResourceFieldInJSONFormatEnabled: true,
+		},
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
+			if tC.sendResourceFieldInJSONFormatEnabled {
+				require.NoError(t, featuregate.GlobalRegistry().Set(sendResourceInJSONFormat.ID(), true))
+			}
+			t.Cleanup(func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(sendResourceInJSONFormat.ID(), false))
+			})
+
 			actualPushRequest := &push.PushRequest{}
 
 			// prepare
@@ -79,6 +101,7 @@ func TestPushLogData(t *testing.T) {
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: ts.URL,
 				},
+				sendResourceFieldInJSONFormatEnabled: sendResourceInJSONFormat.IsEnabled(),
 			}
 
 			f := NewFactory()
