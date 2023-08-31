@@ -27,7 +27,7 @@ const (
 
 type MultiLineTokenizerTestCase struct {
 	tokenizetest.TestCase
-	Flusher *Flusher
+	Flusher *FlusherConfig
 }
 
 func TestLineStartSplitFunc(t *testing.T) {
@@ -165,9 +165,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -181,9 +179,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -196,9 +192,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                forcePeriod / 4,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod * 16,
-			},
+			&FlusherConfig{Period: 16 * forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -212,9 +206,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 	}
 
@@ -223,13 +215,16 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.Wrap(splitFunc)
+		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := NewLineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
+		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -365,7 +360,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				Pattern: `^LOGEND.*$`,
 				Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 			},
-			&Flusher{},
+			nil,
 		},
 		{
 			tokenizetest.TestCase{
@@ -379,9 +374,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -396,9 +389,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -412,9 +403,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                forcePeriod / 4,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod * 16,
-			},
+			&FlusherConfig{Period: 16 * forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{
@@ -428,9 +417,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 	}
 
@@ -439,8 +426,11 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, tc.Flusher, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
 		require.NoError(t, err)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.Wrap(splitFunc)
+		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 }
@@ -531,8 +521,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			tokenizetest.TestCase{Name: "LogsWithoutFlusher",
 				Input: []byte("LOGPART log1"),
 			},
-
-			&Flusher{},
+			nil,
 		},
 		{
 			tokenizetest.TestCase{Name: "LogsWithFlusher",
@@ -543,9 +532,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 				AdditionalIterations: 1,
 				Sleep:                sleepDuration,
 			},
-			&Flusher{
-				forcePeriod: forcePeriod,
-			},
+			&FlusherConfig{Period: forcePeriod},
 		},
 		{
 			tokenizetest.TestCase{Name: "DefaultFlusherSplits",
@@ -604,10 +591,10 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewNewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces))
+		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces))
 		require.NoError(t, err)
 		if tc.Flusher != nil {
-			splitFunc = tc.Flusher.SplitFunc(splitFunc)
+			splitFunc = tc.Flusher.Wrap(splitFunc)
 		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -669,7 +656,7 @@ func TestNoSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		splitFunc := SplitNone(largeLogSize)
+		splitFunc := NoSplitFunc(largeLogSize)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 }
@@ -679,14 +666,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, nil, 0, false, false)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, false, false)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
@@ -747,7 +734,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewNewlineSplitFunc(tc.encoding, false, noTrim)
+			splitFunc, err := NewlineSplitFunc(tc.encoding, false, noTrim)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
