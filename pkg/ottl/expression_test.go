@@ -1721,7 +1721,6 @@ func Test_StandardTimeGetter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			val, err := tt.getter.Get(context.Background(), nil)
-			assert.NoError(t, err)
 			if tt.valid {
 				want, err := time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
 				assert.NoError(t, err)
