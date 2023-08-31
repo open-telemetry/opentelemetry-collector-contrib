@@ -433,8 +433,8 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 					numberDP.SetDoubleValue(v)
 				}
 
-				deltaMetricMetadata := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName, retainInitialValueOfDeltaMetric)
-				numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
+				dmd := generateDeltaMetricMetadata(tc.adjustToDelta, tc.metricName, retainInitialValueOfDeltaMetric)
+				numberDatapointSlice := numberDataPointSlice{dmd, numberDPS}
 
 				// When calculate the delta datapoints for number datapoint
 				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
@@ -453,7 +453,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
+	dmd := generateDeltaMetricMetadata(false, "foo", false)
 
 	testCases := []struct {
 		name              string
@@ -518,7 +518,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(_ *testing.T) {
 			// Given the histogram datapoints
-			histogramDatapointSlice := histogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
+			histogramDatapointSlice := histogramDataPointSlice{dmd, tc.histogramDPS}
 			emfCalcs := setupEmfCalculators()
 			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 			// When calculate the delta datapoints for histograms
@@ -582,7 +582,7 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 }
 
 func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.T) {
-	deltaMetricMetadata := generateDeltaMetricMetadata(false, "foo", false)
+	dmd := generateDeltaMetricMetadata(false, "foo", false)
 
 	testCases := []struct {
 		name              string
@@ -667,7 +667,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 	for _, tc := range testCases {
 		t.Run(tc.name, func(_ *testing.T) {
 			// Given the histogram datapoints
-			exponentialHistogramDatapointSlice := exponentialHistogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
+			exponentialHistogramDatapointSlice := exponentialHistogramDataPointSlice{dmd, tc.histogramDPS}
 			emfCalcs := setupEmfCalculators()
 			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 			// When calculate the delta datapoints for histograms
@@ -734,7 +734,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 	emfCalcs := setupEmfCalculators()
 	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
-		deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", retainInitialValueOfDeltaMetric)
+		dmd := generateDeltaMetricMetadata(true, "foo", retainInitialValueOfDeltaMetric)
 
 		testCases := []struct {
 			name               string
@@ -794,7 +794,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 				secondQuantileValue.SetQuantile(100)
 				secondQuantileValue.SetValue(tc.summaryMetricValue["secondQuantile"].(float64))
 
-				summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata, summaryDPS}
+				summaryDatapointSlice := summaryDataPointSlice{dmd, summaryDPS}
 
 				// When calculate the delta datapoints for sum and count in summary
 				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true, emfCalcs)
