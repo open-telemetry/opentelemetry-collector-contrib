@@ -59,8 +59,8 @@ func TestMultilineBuild(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig)
-			got, err := factory.Build(tt.args.maxLogSize)
+			factory := NewMultilineFactory(tt.splitterConfig, tt.args.maxLogSize)
+			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
