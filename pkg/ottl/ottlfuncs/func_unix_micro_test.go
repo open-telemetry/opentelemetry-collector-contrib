@@ -62,7 +62,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
-			want := tt.expected.UnixMilli()
+			want := tt.expected.UnixMicro()
 			assert.Equal(t, want, result)
 		})
 	}
