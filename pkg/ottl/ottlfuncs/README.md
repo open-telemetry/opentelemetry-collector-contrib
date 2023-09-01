@@ -351,9 +351,9 @@ Examples:
 
 `Duration(duration)`
 
-The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
+The `Duration` Converter takes a string representation of a duration and converts it to a [Golang `time.duration`](https://pkg.go.dev/time#ParseDuration).
 
-`duration` is a string.
+`duration` is a string. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
 
