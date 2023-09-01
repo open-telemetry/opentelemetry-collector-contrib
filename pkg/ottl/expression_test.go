@@ -1657,3 +1657,92 @@ func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 	_, ok := err.(TypeError)
 	assert.False(t, ok)
 }
+
+func Test_StandardTimeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           StandardTimeGetter[interface{}]
+		want             string
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "2023 time",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.Date(2023, 8, 17, 1, 1, 1, 1, time.UTC), nil
+				},
+			},
+			want:  "2023-08-17T01:01:01.000000001Z",
+			valid: true,
+		},
+		{
+			name: "before 2000 time",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.Date(1999, 12, 1, 10, 59, 58, 57, time.UTC), nil
+				},
+			},
+			want:  "1999-12-01T10:59:58.000000057Z",
+			valid: true,
+		},
+		{
+			name: "wrong type - duration",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.ParseDuration("70ns")
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got time.Duration",
+		},
+		{
+			name: "wrong type - bool",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return true, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got bool",
+		},
+		{
+			name: "nil",
+			getter: StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return nil, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "expected time but got nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				var want time.Time
+				want, err = time.Parse("2006-01-02T15:04:05.000000000Z", tt.want)
+				assert.NoError(t, err)
+				assert.Equal(t, want, val)
+			} else {
+				assert.ErrorContains(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardTimeGetter_WrappedError(t *testing.T) {
+	getter := StandardTimeGetter[interface{}]{
+		Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
