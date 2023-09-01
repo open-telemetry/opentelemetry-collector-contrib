@@ -11,11 +11,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "kinetica"
-)
-
 // Config defines configuration for the Kinetica exporter.
 type Config struct {
 	Host               string              `mapstructure:"host"`

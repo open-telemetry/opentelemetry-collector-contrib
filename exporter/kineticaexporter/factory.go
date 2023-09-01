@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package kineticaexporter
 
 import (
@@ -9,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter/internal/metadata"
 )
 
 // NewFactory creates a factory for Kinetica exporter.
@@ -16,7 +20,7 @@ import (
 //	@return exporter.Factory
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		typeStr,
+		metadata.Type,
 		CreateDefaultConfig,
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
