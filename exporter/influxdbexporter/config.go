@@ -48,7 +48,7 @@ type Config struct {
 	// - service.name
 	// - span.name
 	// Other common attributes can be found here:
-	// - https://github.com/open-telemetry/opentelemetry-collector/tree/main/semconv
+	// - https://opentelemetry.io/docs/specs/semconv/
 	SpanDimensions []string `mapstructure:"span_dimensions"`
 
 	// LogRecordDimensions are log record attributes to be used as line protocol tags.
@@ -58,7 +58,7 @@ type Config struct {
 	// The default values:
 	// - service.name
 	// Other common attributes can be found here:
-	// - https://github.com/open-telemetry/opentelemetry-collector/tree/main/semconv
+	// - https://opentelemetry.io/docs/specs/semconv/
 	// When using InfluxDB for both logs and traces, be certain that log_record_dimensions
 	// matches the tracing span_dimensions value.
 	LogRecordDimensions []string `mapstructure:"log_record_dimensions"`
