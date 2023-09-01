@@ -47,7 +47,6 @@ func (p *mockPusher) ForceFlush() error {
 }
 
 func TestConsumeMetrics(t *testing.T) {
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -66,7 +65,7 @@ func TestConsumeMetrics(t *testing.T) {
 	require.NoError(t, exp.shutdown(ctx))
 }
 
-func TestConsumeMetricsWithNaNValuesHistogram(t *testing.T) {
+func TestConsumeMetricsWithNaNValues(t *testing.T) {
 	tests := []struct {
 		testName     string
 		generateFunc func(string) pmetric.Metrics
