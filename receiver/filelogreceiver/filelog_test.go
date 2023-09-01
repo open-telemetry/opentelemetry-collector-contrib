@@ -34,6 +34,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/add"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -120,6 +121,68 @@ func TestReadStaticFile(t *testing.T) {
 	)
 	// TODO: Figure out a nice way to assert each logs entry content.
 	// require.Equal(t, expectedLogs, sink.AllLogs())
+	require.NoError(t, rcvr.Shutdown(context.Background()))
+}
+
+func TestReadAndTransformStaticFile(t *testing.T) {
+	t.Setenv("MY_ENV_VAR", "bar")
+
+	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
+
+	f := NewFactory()
+	sink := new(consumertest.LogsSink)
+	cfg := testdataConfigYaml()
+	cfg.Operators = append(cfg.Operators, operator.Config{
+		Builder: func() *add.Config {
+			cfg := add.NewConfig()
+			cfg.Field = entry.NewResourceField("foo")
+			cfg.Value = "EXPR(env(\"MY_ENV_VAR\"))"
+			return cfg
+		}(),
+	})
+
+	converter := adapter.NewConverter(zap.NewNop())
+	converter.Start()
+	defer converter.Stop()
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
+
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	require.NoError(t, err, "failed to create receiver")
+	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Build the expected set by using adapter.Converter to translate entries
+	// to pdata Logs.
+	queueEntry := func(t *testing.T, c *adapter.Converter, msg string, severity entry.Severity) {
+		e := entry.New()
+		e.Timestamp = expectedTimestamp
+		require.NoError(t, e.Set(entry.NewBodyField("msg"), msg))
+		e.Severity = severity
+		e.AddAttribute("file_name", "simple.log")
+		require.NoError(t, c.Batch([]*entry.Entry{e}))
+	}
+	queueEntry(t, converter, "Something routine", entry.Info)
+	queueEntry(t, converter, "Something bad happened!", entry.Error)
+	queueEntry(t, converter, "Some details...", entry.Debug)
+
+	dir, err := os.Getwd()
+	require.NoError(t, err)
+	t.Logf("Working Directory: %s", dir)
+
+	wg.Wait()
+
+	require.Eventually(t, expectNLogs(sink, 3), 2*time.Second, 5*time.Millisecond,
+		"expected %d but got %d logs",
+		3, sink.LogRecordCount(),
+	)
+	v, ok := sink.AllLogs()[0].ResourceLogs().At(0).Resource().Attributes().Get("foo")
+	assert.True(t, ok)
+	if ok {
+		assert.Equal(t, "bar", v.AsRaw())
+	}
+
 	require.NoError(t, rcvr.Shutdown(context.Background()))
 }
 
