@@ -151,7 +151,7 @@ func newPathGetSetter(path []ottl.Field) (ottl.GetSetter[TransformContext], erro
 	case "time":
 		return accessTime(), nil
 	case "observed_time":
-		return accessObserved(), nil
+		return accessObservedTime(), nil
 	case "severity_number":
 		return accessSeverityNumber(), nil
 	case "severity_text":
