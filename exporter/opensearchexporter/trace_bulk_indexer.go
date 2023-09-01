@@ -194,6 +194,15 @@ func responseAsError(item opensearchutil.BulkIndexerResponseItem) error {
 	return errors.New(string(errorJSON))
 }
 
+func attributesToMapString(attributes pcommon.Map) map[string]string {
+	m := make(map[string]string, attributes.Len())
+	attributes.Range(func(k string, v pcommon.Value) bool {
+		m[k] = v.AsString()
+		return true
+	})
+	return m
+}
+
 func shouldRetryEvent(status int) bool {
 	var retryOnStatus = []int{500, 502, 503, 504, 429}
 	for _, retryable := range retryOnStatus {

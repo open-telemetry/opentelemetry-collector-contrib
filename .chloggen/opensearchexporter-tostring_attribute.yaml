@@ -1,0 +1,9 @@
+change_type: bug_fix
+
+component: opensearchexporter
+
+note: clean up rejected attribute in json by joining an array to string
+
+issues: [23611]
+
+subtext: related to: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/24540 

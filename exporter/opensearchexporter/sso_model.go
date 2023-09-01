@@ -43,13 +43,13 @@ type ssoSpan struct {
 		SchemaURL              string         `json:"schemaUrl"`
 		Version                string         `json:"version"`
 	} `json:"instrumentationScope,omitempty"`
-	Kind         string         `json:"kind"`
-	Links        []ssoSpanLinks `json:"links,omitempty"`
-	Name         string         `json:"name"`
-	ParentSpanID string         `json:"parentSpanId"`
-	Resource     map[string]any `json:"resource,omitempty"`
-	SpanID       string         `json:"spanId"`
-	StartTime    time.Time      `json:"startTime"`
+	Kind         string            `json:"kind"`
+	Links        []ssoSpanLinks    `json:"links,omitempty"`
+	Name         string            `json:"name"`
+	ParentSpanID string            `json:"parentSpanId"`
+	Resource     map[string]string `json:"resource,omitempty"`
+	SpanID       string            `json:"spanId"`
+	StartTime    time.Time         `json:"startTime"`
 	Status       struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
