@@ -6,4 +6,5 @@ note: clean up rejected attribute in json by joining an array to string
 
 issues: [23611]
 
-subtext: related to: [24540] 
+subtext: 
+
