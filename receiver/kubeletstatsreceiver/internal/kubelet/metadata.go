@@ -91,7 +91,7 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 
 	// Cannot proceed, if metadata is unavailable.
 	if m.NodesMetadata == nil {
-		return nil, errors.New("nodes metadata were not fetched")
+		return errors.New("nodes metadata were not fetched")
 	}
 
 	switch extraMetadataLabel {
@@ -112,7 +112,7 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 		// Get more labels from PersistentVolumeClaim volume type.
 		if volume.PersistentVolumeClaim != nil {
 			volCacheID := fmt.Sprintf("%s/%s", podRef.UID, extraMetadataFrom)
-			err := m.DetailedPVCResourceSetter(rb, volCacheID, volume.PersistentVolumeClaim.ClaimName, podRef.Namespace)
+			_, err := m.DetailedPVCResourceSetter(rb, volCacheID, volume.PersistentVolumeClaim.ClaimName, podRef.Namespace)
 			if err != nil {
 				return fmt.Errorf("failed to set labels from volume claim: %w", err)
 			}
