@@ -4,11 +4,13 @@ go 1.20
 
 require (
 	github.com/google/go-cmp v0.5.9
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.85.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/config/confighttp v0.85.1-0.20230922175119-921b6125f017
+	go.opentelemetry.io/collector/config/configopaque v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/confmap v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/consumer v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230922175119-921b6125f017
@@ -18,6 +20,7 @@ require (
 )
 
 require (
+	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.3 // indirect
@@ -39,11 +42,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.85.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.0 // indirect
+	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.85.1-0.20230922175119-921b6125f017 // indirect
-	go.opentelemetry.io/collector/config/configopaque v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/internal v0.85.1-0.20230922175119-921b6125f017 // indirect
@@ -58,6 +61,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.18.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
+	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
