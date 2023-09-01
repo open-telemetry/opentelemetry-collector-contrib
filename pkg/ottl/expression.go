@@ -615,7 +615,7 @@ func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, erro
 
 // DurationGetter is a Getter that must return a time.Duration.
 type DurationGetter[K any] interface {
-	// Get retrieves an time.Duration value.
+	// Get retrieves a time.Duration value.
 	Get(ctx context.Context, tCtx K) (time.Duration, error)
 }
 
