@@ -283,6 +283,7 @@ func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.S
 			}
 			// Convert data into the more simplified data type
 			clientSNMPData := c.convertSnmpPDUToSnmpData(snmpPDU)
+
 			// Keep track of which column OID this data came from as well
 			clientSNMPData.columnOID = oid
 			// If the value type is not supported, then ignore
@@ -391,6 +392,8 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 	case uint16:
 		return int64(value), nil
 	case uint32:
+		return int64(value), nil
+	case uint64:
 		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
