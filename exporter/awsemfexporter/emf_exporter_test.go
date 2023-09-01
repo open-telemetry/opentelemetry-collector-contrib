@@ -6,7 +6,6 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
-	"math"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -15,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -47,6 +47,7 @@ func (p *mockPusher) ForceFlush() error {
 }
 
 func TestConsumeMetrics(t *testing.T) {
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -65,72 +66,44 @@ func TestConsumeMetrics(t *testing.T) {
 	require.NoError(t, exp.shutdown(ctx))
 }
 
-func TestConsumeMetricsWithNaNValues(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	factory := NewFactory()
-	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
-	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-
-	md := generateTestMetrics(testMetric{
-		metricNames:  []string{"metric_1", "metric_2"},
-		metricValues: [][]float64{{math.NaN()}, {2.22}},
-	})
-	require.NoError(t, exp.pushMetricsData(ctx, md))
-	require.NoError(t, exp.shutdown(ctx))
-}
-
 func TestConsumeMetricsWithNaNValuesHistogram(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	factory := NewFactory()
-	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
-	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-	md := generateTestHistogramMetricWithNaNs("bad-histo")
-	require.NoError(t, exp.pushMetricsData(ctx, md))
-	require.NoError(t, exp.shutdown(ctx))
-}
+	tests := []struct {
+		testName     string
+		generateFunc func(string) pmetric.Metrics
+	}{
+		{
+			"histograme-with-nan",
+			generateTestHistogramMetricWithNaNs,
+		}, {
+			"gauge-with-nan",
+			generateTestGaugeMetricNaN,
+		}, {
+			"summary-with-nan",
+			generateTestSummaryMetricWithNaN,
+		}, {
+			"exponentialHistogram-with-nan",
+			generateTestExponentialHistogramMetricWithNaNs,
+		},
+	}
 
-func TestConsumeMetricsWithNaNValuesSummary(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	factory := NewFactory()
-	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
-	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-	md := generateTestSummaryMetricWithNaN("bad-summmary-nan")
-	require.NoError(t, exp.pushMetricsData(ctx, md))
-	require.NoError(t, exp.shutdown(ctx))
-}
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			factory := NewFactory()
+			expCfg := factory.CreateDefaultConfig().(*Config)
+			expCfg.Region = "us-west-2"
+			expCfg.MaxRetries = 0
+			expCfg.OutputDestination = "stdout"
+			exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+			assert.Nil(t, err)
+			assert.NotNil(t, exp)
+			md := tc.generateFunc(tc.testName)
+			require.NoError(t, exp.pushMetricsData(ctx, md))
+			require.NoError(t, exp.shutdown(ctx))
+		})
+	}
 
-func TestConsumeMetricsWithNaNValuesExponentialHistogram(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	factory := NewFactory()
-	expCfg := factory.CreateDefaultConfig().(*Config)
-	expCfg.Region = "us-west-2"
-	expCfg.MaxRetries = 0
-	expCfg.OutputDestination = "stdout"
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
-	assert.Nil(t, err)
-	assert.NotNil(t, exp)
-	md := generateTestExponentialHistogramMetricWithNaNs("bad-expo-nan")
-	require.NoError(t, exp.pushMetricsData(ctx, md))
-	require.NoError(t, exp.shutdown(ctx))
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
