@@ -6,7 +6,6 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 	"os"
-	"sync"
 
 	"go.uber.org/zap"
 
@@ -14,8 +13,9 @@ import (
 )
 
 type readerWrapper struct {
-	reader *reader
-	fp     *fingerprint.Fingerprint
+	reader  *reader
+	trieKey *fingerprint.Fingerprint
+	close   bool // indicate if we should close the file after reading, used when we detect lost readers
 }
 
 func (m *Manager) kickoffThreads(ctx context.Context) {
@@ -68,18 +68,21 @@ func (m *Manager) worker(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			return
-		case chanData, ok := <-m.readerChan:
+		case wrapper, ok := <-m.readerChan:
 			if !ok {
 				return
 			}
-			r, fp := chanData.reader, chanData.fp
-			if !m.readToEnd(ctx, r) {
-				// Save off any files that were not fully read or if deleteAfterRead is disabled
+			r, fp := wrapper.reader, wrapper.trieKey
+			if !m.readToEnd(ctx, r) && !wrapper.close {
+				// Save off any files that were not fully read or if deleteAfterRead is disabled.
 				m.knownFilesLock.Lock()
 				m.knownFiles = append(m.knownFiles, r)
 				m.knownFilesLock.Unlock()
+			} else if wrapper.close {
+				// this is a lost reader, close it and release the file descriptor
+				r.Close()
 			}
-			m.removePath(fp)
+			m.updateTrie(fp, false)
 		}
 	}
 }
@@ -120,11 +123,9 @@ func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
 	for _, path := range paths {
 		reader, fp := m.makeReaderConcurrent(path)
 		if reader != nil {
-			// add path and fingerprint as it's not consuming
-			m.trieLock.Lock()
-			m.trie.Put(fp.FirstBytes)
-			m.trieLock.Unlock()
-			m.readerChan <- readerWrapper{reader: reader, fp: fp}
+			// add fingerprint to trie
+			m.updateTrie(fp, true)
+			m.readerChan <- readerWrapper{reader: reader, trieKey: fp}
 		}
 	}
 }
@@ -135,10 +136,14 @@ func (m *Manager) isCurrentlyConsuming(fp *fingerprint.Fingerprint) bool {
 	return m.trie.HasKey(fp.FirstBytes)
 }
 
-func (m *Manager) removePath(fp *fingerprint.Fingerprint) {
+func (m *Manager) updateTrie(fp *fingerprint.Fingerprint, insert bool) {
 	m.trieLock.Lock()
 	defer m.trieLock.Unlock()
-	m.trie.Delete(fp.FirstBytes)
+	if insert {
+		m.trie.Put(fp.FirstBytes)
+	} else {
+		m.trie.Delete(fp.FirstBytes)
+	}
 }
 
 func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
@@ -159,16 +164,14 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 	}
 	m.knownFiles = m.knownFiles[i:]
 
-	var lostWG sync.WaitGroup
 	for _, r := range oldReaders {
-		lostWG.Add(1)
-		go func(r *reader) {
-			defer lostWG.Done()
-			r.ReadToEnd(ctx)
+		if m.isCurrentlyConsuming(r.Fingerprint) {
 			r.Close()
-		}(r)
+		} else {
+			m.updateTrie(r.Fingerprint, true)
+			m.readerChan <- readerWrapper{reader: r, trieKey: r.Fingerprint, close: true}
+		}
 	}
-	lostWG.Wait()
 }
 
 func (m *Manager) newReaderConcurrent(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
