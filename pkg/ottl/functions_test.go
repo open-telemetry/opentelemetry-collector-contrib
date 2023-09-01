@@ -1334,7 +1334,7 @@ type durationGetterSliceArguments struct {
 	DurationGetters []DurationGetter[any] `ottlarg:"0"`
 }
 
-func functionWithDurationGetterSlice(getters []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
+func functionWithDurationGetterSlice(_ []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return nil, nil
 	}, nil
@@ -1344,7 +1344,7 @@ type timeGetterSliceArguments struct {
 	TimeGetters []TimeGetter[any] `ottlarg:"0"`
 }
 
-func functionWithTimeGetterSlice(getters []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
+func functionWithTimeGetterSlice(_ []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return nil, nil
 	}, nil
