@@ -669,6 +669,40 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: 2,
 		},
 		{
+			name: "durationgetter slice arg",
+			inv: editor{
+				Function: "testing_durationgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "timegetter slice arg",
+			inv: editor{
+				Function: "testing_timegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "floatgetter slice arg",
 			inv: editor{
 				Function: "testing_floatgetter_slice",
@@ -970,6 +1004,28 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: nil,
+		},
+		{
+			name: "durationgetter arg",
+			inv: editor{
+				Function: "testing_durationgetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "timegetter arg",
+			inv: editor{
+				Function: "testing_timegetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
 		},
 		{
 			name: "functiongetter arg (Uppercase)",
@@ -1274,6 +1330,26 @@ func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFun
 	}, nil
 }
 
+type durationGetterSliceArguments struct {
+	DurationGetters []DurationGetter[any] `ottlarg:"0"`
+}
+
+func functionWithDurationGetterSlice(getters []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return nil, nil
+	}, nil
+}
+
+type timeGetterSliceArguments struct {
+	TimeGetters []TimeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithTimeGetterSlice(getters []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return nil, nil
+	}, nil
+}
+
 type floatGetterSliceArguments struct {
 	FloatGetters []FloatGetter[any] `ottlarg:"0"`
 }
@@ -1369,6 +1445,26 @@ type stringGetterArguments struct {
 }
 
 func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type durationGetterArguments struct {
+	DurationGetterArg DurationGetter[any] `ottlarg:"0"`
+}
+
+func functionWithDurationGetter(DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type timeGetterArguments struct {
+	TimeGetterArg TimeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithTimeGetter(TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
 	}, nil
@@ -1609,6 +1705,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringGetterSlice,
 		),
 		createFactory[any](
+			"testing_durationgetter_slice",
+			&durationGetterSliceArguments{},
+			functionWithDurationGetterSlice,
+		),
+		createFactory[any](
+			"testing_timegetter_slice",
+			&timeGetterSliceArguments{},
+			functionWithTimeGetterSlice,
+		),
+		createFactory[any](
 			"testing_stringlikegetter_slice",
 			&stringLikeGetterSliceArguments{},
 			functionWithStringLikeGetterSlice,
@@ -1652,6 +1758,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_getter",
 			&getterArguments{},
 			functionWithGetter,
+		),
+		createFactory[any](
+			"testing_durationgetter",
+			&durationGetterArguments{},
+			functionWithDurationGetter,
+		),
+		createFactory[any](
+			"testing_timegetter",
+			&timeGetterArguments{},
+			functionWithTimeGetter,
 		),
 		createFactory[any](
 			"testing_stringgetter",
