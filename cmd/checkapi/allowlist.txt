@@ -4,7 +4,6 @@ exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
-exporter/datasetexporter
 exporter/dynatraceexporter
 exporter/elasticsearchexporter
 exporter/f5cloudexporter
