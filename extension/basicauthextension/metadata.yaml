@@ -9,6 +9,7 @@ status:
   - grafana
   - observiq
   - redhat
+  - splunk
   - sumo
   codeowners:
     active: [jpkrohling, svrakitin, frzifus]
