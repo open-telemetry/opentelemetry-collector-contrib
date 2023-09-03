@@ -156,7 +156,7 @@ async function getIssuesData({github, context}) {
   // add new issues
   issuesNew.forEach(issue => {
     stats.issuesNew.count++;
-    const { url, title, number } = issue;
+    const { html_url: url, title, number } = issue;
     stats.issuesNew.data.push({ url, title, number });
   });
 
@@ -165,7 +165,7 @@ async function getIssuesData({github, context}) {
     const alias = targetLabels[lbl].alias;
     stats[alias].count = issuesWithLabels[lbl].length;
     stats[alias].data = issuesWithLabels[lbl].map(issue => {
-      const { url, title, number } = issue;
+      const { html_url: url, title, number } = issue;
       return { url, title, number };
     })
   }
@@ -175,7 +175,7 @@ async function getIssuesData({github, context}) {
   const sponsorNeededIssues = issuesWithLabels["Sponsor Needed"].filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
   sponsorNeededIssues.forEach(issue => {
     stats.issuesNewSponsorNeeded.count++;
-    const { url, title, number } = issue;
+    const { html_url: url, title, number } = issue;
     stats.issuesNewSponsorNeeded.data.push({ url, title, number });
   });
   return stats
@@ -201,15 +201,14 @@ function generateReport({ issuesData, previousReport, componentData }) {
     }
 
     // generate summary if issues exist
+    // NOTE: the newline after <summary> is required for markdown to render correctly
     if (data.length !== 0) {
       section.push(`<details>
-    <summary> Issues </summary>
-    <ul>
-    ${data.map((issue) => {
+    <summary> Issues </summary>\n`);
+    section.push(`${data.map((issue) => {
         const { url, title, number } = issue;
-        return `<li><a href="${url}">#${number}</a> ${title}</li>`;
+        return `- [ ] ${title} ([#${number}](${url}))`;
       }).join('\n')}
-    </ul>
 </details>`);
     }
 
@@ -227,14 +226,13 @@ function generateReport({ issuesData, previousReport, componentData }) {
 
     section.push(`<li> ${lbl}: ${count}`);
     if (data.length !== 0) {
+    // NOTE: the newline after <summary> is required for markdown to render correctly
       section.push(`<details>
-    <summary> Components </summary>
-    <ul>
-    ${Object.keys(data).map((compName) => {
+    <summary> Components </summary>\n`);
+      section.push(`${Object.keys(data).map((compName) => {
         const {stability} = data[compName]
-        return `<li>${compName}: ${JSON.stringify(stability)}}</li>`;
+        return `- [ ] ${compName}: ${JSON.stringify(stability)}`
       }).join('\n')}
-    </ul>
 </details>`);
     }
     section.push('</li>');
