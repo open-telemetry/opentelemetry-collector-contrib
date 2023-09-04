@@ -283,7 +283,6 @@ func (c *snmpClient) GetIndexedData(oids []string, scraperErrors *scrapererror.S
 			}
 			// Convert data into the more simplified data type
 			clientSNMPData := c.convertSnmpPDUToSnmpData(snmpPDU)
-
 			// Keep track of which column OID this data came from as well
 			clientSNMPData.columnOID = oid
 			// If the value type is not supported, then ignore
