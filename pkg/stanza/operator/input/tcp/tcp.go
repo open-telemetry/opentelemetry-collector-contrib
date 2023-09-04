@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
@@ -115,7 +115,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	enc, err := decoder.LookupEncoding(c.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +263,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		defer t.wg.Done()
 		defer cancel()
 
-		dec := decoder.New(t.encoding)
-
+		dec := decode.New(t.encoding)
 		if t.OneLogPerPacket {
 			var buf bytes.Buffer
 			_, err := io.Copy(&buf, conn)
@@ -293,7 +292,7 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 	}()
 }
 
-func (t *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decoder.Decoder, log []byte) {
+func (t *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decode.Decoder, log []byte) {
 	decoded, err := dec.Decode(log)
 	if err != nil {
 		t.Errorw("Failed to decode data", zap.Error(err))
