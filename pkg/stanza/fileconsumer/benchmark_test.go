@@ -4,10 +4,15 @@
 package fileconsumer
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -18,6 +23,10 @@ type fileInputBenchmark struct {
 	name   string
 	paths  []string
 	config func() *Config
+}
+
+type fileSizeBenchmark struct {
+	sizes [2]int
 }
 
 type benchFile struct {
@@ -179,4 +188,67 @@ func BenchmarkFileInput(b *testing.B) {
 			}
 		})
 	}
+}
+
+func max(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
+func (fileSize fileSizeBenchmark) createFiles(b *testing.B, rootDir string) {
+	// create 50 files, some with large file sizes, other's with rather small
+	getMessage := func(m int) string { return fmt.Sprintf("message %d", m) }
+	logs := make([]string, 0)
+	for i := 0; i < max(fileSize.sizes[0], fileSize.sizes[1]); i++ {
+		logs = append(logs, getMessage(i))
+	}
+
+	for i := 0; i < 50; i++ {
+		file := openFile(b, filepath.Join(rootDir, fmt.Sprintf("file_%s.log", uuid.NewString())))
+		file.WriteString(uuid.NewString() + strings.Join(logs[:fileSize.sizes[i%2]], "\n") + "\n")
+	}
+}
+
+func BenchmarkFileSizeVarying(b *testing.B) {
+	fileSize := fileSizeBenchmark{
+		sizes: [2]int{b.N * 5000, b.N * 10},
+	}
+	rootDir := b.TempDir()
+	cfg := NewConfig().includeDir(rootDir)
+	cfg.StartAt = "beginning"
+	cfg.MaxConcurrentFiles = 50
+	totalLogs := fileSize.sizes[0]*50 + fileSize.sizes[1]*50
+	emitCalls := make(chan *emitParams, totalLogs+10)
+
+	operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls), withReaderChan())
+	operator.persister = testutil.NewMockPersister("test")
+	defer func() {
+		require.NoError(b, operator.Stop())
+	}()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var once sync.Once
+		for i := 0; i < totalLogs; i++ {
+			once.Do(func() {
+				// Reset once we get the first log
+				b.ResetTimer()
+			})
+			<-emitCalls
+		}
+		// Stop the timer, as we're measuring log throughput
+		b.StopTimer()
+	}()
+	// create first set of files
+	fileSize.createFiles(b, rootDir)
+	operator.poll(context.Background())
+
+	// create new set of files, call poll() again
+	fileSize.createFiles(b, rootDir)
+	operator.poll(context.Background())
+
+	wg.Wait()
 }
