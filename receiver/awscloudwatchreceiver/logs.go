@@ -50,16 +50,23 @@ type client interface {
 
 type streamNames struct {
 	group string
+	arn   string
 	names []*string
 }
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
+
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName: &sn.group,
-		StartTime:    aws.Int64(st.UnixMilli()),
-		EndTime:      aws.Int64(et.UnixMilli()),
-		Limit:        aws.Int64(int64(limit)),
+		StartTime: aws.Int64(st.UnixMilli()),
+		EndTime:   aws.Int64(et.UnixMilli()),
+		Limit:     aws.Int64(int64(limit)),
 	}
+	if sn.arn != "" {
+		base.LogGroupIdentifier = aws.String(sn.arn)
+	} else {
+		base.LogGroupName = &sn.group
+	}
+
 	if len(sn.names) > 0 {
 		base.LogStreamNames = sn.names
 	}
@@ -75,17 +82,24 @@ func (sn *streamNames) groupName() string {
 
 type streamPrefix struct {
 	group  string
+	arn    string
 	prefix *string
 }
 
 func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
 	base := &cloudwatchlogs.FilterLogEventsInput{
-		LogGroupName:        &sp.group,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
 		Limit:               aws.Int64(int64(limit)),
 		LogStreamNamePrefix: sp.prefix,
 	}
+
+	if sp.arn != "" {
+		base.LogGroupIdentifier = aws.String(sp.arn)
+	} else {
+		base.LogGroupName = &sp.group
+	}
+
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
 	}
@@ -298,8 +312,22 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			break
 		}
 
+		var limit = maxLogGroupsPerDiscovery
+
+		if auto.Limit > int(maxLogGroupsPerDiscovery) {
+			limit = int64(auto.Limit)
+		}
+
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: aws.Int64(maxLogGroupsPerDiscovery),
+			Limit: aws.Int64(limit),
+		}
+
+		if auto.IncludeLinkedAccounts {
+			req.IncludeLinkedAccounts = &auto.IncludeLinkedAccounts
+		}
+
+		if auto.IncludeLinkedAccounts && len(auto.AccountIdentifiers) >= 1 {
+			req.AccountIdentifiers = auto.AccountIdentifiers
 		}
 
 		if auto.Prefix != "" {
@@ -323,21 +351,34 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
+				if lg.Arn != nil && *lg.Arn != "" {
+					groups = append(groups, &streamNames{arn: transformARN(*lg.Arn)})
+				}
 				groups = append(groups, &streamNames{group: *lg.LogGroupName})
 				continue
 			}
 
 			for _, prefix := range auto.Streams.Prefixes {
+				if lg.Arn != nil && *lg.Arn != "" {
+					groups = append(groups, &streamPrefix{group: *lg.LogGroupName, arn: *lg.Arn, prefix: prefix})
+				}
 				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
 			}
 
 			if len(auto.Streams.Names) > 0 {
+				if lg.Arn != nil && *lg.Arn != "" {
+					groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: *lg.Arn, names: auto.Streams.Names})
+				}
 				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
 			}
 		}
 		nextToken = dlgResults.NextToken
 	}
 	return groups, nil
+}
+
+func transformARN(arn string) string {
+	return arn[:len(arn)-2]
 }
 
 func (l *logsReceiver) ensureSession() error {

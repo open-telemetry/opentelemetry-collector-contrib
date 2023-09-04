@@ -41,9 +41,11 @@ type GroupConfig struct {
 
 // AutodiscoverConfig is the configuration for the autodiscovery functionality of log groups
 type AutodiscoverConfig struct {
-	Prefix  string       `mapstructure:"prefix"`
-	Limit   int          `mapstructure:"limit"`
-	Streams StreamConfig `mapstructure:"streams"`
+	AccountIdentifiers    []*string    `mapstructure:"accountIdentifiers"`
+	IncludeLinkedAccounts bool         `mapstructure:"includeLinkedAccounts"`
+	Prefix                string       `mapstructure:"prefix"`
+	Limit                 int          `mapstructure:"limit"`
+	Streams               StreamConfig `mapstructure:"streams"`
 }
 
 // StreamConfig represents the configuration for the log stream filtering
@@ -58,6 +60,7 @@ var (
 	errInvalidEventLimit              = errors.New("event limit is improperly configured, value must be greater than 0")
 	errInvalidPollInterval            = errors.New("poll interval is incorrect, it must be a duration greater than one second")
 	errInvalidAutodiscoverLimit       = errors.New("the limit of autodiscovery of log groups is improperly configured, value must be greater than 0")
+	errInvalidAccountIdentifiers      = errors.New("limit of accounts has been reach. Maximum number of 20 items")
 	errAutodiscoverAndNamedConfigured = errors.New("both autodiscover and named configs are configured, Only one or the other is permitted")
 )
 
@@ -126,6 +129,9 @@ func (c *GroupConfig) validate() error {
 func validateAutodiscover(cfg AutodiscoverConfig) error {
 	if cfg.Limit <= 0 {
 		return errInvalidAutodiscoverLimit
+	}
+	if cfg.IncludeLinkedAccounts && len(cfg.AccountIdentifiers) > 20 {
+		return errInvalidAccountIdentifiers
 	}
 	return nil
 }
