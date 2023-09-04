@@ -213,7 +213,7 @@ func (fileSize fileSizeBenchmark) createFiles(b *testing.B, rootDir string) {
 
 func BenchmarkFileSizeVarying(b *testing.B) {
 	fileSize := fileSizeBenchmark{
-		sizes: [2]int{b.N * 5000, b.N * 10},
+		sizes: [2]int{b.N * 5000, b.N * 10}, // Half the files will be huge, other half will be smaller
 	}
 	rootDir := b.TempDir()
 	cfg := NewConfig().includeDir(rootDir)

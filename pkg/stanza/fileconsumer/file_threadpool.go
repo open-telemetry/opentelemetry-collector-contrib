@@ -15,7 +15,7 @@ import (
 type readerWrapper struct {
 	reader  *reader
 	trieKey *fingerprint.Fingerprint
-	close   bool // indicate if we should close the file after reading, used when we detect lost readers
+	close   bool // indicate if we should close the file after reading. Used when we detect lost readers
 }
 
 func (m *Manager) kickoffThreads(ctx context.Context) {
