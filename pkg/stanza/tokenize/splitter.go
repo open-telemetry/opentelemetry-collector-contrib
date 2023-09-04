@@ -6,7 +6,7 @@ package tokenize // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 )
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
@@ -29,7 +29,7 @@ func NewSplitterConfig() SplitterConfig {
 
 // Build builds bufio.SplitFunc based on the config
 func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
-	enc, err := decoder.LookupEncoding(c.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}

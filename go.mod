@@ -273,7 +273,7 @@ require (
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.333 // indirect
+	github.com/aws/aws-sdk-go v1.45.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.21.0 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.18.37 // indirect
@@ -418,9 +418,9 @@ require (
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6 // indirect
-	github.com/influxdata/influxdb-observability/common v0.5.5 // indirect
-	github.com/influxdata/influxdb-observability/influx2otel v0.5.5 // indirect
-	github.com/influxdata/influxdb-observability/otel2influx v0.5.5 // indirect
+	github.com/influxdata/influxdb-observability/common v0.5.6 // indirect
+	github.com/influxdata/influxdb-observability/influx2otel v0.5.6 // indirect
+	github.com/influxdata/influxdb-observability/otel2influx v0.5.6 // indirect
 	github.com/influxdata/line-protocol/v2 v2.2.1 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.6 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -585,7 +585,7 @@ require (
 	github.com/stretchr/testify v1.8.4 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.732 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.735 // indirect
 	github.com/tg123/go-htpasswd v1.2.1 // indirect
 	github.com/tidwall/gjson v1.14.3 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
