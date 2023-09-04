@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestMultilineBuild(t *testing.T) {
@@ -17,13 +17,13 @@ func TestMultilineBuild(t *testing.T) {
 	}
 	tests := []struct {
 		name           string
-		splitterConfig helper.SplitterConfig
+		splitterConfig tokenize.SplitterConfig
 		args           args
 		wantErr        bool
 	}{
 		{
 			name:           "default configuration",
-			splitterConfig: helper.NewSplitterConfig(),
+			splitterConfig: tokenize.NewSplitterConfig(),
 			args: args{
 				maxLogSize: 1024,
 			},
@@ -31,10 +31,10 @@ func TestMultilineBuild(t *testing.T) {
 		},
 		{
 			name: "eoncoding error",
-			splitterConfig: helper.SplitterConfig{
+			splitterConfig: tokenize.SplitterConfig{
 				Encoding:  "error",
-				Flusher:   helper.NewFlusherConfig(),
-				Multiline: helper.NewMultilineConfig(),
+				Flusher:   tokenize.NewFlusherConfig(),
+				Multiline: tokenize.NewMultilineConfig(),
 			},
 			args: args{
 				maxLogSize: 1024,
@@ -43,10 +43,10 @@ func TestMultilineBuild(t *testing.T) {
 		},
 		{
 			name: "Multiline  error",
-			splitterConfig: helper.SplitterConfig{
+			splitterConfig: tokenize.SplitterConfig{
 				Encoding: "utf-8",
-				Flusher:  helper.NewFlusherConfig(),
-				Multiline: helper.MultilineConfig{
+				Flusher:  tokenize.NewFlusherConfig(),
+				Multiline: tokenize.MultilineConfig{
 					LineStartPattern: "START",
 					LineEndPattern:   "END",
 				},
@@ -59,8 +59,8 @@ func TestMultilineBuild(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig)
-			got, err := factory.Build(tt.args.maxLogSize)
+			factory := NewMultilineFactory(tt.splitterConfig, tt.args.maxLogSize)
+			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return

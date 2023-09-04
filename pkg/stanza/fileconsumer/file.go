@@ -412,12 +412,9 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 				m.Errorw("migrate header attributes: unexpected format")
 			}
 		}
-		r, err := m.readerFactory.newFromMetadata(rmd)
-		if err != nil {
-			m.Errorw("load reader", err)
-		} else {
-			m.knownFiles = append(m.knownFiles, r)
-		}
+
+		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
+		m.knownFiles = append(m.knownFiles, &reader{readerMetadata: rmd})
 	}
 
 	return nil

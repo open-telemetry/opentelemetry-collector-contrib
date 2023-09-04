@@ -4,13 +4,13 @@ go 1.20
 
 require (
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.83.0
-	go.opentelemetry.io/collector/config/confighttp v0.83.0
-	go.opentelemetry.io/collector/config/configopaque v0.83.0
-	go.opentelemetry.io/collector/config/configtls v0.83.0
-	go.opentelemetry.io/collector/confmap v0.83.0
-	go.opentelemetry.io/collector/extension v0.83.0
-	go.opentelemetry.io/collector/extension/auth v0.83.0
+	go.opentelemetry.io/collector/component v0.84.0
+	go.opentelemetry.io/collector/config/confighttp v0.84.0
+	go.opentelemetry.io/collector/config/configopaque v0.84.0
+	go.opentelemetry.io/collector/config/configtls v0.84.0
+	go.opentelemetry.io/collector/confmap v0.84.0
+	go.opentelemetry.io/collector/extension v0.84.0
+	go.opentelemetry.io/collector/extension/auth v0.84.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/oauth2 v0.11.0
@@ -36,11 +36,11 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.9.0 // indirect
-	go.opentelemetry.io/collector v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.83.0 // indirect
+	go.opentelemetry.io/collector v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/internal v0.84.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
