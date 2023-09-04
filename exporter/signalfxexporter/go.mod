@@ -12,7 +12,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.84.0
-	github.com/shirou/gopsutil/v3 v3.23.7
+	github.com/shirou/gopsutil/v3 v3.23.8
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1
 	github.com/stretchr/testify v1.8.4
@@ -65,8 +65,8 @@ require (
 	github.com/signalfx/gohistogram v0.0.0-20160107210732-1ccfd2ff5083 // indirect
 	github.com/signalfx/golib/v3 v3.3.47 // indirect
 	github.com/signalfx/sapm-proto v0.13.0 // indirect
-	github.com/tklauser/go-sysconf v0.3.11 // indirect
-	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/tklauser/go-sysconf v0.3.12 // indirect
+	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
