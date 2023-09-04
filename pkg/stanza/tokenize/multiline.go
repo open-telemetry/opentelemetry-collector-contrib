@@ -111,7 +111,7 @@ func LineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) b
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = trimFunc(data)
+			token = trimFunc(data[firstMatchEnd:])
 			advance = len(data)
 			return
 		}
@@ -123,8 +123,8 @@ func LineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) b
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
-		advance = secondMatchStart                               // start scanning at the beginning of the second match
-		token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
+		advance = secondMatchStart                             // start scanning at the beginning of the second match
+		token = trimFunc(data[firstMatchEnd:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
 		err = nil
 		return
 	}
@@ -152,7 +152,7 @@ func LineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool, trimFunc trimFunc) buf
 		}
 
 		advance = loc[1]
-		token = trimFunc(data[:loc[1]])
+		token = trimFunc(data[:loc[0]])
 		err = nil
 		return
 	}
