@@ -73,6 +73,8 @@ all_set:
       enabled: true
     k8s.resource_quota.used:
       enabled: true
+    k8s.service.port_count:
+      enabled: true
     k8s.statefulset.current_pods:
       enabled: true
     k8s.statefulset.desired_pods:
@@ -95,6 +97,8 @@ all_set:
     container.image.name:
       enabled: true
     container.image.tag:
+      enabled: true
+    k8s.cluster.name:
       enabled: true
     container.runtime:
       enabled: true
@@ -151,6 +155,16 @@ all_set:
     k8s.resourcequota.name:
       enabled: true
     k8s.resourcequota.uid:
+      enabled: true
+    k8s.service.cluster_ip:
+      enabled: true
+    k8s.service.name:
+      enabled: true
+    k8s.service.namespace:
+      enabled: true
+    k8s.service.type:
+      enabled: true
+    k8s.service.uid:
       enabled: true
     k8s.statefulset.name:
       enabled: true
@@ -238,6 +252,8 @@ none_set:
       enabled: false
     k8s.resource_quota.used:
       enabled: false
+    k8s.service.port_count:
+      enabled: false
     k8s.statefulset.current_pods:
       enabled: false
     k8s.statefulset.desired_pods:
@@ -260,6 +276,8 @@ none_set:
     container.image.name:
       enabled: false
     container.image.tag:
+      enabled: false
+    k8s.cluster.name:
       enabled: false
     container.runtime:
       enabled: false
@@ -316,6 +334,16 @@ none_set:
     k8s.resourcequota.name:
       enabled: false
     k8s.resourcequota.uid:
+      enabled: false
+    k8s.service.cluster_ip:
+      enabled: false
+    k8s.service.name:
+      enabled: false
+    k8s.service.namespace:
+      enabled: false
+    k8s.service.type:
+      enabled: false
+    k8s.service.uid:
       enabled: false
     k8s.statefulset.name:
       enabled: false
