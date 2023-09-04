@@ -59,7 +59,7 @@ for LABEL_REQ in ${LABELS}; do
 
         # Labels added by a GitHub Actions workflow don't trigger other workflows
         # by design, so we have to manually ping code owners here.
-        COMPONENT="${LABEL}" ISSUE=${ISSUE} SENDER="${SENDER}" bash "${CUR_DIRECTORY}/ping-codeowners.sh"
+        COMPONENT="${LABEL}" ISSUE=${ISSUE} SENDER="${SENDER}" bash "${CUR_DIRECTORY}/ping-codeowners-issues.sh"
     else
         gh issue edit "${ISSUE}" --remove-label "${LABEL}"
     fi
