@@ -8,8 +8,8 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOEl
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg63KZ2rFqZQzSB4Vz2SUXa1BpHTVz9L5PTmPC4E=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
-github.com/IBM/sarama v1.41.0 h1:c+fV23/HDO+M88dTYFg7TFRlxU0scgfdcFrQh/8s5Z8=
-github.com/IBM/sarama v1.41.0/go.mod h1:JFCPURVskaipJdKRFkiE/OZqQHw7jqliaJmRwXCmSSw=
+github.com/IBM/sarama v1.41.1 h1:B4/TdHce/8Ipza+qrLIeNJ9D1AOxZVp/3uDv6H/dp2M=
+github.com/IBM/sarama v1.41.1/go.mod h1:JFCPURVskaipJdKRFkiE/OZqQHw7jqliaJmRwXCmSSw=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/Microsoft/hcsshim v0.10.0-rc.8 h1:YSZVvlIIDD1UxQpJp0h+dnpLUw+TrY0cx8obKsp3bek=
