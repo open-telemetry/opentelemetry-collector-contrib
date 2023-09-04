@@ -46,12 +46,15 @@ func newMetricsExporter(params exporter.CreateSettings, cfg component.Config) (*
 		return nil, err
 	}
 
-	metricExporter := metricExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
+	metricExporter := metricExporterImp{loadBalancer: lb, routingKey: svcRouting}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service":
+	case "service", "":
 		metricExporter.routingKey = svcRouting
-	case "_metric_ID", "":
+	case "resource":
+		metricExporter.routingKey = resourceRouting
+	case "metric":
+		metricExporter.routingKey = metricNameRouting
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
@@ -158,7 +161,7 @@ func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[str
 				metrics := sm.At(j).Metrics()
 				for k := 0; k < metrics.Len(); k++ {
 					md := metrics.At(k)
-					rKey := md.Name()
+					rKey := metricRoutingKey(md)
 					ids[rKey] = true
 				}
 			}
@@ -169,16 +172,6 @@ func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[str
 				for k := 0; k < metrics.Len(); k++ {
 					md := metrics.At(k)
 					rKey := resourceRoutingKey(md, resource.Attributes())
-					ids[rKey] = true
-				}
-			}
-		case attributeRouting:
-			sm := rs.At(i).ScopeMetrics()
-			for j := 0; j < sm.Len(); j++ {
-				metrics := sm.At(j).Metrics()
-				for k := 0; k < metrics.Len(); k++ {
-					md := metrics.At(k)
-					rKey := attributesRoutingKey(md, resource.Attributes())
 					ids[rKey] = true
 				}
 			}
@@ -207,71 +200,14 @@ func sortedMapAttrs(attrs pcommon.Map) []string {
 	return attrsHash
 }
 
-// @help here : what to do when metric is empty (doc says it could cause panic)
-func metricAttrsAsStr(md pmetric.Metric) []string {
-	switch md.Type() {
-	default:
-	case pmetric.MetricTypeSum:
-		allAttrs := make([]string, 0)
-		for i := 0; i < md.Sum().DataPoints().Len(); i++ {
-			attrs := md.Sum().DataPoints().At(i).Attributes()
-			allAttrs = append(allAttrs, sortedMapAttrs(attrs)...)
-		}
-		return allAttrs
-	case pmetric.MetricTypeEmpty:
-		// ???
-		return []string{}
-	case pmetric.MetricTypeHistogram:
-		allAttrs := make([]string, 0)
-		for i := 0; i < md.Histogram().DataPoints().Len(); i++ {
-			attrs := md.Histogram().DataPoints().At(i).Attributes()
-			allAttrs = append(allAttrs, sortedMapAttrs(attrs)...)
-		}
-		return allAttrs
-	case pmetric.MetricTypeExponentialHistogram:
-		allAttrs := make([]string, 0)
-		for i := 0; i < md.ExponentialHistogram().DataPoints().Len(); i++ {
-			attrs := md.ExponentialHistogram().DataPoints().At(i).Attributes()
-			allAttrs = append(allAttrs, sortedMapAttrs(attrs)...)
-		}
-		return allAttrs
-	case pmetric.MetricTypeSummary:
-		allAttrs := make([]string, 0)
-		for i := 0; i < md.Summary().DataPoints().Len(); i++ {
-			attrs := md.Summary().DataPoints().At(i).Attributes()
-			allAttrs = append(allAttrs, sortedMapAttrs(attrs)...)
-		}
-		return allAttrs
-	case pmetric.MetricTypeGauge:
-		allAttrs := make([]string, 0)
-		for i := 0; i < md.Gauge().DataPoints().Len(); i++ {
-			attrs := md.Gauge().DataPoints().At(i).Attributes()
-			allAttrs = append(allAttrs, sortedMapAttrs(attrs)...)
-		}
-		return allAttrs
-	}
-	return []string{}
-}
-
-func attributesRoutingKey(md pmetric.Metric, resourceAttrs pcommon.Map) string {
-
-	routingAttrs := metricAttrsAsStr(md)
-
-	sorted := sortedMapAttrs(resourceAttrs)
-
-	routingAttrs = append(routingAttrs, sorted...)
-	routingAttrs = append(routingAttrs, md.Name())
-
-	routingRef := strings.Join(routingAttrs, "")
-
-	return routingRef
-}
-
 func resourceRoutingKey(md pmetric.Metric, attrs pcommon.Map) string {
-
 	attrsHash := sortedMapAttrs(attrs)
 	attrsHash = append(attrsHash, md.Name())
 	routingRef := strings.Join(attrsHash, "")
-	return routingRef
 
+	return routingRef
+}
+
+func metricRoutingKey(md pmetric.Metric) string {
+	return md.Name()
 }
