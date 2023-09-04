@@ -33,6 +33,7 @@ const (
 )
 
 const attrSeparator = "."
+const UseResourceFieldInJSONFormat = "useResourceFieldInJSONFormat"
 
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
 	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
@@ -202,6 +203,10 @@ func convertLogToLogRawEntry(lr plog.LogRecord) (*push.Entry, error) {
 func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
 	switch format {
 	case formatJSON:
+		if _, enabled := res.Attributes().Get(UseResourceFieldInJSONFormat); enabled {
+			res.Attributes().Remove(UseResourceFieldInJSONFormat)
+			return convertLogToJSONEntryResourceField(lr, res, scope)
+		}
 		return convertLogToJSONEntry(lr, res, scope)
 	case formatLogfmt:
 		return convertLogToLogfmtEntry(lr, res, scope)
@@ -211,19 +216,6 @@ func convertLogToLokiEntry(lr plog.LogRecord, res pcommon.Resource, format strin
 		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
 	}
 
-}
-
-func convertLogToLokiEntryWithResourceFieldInJSONFormat(lr plog.LogRecord, res pcommon.Resource, format string, scope pcommon.InstrumentationScope) (*push.Entry, error) {
-	switch format {
-	case formatJSON:
-		return convertLogToJSONEntryResourceField(lr, res, scope)
-	case formatLogfmt:
-		return convertLogToLogfmtEntry(lr, res, scope)
-	case formatRaw:
-		return convertLogToLogRawEntry(lr)
-	default:
-		return nil, fmt.Errorf("invalid format %s. Expected one of: %s, %s, %s", format, formatJSON, formatLogfmt, formatRaw)
-	}
 }
 
 func timestampFromLogRecord(lr plog.LogRecord) time.Time {

@@ -23,7 +23,7 @@ import (
 var sendResourceInJSONFormat = featuregate.GlobalRegistry().MustRegister(
 	"exporter.loki.sendWithResourceInJSONFormat",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("0.84.0"),
+	featuregate.WithRegisterFromVersion("0.85.0"),
 	featuregate.WithRegisterDescription("When enabled, sends 'resource' instead of 'resources' in JSON format"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21161"),
 )

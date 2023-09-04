@@ -458,6 +458,9 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 					res[hintResource] = val
 				}
 				assert.NoError(t, ld.ResourceLogs().At(0).Resource().Attributes().FromRaw(res))
+				if tt.sendResourceFieldInJSONFormatEnabled {
+					ld.ResourceLogs().At(0).Resource().Attributes().PutBool(UseResourceFieldInJSONFormat, true)
+				}
 			}
 
 			rlogs := ld.ResourceLogs()
@@ -489,12 +492,7 @@ func TestLogsToLokiRequestWithoutTenant(t *testing.T) {
 			}
 
 			// test
-			var requests map[string]PushRequest
-			if tt.sendResourceFieldInJSONFormatEnabled {
-				requests = LogsToLokiRequestsWithResourceFieldInJSONFormat(ld, tt.defaultLebelsEnabled)
-			} else {
-				requests = LogsToLokiRequests(ld, tt.defaultLebelsEnabled)
-			}
+			requests := LogsToLokiRequests(ld, tt.defaultLebelsEnabled)
 
 			assert.Len(t, requests, 1)
 			request := requests[""]
@@ -734,10 +732,9 @@ func TestLogToLokiEntry(t *testing.T) {
 
 			var log *PushEntry
 			if tt.sendResourceFieldInJSONFormatEnabled {
-				log, err = LogToLokiEntryWithResourceFieldInJSONFormat(lr, resource, scope, tt.defaultLabelsEnabled)
-			} else {
-				log, err = LogToLokiEntry(lr, resource, scope, tt.defaultLabelsEnabled)
+				resource.Attributes().PutBool(UseResourceFieldInJSONFormat, true)
 			}
+			log, err = LogToLokiEntry(lr, resource, scope, tt.defaultLabelsEnabled)
 
 			assert.Equal(t, tt.err, err)
 			assert.Equal(t, tt.expected, log)

@@ -50,10 +50,12 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	var requests map[string]loki.PushRequest
 
 	if l.config.sendResourceFieldInJSONFormatEnabled {
-		requests = loki.LogsToLokiRequestsWithResourceFieldInJSONFormat(ld, l.config.DefaultLabelsEnabled)
-	} else {
-		requests = loki.LogsToLokiRequests(ld, l.config.DefaultLabelsEnabled)
+		count := ld.LogRecordCount()
+		for i := 0; i < count; i++ {
+			ld.ResourceLogs().At(i).Resource().Attributes().PutBool(loki.UseResourceFieldInJSONFormat, true)
+		}
 	}
+	requests = loki.LogsToLokiRequests(ld, l.config.DefaultLabelsEnabled)
 
 	var errs error
 	for tenant, request := range requests {

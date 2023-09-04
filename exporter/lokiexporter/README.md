@@ -152,6 +152,9 @@ The following formats are supported:
 
 OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
 
+## Flags
+In v0.85.0 added feature gate flag `exporter.loki.sendWithResourceInJSONFormat`. If enabled, loki exporter sends `resource` instead of `resources` field in JSON format to align the name with the opentelemetry log data model specification
+
 ## Advanced Configuration
 
 Several helper files are leveraged to provide additional capabilities automatically:
