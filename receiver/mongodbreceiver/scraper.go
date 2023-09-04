@@ -118,9 +118,9 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 
 	rb := s.mb.NewResourceBuilder()
 	rb.SetDatabase(databaseName)
+	rb.SetMongodbDatabaseName(databaseName)
 	s.mb.EmitForResource(
 		metadata.WithResource(rb.Emit()),
-		metadata.WithMongodbDatabaseName(databaseName),
 	)
 }
 

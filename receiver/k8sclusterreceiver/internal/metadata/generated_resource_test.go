@@ -16,6 +16,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetK8sClusterName("k8s.cluster.name-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
@@ -39,6 +40,11 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sServiceClusterIP("k8s.service.cluster_ip-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServiceNamespace("k8s.service.namespace-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
@@ -50,9 +56,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 37, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 31, res.Attributes().Len())
+				assert.Equal(t, 37, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -74,6 +80,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.cluster.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
@@ -189,6 +200,31 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.resourcequota.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.cluster_ip")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.cluster_ip-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
 			assert.True(t, ok)

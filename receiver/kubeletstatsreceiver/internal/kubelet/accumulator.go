@@ -66,11 +66,11 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
+	rb.SetK8sNodeName(s.NodeName)
+	rb.SetK8sNodeUID(a.getNodeUID(s.NodeName))
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),
-		metadata.WithK8sNodeName(s.NodeName),
-		metadata.WithK8sNodeUID(a.getNodeUID(s.NodeName)),
 	))
 }
 
@@ -100,15 +100,15 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	rb.SetK8sPodUID(s.PodRef.UID)
 	rb.SetK8sPodName(s.PodRef.Name)
 	rb.SetK8sNamespaceName(s.PodRef.Namespace)
+	rb.SetK8sPodUID(s.PodRef.UID)
+	rb.SetK8sPodName(s.PodRef.Name)
+	rb.SetK8sNamespaceName(s.PodRef.Namespace)
+	rb.SetK8sServiceName(a.getServiceName(s.PodRef.UID))
+	rb.SetK8sServiceAccountName(a.getServiceAccountName(s.PodRef.UID))
+	rb.SetK8sClusterName("unknown")
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),
-		metadata.WithK8sPodUID(s.PodRef.UID),
-		metadata.WithK8sPodName(s.PodRef.Name),
-		metadata.WithK8sNamespaceName(s.PodRef.Namespace),
-		metadata.WithK8sServiceName(a.getServiceName(s.PodRef.UID)),
-		metadata.WithK8sServiceAccountName(a.getServiceAccountName(s.PodRef.UID)),
-		metadata.WithK8sClusterName("unknown"),
 	))
 }
 

@@ -118,6 +118,17 @@ func (r *receiver) recordContainerStats(now pcommon.Timestamp, containerStats *d
 	r.recordBlkioMetrics(now, &containerStats.BlkioStats)
 	r.recordNetworkMetrics(now, &containerStats.Networks)
 	r.recordPidsMetrics(now, &containerStats.PidsStats)
+	// 0-created 1-running 2-paused 3-restarting 4-removing 5-exited 6-dead
+	statusMap := map[string]int64{
+		"created":    0,
+		"running":    1,
+		"paused":     2,
+		"restarting": 3,
+		"removing":   4,
+		"exited":     5,
+		"dead":       6,
+	}
+	r.mb.RecordContainerStatusDataPoint(now, statusMap[container.State.Status])
 	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
 		errs = multierr.Append(errs, err)
 	}

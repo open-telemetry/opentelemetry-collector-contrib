@@ -12,6 +12,39 @@ status:
 sem_conv_version: 1.18.0
 
 resource_attributes:
+
+  k8s.service.cluster_ip:
+    description: The cluster IP of the service
+    type: string
+    enabled: true
+
+  k8s.service.type:
+    description: The type of the service
+    type: string
+    enabled: true
+
+  k8s.service.uid:
+    description: The UID of the service
+    type: string
+    enabled: true
+
+  k8s.service.name:
+    description: The name of the service
+    type: string
+    enabled: true
+
+  k8s.service.namespace:
+    description: The namespace of the service
+    type: string
+    enabled: true
+  
+  k8s.cluster.name:
+    description: The k8s cluster name.
+    type: string
+    enabled: true
+
+  
+
   k8s.namespace.uid:
     description: The k8s namespace uid.
     type: string
@@ -359,6 +392,13 @@ metrics:
   k8s.namespace.phase:
     enabled: true
     description: The current phase of namespaces (1 for active and 0 for terminating)
+    unit: 1
+    gauge:
+      value_type: int
+
+  k8s.service.port_count:
+    enabled: true
+    description: The number of ports in the service
     unit: 1
     gauge:
       value_type: int

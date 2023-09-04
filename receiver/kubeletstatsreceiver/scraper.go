@@ -101,33 +101,33 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
-	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
 		if r.k8sAPIClient == nil {
-			return nil
+			return []metadata.ResourceMetricsOption{}, nil
 		}
 
 		if _, ok := r.cachedVolumeSource[volCacheID]; !ok {
 			ctx := context.Background()
 			pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeClaim, metav1.GetOptions{})
 			if err != nil {
-				return err
+				return []metadata.ResourceMetricsOption{}, err
 			}
 
 			volName := pvc.Spec.VolumeName
 			if volName == "" {
-				return fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
+				return []metadata.ResourceMetricsOption{}, fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
 			}
 
 			pv, err := r.k8sAPIClient.CoreV1().PersistentVolumes().Get(ctx, volName, metav1.GetOptions{})
 			if err != nil {
-				return err
+				return []metadata.ResourceMetricsOption{}, err
 			}
 
 			// Cache collected source.
 			r.cachedVolumeSource[volCacheID] = pv.Spec.PersistentVolumeSource
 		}
 		kubelet.SetPersistentVolumeLabels(rb, r.cachedVolumeSource[volCacheID])
-		return nil
+		return []metadata.ResourceMetricsOption{}, nil
 	}
 }

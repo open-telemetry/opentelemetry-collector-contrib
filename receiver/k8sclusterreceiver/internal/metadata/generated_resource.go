@@ -42,6 +42,13 @@ func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	}
 }
 
+// SetK8sClusterName sets provided value as "k8s.cluster.name" attribute.
+func (rb *ResourceBuilder) SetK8sClusterName(val string) {
+	if rb.config.K8sClusterName.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.name", val)
+	}
+}
+
 // SetK8sContainerName sets provided value as "k8s.container.name" attribute.
 func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	if rb.config.K8sContainerName.Enabled {
@@ -200,6 +207,41 @@ func (rb *ResourceBuilder) SetK8sResourcequotaName(val string) {
 func (rb *ResourceBuilder) SetK8sResourcequotaUID(val string) {
 	if rb.config.K8sResourcequotaUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.resourcequota.uid", val)
+	}
+}
+
+// SetK8sServiceClusterIP sets provided value as "k8s.service.cluster_ip" attribute.
+func (rb *ResourceBuilder) SetK8sServiceClusterIP(val string) {
+	if rb.config.K8sServiceClusterIP.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.cluster_ip", val)
+	}
+}
+
+// SetK8sServiceName sets provided value as "k8s.service.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceName(val string) {
+	if rb.config.K8sServiceName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.name", val)
+	}
+}
+
+// SetK8sServiceNamespace sets provided value as "k8s.service.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sServiceNamespace(val string) {
+	if rb.config.K8sServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.namespace", val)
+	}
+}
+
+// SetK8sServiceType sets provided value as "k8s.service.type" attribute.
+func (rb *ResourceBuilder) SetK8sServiceType(val string) {
+	if rb.config.K8sServiceType.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.type", val)
+	}
+}
+
+// SetK8sServiceUID sets provided value as "k8s.service.uid" attribute.
+func (rb *ResourceBuilder) SetK8sServiceUID(val string) {
+	if rb.config.K8sServiceUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.uid", val)
 	}
 }
 

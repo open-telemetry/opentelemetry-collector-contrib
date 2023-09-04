@@ -296,6 +296,14 @@ The usage for a particular resource in a specific namespace. Will only be sent i
 | ---- | ----------- | ------ |
 | resource | the name of the resource on which the quota is applied | Any Str |
 
+### k8s.service.port_count
+
+The number of ports in the service
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### k8s.statefulset.current_pods
 
 The number of pods created by the StatefulSet controller from the StatefulSet version
@@ -411,6 +419,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | container.id | The container id. | Any Str | true |
 | container.image.name | The container image name | Any Str | true |
 | container.image.tag | The container image tag | Any Str | true |
+| k8s.cluster.name | The k8s cluster name. | Any Str | true |
 | k8s.container.name | The k8s container name | Any Str | true |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
 | k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
@@ -434,6 +443,11 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.replicationcontroller.uid | The k8s replicationcontroller uid. | Any Str | true |
 | k8s.resourcequota.name | The k8s resourcequota name. | Any Str | true |
 | k8s.resourcequota.uid | The k8s resourcequota uid. | Any Str | true |
+| k8s.service.cluster_ip | The cluster IP of the service | Any Str | true |
+| k8s.service.name | The name of the service | Any Str | true |
+| k8s.service.namespace | The namespace of the service | Any Str | true |
+| k8s.service.type | The type of the service | Any Str | true |
+| k8s.service.uid | The UID of the service | Any Str | true |
 | k8s.statefulset.name | The k8s statefulset name. | Any Str | true |
 | k8s.statefulset.uid | The k8s statefulset uid. | Any Str | true |
 | opencensus.resourcetype | The OpenCensus resource type. | Any Str | true |

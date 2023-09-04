@@ -65,7 +65,7 @@ func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error 
 	// Adding a log entry to indicate that the receiver has started successfully.
 	ld := logk8sClusterSuccessMessage(kr.settings.Logger)
 	consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)
-	kr.obsrecv.EndLogsOp(ctx, typeStr, 1, consumerErr)
+	kr.obsrecv.EndLogsOp(ctx, metadata.Type, 1, consumerErr)
 
 	kr.settings.Logger.Info("starting to watch namespaces for the events.")
 	if len(kr.config.Namespaces) == 0 {

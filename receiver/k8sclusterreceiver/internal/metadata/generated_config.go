@@ -60,6 +60,7 @@ type MetricsConfig struct {
 	K8sReplicationControllerDesired     MetricConfig `mapstructure:"k8s.replication_controller.desired"`
 	K8sResourceQuotaHardLimit           MetricConfig `mapstructure:"k8s.resource_quota.hard_limit"`
 	K8sResourceQuotaUsed                MetricConfig `mapstructure:"k8s.resource_quota.used"`
+	K8sServicePortCount                 MetricConfig `mapstructure:"k8s.service.port_count"`
 	K8sStatefulsetCurrentPods           MetricConfig `mapstructure:"k8s.statefulset.current_pods"`
 	K8sStatefulsetDesiredPods           MetricConfig `mapstructure:"k8s.statefulset.desired_pods"`
 	K8sStatefulsetReadyPods             MetricConfig `mapstructure:"k8s.statefulset.ready_pods"`
@@ -177,6 +178,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sResourceQuotaUsed: MetricConfig{
 			Enabled: true,
 		},
+		K8sServicePortCount: MetricConfig{
+			Enabled: true,
+		},
 		K8sStatefulsetCurrentPods: MetricConfig{
 			Enabled: true,
 		},
@@ -214,6 +218,7 @@ type ResourceAttributesConfig struct {
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
 	ContainerImageName           ResourceAttributeConfig `mapstructure:"container.image.name"`
 	ContainerImageTag            ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	K8sClusterName               ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
 	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
@@ -237,6 +242,11 @@ type ResourceAttributesConfig struct {
 	K8sReplicationcontrollerUID  ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.uid"`
 	K8sResourcequotaName         ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
 	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
+	K8sServiceClusterIP          ResourceAttributeConfig `mapstructure:"k8s.service.cluster_ip"`
+	K8sServiceName               ResourceAttributeConfig `mapstructure:"k8s.service.name"`
+	K8sServiceNamespace          ResourceAttributeConfig `mapstructure:"k8s.service.namespace"`
+	K8sServiceType               ResourceAttributeConfig `mapstructure:"k8s.service.type"`
+	K8sServiceUID                ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
@@ -253,6 +263,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		ContainerImageTag: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sClusterName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sContainerName: ResourceAttributeConfig{
@@ -322,6 +335,21 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sResourcequotaUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceClusterIP: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceNamespace: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sStatefulsetName: ResourceAttributeConfig{
