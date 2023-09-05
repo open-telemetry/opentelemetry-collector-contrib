@@ -28,6 +28,8 @@ If set, the `multiline` configuration block instructs the `udp_input` operator t
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
+You can set the `omit_pattern_from_record` in case you want to omit the start/end pattern from each entry.
+
 #### Supported encodings
 
 | Key        | Description
