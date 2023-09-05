@@ -17,13 +17,14 @@ import (
 
 type logBulkIndexer struct {
 	index       string
+	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newLogBulkIndexer(index string, model mappingModel) *logBulkIndexer {
-	return &logBulkIndexer{index, model, nil, nil}
+func newLogBulkIndexer(index string, bulkAction string, model mappingModel) *logBulkIndexer {
+	return &logBulkIndexer{index, bulkAction, model, nil, nil}
 }
 
 func (lbi *logBulkIndexer) start(client *opensearch.Client) error {
@@ -110,7 +111,7 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerRes
 
 func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: "create", Index: lbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: lbi.index, Body: body}
 	return item
 }
 

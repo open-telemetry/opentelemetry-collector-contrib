@@ -16,6 +16,7 @@ import (
 type logExporter struct {
 	client       *opensearch.Client
 	index        string
+	bulkAction   string
 	model        mappingModel
 	httpSettings confighttp.HTTPClientSettings
 	telemetry    component.TelemetrySettings
@@ -39,6 +40,7 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 
 	return &logExporter{
 		index:        cfg.LogsIndex,
+		bulkAction:   cfg.BulkAction,
 		telemetry:    set.TelemetrySettings,
 		httpSettings: cfg.HTTPClientSettings,
 		model:        model,
@@ -61,7 +63,7 @@ func (l *logExporter) Start(_ context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer(l.index, l.model)
+	indexer := newLogBulkIndexer(l.index, l.bulkAction, l.model)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr

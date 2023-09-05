@@ -21,12 +21,13 @@ import (
 type traceBulkIndexer struct {
 	dataset     string
 	namespace   string
+	bulkAction  string
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newTraceBulkIndexer(dataset string, namespace string) *traceBulkIndexer {
-	return &traceBulkIndexer{dataset, namespace, nil, nil}
+func newTraceBulkIndexer(dataset string, namespace string, bulkAction string) *traceBulkIndexer {
+	return &traceBulkIndexer{dataset, namespace, bulkAction, nil, nil}
 }
 
 func (tbi *traceBulkIndexer) joinedError() error {
@@ -205,7 +206,7 @@ func shouldRetryEvent(status int) bool {
 
 func (tbi *traceBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: "create", Index: tbi.getIndexName(), Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: tbi.bulkAction, Index: tbi.getIndexName(), Body: body}
 	return item
 }
 
