@@ -173,19 +173,18 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	httpClient := http.Client{
-		Transport: tr,
-	}
-	httpClient.Transport, err = transport.NewBearerAuthWithRefreshRoundTripper(string(tok), p.tokenPath, tr)
+	rt, err := transport.NewBearerAuthWithRefreshRoundTripper(string(tok), p.tokenPath, tr)
 	if err != nil {
 		return nil, err
 	}
 
 	return &clientImpl{
-		baseURL:    endpoint,
-		httpClient: httpClient,
-		tok:        nil,
-		logger:     p.logger,
+		baseURL: endpoint,
+		httpClient: http.Client{
+			Transport: rt,
+		},
+		tok:    nil,
+		logger: p.logger,
 	}, nil
 }
 
