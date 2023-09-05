@@ -457,6 +457,42 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+func TestAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	tr := ptrace.NewTraces()
+	rl := tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().PutInt("value", 1)
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+	assert.Len(t, defaultExp.AllTraces(), 1)
+	assert.Len(t, firstExp.AllTraces(), 0)
+
+}
+
 func TestTraceProcessorCapabilities(t *testing.T) {
 	// prepare
 	config := &Config{
