@@ -457,7 +457,9 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	})
 }
 
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
 func TestAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
 	defaultExp := &mockTracesExporter{}
 	firstExp := &mockTracesExporter{}
 
@@ -486,8 +488,12 @@ func TestAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
 	span.SetName("span")
 
 	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
 	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
 
+	// verify
 	assert.Len(t, defaultExp.AllTraces(), 1)
 	assert.Len(t, firstExp.AllTraces(), 0)
 
