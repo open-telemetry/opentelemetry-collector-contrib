@@ -23,7 +23,7 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		newDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithLogs(createLogsExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
