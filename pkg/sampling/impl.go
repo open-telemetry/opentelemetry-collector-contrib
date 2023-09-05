@@ -25,7 +25,19 @@ func RandomnessFromTraceID(tid pcommon.TraceID) Randomness {
 	return unsigned.RandomnessFromTraceID(tid)
 }
 
-var AlwaysSampleThreshold = unsigned.AlwaysSampleThreshold
-var NeverSampleThreshold = unsigned.NeverSampleThreshold
-var ErrTValueSize = unsigned.ErrTValueSize
-var ErrRValueSize = unsigned.ErrRValueSize
+func ThresholdLessThan(a, b Threshold) bool {
+	return unsigned.ThresholdLessThan(a, b)
+}
+
+const MaxAdjustedCount = unsigned.MaxAdjustedCount
+
+var (
+	AlwaysSampleThreshold = unsigned.AlwaysSampleThreshold
+	NeverSampleThreshold  = unsigned.NeverSampleThreshold
+
+	AlwaysSampleTValue = AlwaysSampleThreshold.TValue()
+	NeverSampleTValue  = NeverSampleThreshold.TValue()
+
+	ErrTValueSize = unsigned.ErrTValueSize
+	ErrRValueSize = unsigned.ErrRValueSize
+)

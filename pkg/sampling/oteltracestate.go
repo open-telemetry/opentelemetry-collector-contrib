@@ -98,6 +98,10 @@ func (otts *OTelTraceState) HasTValue() bool {
 	return otts.t != ""
 }
 
+func (otts *OTelTraceState) HasNonZeroTValue() bool {
+	return otts.HasTValue() && otts.TValueThreshold() != NeverSampleThreshold
+}
+
 func (otts *OTelTraceState) TValue() string {
 	return otts.t
 }
@@ -106,9 +110,9 @@ func (otts *OTelTraceState) TValueThreshold() Threshold {
 	return otts.tt
 }
 
-func (otts *OTelTraceState) SetTValue(value string, threshold Threshold) {
-	otts.t = value
+func (otts *OTelTraceState) SetTValue(threshold Threshold, encoded string) {
 	otts.tt = threshold
+	otts.t = encoded
 }
 
 func (otts *OTelTraceState) UnsetTValue() {

@@ -41,12 +41,8 @@ var (
 	// ErrTValueSize is returned for t-values longer than NumHexDigits hex digits.
 	ErrTValueSize = errors.New("t-value exceeds 14 hex digits")
 
-	NeverSampleThreshold = Threshold{bytes: [8]byte{
-		0, 0, 0, 0, 0, 0, 0, 0,
-	}}
-	AlwaysSampleThreshold = Threshold{bytes: [8]byte{
-		1, 0, 0, 0, 0, 0, 0, 0,
-	}}
+	NeverSampleThreshold  = Threshold{bytes: [8]byte{0, 0, 0, 0, 0, 0, 0, 0}}
+	AlwaysSampleThreshold = Threshold{bytes: [8]byte{1, 0, 0, 0, 0, 0, 0, 0}}
 
 	hex14Zeros = func() (r [NumHexDigits]byte) {
 		for i := range r {
@@ -98,4 +94,9 @@ func (t Threshold) ShouldSample(rnd Randomness) bool {
 		return true
 	}
 	return bytes.Compare(rnd.bytes[1:], t.bytes[1:]) < 0
+}
+
+func ThresholdLessThan(a, b Threshold) bool {
+	// Note full 8 byte compare
+	return bytes.Compare(a.bytes[:], b.bytes[:]) < 0
 }

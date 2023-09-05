@@ -94,3 +94,7 @@ func (th Threshold) TValue() string {
 func (t Threshold) ShouldSample(rnd Randomness) bool {
 	return rnd.unsigned < t.unsigned
 }
+
+func ThresholdLessThan(a, b Threshold) bool {
+	return a.unsigned < b.unsigned
+}
