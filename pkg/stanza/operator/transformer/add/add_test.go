@@ -297,6 +297,24 @@ func TestProcessAndBuild(t *testing.T) {
 			},
 			false,
 		},
+		{
+			"add_expr",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("fookey")
+				cfg.Value = "EXPR('foo_' + body.key)"
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"fookey": "foo_val",
+				}
+				return e
+			},
+			false,
+		},
 	}
 	for _, tc := range cases {
 		t.Run("BuildandProcess/"+tc.name, func(t *testing.T) {
