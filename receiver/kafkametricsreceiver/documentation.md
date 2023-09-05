@@ -14,11 +14,11 @@ metrics:
 
 ### kafka.brokers
 
-[DEPRECATED] Number of brokers in the cluster.
+[depracated] Number of brokers in the cluster.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {brokers} | Gauge | Int |
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {broker} | Sum | Int | Cumulative | false |
 
 ### kafka.consumer_group.lag
 
@@ -186,7 +186,7 @@ Count of consumer fetches
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {fetches} | Sum | Double | Cumulative | false |
+| {fetches} | Sum | Int | Cumulative | false |
 
 #### Attributes
 
@@ -214,15 +214,15 @@ Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {brokers} | Sum | Int | Cumulative | false |
+| {broker} | Sum | Int | Cumulative | false |
 
 ### messaging.kafka.broker.incoming_byte_rate
 
-Average tncoming Byte Rate in bytes/second
+Average incoming Byte Rate in bytes/second
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| By/s | Gauge | Double |
 
 #### Attributes
 
@@ -246,11 +246,11 @@ Average outgoing Byte Rate in bytes/second.
 
 ### messaging.kafka.broker.request_latency
 
-Average request latency in ms
+Average request latency in seconds
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Double |
+| s | Gauge | Double |
 
 #### Attributes
 

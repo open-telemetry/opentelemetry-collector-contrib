@@ -20,16 +20,18 @@ type metricKafkaBrokers struct {
 // init fills kafka.brokers metric with initial data.
 func (m *metricKafkaBrokers) init() {
 	m.data.SetName("kafka.brokers")
-	m.data.SetDescription("[DEPRECATED] Number of brokers in the cluster.")
-	m.data.SetUnit("{brokers}")
-	m.data.SetEmptyGauge()
+	m.data.SetDescription("[depracated] Number of brokers in the cluster.")
+	m.data.SetUnit("{broker}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 
 func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
@@ -37,14 +39,14 @@ func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricKafkaBrokers) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricKafkaBrokers) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -605,14 +607,14 @@ func (m *metricMessagingKafkaBrokerConsumerFetchCount) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMessagingKafkaBrokerConsumerFetchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+func (m *metricMessagingKafkaBrokerConsumerFetchCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, brokerAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Sum().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutInt("broker", brokerAttributeValue)
 }
 
@@ -702,7 +704,7 @@ type metricMessagingKafkaBrokerCount struct {
 func (m *metricMessagingKafkaBrokerCount) init() {
 	m.data.SetName("messaging.kafka.broker.count")
 	m.data.SetDescription("Number of brokers in the cluster.")
-	m.data.SetUnit("{brokers}")
+	m.data.SetUnit("{broker}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
@@ -752,8 +754,8 @@ type metricMessagingKafkaBrokerIncomingByteRate struct {
 // init fills messaging.kafka.broker.incoming_byte_rate metric with initial data.
 func (m *metricMessagingKafkaBrokerIncomingByteRate) init() {
 	m.data.SetName("messaging.kafka.broker.incoming_byte_rate")
-	m.data.SetDescription("Average tncoming Byte Rate in bytes/second")
-	m.data.SetUnit("1")
+	m.data.SetDescription("Average incoming Byte Rate in bytes/second")
+	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -854,8 +856,8 @@ type metricMessagingKafkaBrokerRequestLatency struct {
 // init fills messaging.kafka.broker.request_latency metric with initial data.
 func (m *metricMessagingKafkaBrokerRequestLatency) init() {
 	m.data.SetName("messaging.kafka.broker.request_latency")
-	m.data.SetDescription("Average request latency in ms")
-	m.data.SetUnit("ms")
+	m.data.SetDescription("Average request latency in seconds")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -1411,7 +1413,7 @@ func (mb *MetricsBuilder) RecordKafkaTopicPartitionsDataPoint(ts pcommon.Timesta
 }
 
 // RecordMessagingKafkaBrokerConsumerFetchCountDataPoint adds a data point to messaging.kafka.broker.consumer_fetch_count metric.
-func (mb *MetricsBuilder) RecordMessagingKafkaBrokerConsumerFetchCountDataPoint(ts pcommon.Timestamp, val float64, brokerAttributeValue int64) {
+func (mb *MetricsBuilder) RecordMessagingKafkaBrokerConsumerFetchCountDataPoint(ts pcommon.Timestamp, val int64, brokerAttributeValue int64) {
 	mb.metricMessagingKafkaBrokerConsumerFetchCount.recordDataPoint(mb.startTime, ts, val, brokerAttributeValue)
 }
 

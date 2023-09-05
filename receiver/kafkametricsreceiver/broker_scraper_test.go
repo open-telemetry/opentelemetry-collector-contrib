@@ -104,10 +104,38 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
 	assert.NoError(t, err)
-	expectedDp := int64(len(testBrokers))
-	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	receivedDp := receivedMetrics.Gauge().DataPoints().At(0).IntValue()
-	assert.Equal(t, expectedDp, receivedDp)
+	require.Equal(t, 1, md.ResourceMetrics().Len())
+	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
+	for i := 0; i < ms.Len(); i++ {
+		m := ms.At(i)
+		switch m.Name() {
+		case "kafka.brokers":
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
+		case "kafka.broker.count":
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
+		case "kafka.broker.consumer_fetch_rate":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.incoming_byte_rate":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.outgoing_byte_rate":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.request_latency":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.response_rate":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.response_size":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.request_rate":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.request_size":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).DoubleValue(), int64(len(testBrokers)))
+		case "kafka.broker.requests_in_flight":
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
+		case "kafka.broker.consumer_fetch_count":
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testBrokers)))
+		}
+	}
 }
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
