@@ -76,6 +76,10 @@ func TestDefaultProcessors(t *testing.T) {
 			skipLifecycle: true, // Requires a k8s API to communicate with
 		},
 		{
+			processor:     "logstransform",
+			skipLifecycle: true,
+		},
+		{
 			processor: "memory_limiter",
 			getConfigFn: func() component.Config {
 				cfg := procFactories["memory_limiter"].CreateDefaultConfig().(*memorylimiterprocessor.Config)

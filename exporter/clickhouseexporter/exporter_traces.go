@@ -28,7 +28,7 @@ type tracesExporter struct {
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	client, err := newClickhouseClient(cfg)
+	client, err := newClickHouseClient(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -59,8 +59,8 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
 	start := time.Now()
-	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		statement, err := tx.PrepareContext(ctx, e.insertSQL)
+	err := func() error {
+		statement, err := e.client.PrepareContext(ctx, e.insertSQL)
 		if err != nil {
 			return fmt.Errorf("PrepareContext:%w", err)
 		}
@@ -70,7 +70,10 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		for i := 0; i < td.ResourceSpans().Len(); i++ {
 			spans := td.ResourceSpans().At(i)
 			res := spans.Resource()
-			resAttr := attributesToMap(res.Attributes())
+			attr := res.Attributes()
+			resAttr := make(map[string]string, attr.Len())
+			attributesToMap(attr, resAttr)
+
 			var serviceName string
 			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
 				serviceName = v.Str()
@@ -81,7 +84,9 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				scopeVersion := spans.ScopeSpans().At(j).Scope().Version()
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
-					spanAttr := attributesToMap(r.Attributes())
+
+					spanAttr := make(map[string]string, res.Attributes().Len())
+					attributesToMap(r.Attributes(), spanAttr)
 					status := r.Status()
 					eventTimes, eventNames, eventAttrs := convertEvents(r.Events())
 					linksTraceIDs, linksSpanIDs, linksTraceStates, linksAttrs := convertLinks(r.Links())
@@ -116,7 +121,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 			}
 		}
 		return nil
-	})
+	}()
 	duration := time.Since(start)
 	e.logger.Debug("insert traces", zap.Int("records", td.SpanCount()),
 		zap.String("cost", duration.String()))
@@ -124,33 +129,38 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 }
 
 func convertEvents(events ptrace.SpanEventSlice) ([]time.Time, []string, []map[string]string) {
-	var (
-		times []time.Time
-		names []string
-		attrs []map[string]string
-	)
+	times := make([]time.Time, events.Len())
+	names := make([]string, events.Len())
+	attrs := make([]map[string]string, events.Len())
+
 	for i := 0; i < events.Len(); i++ {
 		event := events.At(i)
 		times = append(times, event.Timestamp().AsTime())
 		names = append(names, event.Name())
-		attrs = append(attrs, attributesToMap(event.Attributes()))
+
+		eventAttrs := event.Attributes()
+		dest := make(map[string]string, eventAttrs.Len())
+		attributesToMap(eventAttrs, dest)
+		attrs = append(attrs, dest)
 	}
 	return times, names, attrs
 }
 
 func convertLinks(links ptrace.SpanLinkSlice) ([]string, []string, []string, []map[string]string) {
-	var (
-		traceIDs []string
-		spanIDs  []string
-		states   []string
-		attrs    []map[string]string
-	)
+	traceIDs := make([]string, links.Len())
+	spanIDs := make([]string, links.Len())
+	states := make([]string, links.Len())
+	attrs := make([]map[string]string, links.Len())
+
 	for i := 0; i < links.Len(); i++ {
 		link := links.At(i)
 		traceIDs = append(traceIDs, traceutil.TraceIDToHexOrEmptyString(link.TraceID()))
 		spanIDs = append(spanIDs, traceutil.SpanIDToHexOrEmptyString(link.SpanID()))
 		states = append(states, link.TraceState().AsRaw())
-		attrs = append(attrs, attributesToMap(link.Attributes()))
+
+		linkAttrs := link.Attributes()
+		dest := make(map[string]string, linkAttrs.Len())
+		attrs = append(attrs, dest)
 	}
 	return traceIDs, spanIDs, states, attrs
 }

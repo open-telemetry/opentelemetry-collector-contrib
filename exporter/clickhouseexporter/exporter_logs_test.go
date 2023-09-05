@@ -51,7 +51,7 @@ func TestLogsExporter_New(t *testing.T) {
 	}{
 		"no dsn": {
 			config: withDefaultConfig(),
-			want:   failWithMsg("exec create logs table sql: parse dsn address failed"),
+			want:   failWithMsg("parse dsn address failed"),
 		},
 	}
 
@@ -78,6 +78,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("push success", func(t *testing.T) {
 		var items int
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			t.Logf(query)
 			t.Logf("%d, values:%+v", items, values)
 			if strings.HasPrefix(query, "INSERT") {
 				items++
@@ -97,7 +98,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 				require.Equal(t, "https://opentelemetry.io/schemas/1.4.0", values[8])
 				require.Equal(t, map[string]string{
 					"service.name": "test-service",
-				}, values[9])
+				}, values[14])
 			}
 			return nil
 		})
@@ -107,12 +108,12 @@ func TestExporter_pushLogsData(t *testing.T) {
 	t.Run("test check scope metadata", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[10])
-				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[11])
-				require.Equal(t, "1.0.0", values[12])
+				require.Equal(t, "https://opentelemetry.io/schemas/1.7.0", values[15])
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[16])
+				require.Equal(t, "1.0.0", values[17])
 				require.Equal(t, map[string]string{
 					"lib": "clickhouse",
-				}, values[13])
+				}, values[18])
 			}
 			return nil
 		})
@@ -122,7 +123,12 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
-	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
+	cfg := withTestExporterConfig(fns...)(dsn)
+	exporter, err := newLogsExporter(zaptest.NewLogger(t), cfg)
+	require.NoError(t, err)
+
+	// need to use the dummy driver driver for testing
+	exporter.client, err = newClickHouseClient(cfg)
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 
@@ -216,7 +222,18 @@ func (*testClickhouseDriverStmt) Close() error {
 }
 
 func (t *testClickhouseDriverStmt) NumInput() int {
-	return strings.Count(t.query, "?")
+	if !strings.HasPrefix(t.query, `INSERT`) {
+		return 0
+	}
+
+	n := strings.Count(t.query, "?")
+	if n > 0 {
+		return n
+	}
+
+	// no ? in batched queries but column are separated with ","
+	// except for the last one
+	return strings.Count(t.query, ",") + 1
 }
 
 func (t *testClickhouseDriverStmt) Exec(args []driver.Value) (driver.Result, error) {
