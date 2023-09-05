@@ -32,8 +32,6 @@ intends to support.
 
 For a list of open issues related to the Supervisor, see [these issues](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Acmd%2Fopampsupervisor).
 
-### OpAMP capabilities
-
 **Key**:
 
 ✅: Fully implemented
@@ -41,6 +39,8 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 ⚠️: Implemented with caveats
 
 📅: Planned, but no issue to track implementation
+
+### OpAMP capabilities
 
 | OpAMP capability               | Status                                                                           |
 |--------------------------------|----------------------------------------------------------------------------------|
