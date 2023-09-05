@@ -34,6 +34,7 @@ var patternKeyToAttributeMap = map[string]string{
 	"ServiceName":          "service.name",
 	"ContainerInstanceId":  "aws.ecs.container.instance.id",
 	"TaskDefinitionFamily": "aws.ecs.task.family",
+	"JobName":              "job",
 }
 
 func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {

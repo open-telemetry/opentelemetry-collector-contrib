@@ -58,6 +58,29 @@ func TestReplacePatternValidServiceName(t *testing.T) {
 	assert.True(t, success)
 }
 
+func TestReplacePatternValidJobName(t *testing.T) {
+	logger := zap.NewNop()
+
+	input := "{JobName}"
+
+	attrMap := pcommon.NewMap()
+	attrMap.PutStr("job", "some-test-log")
+
+	s, success := replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "some-test-log", s)
+	assert.True(t, success)
+
+	attrMap = pcommon.NewMap()
+	attrMap.PutStr("JobName", "takes-precedence")
+	attrMap.PutStr("job", "some-test-log")
+
+	s, success = replacePatterns(input, attrMaptoStringMap(attrMap), logger)
+
+	assert.Equal(t, "takes-precedence", s)
+	assert.True(t, success)
+}
+
 func TestReplacePatternValidClusterName(t *testing.T) {
 	logger := zap.NewNop()
 
