@@ -27,7 +27,10 @@ func TestDefaultConfig(t *testing.T) {
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
 		LeaderElection: k8sconfig.LeaderElectionConfig{
-			Enabled: false,
+			Enabled:       false,
+			LeaseDuration: 15000000000,
+			RenewDeadline: 10000000000,
+			RetryPeriod:   2000000000,
 		},
 	}, rCfg)
 }

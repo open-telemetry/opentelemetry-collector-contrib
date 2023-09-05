@@ -87,6 +87,14 @@ func (kr *k8sobjectsreceiver) startFunc(ctx context.Context) {
 	}
 }
 
+func (kr *k8sobjectsreceiver) stopFunc() {
+	kr.mu.Lock()
+	for _, stopperChan := range kr.stopperChanList {
+		stopperChan <- struct{}{}
+	}
+	kr.mu.Unlock()
+}
+
 func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
 	leaderLost := make(chan struct{})
 
@@ -94,23 +102,19 @@ func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
 	kr.stopperChanList = append(kr.stopperChanList, leaderLost)
 	kr.mu.Unlock()
 
+	componentLuckNameLogFiled := zap.String("lock name", kr.leaderElection.LockName)
 	lr, err := k8sconfig.NewLeaderElector(kr.leaderElection, kr.leaderElectionClient, func(_ context.Context) {
-		kr.logger.Info("this instance of the component was selected as the current leader",
-			zap.String("lock name", kr.leaderElection.LockName))
+		kr.logger.Info("this instance of the component was selected as the current leader", componentLuckNameLogFiled)
 
 		kr.startFunc(ctx)
 	},
 		func() {
-			kr.logger.Error("this instance of the component was previously the leader but was removed as such")
-			leaderLost <- struct{}{}
+			kr.logger.Error("this instance of the component was previously the leader but was removed as such", zap.String("lock name", kr.leaderElection.LockName))
 			// stop collecting object when it is not the leader anymore, and go back into the candidate
-			err := kr.Shutdown(context.Background())
-			if err != nil {
-				kr.logger.Error("object receiver stopped failed", zap.Error(err))
-			}
+			kr.stopFunc()
 		})
 	if err != nil {
-		kr.logger.Error("create leader elector failed", zap.Error(err))
+		kr.logger.Error("create leader elector failed", zap.Error(err), componentLuckNameLogFiled)
 	}
 	go lr.Run(ctx)
 }

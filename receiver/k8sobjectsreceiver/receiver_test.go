@@ -164,3 +164,26 @@ func TestGetLeaderElectionLockName(t *testing.T) {
 		assert.Equal(t, tc.expectedLockName, getLeaderElectionLockName(tc.id))
 	}
 }
+
+func TestLeaderElectionLuckName(t *testing.T) {
+	t.Parallel()
+
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+
+	// enable leader election
+	rCfg.LeaderElection.Enabled = true
+
+	err := rCfg.Validate()
+	require.NoError(t, err)
+
+	consumer := newMockLogConsumer()
+	_, err = newReceiver(
+		receivertest.NewNopCreateSettings(),
+		rCfg,
+		consumer,
+	)
+	require.EqualError(t, err, "luckName must not be empty if LeaderElection enabled")
+}

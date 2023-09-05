@@ -30,9 +30,7 @@ func createDefaultConfig() component.Config {
 		APIConfig: k8sconfig.APIConfig{
 			AuthType: k8sconfig.AuthTypeServiceAccount,
 		},
-		LeaderElection: k8sconfig.LeaderElectionConfig{
-			Enabled: false,
-		},
+		LeaderElection: k8sconfig.NewDefaultLeaderElectionConfig(),
 	}
 }
 

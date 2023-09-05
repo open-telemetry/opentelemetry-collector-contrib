@@ -5,7 +5,6 @@ package k8sconfig // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -20,6 +19,7 @@ type LeaderElectionConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	// LockName determines the name of the resource that leader election will use for holding the leader lock.
 	LockName      string        `mapstructure:"lock_name"`
+	Namespace     string        `mapstructure:"namespace"`
 	LeaseDuration time.Duration `mapstructure:"lease_duration"`
 	RenewDeadline time.Duration `mapstructure:"renew_deadline"`
 	RetryPeriod   time.Duration `mapstructure:"retry_period"`
@@ -32,15 +32,23 @@ const (
 	defaultRetryPeriod     = 2 * time.Second
 )
 
-// NewResourceLock creates a new leases resource lock for use in a leader election loop
-func newResourceLock(client kubernetes.Interface, lockName string) (resourcelock.Interface, error) {
-	if lockName == "" {
-		return nil, errors.New("lockName must be configured")
+func NewDefaultLeaderElectionConfig() LeaderElectionConfig {
+	return LeaderElectionConfig{
+		Enabled:       false,
+		LeaseDuration: defaultLeaseDuration,
+		RenewDeadline: defaultRenewDeadline,
+		RetryPeriod:   defaultRetryPeriod,
 	}
+}
 
-	leaderElectionNamespace, err := getInClusterNamespace()
-	if err != nil {
-		return nil, fmt.Errorf("unable to find leader election namespace: %w", err)
+// NewResourceLock creates a new leases resource lock for use in a leader election loop
+func newResourceLock(client kubernetes.Interface, leaderElectionNamespace, lockName string) (resourcelock.Interface, error) {
+	var err error
+	if leaderElectionNamespace == "" {
+		leaderElectionNamespace, err = getInClusterNamespace()
+		if err != nil {
+			return nil, fmt.Errorf("unable to find leader election namespace: %w", err)
+		}
 	}
 
 	// Leader id, needs to be unique, use pod name in kubernetes case.
@@ -78,32 +86,20 @@ func getInClusterNamespace() (string, error) {
 
 // NewLeaderElector return  a leader elector object using client-go
 func NewLeaderElector(cfg LeaderElectionConfig, client kubernetes.Interface, startFunc func(context.Context), stopFunc func()) (*leaderelection.LeaderElector, error) {
-	resourceLock, err := newResourceLock(client, cfg.LockName)
+	resourceLock, err := newResourceLock(client, cfg.Namespace, cfg.LockName)
 	if err != nil {
 		return &leaderelection.LeaderElector{}, err
 	}
 
 	leConfig := leaderelection.LeaderElectionConfig{
 		Lock:          resourceLock,
-		LeaseDuration: defaultLeaseDuration,
-		RenewDeadline: defaultRenewDeadline,
-		RetryPeriod:   defaultRetryPeriod,
+		LeaseDuration: cfg.LeaseDuration,
+		RenewDeadline: cfg.RenewDeadline,
+		RetryPeriod:   cfg.RetryPeriod,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: startFunc,
 			OnStoppedLeading: stopFunc,
 		},
-	}
-
-	if cfg.LeaseDuration != 0 {
-		leConfig.LeaseDuration = cfg.LeaseDuration
-	}
-
-	if cfg.RenewDeadline != 0 {
-		leConfig.RenewDeadline = cfg.RenewDeadline
-	}
-
-	if cfg.RetryPeriod != 0 {
-		leConfig.RetryPeriod = cfg.RetryPeriod
 	}
 
 	return leaderelection.NewLeaderElector(leConfig)
