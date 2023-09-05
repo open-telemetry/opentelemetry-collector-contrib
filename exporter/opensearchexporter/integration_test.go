@@ -98,7 +98,7 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 
 			strMap := jsonData.(map[string]any)
 			if actionData, isBulkAction := strMap["create"]; isBulkAction {
-				validateTraceBulkAction(t, actionData.(map[string]any))
+				validateBulkAction(t, "ss4o_traces-default-namespace", actionData.(map[string]any))
 			} else {
 				rtn = append(rtn, strMap)
 			}
@@ -151,8 +151,6 @@ func TestOpenSearchTraceExporter(t *testing.T) {
 }
 
 func TestOpenSearchLogExporter(t *testing.T) {
-	var index = "testindex"
-
 	type requestHandler struct {
 		ValidateReceivedDocuments func(*testing.T, int, []map[string]any)
 		ResponseJSONPath          string
@@ -230,7 +228,7 @@ func TestOpenSearchLogExporter(t *testing.T) {
 
 			strMap := jsonData.(map[string]any)
 			if actionData, isBulkAction := strMap["create"]; isBulkAction {
-				validateLogBulkAction(t, index, actionData.(map[string]any))
+				validateBulkAction(t, "ss4o_logs-default-namespace", actionData.(map[string]any))
 			} else {
 				rtn = append(rtn, strMap)
 			}
@@ -258,7 +256,6 @@ func TestOpenSearchLogExporter(t *testing.T) {
 		cfg := withDefaultConfig(func(config *Config) {
 			config.Endpoint = ts.URL
 			config.TimeoutSettings.Timeout = 0
-			config.LogsIndex = index
 		})
 
 		// Create exporter
@@ -283,15 +280,8 @@ func TestOpenSearchLogExporter(t *testing.T) {
 	}
 }
 
-// validateTraceBulkAction ensures  the action JSON object is to the correct index.
-func validateTraceBulkAction(t *testing.T, strMap map[string]any) {
-	val, exists := strMap["_index"]
-	require.True(t, exists)
-	require.Equal(t, val, "ss4o_traces-default-namespace")
-}
-
-// validateLogBulkAction ensures the log JSON object is to the correct index.
-func validateLogBulkAction(t *testing.T, expectedIndex string, strMap map[string]any) {
+// validateBulkAction ensures the JSON object is to the correct index.
+func validateBulkAction(t *testing.T, expectedIndex string, strMap map[string]any) {
 	val, exists := strMap["_index"]
 	require.True(t, exists)
 	require.Equal(t, expectedIndex, val)

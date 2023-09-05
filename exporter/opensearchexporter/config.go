@@ -30,14 +30,15 @@ type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	MappingsSettings               `mapstructure:"mapping"`
 
-	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
-	// If not specified, the default value `create` will be used.
-	BulkAction string `mapstructure:"bulk_action"`
-
+	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
+	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+	// Index pattern will follow the next naming template ss4o_{type}-{dataset}-{namespace}
 	Namespace string `mapstructure:"namespace"`
 	Dataset   string `mapstructure:"dataset"`
 
-	LogsIndex string `mapstructure:"logs_index"`
+	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
+	// If not specified, the default value `create` will be used.
+	BulkAction string `mapstructure:"bulk_action"`
 }
 
 var (

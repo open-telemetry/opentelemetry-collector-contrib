@@ -6,6 +6,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"bytes"
 	"context"
+	"strings"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"github.com/opensearch-project/opensearch-go/v2/opensearchutil"
@@ -16,15 +17,16 @@ import (
 )
 
 type logBulkIndexer struct {
-	index       string
+	dataset     string
+	namespace   string
 	bulkAction  string
 	model       mappingModel
 	errs        []error
 	bulkIndexer opensearchutil.BulkIndexer
 }
 
-func newLogBulkIndexer(index string, bulkAction string, model mappingModel) *logBulkIndexer {
-	return &logBulkIndexer{index, bulkAction, model, nil, nil}
+func newLogBulkIndexer(dataset, namespace, bulkAction string, model mappingModel) *logBulkIndexer {
+	return &logBulkIndexer{dataset, namespace, bulkAction, model, nil, nil}
 }
 
 func (lbi *logBulkIndexer) start(client *opensearch.Client) error {
@@ -111,8 +113,12 @@ func (lbi *logBulkIndexer) processItemFailure(resp opensearchutil.BulkIndexerRes
 
 func (lbi *logBulkIndexer) newBulkIndexerItem(document []byte) opensearchutil.BulkIndexerItem {
 	body := bytes.NewReader(document)
-	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: lbi.index, Body: body}
+	item := opensearchutil.BulkIndexerItem{Action: lbi.bulkAction, Index: lbi.getIndexName(), Body: body}
 	return item
+}
+
+func (lbi *logBulkIndexer) getIndexName() string {
+	return strings.Join([]string{"ss4o_logs", lbi.dataset, lbi.namespace}, "-")
 }
 
 func newLogOpenSearchBulkIndexer(client *opensearch.Client, onIndexerError func(context.Context, error)) (opensearchutil.BulkIndexer, error) {
