@@ -7,7 +7,6 @@ exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/elasticsearchexporter
 exporter/f5cloudexporter
-exporter/jaegerexporter
 exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logzioexporter
