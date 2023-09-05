@@ -366,6 +366,20 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 			&FlusherConfig{Period: forcePeriod},
 		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "LogsWithFlusherWithLogStartingWithWhiteCharsOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("\nLOGSTART 333"),
+				ExpectedTokens: []string{
+					"",
+				},
+				AdditionalIterations: 1,
+				Sleep:                sleepDuration,
+			},
+			&FlusherConfig{Period: forcePeriod},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -577,6 +591,175 @@ func TestLineEndSplitFunc(t *testing.T) {
 				Sleep:                sleepDuration,
 			},
 			&FlusherConfig{Period: forcePeriod},
+		},
+	}
+
+	for _, tc := range testCases {
+		cfg := &MultilineConfig{
+			LineEndPattern: tc.Pattern,
+		}
+
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		require.NoError(t, err)
+		if tc.Flusher != nil {
+			splitFunc = tc.Flusher.Wrap(splitFunc)
+		}
+		t.Run(tc.Name, tc.Run(splitFunc))
+	}
+}
+
+func TestNewlineSplitFunc(t *testing.T) {
+	testCases := []MultiLineTokenizerTestCase{
+		{
+			tokenizetest.TestCase{Name: "OneLogSimple",
+				Input: []byte("my log\n"),
+				ExpectedTokens: []string{
+					`my log`,
+				},
+			}, nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "OneLogCarriageReturn",
+				Input: []byte("my log\r\n"),
+				ExpectedTokens: []string{
+					`my log`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "TwoLogsSimple",
+				Input: []byte("log1\nlog2\n"),
+				ExpectedTokens: []string{
+					`log1`,
+					`log2`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "TwoLogsCarriageReturn",
+				Input: []byte("log1\r\nlog2\r\n"),
+				ExpectedTokens: []string{
+					`log1`,
+					`log2`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "NoTailingNewline",
+				Input: []byte(`foo`),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "HugeLog100",
+				Input: func() []byte {
+					newInput := tokenizetest.GenerateBytes(100)
+					newInput = append(newInput, '\n')
+					return newInput
+				}(),
+				ExpectedTokens: []string{
+					string(tokenizetest.GenerateBytes(100)),
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "HugeLog10000",
+				Input: func() []byte {
+					newInput := tokenizetest.GenerateBytes(10000)
+					newInput = append(newInput, '\n')
+					return newInput
+				}(),
+				ExpectedTokens: []string{
+					string(tokenizetest.GenerateBytes(10000)),
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "HugeLog1000000",
+				Input: func() []byte {
+					newInput := tokenizetest.GenerateBytes(1000000)
+					newInput = append(newInput, '\n')
+					return newInput
+				}(),
+				ExpectedError: errors.New("bufio.Scanner: token too long"),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "LogsWithoutFlusher",
+				Input: []byte("LOGPART log1"),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "LogsWithFlusher",
+				Input: []byte("LOGPART log1"),
+				ExpectedTokens: []string{
+					"LOGPART log1",
+				},
+				AdditionalIterations: 1,
+				Sleep:                sleepDuration,
+			},
+			&FlusherConfig{Period: forcePeriod},
+		},
+		{
+			tokenizetest.TestCase{Name: "DefaultFlusherSplits",
+				Input: []byte("log1\nlog2\n"),
+				ExpectedTokens: []string{
+					"log1",
+					"log2",
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "LogsWithLogStartingWithWhiteChars",
+				Input: []byte("\nLOGEND 333\nAnother one"),
+				ExpectedTokens: []string{
+					"",
+					"LOGEND 333",
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "PreserveLeadingWhitespaces",
+				Input: []byte("\n LOGEND 333 \nAnother one "),
+				ExpectedTokens: []string{
+					"",
+					" LOGEND 333",
+				},
+				PreserveLeadingWhitespaces: true,
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "PreserveTrailingWhitespaces",
+				Input: []byte("\n LOGEND 333 \nAnother one "),
+				ExpectedTokens: []string{
+					"",
+					"LOGEND 333 ",
+				},
+				PreserveTrailingWhitespaces: true,
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{Name: "PreserveBothLeadingAndTrailingWhitespaces",
+				Input: []byte("\n LOGEND 333 \nAnother one "),
+				ExpectedTokens: []string{
+					"",
+					" LOGEND 333 ",
+				},
+				PreserveLeadingWhitespaces:  true,
+				PreserveTrailingWhitespaces: true,
+			},
+			nil,
 		},
 	}
 

@@ -73,7 +73,7 @@ func (r *testReader) splitFunc(split bufio.SplitFunc) bufio.SplitFunc {
 type TestCase struct {
 	Name                        string
 	Pattern                     string
-	OmitPattern                 bool
+	OmitPatternFromRecord       bool
 	Input                       []byte
 	ExpectedTokens              []string
 	ExpectedError               error

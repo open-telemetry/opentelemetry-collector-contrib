@@ -107,8 +107,13 @@ func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEO
 		}
 
 		if firstMatchEnd == len(data) {
-			// the first match goes to the end of the bufer, so don't look for a second match
-			return 0, nil, nil
+			if OmitPatternFromRecord {
+				// read more data and try again
+				return firstMatchEnd, nil, nil
+			} else {
+				// the first match goes to the end of the bufer, so don't look for a second match
+				return 0, nil, nil
+			}
 		}
 
 		// Flush if no more data is expected
@@ -125,7 +130,13 @@ func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEO
 		secondLocOfset := firstMatchEnd + 1
 		secondLoc := re.FindIndex(data[secondLocOfset:])
 		if secondLoc == nil {
-			return 0, nil, nil // read more data and try again
+			if OmitPatternFromRecord {
+				// read more data and try again
+				return firstMatchEnd, nil, nil
+			} else {
+				// read more data and try again
+				return 0, nil, nil
+			}
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
