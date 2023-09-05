@@ -11,8 +11,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strconv"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/hashicorp/go-hclog"
 	"github.com/jaegertracing/jaeger/model"
@@ -128,6 +131,8 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
+			details := merge(resource.Attributes(), scope.Attributes())
+			details.PutStr(`scope.name`, scope.Name())
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
 				jsonLog := convertLogRecordToJSON(log, scope.Name(), resource)
@@ -146,6 +151,36 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err
+}
+
+func merge(maps ...pcommon.Map) pcommon.Map {
+	res := map[string]any{}
+	for _, m := range maps {
+		for key, val := range m.AsRaw() {
+			// Check if (k,v) was added before:
+			if resMapValue, keyExists := res[key]; keyExists {
+				rt := reflect.TypeOf(resMapValue)
+				switch rt.Kind() {
+				case reflect.Slice:
+					res[key] = append(resMapValue.([]interface{}), val)
+				default:
+					// Create a new slice if the key exists:
+					valslice := make([]interface{}, 2)
+					res[key] = append(valslice, resMapValue, val)
+				}
+			}
+
+			res[key] = val
+		}
+	}
+
+	pcommonRes := pcommon.NewMap()
+	err := pcommonRes.FromRaw(res)
+	if err != nil {
+		return pcommon.Map{}
+	}
+
+	return pcommonRes
 }
 
 func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace.Traces) error {
