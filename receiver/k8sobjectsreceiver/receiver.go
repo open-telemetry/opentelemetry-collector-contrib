@@ -56,6 +56,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
+	for _, object := range config.Objects {
+		object.exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range object.ExcludeWatchType {
+			object.exclude[item] = true
+		}
+	}
+
 	objReceiver := &k8sobjectsreceiver{
 		client:         client,
 		setting:        params,
@@ -120,7 +127,6 @@ func (kr *k8sobjectsreceiver) startInLeaderElectionMode(ctx context.Context) {
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
-
 	kr.setting.Logger.Info("Object Receiver started")
 
 	if kr.leaderElectionClient != nil {
@@ -128,7 +134,6 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	} else {
 		kr.startFunc(ctx)
 	}
-
 	return nil
 }
 
@@ -236,6 +241,12 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
+
+			if config.exclude[data.Type] {
+				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				continue
+			}
+
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
