@@ -30,6 +30,7 @@ The following exporter configuration parameters are supported.
 | `file_prefix`  | file prefix defined by user                                                                          |             |
 | `marshaler`    | marshaler used to produce output data                                                                | `otlp_json` |
 | `endpoint`     | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket` |             |
+| `Compression`  | compression algorithm used to compress data before sending to S3        
 
 ### Marshaler
 
