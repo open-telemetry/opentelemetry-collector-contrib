@@ -45,12 +45,37 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "OneLogSimpleOmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGSTART 123 log1LOGSTART 123 a"),
+				ExpectedTokens: []string{
+					`log1`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "TwoLogsSimple",
 				Pattern: `LOGSTART \d+ `,
 				Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
 				ExpectedTokens: []string{
 					`LOGSTART 123 log1`,
 					`LOGSTART 234 log2`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "TwoLogsSimpleOmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input:                 []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
+				ExpectedTokens: []string{
+					`log1`,
+					`log2`,
 				},
 			},
 			nil,
@@ -69,9 +94,31 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "TwoLogsLineStartOmitPattern",
+				Pattern:               `^LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
+				ExpectedTokens: []string{
+					"LOGSTART 345 log1",
+					"log2",
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "NoMatches",
 				Pattern: `LOGSTART \d+ `,
 				Input:   []byte(`file that has no matches in it`),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "NoMatchesOmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input:                 []byte(`file that has no matches in it`),
 			},
 			nil,
 		},
@@ -89,6 +136,19 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "PrecedingNonMatchesOmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input:                 []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
+				ExpectedTokens: []string{
+					`part that doesn't match`,
+					`part that matches`,
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "HugeLog100",
 				Pattern: `LOGSTART \d+ `,
 				Input: func() []byte {
@@ -99,6 +159,23 @@ func TestLineStartSplitFunc(t *testing.T) {
 				}(),
 				ExpectedTokens: []string{
 					`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(100)),
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "HugeLog100OmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input: func() []byte {
+					newInput := []byte(`LOGSTART 123 `)
+					newInput = append(newInput, tokenizetest.GenerateBytes(100)...)
+					newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+					return newInput
+				}(),
+				ExpectedTokens: []string{
+					string(tokenizetest.GenerateBytes(100)),
 				},
 			},
 			nil,
@@ -135,12 +212,40 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "ErrTooLongOmitPattern",
+				Pattern:               `LOGSTART \d+ `,
+				OmitPatternFromRecord: true,
+				Input: func() []byte {
+					newInput := []byte(`LOGSTART 123 `)
+					newInput = append(newInput, tokenizetest.GenerateBytes(1000000)...)
+					newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+					return newInput
+				}(),
+				ExpectedError: errors.New("bufio.Scanner: token too long"),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "MultipleMultilineLogs",
 				Pattern: `^LOGSTART \d+`,
 				Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
 				ExpectedTokens: []string{
 					"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
 					"LOGSTART 17 log2\nLOGPART log2\nanother line",
+				},
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "MultipleMultilineLogsOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
+				ExpectedTokens: []string{
+					"log1\t  \nLOGPART log1\nLOGPART log1",
+					"log2\nLOGPART log2\nanother line",
 				},
 			},
 			nil,
@@ -155,9 +260,33 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "LogsWithoutFlusherOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			},
+			nil,
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "LogsWithFlusher",
 				Pattern: `^LOGSTART \d+`,
 				Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
+				ExpectedTokens: []string{
+					"LOGPART log1\nLOGPART log1",
+				},
+
+				AdditionalIterations: 1,
+				Sleep:                sleepDuration,
+			},
+			&FlusherConfig{Period: forcePeriod},
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "LogsWithFlusherOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGPART log1\nLOGPART log1\t   \n"),
 				ExpectedTokens: []string{
 					"LOGPART log1\nLOGPART log1",
 				},
@@ -183,9 +312,38 @@ func TestLineStartSplitFunc(t *testing.T) {
 		},
 		{
 			tokenizetest.TestCase{
+				Name:                  "LogsWithFlusherWithMultipleLogsInBufferOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
+				ExpectedTokens: []string{
+					"LOGPART log1",
+					"LOGPART log1",
+				},
+				AdditionalIterations: 1,
+				Sleep:                sleepDuration,
+			},
+			&FlusherConfig{Period: forcePeriod},
+		},
+		{
+			tokenizetest.TestCase{
 				Name:    "LogsWithLongFlusherWithMultipleLogsInBuffer",
 				Pattern: `^LOGSTART \d+`,
 				Input:   []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
+				ExpectedTokens: []string{
+					"LOGPART log1",
+				},
+				AdditionalIterations: 1,
+				Sleep:                forcePeriod / 4,
+			},
+			&FlusherConfig{Period: 16 * forcePeriod},
+		},
+		{
+			tokenizetest.TestCase{
+				Name:                  "LogsWithLongFlusherWithMultipleLogsInBufferOmitPattern",
+				Pattern:               `^LOGSTART \d+`,
+				OmitPatternFromRecord: true,
+				Input:                 []byte("LOGPART log1\nLOGSTART 123\nLOGPART log1\t   \n"),
 				ExpectedTokens: []string{
 					"LOGPART log1",
 				},
@@ -212,7 +370,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := &MultilineConfig{
-			LineStartPattern: tc.Pattern,
+			LineStartPattern:      tc.Pattern,
+			OmitPatternFromRecord: tc.OmitPatternFromRecord,
 		}
 
 		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
@@ -224,7 +383,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
+		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, false, noTrim)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -418,175 +577,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 				Sleep:                sleepDuration,
 			},
 			&FlusherConfig{Period: forcePeriod},
-		},
-	}
-
-	for _, tc := range testCases {
-		cfg := &MultilineConfig{
-			LineEndPattern: tc.Pattern,
-		}
-
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
-		require.NoError(t, err)
-		if tc.Flusher != nil {
-			splitFunc = tc.Flusher.Wrap(splitFunc)
-		}
-		t.Run(tc.Name, tc.Run(splitFunc))
-	}
-}
-
-func TestNewlineSplitFunc(t *testing.T) {
-	testCases := []MultiLineTokenizerTestCase{
-		{
-			tokenizetest.TestCase{Name: "OneLogSimple",
-				Input: []byte("my log\n"),
-				ExpectedTokens: []string{
-					`my log`,
-				},
-			}, nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "OneLogCarriageReturn",
-				Input: []byte("my log\r\n"),
-				ExpectedTokens: []string{
-					`my log`,
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "TwoLogsSimple",
-				Input: []byte("log1\nlog2\n"),
-				ExpectedTokens: []string{
-					`log1`,
-					`log2`,
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "TwoLogsCarriageReturn",
-				Input: []byte("log1\r\nlog2\r\n"),
-				ExpectedTokens: []string{
-					`log1`,
-					`log2`,
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "NoTailingNewline",
-				Input: []byte(`foo`),
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "HugeLog100",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(100)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(100)),
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "HugeLog10000",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(10000)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(10000)),
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "HugeLog1000000",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(1000000)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedError: errors.New("bufio.Scanner: token too long"),
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "LogsWithoutFlusher",
-				Input: []byte("LOGPART log1"),
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "LogsWithFlusher",
-				Input: []byte("LOGPART log1"),
-				ExpectedTokens: []string{
-					"LOGPART log1",
-				},
-				AdditionalIterations: 1,
-				Sleep:                sleepDuration,
-			},
-			&FlusherConfig{Period: forcePeriod},
-		},
-		{
-			tokenizetest.TestCase{Name: "DefaultFlusherSplits",
-				Input: []byte("log1\nlog2\n"),
-				ExpectedTokens: []string{
-					"log1",
-					"log2",
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "LogsWithLogStartingWithWhiteChars",
-				Input: []byte("\nLOGEND 333\nAnother one"),
-				ExpectedTokens: []string{
-					"",
-					"LOGEND 333",
-				},
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveLeadingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					" LOGEND 333",
-				},
-				PreserveLeadingWhitespaces: true,
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveTrailingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					"LOGEND 333 ",
-				},
-				PreserveTrailingWhitespaces: true,
-			},
-			nil,
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveBothLeadingAndTrailingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					" LOGEND 333 ",
-				},
-				PreserveLeadingWhitespaces:  true,
-				PreserveTrailingWhitespaces: true,
-			},
-			nil,
 		},
 	}
 
