@@ -110,6 +110,7 @@ func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Met
 	if mismatch {
 		return diffs
 	}
+	//exhaustive:enforce
 	switch actual.Type() {
 	case pmetric.MetricTypeGauge:
 		diffs = diffNumberPts(diffs, expected.Gauge().DataPoints(), actual.Gauge().DataPoints())
@@ -123,8 +124,10 @@ func DiffMetric(diffs []*MetricDiff, expected pmetric.Metric, actual pmetric.Met
 	case pmetric.MetricTypeExponentialHistogram:
 		diffs = diff(diffs, expected.ExponentialHistogram().AggregationTemporality(), actual.ExponentialHistogram().AggregationTemporality(), "ExponentialHistogram AggregationTemporality")
 		diffs = diffExponentialHistogramPts(diffs, expected.ExponentialHistogram().DataPoints(), actual.ExponentialHistogram().DataPoints())
-	default:
+	case pmetric.MetricTypeSummary:
 		// Note: Summary data points are not currently handled
+		panic("unsupported test case for summary data")
+	default:
 		panic("unsupported test case")
 	}
 	return diffs

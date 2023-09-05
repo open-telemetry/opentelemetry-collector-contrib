@@ -49,6 +49,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
+	for _, object := range config.Objects {
+		object.exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range object.ExcludeWatchType {
+			object.exclude[item] = true
+		}
+	}
+
 	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
@@ -108,7 +115,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
-	ticker := NewTicker(config.Interval)
+	ticker := newTicker(config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
 		LabelSelector: config.LabelSelector,
@@ -172,6 +179,12 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
+
+			if config.exclude[data.Type] {
+				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				continue
+			}
+
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
 				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
@@ -219,7 +232,7 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 
 // Start ticking immediately.
 // Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
-func NewTicker(repeat time.Duration) *time.Ticker {
+func newTicker(repeat time.Duration) *time.Ticker {
 	ticker := time.NewTicker(repeat)
 	oc := ticker.C
 	nc := make(chan time.Time, 1)

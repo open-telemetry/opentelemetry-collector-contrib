@@ -277,21 +277,31 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hours](#hours)
 - [Duration](#duration)
 - [Int](#int)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
 - [Log](#log)
+- [Microseconds](#microseconds)
+- [Milliseconds](#milliseconds)
+- [Minutes](#minutes)
+- [Nanoseconds](#nanoseconds)
 - [ParseJSON](#parsejson)
+- [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
-- [Time](#time)
-- [TraceID](#traceid)
 - [Substring](#substring)
+- [Time](#time)
+- [UnixMicro](#unixmicro)
+- [UnixMilli](#unixmilli)
+- [UnixNano](#unixnano)
+- [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 
 ### Concat
@@ -341,9 +351,9 @@ Examples:
 
 `Duration(duration)`
 
-The `Duration` Converter takes a string representation of a duration and converts it to a Golang `time.duration`.
+The `Duration` Converter takes a string representation of a duration and converts it to a [Golang `time.duration`](https://pkg.go.dev/time#ParseDuration).
 
-`duration` is a string.
+`duration` is a string. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
 
 If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
 
@@ -352,6 +362,22 @@ Examples:
 - `Duration("3s")`
 - `Duration("333ms")`
 - `Duration("1000000h")`
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string. 
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup. 
+
+Examples:
+
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
 
 ### FNV
 
@@ -371,6 +397,20 @@ Examples:
 
 
 - `FNV("name")`
+
+### Hours
+
+`Hours(value)`
+
+The `Hours` Converter returns the duration as a floating point number of hours.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Hours(Duration("1h"))`
 
 ### Int
 
@@ -499,6 +539,62 @@ Examples:
 
 - `Int(Log(attributes["duration_ms"])`
 
+### Microseconds
+
+`Microseconds(value)`
+
+The `Microseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Microseconds(Duration("1h"))`
+
+### Milliseconds
+
+`Milliseconds(value)`
+
+The `Milliseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Milliseconds(Duration("1h"))`
+
+### Minutes
+
+`Minutes(value)`
+
+The `Minutes` Converter returns the duration as a floating point number of minutes.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Minutes(Duration("1h"))`
+
+### Nanoseconds
+
+`Nanoseconds(value)`
+
+The `Nanoseconds` Converter returns the duration as an integer nanosecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanoseconds(Duration("1h"))`
+
 ### ParseJSON
 
 `ParseJSON(target)`
@@ -529,6 +625,20 @@ Examples:
 
 
 - `ParseJSON(body)`
+
+### Seconds
+
+`Seconds(value)`
+
+The `Seconds` Converter returns the duration as a floating point number of seconds.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Seconds(Duration("1h"))`
 
 ### SHA1
 
@@ -601,6 +711,21 @@ Examples:
 
 - ```Split("A|B|C", "|")```
 
+### Substring
+
+`Substring(target, start, length)`
+
+The `Substring` Converter returns a substring from the given start index to the specified length.
+
+`target` is a string. `start` and `length` are `int64`.
+
+If `target` is not a string or is nil, an error is returned.
+If the start/length exceed the length of the `target` string, an error is returned.
+
+Examples:
+
+- `Substring("123456789", 0, 3)`
+
 ### Time
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
@@ -625,20 +750,61 @@ Examples:
 
 - `TraceID(0x00000000000000000000000000000000)`
 
-### Substring
+### UnixMicro
 
-`Substring(target, start, length)`
+`UnixMicro(value)`
 
-The `Substring` Converter returns a substring from the given start index to the specified length.
+The `UnixMicro` Converter returns the time as a Unix time, the number of microseconds elapsed since January 1, 1970 UTC.
 
-`target` is a string. `start` and `length` are `int64`.
+`value` is a `time.Time`. If `value` is another type an error is returned.
 
-If `target` is not a string or is nil, an error is returned.
-If the start/length exceed the length of the `target` string, an error is returned.
+The returned type is `int64`.
 
 Examples:
 
-- `Substring("123456789", 0, 3)`
+- `UnixMicro(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixMilli
+
+`UnixMilli(value)`
+
+The `UnixMilli` Converter returns the time as a Unix time, the number of milliseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixMilli(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixNano
+
+`UnixNano(value)`
+
+The `UnixNano` Converter returns the time as a Unix time, the number of nanoseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixNano(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixSeconds
+
+`UnixSeconds(value)`
+
+The `UnixSeconds` Converter returns the time as a Unix time, the number of seconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
 ### UUID
 

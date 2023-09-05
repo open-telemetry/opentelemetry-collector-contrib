@@ -32,6 +32,8 @@ const (
 	levelLabel    string = "level"
 )
 
+const attrSeparator = "."
+
 func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
 	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
@@ -97,14 +99,7 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
 
-		av, ok := attributes.Get(attr)
-		if !ok {
-			// couldn't find the attribute under the given name directly
-			// perhaps it's a nested attribute?
-			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
-		}
-
-		if ok {
+		if av, ok := getAttribute(attr, attributes); ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
@@ -112,18 +107,26 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	return out
 }
 
-func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
-	left, right, _ := strings.Cut(attr, ".")
-	av, ok := attributes.Get(left)
-	if !ok {
-		return pcommon.Value{}, false
-	}
-
-	if len(right) == 0 {
+func getAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	if av, ok := attributes.Get(attr); ok {
 		return av, ok
 	}
 
-	return getNestedAttribute(right, av.Map())
+	// couldn't find the attribute under the given name directly
+	// perhaps it's a nested attribute?
+	segments := strings.Split(attr, attrSeparator)
+	segmentsNumber := len(segments)
+	for i := 0; i < segmentsNumber-1; i++ {
+		left := strings.Join(segments[:segmentsNumber-i-1], attrSeparator)
+		right := strings.Join(segments[segmentsNumber-i-1:], attrSeparator)
+
+		if av, ok := getAttribute(left, attributes); ok {
+			if av.Type() == pcommon.ValueTypeMap {
+				return getAttribute(right, av.Map())
+			}
+		}
+	}
+	return pcommon.Value{}, false
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {

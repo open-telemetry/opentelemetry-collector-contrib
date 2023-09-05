@@ -15,6 +15,7 @@ import (
 
 	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/transport"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -165,9 +166,26 @@ func (p *saClientProvider) BuildClient() (Client, error) {
 	}
 	tr := defaultTransport()
 	tr.TLSClientConfig = &tls.Config{
-		RootCAs: rootCAs,
+		RootCAs:            rootCAs,
+		InsecureSkipVerify: true,
 	}
-	return defaultTLSClient(p.endpoint, true, rootCAs, nil, tok, p.logger)
+	endpoint, err := buildEndpoint(p.endpoint, true, p.logger)
+	if err != nil {
+		return nil, err
+	}
+	rt, err := transport.NewBearerAuthWithRefreshRoundTripper(string(tok), p.tokenPath, tr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientImpl{
+		baseURL: endpoint,
+		httpClient: http.Client{
+			Transport: rt,
+		},
+		tok:    nil,
+		logger: p.logger,
+	}, nil
 }
 
 func defaultTLSClient(

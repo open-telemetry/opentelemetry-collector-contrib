@@ -153,7 +153,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
 					},
 					map[string]interface{}{
-						"metric":    "otel.system.disk.in_use",
+						"metric":    "system.disk.in_use",
 						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
@@ -194,7 +194,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
-						"metric":    "otel.system.disk.in_use",
+						"metric":    "system.disk.in_use",
 						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
@@ -267,7 +267,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 						"tags":      []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
-						"metric":    "otel.system.disk.in_use",
+						"metric":    "system.disk.in_use",
 						"points":    []interface{}{map[string]interface{}{"timestamp": float64(0), "value": float64(333)}},
 						"type":      float64(datadogV2.METRICINTAKETYPE_GAUGE),
 						"resources": []interface{}{map[string]interface{}{"name": "test-host", "type": "host"}},
@@ -481,7 +481,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev"},
 					},
 					map[string]interface{}{
-						"metric": "otel.system.disk.in_use",
+						"metric": "system.disk.in_use",
 						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
@@ -522,7 +522,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
-						"metric": "otel.system.disk.in_use",
+						"metric": "system.disk.in_use",
 						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
@@ -595,7 +595,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 						"tags":   []interface{}{"lower_bound:0", "upper_bound:inf", "env:dev", "key1:value1", "key2:value2"},
 					},
 					map[string]interface{}{
-						"metric": "otel.system.disk.in_use",
+						"metric": "system.disk.in_use",
 						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
@@ -638,7 +638,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 						"tags":   []interface{}{"env:dev"},
 					},
 					map[string]interface{}{
-						"metric": "otel.system.disk.in_use",
+						"metric": "system.disk.in_use",
 						"points": []interface{}{[]interface{}{float64(0), float64(333)}},
 						"type":   "gauge",
 						"host":   "test-host",
