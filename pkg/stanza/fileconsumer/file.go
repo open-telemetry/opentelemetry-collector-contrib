@@ -157,10 +157,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			r.ReadToEnd(ctx)
 			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
 			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
+				r.Delete()
 			}
 		}(r)
 	}
