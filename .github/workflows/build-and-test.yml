@@ -7,9 +7,9 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 1 minute
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -72,6 +72,7 @@ jobs:
           - connector
           - internal
           - pkg
+          - cmd
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -184,6 +185,8 @@ jobs:
         run: make checkdoc
       - name: CheckMetadata
         run: make checkmetadata
+      - name: CheckApi
+        run: make checkapi
       - name: Porto
         run: |
           make -j2 goporto
@@ -208,10 +211,6 @@ jobs:
         run: |
           make -j2 generate
           git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
-      - name: Gen codeowners
-        run: |
-          make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gengithub" and commit the changes in this PR.' && exit 1)
       - name: Check gendependabot
         run: |
           make -j2 gendependabot
@@ -235,6 +234,7 @@ jobs:
           - connector
           - internal
           - pkg
+          - cmd
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]

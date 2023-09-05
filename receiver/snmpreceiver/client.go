@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -62,7 +61,7 @@ var _ client = (*snmpClient)(nil)
 func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
-	goSNMP.SetTimeout(5 * time.Second)
+	goSNMP.SetTimeout(cfg.Timeout)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {
@@ -327,7 +326,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	// Condense gosnmp data types to our client's simplified data types
 	switch pdu.Type { // nolint:exhaustive
 	// Integer types
-	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
+	case gosnmp.Counter64, gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal

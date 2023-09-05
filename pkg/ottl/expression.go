@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -580,4 +581,64 @@ func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 		expr: call,
 		keys: c.Keys,
 	}, nil
+}
+
+// TimeGetter is a Getter that must return an time.Time.
+type TimeGetter[K any] interface {
+	// Get retrieves an time.Time value.
+	Get(ctx context.Context, tCtx K) (time.Time, error)
+}
+
+// StandardTimeGetter is a basic implementation of IntGetter
+type StandardTimeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves a time.Time value.
+// If the value is not a time.Time, a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardTimeGetter[K]) Get(ctx context.Context, tCtx K) (time.Time, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return time.Time{}, TypeError("expected time but got nil")
+	}
+	switch v := val.(type) {
+	case time.Time:
+		return v, nil
+	default:
+		return time.Time{}, TypeError(fmt.Sprintf("expected time but got %T", val))
+	}
+}
+
+// DurationGetter is a Getter that must return an time.Duration.
+type DurationGetter[K any] interface {
+	// Get retrieves an int64 value.
+	Get(ctx context.Context, tCtx K) (time.Duration, error)
+}
+
+// StandardDurationGetter is a basic implementation of DurationGetter
+type StandardDurationGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (interface{}, error)
+}
+
+// Get retrieves an time.Duration value.
+// If the value is not an time.Duration a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardDurationGetter[K]) Get(ctx context.Context, tCtx K) (time.Duration, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return 0, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return 0, TypeError("expected duration but got nil")
+	}
+	switch v := val.(type) {
+	case time.Duration:
+		return v, nil
+	default:
+		return 0, TypeError(fmt.Sprintf("expected duration but got %T", val))
+	}
 }
