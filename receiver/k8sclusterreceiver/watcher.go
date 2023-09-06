@@ -127,19 +127,25 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 	// informer for that kind won't be set and a warning message is thrown.
 	// This map should be kept in sync with what can be provided by the supported k8s server versions.
 	supportedKinds := map[string][]schema.GroupVersionKind{
-		"Pod":                     {gvk.Pod},
-		"Node":                    {gvk.Node},
-		"Namespace":               {gvk.Namespace},
-		"ReplicationController":   {gvk.ReplicationController},
-		"ResourceQuota":           {gvk.ResourceQuota},
-		"Service":                 {gvk.Service},
-		"DaemonSet":               {gvk.DaemonSet},
-		"Deployment":              {gvk.Deployment},
-		"ReplicaSet":              {gvk.ReplicaSet},
-		"StatefulSet":             {gvk.StatefulSet},
-		"Job":                     {gvk.Job},
-		"CronJob":                 {gvk.CronJob, gvk.CronJobBeta},
-		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta},
+		"Pod":                   {gvk.Pod},
+		"Node":                  {gvk.Node},
+		"Namespace":             {gvk.Namespace},
+		"ReplicationController": {gvk.ReplicationController},
+		"ResourceQuota":         {gvk.ResourceQuota},
+		"Service":               {gvk.Service},
+		"DaemonSet":             {gvk.DaemonSet},
+		"Deployment":            {gvk.Deployment},
+		"ReplicaSet":            {gvk.ReplicaSet},
+		"StatefulSet":           {gvk.StatefulSet},
+		"Job":                   {gvk.Job},
+	}
+
+	if !rw.config.IgnoreDeprecatedResource {
+		supportedKinds["CronJob"] = []schema.GroupVersionKind{gvk.CronJob, gvk.CronJobBeta}
+		supportedKinds["HorizontalPodAutoscaler"] = []schema.GroupVersionKind{gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta}
+	} else {
+		supportedKinds["CronJob"] = []schema.GroupVersionKind{gvk.CronJob}
+		supportedKinds["HorizontalPodAutoscaler"] = []schema.GroupVersionKind{gvk.HorizontalPodAutoscaler}
 	}
 
 	for kind, gvks := range supportedKinds {
