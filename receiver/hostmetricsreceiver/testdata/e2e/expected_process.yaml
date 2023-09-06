@@ -1,0 +1,151 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: process.command
+          value:
+            stringValue: /bin/sleep 300
+        - key: process.command_line
+          value:
+            stringValue: /bin/sleep 300
+        - key: process.executable.name
+          value:
+            stringValue: sleep
+        - key: process.executable.path
+          value:
+            stringValue: /bin/sleep
+        - key: process.owner
+          value:
+            stringValue: atoulme
+        - key: process.parent_pid
+          value:
+            intValue: "95040"
+        - key: process.pid
+          value:
+            intValue: "95041"
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU seconds broken down by different states.
+            name: process.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.0012836666666666665
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.00037095833333333333
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: wait
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The amount of physical memory in use.
+            name: process.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1064960"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Virtual memory size.
+            name: process.memory.virtual
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "418299674624"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+        scope:
+          name: otelcol/hostmetricsreceiver/process
+          version: latest
+  - resource:
+      attributes:
+        - key: process.command
+          value:
+            stringValue: sleep 31536000
+        - key: process.command_line
+          value:
+            stringValue: sleep 31536000
+        - key: process.executable.name
+          value:
+            stringValue: sleep
+        - key: process.executable.path
+          value:
+            stringValue: sleep
+        - key: process.owner
+          value:
+            stringValue: atoulme
+        - key: process.parent_pid
+          value:
+            intValue: "4654"
+        - key: process.pid
+          value:
+            intValue: "4668"
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Total CPU seconds broken down by different states.
+            name: process.cpu.time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asDouble: 0.0030173333333333332
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: system
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0.0006898333333333332
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: user
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: state
+                      value:
+                        stringValue: wait
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+          - description: The amount of physical memory in use.
+            name: process.memory.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "311296"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: Virtual memory size.
+            name: process.memory.virtual
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "418299674624"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+        scope:
+          name: otelcol/hostmetricsreceiver/process
+          version: latest
