@@ -148,7 +148,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		settings             *Config
 		expectedClientConfig *clientcredentials.Config
 		shouldError          bool
-		expectedError        string
+		expectedError        error
 	}{
 		{
 			name: "client_id_file",
@@ -163,7 +163,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecret: "testsecret",
 			},
 			shouldError:   false,
-			expectedError: "",
+			expectedError: nil,
 		},
 		{
 			name: "client_secret_file",
@@ -178,7 +178,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				ClientSecret: "testcreds",
 			},
 			shouldError:   false,
-			expectedError: "",
+			expectedError: nil,
 		},
 		{
 			name: "empty_client_creds_file",
@@ -189,7 +189,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				Scopes:       []string{"resource.read"},
 			},
 			shouldError:   true,
-			expectedError: errNoClientIDProvided.Error(),
+			expectedError: errNoClientIDProvided,
 		},
 		{
 			name: "missing_client_creds_file",
@@ -200,7 +200,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 				Scopes:           []string{"resource.read"},
 			},
 			shouldError:   true,
-			expectedError: errNoClientSecretProvided.Error(),
+			expectedError: errNoClientSecretProvided,
 		},
 	}
 
@@ -210,7 +210,7 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			cfg, err := rc.clientCredentials.createConfig()
 			if test.shouldError {
 				assert.NotNil(t, err)
-				assert.Contains(t, err.Error(), test.expectedError)
+				assert.ErrorAs(t, err, &test.expectedError)
 				return
 			}
 			assert.NoError(t, err)

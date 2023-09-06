@@ -60,18 +60,15 @@ func readCredentialsFile(path string) (string, error) {
 }
 
 func getActualValue(value, filepath string) (string, error) {
-	actualValue := value
-	var err error
-
 	if len(filepath) > 0 {
-		actualValue, err = readCredentialsFile(filepath)
+		return readCredentialsFile(filepath)
 	}
 
-	return actualValue, err
+	return value, nil
 }
 
 // createConfig creates a proper clientcredentials.Config with values retrieved
-// from files, if the user has specified a "file:" prefix
+// from files, if the user has specified '*_file' values
 func (c *clientCredentialsConfig) createConfig() (*clientcredentials.Config, error) {
 	clientID, err := getActualValue(c.ClientID, c.ClientIDFile)
 	if err != nil {
