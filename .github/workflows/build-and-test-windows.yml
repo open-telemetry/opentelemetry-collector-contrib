@@ -38,7 +38,7 @@ jobs:
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - if: matrix.group == 'receiver-0'
         name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
