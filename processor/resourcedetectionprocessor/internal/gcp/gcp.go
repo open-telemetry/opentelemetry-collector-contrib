@@ -72,7 +72,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
 	case gcp.CloudRunJob:
@@ -80,7 +80,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobExecution, d.detector.CloudRunJobExecution),
 			d.rb.SetFromCallable(d.rb.SetGcpCloudRunJobTaskIndex, d.detector.CloudRunJobTaskIndex),
 		)
@@ -89,7 +89,7 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.FaaSName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.FaaSVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.FaaSID),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.FaaSID),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.FaaSCloudRegion),
 		)
 	case gcp.AppEngineFlex:
@@ -98,14 +98,14 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetZoneAndRegion(d.detector.AppEngineFlexAvailabilityZoneAndRegion),
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 		)
 	case gcp.AppEngineStandard:
 		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPAppEngine)
 		errs = multierr.Combine(errs,
 			d.rb.SetFromCallable(d.rb.SetFaasName, d.detector.AppEngineServiceName),
 			d.rb.SetFromCallable(d.rb.SetFaasVersion, d.detector.AppEngineServiceVersion),
-			d.rb.SetFromCallable(d.rb.SetFaasID, d.detector.AppEngineServiceInstance),
+			d.rb.SetFromCallable(d.rb.SetFaasInstance, d.detector.AppEngineServiceInstance),
 			d.rb.SetFromCallable(d.rb.SetCloudAvailabilityZone, d.detector.AppEngineStandardAvailabilityZone),
 			d.rb.SetFromCallable(d.rb.SetCloudRegion, d.detector.AppEngineStandardCloudRegion),
 		)

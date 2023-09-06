@@ -156,7 +156,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeFaaSName:       "my-service",
 				conventions.AttributeFaaSVersion:    "123456",
-				conventions.AttributeFaaSID:         "1472385723456792345",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
 			},
 		},
 		{
@@ -176,7 +176,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeFaaSName:       "my-service",
-				conventions.AttributeFaaSID:         "1472385723456792345",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
 				"gcp.cloud_run.job.execution":       "my-service-ajg89",
 				"gcp.cloud_run.job.task_index":      "2",
 			},
@@ -198,7 +198,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudRegion:    "us-central1",
 				conventions.AttributeFaaSName:       "my-service",
 				conventions.AttributeFaaSVersion:    "123456",
-				conventions.AttributeFaaSID:         "1472385723456792345",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
 			},
 		},
 		{
@@ -220,7 +220,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeFaaSName:              "my-service",
 				conventions.AttributeFaaSVersion:           "123456",
-				conventions.AttributeFaaSID:                "1472385723456792345",
+				conventions.AttributeFaaSInstance:          "1472385723456792345",
 			},
 		},
 		{
@@ -242,7 +242,7 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
 				conventions.AttributeFaaSName:              "my-service",
 				conventions.AttributeFaaSVersion:           "123456",
-				conventions.AttributeFaaSID:                "1472385723456792345",
+				conventions.AttributeFaaSInstance:          "1472385723456792345",
 			},
 		},
 		{

@@ -18,7 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetCloudRegion("cloud.region-val")
-			rb.SetFaasID("faas.id-val")
+			rb.SetFaasInstance("faas.instance-val")
 			rb.SetFaasName("faas.name-val")
 			rb.SetFaasVersion("faas.version-val")
 			rb.SetGcpCloudRunJobExecution("gcp.cloud_run.job.execution-val")
@@ -70,10 +70,10 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "cloud.region-val", val.Str())
 			}
-			val, ok = res.Attributes().Get("faas.id")
+			val, ok = res.Attributes().Get("faas.instance")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "faas.id-val", val.Str())
+				assert.EqualValues(t, "faas.instance-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("faas.name")
 			assert.True(t, ok)
