@@ -10,13 +10,18 @@ type OTelTraceState struct {
 	commonTraceState
 
 	// sampling r and t-values
-	rnd Randomness // r value parsed, as unsigned
-	r   string     // 14 ASCII hex digits
-	tt  Threshold  // t value parsed, as a threshold
-	t   string     // 1-14 ASCII hex digits
+	rnd       Randomness // r value parsed, as unsigned
+	rvalue    string     // 14 ASCII hex digits
+	threshold Threshold  // t value parsed, as a threshold
+	tvalue    string     // 1-14 ASCII hex digits
 }
 
 const (
+	// RName is the OTel tracestate field for R-value
+	RName = "rv"
+	// TName is the OTel tracestate field for T-value
+	TName = "th"
+
 	// hardMaxOTelLength is the maximum encoded size of an OTel
 	// tracestate value.
 	hardMaxOTelLength = 256
@@ -58,17 +63,20 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 	err := otelSyntax.scanKeyValues(input, func(key, value string) error {
 		var err error
 		switch key {
-		case "r":
+		case RName:
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
-				otts.r = value
+				otts.rvalue = value
 			} else {
-				otts.rnd = Randomness{} // @@@
+				// The zero-value for randomness implies always-sample;
+				// the threshold test is R < T, but T is not meaningful
+				// at zero, and this value implies zero adjusted count.
+				otts.rnd = Randomness{}
 			}
-		case "t":
-			if otts.tt, err = TValueToThreshold(value); err == nil {
-				otts.t = value
+		case TName:
+			if otts.threshold, err = TValueToThreshold(value); err == nil {
+				otts.tvalue = value
 			} else {
-				otts.tt = AlwaysSampleThreshold
+				otts.threshold = AlwaysSampleThreshold
 			}
 		default:
 			otts.kvs = append(otts.kvs, KV{
@@ -83,11 +91,11 @@ func NewOTelTraceState(input string) (otts OTelTraceState, _ error) {
 }
 
 func (otts *OTelTraceState) HasRValue() bool {
-	return otts.r != ""
+	return otts.rvalue != ""
 }
 
 func (otts *OTelTraceState) RValue() string {
-	return otts.r
+	return otts.rvalue
 }
 
 func (otts *OTelTraceState) RValueRandomness() Randomness {
@@ -95,7 +103,7 @@ func (otts *OTelTraceState) RValueRandomness() Randomness {
 }
 
 func (otts *OTelTraceState) HasTValue() bool {
-	return otts.t != ""
+	return otts.tvalue != ""
 }
 
 func (otts *OTelTraceState) HasNonZeroTValue() bool {
@@ -103,21 +111,21 @@ func (otts *OTelTraceState) HasNonZeroTValue() bool {
 }
 
 func (otts *OTelTraceState) TValue() string {
-	return otts.t
+	return otts.tvalue
 }
 
 func (otts *OTelTraceState) TValueThreshold() Threshold {
-	return otts.tt
+	return otts.threshold
 }
 
 func (otts *OTelTraceState) SetTValue(threshold Threshold, encoded string) {
-	otts.tt = threshold
-	otts.t = encoded
+	otts.threshold = threshold
+	otts.tvalue = encoded
 }
 
 func (otts *OTelTraceState) UnsetTValue() {
-	otts.t = ""
-	otts.tt = Threshold{}
+	otts.tvalue = ""
+	otts.threshold = Threshold{}
 }
 
 func (otts *OTelTraceState) HasAnyValue() bool {
@@ -134,12 +142,14 @@ func (otts *OTelTraceState) Serialize(w io.StringWriter) {
 	}
 	if otts.HasRValue() {
 		sep()
-		w.WriteString("r:")
+		w.WriteString(RName)
+		w.WriteString(":")
 		w.WriteString(otts.RValue())
 	}
 	if otts.HasTValue() {
 		sep()
-		w.WriteString("t:")
+		w.WriteString(TName)
+		w.WriteString(":")
 		w.WriteString(otts.TValue())
 	}
 	for _, kv := range otts.ExtraValues() {

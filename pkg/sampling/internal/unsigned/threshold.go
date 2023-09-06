@@ -95,6 +95,8 @@ func (t Threshold) ShouldSample(rnd Randomness) bool {
 	return rnd.unsigned < t.unsigned
 }
 
+// ThresholdLessThan allows direct comparison of Threshold values.
+// Smaller thresholds equate with smaller probabilities.
 func ThresholdLessThan(a, b Threshold) bool {
 	return a.unsigned < b.unsigned
 }
