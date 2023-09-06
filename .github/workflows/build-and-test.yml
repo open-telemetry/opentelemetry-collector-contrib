@@ -265,13 +265,13 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: ${{ matrix.go-version == '1.19' }}
+        if: startsWith( matrix.go-version, '1.19' )
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
+        if: startsWith( matrix.go-version, '~1.20' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v3
-        if: ${{ matrix.go-version == '1.20' }} # only run coverage on one version
+        if: startsWith( matrix.go-version, '~1.21' ) # only run coverage on one version
         with:
           name: coverage-artifacts
           path: ${{ matrix.group }}-coverage.txt
