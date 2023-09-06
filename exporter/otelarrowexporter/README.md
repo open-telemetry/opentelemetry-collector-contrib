@@ -29,7 +29,7 @@ OTel-Arrow supports column-oriented data transport using the Apache
 Arrow data format.  This component converts OTLP data into an
 optimized representation and then sends batches of data using Apache
 Arrow to encode the stream.  The [OTel-Arrow
-receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otelarrowreceiver/README.md)
+receiver](../../receiver/otelarrowreceiver/README.md)
 component contains logic to reverse the process used in this
 component.
 
@@ -50,7 +50,7 @@ for a pipeline.  Two settings are required:
 using the gRPC protocol. The valid syntax is described
 [here](https://github.com/grpc/grpc/blob/master/doc/naming.md).
 If a scheme of `https` is used then client transport security is enabled and overrides the `insecure` setting.
-- `tls`: see [TLS Configuration Settings](../../config/configtls/README.md) for the full set of available options.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
 Example:
 
@@ -69,7 +69,7 @@ exporters:
 
 By default, `zstd` compression is enabled at the gRPC level. See
 [compression
-comparison](../../config/configgrpc/README.md#compression-comparison)
+comparison](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configgrpc/README.md#compression-comparison)
 for details and benchmark information.  To disable gRPC-level
 compression, configure as follows:
 

@@ -28,7 +28,7 @@ component with additional support for the
 
 OTel-Arrow supports column-oriented data transport using the Apache
 Arrow data format.  The [OTel-Arrow
-exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/otelarrowexporter/README.md)
+exporter](../../exporter/otelarrowexporter/README.md)
 converts OTLP data into an optimized representation and then sends
 batches of data using Apache Arrow to encode the stream.  This
 component contains logic to reverse the process used in the OTel-Arrow
@@ -130,7 +130,7 @@ RPC errors when the exporter's `max_stream_lifetime` is not configured
 correctly.
 
 [See the exporter README for more
-guidance](../../exporter/otelarrowexporter/README.md).  For the
+guidance](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).  For the
 example where `max_connection_age_grace` is set to 10 minutes, the
 exporter's `max_stream_lifetime` should be set to the same number
 minus a reasonable timeout to allow in-flight requests to complete.
