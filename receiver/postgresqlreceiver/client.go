@@ -36,6 +36,7 @@ var errNoLastArchive = errors.New("no last archive found, not able to calculate 
 type client interface {
 	Close() error
 	getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error)
+	getDatabaseLocks(ctx context.Context) ([]databaseLocks, error)
 	getBGWriterStats(ctx context.Context) (*bgStat, error)
 	getBackends(ctx context.Context, databases []string) (map[databaseName]int64, error)
 	getDatabaseSize(ctx context.Context, databases []string) (map[databaseName]int64, error)
@@ -161,6 +162,44 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 		}
 	}
 	return dbStats, errs
+}
+
+type databaseLocks struct {
+	relation string
+	mode     string
+	lockType string
+	locks    int64
+}
+
+func (c *postgreSQLClient) getDatabaseLocks(ctx context.Context) ([]databaseLocks, error) {
+	query := `SELECT relname AS relation, mode, locktype,COUNT(pid)
+	AS locks FROM pg_locks
+	JOIN pg_class ON pg_locks.relation = pg_class.oid
+	GROUP BY relname, mode, locktype;`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_locks and pg_locks.relation: %w", err)
+	}
+	defer rows.Close()
+	var dl []databaseLocks
+	var errs []error
+	for rows.Next() {
+		var relation, mode, lockType string
+		var locks int64
+		err = rows.Scan(&relation, &mode, &lockType, &locks)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		dl = append(dl, databaseLocks{
+			relation: relation,
+			mode:     mode,
+			lockType: lockType,
+			locks:    locks,
+		})
+	}
+	return dl, multierr.Combine(errs...)
 }
 
 // getBackends returns a map of database names to the number of active connections

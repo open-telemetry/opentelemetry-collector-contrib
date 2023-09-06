@@ -1,5 +1,4 @@
 connector/servicegraphconnector
-exporter/alibabacloudlogserviceexporter
 exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
 exporter/azuremonitorexporter
