@@ -30,8 +30,8 @@ func NewFactory() exporter.Factory {
 func newDefaultConfig() component.Config {
 	return &Config{
 		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
-		Namespace:          defaultNamespace,
 		Dataset:            defaultDataset,
+		Namespace:          defaultNamespace,
 		BulkAction:         defaultBulkAction,
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		MappingsSettings:   MappingsSettings{Mode: defaultMappingMode},

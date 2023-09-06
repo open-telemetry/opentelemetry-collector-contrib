@@ -5,6 +5,7 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"strings"
 
 	"github.com/opensearch-project/opensearch-go/v2"
 	"go.opentelemetry.io/collector/component"
@@ -15,8 +16,7 @@ import (
 
 type logExporter struct {
 	client       *opensearch.Client
-	Dataset      string
-	Namespace    string
+	Index        string
 	bulkAction   string
 	model        mappingModel
 	httpSettings confighttp.HTTPClientSettings
@@ -40,8 +40,7 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 
 	return &logExporter{
 		telemetry:    set.TelemetrySettings,
-		Dataset:      cfg.Dataset,
-		Namespace:    cfg.Namespace,
+		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
 		bulkAction:   cfg.BulkAction,
 		httpSettings: cfg.HTTPClientSettings,
 		model:        model,
@@ -64,7 +63,7 @@ func (l *logExporter) Start(_ context.Context, host component.Host) error {
 }
 
 func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	indexer := newLogBulkIndexer(l.Dataset, l.Namespace, l.bulkAction, l.model)
+	indexer := newLogBulkIndexer(l.Index, l.bulkAction, l.model)
 	startErr := indexer.start(l.client)
 	if startErr != nil {
 		return startErr
@@ -72,4 +71,12 @@ func (l *logExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	indexer.submit(ctx, ld)
 	indexer.close(ctx)
 	return indexer.joinedError()
+}
+
+func getIndexName(dataset, namespace, index string) string {
+	if len(index) != 0 {
+		return index
+	}
+
+	return strings.Join([]string{"ss4o_logs", dataset, namespace}, "-")
 }

@@ -38,6 +38,11 @@ type Config struct {
 	Dataset   string `mapstructure:"dataset"`
 	Namespace string `mapstructure:"namespace"`
 
+	// LogsIndex configures the index, index alias, or data stream name logs should be indexed in.
+	// https://opensearch.org/docs/latest/im-plugin/index/
+	// https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
+	LogsIndex string `mapstructure:"logs_index"`
+
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
 	BulkAction string `mapstructure:"bulk_action"`
@@ -52,7 +57,19 @@ var (
 )
 
 type MappingsSettings struct {
-	// Mode configures the field mappings. Uses SS4O by default.
+	// Mode configures the field mappings.
+	// Supported modes are the following:
+	//
+	//   ss4o: exports logs in the Simple Schema for Observability standard.
+	//   This mode is enabled by default.
+	//   See: https://opensearch.org/docs/latest/observing-your-data/ss4o/
+	//
+	//   ecs: maps fields defined in the OpenTelemetry Semantic Conventions
+	//   to the Elastic Common Schema.
+	//   See: https://www.elastic.co/guide/en/ecs/current/index.html
+	//
+	//   flatten_attributes: uses the ECS mapping but flattens all resource and
+	//   log attributes in the record to the top-level.
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -114,6 +131,7 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Endpoint) == 0 {
 		multiErr = append(multiErr, errConfigNoEndpoint)
 	}
+
 	if len(cfg.Dataset) == 0 {
 		multiErr = append(multiErr, errDatasetNoValue)
 	}
