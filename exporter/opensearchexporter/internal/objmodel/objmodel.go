@@ -402,7 +402,7 @@ func ValueFromAttribute(attr pcommon.Value) Value {
 	}
 }
 
-// Sort recursively sorts all keys in docuemts held by the value.
+// Sort recursively sorts all keys in documents held by the value.
 func (v *Value) Sort() {
 	switch v.kind {
 	case KindObject:

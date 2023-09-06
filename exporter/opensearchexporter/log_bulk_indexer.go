@@ -62,7 +62,7 @@ func (lbi *logBulkIndexer) appendRetryLogError(err error, log plog.Logs) {
 
 func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs) {
 	forEachLog(ld, func(resource pcommon.Resource, resourceSchemaURL string, scope pcommon.InstrumentationScope, scopeSchemaURL string, log plog.LogRecord) {
-		document, err := lbi.model.encodeLog(resource, log)
+		payload, err := lbi.model.encodeLog(resource, scope, scopeSchemaURL, log)
 		if err != nil {
 			lbi.appendPermanentError(err)
 		} else {
@@ -71,7 +71,7 @@ func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs) {
 				// selective ACKing in the bulk response.
 				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))
 			}
-			bi := lbi.newBulkIndexerItem(document)
+			bi := lbi.newBulkIndexerItem(payload)
 			bi.OnFailure = ItemFailureHandler
 			err = lbi.bulkIndexer.Add(ctx, bi)
 			if err != nil {

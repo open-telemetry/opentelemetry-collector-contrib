@@ -20,6 +20,7 @@ type ssoTracesExporter struct {
 	Namespace    string
 	Dataset      string
 	bulkAction   string
+	model        mappingModel
 	httpSettings confighttp.HTTPClientSettings
 	telemetry    component.TelemetrySettings
 }
@@ -29,11 +30,17 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesE
 		return nil, err
 	}
 
+	model := &encodeModel{
+		dataset:   cfg.Dataset,
+		namespace: cfg.Namespace,
+	}
+
 	return &ssoTracesExporter{
 		telemetry:    set.TelemetrySettings,
 		Namespace:    cfg.Namespace,
 		Dataset:      cfg.Dataset,
 		bulkAction:   cfg.BulkAction,
+		model:        model,
 		httpSettings: cfg.HTTPClientSettings,
 	}, nil
 }
@@ -54,7 +61,7 @@ func (s *ssoTracesExporter) Start(_ context.Context, host component.Host) error 
 }
 
 func (s *ssoTracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	indexer := newTraceBulkIndexer(s.Dataset, s.Namespace, s.bulkAction)
+	indexer := newTraceBulkIndexer(s.Dataset, s.Namespace, s.bulkAction, s.model)
 	startErr := indexer.start(s.client)
 	if startErr != nil {
 		return startErr

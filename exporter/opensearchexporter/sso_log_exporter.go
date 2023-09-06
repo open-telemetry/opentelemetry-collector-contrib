@@ -29,14 +29,13 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 	}
 
 	model := &encodeModel{
-		dedup:             true,
-		dedot:             false,
-		flattenAttributes: false,
+		dedup:             cfg.Dedup,
+		dedot:             cfg.Dedot,
+		flattenAttributes: cfg.MappingsSettings.Mode == MappingFlattenAttributes.String(),
 		timestampField:    cfg.MappingsSettings.TimestampField,
 		unixTime:          cfg.MappingsSettings.UnixTimestamp,
-	}
-	if cfg.MappingsSettings.Mode == MappingFlattenAttributes.String() {
-		model.flattenAttributes = true
+		dataset:           cfg.Dataset,
+		namespace:         cfg.Namespace,
 	}
 
 	return &logExporter{
