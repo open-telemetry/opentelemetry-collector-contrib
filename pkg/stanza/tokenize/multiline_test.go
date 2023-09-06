@@ -17,7 +17,10 @@ import (
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+var noTrim = trim.Whitespace(true, true)
 
 const (
 	// Those values has been experimentally figured out for windows
@@ -215,10 +218,11 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
-			splitFunc = tc.Flusher.Wrap(splitFunc)
+			splitFunc = tc.Flusher.Wrap(splitFunc, trimFunc)
 		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -426,10 +430,11 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
-			splitFunc = tc.Flusher.Wrap(splitFunc)
+			splitFunc = tc.Flusher.Wrap(splitFunc, trimFunc)
 		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -591,10 +596,11 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, getTrimFunc(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces))
+		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
-			splitFunc = tc.Flusher.Wrap(splitFunc)
+			splitFunc = tc.Flusher.Wrap(splitFunc, trimFunc)
 		}
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -666,14 +672,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, false, false)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, noTrim)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, false, false)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, noTrim)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 

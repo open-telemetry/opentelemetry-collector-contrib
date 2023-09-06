@@ -7,6 +7,7 @@ import (
 	"bufio"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type customFactory struct {
@@ -17,10 +18,13 @@ type customFactory struct {
 var _ Factory = (*customFactory)(nil)
 
 func NewCustomFactory(flusherCfg tokenize.FlusherConfig, splitFunc bufio.SplitFunc) Factory {
-	return &customFactory{flusherCfg: flusherCfg, splitFunc: splitFunc}
+	return &customFactory{
+		flusherCfg: flusherCfg,
+		splitFunc:  splitFunc,
+	}
 }
 
 // Build builds Multiline Splitter struct
 func (f *customFactory) Build() (bufio.SplitFunc, error) {
-	return f.flusherCfg.Wrap(f.splitFunc), nil
+	return f.flusherCfg.Wrap(f.splitFunc, trim.Whitespace(true, true)), nil
 }
