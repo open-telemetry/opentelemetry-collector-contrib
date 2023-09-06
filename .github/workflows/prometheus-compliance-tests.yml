@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v4
@@ -41,7 +41,7 @@ jobs:
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: prometheus/compliance
           path: compliance

@@ -285,6 +285,7 @@ Available Converters:
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsString](#isstring)
+- [Len](#len)
 - [Log](#log)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
