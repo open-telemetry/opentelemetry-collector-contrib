@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 const (
@@ -57,5 +57,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	return New(params, *c, consumer)
+	return newReceiver(params, *c, consumer)
 }

@@ -77,6 +77,10 @@ func (m *MockK8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extracto
 	return metric
 }
 
+func (m *MockK8sDecorator) Shutdown() error {
+	return nil
+}
+
 func TestGetMetrics(t *testing.T) {
 	t.Setenv("HOST_NAME", "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "cluster"}

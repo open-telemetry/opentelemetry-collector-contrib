@@ -17,16 +17,16 @@ jobs:
   prepare-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: 'open-telemetry/opentelemetry-collector'
           path: opentelemetry-collector
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.11
+          go-version: ~1.20.8
           cache: false
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib

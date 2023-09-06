@@ -13,6 +13,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/cmd/githubgen"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/cmd/mdatagen"
     schedule:
       interval: "weekly"
@@ -44,6 +49,11 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/connector/countconnector"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
+    directory: "/connector/datadogconnector"
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -473,6 +483,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/internal/datadog"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/internal/docker"
     schedule:
       interval: "weekly"
@@ -858,6 +873,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/gitproviderreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/googlecloudpubsubreceiver"
     schedule:
       interval: "weekly"
@@ -998,11 +1018,6 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
-    directory: "/receiver/prometheusexecreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
     directory: "/receiver/prometheusreceiver"
     schedule:
       interval: "weekly"
@@ -1084,21 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/solacereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkenterprisereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/splunkhecreceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/sqlqueryreceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

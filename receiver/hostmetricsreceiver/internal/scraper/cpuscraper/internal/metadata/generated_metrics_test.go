@@ -142,7 +142,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["system.cpu.utilization"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Difference in system.cpu.time since the last measurement, divided by the elapsed time and number of logical CPUs.", ms.At(i).Description())
+					assert.Equal(t, "Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -31,7 +32,7 @@ type Manager struct {
 	cancel context.CancelFunc
 
 	readerFactory readerFactory
-	finder        MatchingCriteria
+	fileMatcher   *matcher.Matcher
 	roller        roller
 	persister     operator.Persister
 
@@ -56,12 +57,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 		return fmt.Errorf("read known files from database: %w", err)
 	}
 
-	if files, err := m.finder.findFiles(); err != nil {
-		m.Warnw("error occurred while finding files", "error", err.Error())
-	} else if len(files) == 0 {
-		m.Warnw("no files match the configured include patterns",
-			"include", m.finder.Include,
-			"exclude", m.finder.Exclude)
+	if _, err := m.fileMatcher.MatchFiles(); err != nil {
+		m.Warnw("finding files", "error", err.Error())
 	}
 
 	// Start polling goroutine
@@ -116,7 +113,7 @@ func (m *Manager) poll(ctx context.Context) {
 	batchesProcessed := 0
 
 	// Get the list of paths on disk
-	matches, err := m.finder.findFiles()
+	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Errorf("error finding files: %s", err)
 	}
@@ -160,10 +157,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			r.ReadToEnd(ctx)
 			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
 			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
+				r.Delete()
 			}
 		}(r)
 	}
@@ -326,7 +320,7 @@ func (m *Manager) syncLastPollFiles(ctx context.Context) {
 
 	// Encode each known file
 	for _, fileReader := range m.knownFiles {
-		if err := enc.Encode(fileReader); err != nil {
+		if err := enc.Encode(fileReader.readerMetadata); err != nil {
 			m.Errorw("Failed to encode known files", zap.Error(err))
 		}
 	}
@@ -352,7 +346,7 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 
 	// Decode the number of entries
 	var knownFileCount int
-	if err := dec.Decode(&knownFileCount); err != nil {
+	if err = dec.Decode(&knownFileCount); err != nil {
 		return fmt.Errorf("decoding file count: %w", err)
 	}
 
@@ -364,31 +358,27 @@ func (m *Manager) loadLastPollFiles(ctx context.Context) error {
 	// Decode each of the known files
 	m.knownFiles = make([]*reader, 0, knownFileCount)
 	for i := 0; i < knownFileCount; i++ {
-		// Only the offset, fingerprint, and splitter
-		// will be used before this reader is discarded
-		unsafeReader, err := m.readerFactory.unsafeReader()
-		if err != nil {
-			return err
-		}
-		if err = dec.Decode(unsafeReader); err != nil {
+		rmd := &readerMetadata{}
+		if err = dec.Decode(rmd); err != nil {
 			return err
 		}
 
 		// Migrate readers that used FileAttributes.HeaderAttributes
 		// This block can be removed in a future release, tentatively v0.90.0
-		if ha, ok := unsafeReader.FileAttributes["HeaderAttributes"]; ok {
+		if ha, ok := rmd.FileAttributes["HeaderAttributes"]; ok {
 			switch hat := ha.(type) {
 			case map[string]any:
 				for k, v := range hat {
-					unsafeReader.FileAttributes[k] = v
+					rmd.FileAttributes[k] = v
 				}
-				delete(unsafeReader.FileAttributes, "HeaderAttributes")
+				delete(rmd.FileAttributes, "HeaderAttributes")
 			default:
 				m.Errorw("migrate header attributes: unexpected format")
 			}
 		}
 
-		m.knownFiles = append(m.knownFiles, unsafeReader)
+		// This reader won't be used for anything other than metadata reference, so just wrap the metadata
+		m.knownFiles = append(m.knownFiles, &reader{readerMetadata: rmd})
 	}
 
 	return nil

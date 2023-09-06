@@ -27,6 +27,7 @@ type Cadvisor struct {
 
 type Decorator interface {
 	Decorate(*extractors.CAdvisorMetric) *extractors.CAdvisorMetric
+	Shutdown() error
 }
 
 // Option is a function that can be used to configure Cadvisor struct
@@ -53,4 +54,8 @@ func New(_ string, _ HostInfo, _ *zap.Logger, _ ...Option) (*Cadvisor, error) {
 // GetMetrics is a dummy function that always returns empty metrics for windows
 func (c *Cadvisor) GetMetrics() []pmetric.Metrics {
 	return []pmetric.Metrics{}
+}
+
+func (c *Cadvisor) Shutdown() error {
+	return nil
 }
