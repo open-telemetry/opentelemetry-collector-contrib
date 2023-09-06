@@ -1,9 +1,0 @@
-{
-    "Arn": "arn:aws:logs:us-east-1:022152963040:some-arn:*",
-    "CreationTime": 1522701367574,
-    "KmsKeyId": null,
-    "LogGroupName": "/aws/eks/dev-0/Cluster",
-    "MetricFilterCount": 0,
-    "RetentionInDays": null,
-    "StoredBytes": 21496987
-}

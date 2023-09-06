@@ -1,3 +1,0 @@
-# TYPE a summary
-a{quantile="foo"} 0
-# EOF

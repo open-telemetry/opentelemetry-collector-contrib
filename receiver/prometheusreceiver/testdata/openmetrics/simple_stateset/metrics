@@ -1,5 +1,0 @@
-# TYPE a stateset
-# HELP a help
-a{a="bar"} 0
-a{a="foo"} 1.0
-# EOF

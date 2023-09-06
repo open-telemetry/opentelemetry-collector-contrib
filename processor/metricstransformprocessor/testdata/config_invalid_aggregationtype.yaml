@@ -1,6 +1,0 @@
-metricstransform:
-  transforms:
-    - include: old_name
-      action: combine
-      new_name: new_name
-      aggregation_type: invalid

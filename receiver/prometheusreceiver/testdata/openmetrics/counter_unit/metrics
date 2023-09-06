@@ -1,6 +1,0 @@
-# HELP cc_seconds A counter
-# TYPE cc_seconds counter
-# UNIT cc_seconds seconds
-cc_seconds_total 1.0
-cc_seconds_created 123.456
-# EOF

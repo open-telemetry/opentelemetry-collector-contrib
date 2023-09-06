@@ -1,5 +1,0 @@
-pprof:
-pprof/1:
-  endpoint: "127.0.0.1:1777"
-  block_profile_fraction: 3
-  mutex_profile_fraction: 5

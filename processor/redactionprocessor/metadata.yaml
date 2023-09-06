@@ -1,9 +1,0 @@
-type: redaction
-
-status:
-  class: processor
-  stability:
-    beta: [traces]
-  distributions: [contrib, sumo]
-  codeowners:
-    active: [leonsp-ai, dmitryax, mx-psi, TylerHelmuth]

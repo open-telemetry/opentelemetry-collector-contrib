@@ -1,5 +1,0 @@
-metricstransform:
-  transforms:
-    - include: name1
-      metric_name: name2
-      action: update

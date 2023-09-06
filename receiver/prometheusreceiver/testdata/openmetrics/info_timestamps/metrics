@@ -1,5 +1,0 @@
-# TYPE a info
-# HELP a help
-a_info{a="1",foo="bar"} 1 1
-a_info{a="2",foo="bar"} 1 0
-# EOF

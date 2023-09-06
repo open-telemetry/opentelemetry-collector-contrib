@@ -1,4 +1,0 @@
-sqlquery:
-  collection_interval: 10s
-  driver: mydriver
-  datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"

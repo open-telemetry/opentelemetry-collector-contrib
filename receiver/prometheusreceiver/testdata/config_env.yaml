@@ -1,5 +1,0 @@
-prometheus:
-  config:
-    scrape_configs:
-      - job_name: ${env:JOBNAME}
-        scrape_interval: 5s

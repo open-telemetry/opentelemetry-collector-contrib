@@ -1,1 +1,0 @@
-a_schema	a_table	an_index	9	10	11	12	13000	14000	15000	16000

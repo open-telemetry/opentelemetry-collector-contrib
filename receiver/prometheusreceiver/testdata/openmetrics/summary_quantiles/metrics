@@ -1,7 +1,0 @@
-# TYPE a summary
-# HELP a help
-a_count 1
-a_sum 2
-a{quantile="0.5"} 0.7
-a{quantile="1"} 0.8
-# EOF

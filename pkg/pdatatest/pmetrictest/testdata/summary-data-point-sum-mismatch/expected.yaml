@@ -1,9 +1,0 @@
-resourceMetrics:
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - name: summary.one
-            summary:
-              dataPoints:
-                - sum: 123.456
-        scope: {}

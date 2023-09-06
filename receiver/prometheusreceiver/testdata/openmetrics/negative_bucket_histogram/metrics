@@ -1,6 +1,0 @@
-# TYPE a histogram
-# HELP a help
-a_bucket{le="-1.0"} 0
-a_bucket{le="1.0"} 1
-a_bucket{le="+Inf"} 3
-# EOF

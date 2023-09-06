@@ -1,8 +1,0 @@
-# TYPE a gauge
-# HELP a help
-a{a="1",foo="bar"} 1 0
-a{a="1",foo="bar"} 2 0
-a{a="1",foo="bar"} 3 0
-a{a="2",foo="bar"} 4 0
-a{a="2",foo="bar"} 5 0
-# EOF

@@ -1,2 +1,0 @@
-name	count
-buffer_pool_size	134217728

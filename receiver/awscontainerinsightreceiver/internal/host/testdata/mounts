@@ -1,4 +1,0 @@
-/dev/nvme1n1 /var/lib/kubelet/plugins/kubernetes.io/aws-ebs/mounts/aws/us-west-2b/vol-0d9f0816149eb2050 ext4 rw,relatime,data=ordered 0 0
-/dev/nvme1n1 /var/lib/kubelet/pods/df570351-2e4c-11e9-95ea-0a695d7ce286/volumes/kubernetes.io~aws-ebs/pvc-df563cf6-2e4c-11e9-95ea-0a695d7ce286 ext4 rw,relatime,data=ordered 0 0
- 
-/dev/invalidEntry

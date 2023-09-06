@@ -1,7 +1,0 @@
-metricstransform:
-  transforms:
-    - include: old_name
-      action: update
-      operations:
-        - action: aggregate_labels
-          aggregation_type: invalid

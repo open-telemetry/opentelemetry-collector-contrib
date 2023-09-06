@@ -1,9 +1,0 @@
-type: mezmo
-
-status:
-  class: exporter
-  stability:
-    beta: [logs]
-  distributions: [contrib]
-  codeowners:
-    active: [dashpole, billmeyer, gjanco]

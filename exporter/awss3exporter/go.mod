@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter
+module github.com/pelotoncycle/opentelemetry-collector-contrib/exporter/awss3exporter
 
 go 1.20
 
