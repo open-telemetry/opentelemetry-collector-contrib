@@ -29,6 +29,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -372,16 +373,43 @@ func getSTSRegionalEndpoint(r string) string {
 }
 
 func GetDefaultSession(logger *zap.Logger, cfg *AWSSessionSettings) (*session.Session, error) {
-	awsConfig := &aws.Config{
+	cfgFiles := getFallbackSharedConfigFiles(backwardsCompatibleUserHomeDir)
+	logger.Debug("Fallback shared config file(s)", zap.Strings("files", cfgFiles))
+	awsConfig := aws.Config{
 		Credentials: getRootCredentials(cfg),
 	}
-	result, serr := session.NewSession(awsConfig)
+	result, serr := session.NewSessionWithOptions(session.Options{
+		Config:            awsConfig,
+		SharedConfigFiles: cfgFiles,
+	})
 	if serr != nil {
 		logger.Error("Error in creating session object waiting 15 seconds", zap.Error(serr))
 		time.Sleep(15 * time.Second)
-		result, serr = session.NewSession(awsConfig)
+		result, serr = session.NewSessionWithOptions(session.Options{
+			Config:            awsConfig,
+			SharedConfigFiles: cfgFiles,
+		})
 		if serr != nil {
 			logger.Error("Retry failed for creating credential sessions", zap.Error(serr))
+			return result, serr
+		}
+	}
+	cred, err := result.Config.Credentials.Get()
+	if err != nil {
+		logger.Error("Failed to get credential from session", zap.Error(err))
+	} else {
+		logger.Debug("Using credential from session", zap.String("access-key", cred.AccessKeyID), zap.String("provider", cred.ProviderName))
+	}
+	if cred.ProviderName == ec2rolecreds.ProviderName {
+		var found []string
+		cfgFiles = getFallbackSharedConfigFiles(currentUserHomeDir)
+		for _, cfgFile := range cfgFiles {
+			if _, err = os.Stat(cfgFile); err == nil {
+				found = append(found, cfgFile)
+			}
+		}
+		if len(found) > 0 {
+			logger.Warn("Unused shared config file(s) found.", zap.Strings("files", found))
 		}
 	}
 	return result, serr
