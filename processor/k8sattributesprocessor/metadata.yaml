@@ -4,9 +4,9 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib, splunk, observiq, sumo, redhat]
+  distributions: [contrib, splunk, observiq, sumo, redhat, aws]
   codeowners:
-    active: [dmitryax, rmfitzpatrick, fatsheep9146]
+    active: [dmitryax, rmfitzpatrick, fatsheep9146, TylerHelmuth]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
   k8s.cluster.uid:

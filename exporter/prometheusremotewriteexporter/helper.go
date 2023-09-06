@@ -16,10 +16,11 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	var requests []*prompb.WriteRequest
-	var tsArray []prompb.TimeSeries
+	requests := make([]*prompb.WriteRequest, 0, len(tsMap))
+	tsArray := make([]prompb.TimeSeries, 0, len(tsMap))
 	sizeOfCurrentBatch := 0
 
+	i := 0
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
@@ -27,12 +28,13 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
-			tsArray = nil
+			tsArray = make([]prompb.TimeSeries, 0, len(tsMap)-i)
 			sizeOfCurrentBatch = 0
 		}
 
 		tsArray = append(tsArray, *v)
 		sizeOfCurrentBatch += sizeOfSeries
+		i++
 	}
 
 	if len(tsArray) != 0 {

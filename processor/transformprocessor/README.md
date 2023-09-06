@@ -116,7 +116,7 @@ transform:
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+        - replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
 ```
 
@@ -365,7 +365,7 @@ transform:
     - context: resource
       statements:
         # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs
@@ -412,7 +412,7 @@ See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-
 
 ## Warnings
 
-The transform processor's implementation of the [OpenTelemetry Transformation Language]https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#opentelemetry-transformation-language) (OTTL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
+The transform processor's implementation of the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#opentelemetry-transformation-language) (OTTL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
 
 - [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.

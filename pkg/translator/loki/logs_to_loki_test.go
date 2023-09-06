@@ -521,7 +521,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 			err: nil,
@@ -543,7 +543,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 		},
@@ -565,7 +565,7 @@ func TestLogToLokiEntry(t *testing.T) {
 				},
 				Labels: model.LabelSet{
 					"exporter":  "OTLP",
-					"host.name": "guarana",
+					"host_name": "guarana",
 				},
 			},
 		},
@@ -618,6 +618,26 @@ func TestLogToLokiEntry(t *testing.T) {
 			},
 		},
 		{
+			name:      "with instrumentation scope attributes",
+			timestamp: time.Unix(0, 1677592916000000000),
+			instrumentationScope: &instrumentationScope{
+				Name:    "otlp",
+				Version: "v1",
+				Attributes: map[string]interface{}{
+					"foo": "bar",
+				},
+			},
+			expected: &PushEntry{
+				Entry: &push.Entry{
+					Timestamp: time.Unix(0, 1677592916000000000),
+					Line:      `{"instrumentation_scope":{"name":"otlp","version":"v1","attributes":{"foo":"bar"}}}`,
+				},
+				Labels: model.LabelSet{
+					"exporter": "OTLP",
+				},
+			},
+		},
+		{
 			name:      "with unknown format hint",
 			timestamp: time.Unix(0, 1677592916000000000),
 			hints: map[string]interface{}{
@@ -650,6 +670,8 @@ func TestLogToLokiEntry(t *testing.T) {
 			if tt.instrumentationScope != nil {
 				scope.SetName(tt.instrumentationScope.Name)
 				scope.SetVersion(tt.instrumentationScope.Version)
+				err = scope.Attributes().FromRaw(tt.instrumentationScope.Attributes)
+				require.NoError(t, err)
 			}
 
 			resource := pcommon.NewResource()

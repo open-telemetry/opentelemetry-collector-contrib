@@ -23,6 +23,7 @@ type testCase struct {
 }
 
 func TestProcessAndBuild(t *testing.T) {
+	t.Setenv("TEST_EXPR_STRING_ENV", "val")
 	now := time.Now()
 	newTestEntry := func() *entry.Entry {
 		e := entry.New()
@@ -292,6 +293,42 @@ func TestProcessAndBuild(t *testing.T) {
 							"new": 1,
 						},
 					},
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_expr",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("fookey")
+				cfg.Value = "EXPR('foo_' + body.key)"
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"fookey": "foo_val",
+				}
+				return e
+			},
+			false,
+		},
+		{
+			"add_expr_env",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.Field = entry.NewAttributeField("fookey")
+				cfg.Value = "EXPR('foo_' + env('TEST_EXPR_STRING_ENV'))"
+				return cfg
+			}(),
+			newTestEntry,
+			func() *entry.Entry {
+				e := newTestEntry()
+				e.Attributes = map[string]interface{}{
+					"fookey": "foo_val",
 				}
 				return e
 			},

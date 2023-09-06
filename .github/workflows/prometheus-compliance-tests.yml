@@ -12,16 +12,16 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 1 minute
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
   prometheus-compliance-tests:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v4
@@ -41,7 +41,7 @@ jobs:
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: prometheus/compliance
           path: compliance
