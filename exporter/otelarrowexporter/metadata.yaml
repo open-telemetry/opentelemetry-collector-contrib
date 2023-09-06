@@ -1,0 +1,7 @@
+type: otelarrow
+
+status:
+  class: exporter
+  stability:
+    development: [metrics, traces, logs]
+  distributions: [otelarrow]

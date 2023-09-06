@@ -1,0 +1,7 @@
+type: otelarrow
+
+status:
+  class: receiver
+  stability:
+    development: [metrics, traces, logs]
+  distributions: [otelarrow]
