@@ -10,17 +10,8 @@ import (
 	"io"
 	"strings"
 
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
-
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
-
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -29,6 +20,13 @@ import (
 	"go.opentelemetry.io/collector/extension/auth"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -295,49 +293,46 @@ func (r *Receiver) anyStream(serverStream anyStreamServer) (retErr error) {
 	for {
 		// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
 		// or plog.Logs item.
-		req, err := serverStream.Recv()
-
-		if err != nil {
+		req, recvErr := serverStream.Recv()
+		if recvErr != nil {
 			// client called CloseSend()
-			if err == io.EOF {
+			if errors.Is(recvErr, io.EOF) {
 				status := &arrowpb.BatchStatus{}
 				status.StatusCode = arrowpb.StatusCode_CANCELED
-				err = serverStream.Send(status)
-				if err != nil {
-					r.logStreamError(err)
-					return err
+				if sendErr := serverStream.Send(status); sendErr != nil {
+					r.logStreamError(sendErr)
+					return sendErr
 				}
 				return nil
 			}
 
-			r.logStreamError(err)
-			return err
+			r.logStreamError(recvErr)
+			return recvErr
 		}
 
 		// Check for optional headers and set the incoming context.
-		thisCtx, authHdrs, err := hrcv.combineHeaders(streamCtx, req.GetHeaders())
-		if err != nil {
+		thisCtx, authHdrs, hdrErr := hrcv.combineHeaders(streamCtx, req.GetHeaders())
+		if hdrErr != nil {
 			// Failing to parse the incoming headers breaks the stream.
-			r.telemetry.Logger.Error("arrow metadata error", zap.Error(err))
-			return err
+			r.telemetry.Logger.Error("arrow metadata error", zap.Error(hdrErr))
+			return hdrErr
 		}
 
 		var authErr error
 		if r.authServer != nil {
 			var newCtx context.Context
-			if newCtx, err = r.authServer.Authenticate(thisCtx, authHdrs); err != nil {
-				authErr = err
-			} else {
+			if newCtx, authErr = r.authServer.Authenticate(thisCtx, authHdrs); authErr == nil {
 				thisCtx = newCtx
 			}
 		}
 
 		// Process records: an error in this code path does
 		// not necessarily break the stream.
+		var processErr error
 		if authErr != nil {
-			err = authErr
+			processErr = authErr
 		} else {
-			err = r.processRecords(thisCtx, ac, req)
+			processErr = r.processRecords(thisCtx, ac, req)
 		}
 
 		// Note: Statuses can be batched, but we do not take
@@ -345,26 +340,26 @@ func (r *Receiver) anyStream(serverStream anyStreamServer) (retErr error) {
 		status := &arrowpb.BatchStatus{
 			BatchId: req.GetBatchId(),
 		}
-		if err == nil {
+		if processErr == nil {
 			status.StatusCode = arrowpb.StatusCode_OK
 		} else {
-			status.StatusMessage = err.Error()
-			if errors.Is(err, arrowRecord.ErrConsumerMemoryLimit) {
-				r.telemetry.Logger.Error("arrow resource exhausted", zap.Error(err))
+			status.StatusMessage = processErr.Error()
+			switch {
+			case errors.Is(processErr, arrowRecord.ErrConsumerMemoryLimit):
+				r.telemetry.Logger.Error("arrow resource exhausted", zap.Error(processErr))
 				status.StatusCode = arrowpb.StatusCode_RESOURCE_EXHAUSTED
-			} else if consumererror.IsPermanent(err) {
-				r.telemetry.Logger.Error("arrow data error", zap.Error(err))
+			case consumererror.IsPermanent(processErr):
+				r.telemetry.Logger.Error("arrow data error", zap.Error(processErr))
 				status.StatusCode = arrowpb.StatusCode_INVALID_ARGUMENT
-			} else {
-				r.telemetry.Logger.Debug("arrow consumer error", zap.Error(err))
+			default:
+				r.telemetry.Logger.Debug("arrow consumer error", zap.Error(processErr))
 				status.StatusCode = arrowpb.StatusCode_UNAVAILABLE
 			}
 		}
 
-		err = serverStream.Send(status)
-		if err != nil {
-			r.logStreamError(err)
-			return err
+		if sendErr := serverStream.Send(status); sendErr != nil {
+			r.logStreamError(sendErr)
+			return sendErr
 		}
 	}
 }
