@@ -34,6 +34,7 @@ func newDefaultConfig() component.Config {
 		Dataset:            defaultDataset,
 		BulkAction:         defaultBulkAction,
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		MappingsSettings:   MappingsSettings{Mode: defaultMappingMode},
 	}
 }
 

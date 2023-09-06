@@ -5,7 +5,6 @@ package opensearchexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -21,6 +20,9 @@ const (
 
 	// defaultBulkAction value is used when component.Config.BulkAction is not set.
 	defaultBulkAction = "create"
+
+	// defaultMappingMode value is used when component.Config.MappingSettings.Mode is not set.
+	defaultMappingMode = "ss4o"
 )
 
 // Config defines configuration for OpenSearch exporter.
@@ -33,8 +35,8 @@ type Config struct {
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/
 	// Index pattern will follow the next naming template ss4o_{type}-{dataset}-{namespace}
-	Namespace string `mapstructure:"namespace"`
 	Dataset   string `mapstructure:"dataset"`
+	Namespace string `mapstructure:"namespace"`
 
 	// BulkAction configures the action for ingesting data. Only `create` and `index` are allowed here.
 	// If not specified, the default value `create` will be used.
@@ -42,14 +44,15 @@ type Config struct {
 }
 
 var (
-	errConfigNoEndpoint  = errors.New("endpoint must be specified")
-	errDatasetNoValue    = errors.New("dataset must be specified")
-	errNamespaceNoValue  = errors.New("namespace must be specified")
-	errBulkActionInvalid = errors.New("bulk_action can either be `create` or `index`")
+	errConfigNoEndpoint   = errors.New("endpoint must be specified")
+	errDatasetNoValue     = errors.New("dataset must be specified")
+	errNamespaceNoValue   = errors.New("namespace must be specified")
+	errBulkActionInvalid  = errors.New("bulk_action can either be `create` or `index`")
+	errMappingModeInvalid = errors.New("mapping.mode is invalid")
 )
 
 type MappingsSettings struct {
-	// Mode configures the field mappings.
+	// Mode configures the field mappings. Uses SS4O by default.
 	Mode string `mapstructure:"mode"`
 
 	// Additional field mappings.
@@ -74,37 +77,33 @@ type MappingMode int
 
 // Enum values for MappingMode.
 const (
-	MappingNone MappingMode = iota
+	MappingSS4O MappingMode = iota
 	MappingECS
 	MappingFlattenAttributes
 )
 
 func (m MappingMode) String() string {
 	switch m {
-	case MappingNone:
-		return ""
+	case MappingSS4O:
+		return "ss4o"
 	case MappingECS:
 		return "ecs"
 	case MappingFlattenAttributes:
 		return "flatten_attributes"
 	default:
-		return ""
+		return "ss4o"
 	}
 }
 
 var mappingModes = func() map[string]MappingMode {
 	table := map[string]MappingMode{}
 	for _, m := range []MappingMode{
-		MappingNone,
 		MappingECS,
+		MappingSS4O,
 		MappingFlattenAttributes,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
 
 	return table
 }()
@@ -122,16 +121,12 @@ func (cfg *Config) Validate() error {
 		multiErr = append(multiErr, errNamespaceNoValue)
 	}
 
-	if len(cfg.BulkAction) == 0 {
-		cfg.BulkAction = "create"
-	}
-
 	if cfg.BulkAction != "create" && cfg.BulkAction != "index" {
 		return errBulkActionInvalid
 	}
 
 	if _, ok := mappingModes[cfg.MappingsSettings.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %v", cfg.MappingsSettings.Mode)
+		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 
 	return errors.Join(multiErr...)

@@ -58,7 +58,7 @@ func (m *encodeModel) encodeLogSSO(
 	schemaURL string,
 	record plog.LogRecord,
 ) ([]byte, error) {
-	sso := ssoLog{}
+	sso := ssoRecord{}
 	sso.Attributes = record.Attributes().AsRaw()
 	sso.Body = record.Body().AsString()
 

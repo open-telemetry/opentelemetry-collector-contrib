@@ -59,7 +59,7 @@ type ssoSpan struct {
 	TraceState string    `json:"traceState"`
 }
 
-type ssoLog struct {
+type ssoRecord struct {
 	Attributes           map[string]any `json:"attributes,omitempty"`
 	Body                 string         `json:"body"`
 	InstrumentationScope struct {

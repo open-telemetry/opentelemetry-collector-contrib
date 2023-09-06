@@ -68,6 +68,9 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: 0.5,
 				},
 				BulkAction: defaultBulkAction,
+				MappingsSettings: MappingsSettings{
+					Mode: "ss4o",
+				},
 			},
 			configValidateAssert: assert.NoError,
 		},
