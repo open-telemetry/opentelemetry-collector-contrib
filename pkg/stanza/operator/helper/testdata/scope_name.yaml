@@ -1,4 +1,0 @@
-parse_from:
-  type: helpers_test
-  scope:
-    parse_from: body.from

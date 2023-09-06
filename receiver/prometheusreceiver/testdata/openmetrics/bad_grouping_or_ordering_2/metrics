@@ -1,5 +1,0 @@
-# TYPE a gaugehistogram
-a_gsum{a="1"} 0
-a_gsum{a="2"} 0
-a_gcount{a="1"} 0
-# EOF

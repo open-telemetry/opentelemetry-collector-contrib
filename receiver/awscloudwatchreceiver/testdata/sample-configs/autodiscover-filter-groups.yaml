@@ -1,9 +1,0 @@
-receivers:
-  awscloudwatch:
-    region: us-west-1
-    logs:
-      poll_interval: 1m
-      groups:
-        autodiscover:
-          limit: 100
-          prefix: /aws/eks/

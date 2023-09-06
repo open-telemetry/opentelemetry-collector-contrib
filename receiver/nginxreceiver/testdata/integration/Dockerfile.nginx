@@ -1,6 +1,0 @@
-FROM docker.io/library/nginx:1.25
-
-COPY default.conf /etc/nginx/conf.d/default.conf
-RUN \
-    chown root:root /etc/nginx/conf.d/default.conf && \
-    chmod 0644 /etc/nginx/conf.d/default.conf

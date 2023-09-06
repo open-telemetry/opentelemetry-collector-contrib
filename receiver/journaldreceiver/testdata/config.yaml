@@ -1,5 +1,0 @@
-journald:
-  units:
-    - ssh
-  priority: info
-  directory: /run/log/journal

@@ -1,9 +1,0 @@
-{
-    "version": "3.1.2.0.0.17883600",
-    "control_cluster_status": {
-        "mgmt_connection_status": {
-            "connectivity_status": "CONNECTED"
-        },
-        "control_cluster_status": "CONNECTED"
-    }
-}

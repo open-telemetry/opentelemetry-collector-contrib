@@ -1,9 +1,0 @@
-type: azuremonitor
-
-status:
-  class: exporter
-  stability:
-    beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
-  codeowners:
-    active: [pcwiese]

@@ -1,8 +1,0 @@
-alibabacloud_logservice:
-  endpoint: "cn-hangzhou.log.aliyuncs.com"
-alibabacloud_logservice/2:
-  endpoint: "cn-hangzhou.log.aliyuncs.com"
-  project: "demo-project"
-  logstore: "demo-logstore"
-  access_key_id: "test-id"
-  access_key_secret: "test-secret"

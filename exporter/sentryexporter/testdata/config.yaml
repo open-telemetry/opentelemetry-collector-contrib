@@ -1,4 +1,0 @@
-sentry:
-sentry/2:
-  dsn: https://key@host/path/42
-  environment: prod

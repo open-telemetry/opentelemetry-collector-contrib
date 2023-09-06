@@ -1,5 +1,0 @@
-# TYPE a_seconds gauge
-# UNIT a_seconds seconds
-# HELP a_seconds help
-a_seconds 1
-# EOF

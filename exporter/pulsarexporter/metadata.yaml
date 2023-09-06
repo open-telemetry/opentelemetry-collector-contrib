@@ -1,9 +1,0 @@
-type: pulsar
-
-status:
-  class: exporter
-  stability:
-    alpha: [traces, metrics, logs]
-  distributions: [contrib]
-  codeowners:
-    active: [dmitryax, dao-jun]

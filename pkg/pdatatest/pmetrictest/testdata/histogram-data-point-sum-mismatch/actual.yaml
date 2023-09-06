@@ -1,9 +1,0 @@
-resourceMetrics:
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - histogram:
-              dataPoints:
-                - sum: 654.321
-            name: histogram.one
-        scope: {}

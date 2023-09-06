@@ -1,9 +1,0 @@
-type: carbon
-
-status:
-  class: exporter
-  stability:
-    beta: [metrics]
-  distributions: [contrib, observiq, sumo]
-  codeowners:
-    active: [aboguszewski-sumo]

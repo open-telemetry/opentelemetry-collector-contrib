@@ -1,9 +1,0 @@
-type: logzio
-
-status:
-  class: exporter
-  stability:
-    beta: [traces, logs]
-  distributions: [contrib, observiq, aws]
-  codeowners:
-    active: [Doron-Bargo, yotamloe]

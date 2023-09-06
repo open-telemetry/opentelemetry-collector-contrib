@@ -1,4 +1,0 @@
-# TYPE a gaugehistogram
-a_bucket{le=" Inf"} 0
-a_gsum 0
-# EOF

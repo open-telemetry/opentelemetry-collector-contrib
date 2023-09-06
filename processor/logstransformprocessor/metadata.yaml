@@ -1,9 +1,0 @@
-type: logstransform
-
-status:
-  class: processor
-  stability:
-    development: [logs]
-  distributions: [observiq, splunk, sumo]
-  codeowners:
-    active: [djaglowski, dehaansa]

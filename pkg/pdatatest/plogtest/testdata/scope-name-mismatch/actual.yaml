@@ -1,6 +1,0 @@
-resourceLogs:
-  - resource: {}
-    scopeLogs:
-      - scope:
-          name: two
-          version: "1.0"

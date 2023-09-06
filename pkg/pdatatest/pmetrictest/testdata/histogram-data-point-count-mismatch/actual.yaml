@@ -1,9 +1,0 @@
-resourceMetrics:
-  - resource: {}
-    scopeMetrics:
-      - metrics:
-          - histogram:
-              dataPoints:
-                - count: "654"
-            name: histogram.one
-        scope: {}

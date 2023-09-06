@@ -1,4 +1,0 @@
-awscloudwatch:
-  region: us-west-1
-  logs:
-    poll_interval: 5m

@@ -1,8 +1,0 @@
-# TYPE a histogram
-a_sum{a="1"} 0
-a_bucket{a="2",le="+Inf"} 0
-a_count{a="2"} 0
-a_sum{a="2"} 0
-a_bucket{a="1",le="+Inf"} 0
-a_count{a="1"} 0
-# EOF
