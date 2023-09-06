@@ -6,6 +6,8 @@ package tokenize // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const DefaultFlushPeriod = 500 * time.Millisecond
@@ -24,13 +26,13 @@ func NewFlusherConfig() FlusherConfig {
 }
 
 // Wrap a bufio.SplitFunc with a flusher
-func (c *FlusherConfig) Wrap(splitFunc bufio.SplitFunc) bufio.SplitFunc {
+func (c *FlusherConfig) Wrap(splitFunc bufio.SplitFunc, trimFunc trim.Func) bufio.SplitFunc {
 	f := &flusher{
 		lastDataChange:     time.Now(),
 		forcePeriod:        c.Period,
 		previousDataLength: 0,
 	}
-	return f.splitFunc(splitFunc)
+	return f.splitFunc(splitFunc, trimFunc)
 }
 
 // flusher keeps information about flush state
@@ -71,7 +73,7 @@ func (f *flusher) shouldFlush() bool {
 	return f.forcePeriod > 0 && time.Since(f.lastDataChange) > f.forcePeriod && f.previousDataLength > 0
 }
 
-func (f *flusher) splitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
+func (f *flusher) splitFunc(splitFunc bufio.SplitFunc, trimFunc trim.Func) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 
@@ -91,7 +93,7 @@ func (f *flusher) splitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 		if f.shouldFlush() {
 			// Inform flusher that we just flushed
 			f.flushed()
-			token = trimWhitespacesFunc(data)
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
