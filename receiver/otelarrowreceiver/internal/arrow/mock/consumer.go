@@ -9,7 +9,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-
 	consumer "go.opentelemetry.io/collector/consumer"
 	plog "go.opentelemetry.io/collector/pdata/plog"
 	pmetric "go.opentelemetry.io/collector/pdata/pmetric"

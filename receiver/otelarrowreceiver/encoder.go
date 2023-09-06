@@ -8,11 +8,10 @@ import (
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
-	spb "google.golang.org/genproto/googleapis/rpc/status"
-
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 )
 
 const (
