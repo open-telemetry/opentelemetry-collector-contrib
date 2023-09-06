@@ -15,19 +15,18 @@ import (
 
 	"github.com/golang/mock/gomock"
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	otelAssert "github.com/open-telemetry/otel-arrow/pkg/otel/assert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/http2/hpack"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"golang.org/x/net/http2/hpack"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const defaultMaxStreamLifetime = 11 * time.Second

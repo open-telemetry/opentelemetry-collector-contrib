@@ -15,9 +15,8 @@ import (
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"google.golang.org/grpc"
 )
 
 var oneBatch = &arrowpb.BatchArrowRecords{

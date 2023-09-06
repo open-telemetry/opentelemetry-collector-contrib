@@ -12,11 +12,10 @@ import (
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"go.opentelemetry.io/collector/component"
 )
 
 // Exporter is 1:1 with exporter, isolates arrow-specific

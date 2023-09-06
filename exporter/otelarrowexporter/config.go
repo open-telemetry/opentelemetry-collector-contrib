@@ -8,12 +8,11 @@ import (
 	"time"
 
 	"github.com/open-telemetry/otel-arrow/pkg/config"
-	"google.golang.org/grpc"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"google.golang.org/grpc"
 )
 
 // Config defines configuration for OTLP exporter.
