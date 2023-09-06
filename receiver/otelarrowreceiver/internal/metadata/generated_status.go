@@ -8,7 +8,7 @@ import (
 
 const (
 	Type             = "otelarrow"
-	MetricsStability = component.StabilityLevelDevelopment
-	TracesStability  = component.StabilityLevelDevelopment
-	LogsStability    = component.StabilityLevelDevelopment
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelBeta
+	LogsStability    = component.StabilityLevelBeta
 )
