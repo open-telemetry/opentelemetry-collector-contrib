@@ -119,18 +119,18 @@ type samplerMode int
 const (
 	modeUnset = iota
 	modeHashSeed
-	modeDownsample
-	modeResample
+	modeProportional
+	modeEqualizing
 )
 
 func parseSamplerMode(s string) (samplerMode, error) {
 	switch strings.ToLower(s) {
-	case "resample":
-		return modeResample, nil
+	case "equalizing":
+		return modeEqualizing, nil
 	case "hash_seed":
 		return modeHashSeed, nil
-	case "downsample":
-		return modeDownsample, nil
+	case "proportional":
+		return modeProportional, nil
 	case "":
 		return modeUnset, nil
 	default:

@@ -66,13 +66,13 @@ type traceProcessor struct {
 
 type traceHashSampler struct {
 	// Hash-based calculation
-	hashScaledSamplingRate uint32
-	hashSeed               uint32
-	probability            float64
-	svalueEncoding         string
+	hashScaledSamplerate uint32
+	hashSeed             uint32
+	probability          float64
+	svalueEncoding       string
 }
 
-type traceResampler struct {
+type traceEqualizer struct {
 	// TraceID-randomness-based calculation
 	traceIDThreshold sampling.Threshold
 
@@ -122,7 +122,8 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		if cfg.HashSeed != 0 {
 			mode = modeHashSeed
 		} else {
-			mode = modeDownsample
+			// TODO: make this modeProportional
+			mode = modeEqualizing
 		}
 	}
 
@@ -132,25 +133,26 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		ts := &traceHashSampler{}
 
 		// Adjust sampling percentage on private so recalculations are avoided.
-		ts.hashScaledSamplingRate = uint32(pct * percentageScaleFactor)
+		ts.hashScaledSamplerate = uint32(pct * percentageScaleFactor)
 		ts.hashSeed = cfg.HashSeed
 		ts.probability = ratio
 		ts.svalueEncoding = strconv.FormatFloat(ratio, 'g', 4, 64)
 
 		tp.sampler = ts
-	case modeResample:
+	case modeEqualizing:
 		// Encode t-value: for cases where the incoming context has
 		threshold, err := sampling.ProbabilityToThreshold(ratio)
 		if err != nil {
 			return nil, err
 		}
 
-		tp.sampler = &traceResampler{
+		tp.sampler = &traceEqualizer{
 			tValueEncoding:   threshold.TValue(),
 			traceIDThreshold: threshold,
 		}
-	case modeDownsample:
+	case modeProportional:
 		// TODO
+		panic("Not implemented")
 	}
 
 	return processorhelper.NewTracesProcessor(
@@ -167,7 +169,7 @@ func (ts *traceHashSampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState
 	// with various different criteria to generate trace id and perhaps were already sampled without hashing.
 	// Hashing here prevents bias due to such systems.
 	tid := s.TraceID()
-	decision := computeHash(tid[:], ts.hashSeed)&bitMaskHashBuckets < ts.hashScaledSamplingRate
+	decision := computeHash(tid[:], ts.hashSeed)&bitMaskHashBuckets < ts.hashScaledSamplerate
 	return decision, nil, nil
 }
 
@@ -175,7 +177,7 @@ func (ts *traceHashSampler) updateTracestate(tid pcommon.TraceID, should bool, o
 	// No action, nothing is specified.
 }
 
-func (ts *traceResampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
+func (ts *traceEqualizer) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, error) {
 	rnd, wts, err := randomnessFromSpan(s)
 	if err != nil {
 		// TODO: Configure fail-open vs fail-closed?
@@ -197,7 +199,7 @@ func (ts *traceResampler) decide(s ptrace.Span) (bool, *sampling.W3CTraceState, 
 	return ts.traceIDThreshold.ShouldSample(rnd), wts, err
 }
 
-func (ts *traceResampler) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) {
+func (ts *traceEqualizer) updateTracestate(tid pcommon.TraceID, should bool, otts *sampling.OTelTraceState) {
 	// When this sampler decided not to sample, the t-value becomes zero.
 	// Incoming TValue consistency is not checked when this happens.
 	if !should {
