@@ -32,7 +32,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/arrow/mock"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"go.opentelemetry.io/collector/client"

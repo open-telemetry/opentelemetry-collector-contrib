@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package otelarrowreceiver // import "github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver"
+package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver"
 
 import (
 	"context"
@@ -17,10 +17,10 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
-	"github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/arrow"
-	"github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/logs"
-	"github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/metrics"
-	"github.com/open-telemetry/otel-arrow/collector/receiver/otelarrowreceiver/internal/trace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
