@@ -80,7 +80,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, ma
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
+func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
@@ -107,18 +107,18 @@ func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEO
 		}
 
 		if firstMatchEnd == len(data) {
-			if OmitPatternFromRecord {
+			if omitPatternFromRecord {
 				// read more data and try again
 				return firstMatchEnd, nil, nil
-			} else {
-				// the first match goes to the end of the bufer, so don't look for a second match
-				return 0, nil, nil
 			}
+
+			// the first match goes to the end of the bufer, so don't look for a second match
+			return 0, nil, nil
 		}
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			if OmitPatternFromRecord {
+			if omitPatternFromRecord {
 				token = trimFunc(data[firstMatchEnd:])
 			} else {
 				token = trimFunc(data)
@@ -130,18 +130,18 @@ func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEO
 		secondLocOfset := firstMatchEnd + 1
 		secondLoc := re.FindIndex(data[secondLocOfset:])
 		if secondLoc == nil {
-			if OmitPatternFromRecord {
+			if omitPatternFromRecord {
 				// read more data and try again
 				return firstMatchEnd, nil, nil
-			} else {
-				// read more data and try again
-				return 0, nil, nil
 			}
+
+			// read more data and try again
+			return 0, nil, nil
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
 		advance = secondMatchStart // start scanning at the beginning of the second match
-		if OmitPatternFromRecord {
+		if omitPatternFromRecord {
 			token = trimFunc(data[firstMatchEnd:secondMatchStart]) // the token begins after the first match, and ends at the beginning of the second match
 		} else {
 			token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
@@ -153,7 +153,7 @@ func LineStartSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEO
 
 // LineEndSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that end with a match to the regex pattern provided
-func LineEndSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
+func LineEndSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEOF bool, trimFunc trimFunc) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		loc := re.FindIndex(data)
 		if loc == nil {
@@ -173,7 +173,7 @@ func LineEndSplitFunc(re *regexp.Regexp, OmitPatternFromRecord bool, flushAtEOF 
 		}
 
 		advance = loc[1]
-		if OmitPatternFromRecord {
+		if omitPatternFromRecord {
 			token = trimFunc(data[:loc[0]])
 		} else {
 			token = trimFunc(data[:loc[1]])
