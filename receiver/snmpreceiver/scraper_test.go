@@ -2982,6 +2982,103 @@ func TestScrape(t *testing.T) {
 				require.NoError(t, err)
 			},
 		},
+		{
+			desc: "Metric does not use all available scalar RAs and still behaves properly (near copy of (24)) (29)",
+			testFunc: func(t *testing.T) {
+				mockClient := new(MockClient)
+				scalarRA1 := SNMPData{
+					oid:       ".5.0",
+					value:     "scalar",
+					valueType: stringVal,
+				}
+				scalarRA2 := SNMPData{
+					oid:       ".6.0",
+					value:     "also scalar",
+					valueType: stringVal,
+				}
+				coidAttr11 := SNMPData{
+					columnOID: ".1",
+					oid:       ".1.1",
+					value:     "string1",
+					valueType: stringVal,
+				}
+				coidAttr12 := SNMPData{
+					columnOID: ".1",
+					oid:       ".1.2",
+					value:     "string2",
+					valueType: stringVal,
+				}
+				coid21 := SNMPData{
+					columnOID: ".2",
+					oid:       ".2.1",
+					value:     int64(3),
+					valueType: integerVal,
+				}
+				coid22 := SNMPData{
+					columnOID: ".2",
+					oid:       ".2.2",
+					value:     int64(4),
+					valueType: integerVal,
+				}
+				mockClient.On("Connect").Return(nil)
+				mockClient.On("Close").Return(nil)
+				mockClient.On("GetScalarData", []string{".5.0", ".6.0"}, mock.Anything).Return([]SNMPData{scalarRA1, scalarRA2}).Once()
+				mockClient.On("GetIndexedData", []string{".1"}, mock.Anything).Return([]SNMPData{coidAttr11, coidAttr12}).Once()
+				mockClient.On("GetIndexedData", []string{".2"}, mock.Anything).Return([]SNMPData{coid21, coid22}).Once()
+				scraper := &snmpScraper{
+					cfg: &Config{
+						ResourceAttributes: map[string]*ResourceAttributeConfig{
+							"rattr1": {
+								ScalarOID: ".5.0",
+							},
+							"rattr2": {
+								ScalarOID: ".6.0",
+							},
+						},
+						Attributes: map[string]*AttributeConfig{
+							"attr1": {
+								OID: ".1",
+							},
+						},
+						Metrics: map[string]*MetricConfig{
+							"metric1": {
+								Description: "test description",
+								Unit:        "By",
+								Gauge: &GaugeMetric{
+									ValueType: "int",
+								},
+								ColumnOIDs: []ColumnOID{
+									{
+										OID:                ".2",
+										ResourceAttributes: []string{"rattr1"},
+										Attributes: []Attribute{
+											{
+												Name: "attr1",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					settings: receivertest.NewNopCreateSettings(),
+					client:   mockClient,
+					logger:   zap.NewNop(),
+				}
+
+				expectedMetricGen := func(t *testing.T) pmetric.Metrics {
+					goldenPath := filepath.Join("testdata", "expected_metrics", "29_metric_does_not_use_all_available_scalar_RAs_golden.yaml")
+					expectedMetrics, err := golden.ReadMetrics(goldenPath)
+					require.NoError(t, err)
+					return expectedMetrics
+				}
+				expectedMetrics := expectedMetricGen(t)
+				metrics, err := scraper.scrape(context.Background())
+				require.NoError(t, err)
+				err = pmetrictest.CompareMetrics(expectedMetrics, metrics, pmetrictest.IgnoreTimestamp())
+				require.NoError(t, err)
+			},
+		},
 	}
 
 	for _, tc := range testCases {
