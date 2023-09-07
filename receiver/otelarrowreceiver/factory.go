@@ -7,13 +7,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -68,9 +69,9 @@ func createDefaultConfig() component.Config {
 // createTraces creates a trace receiver based on provided config.
 func createTraces(
 	_ context.Context,
-	set receiver.CreateSettings,
-	cfg component.Config,
-	nextConsumer consumer.Traces,
+	_ receiver.CreateSettings,
+	_ component.Config,
+	_ consumer.Traces,
 ) (receiver.Traces, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
@@ -78,9 +79,9 @@ func createTraces(
 // createMetrics creates a metrics receiver based on provided config.
 func createMetrics(
 	_ context.Context,
-	set receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Metrics,
+	_ receiver.CreateSettings,
+	_ component.Config,
+	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
@@ -88,9 +89,9 @@ func createMetrics(
 // createLog creates a log receiver based on provided config.
 func createLogs(
 	_ context.Context,
-	set receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Logs,
+	_ receiver.CreateSettings,
+	_ component.Config,
+	_ consumer.Logs,
 ) (receiver.Logs, error) {
 	return nil, fmt.Errorf("unimplemented")
 }
