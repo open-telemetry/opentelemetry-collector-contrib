@@ -57,6 +57,7 @@ type Config struct {
 	Headers            KeyValue
 	ResourceAttributes KeyValue
 	SignalAttributes   KeyValue
+	Name               string
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
@@ -106,5 +107,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	c.SignalAttributes = make(map[string]string)
 	fs.Var(&c.SignalAttributes, "signal-attributes", "Custom signal attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
 		"Flag may be repeated to set multiple attributes (e.g --signal-attributes \"key1=\\\"value1\\\"\" --otlp-attributes \"key2=\\\"value2\\\"\")")
+
+	fs.StringVar(&c.Name, "name", "gen", "Custom metric name.")
 
 }

@@ -27,7 +27,7 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, name string, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -38,7 +38,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				{
 					Metrics: []metricdata.Metrics{
 						{
-							Name: "gen",
+							Name: name,
 							Data: metricdata.Gauge[int64]{
 								DataPoints: []metricdata.DataPoint[int64]{
 									{
