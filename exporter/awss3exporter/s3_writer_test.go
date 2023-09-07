@@ -4,8 +4,6 @@
 package awss3exporter
 
 import (
-	"bytes"
-	"compress/gzip"
 	"regexp"
 	"testing"
 	"time"
@@ -67,25 +65,4 @@ func TestGetSessionConfigNoEndpoint(t *testing.T) {
 	sessionConfig := getSessionConfig(config)
 	assert.Empty(t, sessionConfig.Endpoint)
 	assert.Equal(t, sessionConfig.Region, aws.String(region))
-}
-
-func TestGzipCompression(t *testing.T) {
-	originalData := []byte("This is a test string.")
-	compressedData, err := compressBuffer(originalData)
-
-	assert.NoError(t, err)
-
-	// Decompress to validate
-	var decompressedData bytes.Buffer
-	reader, err := gzip.NewReader(bytes.NewReader(compressedData))
-	assert.NoError(t, err)
-
-	_, err = decompressedData.ReadFrom(reader)
-	assert.NoError(t, err)
-
-	err = reader.Close()
-	assert.NoError(t, err)
-
-	// Compare original and decompressed data
-	assert.Equal(t, originalData, decompressedData.Bytes())
 }

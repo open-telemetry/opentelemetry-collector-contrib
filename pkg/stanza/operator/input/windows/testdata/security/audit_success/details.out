@@ -1,0 +1,5 @@
+{
+  "Additional Context": [
+    "This event is logged when LSASS.EXE starts and the auditing subsystem is initialized."
+  ]
+}

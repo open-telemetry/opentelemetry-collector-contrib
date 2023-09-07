@@ -1,0 +1,79 @@
+default:
+all_set:
+  metrics:
+    zookeeper.connection.active:
+      enabled: true
+    zookeeper.data_tree.ephemeral_node.count:
+      enabled: true
+    zookeeper.data_tree.size:
+      enabled: true
+    zookeeper.file_descriptor.limit:
+      enabled: true
+    zookeeper.file_descriptor.open:
+      enabled: true
+    zookeeper.follower.count:
+      enabled: true
+    zookeeper.fsync.exceeded_threshold.count:
+      enabled: true
+    zookeeper.latency.avg:
+      enabled: true
+    zookeeper.latency.max:
+      enabled: true
+    zookeeper.latency.min:
+      enabled: true
+    zookeeper.packet.count:
+      enabled: true
+    zookeeper.request.active:
+      enabled: true
+    zookeeper.ruok:
+      enabled: true
+    zookeeper.sync.pending:
+      enabled: true
+    zookeeper.watch.count:
+      enabled: true
+    zookeeper.znode.count:
+      enabled: true
+  resource_attributes:
+    server.state:
+      enabled: true
+    zk.version:
+      enabled: true
+none_set:
+  metrics:
+    zookeeper.connection.active:
+      enabled: false
+    zookeeper.data_tree.ephemeral_node.count:
+      enabled: false
+    zookeeper.data_tree.size:
+      enabled: false
+    zookeeper.file_descriptor.limit:
+      enabled: false
+    zookeeper.file_descriptor.open:
+      enabled: false
+    zookeeper.follower.count:
+      enabled: false
+    zookeeper.fsync.exceeded_threshold.count:
+      enabled: false
+    zookeeper.latency.avg:
+      enabled: false
+    zookeeper.latency.max:
+      enabled: false
+    zookeeper.latency.min:
+      enabled: false
+    zookeeper.packet.count:
+      enabled: false
+    zookeeper.request.active:
+      enabled: false
+    zookeeper.ruok:
+      enabled: false
+    zookeeper.sync.pending:
+      enabled: false
+    zookeeper.watch.count:
+      enabled: false
+    zookeeper.znode.count:
+      enabled: false
+  resource_attributes:
+    server.state:
+      enabled: false
+    zk.version:
+      enabled: false

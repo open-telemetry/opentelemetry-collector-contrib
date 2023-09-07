@@ -1,0 +1,9 @@
+{
+    "storageEngine": {
+		"name": "wiredTiger",
+		"persistent": true,
+		"readOnly": false,
+		"supportsCommittedReads": true,
+		"supportsSnapshotReadConcern": true
+	}
+}

@@ -1,0 +1,9 @@
+type: metricstransform
+
+status:
+  class: processor
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, splunk, sumo, aws]
+  codeowners:
+    active: [dmitryax]

@@ -1,0 +1,6 @@
+metricstransform:
+  transforms:
+    - include: old_name
+      action: update
+      operations:
+        - action: invalid

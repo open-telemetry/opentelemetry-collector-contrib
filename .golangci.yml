@@ -57,7 +57,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/pelotoncycle/opentelemetry-collector-contrib)
+      - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
 
   govet:
     # report about shadowed variables
@@ -89,7 +89,7 @@ linters-settings:
   goimports:
     # put imports beginning with prefix after 3rd-party packages;
     # it's a comma-separated list of prefixes
-    local-prefixes: github.com/pelotoncycle/opentelemetry-collector-contrib
+    local-prefixes: github.com/open-telemetry/opentelemetry-collector-contrib
 
   misspell:
     # Correct spellings using locale preferences for US or UK.

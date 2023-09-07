@@ -1,0 +1,61 @@
+[
+    {
+        "alertId": "63975427b7942a211665ae20",
+        "alertConfigId": "",
+        "created": "2022-12-12T16:29:43Z",
+        "eventTypeName": "ALERT_ACKNOWLEDGED_AUDIT",
+        "groupId": "5bc762b579358e3332046e6a",
+        "hostname": "",
+        "id": "639756f71d4cad6afbce4cae",
+        "links": [
+            {
+                "rel": "self",
+                "href": "https://cloud.mongodb.com/api/atlas/v1.0/groups/5bc762b579358e3332046e6a/events/639756f71d4cad6afbce4cae"
+            }
+        ],
+        "remoteAddress": "72.44.116.110",
+        "userId": "5bc76130ff7a25df17bbd9d9",
+        "username": "devops@open-telemetry.org"
+    },
+    {
+        "alertId": "",
+        "alertConfigId": "",
+        "created": "2022-12-12T16:17:43Z",
+        "currentValue": {
+            "number": 6,
+            "units": "RAW"
+        },
+        "eventTypeName": "OUTSIDE_METRIC_THRESHOLD",
+        "groupId": "5bc762b579358e3332046e6a",
+        "hostname": "atlas-yjc7yl-shard-00-02.bzrvwof.mongodb.net",
+        "id": "63975427b7942a211665ae1d",
+        "links": [
+            {
+                "rel": "self",
+                "href": "https://cloud.mongodb.com/api/atlas/v1.0/groups/5bc762b579358e3332046e6a/events/63975427b7942a211665ae1d"
+            }
+        ],
+        "metricName": "CONNECTIONS",
+        "orgId": "5bc76130ff7a25df17bbd9de",
+        "Port": 27017,
+        "replicaSetName": "atlas-yjc7yl-shard-0"
+    },
+    {
+        "alertId": "",
+        "alertConfigId": "6331e126aecbcc4b2c1bb666",
+        "created": "2022-12-12T16:17:06Z",
+        "eventTypeName": "ALERT_CONFIG_CHANGED_AUDIT",
+        "groupId": "5bc762b579358e3332046e6a",
+        "hostname": "",
+        "id": "63975402294a8a205ec865e3",
+        "links": [
+            {
+                "rel": "self",
+                "href": "https://cloud.mongodb.com/api/atlas/v1.0/groups/5bc762b579358e3332046e6a/events/63975402294a8a205ec865e3"
+            }
+        ],
+        "remoteAddress": "72.44.116.110",
+        "userId": "5bc76130ff7a25df17bbd9d9",
+        "username": "devops@open-telemetry.org"
+    }
+]

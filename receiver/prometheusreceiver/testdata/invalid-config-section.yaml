@@ -1,0 +1,6 @@
+prometheus:
+  unknow_section: 1
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s

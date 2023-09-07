@@ -1,0 +1,14 @@
+type: loadbalancing
+
+status:
+  class: exporter
+  stability:
+    beta: [traces, logs]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - sumo
+  - aws
+  codeowners:
+    active: [jpkrohling]

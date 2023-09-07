@@ -1,0 +1,9 @@
+filter/include:
+  # any names NOT matching filters are excluded from remainder of pipeline
+  metrics:
+    include:
+      match_type: regexp
+      metric_names:
+        # re2 regexp patterns
+        - (\W|^)stock\stips(\W|$
+
