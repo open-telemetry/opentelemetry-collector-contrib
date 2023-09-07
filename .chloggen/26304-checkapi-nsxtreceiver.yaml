@@ -7,7 +7,7 @@ change_type: breaking
 component: nsxtreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
+note: do not export `NewMockClient`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [26304]
