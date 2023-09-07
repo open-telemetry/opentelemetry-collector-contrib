@@ -1003,6 +1003,11 @@ updates:
       interval: "weekly"
       day: "wednesday"
   - package-ecosystem: "gomod"
+    directory: "/receiver/otelarrowreceiver"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+  - package-ecosystem: "gomod"
     directory: "/receiver/otlpjsonfilereceiver"
     schedule:
       interval: "weekly"
@@ -1094,11 +1099,6 @@ updates:
       day: "wednesday"
   - package-ecosystem: "gomod"
     directory: "/receiver/snowflakereceiver"
-    schedule:
-      interval: "weekly"
-      day: "wednesday"
-  - package-ecosystem: "gomod"
-    directory: "/receiver/solacereceiver"
     schedule:
       interval: "weekly"
       day: "wednesday"

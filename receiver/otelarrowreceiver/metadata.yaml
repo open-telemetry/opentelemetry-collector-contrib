@@ -1,0 +1,9 @@
+type: otelarrow
+
+status:
+  class: receiver
+  stability:
+    development: [traces, metrics, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [jmacd, lquerel]
