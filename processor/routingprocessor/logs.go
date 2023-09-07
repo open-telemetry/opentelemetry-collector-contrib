@@ -105,8 +105,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
 		ltx := ottllog.NewTransformContext(
-			plog.LogRecord{},
-			pcommon.InstrumentationScope{},
+			plog.NewLogRecord(),
+			pcommon.NewInstrumentationScope(),
 			rlogs.Resource(),
 		)
 
