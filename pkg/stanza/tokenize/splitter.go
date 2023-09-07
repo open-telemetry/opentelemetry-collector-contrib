@@ -13,10 +13,8 @@ import (
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	Flusher          FlusherConfig   `mapstructure:",squash,omitempty"`
-	Multiline        MultilineConfig `mapstructure:"multiline,omitempty"`
-	PreserveLeading  bool            `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailing bool            `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	Flusher   FlusherConfig   `mapstructure:",squash,omitempty"`
+	Multiline MultilineConfig `mapstructure:"multiline,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
@@ -28,12 +26,10 @@ func NewSplitterConfig() SplitterConfig {
 }
 
 // Build builds bufio.SplitFunc based on the config
-func (c *SplitterConfig) Build(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
-	trimFunc := trim.Whitespace(c.PreserveLeading, c.PreserveTrailing)
+func (c *SplitterConfig) Build(enc encoding.Encoding, flushAtEOF bool, maxLogSize int, trimFunc trim.Func) (bufio.SplitFunc, error) {
 	splitFunc, err := c.Multiline.Build(enc, flushAtEOF, maxLogSize, trimFunc)
 	if err != nil {
 		return nil, err
 	}
-
 	return c.Flusher.Wrap(splitFunc, trimFunc), nil
 }

@@ -26,5 +26,5 @@ func NewCustomFactory(flusherCfg tokenize.FlusherConfig, splitFunc bufio.SplitFu
 
 // Build builds Multiline Splitter struct
 func (f *customFactory) Build() (bufio.SplitFunc, error) {
-	return f.flusherCfg.Wrap(f.splitFunc, trim.Whitespace(true, true)), nil
+	return f.flusherCfg.Wrap(f.splitFunc, trim.Nop), nil
 }

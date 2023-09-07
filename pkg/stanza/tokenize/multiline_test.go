@@ -20,8 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-var noTrim = trim.Whitespace(true, true)
-
 const (
 	// Those values has been experimentally figured out for windows
 	sleepDuration time.Duration = time.Millisecond * 80
@@ -218,7 +216,10 @@ func TestLineStartSplitFunc(t *testing.T) {
 			LineStartPattern: tc.Pattern,
 		}
 
-		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		trimFunc := trim.Config{
+			PreserveLeading:  tc.PreserveLeadingWhitespaces,
+			PreserveTrailing: tc.PreserveTrailingWhitespaces,
+		}.Func()
 		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
@@ -228,7 +229,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, noTrim)
+		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, trim.Nop)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -430,7 +431,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			LineEndPattern: tc.Pattern,
 		}
 
-		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		trimFunc := trim.Config{
+			PreserveLeading:  tc.PreserveLeadingWhitespaces,
+			PreserveTrailing: tc.PreserveTrailingWhitespaces,
+		}.Func()
 		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
@@ -596,7 +600,10 @@ func TestNewlineSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		trimFunc := trim.Whitespace(tc.PreserveLeadingWhitespaces, tc.PreserveTrailingWhitespaces)
+		trimFunc := trim.Config{
+			PreserveLeading:  tc.PreserveLeadingWhitespaces,
+			PreserveTrailing: tc.PreserveTrailingWhitespaces,
+		}.Func()
 		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, trimFunc)
 		require.NoError(t, err)
 		if tc.Flusher != nil {
@@ -672,14 +679,14 @@ func TestNoopEncodingError(t *testing.T) {
 		LineEndPattern: "\n",
 	}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, noTrim)
+	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	cfg = &MultilineConfig{
 		LineStartPattern: "\n",
 	}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, noTrim)
+	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
@@ -740,7 +747,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewlineSplitFunc(tc.encoding, false, noTrim)
+			splitFunc, err := NewlineSplitFunc(tc.encoding, false, trim.Nop)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)
