@@ -49,14 +49,15 @@ func newMetricsExporter(params exporter.CreateSettings, cfg component.Config) (*
 	metricExporter := metricExporterImp{loadBalancer: lb, routingKey: svcRouting}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service", "":
+	case "service", "traceID", "":
+		// default case
 		metricExporter.routingKey = svcRouting
 	case "resource":
 		metricExporter.routingKey = resourceRouting
 	case "metric":
 		metricExporter.routingKey = metricNameRouting
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: '%s'", cfg.(*Config).RoutingKey)
 	}
 	return &metricExporter, nil
 
@@ -120,8 +121,8 @@ func (e *metricExporterImp) consumeMetric(ctx context.Context, md pmetric.Metric
 				mBackendLatency.M(duration.Milliseconds()))
 		}
 	}
-	return err
 
+	return err
 }
 
 func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[string]bool, error) {
@@ -149,7 +150,7 @@ func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[str
 		resource := rs.At(i).Resource()
 		switch key {
 		default:
-		case svcRouting:
+		case svcRouting, traceIDRouting:
 			svc, ok := resource.Attributes().Get("service.name")
 			if !ok {
 				return nil, errors.New("unable to get service name")

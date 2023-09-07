@@ -11,7 +11,6 @@ import (
 	"net"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -36,9 +35,9 @@ import (
 )
 
 const (
-	serviceRouteKey   = "service"
-	resourceRouteKey  = "resource"
-	attributeRouteKey = "attribute"
+	serviceRouteKey  = "service"
+	resourceRouteKey = "resource"
+	metricRouteKey   = "metric"
 
 	ilsName1          = "library-1"
 	ilsName2          = "library-2"
@@ -72,6 +71,21 @@ func TestNewMetricsExporter(t *testing.T) {
 			nil,
 		},
 		{
+			"service",
+			serviceBasedRoutingConfig(),
+			nil,
+		},
+		{
+			"metric",
+			metricNameBasedRoutingConfig(),
+			nil,
+		},
+		{
+			"resource",
+			resourceBasedRoutingConfig(),
+			nil,
+		},
+		{
 			"empty",
 			&Config{},
 			errNoResolver,
@@ -96,7 +110,7 @@ func TestMetricsExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *metricExporterImp {
-				p, _ := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+				p, _ := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 				return p
 			}(),
 			nil,
@@ -104,8 +118,8 @@ func TestMetricsExporterStart(t *testing.T) {
 		{
 			"error",
 			func() *metricExporterImp {
-				lb, _ := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), nil)
-				p, _ := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+				lb, _ := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), nil)
+				p, _ := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 
 				lb.res = &mockResolver{
 					onStart: func(context.Context) error {
@@ -157,7 +171,7 @@ func TestConsumeMetrics(t *testing.T) {
 	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, traceIDRouting)
+	assert.Equal(t, p.routingKey, svcRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -176,10 +190,11 @@ func TestConsumeMetrics(t *testing.T) {
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetrics())
+	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithNoService())
 
 	// verify
-	assert.Nil(t, res)
+	assert.Error(t, res)
+
 }
 
 func TestConsumeMetricsServiceBased(t *testing.T) {
@@ -254,18 +269,18 @@ func TestConsumeMetricsResourceBased(t *testing.T) {
 	assert.Nil(t, res)
 }
 
-func TestConsumeMetricsAttributeBased(t *testing.T) {
+func TestConsumeMetricsMetricNameBased(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), attributeBasedRoutingConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), metricNameBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), attributeBasedRoutingConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), metricNameBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
-	assert.Equal(t, p.routingKey, resourceRouting)
+	assert.Equal(t, p.routingKey, metricNameRouting)
 
 	// pre-load an exporter here, so that we don't use the actual OTLP exporter
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
@@ -284,7 +299,7 @@ func TestConsumeMetricsAttributeBased(t *testing.T) {
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithAttribute())
+	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithResource())
 
 	// verify
 	assert.Nil(t, res)
@@ -308,10 +323,7 @@ func TestServiceBasedRoutingForSameMetricName(t *testing.T) {
 			"different services - trace id routing",
 			twoServicesWithSameMetricName(),
 			traceIDRouting,
-			map[string]bool{
-				strings.Join([]string{"service.name", serviceName1, signal1Name}, ""): true,
-				strings.Join([]string{"service.name", serviceName2, signal1Name}, ""): true,
-			},
+			map[string]bool{serviceName1: true, serviceName2: true},
 		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
@@ -330,7 +342,7 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), endpoint2Config())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -349,7 +361,7 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetrics())
+	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithServiceName())
 
 	// verify
 	assert.Error(t, res)
@@ -385,7 +397,7 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	}()
 
 	// test
-	res := p.ConsumeMetrics(context.Background(), simpleMetrics())
+	res := p.ConsumeMetrics(context.Background(), simpleMetricsWithServiceName())
 
 	// verify
 	assert.Error(t, res)
@@ -439,8 +451,7 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 
-	td := simpleMetrics()
-	appendSimpleMetricWithID(td.ResourceMetrics().AppendEmpty(), "metric-name")
+	td := twoServicesWithSameMetricName()
 
 	// test
 	err = p.ConsumeMetrics(context.Background(), td)
@@ -510,53 +521,20 @@ func TestResourceRoutingKey(t *testing.T) {
 	if got := resourceRoutingKey(md, attrs); got != "k1v1k2v2metric" {
 		t.Errorf("metricRoutingKey() = %v, want %v", got, "k1v1k2v2metric")
 	}
-
 }
 
-func TestAttributeRoutingKey(t *testing.T) {
+func TestMetricNameRoutingKey(t *testing.T) {
 
 	md := pmetric.NewMetric()
-	md.SetName("metric")
-	attrs := pcommon.NewMap()
-	if got := attributesRoutingKey(md, attrs); got != "metric" {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, "metric")
+	md.SetName(signal1Name)
+	if got := metricRoutingKey(md); got != signal1Name {
+		t.Errorf("metricRoutingKey() = %v, want %v", got, signal1Name)
 	}
 
-	attrs.PutStr("k1", "v1")
-	if got := attributesRoutingKey(md, attrs); got != "k1v1metric" {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, "k1v1metric")
-	}
-
-	attrs.PutStr("k2", "v2")
-	if got := attributesRoutingKey(md, attrs); got != "k1v1k2v2metric" {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, "k1v1k2v2metric")
-	}
-
-	md.SetEmptySum().DataPoints().AppendEmpty().Attributes().PutStr(signal1Attr1Key, signal1Attr1Value)
-	expected := strings.Join([]string{signal1Attr1Key, signal1Attr1Value, "k1v1k2v2metric"}, "")
-	if got := attributesRoutingKey(md, attrs); got != expected {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, expected)
-	}
-
-	md.Sum().DataPoints().AppendEmpty().Attributes().PutInt(signal1Attr2Key, signal1Attr2Value)
-	attr2 := fmt.Sprintf("%d", signal1Attr2Value)
-	expected = strings.Join([]string{signal1Attr1Key, signal1Attr1Value, signal1Attr2Key, attr2, "k1v1k2v2metric"}, "")
-	if got := attributesRoutingKey(md, attrs); got != expected {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, expected)
-	}
-
-	md.Sum().DataPoints().AppendEmpty().Attributes().PutBool(signal1Attr3Key, signal1Attr3Value)
-	attr3 := strconv.FormatBool(signal1Attr3Value)
-	expected = strings.Join([]string{signal1Attr1Key, signal1Attr1Value, signal1Attr2Key, attr2, signal1Attr3Key, attr3, "k1v1k2v2metric"}, "")
-	if got := attributesRoutingKey(md, attrs); got != expected {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, expected)
-	}
-
-	md.Sum().DataPoints().AppendEmpty().Attributes().PutDouble(signal1Attr4Key, signal1Attr4Value)
-	attr4 := fmt.Sprintf("%v", signal1Attr4Value)
-	expected = strings.Join([]string{signal1Attr1Key, signal1Attr1Value, signal1Attr2Key, attr2, signal1Attr3Key, attr3, signal1Attr4Key, attr4, "k1v1k2v2metric"}, "")
-	if got := attributesRoutingKey(md, attrs); got != expected {
-		t.Errorf("metricRoutingKey() = %v, want %v", got, expected)
+	md = pmetric.NewMetric()
+	md.SetName(signal2Name)
+	if got := metricRoutingKey(md); got != signal2Name {
+		t.Errorf("metricRoutingKey() = %v, want %v", got, signal2Name)
 	}
 
 }
@@ -703,6 +681,22 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Greater(t, counter2.Load(), int64(0))
 }
 
+// func endpoint1Config() *Config {
+// 	return &Config{
+// 		Resolver: ResolverSettings{
+// 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
+// 		},
+// 	}
+// }
+
+func endpoint2Config() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{Hostnames: []string{"endpoint-2"}},
+		},
+	}
+}
+
 func resourceBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
@@ -712,12 +706,12 @@ func resourceBasedRoutingConfig() *Config {
 	}
 }
 
-func attributeBasedRoutingConfig() *Config {
+func metricNameBasedRoutingConfig() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
 		},
-		RoutingKey: attributeRouteKey,
+		RoutingKey: metricRouteKey,
 	}
 }
 
@@ -729,7 +723,7 @@ func randomMetrics() pmetric.Metrics {
 	return metrics
 }
 
-func simpleMetrics() pmetric.Metrics {
+func simpleMetricsWithNoService() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	appendSimpleMetricWithID(metrics.ResourceMetrics().AppendEmpty(), "simple-metric-name")
 	return metrics
@@ -739,7 +733,7 @@ func simpleMetricsWithServiceName() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
+	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
 	return metrics
 }
@@ -749,22 +743,10 @@ func simpleMetricsWithResource() pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	metrics.ResourceMetrics().EnsureCapacity(1)
 	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
+	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
 	rmetrics.Resource().Attributes().PutStr(keyAttr1, valueAttr1)
 	rmetrics.Resource().Attributes().PutInt(keyAttr2, valueAttr2)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
-	return metrics
-}
-
-func simpleMetricsWithAttribute() pmetric.Metrics {
-
-	metrics := pmetric.NewMetrics()
-	metrics.ResourceMetrics().EnsureCapacity(1)
-	rmetrics := metrics.ResourceMetrics().AppendEmpty()
-	rmetrics.Resource().Attributes().PutStr(conventions.AttributeServiceName, "service-name-1")
-	rmetrics.Resource().Attributes().PutStr(keyAttr1, valueAttr1)
-	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
-
 	return metrics
 }
 
