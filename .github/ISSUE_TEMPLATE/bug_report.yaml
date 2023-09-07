@@ -211,6 +211,7 @@ body:
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
