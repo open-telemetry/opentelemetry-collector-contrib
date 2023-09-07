@@ -156,13 +156,11 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 	i := 0
 	for ; i < len(m.knownFiles); i++ {
 		reader := m.knownFiles[i]
-		if reader.generation >= 3 {
-			oldReaders = append(oldReaders, reader)
-		} else {
+		if reader.generation < 3 {
 			break
 		}
 	}
-	m.knownFiles = m.knownFiles[i:]
+	oldReaders, m.knownFiles := m.knownFiles[:i], m.knownFiles[i:]
 
 	for _, r := range oldReaders {
 		if m.isCurrentlyConsuming(r.Fingerprint) {
