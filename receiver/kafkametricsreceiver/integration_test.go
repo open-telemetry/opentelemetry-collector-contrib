@@ -69,7 +69,7 @@ func TestIntegration(t *testing.T) {
 					ci.MappedPortForNamedContainer(t, "kafka", kafkaPort))}
 				rCfg.Scrapers = []string{"brokers", "consumers", "topics"}
 			}),
-		// scraperinttest.WriteExpected(), // TODO remove
+		scraperinttest.WriteExpected(), // TODO remove
 		scraperinttest.WithCompareOptions(
 			// pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),
