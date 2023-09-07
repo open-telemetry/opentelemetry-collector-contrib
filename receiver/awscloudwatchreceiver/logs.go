@@ -49,9 +49,10 @@ type client interface {
 }
 
 type streamNames struct {
-	group string
-	arn   string
-	names []*string
+	group       string
+	arn         string
+	names       []*string
+	storedBytes int64
 }
 
 func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
@@ -81,9 +82,10 @@ func (sn *streamNames) groupName() string {
 }
 
 type streamPrefix struct {
-	group  string
-	arn    string
-	prefix *string
+	group       string
+	arn         string
+	prefix      *string
+	storedBytes int64
 }
 
 func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) *cloudwatchlogs.FilterLogEventsInput {
@@ -340,30 +342,34 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 					zap.Int("groups_discovered", numGroups), zap.Int("limit", auto.Limit))
 				break
 			}
-
-			numGroups++
-			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
-			// default behavior is to collect all if not stream filtered
-			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
-				if lg.Arn != nil && *lg.Arn != "" {
-					groups = append(groups, &streamNames{arn: transformARN(*lg.Arn)})
+			if lg.StoredBytes != nil && *lg.StoredBytes > int64(0) {
+				numGroups++
+				l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
+				// default behavior is to collect all if not stream filtered
+				if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
+					if lg.Arn != nil && *lg.Arn != "" {
+						groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: transformARN(*lg.Arn), storedBytes: *lg.StoredBytes})
+					} else {
+						groups = append(groups, &streamNames{group: *lg.LogGroupName})
+					}
+					continue
 				}
-				groups = append(groups, &streamNames{group: *lg.LogGroupName})
-				continue
-			}
 
-			for _, prefix := range auto.Streams.Prefixes {
-				if lg.Arn != nil && *lg.Arn != "" {
-					groups = append(groups, &streamPrefix{group: *lg.LogGroupName, arn: *lg.Arn, prefix: prefix})
+				for _, prefix := range auto.Streams.Prefixes {
+					if lg.Arn != nil && *lg.Arn != "" {
+						groups = append(groups, &streamPrefix{group: *lg.LogGroupName, arn: *lg.Arn, prefix: prefix, storedBytes: *lg.StoredBytes})
+					} else {
+						groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
+					}
 				}
-				groups = append(groups, &streamPrefix{group: *lg.LogGroupName, prefix: prefix})
-			}
 
-			if len(auto.Streams.Names) > 0 {
-				if lg.Arn != nil && *lg.Arn != "" {
-					groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: *lg.Arn, names: auto.Streams.Names})
+				if len(auto.Streams.Names) > 0 {
+					if lg.Arn != nil && *lg.Arn != "" {
+						groups = append(groups, &streamNames{group: *lg.LogGroupName, arn: *lg.Arn, names: auto.Streams.Names, storedBytes: *lg.StoredBytes})
+					} else {
+						groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
+					}
 				}
-				groups = append(groups, &streamNames{group: *lg.LogGroupName, names: auto.Streams.Names})
 			}
 		}
 		nextToken = dlgResults.NextToken

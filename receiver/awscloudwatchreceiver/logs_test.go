@@ -171,10 +171,12 @@ func TestShutdownWhileCollecting(t *testing.T) {
 func TestAutodiscoverLimit(t *testing.T) {
 	mc := &mockClient{}
 
+	storedBytes := int64(213)
 	logGroups := []*cloudwatchlogs.LogGroup{}
 	for i := 0; i <= 100; i++ {
 		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
 			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
+			StoredBytes:  aws.Int64(storedBytes),
 		})
 	}
 	token := "token"
@@ -212,11 +214,13 @@ func TestAutodiscoverLimit(t *testing.T) {
 
 func defaultMockClient() client {
 	mc := &mockClient{}
+	storedBytes := int64(1)
 	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: []*cloudwatchlogs.LogGroup{
 				{
 					LogGroupName: &testLogGroupName,
+					StoredBytes:  &storedBytes,
 				},
 			},
 			NextToken: nil,
