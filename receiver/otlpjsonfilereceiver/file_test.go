@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
@@ -51,11 +51,12 @@ func TestFileTracesReceiver(t *testing.T) {
 	marshaler := &ptrace.JSONMarshaler{}
 	b, err := marshaler.MarshalTraces(td)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
-	require.Len(t, sink.AllTraces(), 1)
 
+	require.Len(t, sink.AllTraces(), 1)
 	assert.EqualValues(t, td, sink.AllTraces()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
@@ -77,6 +78,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	marshaler := &pmetric.JSONMarshaler{}
 	b, err := marshaler.MarshalMetrics(md)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
@@ -103,6 +105,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	marshaler := &plog.JSONMarshaler{}
 	b, err := marshaler.MarshalLogs(ld)
 	assert.NoError(t, err)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)
@@ -121,7 +124,7 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFileNameResolved: false,
 			IncludeFilePathResolved: false,
 			PollInterval:            200 * time.Millisecond,
-			Splitter:                helper.NewSplitterConfig(),
+			Splitter:                tokenize.NewSplitterConfig(),
 			StartAt:                 "end",
 			FingerprintSize:         1000,
 			MaxLogSize:              1024 * 1024,
@@ -186,6 +189,7 @@ func TestFileMixedSignals(t *testing.T) {
 	b = append(b, b2...)
 	b = append(b, '\n')
 	b = append(b, b3...)
+	b = append(b, '\n')
 	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
 	assert.NoError(t, err)
 	time.Sleep(1 * time.Second)

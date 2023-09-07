@@ -166,6 +166,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodPhaseDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordK8sPodStatusReasonDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sReplicasetAvailableDataPoint(ts, 1)
@@ -606,6 +609,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "k8s.pod.status_reason":
+					assert.False(t, validatedMetrics["k8s.pod.status_reason"], "Found a duplicate in the metrics slice: k8s.pod.status_reason")
+					validatedMetrics["k8s.pod.status_reason"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

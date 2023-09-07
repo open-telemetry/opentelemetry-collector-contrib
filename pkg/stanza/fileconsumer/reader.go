@@ -12,11 +12,11 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
 
 type readerConfig struct {
@@ -44,7 +44,7 @@ type reader struct {
 	file          *os.File
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
-	decoder       *helper.Decoder
+	decoder       *decode.Decoder
 	headerReader  *header.Reader
 	processFunc   emit.Callback
 	generation    int
@@ -124,12 +124,25 @@ func (r *reader) finalizeHeader() {
 	r.HeaderFinalized = true
 }
 
+// Delete will close and delete the file
+func (r *reader) Delete() {
+	if r.file == nil {
+		return
+	}
+	f := r.file
+	r.Close()
+	if err := os.Remove(f.Name()); err != nil {
+		r.Errorf("could not delete %s", f.Name())
+	}
+}
+
 // Close will close the file
 func (r *reader) Close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
 			r.Debugw("Problem closing reader", zap.Error(err))
 		}
+		r.file = nil
 	}
 
 	if r.headerReader != nil {
