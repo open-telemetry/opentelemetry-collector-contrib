@@ -15,6 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
+const (
+	telemetryAttrKeyOne   = "k1"
+	telemetryAttrKeyTwo   = "k2"
+	telemetryAttrValueOne = "v1"
+	telemetryAttrValueTwo = "v2"
+)
+
 type mockExporter struct {
 	logs []plog.Logs
 }
@@ -95,4 +102,106 @@ func TestCustomBody(t *testing.T) {
 	require.NoError(t, Run(cfg, exp, logger))
 
 	assert.Equal(t, "custom body", exp.logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
+}
+
+func TestLogsWithNoTelemetryAttributes(t *testing.T) {
+	cfg := configWithNoAttributes(2, "custom body")
+
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// verify
+	require.Len(t, exp.logs, 2)
+	for _, log := range exp.logs {
+		rlogs := log.ResourceLogs()
+		for i := 0; i < rlogs.Len(); i++ {
+			attrs := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			assert.Equal(t, 1, attrs.Len(), "shouldn't have more than 1 attribute")
+		}
+	}
+}
+
+func TestLogsWithOneTelemetryAttributes(t *testing.T) {
+	qty := 1
+	cfg := configWithOneAttribute(qty, "custom body")
+
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// verify
+	require.Len(t, exp.logs, qty)
+	for _, log := range exp.logs {
+		rlogs := log.ResourceLogs()
+		for i := 0; i < rlogs.Len(); i++ {
+			attrs := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			assert.Equal(t, 2, attrs.Len(), "shouldn't have less than 2 attributes")
+		}
+	}
+}
+
+func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
+	qty := 1
+	cfg := configWithMultipleAttributes(qty, "custom body")
+
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// verify
+	require.Len(t, exp.logs, qty)
+	for _, log := range exp.logs {
+		rlogs := log.ResourceLogs()
+		for i := 0; i < rlogs.Len(); i++ {
+			attrs := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0).Attributes()
+			assert.Equal(t, 3, attrs.Len(), "shouldn't have less than 3 attributes")
+		}
+	}
+}
+
+func configWithNoAttributes(qty int, body string) *Config {
+	return &Config{
+		Body:    body,
+		NumLogs: qty,
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+	}
+}
+
+func configWithOneAttribute(qty int, body string) *Config {
+	return &Config{
+		Body:    body,
+		NumLogs: qty,
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
+		},
+	}
+}
+
+func configWithMultipleAttributes(qty int, body string) *Config {
+	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
+	return &Config{
+		Body:    body,
+		NumLogs: qty,
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: kvs,
+		},
+	}
 }

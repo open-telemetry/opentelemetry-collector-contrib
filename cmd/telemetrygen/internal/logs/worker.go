@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -27,7 +28,7 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
+func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetryAttributes []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -44,8 +45,13 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter) {
 		log.SetDroppedAttributesCount(1)
 		log.SetSeverityNumber(plog.SeverityNumberInfo)
 		log.SetSeverityText("Info")
+		log.Attributes()
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
+
+		for i, key := range telemetryAttributes {
+			lattrs.PutStr(key.Value.AsString(), telemetryAttributes[i].Value.AsString())
+		}
 
 		if err := exporter.export(logs); err != nil {
 			w.logger.Fatal("exporter failed", zap.Error(err))

@@ -50,13 +50,13 @@ type Config struct {
 	ReportingInterval time.Duration
 
 	// OTLP config
-	Endpoint           string
-	Insecure           bool
-	UseHTTP            bool
-	HTTPPath           string
-	Headers            KeyValue
-	ResourceAttributes KeyValue
-	SignalAttributes   KeyValue
+	Endpoint            string
+	Insecure            bool
+	UseHTTP             bool
+	HTTPPath            string
+	Headers             KeyValue
+	ResourceAttributes  KeyValue
+	TelemetryAttributes KeyValue
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
@@ -70,11 +70,11 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	return attributes
 }
 
-func (c *Config) GetSignalAttributes() []attribute.KeyValue {
+func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
-	if len(c.SignalAttributes) > 0 {
-		for k, v := range c.SignalAttributes {
+	if len(c.TelemetryAttributes) > 0 {
+		for k, v := range c.TelemetryAttributes {
 			attributes = append(attributes, attribute.String(k, v))
 		}
 	}
@@ -103,8 +103,8 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
 		"Flag may be repeated to set multiple attributes (e.g --otlp-attributes \"key1=\\\"value1\\\"\" --otlp-attributes \"key2=\\\"value2\\\"\")")
 
-	c.SignalAttributes = make(map[string]string)
-	fs.Var(&c.SignalAttributes, "signal-attributes", "Custom signal attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
+	c.TelemetryAttributes = make(map[string]string)
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
 		"Flag may be repeated to set multiple attributes (e.g --signal-attributes \"key1=\\\"value1\\\"\" --otlp-attributes \"key2=\\\"value2\\\"\")")
 
 }

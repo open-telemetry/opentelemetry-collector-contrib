@@ -20,6 +20,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
+const (
+	telemetryAttrKeyOne   = "k1"
+	telemetryAttrKeyTwo   = "k2"
+	telemetryAttrValueOne = "v1"
+	telemetryAttrValueTwo = "v2"
+)
+
 func TestFixedNumberOfTraces(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}
@@ -173,6 +180,72 @@ func TestSpanStatuses(t *testing.T) {
 
 }
 
+func TestSpansWithNoAttrs(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := configWithNoAttributes(2, "")
+
+	// test
+	require.NoError(t, Run(cfg, zap.NewNop()))
+
+	// verify
+	assert.Len(t, syncer.spans, 4) // each trace has two spans
+	for _, span := range syncer.spans {
+		attributes := span.Attributes()
+		assert.Equal(t, 2, len(attributes), "it shouldn't have more than 2 fixed attributes")
+	}
+}
+
+func TestSpansWithOneAttrs(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := configWithOneAttribute(2, "")
+
+	// test
+	require.NoError(t, Run(cfg, zap.NewNop()))
+
+	// verify
+	assert.Len(t, syncer.spans, 4) // each trace has two spans
+	for _, span := range syncer.spans {
+		attributes := span.Attributes()
+		assert.Equal(t, 3, len(attributes), "it should have more than 3 attributes")
+	}
+}
+
+func TestSpansWithMultipleAttrs(t *testing.T) {
+	// prepare
+	syncer := &mockSyncer{}
+
+	tracerProvider := sdktrace.NewTracerProvider()
+	sp := sdktrace.NewSimpleSpanProcessor(syncer)
+	tracerProvider.RegisterSpanProcessor(sp)
+	otel.SetTracerProvider(tracerProvider)
+
+	cfg := configWithMultipleAttributes(2, "")
+
+	// test
+	require.NoError(t, Run(cfg, zap.NewNop()))
+
+	// verify
+	assert.Len(t, syncer.spans, 4) // each trace has two spans
+	for _, span := range syncer.spans {
+		attributes := span.Attributes()
+		assert.Equal(t, 4, len(attributes), "it should have more than 4 attributes")
+	}
+}
+
 var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
 
 type mockSyncer struct {
@@ -190,4 +263,39 @@ func (m *mockSyncer) Shutdown(context.Context) error {
 
 func (m *mockSyncer) Reset() {
 	m.spans = []sdktrace.ReadOnlySpan{}
+}
+
+func configWithNoAttributes(qty int, statusCode string) *Config {
+	return &Config{
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: nil,
+		},
+		NumTraces:  qty,
+		StatusCode: statusCode,
+	}
+}
+
+func configWithOneAttribute(qty int, statusCode string) *Config {
+	return &Config{
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
+		},
+		NumTraces:  qty,
+		StatusCode: statusCode,
+	}
+}
+
+func configWithMultipleAttributes(qty int, statusCode string) *Config {
+	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
+	return &Config{
+		Config: common.Config{
+			WorkerCount:         1,
+			TelemetryAttributes: kvs,
+		},
+		NumTraces:  qty,
+		StatusCode: statusCode,
+	}
+
 }
