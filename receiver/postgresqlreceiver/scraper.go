@@ -132,6 +132,7 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectWalAge(ctx, now, listClient, &errs)
 	p.collectReplicationStats(ctx, now, listClient, &errs)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
+	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
 	return p.mb.Emit(), errs.combine()
 }
@@ -166,6 +167,7 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlCommitsDataPoint(now, stats.transactionCommitted)
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
+		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
 	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)
@@ -192,6 +194,7 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		p.mb.RecordPostgresqlOperationsDataPoint(now, tm.hotUpd, metadata.AttributeOperationHotUpd)
 		p.mb.RecordPostgresqlTableSizeDataPoint(now, tm.size)
 		p.mb.RecordPostgresqlTableVacuumCountDataPoint(now, tm.vacuumCount)
+		p.mb.RecordPostgresqlSequentialScansDataPoint(now, tm.seqScans)
 
 		br, ok := blockReads[tableKey]
 		if ok {
@@ -262,6 +265,23 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterDurationDataPoint(now, bgStats.checkpointWriteTime, metadata.AttributeBgDurationTypeWrite)
 
 	p.mb.RecordPostgresqlBgwriterMaxwrittenDataPoint(now, bgStats.maxWritten)
+}
+
+func (p *postgreSQLScraper) collectDatabaseLocks(
+	ctx context.Context,
+	now pcommon.Timestamp,
+	client client,
+	errs *errsMux,
+) {
+	dbLocks, err := client.getDatabaseLocks(ctx)
+	if err != nil {
+		p.logger.Error("Errors encountered while fetching database locks", zap.Error(err))
+		errs.addPartial(err)
+		return
+	}
+	for _, dbLock := range dbLocks {
+		p.mb.RecordPostgresqlDatabaseLocksDataPoint(now, dbLock.locks, dbLock.relation, dbLock.mode, dbLock.lockType)
+	}
 }
 
 func (p *postgreSQLScraper) collectMaxConnections(

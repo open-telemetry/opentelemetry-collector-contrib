@@ -6,10 +6,10 @@ require (
 	cloud.google.com/go/pubsub v1.33.0
 	github.com/google/uuid v1.3.1
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.83.0
-	go.opentelemetry.io/collector/confmap v0.83.0
-	go.opentelemetry.io/collector/consumer v0.83.0
-	go.opentelemetry.io/collector/exporter v0.83.0
+	go.opentelemetry.io/collector/component v0.84.0
+	go.opentelemetry.io/collector/confmap v0.84.0
+	go.opentelemetry.io/collector/consumer v0.84.0
+	go.opentelemetry.io/collector/exporter v0.84.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.uber.org/zap v1.25.0
 	google.golang.org/api v0.138.0
@@ -40,12 +40,12 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.83.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.83.0 // indirect
-	go.opentelemetry.io/collector/extension v0.83.0 // indirect
+	go.opentelemetry.io/collector v0.84.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.84.0 // indirect
+	go.opentelemetry.io/collector/extension v0.84.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
-	go.opentelemetry.io/collector/processor v0.83.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.83.0 // indirect
+	go.opentelemetry.io/collector/processor v0.84.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.84.0 // indirect
 	go.opentelemetry.io/otel v1.16.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
@@ -54,8 +54,8 @@ require (
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230803162519-f966b187b2e5 // indirect

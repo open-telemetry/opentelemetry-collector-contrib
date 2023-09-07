@@ -34,6 +34,7 @@ The following configuration options are supported:
   * `username` (optional) Basic auth username for authenticating with InfluxDB v1.x
   * `password` (optional) Basic auth password for authenticating with InfluxDB v1.x
 * `span_dimensions` (default = service.name, span.name) Span attributes to use as dimensions (InfluxDB tags)
+* `log_record_dimensions` (default = service.name) Log Record attributes to use as dimensions (InfluxDB tags)
 * `payload_max_lines` (default = 10_000) Maximum number of lines allowed per HTTP POST request
 * `payload_max_bytes` (default = 10_000_000) Maximum number of bytes allowed per HTTP POST request
 * `metrics_schema` (default = telegraf-prometheus-v1) The chosen metrics schema to write; must be one of:
@@ -63,6 +64,8 @@ exporters:
     span_dimensions:
     - service.name
     - span.name
+    log_record_dimensions:
+    - service.name
     metrics_schema: telegraf-prometheus-v1
 
     sending_queue:
