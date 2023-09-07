@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.14.3
+	github.com/antonmedv/expr v1.15.0
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
@@ -24,8 +24,8 @@ require (
 	go.opentelemetry.io/collector/receiver v0.84.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	golang.org/x/sys v0.11.0
-	golang.org/x/text v0.12.0
+	golang.org/x/sys v0.12.0
+	golang.org/x/text v0.13.0
 	gonum.org/v1/gonum v0.14.0
 	gopkg.in/yaml.v2 v2.4.0
 )
