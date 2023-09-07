@@ -12,14 +12,6 @@ metrics:
     enabled: false
 ```
 
-### kafka.brokers
-
-[DEPRACATED] Number of brokers in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {broker} | Sum | Int | Cumulative | false |
-
 ### kafka.consumer_group.lag
 
 Current approximate lag of consumer group at partition of topic
@@ -170,6 +162,20 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
+### messaging.kafka.broker.consumer_fetch_rate
+
+Average consumer fetch Rate
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fetches}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
 ### messaging.kafka.broker.count
 
 Number of brokers in the cluster.
@@ -188,6 +194,14 @@ metrics:
     enabled: true
 ```
 
+### kafka.brokers
+
+[DEPRACATED] Number of brokers in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {broker} | Sum | Int | Cumulative | false |
+
 ### messaging.kafka.broker.consumer_fetch_count
 
 Count of consumer fetches
@@ -195,20 +209,6 @@ Count of consumer fetches
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {fetches} | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### messaging.kafka.broker.consumer_fetch_rate
-
-Average consumer fetch Rate
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {fetches}/s | Gauge | Double |
 
 #### Attributes
 

@@ -26,7 +26,7 @@ metrics:
 
   #  brokers scraper
   kafka.brokers:
-    enabled: true
+    enabled: false
     description: '[DEPRACATED] Number of brokers in the cluster.'
     unit: "{broker}"
     sum:
@@ -47,7 +47,7 @@ metrics:
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
   messaging.kafka.broker.consumer_fetch_rate:
-    enabled: false
+    enabled: true
     description: Average consumer fetch Rate
     unit: "{fetches}/s"
     gauge:
