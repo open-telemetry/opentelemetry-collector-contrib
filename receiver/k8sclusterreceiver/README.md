@@ -67,6 +67,9 @@ The following allocatable resource types are available.
   - storage
 - `metrics`: Allows to enable/disable metrics.
 - `resource_attributes`: Allows to enable/disable resource attributes.
+- `ignore_deprecated_resource` (default = `false`): Whether to ignore deprecated Kubernetes API resources. If set to true,
+  the receiver will not collect metrics for deprecated resources. This setting is useful for clusters that have deprecated
+  resources that are not used anymore and are causing errors or warnings in the logs.
 
 Example:
 
@@ -81,6 +84,7 @@ Example:
   resource_attributes:
     container.id:
       enabled: false
+  ignore_deprecated_resource: true
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)
