@@ -253,6 +253,22 @@ metrics:
     enabled: true
 ```
 
+### postgresql.database.locks
+
+The number of database locks.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation | OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation. | Any Str |
+| mode | Name of the lock mode held or desired by the process. | Any Str |
+| lock_type | Type of the lockable object. | Any Str |
+
 ### postgresql.deadlocks
 
 The number of deadlocks.

@@ -6,7 +6,11 @@ package tokenize // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+const DefaultFlushPeriod = 500 * time.Millisecond
 
 // FlusherConfig is a configuration of Flusher helper
 type FlusherConfig struct {
@@ -17,21 +21,22 @@ type FlusherConfig struct {
 func NewFlusherConfig() FlusherConfig {
 	return FlusherConfig{
 		// Empty or `0s` means that we will never force flush
-		Period: time.Millisecond * 500,
+		Period: DefaultFlushPeriod,
 	}
 }
 
-// Build creates Flusher from configuration
-func (c *FlusherConfig) Build() *Flusher {
-	return &Flusher{
+// Wrap a bufio.SplitFunc with a flusher
+func (c *FlusherConfig) Wrap(splitFunc bufio.SplitFunc, trimFunc trim.Func) bufio.SplitFunc {
+	f := &flusher{
 		lastDataChange:     time.Now(),
 		forcePeriod:        c.Period,
 		previousDataLength: 0,
 	}
+	return f.splitFunc(splitFunc, trimFunc)
 }
 
-// Flusher keeps information about flush state
-type Flusher struct {
+// flusher keeps information about flush state
+type flusher struct {
 	// forcePeriod defines time from last flush which should pass before setting force to true.
 	// Never forces if forcePeriod is set to 0
 	forcePeriod time.Duration
@@ -45,7 +50,7 @@ type Flusher struct {
 	previousDataLength int
 }
 
-func (f *Flusher) UpdateDataChangeTime(length int) {
+func (f *flusher) updateDataChangeTime(length int) {
 	// Skip if length is greater than 0 and didn't changed
 	if length > 0 && length == f.previousDataLength {
 		return
@@ -58,17 +63,17 @@ func (f *Flusher) UpdateDataChangeTime(length int) {
 }
 
 // Flushed reset data length
-func (f *Flusher) Flushed() {
-	f.UpdateDataChangeTime(0)
+func (f *flusher) flushed() {
+	f.updateDataChangeTime(0)
 }
 
 // ShouldFlush returns true if data should be forcefully flushed
-func (f *Flusher) ShouldFlush() bool {
+func (f *flusher) shouldFlush() bool {
 	// Returns true if there is f.forcePeriod after f.lastDataChange and data length is greater than 0
 	return f.forcePeriod > 0 && time.Since(f.lastDataChange) > f.forcePeriod && f.previousDataLength > 0
 }
 
-func (f *Flusher) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
+func (f *flusher) splitFunc(splitFunc bufio.SplitFunc, trimFunc trim.Func) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
 
@@ -80,21 +85,21 @@ func (f *Flusher) SplitFunc(splitFunc bufio.SplitFunc) bufio.SplitFunc {
 		// Return token
 		if token != nil {
 			// Inform flusher that we just flushed
-			f.Flushed()
+			f.flushed()
 			return
 		}
 
 		// If there is no token, force flush eventually
-		if f.ShouldFlush() {
+		if f.shouldFlush() {
 			// Inform flusher that we just flushed
-			f.Flushed()
-			token = trimWhitespacesFunc(data)
+			f.flushed()
+			token = trimFunc(data)
 			advance = len(data)
 			return
 		}
 
 		// Inform flusher that we didn't flushed
-		f.UpdateDataChangeTime(len(data))
+		f.updateDataChangeTime(len(data))
 		return
 	}
 }

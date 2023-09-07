@@ -15,10 +15,11 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -85,13 +86,14 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	enc, err := decoder.LookupEncoding(c.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, MaxUDPSize)
+	trimFunc := trim.Whitespace(c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces)
+	splitFunc, err := c.Multiline.Build(enc, true, MaxUDPSize, trimFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -153,7 +155,7 @@ func (u *Input) goHandleMessages(ctx context.Context) {
 	go func() {
 		defer u.wg.Done()
 
-		dec := decoder.New(u.encoding)
+		dec := decode.New(u.encoding)
 		buf := make([]byte, 0, MaxUDPSize)
 		for {
 			message, remoteAddr, err := u.readMessage()
@@ -200,7 +202,7 @@ func truncateMaxLog(data []byte) (token []byte) {
 	return data
 }
 
-func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *decoder.Decoder, log []byte) {
+func (u *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *decode.Decoder, log []byte) {
 	decoded, err := dec.Decode(log)
 	if err != nil {
 		u.Errorw("Failed to decode data", zap.Error(err))
