@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awss3exporter // import "github.com/pelotoncycle/opentelemetry-collector-contrib/exporter/awss3exporter"
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"bytes"
 	"context"
 	"fmt"
-	"gzip"
 	"math/rand"
 	"strconv"
 	"time"
@@ -66,35 +65,8 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 		config.S3Uploader.S3Prefix, config.S3Uploader.S3Partition,
 		config.S3Uploader.FilePrefix, metadata, format)
 
-	var reader *bytes.Reader
-	var contentType string
-
-	if config.S3Uploader.Compression == "gzip" {
-		// Create a buffer to hold compressed data
-		var compressedBuffer bytes.Buffer
-		writer := gzip.NewWriter(&compressedBuffer)
-
-		// Write the original data to the gzip writer
-		_, err := writer.Write(buf)
-		if err != nil {
-			return err
-		}
-
-		// Close the gzip writer to flush any remaining data to compressedBuffer
-		err = writer.Close()
-		if err != nil {
-			return err
-		}
-
-		// Create a reader from compressed data in memory
-		reader = bytes.NewReader(compressedBuffer.Bytes())
-		contentType = "application/gzip"
-		key += ".gz" // Added ".gz" to indicate it's gzipped
-	} else {
-		// Create a reader from data in memory (not compressed)
-		reader = bytes.NewReader(buf)
-		contentType = "application/octet-stream"
-	}
+	// create a reader from data data in memory
+	reader := bytes.NewReader(buf)
 
 	sessionConfig := getSessionConfig(config)
 	sess, err := session.NewSession(sessionConfig)
@@ -106,10 +78,9 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 	uploader := s3manager.NewUploader(sess)
 
 	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket:      aws.String(config.S3Uploader.S3Bucket),
-		Key:         aws.String(key),
-		Body:        reader,
-		ContentType: aws.String(contentType),
+		Bucket: aws.String(config.S3Uploader.S3Bucket),
+		Key:    aws.String(key),
+		Body:   reader,
 	})
 	if err != nil {
 		return err

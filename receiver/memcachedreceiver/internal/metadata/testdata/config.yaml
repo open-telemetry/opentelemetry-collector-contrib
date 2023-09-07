@@ -1,0 +1,49 @@
+default:
+all_set:
+  metrics:
+    memcached.bytes:
+      enabled: true
+    memcached.commands:
+      enabled: true
+    memcached.connections.current:
+      enabled: true
+    memcached.connections.total:
+      enabled: true
+    memcached.cpu.usage:
+      enabled: true
+    memcached.current_items:
+      enabled: true
+    memcached.evictions:
+      enabled: true
+    memcached.network:
+      enabled: true
+    memcached.operation_hit_ratio:
+      enabled: true
+    memcached.operations:
+      enabled: true
+    memcached.threads:
+      enabled: true
+none_set:
+  metrics:
+    memcached.bytes:
+      enabled: false
+    memcached.commands:
+      enabled: false
+    memcached.connections.current:
+      enabled: false
+    memcached.connections.total:
+      enabled: false
+    memcached.cpu.usage:
+      enabled: false
+    memcached.current_items:
+      enabled: false
+    memcached.evictions:
+      enabled: false
+    memcached.network:
+      enabled: false
+    memcached.operation_hit_ratio:
+      enabled: false
+    memcached.operations:
+      enabled: false
+    memcached.threads:
+      enabled: false

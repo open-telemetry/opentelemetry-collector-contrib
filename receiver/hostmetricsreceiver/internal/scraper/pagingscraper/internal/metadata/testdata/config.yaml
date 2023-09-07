@@ -1,0 +1,21 @@
+default:
+all_set:
+  metrics:
+    system.paging.faults:
+      enabled: true
+    system.paging.operations:
+      enabled: true
+    system.paging.usage:
+      enabled: true
+    system.paging.utilization:
+      enabled: true
+none_set:
+  metrics:
+    system.paging.faults:
+      enabled: false
+    system.paging.operations:
+      enabled: false
+    system.paging.usage:
+      enabled: false
+    system.paging.utilization:
+      enabled: false

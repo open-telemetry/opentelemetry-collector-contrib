@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awss3exporter // import "github.com/pelotoncycle/opentelemetry-collector-contrib/exporter/awss3exporter"
+package awss3exporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter"
 
 import (
 	"errors"
@@ -18,7 +18,6 @@ type S3UploaderConfig struct {
 	S3Partition string `mapstructure:"s3_partition"`
 	FilePrefix  string `mapstructure:"file_prefix"`
 	Endpoint    string `mapstructure:"endpoint"`
-	Compression string `mapstructure:"compression"`
 }
 
 type MarshalerType string

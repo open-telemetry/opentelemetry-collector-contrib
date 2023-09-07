@@ -1,0 +1,4 @@
+# HELP a x
+a 1
+# TYPE a gauge
+# EOF

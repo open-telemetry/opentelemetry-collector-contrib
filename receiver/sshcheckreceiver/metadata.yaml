@@ -1,0 +1,67 @@
+type: sshcheck
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [nslaughter, codeboten]
+
+resource_attributes:
+  ssh.endpoint:
+    description: Full SSH endpoint
+    type: string
+
+attributes:
+  error.message:
+    description: Error message recorded during check
+    type: string
+
+metrics:
+  sshcheck.status:
+    description: 1 if the SSH client successfully connected, otherwise 0.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: 1
+  sshcheck.duration:
+    description: Measures the duration of SSH connection.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+  sshcheck.error:
+    description: Records errors occurring during SSH check.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [error.message]
+  sshcheck.sftp_status:
+    description: 1 if the SFTP server replied to request, otherwise 0.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: 1
+  sshcheck.sftp_duration:
+    description: Measures SFTP request duration.
+    enabled: false
+    gauge:
+      value_type: int
+    unit: ms
+  sshcheck.sftp_error:
+    description: Records errors occurring during SFTP check.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: "{error}"
+    attributes: [error.message]

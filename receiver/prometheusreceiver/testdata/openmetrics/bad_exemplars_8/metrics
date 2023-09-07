@@ -1,0 +1,3 @@
+# TYPE a histogram
+a_bucket{le=" Inf"} 1 # {} 1 0x1p-3
+# EOF

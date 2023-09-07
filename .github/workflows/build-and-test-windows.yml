@@ -1,0 +1,76 @@
+name: build-and-test-windows
+on:
+  push:
+    branches:
+      - 'main'
+      - 'releases/**'
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+
+# Do not cancel this workflow on main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  windows-unittest-matrix:
+    strategy:
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - processor
+          - exporter
+          - extension
+          - internal
+          - pkg
+          - cmd
+          - other
+    runs-on: windows-latest
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    steps:
+      - uses: actions/checkout@v3
+      - if: matrix.group == 'receiver-0'
+        name: install IIS
+        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ~1.20.7
+          cache: false
+      - name: Cache Go
+        id: go-mod-cache
+        timeout-minutes: 15
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~\go\pkg\mod
+            ~\AppData\Local\go-build
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit tests
+        run: make -j2 gotest GROUP=${{ matrix.group }}
+  windows-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    runs-on: windows-latest
+    needs: [windows-unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.windows-unittest-matrix.result }}
+      - name: Interpret result
+        shell: bash
+        run: |
+          if [[ success == ${{ needs.windows-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
