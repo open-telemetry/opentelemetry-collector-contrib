@@ -28,6 +28,7 @@ const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
+	defaultFlushPeriod        = 500 * time.Millisecond
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -79,6 +80,7 @@ type Config struct {
 	Splitter                tokenize.SplitterConfig `mapstructure:",squash,omitempty"`
 	TrimConfig              trim.Config             `mapstructure:",squash,omitempty"`
 	Encoding                string                  `mapstructure:"encoding,omitempty"`
+	FlushPeriod             time.Duration           `mapstructure:"force_flush_period,omitempty"`
 	Header                  *HeaderConfig           `mapstructure:"header,omitempty"`
 }
 
@@ -99,7 +101,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewMultilineFactory(c.Splitter, enc, int(c.MaxLogSize), c.TrimConfig.Func())
+	factory := splitter.NewMultilineFactory(c.Splitter, enc, int(c.MaxLogSize), c.TrimConfig.Func(), c.FlushPeriod)
 	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
@@ -118,7 +120,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewCustomFactory(c.Splitter.Flusher, splitFunc)
+	factory := splitter.NewCustomFactory(splitFunc, c.FlushPeriod)
 	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
