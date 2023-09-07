@@ -106,9 +106,9 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		rmetrics := tm.ResourceMetrics().At(i)
 		mtx := ottldatapoint.NewTransformContext(
 			nil,
-			pmetric.Metric{},
-			pmetric.MetricSlice{},
-			pcommon.InstrumentationScope{},
+			pmetric.NewMetric(),
+			pmetric.NewMetricSlice(),
+			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
 		)
 
