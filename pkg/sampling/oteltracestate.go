@@ -128,6 +128,16 @@ func (otts *OTelTraceState) UnsetTValue() {
 	otts.threshold = Threshold{}
 }
 
+func (otts *OTelTraceState) SetRValue(randomness Randomness) {
+	otts.rnd = randomness
+	otts.rvalue = randomness.ToRValue()
+}
+
+func (otts *OTelTraceState) UnsetRValue() {
+	otts.rvalue = ""
+	otts.rnd = Randomness{}
+}
+
 func (otts *OTelTraceState) HasAnyValue() bool {
 	return otts.HasRValue() || otts.HasTValue() || otts.HasExtraValues()
 }

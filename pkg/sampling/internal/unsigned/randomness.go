@@ -17,16 +17,24 @@ var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 // the unsigned value of bytes 9 through 15.
 const LeastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
-// Randomness may be derived from r-value or TraceID.
+// Randomness may be derived from R-value or TraceID.
 type Randomness struct {
-	// randomness is in the range [0, MaxAdjustedCount-1]
+	// unsigned is in the range [0, MaxAdjustedCount-1]
 	unsigned uint64
 }
 
-// Randomness is the value we compare with Threshold in ShouldSample.
+// RandomnessFromTraceID returns randomness from a TraceID (assumes
+// the traceparent random flag was set).
 func RandomnessFromTraceID(id pcommon.TraceID) Randomness {
 	return Randomness{
 		unsigned: binary.BigEndian.Uint64(id[8:]) & LeastHalfTraceIDThresholdMask,
+	}
+}
+
+// RandomnessFromBits returns randomness from 56 random bits.
+func RandomnessFromBits(bits uint64) Randomness {
+	return Randomness{
+		unsigned: bits & LeastHalfTraceIDThresholdMask,
 	}
 }
 
@@ -44,4 +52,11 @@ func RValueToRandomness(s string) (Randomness, error) {
 	return Randomness{
 		unsigned: unsigned,
 	}, nil
+}
+
+func (rnd Randomness) ToRValue() string {
+	// Note: adding MaxAdjustedCount then removing the leading byte accomplishes
+	// zero padding.
+	return strconv.FormatUint(MaxAdjustedCount+rnd.unsigned, hexBase)[1:]
+
 }

@@ -37,7 +37,7 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		AttributeSource: defaultAttributeSource,
-		SamplerMode:     "equalizing",
+		SamplerMode:     DefaultMode,
 	}
 }
 

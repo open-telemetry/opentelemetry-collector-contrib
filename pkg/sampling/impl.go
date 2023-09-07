@@ -34,6 +34,12 @@ func RandomnessFromTraceID(tid pcommon.TraceID) Randomness {
 	return unsigned.RandomnessFromTraceID(tid)
 }
 
+// RandomnessFromBits constructs a randomness using random bits.
+// Bits should be in the range [0, MaxAdjustedCount).
+func RandomnessFromBits(bits uint64) Randomness {
+	return unsigned.RandomnessFromBits(bits)
+}
+
 // ThresholdLessThan allows comparing thresholds directly.  Smaller
 // thresholds have smaller probabilities, larger adjusted counts.
 func ThresholdLessThan(a, b Threshold) bool {

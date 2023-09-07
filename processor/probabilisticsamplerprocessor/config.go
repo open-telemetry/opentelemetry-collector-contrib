@@ -6,7 +6,6 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"fmt"
 	"math"
-	"strings"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/component"
@@ -51,7 +50,7 @@ type Config struct {
 	//    span-to-metrics pipeline based on this mechanism may have
 	//    anomalous behavior.
 	//
-	// - "resample": Using an OTel-specified consistent sampling
+	// - "equalizing": Using an OTel-specified consistent sampling
 	//   mechanism, this sampler selectively reduces the effective
 	//   sampling probability of arriving spans.  This can be
 	//   useful to select a small fraction of complete traces from
@@ -63,10 +62,10 @@ type Config struct {
 	//   because it means this sampler is configured with too
 	//   large a sampling probability to ensure complete traces.
 	//
-	// - "downsample": Using an OTel-specified consistent sampling
+	// - "proportional": Using an OTel-specified consistent sampling
 	//   mechanism, this sampler reduces the effective sampling
 	//   probability of each span by `SamplingProbability`.
-	SamplerMode string `mapstructure:"sampler_mode"`
+	SamplerMode SamplerMode `mapstructure:"sampler_mode"`
 
 	///////
 	// Logs only fields below.
@@ -106,34 +105,5 @@ func (cfg *Config) Validate() error {
 	if cfg.AttributeSource != "" && !validAttributeSource[cfg.AttributeSource] {
 		return fmt.Errorf("invalid attribute source: %v. Expected: %v or %v", cfg.AttributeSource, traceIDAttributeSource, recordAttributeSource)
 	}
-
-	// Force the mode to lower case, check validity
-	if _, err := parseSamplerMode(cfg.SamplerMode); err != nil {
-		return err
-	}
 	return nil
-}
-
-type samplerMode int
-
-const (
-	modeUnset = iota
-	modeHashSeed
-	modeProportional
-	modeEqualizing
-)
-
-func parseSamplerMode(s string) (samplerMode, error) {
-	switch strings.ToLower(s) {
-	case "equalizing":
-		return modeEqualizing, nil
-	case "hash_seed":
-		return modeHashSeed, nil
-	case "proportional":
-		return modeProportional, nil
-	case "":
-		return modeUnset, nil
-	default:
-		return modeUnset, fmt.Errorf("unknown sampler mode: %q", s)
-	}
 }
