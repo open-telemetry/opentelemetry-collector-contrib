@@ -127,6 +127,9 @@ linters-settings:
     explicit-exhaustive-switch: true
     ignore-enum-members: "pmetric.MetricTypeEmpty"
 
+  predeclared:
+    ignore: copy
+
 linters:
   enable:
     - depguard
@@ -141,6 +144,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - predeclared
     - revive
     - staticcheck
     - tenv
