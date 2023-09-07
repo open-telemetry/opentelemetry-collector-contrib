@@ -52,6 +52,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
+	for _, object := range config.Objects {
+		object.exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range object.ExcludeWatchType {
+			object.exclude[item] = true
+		}
+	}
+
 	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
@@ -205,6 +212,11 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 			if !ok {
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return true
+			}
+
+			if config.exclude[data.Type] {
+				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				continue
 			}
 
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)

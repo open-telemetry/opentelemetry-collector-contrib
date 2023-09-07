@@ -6,16 +6,17 @@ package tokenize // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"bufio"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decoder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 // SplitterConfig consolidates MultilineConfig and FlusherConfig
 type SplitterConfig struct {
-	Encoding                    string          `mapstructure:"encoding,omitempty"`
-	Flusher                     FlusherConfig   `mapstructure:",squash,omitempty"`
-	Multiline                   MultilineConfig `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool            `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool            `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	Encoding         string          `mapstructure:"encoding,omitempty"`
+	Flusher          FlusherConfig   `mapstructure:",squash,omitempty"`
+	Multiline        MultilineConfig `mapstructure:"multiline,omitempty"`
+	PreserveLeading  bool            `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailing bool            `mapstructure:"preserve_trailing_whitespaces,omitempty"`
 }
 
 // NewSplitterConfig returns default SplitterConfig
@@ -23,51 +24,21 @@ func NewSplitterConfig() SplitterConfig {
 	return SplitterConfig{
 		Encoding:  "utf-8",
 		Multiline: NewMultilineConfig(),
-		Flusher:   NewFlusherConfig(),
+		Flusher:   FlusherConfig{Period: DefaultFlushPeriod},
 	}
 }
 
-// Build builds Splitter struct
-func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (*Splitter, error) {
-	enc, err := decoder.LookupEncoding(c.Encoding)
+// Build builds bufio.SplitFunc based on the config
+func (c *SplitterConfig) Build(flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
+	enc, err := decode.LookupEncoding(c.Encoding)
+	if err != nil {
+		return nil, err
+	}
+	trimFunc := trim.Whitespace(c.PreserveLeading, c.PreserveTrailing)
+	splitFunc, err := c.Multiline.Build(enc, flushAtEOF, maxLogSize, trimFunc)
 	if err != nil {
 		return nil, err
 	}
 
-	flusher := c.Flusher.Build()
-	splitFunc, err := c.Multiline.Build(enc, flushAtEOF, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, flusher, maxLogSize)
-	if err != nil {
-		return nil, err
-	}
-
-	return &Splitter{
-		Decoder:   decoder.New(enc),
-		Flusher:   flusher,
-		SplitFunc: splitFunc,
-	}, nil
-}
-
-// Splitter consolidates Flusher and dependent splitFunc
-type Splitter struct {
-	Decoder   *decoder.Decoder
-	SplitFunc bufio.SplitFunc
-	Flusher   *Flusher
-}
-
-// SplitNone doesn't split any of the bytes, it reads in all of the bytes and returns it all at once. This is for when the encoding is nop
-func SplitNone(maxLogSize int) bufio.SplitFunc {
-	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if len(data) >= maxLogSize {
-			return maxLogSize, data[:maxLogSize], nil
-		}
-
-		if !atEOF {
-			return 0, nil, nil
-		}
-
-		if len(data) == 0 {
-			return 0, nil, nil
-		}
-		return len(data), data, nil
-	}
+	return c.Flusher.Wrap(splitFunc, trimFunc), nil
 }
