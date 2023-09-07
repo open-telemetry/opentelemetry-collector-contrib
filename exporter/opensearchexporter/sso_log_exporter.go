@@ -31,6 +31,7 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 	model := &encodeModel{
 		dedup:             cfg.Dedup,
 		dedot:             cfg.Dedot,
+		sso:               cfg.MappingsSettings.Mode == MappingSS4O.String(),
 		flattenAttributes: cfg.MappingsSettings.Mode == MappingFlattenAttributes.String(),
 		timestampField:    cfg.MappingsSettings.TimestampField,
 		unixTime:          cfg.MappingsSettings.UnixTimestamp,
