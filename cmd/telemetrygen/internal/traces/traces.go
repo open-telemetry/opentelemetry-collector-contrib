@@ -135,6 +135,8 @@ func Run(c *Config, logger *zap.Logger) error {
 	running := &atomic.Bool{}
 	running.Store(true)
 
+	telemetryAttributes := c.GetTelemetryAttributes()
+
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
@@ -149,7 +151,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			loadSize:         c.LoadSize,
 		}
 
-		go w.simulateTraces()
+		go w.simulateTraces(telemetryAttributes)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
