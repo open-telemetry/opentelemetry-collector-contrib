@@ -706,7 +706,7 @@ func (m *metricMessagingKafkaBrokerCount) init() {
 	m.data.SetDescription("Number of brokers in the cluster.")
 	m.data.SetUnit("{broker}")
 	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetIsMonotonic(true)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 }
 

@@ -49,6 +49,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `kafka.brokers` should not be enabled: The metric is deprecated and will be removed. Use `messaging.kafka.broker.count`", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if test.configSet == testSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `messaging.kafka.broker.consumer_fetch_count`: This metric will be enabled by default in the next versions.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -98,6 +102,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
@@ -144,11 +149,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchCountDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerCountDataPoint(ts, 1)
 
@@ -439,7 +442,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of brokers in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{broker}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
