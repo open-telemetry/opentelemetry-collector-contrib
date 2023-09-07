@@ -46,7 +46,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":

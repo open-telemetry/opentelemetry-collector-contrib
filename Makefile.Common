@@ -165,7 +165,7 @@ fmt: $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --allow-parallel-runners --verbose --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
@@ -174,7 +174,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.19
+	$(GOCMD) mod tidy -compat=1.20
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

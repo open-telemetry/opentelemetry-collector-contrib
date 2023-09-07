@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, TylerHelmuth]
 
 sem_conv_version: 1.18.0
 
@@ -242,6 +242,12 @@ metrics:
   k8s.pod.phase:
     enabled: true
     description: Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5 - Unknown)
+    unit: 1
+    gauge:
+      value_type: int
+  k8s.pod.status_reason:
+    enabled: false
+    description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
     unit: 1
     gauge:
       value_type: int
