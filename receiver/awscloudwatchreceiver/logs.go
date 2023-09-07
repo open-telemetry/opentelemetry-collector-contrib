@@ -312,14 +312,8 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			break
 		}
 
-		var limit = maxLogGroupsPerDiscovery
-
-		if auto.Limit > int(maxLogGroupsPerDiscovery) {
-			limit = int64(auto.Limit)
-		}
-
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: aws.Int64(limit),
+			Limit: aws.Int64(maxLogGroupsPerDiscovery),
 		}
 
 		if auto.IncludeLinkedAccounts {
