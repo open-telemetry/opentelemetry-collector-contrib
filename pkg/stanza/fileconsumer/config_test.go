@@ -368,7 +368,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_lower",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.Encoding = "utf-16le"
+					cfg.Encoding = "utf-16le"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -376,7 +376,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "encoding_upper",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Splitter.Encoding = "UTF-16lE"
+					cfg.Encoding = "UTF-16lE"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -486,7 +486,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.Encoding = "UTF-3233"
+				f.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
@@ -681,7 +681,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.Encoding = "UTF-3233"
+				f.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,

@@ -413,7 +413,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Splitter.Encoding = "utf-16le"
+					cfg.Encoding = "utf-16le"
 					return cfg
 				}(),
 			},
@@ -422,7 +422,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.Splitter.Encoding = "UTF-16lE"
+					cfg.Encoding = "UTF-16lE"
 					return cfg
 				}(),
 			},
@@ -510,7 +510,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidEncoding",
 			func(f *Config) {
-				f.Splitter.Encoding = "UTF-3233"
+				f.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
