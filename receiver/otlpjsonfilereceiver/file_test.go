@@ -125,6 +125,7 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFilePathResolved: false,
 			PollInterval:            200 * time.Millisecond,
 			Splitter:                tokenize.NewSplitterConfig(),
+			Encoding:                "utf-8",
 			StartAt:                 "end",
 			FingerprintSize:         1000,
 			MaxLogSize:              1024 * 1024,
