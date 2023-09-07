@@ -37,7 +37,7 @@ metrics:
       if_enabled: The metric is deprecated and will be removed. Use `messaging.kafka.broker.count`
 
   messaging.kafka.broker.count:
-    enabled: false
+    enabled: true
     description: Number of brokers in the cluster.
     unit: "{broker}"
     sum:

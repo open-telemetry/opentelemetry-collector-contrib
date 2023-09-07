@@ -152,6 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchRateDataPoint(ts, 1, 6)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerCountDataPoint(ts, 1)
 
@@ -206,7 +207,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["kafka.brokers"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "[depracated] Number of brokers in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "[DEPRACATED] Number of brokers in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{broker}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
