@@ -73,7 +73,7 @@ exporter/lokiexporter/                                   @open-telemetry/collect
 exporter/mezmoexporter/                                  @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/opensearchexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
-exporter/otelarrowexporter/                              @open-telemetry/collector-contrib-approvers @jmacd @gramidt
+exporter/otelarrowexporter/                              @open-telemetry/collector-contrib-approvers @open-telemetry/arrow-approvers
 exporter/parquetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme
 exporter/prometheusexporter/                             @open-telemetry/collector-contrib-approvers @Aneurysm9
 exporter/prometheusremotewriteexporter/                  @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil
@@ -224,7 +224,7 @@ receiver/nginxreceiver/                                  @open-telemetry/collect
 receiver/nsxtreceiver/                                   @open-telemetry/collector-contrib-approvers @dashpole @schmikei
 receiver/opencensusreceiver/                             @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 receiver/oracledbreceiver/                               @open-telemetry/collector-contrib-approvers @dmitryax @crobert-1 @atoulme
-receiver/otelarrowreceiver/                              @open-telemetry/collector-contrib-approvers @jmacd @gramidt
+receiver/otelarrowreceiver/                              @open-telemetry/collector-contrib-approvers @open-telemetry/arrow-approvers
 receiver/otlpjsonfilereceiver/                           @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 receiver/podmanreceiver/                                 @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                             @open-telemetry/collector-contrib-approvers @djaglowski
