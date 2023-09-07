@@ -170,6 +170,20 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
+### messaging.kafka.broker.outgoing_byte_rate
+
+Average outgoing Byte Rate in bytes/second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -223,20 +237,6 @@ Average incoming Byte Rate in bytes/second
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By/s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
-### messaging.kafka.broker.outgoing_byte_rate
-
-Average outgoing Byte Rate in bytes/second.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
 
 #### Attributes
 

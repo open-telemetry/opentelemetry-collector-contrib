@@ -97,7 +97,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MessagingKafkaBrokerOutgoingByteRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerRequestLatency: MetricConfig{
 			Enabled: false,

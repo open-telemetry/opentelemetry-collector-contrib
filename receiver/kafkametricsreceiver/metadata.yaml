@@ -65,7 +65,7 @@ metrics:
     warnings:
       if_enabled_not_set: This metric will be enabled by default in the next versions.
   messaging.kafka.broker.outgoing_byte_rate:
-    enabled: false
+    enabled: true
     description: Average outgoing Byte Rate in bytes/second.
     unit: 1
     gauge:
