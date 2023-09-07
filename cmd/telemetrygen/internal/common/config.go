@@ -56,6 +56,7 @@ type Config struct {
 	HTTPPath           string
 	Headers            KeyValue
 	ResourceAttributes KeyValue
+	SignalAttributes   KeyValue
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
@@ -63,6 +64,17 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 
 	if len(c.ResourceAttributes) > 0 {
 		for k, v := range c.ResourceAttributes {
+			attributes = append(attributes, attribute.String(k, v))
+		}
+	}
+	return attributes
+}
+
+func (c *Config) GetSignalAttributes() []attribute.KeyValue {
+	var attributes []attribute.KeyValue
+
+	if len(c.SignalAttributes) > 0 {
+		for k, v := range c.SignalAttributes {
 			attributes = append(attributes, attribute.String(k, v))
 		}
 	}
@@ -83,11 +95,16 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	// custom headers
 	c.Headers = make(map[string]string)
-	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=value."+
+	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=value. "+
 		"Flag may be repeated to set multiple headers (e.g -otlp-header key1=value1 -otlp-header key2=value2)")
 
 	// custom resource attributes
 	c.ResourceAttributes = make(map[string]string)
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\"."+
-		"Flag may be repeated to set multiple attributes (e.g -otlp-attributes key1=\"value1\" -otlp-attributes key2=\"value2\")")
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
+		"Flag may be repeated to set multiple attributes (e.g --otlp-attributes \"key1=\\\"value1\\\"\" --otlp-attributes \"key2=\\\"value2\\\"\")")
+
+	c.SignalAttributes = make(map[string]string)
+	fs.Var(&c.SignalAttributes, "signal-attributes", "Custom signal attributes to use. The value is expected in the format \"key=\\\"value\\\"\". "+
+		"Flag may be repeated to set multiple attributes (e.g --signal-attributes \"key1=\\\"value1\\\"\" --otlp-attributes \"key2=\\\"value2\\\"\")")
+
 }

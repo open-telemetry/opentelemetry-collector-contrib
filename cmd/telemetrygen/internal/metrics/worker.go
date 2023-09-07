@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -26,7 +27,7 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int64
 
@@ -41,8 +42,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 							Data: metricdata.Gauge[int64]{
 								DataPoints: []metricdata.DataPoint[int64]{
 									{
-										Time:  time.Now(),
-										Value: i,
+										Time:       time.Now(),
+										Value:      i,
+										Attributes: attribute.NewSet(signalAttrs...),
 									},
 								},
 							},
