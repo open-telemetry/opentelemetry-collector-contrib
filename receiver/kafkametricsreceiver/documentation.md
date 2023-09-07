@@ -14,7 +14,7 @@ metrics:
 
 ### kafka.brokers
 
-[depracated] Number of brokers in the cluster.
+[DEPRACATED] Number of brokers in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -170,6 +170,14 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
+### messaging.kafka.broker.count
+
+Number of brokers in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {broker} | Sum | Int | Cumulative | false |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -207,14 +215,6 @@ Average consumer fetch Rate
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
-
-### messaging.kafka.broker.count
-
-Number of brokers in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {broker} | Sum | Int | Cumulative | false |
 
 ### messaging.kafka.broker.incoming_byte_rate
 
