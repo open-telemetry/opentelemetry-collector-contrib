@@ -14,32 +14,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-// Multiline consists of splitFunc and variables needed to perform force flush
-type Multiline struct {
-	SplitFunc bufio.SplitFunc
-}
-
-// NewMultilineConfig creates a new Multiline config
-func NewMultilineConfig() MultilineConfig {
-	return MultilineConfig{
-		LineStartPattern: "",
-		LineEndPattern:   "",
-	}
-}
-
-// MultilineConfig is the configuration of a multiline helper
-type MultilineConfig struct {
+// Config is the configuration for a split func
+type Config struct {
 	LineStartPattern string `mapstructure:"line_start_pattern"`
 	LineEndPattern   string `mapstructure:"line_end_pattern"`
 }
 
-// Build will build a Multiline operator.
-func (c MultilineConfig) Build(enc encoding.Encoding, flushAtEOF bool, maxLogSize int, trimFunc trim.Func) (bufio.SplitFunc, error) {
-	return c.getSplitFunc(enc, flushAtEOF, maxLogSize, trimFunc)
-}
-
-// getSplitFunc returns split function for bufio.Scanner basing on configured pattern
-func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, maxLogSize int, trimFunc trim.Func) (bufio.SplitFunc, error) {
+// Func will return a bufio.SplitFunc based on the config
+func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int, trimFunc trim.Func) (bufio.SplitFunc, error) {
 	endPattern := c.LineEndPattern
 	startPattern := c.LineStartPattern
 
@@ -72,8 +54,6 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, ma
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
 		splitFunc = LineStartSplitFunc(re, flushAtEOF, trimFunc)
-	default:
-		return nil, fmt.Errorf("unreachable")
 	}
 	return splitFunc, nil
 }
@@ -181,7 +161,6 @@ func NewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool, trimFunc trim.Func
 		if i := bytes.Index(data, newline); i >= 0 {
 			// We have a full newline-terminated line.
 			token = bytes.TrimSuffix(data[:i], carriageReturn)
-
 			return i + len(newline), trimFunc(token), nil
 		}
 

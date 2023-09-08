@@ -16,7 +16,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
@@ -280,9 +279,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "multiline_line_start_string",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Multiline = split.MultilineConfig{
-						LineStartPattern: "Start",
-					}
+					cfg.SplitConfig.LineStartPattern = "Start"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -290,9 +287,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "multiline_line_start_special",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Multiline = split.MultilineConfig{
-						LineStartPattern: "%",
-					}
+					cfg.SplitConfig.LineStartPattern = "%"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -300,9 +295,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "multiline_line_end_string",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Multiline = split.MultilineConfig{
-						LineEndPattern: "Start",
-					}
+					cfg.SplitConfig.LineEndPattern = "Start"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -310,9 +303,7 @@ func TestUnmarshal(t *testing.T) {
 				Name: "multiline_line_end_special",
 				Expect: func() *mockOperatorConfig {
 					cfg := NewConfig()
-					cfg.Multiline = split.MultilineConfig{
-						LineEndPattern: "%",
-					}
+					cfg.SplitConfig.LineEndPattern = "%"
 					return newMockOperatorConfig(cfg)
 				}(),
 			},
@@ -427,127 +418,113 @@ func TestBuild(t *testing.T) {
 	}{
 		{
 			"Basic",
-			func(f *Config) {},
+			func(cfg *Config) {},
 			require.NoError,
-			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.pollInterval, 10*time.Millisecond)
+			func(t *testing.T, m *Manager) {
+				require.Equal(t, m.pollInterval, 10*time.Millisecond)
 			},
 		},
 		{
 			"BadIncludeGlob",
-			func(f *Config) {
-				f.Include = []string{"["}
+			func(cfg *Config) {
+				cfg.Include = []string{"["}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"BadExcludeGlob",
-			func(f *Config) {
-				f.Include = []string{"["}
+			func(cfg *Config) {
+				cfg.Include = []string{"["}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"MultilineConfiguredStartAndEndPatterns",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineEndPattern:   "Exists",
-					LineStartPattern: "Exists",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineEndPattern = "Exists"
+				cfg.SplitConfig.LineStartPattern = "Exists"
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"MultilineConfiguredStartPattern",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineStartPattern: "START.*",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineStartPattern = "START.*"
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"MultilineConfiguredEndPattern",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineEndPattern: "END.*",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineEndPattern = "END.*"
 			},
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"InvalidEncoding",
-			func(f *Config) {
-				f.Encoding = "UTF-3233"
+			func(cfg *Config) {
+				cfg.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"LineStartAndEnd",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineStartPattern: ".*",
-					LineEndPattern:   ".*",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineStartPattern = ".*"
+				cfg.SplitConfig.LineEndPattern = ".*"
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"NoLineStartOrEnd",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{}
-			},
+			func(cfg *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Manager) {},
 		},
 		{
 			"InvalidLineStartRegex",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineStartPattern: "(",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineStartPattern = "("
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"InvalidLineEndRegex",
-			func(f *Config) {
-				f.Multiline = split.MultilineConfig{
-					LineEndPattern: "(",
-				}
+			func(cfg *Config) {
+				cfg.SplitConfig.LineEndPattern = "("
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"InvalidStartAtDelete",
-			func(f *Config) {
-				f.StartAt = "end"
-				f.DeleteAfterRead = true
+			func(cfg *Config) {
+				cfg.StartAt = "end"
+				cfg.DeleteAfterRead = true
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"InvalidMaxBatches",
-			func(f *Config) {
-				f.MaxBatches = -1
+			func(cfg *Config) {
+				cfg.MaxBatches = -1
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"ValidMaxBatches",
-			func(f *Config) {
-				f.MaxBatches = 6
+			func(cfg *Config) {
+				cfg.MaxBatches = 6
 			},
 			require.NoError,
 			func(t *testing.T, m *Manager) {
@@ -556,16 +533,16 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"HeaderConfigNoFlag",
-			func(f *Config) {
-				f.Header = &HeaderConfig{}
+			func(cfg *Config) {
+				cfg.Header = &HeaderConfig{}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"BadOrderingCriteriaRegex",
-			func(f *Config) {
-				f.OrderingCriteria = matcher.OrderingCriteria{
+			func(cfg *Config) {
+				cfg.OrderingCriteria = matcher.OrderingCriteria{
 					SortBy: []matcher.Sort{
 						{
 							SortType: "numeric",
@@ -579,8 +556,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"OrderingCriteriaTimestampMissingLayout",
-			func(f *Config) {
-				f.OrderingCriteria = matcher.OrderingCriteria{
+			func(cfg *Config) {
+				cfg.OrderingCriteria = matcher.OrderingCriteria{
 					Regex: ".*",
 					SortBy: []matcher.Sort{
 						{
@@ -595,8 +572,8 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"GoodOrderingCriteriaTimestamp",
-			func(f *Config) {
-				f.OrderingCriteria = matcher.OrderingCriteria{
+			func(cfg *Config) {
+				cfg.OrderingCriteria = matcher.OrderingCriteria{
 					Regex: ".*",
 					SortBy: []matcher.Sort{
 						{
@@ -649,32 +626,32 @@ func TestBuildWithSplitFunc(t *testing.T) {
 	}{
 		{
 			"Basic",
-			func(f *Config) {},
+			func(cfg *Config) {},
 			require.NoError,
-			func(t *testing.T, f *Manager) {
-				require.Equal(t, f.pollInterval, 10*time.Millisecond)
+			func(t *testing.T, m *Manager) {
+				require.Equal(t, m.pollInterval, 10*time.Millisecond)
 			},
 		},
 		{
 			"BadIncludeGlob",
-			func(f *Config) {
-				f.Include = []string{"["}
+			func(cfg *Config) {
+				cfg.Include = []string{"["}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"BadExcludeGlob",
-			func(f *Config) {
-				f.Include = []string{"["}
+			func(cfg *Config) {
+				cfg.Include = []string{"["}
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"InvalidEncoding",
-			func(f *Config) {
-				f.Encoding = "UTF-3233"
+			func(cfg *Config) {
+				cfg.Encoding = "UTF-3233"
 			},
 			require.Error,
 			nil,
@@ -731,19 +708,19 @@ func TestBuildWithHeader(t *testing.T) {
 	}{
 		{
 			"InvalidHeaderConfig",
-			func(f *Config) {
-				f.Header = &HeaderConfig{}
-				f.StartAt = "beginning"
+			func(cfg *Config) {
+				cfg.Header = &HeaderConfig{}
+				cfg.StartAt = "beginning"
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"HeaderConfigWithStartAtEnd",
-			func(f *Config) {
+			func(cfg *Config) {
 				regexCfg := regex.NewConfig()
 				regexCfg.Regex = "^(?P<field>.*)"
-				f.Header = &HeaderConfig{
+				cfg.Header = &HeaderConfig{
 					Pattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
@@ -751,17 +728,17 @@ func TestBuildWithHeader(t *testing.T) {
 						},
 					},
 				}
-				f.StartAt = "end"
+				cfg.StartAt = "end"
 			},
 			require.Error,
 			nil,
 		},
 		{
 			"ValidHeaderConfig",
-			func(f *Config) {
+			func(cfg *Config) {
 				regexCfg := regex.NewConfig()
 				regexCfg.Regex = "^(?P<field>.*)"
-				f.Header = &HeaderConfig{
+				cfg.Header = &HeaderConfig{
 					Pattern: "^#",
 					MetadataOperators: []operator.Config{
 						{
@@ -769,11 +746,11 @@ func TestBuildWithHeader(t *testing.T) {
 						},
 					},
 				}
-				f.StartAt = "beginning"
+				cfg.StartAt = "beginning"
 			},
 			require.NoError,
-			func(t *testing.T, f *Manager) {
-				require.NotNil(t, f.readerFactory.headerConfig.SplitFunc)
+			func(t *testing.T, m *Manager) {
+				require.NotNil(t, m.readerFactory.headerConfig.SplitFunc)
 			},
 		},
 	}

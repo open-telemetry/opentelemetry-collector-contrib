@@ -45,9 +45,8 @@ func NewConfigWithID(operatorID string) *Config {
 		BaseConfig: BaseConfig{
 			Encoding:        "utf-8",
 			OneLogPerPacket: false,
-			Multiline: split.MultilineConfig{
-				LineStartPattern: "",
-				LineEndPattern:   ".^", // Use never matching regex to not split data by default
+			SplitConfig: split.Config{
+				LineEndPattern: ".^", // Use never matching regex to not split data by default
 			},
 		},
 	}
@@ -61,12 +60,12 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress   string                `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket bool                  `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes   bool                  `mapstructure:"add_attributes,omitempty"`
-	Encoding        string                `mapstructure:"encoding,omitempty"`
-	Multiline       split.MultilineConfig `mapstructure:"multiline,omitempty"`
-	TrimConfig      trim.Config           `mapstructure:",squash"`
+	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
+	Encoding        string       `mapstructure:"encoding,omitempty"`
+	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
+	TrimConfig      trim.Config  `mapstructure:",squash"`
 }
 
 // Build will build a udp input operator.
@@ -92,7 +91,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 
 	// Build multiline
 	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.Multiline.Build(enc, true, MaxUDPSize, trimFunc)
+	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize, trimFunc)
 	if err != nil {
 		return nil, err
 	}

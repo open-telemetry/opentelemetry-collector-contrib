@@ -18,23 +18,22 @@ import (
 func TestMultilineBuild(t *testing.T) {
 	tests := []struct {
 		name         string
-		multilineCfg split.MultilineConfig
+		multilineCfg split.Config
 		encoding     encoding.Encoding
 		maxLogSize   int
 		flushPeriod  time.Duration
 		wantErr      bool
 	}{
 		{
-			name:         "default configuration",
-			multilineCfg: split.NewMultilineConfig(),
-			encoding:     unicode.UTF8,
-			maxLogSize:   1024,
-			flushPeriod:  100 * time.Millisecond,
-			wantErr:      false,
+			name:        "default configuration",
+			encoding:    unicode.UTF8,
+			maxLogSize:  1024,
+			flushPeriod: 100 * time.Millisecond,
+			wantErr:     false,
 		},
 		{
 			name: "Multiline  error",
-			multilineCfg: split.MultilineConfig{
+			multilineCfg: split.Config{
 				LineStartPattern: "START",
 				LineEndPattern:   "END",
 			},

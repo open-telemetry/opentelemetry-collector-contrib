@@ -15,7 +15,7 @@ import (
 )
 
 type multilineFactory struct {
-	multilineCfg split.MultilineConfig
+	multilineCfg split.Config
 	encoding     encoding.Encoding
 	maxLogSize   int
 	trimFunc     trim.Func
@@ -25,7 +25,7 @@ type multilineFactory struct {
 var _ Factory = (*multilineFactory)(nil)
 
 func NewMultilineFactory(
-	multilineCfg split.MultilineConfig,
+	multilineCfg split.Config,
 	encoding encoding.Encoding,
 	maxLogSize int,
 	trimFunc trim.Func,
@@ -42,7 +42,7 @@ func NewMultilineFactory(
 
 // Build builds Multiline Splitter struct
 func (f *multilineFactory) Build() (bufio.SplitFunc, error) {
-	splitFunc, err := f.multilineCfg.Build(f.encoding, false, f.maxLogSize, f.trimFunc)
+	splitFunc, err := f.multilineCfg.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
 	if err != nil {
 		return nil, err
 	}

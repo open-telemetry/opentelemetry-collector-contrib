@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
@@ -18,6 +19,63 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+func TestConfigFunc(t *testing.T) {
+	maxLogSize := 100
+
+	t.Run("BothStartAndEnd", func(t *testing.T) {
+		cfg := &Config{
+			LineStartPattern: "foo",
+			LineEndPattern:   "bar",
+		}
+
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		assert.EqualError(t, err, "only one of line_start_pattern or line_end_pattern can be set")
+	})
+
+	t.Run("NopEncoding", func(t *testing.T) {
+		cfg := &Config{}
+
+		f, err := cfg.Func(encoding.Nop, false, maxLogSize, trim.Nop)
+		assert.NoError(t, err)
+
+		raw := splittest.GenerateBytes(maxLogSize * 2)
+		advance, token, err := f(raw, false)
+		assert.NoError(t, err)
+		assert.Equal(t, maxLogSize, advance)
+		assert.Equal(t, raw[:maxLogSize], token)
+	})
+
+	t.Run("Newline", func(t *testing.T) {
+		cfg := &Config{}
+
+		f, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		assert.NoError(t, err)
+
+		advance, token, err := f([]byte("foo\nbar\nbaz\n"), false)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, advance)
+		assert.Equal(t, []byte("foo"), token)
+	})
+
+	t.Run("InvalidStartRegex", func(t *testing.T) {
+		cfg := &Config{
+			LineStartPattern: "[",
+		}
+
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		assert.EqualError(t, err, "compile line start regex: error parsing regexp: missing closing ]: `[`")
+	})
+
+	t.Run("InvalidEndRegex", func(t *testing.T) {
+		cfg := &Config{
+			LineEndPattern: "[",
+		}
+
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		assert.EqualError(t, err, "compile line end regex: error parsing regexp: missing closing ]: `[`")
+	})
+}
 
 func TestLineStartSplitFunc(t *testing.T) {
 	testCases := []splittest.TestCase{
@@ -115,15 +173,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		cfg := &MultilineConfig{
-			LineStartPattern: tc.Pattern,
-		}
-
+		cfg := Config{LineStartPattern: tc.Pattern}
 		trimFunc := trim.Config{
 			PreserveLeading:  tc.PreserveLeadingWhitespaces,
 			PreserveTrailing: tc.PreserveTrailingWhitespaces,
 		}.Func()
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
@@ -145,6 +200,66 @@ func TestLineStartSplitFunc(t *testing.T) {
 			require.Equal(t, 0, advance)
 			require.Nil(t, token)
 		})
+	})
+
+	t.Run("FlushAtEOF", func(t *testing.T) {
+		flushAtEOFCases := []splittest.TestCase{
+			{
+				Name:           "NoMatch",
+				Pattern:        `^LOGSTART \d+`,
+				Input:          []byte("LOGPART log1\nLOGPART log1\t   \n"),
+				ExpectedTokens: []string{"LOGPART log1\nLOGPART log1\t   \n"},
+			},
+			{
+				Name:    "MatchThenNoMatch",
+				Pattern: `^LOGSTART \d+`,
+				Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line"),
+				ExpectedTokens: []string{
+					"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
+					"LOGSTART 17 log2\nLOGPART log2\nanother line",
+				},
+			},
+		}
+		for _, tc := range flushAtEOFCases {
+			cfg := &Config{
+				LineStartPattern: `^LOGSTART \d+`,
+			}
+			splitFunc, err := cfg.Func(unicode.UTF8, true, 0, trim.Nop)
+			require.NoError(t, err)
+			t.Run(tc.Name, tc.Run(splitFunc))
+		}
+	})
+
+	t.Run("ApplyTrimFunc", func(t *testing.T) {
+		cfg := Config{LineStartPattern: ` LOGSTART \d+ `}
+		input := []byte(" LOGSTART 123 log1  LOGSTART 234 log2  LOGSTART 345 foo")
+
+		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		require.NoError(t, err)
+		t.Run("TrimLeading", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`LOGSTART 123 log1 `,
+				`LOGSTART 234 log2 `,
+			}}.Run(splitTrimLeading))
+
+		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
+		require.NoError(t, err)
+		t.Run("TrimTrailing", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				` LOGSTART 123 log1`,
+				` LOGSTART 234 log2`,
+			}}.Run(splitTrimTrailing))
+
+		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
+		require.NoError(t, err)
+		t.Run("TrimBoth", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`LOGSTART 123 log1`,
+				`LOGSTART 234 log2`,
+			}}.Run(splitTrimBoth))
 	})
 }
 
@@ -240,18 +355,61 @@ func TestLineEndSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		cfg := &MultilineConfig{
-			LineEndPattern: tc.Pattern,
-		}
+		cfg := Config{LineEndPattern: tc.Pattern}
 
 		trimFunc := trim.Config{
 			PreserveLeading:  tc.PreserveLeadingWhitespaces,
 			PreserveTrailing: tc.PreserveTrailingWhitespaces,
 		}.Func()
-		splitFunc, err := cfg.getSplitFunc(unicode.UTF8, false, 0, trimFunc)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
+
+	t.Run("FlushAtEOF", func(t *testing.T) {
+		cfg := &Config{
+			LineEndPattern: `^LOGSTART \d+`,
+		}
+		splitFunc, err := cfg.Func(unicode.UTF8, true, 0, trim.Nop)
+		require.NoError(t, err)
+		splittest.TestCase{
+			Name:           "NoMatch",
+			Input:          []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			ExpectedTokens: []string{"LOGPART log1\nLOGPART log1\t   \n"},
+		}.Run(splitFunc)(t)
+	})
+
+	t.Run("ApplyTrimFunc", func(t *testing.T) {
+		cfg := Config{LineEndPattern: ` LOGEND `}
+		input := []byte(" log1 LOGEND  log2 LOGEND ")
+
+		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		require.NoError(t, err)
+		t.Run("TrimLeading", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`log1 LOGEND `,
+				`log2 LOGEND `,
+			}}.Run(splitTrimLeading))
+
+		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
+		require.NoError(t, err)
+		t.Run("TrimTrailing", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				` log1 LOGEND`,
+				` log2 LOGEND`,
+			}}.Run(splitTrimTrailing))
+
+		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
+		require.NoError(t, err)
+		t.Run("TrimBoth", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`log1 LOGEND`,
+				`log2 LOGEND`,
+			}}.Run(splitTrimBoth))
+	})
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
@@ -380,6 +538,48 @@ func TestNewlineSplitFunc(t *testing.T) {
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
+
+	t.Run("FlushAtEOF", func(t *testing.T) {
+		splitFunc, err := Config{}.Func(unicode.UTF8, true, 0, trim.Nop)
+		require.NoError(t, err)
+		splittest.TestCase{
+			Name:           "FlushAtEOF",
+			Input:          []byte("log1\nlog2"),
+			ExpectedTokens: []string{"log1", "log2"},
+		}.Run(splitFunc)(t)
+	})
+
+	t.Run("ApplyTrimFunc", func(t *testing.T) {
+		cfg := &Config{}
+		input := []byte(" log1 \n log2 \n")
+
+		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		require.NoError(t, err)
+		t.Run("TrimLeading", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`log1 `,
+				`log2 `,
+			}}.Run(splitTrimLeading))
+
+		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
+		require.NoError(t, err)
+		t.Run("TrimTrailing", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				` log1`,
+				` log2`,
+			}}.Run(splitTrimTrailing))
+
+		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
+		require.NoError(t, err)
+		t.Run("TrimBoth", splittest.TestCase{
+			Input: input,
+			ExpectedTokens: []string{
+				`log1`,
+				`log2`,
+			}}.Run(splitTrimBoth))
+	})
 }
 
 func TestNoSplitFunc(t *testing.T) {
@@ -444,18 +644,14 @@ func TestNoSplitFunc(t *testing.T) {
 }
 
 func TestNoopEncodingError(t *testing.T) {
-	cfg := &MultilineConfig{
-		LineEndPattern: "\n",
-	}
+	endCfg := Config{LineEndPattern: "\n"}
 
-	_, err := cfg.getSplitFunc(encoding.Nop, false, 0, trim.Nop)
+	_, err := endCfg.Func(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
-	cfg = &MultilineConfig{
-		LineStartPattern: "\n",
-	}
+	startCfg := Config{LineStartPattern: "\n"}
 
-	_, err = cfg.getSplitFunc(encoding.Nop, false, 0, trim.Nop)
+	_, err = startCfg.Func(encoding.Nop, false, 0, trim.Nop)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
