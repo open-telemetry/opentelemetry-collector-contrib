@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tokenize // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+package split // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 
 import (
 	"bufio"

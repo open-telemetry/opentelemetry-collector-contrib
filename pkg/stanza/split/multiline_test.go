@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tokenize
+package split
 
 import (
 	"bufio"
@@ -15,12 +15,12 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestLineStartSplitFunc(t *testing.T) {
-	testCases := []tokenizetest.TestCase{
+	testCases := []splittest.TestCase{
 		{
 			Name:    "OneLogSimple",
 			Pattern: `LOGSTART \d+ `,
@@ -66,12 +66,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input: func() []byte {
 				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, tokenizetest.GenerateBytes(100)...)
+				newInput = append(newInput, splittest.GenerateBytes(100)...)
 				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(100)),
+				`LOGSTART 123 ` + string(splittest.GenerateBytes(100)),
 			},
 		},
 		{
@@ -79,12 +79,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input: func() []byte {
 				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, tokenizetest.GenerateBytes(10000)...)
+				newInput = append(newInput, splittest.GenerateBytes(10000)...)
 				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(10000)),
+				`LOGSTART 123 ` + string(splittest.GenerateBytes(10000)),
 			},
 		},
 		{
@@ -92,7 +92,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input: func() []byte {
 				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, tokenizetest.GenerateBytes(1000000)...)
+				newInput = append(newInput, splittest.GenerateBytes(1000000)...)
 				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
 				return newInput
 			}(),
@@ -149,7 +149,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 }
 
 func TestLineEndSplitFunc(t *testing.T) {
-	testCases := []tokenizetest.TestCase{
+	testCases := []splittest.TestCase{
 		{
 			Name:    "OneLogSimple",
 			Pattern: `LOGEND \d+`,
@@ -193,31 +193,31 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Name:    "HugeLog100",
 			Pattern: `LOGEND \d`,
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(100)
+				newInput := splittest.GenerateBytes(100)
 				newInput = append(newInput, []byte(`LOGEND 1 `)...)
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				string(tokenizetest.GenerateBytes(100)) + `LOGEND 1`,
+				string(splittest.GenerateBytes(100)) + `LOGEND 1`,
 			},
 		},
 		{
 			Name:    "HugeLog10000",
 			Pattern: `LOGEND \d`,
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(10000)
+				newInput := splittest.GenerateBytes(10000)
 				newInput = append(newInput, []byte(`LOGEND 1 `)...)
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				string(tokenizetest.GenerateBytes(10000)) + `LOGEND 1`,
+				string(splittest.GenerateBytes(10000)) + `LOGEND 1`,
 			},
 		},
 		{
 			Name:    "HugeLog1000000",
 			Pattern: `LOGEND \d`,
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(1000000)
+				newInput := splittest.GenerateBytes(1000000)
 				newInput = append(newInput, []byte(`LOGEND 1 `)...)
 				return newInput
 			}(),
@@ -255,7 +255,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
-	testCases := []tokenizetest.TestCase{
+	testCases := []splittest.TestCase{
 		{
 			Name:  "OneLogSimple",
 			Input: []byte("my log\n"),
@@ -293,29 +293,29 @@ func TestNewlineSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(100)
+				newInput := splittest.GenerateBytes(100)
 				newInput = append(newInput, '\n')
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				string(tokenizetest.GenerateBytes(100)),
+				string(splittest.GenerateBytes(100)),
 			},
 		},
 		{
 			Name: "HugeLog10000",
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(10000)
+				newInput := splittest.GenerateBytes(10000)
 				newInput = append(newInput, '\n')
 				return newInput
 			}(),
 			ExpectedTokens: []string{
-				string(tokenizetest.GenerateBytes(10000)),
+				string(splittest.GenerateBytes(10000)),
 			},
 		},
 		{
 			Name: "HugeLog1000000",
 			Input: func() []byte {
-				newInput := tokenizetest.GenerateBytes(1000000)
+				newInput := splittest.GenerateBytes(1000000)
 				newInput = append(newInput, '\n')
 				return newInput
 			}(),
@@ -384,7 +384,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 
 func TestNoSplitFunc(t *testing.T) {
 	const largeLogSize = 100
-	testCases := []tokenizetest.TestCase{
+	testCases := []splittest.TestCase{
 		{
 			Name:           "OneLogSimple",
 			Input:          []byte("my log\n"),
@@ -408,14 +408,14 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Input: func() []byte {
-				return tokenizetest.GenerateBytes(largeLogSize)
+				return splittest.GenerateBytes(largeLogSize)
 			}(),
-			ExpectedTokens: []string{string(tokenizetest.GenerateBytes(largeLogSize))},
+			ExpectedTokens: []string{string(splittest.GenerateBytes(largeLogSize))},
 		},
 		{
 			Name: "HugeLog300",
 			Input: func() []byte {
-				return tokenizetest.GenerateBytes(largeLogSize * 3)
+				return splittest.GenerateBytes(largeLogSize * 3)
 			}(),
 			ExpectedTokens: []string{
 				"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
@@ -426,7 +426,7 @@ func TestNoSplitFunc(t *testing.T) {
 		{
 			Name: "EOFBeforeMaxLogSize",
 			Input: func() []byte {
-				return tokenizetest.GenerateBytes(largeLogSize * 3.5)
+				return splittest.GenerateBytes(largeLogSize * 3.5)
 			}(),
 			ExpectedTokens: []string{
 				"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",

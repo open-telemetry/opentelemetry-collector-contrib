@@ -17,8 +17,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
 )
 
 var (
@@ -182,7 +182,7 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 }
 
 func TestOctetFramingSplitFunc(t *testing.T) {
-	testCases := []tokenizetest.TestCase{
+	testCases := []splittest.TestCase{
 		{
 			Name:  "OneLogSimple",
 			Input: []byte(`17 my log LOGEND 123`),
@@ -216,34 +216,34 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 		{
 			Name: "HugeLog100",
 			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(100)
+				newRaw := splittest.GenerateBytes(100)
 				newRaw = append([]byte(`100 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokens: []string{
-				`100 ` + string(tokenizetest.GenerateBytes(100)),
+				`100 ` + string(splittest.GenerateBytes(100)),
 			},
 		},
 		{
 			Name: "maxCapacity",
 			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(4091)
+				newRaw := splittest.GenerateBytes(4091)
 				newRaw = append([]byte(`4091 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokens: []string{
-				`4091 ` + string(tokenizetest.GenerateBytes(4091)),
+				`4091 ` + string(splittest.GenerateBytes(4091)),
 			},
 		},
 		{
 			Name: "over capacity",
 			Input: func() []byte {
-				newRaw := tokenizetest.GenerateBytes(4092)
+				newRaw := splittest.GenerateBytes(4092)
 				newRaw = append([]byte(`5000 `), newRaw...)
 				return newRaw
 			}(),
 			ExpectedTokens: []string{
-				`5000 ` + string(tokenizetest.GenerateBytes(4091)),
+				`5000 ` + string(splittest.GenerateBytes(4091)),
 				`j`,
 			},
 		},

@@ -10,12 +10,12 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type multilineFactory struct {
-	multilineCfg tokenize.MultilineConfig
+	multilineCfg split.MultilineConfig
 	encoding     encoding.Encoding
 	maxLogSize   int
 	trimFunc     trim.Func
@@ -25,7 +25,7 @@ type multilineFactory struct {
 var _ Factory = (*multilineFactory)(nil)
 
 func NewMultilineFactory(
-	multilineCfg tokenize.MultilineConfig,
+	multilineCfg split.MultilineConfig,
 	encoding encoding.Encoding,
 	maxLogSize int,
 	trimFunc trim.Func,
