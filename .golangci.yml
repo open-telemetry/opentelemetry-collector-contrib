@@ -129,6 +129,7 @@ linters-settings:
 
 linters:
   enable:
+    - decorder
     - depguard
     - errcheck
     - errorlint

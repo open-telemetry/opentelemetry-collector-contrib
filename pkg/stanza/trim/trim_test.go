@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWhitespace(t *testing.T) {
+func TestTrim(t *testing.T) {
 	// Test all permutations of trimming whitespace
 	testCases := []struct {
 		name             string
@@ -50,7 +50,10 @@ func TestWhitespace(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			trimFunc := Whitespace(tc.preserveLeading, tc.preserveTrailing)
+			trimFunc := Config{
+				PreserveLeading:  tc.preserveLeading,
+				PreserveTrailing: tc.preserveTrailing,
+			}.Func()
 			assert.Equal(t, []byte(tc.expect), trimFunc([]byte(tc.input)))
 
 			// Also test that regardless of configuration, an empty []byte in gives an empty []byte out
