@@ -142,6 +142,7 @@ linters:
     - gosec
     - govet
     - misspell
+    - reassign
     - revive
     - staticcheck
     - tenv
