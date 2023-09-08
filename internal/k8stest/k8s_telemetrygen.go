@@ -6,6 +6,7 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -65,9 +66,12 @@ func WaitForTelemetryGenToStart(t *testing.T, client *dynamic.DynamicClient, pod
 		list, err := client.Resource(podGVR).Namespace(podNamespace).List(context.Background(), listOptions)
 		require.NoError(t, err, "failed to list collector pods")
 		if len(list.Items) == 0 {
+			fmt.Println("no items")
 			return false
 		}
+		fmt.Printf("looking at list items: %v\n", list.Items)
 		podPhase = list.Items[0].Object["status"].(map[string]interface{})["phase"].(string)
+		fmt.Printf("looking at pod phase: %s\n", podPhase)
 		return podPhase == "Running"
 	}, time.Duration(podTimeoutMinutes)*time.Minute, 50*time.Millisecond,
 		"telemetrygen pod of Workload [%s] in datatype [%s] haven't started within %d minutes, latest pod phase is %s", workload, dataType, podTimeoutMinutes, podPhase)
