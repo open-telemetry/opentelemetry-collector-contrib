@@ -11,15 +11,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.84.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.84.0
-	go.opentelemetry.io/collector/config/confighttp v0.84.0
-	go.opentelemetry.io/collector/config/configopaque v0.84.0
-	go.opentelemetry.io/collector/config/configtls v0.84.0
-	go.opentelemetry.io/collector/confmap v0.84.0
-	go.opentelemetry.io/collector/consumer v0.84.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
-	go.opentelemetry.io/collector/processor v0.84.0
-	go.opentelemetry.io/collector/semconv v0.84.0
+	go.opentelemetry.io/collector/component v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/config/confighttp v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/config/configopaque v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/config/configtls v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/confmap v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/consumer v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/processor v0.84.1-0.20230908162931-eaac340d0bc3
+	go.opentelemetry.io/collector/semconv v0.84.1-0.20230908162931-eaac340d0bc3
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
 	k8s.io/apimachinery v0.28.1
@@ -80,27 +80,27 @@ require (
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rs/cors v1.9.0 // indirect
+	github.com/rs/cors v1.10.0 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.84.0 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.84.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v0.84.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.84.0 // indirect
-	go.opentelemetry.io/collector/config/internal v0.84.0 // indirect
-	go.opentelemetry.io/collector/extension v0.84.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.84.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
+	go.opentelemetry.io/collector v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/config/configcompression v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/config/internal v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/extension v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.84.1-0.20230908162931-eaac340d0bc3 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230908162931-eaac340d0bc3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.42.0 // indirect
-	go.opentelemetry.io/otel v1.16.0 // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel v1.17.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230711023510-fffb14384f22 // indirect
-	golang.org/x/net v0.14.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
+	golang.org/x/term v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
