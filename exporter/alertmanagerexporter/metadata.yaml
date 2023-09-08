@@ -1,0 +1,7 @@
+type: alertmanager
+
+status:
+  class: exporter
+  stability:
+    development: [traces]
+  distributions: [contrib]
