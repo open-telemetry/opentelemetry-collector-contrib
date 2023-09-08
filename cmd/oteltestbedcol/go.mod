@@ -6,7 +6,6 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.85.0
@@ -297,8 +296,6 @@ require (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../../exporter/jaegerexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
 
