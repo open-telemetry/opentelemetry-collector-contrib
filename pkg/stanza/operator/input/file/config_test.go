@@ -315,9 +315,9 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := tokenize.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "Start"
-					cfg.Splitter = newSplit
+					cfg.Multiline = tokenize.MultilineConfig{
+						LineStartPattern: "Start",
+					}
 					return cfg
 				}(),
 			},
@@ -326,9 +326,9 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := tokenize.NewSplitterConfig()
-					newSplit.Multiline.LineStartPattern = "%"
-					cfg.Splitter = newSplit
+					cfg.Multiline = tokenize.MultilineConfig{
+						LineStartPattern: "%",
+					}
 					return cfg
 				}(),
 			},
@@ -337,9 +337,9 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := tokenize.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "Start"
-					cfg.Splitter = newSplit
+					cfg.Multiline = tokenize.MultilineConfig{
+						LineEndPattern: "Start",
+					}
 					return cfg
 				}(),
 			},
@@ -348,9 +348,9 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					newSplit := tokenize.NewSplitterConfig()
-					newSplit.Multiline.LineEndPattern = "%"
-					cfg.Splitter = newSplit
+					cfg.Multiline = tokenize.MultilineConfig{
+						LineEndPattern: "%",
+					}
 					return cfg
 				}(),
 			},
@@ -476,8 +476,7 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartAndEndPatterns",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineEndPattern:   "Exists",
 					LineStartPattern: "Exists",
 				}
@@ -488,8 +487,7 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredStartPattern",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineStartPattern: "START.*",
 				}
 			},
@@ -499,8 +497,7 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredEndPattern",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineEndPattern: "END.*",
 				}
 			},
@@ -518,8 +515,7 @@ func TestBuild(t *testing.T) {
 		{
 			"LineStartAndEnd",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineStartPattern: ".*",
 					LineEndPattern:   ".*",
 				}
@@ -530,8 +526,7 @@ func TestBuild(t *testing.T) {
 		{
 			"NoLineStartOrEnd",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{}
+				f.Multiline = tokenize.MultilineConfig{}
 			},
 			require.NoError,
 			func(t *testing.T, f *Input) {},
@@ -539,8 +534,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineStartRegex",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineStartPattern: "(",
 				}
 			},
@@ -550,8 +544,7 @@ func TestBuild(t *testing.T) {
 		{
 			"InvalidLineEndRegex",
 			func(f *Config) {
-				f.Splitter = tokenize.NewSplitterConfig()
-				f.Splitter.Multiline = tokenize.MultilineConfig{
+				f.Multiline = tokenize.MultilineConfig{
 					LineEndPattern: "(",
 				}
 			},

@@ -547,7 +547,7 @@ func TestNoNewline(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.Splitter = tokenize.NewSplitterConfig()
+	cfg.Multiline = tokenize.NewMultilineConfig()
 	cfg.FlushPeriod = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
