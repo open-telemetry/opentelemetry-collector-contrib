@@ -337,7 +337,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -421,7 +421,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -1289,7 +1289,7 @@ func TestEncodings(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			cfg.Splitter.Encoding = tc.encoding
+			cfg.Encoding = tc.encoding
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Populate the file

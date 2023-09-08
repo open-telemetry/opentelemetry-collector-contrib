@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -19,6 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestPersistFlusher(t *testing.T) {
@@ -177,10 +179,9 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 	mlc := tokenize.NewMultilineConfig()
 	mlc.LineStartPattern = `\d+-\d+-\d+`
 	f.splitterFactory = splitter.NewMultilineFactory(tokenize.SplitterConfig{
-		Encoding:  "utf-8",
 		Flusher:   tokenize.NewFlusherConfig(),
 		Multiline: mlc,
-	}, 15)
+	}, unicode.UTF8, 15, trim.Whitespace)
 	f.readerConfig.maxLogSize = 15
 
 	temp := openTemp(t, t.TempDir())
@@ -239,7 +240,8 @@ func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
 
 func testReaderFactoryWithSplitter(t *testing.T, splitterConfig tokenize.SplitterConfig) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	enc, err := decode.LookupEncoding(splitterConfig.Encoding)
+	enc, err := decode.LookupEncoding(defaultEncoding)
+	trimFunc := trim.Whitespace
 	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
@@ -249,7 +251,7 @@ func testReaderFactoryWithSplitter(t *testing.T, splitterConfig tokenize.Splitte
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewMultilineFactory(splitterConfig, defaultMaxLogSize),
+		splitterFactory: splitter.NewMultilineFactory(splitterConfig, enc, defaultMaxLogSize, trimFunc),
 		encoding:        enc,
 	}, emitChan
 }

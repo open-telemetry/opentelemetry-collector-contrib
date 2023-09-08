@@ -7,59 +7,45 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestMultilineBuild(t *testing.T) {
-	type args struct {
-		maxLogSize int
-	}
 	tests := []struct {
 		name           string
 		splitterConfig tokenize.SplitterConfig
-		args           args
+		encoding       encoding.Encoding
+		maxLogSize     int
 		wantErr        bool
 	}{
 		{
 			name:           "default configuration",
 			splitterConfig: tokenize.NewSplitterConfig(),
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: false,
-		},
-		{
-			name: "eoncoding error",
-			splitterConfig: tokenize.SplitterConfig{
-				Encoding:  "error",
-				Flusher:   tokenize.NewFlusherConfig(),
-				Multiline: tokenize.NewMultilineConfig(),
-			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
+			encoding:       unicode.UTF8,
+			maxLogSize:     1024,
+			wantErr:        false,
 		},
 		{
 			name: "Multiline  error",
 			splitterConfig: tokenize.SplitterConfig{
-				Encoding: "utf-8",
-				Flusher:  tokenize.NewFlusherConfig(),
+				Flusher: tokenize.NewFlusherConfig(),
 				Multiline: tokenize.MultilineConfig{
 					LineStartPattern: "START",
 					LineEndPattern:   "END",
 				},
 			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
+			encoding:   unicode.UTF8,
+			maxLogSize: 1024,
+			wantErr:    true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig, tt.args.maxLogSize)
+			factory := NewMultilineFactory(tt.splitterConfig, tt.encoding, tt.maxLogSize, trim.Nop)
 			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)

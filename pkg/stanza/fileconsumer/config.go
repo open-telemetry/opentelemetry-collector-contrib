@@ -21,11 +21,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
+	defaultEncoding           = "utf-8"
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -51,6 +53,7 @@ func NewConfig() *Config {
 		IncludeFilePathResolved: false,
 		PollInterval:            200 * time.Millisecond,
 		Splitter:                tokenize.NewSplitterConfig(),
+		Encoding:                defaultEncoding,
 		StartAt:                 "end",
 		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
@@ -74,6 +77,8 @@ type Config struct {
 	MaxBatches              int                     `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                    `mapstructure:"delete_after_read,omitempty"`
 	Splitter                tokenize.SplitterConfig `mapstructure:",squash,omitempty"`
+	TrimConfig              trim.Config             `mapstructure:",squash,omitempty"`
+	Encoding                string                  `mapstructure:"encoding,omitempty"`
 	Header                  *HeaderConfig           `mapstructure:"header,omitempty"`
 }
 
@@ -88,8 +93,13 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		return nil, err
 	}
 
+	enc, err := decode.LookupEncoding(c.Encoding)
+	if err != nil {
+		return nil, err
+	}
+
 	// Ensure that splitter is buildable
-	factory := splitter.NewMultilineFactory(c.Splitter, int(c.MaxLogSize))
+	factory := splitter.NewMultilineFactory(c.Splitter, enc, int(c.MaxLogSize), c.TrimConfig.Func())
 	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
@@ -130,13 +140,13 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		return nil, fmt.Errorf("invalid start_at location '%s'", c.StartAt)
 	}
 
+	enc, err := decode.LookupEncoding(c.Encoding)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find encoding: %w", err)
+	}
+
 	var hCfg *header.Config
 	if c.Header != nil {
-		enc, err := decode.LookupEncoding(c.Splitter.Encoding)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create encoding: %w", err)
-		}
-
 		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
@@ -144,11 +154,6 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	}
 
 	fileMatcher, err := matcher.New(c.Criteria)
-	if err != nil {
-		return nil, err
-	}
-
-	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +225,7 @@ func (c Config) validate() error {
 		return errors.New("`max_batches` must not be negative")
 	}
 
-	enc, err := decode.LookupEncoding(c.Splitter.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}
