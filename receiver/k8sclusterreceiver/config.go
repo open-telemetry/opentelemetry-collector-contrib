@@ -41,7 +41,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 
 	// Whether to ignore deprecated resources or not.
-	IgnoreDeprecatedResource bool `mapstructure:"ignore_deprecated_resource"`
+	IgnoreDeprecatedResources bool `mapstructure:"ignore_deprecated_resources"`
 }
 
 func (cfg *Config) Validate() error {

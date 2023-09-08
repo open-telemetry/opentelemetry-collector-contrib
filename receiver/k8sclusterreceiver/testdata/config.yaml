@@ -5,7 +5,7 @@ k8s_cluster/all_settings:
   allocatable_types_to_report: [ "cpu","memory" ]
   metadata_exporters: [ nop ]
   metadata_collection_interval: 30m
-  ignore_deprecated_resource: false
+  ignore_deprecated_resources: false
 k8s_cluster/partial_settings:
   collection_interval: 30s
   distribution: openshift

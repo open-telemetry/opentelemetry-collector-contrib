@@ -23,7 +23,7 @@ const (
 	defaultCollectionInterval         = 10 * time.Second
 	defaultDistribution               = distributionKubernetes
 	defaultMetadataCollectionInterval = 5 * time.Minute
-	defaultIgnoreDeprecatedResource   = false
+	defaultIgnoreDeprecatedResources  = false
 )
 
 var defaultNodeConditionsToReport = []string{"Ready"}
@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 		},
 		MetadataCollectionInterval: defaultMetadataCollectionInterval,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
-		IgnoreDeprecatedResource:   defaultIgnoreDeprecatedResource,
+		IgnoreDeprecatedResources:  defaultIgnoreDeprecatedResources,
 	}
 }
 

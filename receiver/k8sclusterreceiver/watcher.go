@@ -140,7 +140,7 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"Job":                   {gvk.Job},
 	}
 
-	if !rw.config.IgnoreDeprecatedResource {
+	if !rw.config.IgnoreDeprecatedResources {
 		supportedKinds["CronJob"] = []schema.GroupVersionKind{gvk.CronJob, gvk.CronJobBeta}
 		supportedKinds["HorizontalPodAutoscaler"] = []schema.GroupVersionKind{gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta}
 	} else {
