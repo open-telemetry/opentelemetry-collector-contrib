@@ -21,6 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -76,6 +77,7 @@ type Config struct {
 	MaxBatches              int                     `mapstructure:"max_batches,omitempty"`
 	DeleteAfterRead         bool                    `mapstructure:"delete_after_read,omitempty"`
 	Splitter                tokenize.SplitterConfig `mapstructure:",squash,omitempty"`
+	TrimConfig              trim.Config             `mapstructure:",squash,omitempty"`
 	Encoding                string                  `mapstructure:"encoding,omitempty"`
 	Header                  *HeaderConfig           `mapstructure:"header,omitempty"`
 }
@@ -97,7 +99,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewMultilineFactory(c.Splitter, enc, int(c.MaxLogSize))
+	factory := splitter.NewMultilineFactory(c.Splitter, enc, int(c.MaxLogSize), c.TrimConfig.Func())
 	if _, err := factory.Build(); err != nil {
 		return nil, err
 	}
