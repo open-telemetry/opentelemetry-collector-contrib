@@ -132,6 +132,7 @@ linters-settings:
 
 linters:
   enable:
+    - decorder
     - depguard
     - errcheck
     - errorlint
@@ -145,6 +146,7 @@ linters:
     - govet
     - misspell
     - predeclared
+    - reassign
     - revive
     - staticcheck
     - tenv
