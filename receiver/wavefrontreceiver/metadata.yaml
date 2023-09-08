@@ -6,5 +6,5 @@ status:
     unmaintained: [metrics]
   distributions: [contrib, sumo]
   codeowners:
-    active: [ ]
+    active: [samiura]
 
