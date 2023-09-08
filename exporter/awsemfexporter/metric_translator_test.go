@@ -453,7 +453,8 @@ func TestTranslateCWMetricToEMF(t *testing.T) {
 				measurements: tc.measurements,
 			}
 
-			emfLogEvent := translateCWMetricToEMF(cloudwatchMetric, config)
+			emfLogEvent, err := translateCWMetricToEMF(cloudwatchMetric, config)
+			require.NoError(t, err)
 
 			assert.Equal(t, tc.expectedEMFLogEvent, *emfLogEvent.InputLogEvent.Message)
 		})
@@ -2174,7 +2175,8 @@ func BenchmarkTranslateCWMetricToEMF(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		translateCWMetricToEMF(met, &Config{})
+		_, err := translateCWMetricToEMF(met, &Config{})
+		require.NoError(b, err)
 	}
 }
 

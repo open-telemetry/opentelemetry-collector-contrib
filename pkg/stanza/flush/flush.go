@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tokenize // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+package flush // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 
 import (
 	"bufio"
@@ -10,26 +10,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-const DefaultFlushPeriod = 500 * time.Millisecond
-
-// FlusherConfig is a configuration of Flusher helper
-type FlusherConfig struct {
-	Period time.Duration `mapstructure:"force_flush_period"`
-}
-
-// NewFlusherConfig creates a default Flusher config
-func NewFlusherConfig() FlusherConfig {
-	return FlusherConfig{
-		// Empty or `0s` means that we will never force flush
-		Period: DefaultFlushPeriod,
-	}
-}
-
 // Wrap a bufio.SplitFunc with a flusher
-func (c *FlusherConfig) Wrap(splitFunc bufio.SplitFunc, trimFunc trim.Func) bufio.SplitFunc {
+func WithPeriod(splitFunc bufio.SplitFunc, trimFunc trim.Func, period time.Duration) bufio.SplitFunc {
+	if period <= 0 {
+		return splitFunc
+	}
 	f := &flusher{
 		lastDataChange:     time.Now(),
-		forcePeriod:        c.Period,
+		forcePeriod:        period,
 		previousDataLength: 0,
 	}
 	return f.splitFunc(splitFunc, trimFunc)
