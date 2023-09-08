@@ -111,7 +111,7 @@ func newConnector(logger *zap.Logger, config component.Config) *serviceGraphConn
 	}
 }
 
-func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
+func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	go p.cacheLoop(p.config.CacheLoop)

@@ -13,13 +13,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -344,22 +340,6 @@ func incompleteServerTraces(withParentSpan bool) ptrace.Traces {
 	return traces
 }
 
-func newOTLPExporters(t *testing.T) (component.ID, exporter.Metrics, exporter.Traces) {
-	otlpExpFactory := otlpexporter.NewFactory()
-	otlpID := component.NewID("otlp")
-	otlpConfig := &otlpexporter.Config{
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
-			Endpoint: "example.com:1234",
-		},
-	}
-	expCreationParams := exportertest.NewNopCreateSettings()
-	mexp, err := otlpExpFactory.CreateMetricsExporter(context.Background(), expCreationParams, otlpConfig)
-	require.NoError(t, err)
-	texp, err := otlpExpFactory.CreateTracesExporter(context.Background(), expCreationParams, otlpConfig)
-	require.NoError(t, err)
-	return otlpID, mexp, texp
-}
-
 type mockHost struct {
 	component.Host
 	exps map[component.DataType]map[component.ID]component.Component
@@ -390,7 +370,7 @@ func (*mockMetricsConsumer) Capabilities() consumer.Capabilities {
 }
 
 // ConsumeMetrics implements consumer.Metrics.
-func (*mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (*mockMetricsConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
 
