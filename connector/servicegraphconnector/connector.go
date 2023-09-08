@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -114,24 +113,6 @@ func newConnector(logger *zap.Logger, config component.Config) *serviceGraphConn
 
 func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
-
-	if p.metricsConsumer == nil {
-		exporters := host.GetExporters() //nolint:staticcheck
-
-		// The available list of exporters come from any configured metrics pipelines' exporters.
-		for k, exp := range exporters[component.DataTypeMetrics] {
-			metricsExp, ok := exp.(exporter.Metrics)
-			if k.String() == p.config.MetricsExporter && ok {
-				p.metricsConsumer = metricsExp
-				break
-			}
-		}
-
-		if p.metricsConsumer == nil {
-			return fmt.Errorf("failed to find metrics exporter: %s",
-				p.config.MetricsExporter)
-		}
-	}
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -457,11 +438,6 @@ func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) er
 }
 
 func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) error {
-	// TODO: Remove this once legacy metric names are removed
-	if legacyMetricNamesFeatureGate.IsEnabled() {
-		return p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_duration_seconds")
-	}
-
 	if err := p.collectServerLatencyMetrics(ilm, "traces_service_graph_request_server_seconds"); err != nil {
 		return err
 	}

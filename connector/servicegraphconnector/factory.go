@@ -19,12 +19,11 @@ const (
 	// The value of "type" key in configuration.
 	typeStr = "servicegraph"
 	// The stability level of the connector.
-	connectorStability                    = component.StabilityLevelDevelopment
-	virtualNodeFeatureGateID              = "connector.servicegraph.virtualNode"
-	legacyLatencyMetricNamesFeatureGateID = "connector.servicegraph.legacyLatencyMetricNames"
+	connectorStability       = component.StabilityLevelDevelopment
+	virtualNodeFeatureGateID = "connector.servicegraph.virtualNode"
 )
 
-var virtualNodeFeatureGate, legacyMetricNamesFeatureGate *featuregate.Gate
+var virtualNodeFeatureGate *featuregate.Gate
 
 func init() {
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -32,13 +31,6 @@ func init() {
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled, when the edge expires, connector checks if it has peer attributes(`db.name, net.sock.peer.addr, net.peer.name, rpc.service, http.url, http.target`), and then aggregate the metrics with virtual node."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17196"),
-	)
-	// TODO: Remove this feature gate when the legacy metric names are removed.
-	legacyMetricNamesFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		legacyLatencyMetricNamesFeatureGateID,
-		featuregate.StageAlpha, // Alpha because we want it disabled by default.
-		featuregate.WithRegisterDescription("When enabled, connector uses legacy latency metric names."),
-		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18743,https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16578"),
 	)
 }
 

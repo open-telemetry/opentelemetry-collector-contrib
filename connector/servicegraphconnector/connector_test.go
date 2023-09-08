@@ -73,8 +73,7 @@ func TestConnectorConsumeWithVirtualNodeFeatureGate(t *testing.T) {
 		{
 			name: "traces with client and server span",
 			cfg: Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
@@ -85,8 +84,7 @@ func TestConnectorConsumeWithVirtualNodeFeatureGate(t *testing.T) {
 		{
 			name: "incomplete traces with virtual server span",
 			cfg: Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
@@ -102,8 +100,7 @@ func TestConnectorConsumeWithVirtualNodeFeatureGate(t *testing.T) {
 		{
 			name: "incomplete traces with virtual client span",
 			cfg: Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
@@ -119,8 +116,7 @@ func TestConnectorConsumeWithVirtualNodeFeatureGate(t *testing.T) {
 		{
 			name: "incomplete traces with client span lost",
 			cfg: Config{
-				MetricsExporter: "mock",
-				Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+				Dimensions: []string{"some-attribute", "non-existing-attribute"},
 				Store: StoreConfig{
 					MaxItems: 10,
 					TTL:      time.Nanosecond,
@@ -135,14 +131,9 @@ func TestConnectorConsumeWithVirtualNodeFeatureGate(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 			p := newConnector(zaptest.NewLogger(t), &tc.cfg)
+			p.metricsConsumer = newMockMetricsConsumer()
 
-			metricsExporter := newMockMetricsExporter()
-
-			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-				component.DataTypeMetrics: {
-					component.NewID("mock"): metricsExporter,
-				},
-			})
+			mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{})
 
 			// Start connector
 			assert.NoError(t, p.Start(context.Background(), mHost))
@@ -175,7 +166,7 @@ func TestConnectorConsume(t *testing.T) {
 	}
 
 	conn := newConnector(zaptest.NewLogger(t), cfg)
-	conn.metricsConsumer = newMockMetricsExporter()
+	conn.metricsConsumer = newMockMetricsConsumer()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -385,21 +376,21 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 	return m.exps
 }
 
-var _ exporter.Metrics = (*mockMetricsExporter)(nil)
+var _ consumer.Metrics = (*mockMetricsConsumer)(nil)
 
-func newMockMetricsExporter() exporter.Metrics {
-	return &mockMetricsExporter{}
+func newMockMetricsConsumer() consumer.Metrics {
+	return &mockMetricsConsumer{}
 }
 
-type mockMetricsExporter struct{}
+type mockMetricsConsumer struct{}
 
-func (m *mockMetricsExporter) Start(context.Context, component.Host) error { return nil }
+// Capabilities implements consumer.Metrics.
+func (*mockMetricsConsumer) Capabilities() consumer.Capabilities {
+	panic("unimplemented")
+}
 
-func (m *mockMetricsExporter) Shutdown(context.Context) error { return nil }
-
-func (m *mockMetricsExporter) Capabilities() consumer.Capabilities { return consumer.Capabilities{} }
-
-func (m *mockMetricsExporter) ConsumeMetrics(context.Context, pmetric.Metrics) error {
+// ConsumeMetrics implements consumer.Metrics.
+func (*mockMetricsConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	return nil
 }
 
@@ -449,23 +440,17 @@ func TestUpdateDurationMetrics(t *testing.T) {
 func TestStaleSeriesCleanup(t *testing.T) {
 	// Prepare
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
 		},
 	}
 
-	mockMetricsExporter := newMockMetricsExporter()
-
 	p := newConnector(zaptest.NewLogger(t), cfg)
+	p.metricsConsumer = newMockMetricsConsumer()
 
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.NewID("mock"): mockMetricsExporter,
-		},
-	})
+	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{})
 
 	assert.NoError(t, p.Start(context.Background(), mHost))
 

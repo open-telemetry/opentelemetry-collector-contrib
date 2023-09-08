@@ -10,9 +10,6 @@ import (
 // Config defines the configuration options for servicegraphconnector.
 type Config struct {
 
-	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
-	MetricsExporter string `mapstructure:"metrics_exporter"`
-
 	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
 	// See defaultLatencyHistogramBucketsMs in connector.go for the default value.
 	LatencyHistogramBuckets []time.Duration `mapstructure:"latency_histogram_buckets"`
