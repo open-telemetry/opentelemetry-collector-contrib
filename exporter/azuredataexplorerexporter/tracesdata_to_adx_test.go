@@ -49,11 +49,14 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				TraceID:            "00000000000000000000000000000064",
-				SpanID:             "0000000000000032",
-				ParentID:           "",
-				SpanName:           "spanname",
-				SpanStatus:         "STATUS_CODE_UNSET",
+				TraceID:    "00000000000000000000000000000064",
+				SpanID:     "0000000000000032",
+				ParentID:   "",
+				SpanName:   "spanname",
+				SpanStatus: "STATUS_CODE_UNSET",
+				SpanStatusAttributes: &Status{
+					Code: "STATUS_CODE_UNSET",
+				},
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,
@@ -72,7 +75,10 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: pcommon.NewResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanStatus: "STATUS_CODE_UNSET",
+				SpanStatusAttributes: &Status{
+					Code: "STATUS_CODE_UNSET",
+				},
 				SpanKind:           "SPAN_KIND_UNSPECIFIED",
 				StartTime:          defaultTime,
 				EndTime:            defaultTime,
@@ -109,11 +115,71 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				TraceID:            "00000000000000000000000000000064",
-				SpanID:             "0000000000000032",
-				ParentID:           "",
-				SpanName:           "spanname",
-				SpanStatus:         "STATUS_CODE_UNSET",
+				TraceID:    "00000000000000000000000000000064",
+				SpanID:     "0000000000000032",
+				ParentID:   "",
+				SpanName:   "spanname",
+				SpanStatus: "STATUS_CODE_UNSET",
+				SpanStatusAttributes: &Status{
+					Code: "STATUS_CODE_UNSET",
+				},
+				SpanKind:           "SPAN_KIND_SERVER",
+				StartTime:          tstr,
+				EndTime:            tstr,
+				ResourceAttributes: tmap,
+				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
+				Events: []*Event{
+					{
+						EventName:       "eventName",
+						EventAttributes: newMapFromAttr(`{"eventkey": "eventvalue"}`),
+						Timestamp:       tstr,
+					},
+				},
+				Links: []*Link{{
+					TraceID:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceState:         "",
+					SpanLinkAttributes: newMapFromAttr(`{}`),
+				}},
+			},
+		},
+
+		{
+			name: "with_status_message_for_error",
+			spanDatafn: func() ptrace.Span {
+				span := ptrace.NewSpan()
+				span.SetName("spanname-status-message")
+				span.Status().SetCode(ptrace.StatusCodeError)
+				span.Status().SetMessage("An error occurred")
+				span.SetTraceID(pcommon.TraceID(traceID))
+				span.SetSpanID(pcommon.SpanID(spanID))
+				span.SetKind(ptrace.SpanKindServer)
+				span.SetStartTimestamp(ts)
+				span.SetEndTimestamp(ts)
+				span.Attributes().PutStr("traceAttribKey", "traceAttribVal")
+				event := span.Events().AppendEmpty()
+				event.SetName("eventName")
+				event.SetTimestamp(ts)
+				event.Attributes().PutStr("eventkey", "eventvalue")
+
+				link := span.Links().AppendEmpty()
+				link.SetSpanID(pcommon.SpanID(spanID))
+				link.SetTraceID(pcommon.TraceID(traceID))
+				link.TraceState().FromRaw("")
+				return span
+			},
+			resourceFn: newDummyResource,
+			insScopeFn: newScopeWithData,
+			expectedAdxTrace: &AdxTrace{
+				TraceID:    "00000000000000000000000000000064",
+				SpanID:     "0000000000000032",
+				ParentID:   "",
+				SpanName:   "spanname-status-message",
+				SpanStatus: "STATUS_CODE_ERROR",
+				SpanStatusAttributes: &Status{
+					Code:    "STATUS_CODE_ERROR",
+					Message: "An error occurred",
+				},
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,
