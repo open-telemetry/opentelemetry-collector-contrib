@@ -38,6 +38,8 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	kind create cluster --kubeconfig=/tmp/kube-config-otelcol-e2e-testing
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
+//  docker pull ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+//  KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
 func TestE2E(t *testing.T) {
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")

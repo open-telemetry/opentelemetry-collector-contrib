@@ -87,6 +87,10 @@ jobs:
       - name: Kind load image
         run: |
           kind load docker-image otelcontribcol:latest --name kind
+      - name: Kind download telemetrygen image
+        run: |
+          docker pull ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+          kind load docker-image ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest --name kind
       - name: run k8sclusterreceiver e2e tests
         run: |
           cd receiver/k8sclusterreceiver
