@@ -24,7 +24,7 @@ import (
 
 func TestPersistFlusher(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	f, emitChan := testReaderFactory(t, tokenize.NewSplitterConfig(), defaultMaxLogSize, flushPeriod)
+	f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), defaultMaxLogSize, flushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	fp, err := f.newFingerprint(temp)
@@ -110,7 +110,7 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			f, emitChan := testReaderFactory(t, tokenize.NewSplitterConfig(), defaultMaxLogSize, defaultFlushPeriod)
+			f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), defaultMaxLogSize, defaultFlushPeriod)
 
 			temp := openTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
@@ -140,7 +140,7 @@ func TestTokenizationTooLong(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, emitChan := testReaderFactory(t, tokenize.NewSplitterConfig(), 10, defaultFlushPeriod)
+	f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), 10, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -170,9 +170,9 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 		[]byte("2023-01-01 2"),
 	}
 
-	sCfg := tokenize.NewSplitterConfig()
-	sCfg.Multiline.LineStartPattern = `\d+-\d+-\d+`
-	f, emitChan := testReaderFactory(t, sCfg, 15, defaultFlushPeriod)
+	mCfg := tokenize.NewMultilineConfig()
+	mCfg.LineStartPattern = `\d+-\d+-\d+`
+	f, emitChan := testReaderFactory(t, mCfg, 15, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
@@ -195,7 +195,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 func TestHeaderFingerprintIncluded(t *testing.T) {
 	fileContent := []byte("#header-line\naaa\n")
 
-	f, _ := testReaderFactory(t, tokenize.NewSplitterConfig(), 10, defaultFlushPeriod)
+	f, _ := testReaderFactory(t, tokenize.NewMultilineConfig(), 10, defaultFlushPeriod)
 
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
@@ -223,7 +223,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
-func testReaderFactory(t *testing.T, sCfg tokenize.SplitterConfig, maxLogSize int, flushPeriod time.Duration) (*readerFactory, chan *emitParams) {
+func testReaderFactory(t *testing.T, mCfg tokenize.MultilineConfig, maxLogSize int, flushPeriod time.Duration) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	enc, err := decode.LookupEncoding(defaultEncoding)
 	trimFunc := trim.Whitespace
@@ -236,7 +236,7 @@ func testReaderFactory(t *testing.T, sCfg tokenize.SplitterConfig, maxLogSize in
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewMultilineFactory(sCfg, enc, maxLogSize, trimFunc, flushPeriod),
+		splitterFactory: splitter.NewMultilineFactory(mCfg, enc, maxLogSize, trimFunc, flushPeriod),
 		encoding:        enc,
 	}, emitChan
 }
