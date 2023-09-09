@@ -39,9 +39,6 @@ type Config struct {
 
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-
-	// Whether to ignore deprecated resources or not.
-	IgnoreDeprecatedResources bool `mapstructure:"ignore_deprecated_resources"`
 }
 
 func (cfg *Config) Validate() error {
