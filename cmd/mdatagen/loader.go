@@ -115,6 +115,8 @@ type metric struct {
 	Sum *sum `mapstructure:"sum,omitempty"`
 	// Gauge stores metadata for gauge metric type
 	Gauge *gauge `mapstructure:"gauge,omitempty"`
+	// Histogram stores metadata for histogram metric type
+	Histogram *histogram `mapstructure:"histogram,omitempty"`
 
 	// Attributes is the list of attributes that the metric emits.
 	Attributes []attributeName `mapstructure:"attributes"`
@@ -136,6 +138,9 @@ func (m metric) Data() MetricData {
 	}
 	if m.Gauge != nil {
 		return m.Gauge
+	}
+	if m.Histogram != nil {
+		return m.Histogram
 	}
 	return nil
 }

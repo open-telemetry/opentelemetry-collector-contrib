@@ -122,6 +122,16 @@ metrics:
     attributes: [string_attr, boolean_attr]
     warnings:
       if_configured: This metric is deprecated and will be removed soon.
+      
+  optional.histogram.metric:
+    enabled: false
+    description: "[DEPRECATED] Histogram metric disabled by default."
+    unit: 1
+    histogram:
+      aggregation_temporality: cumulative
+    attributes: [string_attr, boolean_attr]
+    warnings:
+      if_configured: This metric is deprecated and will be removed soon.
 
   default.metric.to_be_removed:
     enabled: true

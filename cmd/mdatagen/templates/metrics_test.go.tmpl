@@ -100,7 +100,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 				{{ if $metric.Enabled }}defaultMetricsCount++{{ end }}
 				allMetricsCount++
-				mb.Record{{ $name.Render }}DataPoint(ts, {{ if $metric.Data.HasMetricInputType }}"1"{{ else }}1{{ end }}
+				mb.Record{{ $name.Render }}DataPoint(ts
+				{{- if $metric.Data.HasMetricInputType }}, "1"
+				{{- else if eq $metric.Data.Type "Histogram" }}, 6, 10.0, []uint64{1, 2, 3}, []float64{4.0, 5.0}
+				{{- else }}, 1
+				{{- end }} 
 				{{- range $metric.Attributes -}}
 					, {{ if (attributeInfo .).Enum }}Attribute{{ .Render }}{{ (index (attributeInfo .).Enum 0) | publicVar }}{{ else }}{{ (attributeInfo .).TestValue }}{{ end }}
 				{{- end }})
@@ -157,8 +161,21 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).{{ $metric.Data.Type }}().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
+					{{- if eq $metric.Data.Type "Histogram" }}
+					var count uint64
+					for _, bucketCount := range dp.BucketCounts().AsRaw() {
+						count = count + bucketCount
+					}
+					assert.Equal(t, count, dp.Count())
+					assert.Equal(t, uint64(6), dp.Count())
+					assert.Equal(t, float64(10.0), dp.Sum())
+					assert.Equal(t, []uint64{1, 2, 3}, dp.BucketCounts().AsRaw())
+					assert.Equal(t, []float64{4.0, 5.0}, dp.ExplicitBounds().AsRaw())
+					assert.Equal(t, dp.BucketCounts().Len(), dp.ExplicitBounds().Len() + 1)
+					{{- else }}
 					assert.Equal(t, pmetric.NumberDataPointValueType{{ $metric.Data.MetricValueType }}, dp.ValueType())
 					assert.Equal(t, {{ $metric.Data.MetricValueType.BasicType }}(1), dp.{{ $metric.Data.MetricValueType }}Value())
+					{{- end }}
 
 					{{- range $i, $attr := $metric.Attributes }}
 					attrVal, ok {{ if eq $i 0 }}:{{ end }}= dp.Attributes().Get("{{ (attributeInfo $attr).Name }}")

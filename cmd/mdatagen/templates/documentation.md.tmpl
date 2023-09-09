@@ -12,9 +12,10 @@
 
 {{- end }}
 
-| Unit | Metric Type | Value Type |{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
-| ---- | ----------- | ---------- |{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
-| {{ $metric.Unit }} | {{ $metric.Data.Type }} | {{ $metric.Data.MetricValueType }} |
+| Unit | Metric Type |{{ if or (eq $metric.Data.Type "Sum") (eq $metric.Data.Type "Gauge") }} Value Type |{{ end }}{{ if $metric.Data.HasAggregated }} Aggregation Temporality |{{ end }}{{ if $metric.Data.HasMonotonic }} Monotonic |{{ end }}
+| ---- | ----------- |{{ if or (eq $metric.Data.Type "Sum") (eq $metric.Data.Type "Gauge") }} ---------- |{{ end }}{{ if $metric.Data.HasAggregated }} ----------------------- |{{ end }}{{ if $metric.Data.HasMonotonic }} --------- |{{ end }}
+| {{ $metric.Unit }} | {{ $metric.Data.Type }} |
+{{- if or (eq $metric.Data.Type "Sum") (eq $metric.Data.Type "Gauge") }} {{ $metric.Data.MetricValueType }} |{{ end }}
 {{- if $metric.Data.HasAggregated }} {{ $metric.Data.AggregationTemporality }} |{{ end }}
 {{- if $metric.Data.HasMonotonic }} {{ $metric.Data.Monotonic }} |{{ end }}
 

@@ -75,15 +75,29 @@ func (m *metric{{ $name.Render }}) init() {
 	{{- end }}
 }
 
-func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val {{ $metric.Data.MetricValueType.BasicType }}
-{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
+func (m *metric{{ $name.Render }}) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp
+	{{- if eq $metric.Data.Type "Histogram" }}, count uint64, sum float64, bucketCounts []uint64, explicitBounds []float64
+	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
+	{{- end }}
+	{{- range $metric.Attributes -}}, {{ .RenderUnexported }}AttributeValue {{ (attributeInfo .).Type.Primitive }}{{ end }}) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.{{ $metric.Data.Type }}().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
+	{{- if eq $metric.Data.Type "Histogram" }}
+	dp.SetCount(count)
+	dp.SetSum(sum)
+	if len(bucketCounts) > 0 {
+		dp.BucketCounts().FromRaw(bucketCounts)
+	}
+	if len(explicitBounds) > 0 {
+		dp.ExplicitBounds().FromRaw(explicitBounds)
+	}
+	{{- else }}
 	dp.Set{{ $metric.Data.MetricValueType }}Value(val)
+	{{- end }}
 	{{- range $metric.Attributes }}
 	{{- if eq (attributeInfo .).Type.Primitive "[]byte" }}
 	dp.Attributes().PutEmptyBytes("{{ (attributeInfo .).Name }}").FromRaw({{ .RenderUnexported }}AttributeValue)
@@ -283,6 +297,7 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // Record{{ $name.Render }}DataPoint adds a data point to {{ $name }} metric.
 func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 	{{- if $metric.Data.HasMetricInputType }}, inputVal {{ $metric.Data.MetricInputType.String }}
+	{{- else if eq $metric.Data.Type "Histogram" }}, count uint64, sum float64, bucketCounts []uint64, explicitBounds []float64
 	{{- else }}, val {{ $metric.Data.MetricValueType.BasicType }}
 	{{- end }}
 	{{- range $metric.Attributes -}}
@@ -299,7 +314,10 @@ func (mb *MetricsBuilder) Record{{ $name.Render }}DataPoint(ts pcommon.Timestamp
 		return fmt.Errorf("failed to parse {{ $metric.Data.MetricValueType.BasicType }} for {{ $name.Render }}, value was %s: %w", inputVal, err)
 	}
 	{{- end }}
-	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts, val
+	mb.metric{{ $name.Render }}.recordDataPoint(mb.startTime, ts
+		{{- if eq $metric.Data.Type "Histogram" }}, count, sum, bucketCounts, explicitBounds
+		{{- else }}, val
+		{{- end }}
 		{{- range $metric.Attributes -}}
 		, {{ .RenderUnexported }}AttributeValue{{ if (attributeInfo .).Enum }}.String(){{ end }}
 		{{- end }})

@@ -117,14 +117,14 @@ func (md *metadata) validateMetrics() error {
 	var errs error
 	usedAttrs := map[attributeName]bool{}
 	for mn, m := range md.Metrics {
-		if m.Sum == nil && m.Gauge == nil {
+		if m.Sum == nil && m.Gauge == nil && m.Histogram == nil {
 			errs = multierr.Append(errs, fmt.Errorf("metric %v doesn't have a metric type key, "+
-				"one of the following has to be specified: sum, gauge", mn))
+				"one of the following has to be specified: sum, gauge, histogram", mn))
 			continue
 		}
-		if m.Sum != nil && m.Gauge != nil {
+		if (m.Sum != nil && m.Gauge != nil) || (m.Sum != nil && m.Histogram != nil) || (m.Gauge != nil && m.Histogram != nil) {
 			errs = multierr.Append(errs, fmt.Errorf("metric %v has more than one metric type keys, "+
-				"only one of the following has to be specified: sum, gauge", mn))
+				"only one of the following has to be specified: sum, gauge, histogram", mn))
 			continue
 		}
 		if err := m.validate(); err != nil {
@@ -160,6 +160,9 @@ func (m *metric) validate() error {
 	}
 	if m.Gauge != nil {
 		errs = multierr.Append(errs, m.Gauge.Validate())
+	}
+	if m.Histogram != nil {
+		errs = multierr.Append(errs, m.Histogram.Validate())
 	}
 	return errs
 }

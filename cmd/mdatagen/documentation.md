@@ -52,6 +52,21 @@ metrics:
     enabled: true
 ```
 
+### optional.histogram.metric
+
+[DEPRECATED] Histogram metric disabled by default.
+
+| Unit | Metric Type | Aggregation Temporality |
+| ---- | ----------- | ----------------------- |
+| 1 | Histogram | Cumulative |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| string_attr | Attribute with any string value. | Any Str |
+| boolean_attr | Attribute with a boolean value. | Any Bool |
+
 ### optional.metric
 
 [DEPRECATED] Gauge double metric disabled by default.

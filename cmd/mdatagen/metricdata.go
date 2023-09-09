@@ -14,6 +14,7 @@ import (
 var (
 	_ MetricData = &gauge{}
 	_ MetricData = &sum{}
+	_ MetricData = &histogram{}
 )
 
 // MetricData is generic interface for all metric datatypes.
@@ -178,5 +179,30 @@ func (d sum) HasMonotonic() bool {
 }
 
 func (d sum) HasAggregated() bool {
+	return true
+}
+
+type histogram struct {
+	AggregationTemporality `mapstructure:"aggregation_temporality"`
+	MetricInputType        `mapstructure:",squash"`
+}
+
+// Unmarshal is a custom unmarshaler for histogram. Needed mostly to avoid MetricValueType.Unmarshal inheritance.
+func (d *histogram) Unmarshal(parser *confmap.Conf) error {
+	if !parser.IsSet("aggregation_temporality") {
+		return errors.New("missing required field: `aggregation_temporality`")
+	}
+	return parser.Unmarshal(d, confmap.WithErrorUnused())
+}
+
+func (d histogram) Type() string {
+	return "Histogram"
+}
+
+func (d histogram) HasMonotonic() bool {
+	return false
+}
+
+func (d histogram) HasAggregated() bool {
 	return true
 }

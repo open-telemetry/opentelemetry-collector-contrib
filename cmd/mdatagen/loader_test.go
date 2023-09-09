@@ -197,7 +197,18 @@ func Test_loadMetadata(t *testing.T) {
 						},
 						Attributes: []attributeName{"string_attr", "boolean_attr"},
 					},
-
+					"optional.histogram.metric": {
+						Enabled:     false,
+						Description: "[DEPRECATED] Histogram metric disabled by default.",
+						Warnings: warnings{
+							IfConfigured: "This metric is deprecated and will be removed soon.",
+						},
+						Unit: strPtr("1"),
+						Histogram: &histogram{
+							AggregationTemporality: AggregationTemporality{Aggregation: pmetric.AggregationTemporalityCumulative},
+						},
+						Attributes: []attributeName{"string_attr", "boolean_attr"},
+					},
 					"default.metric.to_be_removed": {
 						Enabled:               true,
 						Description:           "[DEPRECATED] Non-monotonic delta sum double metric enabled by default.",
