@@ -1,0 +1,15 @@
+clickhouse/table-engine-empty:
+  endpoint: clickhouse://127.0.0.1:9000
+clickhouse/table-engine-name-only:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    name: ReplicatedReplacingMergeTree
+clickhouse/table-engine-full:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    name: ReplicatedReplacingMergeTree
+    params: "'/clickhouse/tables/{shard}/table_name', '{replica}', ver"
+clickhouse/table-engine-invalid:
+  endpoint: clickhouse://127.0.0.1:9000
+  table_engine:
+    params: "whatever"

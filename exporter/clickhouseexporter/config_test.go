@@ -22,6 +22,48 @@ import (
 
 const defaultEndpoint = "clickhouse://127.0.0.1:9000"
 
+func TestTableEngineConfigParsing(t *testing.T) {
+	t.Parallel()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-table-engine.yml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected string
+	} {
+		{
+			id: component.NewIDWithName(metadata.Type, "table-engine-empty"),
+			expected: "MergeTree()",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "table-engine-name-only"),
+			expected: "ReplicatedReplacingMergeTree()",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "table-engine-full"),
+			expected: "ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/table_name', '{replica}', ver)",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "table-engine-invalid"),
+			expected: "MergeTree()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).TableEngineString())
+		})
+	}
+}
+
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 

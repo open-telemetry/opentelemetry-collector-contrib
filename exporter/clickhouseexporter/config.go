@@ -40,6 +40,8 @@ type Config struct {
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
+	// Used to generate ENGINE value when create table. See `TableEngineString` function for details.
+	TableEngine TableEngine `mapstructure:"table_engine"`
 }
 
 // QueueSettings is a subset of exporterhelper.QueueSettings.
@@ -48,7 +50,14 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
+// Encapsulates ENGINE value when create table. For example, Name = ReplicatedReplacingMergeTree and Params = "'par1', 'par2', par3".
+type TableEngine struct {
+	Name string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
+}
+
 const defaultDatabase = "default"
+const defaultTableEngine = "MergeTree"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
@@ -141,4 +150,18 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 
 	return conn, nil
 
+}
+
+// Generate ENGINE string
+// If `TableEngine.Name` and `TableEngine.Params` are set then return 'TableEngine.Name(TableEngine.Params)'. If `TableEngine.Params`is empty then return 'TableEngine.Name()'. Otherwise return 'defaultTableEngine()'.
+func (cfg *Config) TableEngineString() (string) {
+	if cfg.TableEngine.Name == "" {
+		return fmt.Sprintf("%s()", defaultTableEngine)
+	}
+
+	if cfg.TableEngine.Params == "" {
+		return fmt.Sprintf("%s()", cfg.TableEngine.Name)
+	}
+
+	return fmt.Sprintf("%s(%s)", cfg.TableEngine.Name, cfg.TableEngine.Params)
 }
