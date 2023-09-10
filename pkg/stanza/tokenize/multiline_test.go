@@ -251,10 +251,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:    "OneLogSimpleOmitPattern",
-			Pattern: `LOGEND \d+`,
+			Name:                  "OneLogSimpleOmitPattern",
+			Pattern:               `LOGEND \d+`,
 			OmitPatternFromRecord: true,
-			Input:   []byte(`my log LOGEND 123`),
+			Input:                 []byte(`my log LOGEND 123`),
 			ExpectedTokens: []string{
 				`my log`,
 			},
@@ -269,15 +269,15 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:    "TwoLogsSimpleOmitPattern",
-			Pattern: `LOGEND \d+`,
+			Name:                  "TwoLogsSimpleOmitPattern",
+			Pattern:               `LOGEND \d+`,
 			OmitPatternFromRecord: true,
-			Input:   []byte(`log1 LOGEND 123log2 LOGEND 234`),
+			Input:                 []byte(`log1 LOGEND 123log2 LOGEND 234`),
 			ExpectedTokens: []string{
 				`log1`,
 				`log2`,
 			},
-		},	
+		},
 		{
 			Name:    "TwoLogsLineEndSimple",
 			Pattern: `LOGEND$`,
@@ -288,10 +288,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:    "TwoLogsLineEndSimpleOmitPattern",
-			Pattern: `LOGEND$`,
+			Name:                  "TwoLogsLineEndSimpleOmitPattern",
+			Pattern:               `LOGEND$`,
 			OmitPatternFromRecord: true,
-			Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
+			Input:                 []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
 			ExpectedTokens: []string{
 				"log1 LOGEND",
 				"log2",
@@ -303,10 +303,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Input:   []byte(`file that has no matches in it`),
 		},
 		{
-			Name:    "NoMatchesOmitPattern",
+			Name:                  "NoMatchesOmitPattern",
 			OmitPatternFromRecord: true,
-			Pattern: `LOGEND \d+`,
-			Input:   []byte(`file that has no matches in it`),
+			Pattern:               `LOGEND \d+`,
+			Input:                 []byte(`file that has no matches in it`),
 		},
 		{
 			Name:    "NonMatchesAfter",
@@ -317,10 +317,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:    "NonMatchesAfterOmitPattern",
-			Pattern: `LOGEND \d+`,
+			Name:                  "NonMatchesAfterOmitPattern",
+			Pattern:               `LOGEND \d+`,
 			OmitPatternFromRecord: true,
-			Input:   []byte(`part that matches LOGEND 123 part that doesn't match`),
+			Input:                 []byte(`part that matches LOGEND 123 part that doesn't match`),
 			ExpectedTokens: []string{
 				`part that matches`,
 			},
@@ -336,9 +336,9 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedTokens: []string{
 				string(tokenizetest.GenerateBytes(100)) + `LOGEND 1`,
 			},
-		},		{
-			Name:    "HugeLog100OmitPattern",
-			Pattern: `LOGEND \d`,
+		}, {
+			Name:                  "HugeLog100OmitPattern",
+			Pattern:               `LOGEND \d`,
 			OmitPatternFromRecord: true,
 			Input: func() []byte {
 				newInput := tokenizetest.GenerateBytes(100)
@@ -372,8 +372,8 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:    "HugeLog1000000OmitPattern",
-			Pattern: `LOGEND \d`,
+			Name:                  "HugeLog1000000OmitPattern",
+			Pattern:               `LOGEND \d`,
 			OmitPatternFromRecord: true,
 			Input: func() []byte {
 				newInput := tokenizetest.GenerateBytes(1000000)
@@ -392,10 +392,10 @@ func TestLineEndSplitFunc(t *testing.T) {
 			},
 		},
 		{
-			Name:    "MultipleMultilineLogsOmitPattern",
-			Pattern: `^LOGEND.*$`,
+			Name:                  "MultipleMultilineLogsOmitPattern",
+			Pattern:               `^LOGEND.*$`,
 			OmitPatternFromRecord: true,
-			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
+			Input:                 []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
 			ExpectedTokens: []string{
 				"LOGSTART 12 log1\t  \nLOGPART log1",
 				"LOGSTART 17 log2\nLOGPART log2",
@@ -407,16 +407,16 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 		{
-			Name:    "LogsWithoutFlusherOmitPattern",
+			Name:                  "LogsWithoutFlusherOmitPattern",
 			OmitPatternFromRecord: true,
-			Pattern: `^LOGEND.*$`,
-			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			Pattern:               `^LOGEND.*$`,
+			Input:                 []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 	}
 
 	for _, tc := range testCases {
 		cfg := &MultilineConfig{
-			LineEndPattern: tc.Pattern,
+			LineEndPattern:        tc.Pattern,
 			OmitPatternFromRecord: tc.OmitPatternFromRecord,
 		}
 
