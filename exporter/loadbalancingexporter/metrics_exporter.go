@@ -49,13 +49,15 @@ func newMetricsExporter(params exporter.CreateSettings, cfg component.Config) (*
 	metricExporter := metricExporterImp{loadBalancer: lb, routingKey: svcRouting}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service", "traceID", "":
-		// default case
+	case "service": // , ""
+		// default case for empty routing key
 		metricExporter.routingKey = svcRouting
 	case "resource":
 		metricExporter.routingKey = resourceRouting
 	case "metric":
 		metricExporter.routingKey = metricNameRouting
+	case "traceID", "":
+		fallthrough
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: '%s'", cfg.(*Config).RoutingKey)
 	}

@@ -66,9 +66,9 @@ func TestNewMetricsExporter(t *testing.T) {
 		err    error
 	}{
 		{
-			"simple",
-			simpleConfig(),
-			nil,
+			"empty routing key",
+			&Config{},
+			errNoResolver,
 		},
 		{
 			"service",
@@ -86,8 +86,10 @@ func TestNewMetricsExporter(t *testing.T) {
 			nil,
 		},
 		{
-			"empty",
-			&Config{},
+			"traceID",
+			&Config{
+				RoutingKey: "service",
+			},
 			errNoResolver,
 		},
 	} {
@@ -149,7 +151,7 @@ func TestMetricsExporterStart(t *testing.T) {
 }
 
 func TestMetricsExporterShutdown(t *testing.T) {
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -164,11 +166,11 @@ func TestConsumeMetrics(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 	assert.Equal(t, p.routingKey, svcRouting)
@@ -319,12 +321,6 @@ func TestServiceBasedRoutingForSameMetricName(t *testing.T) {
 			svcRouting,
 			map[string]bool{serviceName1: true, serviceName2: true},
 		},
-		{
-			"different services - trace id routing",
-			twoServicesWithSameMetricName(),
-			traceIDRouting,
-			map[string]bool{serviceName1: true, serviceName2: true},
-		},
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			res, err := routingIdentifiersFromMetrics(tt.batch, tt.routingKey)
@@ -338,7 +334,7 @@ func TestConsumeMetricsExporterNoEndpoint(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockMetricsExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
@@ -372,11 +368,11 @@ func TestConsumeMetricsUnexpectedExporterType(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -437,11 +433,11 @@ func TestBatchWithTwoMetrics(t *testing.T) {
 	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
 		return newMockMetricsExporter(sink.ConsumeMetrics), nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -471,7 +467,7 @@ func TestNoMetricsInBatch(t *testing.T) {
 		{
 			"no resource metrics",
 			pmetric.NewMetrics(),
-			traceIDRouting,
+			svcRouting,
 			errors.New("empty resource metrics"),
 		},
 		{
@@ -481,7 +477,7 @@ func TestNoMetricsInBatch(t *testing.T) {
 				batch.ResourceMetrics().AppendEmpty()
 				return batch
 			}(),
-			traceIDRouting,
+			svcRouting,
 			errors.New("empty scope metrics"),
 		},
 		{
@@ -681,19 +677,21 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Greater(t, counter2.Load(), int64(0))
 }
 
-// func endpoint1Config() *Config {
-// 	return &Config{
-// 		Resolver: ResolverSettings{
-// 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
-// 		},
-// 	}
-// }
+func emptyEndpointConfig() *Config {
+	return &Config{
+		Resolver: ResolverSettings{
+			Static: &StaticResolver{},
+		},
+		RoutingKey: "service",
+	}
+}
 
 func endpoint2Config() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-2"}},
 		},
+		RoutingKey: "service",
 	}
 }
 
