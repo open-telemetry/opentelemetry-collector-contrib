@@ -272,7 +272,6 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Name:    "TwoLogsSimpleOmitPattern",
 			Pattern: `LOGEND \d+`,
 			OmitPatternFromRecord: true,
-
 			Input:   []byte(`log1 LOGEND 123log2 LOGEND 234`),
 			ExpectedTokens: []string{
 				`log1`,
