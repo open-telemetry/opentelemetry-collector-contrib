@@ -22,7 +22,7 @@ var (
 	}
 )
 
-// MetricViews return the metrics views according to given telemetry level.
-func MetricViews() []*view.View {
+// metricViews return the metrics views according to given telemetry level.
+func metricViews() []*view.View {
 	return []*view.View{vLastConnectionState}
 }

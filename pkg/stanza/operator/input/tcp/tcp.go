@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -68,22 +69,22 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
-	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
-	OneLogPerPacket             bool                        `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding                    string                      `mapstructure:"encoding,omitempty"`
-	Multiline                   tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
-	MultiLineBuilder            MultiLineBuilderFunc
+	MaxLogSize       helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                      `mapstructure:"listen_address,omitempty"`
+	TLS              *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                      `mapstructure:"encoding,omitempty"`
+	Multiline        tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config                 `mapstructure:",squash"`
+	MultiLineBuilder MultiLineBuilderFunc
 }
 
 type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
 func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, int(c.MaxLogSize))
+	trimFunc := c.TrimConfig.Func()
+	splitFunc, err := c.Multiline.Build(enc, true, int(c.MaxLogSize), trimFunc)
 	if err != nil {
 		return nil, err
 	}

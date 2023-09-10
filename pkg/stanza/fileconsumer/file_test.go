@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -336,7 +337,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = 8
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -420,7 +421,7 @@ func TestNopEncodingDifferentLogSizes(t *testing.T) {
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
 			cfg.MaxLogSize = tc.maxLogSize
-			cfg.Splitter.Encoding = "nop"
+			cfg.Encoding = "nop"
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Create a file, then start
@@ -546,8 +547,8 @@ func TestNoNewline(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.Splitter = tokenize.NewSplitterConfig()
-	cfg.Splitter.Flusher.Period = time.Nanosecond
+	cfg.Multiline = tokenize.NewMultilineConfig()
+	cfg.FlushPeriod = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
 	temp := openTemp(t, tempDir)
@@ -1288,7 +1289,7 @@ func TestEncodings(t *testing.T) {
 			tempDir := t.TempDir()
 			cfg := NewConfig().includeDir(tempDir)
 			cfg.StartAt = "beginning"
-			cfg.Splitter.Encoding = tc.encoding
+			cfg.Encoding = tc.encoding
 			operator, emitCalls := buildTestManager(t, cfg)
 
 			// Populate the file
@@ -1476,6 +1477,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	shortFileLine := tokenWithLength(bytesPerLine - 1)
 	longFileLines := 100000
 	longFileSize := longFileLines * bytesPerLine
+	longFileFirstLine := "first line of long file\n"
 
 	require.NoError(t, featuregate.GlobalRegistry().Set(allowFileDeletion.ID(), true))
 	defer func() {
@@ -1496,6 +1498,8 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, shortFile.Close())
 
 	longFile := openTemp(t, tempDir)
+	_, err = longFile.WriteString(longFileFirstLine)
+	require.NoError(t, err)
 	for line := 0; line < longFileLines; line++ {
 		_, err := longFile.WriteString(string(tokenWithLength(bytesPerLine-1)) + "\n")
 		require.NoError(t, err)
@@ -1538,8 +1542,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Verify that only long file is remembered and that (0 < offset < fileSize)
 	require.Equal(t, 1, len(operator.knownFiles))
 	reader := operator.knownFiles[0]
-	require.Equal(t, longFile.Name(), reader.file.Name())
-	require.Greater(t, reader.Offset, int64(0))
+	require.True(t, bytes.HasPrefix(reader.Fingerprint.FirstBytes, []byte(longFileFirstLine)))
 	require.Less(t, reader.Offset, int64(longFileSize))
 }
 

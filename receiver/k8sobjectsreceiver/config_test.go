@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -50,6 +51,9 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
+						ExcludeWatchType: []apiWatch.EventType{
+							apiWatch.Deleted,
+						},
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
 							Version:  "v1",
@@ -129,6 +133,9 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "invalid_resource"),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "exclude_deleted_with_pull"),
 		},
 	}
 
