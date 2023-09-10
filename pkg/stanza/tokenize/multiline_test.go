@@ -19,122 +19,98 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-type MultiLineTokenizerTestCase struct {
-	tokenizetest.TestCase
-}
-
 func TestLineStartSplitFunc(t *testing.T) {
-	testCases := []MultiLineTokenizerTestCase{
+	testCases := []tokenizetest.TestCase{
 		{
-			tokenizetest.TestCase{
-				Name:    "OneLogSimple",
-				Pattern: `LOGSTART \d+ `,
-				Input:   []byte("LOGSTART 123 log1LOGSTART 123 a"),
-				ExpectedTokens: []string{
-					`LOGSTART 123 log1`,
-				},
+			Name:    "OneLogSimple",
+			Pattern: `LOGSTART \d+ `,
+			Input:   []byte("LOGSTART 123 log1LOGSTART 123 a"),
+			ExpectedTokens: []string{
+				`LOGSTART 123 log1`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "TwoLogsSimple",
-				Pattern: `LOGSTART \d+ `,
-				Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
-				ExpectedTokens: []string{
-					`LOGSTART 123 log1`,
-					`LOGSTART 234 log2`,
-				},
+			Name:    "TwoLogsSimple",
+			Pattern: `LOGSTART \d+ `,
+			Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
+			ExpectedTokens: []string{
+				`LOGSTART 123 log1`,
+				`LOGSTART 234 log2`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "TwoLogsLineStart",
-				Pattern: `^LOGSTART \d+ `,
-				Input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
-				ExpectedTokens: []string{
-					"LOGSTART 123 LOGSTART 345 log1",
-					"LOGSTART 234 log2",
-				},
+			Name:    "TwoLogsLineStart",
+			Pattern: `^LOGSTART \d+ `,
+			Input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
+			ExpectedTokens: []string{
+				"LOGSTART 123 LOGSTART 345 log1",
+				"LOGSTART 234 log2",
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "NoMatches",
-				Pattern: `LOGSTART \d+ `,
-				Input:   []byte(`file that has no matches in it`),
+			Name:    "NoMatches",
+			Pattern: `LOGSTART \d+ `,
+			Input:   []byte(`file that has no matches in it`),
+		},
+		{
+			Name:    "PrecedingNonMatches",
+			Pattern: `LOGSTART \d+ `,
+			Input:   []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
+			ExpectedTokens: []string{
+				`part that doesn't match`,
+				`LOGSTART 123 part that matches`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "PrecedingNonMatches",
-				Pattern: `LOGSTART \d+ `,
-				Input:   []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
-				ExpectedTokens: []string{
-					`part that doesn't match`,
-					`LOGSTART 123 part that matches`,
-				},
+			Name:    "HugeLog100",
+			Pattern: `LOGSTART \d+ `,
+			Input: func() []byte {
+				newInput := []byte(`LOGSTART 123 `)
+				newInput = append(newInput, tokenizetest.GenerateBytes(100)...)
+				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(100)),
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "HugeLog100",
-				Pattern: `LOGSTART \d+ `,
-				Input: func() []byte {
-					newInput := []byte(`LOGSTART 123 `)
-					newInput = append(newInput, tokenizetest.GenerateBytes(100)...)
-					newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(100)),
-				},
+			Name:    "HugeLog10000",
+			Pattern: `LOGSTART \d+ `,
+			Input: func() []byte {
+				newInput := []byte(`LOGSTART 123 `)
+				newInput = append(newInput, tokenizetest.GenerateBytes(10000)...)
+				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(10000)),
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "HugeLog10000",
-				Pattern: `LOGSTART \d+ `,
-				Input: func() []byte {
-					newInput := []byte(`LOGSTART 123 `)
-					newInput = append(newInput, tokenizetest.GenerateBytes(10000)...)
-					newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					`LOGSTART 123 ` + string(tokenizetest.GenerateBytes(10000)),
-				},
+			Name:    "ErrTooLong",
+			Pattern: `LOGSTART \d+ `,
+			Input: func() []byte {
+				newInput := []byte(`LOGSTART 123 `)
+				newInput = append(newInput, tokenizetest.GenerateBytes(1000000)...)
+				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+				return newInput
+			}(),
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
+		},
+		{
+			Name:    "MultipleMultilineLogs",
+			Pattern: `^LOGSTART \d+`,
+			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
+			ExpectedTokens: []string{
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
+				"LOGSTART 17 log2\nLOGPART log2\nanother line",
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "ErrTooLong",
-				Pattern: `LOGSTART \d+ `,
-				Input: func() []byte {
-					newInput := []byte(`LOGSTART 123 `)
-					newInput = append(newInput, tokenizetest.GenerateBytes(1000000)...)
-					newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-					return newInput
-				}(),
-				ExpectedError: errors.New("bufio.Scanner: token too long"),
-			},
-		},
-		{
-			tokenizetest.TestCase{
-				Name:    "MultipleMultilineLogs",
-				Pattern: `^LOGSTART \d+`,
-				Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
-				ExpectedTokens: []string{
-					"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
-					"LOGSTART 17 log2\nLOGPART log2\nanother line",
-				},
-			},
-		},
-		{
-			tokenizetest.TestCase{
-				Name:    "LogsWithoutFlusher",
-				Pattern: `^LOGSTART \d+`,
-				Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			},
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGSTART \d+`,
+			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 	}
 
@@ -173,113 +149,93 @@ func TestLineStartSplitFunc(t *testing.T) {
 }
 
 func TestLineEndSplitFunc(t *testing.T) {
-	testCases := []MultiLineTokenizerTestCase{
+	testCases := []tokenizetest.TestCase{
 		{
-			tokenizetest.TestCase{
-				Name:    "OneLogSimple",
-				Pattern: `LOGEND \d+`,
-				Input:   []byte(`my log LOGEND 123`),
-				ExpectedTokens: []string{
-					`my log LOGEND 123`,
-				},
+			Name:    "OneLogSimple",
+			Pattern: `LOGEND \d+`,
+			Input:   []byte(`my log LOGEND 123`),
+			ExpectedTokens: []string{
+				`my log LOGEND 123`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "TwoLogsSimple",
-				Pattern: `LOGEND \d+`,
-				Input:   []byte(`log1 LOGEND 123log2 LOGEND 234`),
-				ExpectedTokens: []string{
-					`log1 LOGEND 123`,
-					`log2 LOGEND 234`,
-				},
+			Name:    "TwoLogsSimple",
+			Pattern: `LOGEND \d+`,
+			Input:   []byte(`log1 LOGEND 123log2 LOGEND 234`),
+			ExpectedTokens: []string{
+				`log1 LOGEND 123`,
+				`log2 LOGEND 234`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "TwoLogsLineEndSimple",
-				Pattern: `LOGEND$`,
-				Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
-				ExpectedTokens: []string{
-					"log1 LOGEND LOGEND",
-					"log2 LOGEND",
-				},
+			Name:    "TwoLogsLineEndSimple",
+			Pattern: `LOGEND$`,
+			Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
+			ExpectedTokens: []string{
+				"log1 LOGEND LOGEND",
+				"log2 LOGEND",
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "NoMatches",
-				Pattern: `LOGEND \d+`,
-				Input:   []byte(`file that has no matches in it`),
+			Name:    "NoMatches",
+			Pattern: `LOGEND \d+`,
+			Input:   []byte(`file that has no matches in it`),
+		},
+		{
+			Name:    "NonMatchesAfter",
+			Pattern: `LOGEND \d+`,
+			Input:   []byte(`part that matches LOGEND 123 part that doesn't match`),
+			ExpectedTokens: []string{
+				`part that matches LOGEND 123`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "NonMatchesAfter",
-				Pattern: `LOGEND \d+`,
-				Input:   []byte(`part that matches LOGEND 123 part that doesn't match`),
-				ExpectedTokens: []string{
-					`part that matches LOGEND 123`,
-				},
+			Name:    "HugeLog100",
+			Pattern: `LOGEND \d`,
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(100)
+				newInput = append(newInput, []byte(`LOGEND 1 `)...)
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				string(tokenizetest.GenerateBytes(100)) + `LOGEND 1`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "HugeLog100",
-				Pattern: `LOGEND \d`,
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(100)
-					newInput = append(newInput, []byte(`LOGEND 1 `)...)
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(100)) + `LOGEND 1`,
-				},
+			Name:    "HugeLog10000",
+			Pattern: `LOGEND \d`,
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(10000)
+				newInput = append(newInput, []byte(`LOGEND 1 `)...)
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				string(tokenizetest.GenerateBytes(10000)) + `LOGEND 1`,
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "HugeLog10000",
-				Pattern: `LOGEND \d`,
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(10000)
-					newInput = append(newInput, []byte(`LOGEND 1 `)...)
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(10000)) + `LOGEND 1`,
-				},
+			Name:    "HugeLog1000000",
+			Pattern: `LOGEND \d`,
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(1000000)
+				newInput = append(newInput, []byte(`LOGEND 1 `)...)
+				return newInput
+			}(),
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
+		},
+		{
+			Name:    "MultipleMultilineLogs",
+			Pattern: `^LOGEND.*$`,
+			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
+			ExpectedTokens: []string{
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1",
+				"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
 			},
 		},
 		{
-			tokenizetest.TestCase{
-				Name:    "HugeLog1000000",
-				Pattern: `LOGEND \d`,
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(1000000)
-					newInput = append(newInput, []byte(`LOGEND 1 `)...)
-					return newInput
-				}(),
-				ExpectedError: errors.New("bufio.Scanner: token too long"),
-			},
-		},
-		{
-			tokenizetest.TestCase{
-				Name:    "MultipleMultilineLogs",
-				Pattern: `^LOGEND.*$`,
-				Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
-				ExpectedTokens: []string{
-					"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1",
-					"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
-				},
-			},
-		},
-		{
-			tokenizetest.TestCase{
-				Name:    "LogsWithoutFlusher",
-				Pattern: `^LOGEND.*$`,
-				Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			},
+			Name:    "LogsWithoutFlusher",
+			Pattern: `^LOGEND.*$`,
+			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
 	}
 
@@ -299,133 +255,119 @@ func TestLineEndSplitFunc(t *testing.T) {
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
-	testCases := []MultiLineTokenizerTestCase{
+	testCases := []tokenizetest.TestCase{
 		{
-			tokenizetest.TestCase{Name: "OneLogSimple",
-				Input: []byte("my log\n"),
-				ExpectedTokens: []string{
-					`my log`,
-				},
+			Name:  "OneLogSimple",
+			Input: []byte("my log\n"),
+			ExpectedTokens: []string{
+				`my log`,
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "OneLogCarriageReturn",
-				Input: []byte("my log\r\n"),
-				ExpectedTokens: []string{
-					`my log`,
-				},
+			Name:  "OneLogCarriageReturn",
+			Input: []byte("my log\r\n"),
+			ExpectedTokens: []string{
+				`my log`,
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "TwoLogsSimple",
-				Input: []byte("log1\nlog2\n"),
-				ExpectedTokens: []string{
-					`log1`,
-					`log2`,
-				},
+			Name:  "TwoLogsSimple",
+			Input: []byte("log1\nlog2\n"),
+			ExpectedTokens: []string{
+				`log1`,
+				`log2`,
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "TwoLogsCarriageReturn",
-				Input: []byte("log1\r\nlog2\r\n"),
-				ExpectedTokens: []string{
-					`log1`,
-					`log2`,
-				},
+			Name:  "TwoLogsCarriageReturn",
+			Input: []byte("log1\r\nlog2\r\n"),
+			ExpectedTokens: []string{
+				`log1`,
+				`log2`,
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "NoTailingNewline",
-				Input: []byte(`foo`),
+			Name:  "NoTailingNewline",
+			Input: []byte(`foo`),
+		},
+		{
+			Name: "HugeLog100",
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(100)
+				newInput = append(newInput, '\n')
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				string(tokenizetest.GenerateBytes(100)),
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "HugeLog100",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(100)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(100)),
-				},
+			Name: "HugeLog10000",
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(10000)
+				newInput = append(newInput, '\n')
+				return newInput
+			}(),
+			ExpectedTokens: []string{
+				string(tokenizetest.GenerateBytes(10000)),
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "HugeLog10000",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(10000)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedTokens: []string{
-					string(tokenizetest.GenerateBytes(10000)),
-				},
+			Name: "HugeLog1000000",
+			Input: func() []byte {
+				newInput := tokenizetest.GenerateBytes(1000000)
+				newInput = append(newInput, '\n')
+				return newInput
+			}(),
+			ExpectedError: errors.New("bufio.Scanner: token too long"),
+		},
+		{
+			Name:  "LogsWithoutFlusher",
+			Input: []byte("LOGPART log1"),
+		},
+		{
+			Name:  "DefaultFlusherSplits",
+			Input: []byte("log1\nlog2\n"),
+			ExpectedTokens: []string{
+				"log1",
+				"log2",
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "HugeLog1000000",
-				Input: func() []byte {
-					newInput := tokenizetest.GenerateBytes(1000000)
-					newInput = append(newInput, '\n')
-					return newInput
-				}(),
-				ExpectedError: errors.New("bufio.Scanner: token too long"),
+			Name:  "LogsWithLogStartingWithWhiteChars",
+			Input: []byte("\nLOGEND 333\nAnother one"),
+			ExpectedTokens: []string{
+				"",
+				"LOGEND 333",
 			},
 		},
 		{
-			tokenizetest.TestCase{Name: "LogsWithoutFlusher",
-				Input: []byte("LOGPART log1"),
+			Name:  "PreserveLeadingWhitespaces",
+			Input: []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokens: []string{
+				"",
+				" LOGEND 333",
 			},
+			PreserveLeadingWhitespaces: true,
 		},
 		{
-			tokenizetest.TestCase{Name: "DefaultFlusherSplits",
-				Input: []byte("log1\nlog2\n"),
-				ExpectedTokens: []string{
-					"log1",
-					"log2",
-				},
+			Name:  "PreserveTrailingWhitespaces",
+			Input: []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokens: []string{
+				"",
+				"LOGEND 333 ",
 			},
+			PreserveTrailingWhitespaces: true,
 		},
 		{
-			tokenizetest.TestCase{Name: "LogsWithLogStartingWithWhiteChars",
-				Input: []byte("\nLOGEND 333\nAnother one"),
-				ExpectedTokens: []string{
-					"",
-					"LOGEND 333",
-				},
+			Name:  "PreserveBothLeadingAndTrailingWhitespaces",
+			Input: []byte("\n LOGEND 333 \nAnother one "),
+			ExpectedTokens: []string{
+				"",
+				" LOGEND 333 ",
 			},
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveLeadingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					" LOGEND 333",
-				},
-				PreserveLeadingWhitespaces: true,
-			},
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveTrailingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					"LOGEND 333 ",
-				},
-				PreserveTrailingWhitespaces: true,
-			},
-		},
-		{
-			tokenizetest.TestCase{Name: "PreserveBothLeadingAndTrailingWhitespaces",
-				Input: []byte("\n LOGEND 333 \nAnother one "),
-				ExpectedTokens: []string{
-					"",
-					" LOGEND 333 ",
-				},
-				PreserveLeadingWhitespaces:  true,
-				PreserveTrailingWhitespaces: true,
-			},
+			PreserveLeadingWhitespaces:  true,
+			PreserveTrailingWhitespaces: true,
 		},
 	}
 

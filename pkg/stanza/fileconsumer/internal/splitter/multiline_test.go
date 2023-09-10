@@ -17,28 +17,26 @@ import (
 
 func TestMultilineBuild(t *testing.T) {
 	tests := []struct {
-		name           string
-		splitterConfig tokenize.SplitterConfig
-		encoding       encoding.Encoding
-		maxLogSize     int
-		flushPeriod    time.Duration
-		wantErr        bool
+		name         string
+		multilineCfg tokenize.MultilineConfig
+		encoding     encoding.Encoding
+		maxLogSize   int
+		flushPeriod  time.Duration
+		wantErr      bool
 	}{
 		{
-			name:           "default configuration",
-			splitterConfig: tokenize.NewSplitterConfig(),
-			encoding:       unicode.UTF8,
-			maxLogSize:     1024,
-			flushPeriod:    100 * time.Millisecond,
-			wantErr:        false,
+			name:         "default configuration",
+			multilineCfg: tokenize.NewMultilineConfig(),
+			encoding:     unicode.UTF8,
+			maxLogSize:   1024,
+			flushPeriod:  100 * time.Millisecond,
+			wantErr:      false,
 		},
 		{
 			name: "Multiline  error",
-			splitterConfig: tokenize.SplitterConfig{
-				Multiline: tokenize.MultilineConfig{
-					LineStartPattern: "START",
-					LineEndPattern:   "END",
-				},
+			multilineCfg: tokenize.MultilineConfig{
+				LineStartPattern: "START",
+				LineEndPattern:   "END",
 			},
 			flushPeriod: 100 * time.Millisecond,
 			encoding:    unicode.UTF8,
@@ -48,7 +46,7 @@ func TestMultilineBuild(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
+			factory := NewMultilineFactory(tt.multilineCfg, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
 			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
