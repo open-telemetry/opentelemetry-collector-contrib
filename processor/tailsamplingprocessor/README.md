@@ -229,7 +229,7 @@ tail_sampling:
   expected_new_traces_per_sec: 10
   policies: [
       {
-        # Rule 1: use always_sample policy for services that are not using tail sampling
+        # Rule 1: use always_sample policy for services that don't belong to team_a and are not ready to use tail sampling
         name: backwards-compatibility-policy,
         type: and,
         and:
