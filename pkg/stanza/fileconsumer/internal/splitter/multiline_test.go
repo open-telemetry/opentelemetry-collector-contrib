@@ -11,30 +11,29 @@ import (
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestMultilineBuild(t *testing.T) {
 	tests := []struct {
 		name         string
-		multilineCfg tokenize.MultilineConfig
+		multilineCfg split.Config
 		encoding     encoding.Encoding
 		maxLogSize   int
 		flushPeriod  time.Duration
 		wantErr      bool
 	}{
 		{
-			name:         "default configuration",
-			multilineCfg: tokenize.NewMultilineConfig(),
-			encoding:     unicode.UTF8,
-			maxLogSize:   1024,
-			flushPeriod:  100 * time.Millisecond,
-			wantErr:      false,
+			name:        "default configuration",
+			encoding:    unicode.UTF8,
+			maxLogSize:  1024,
+			flushPeriod: 100 * time.Millisecond,
+			wantErr:     false,
 		},
 		{
 			name: "Multiline  error",
-			multilineCfg: tokenize.MultilineConfig{
+			multilineCfg: split.Config{
 				LineStartPattern: "START",
 				LineEndPattern:   "END",
 			},
