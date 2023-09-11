@@ -162,7 +162,7 @@ func TestLogsSampling(t *testing.T) {
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
 					b.FromRaw(traceID[:])
-					record.Attributes().PutStr("bar", string(record.TraceID().String()))
+					record.Attributes().PutStr("bar", record.TraceID().String())
 				}
 				// set a fourth of records with a priority attribute
 				if i%4 == 0 {
