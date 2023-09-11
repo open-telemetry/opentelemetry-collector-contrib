@@ -33,6 +33,38 @@ func TestScrape(t *testing.T) {
 	testScrape(ctx, t, cfg)
 }
 
+func TestScrapeWithPerfObjects(t *testing.T) {
+	ctx := context.Background()
+	mockServer := mock.MockServer(t, false)
+	defer mockServer.Close()
+
+	cfg := &Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Endpoint:             mockServer.URL,
+		Username:             mock.MockUsername,
+		Password:             mock.MockPassword,
+	}
+
+	scraper := newVmwareVcenterScraper(zap.NewNop(), cfg, receivertest.NewNopCreateSettings())
+	scraper.emitPerfWithObject = true
+
+	metrics, err := scraper.scrape(ctx)
+	require.NoError(t, err)
+	require.NotEqual(t, metrics.MetricCount(), 0)
+
+	goldenPath := filepath.Join("testdata", "metrics", "expected_with_object.yaml")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
+	require.NoError(t, err)
+	require.NoError(t, scraper.Shutdown(ctx))
+}
+
 func TestScrape_TLS(t *testing.T) {
 	ctx := context.Background()
 	mockServer := mock.MockServer(t, true)

@@ -14,9 +14,9 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.11.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.11.0
 	go.opentelemetry.io/build-tools/multimod v0.11.0
-	go.opentelemetry.io/collector/cmd/builder v0.83.0
-	golang.org/x/tools v0.12.0
-	golang.org/x/vuln v1.0.0
+	go.opentelemetry.io/collector/cmd/builder v0.84.1-0.20230908201109-ab3d6c5b6470
+	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846
+	golang.org/x/vuln v1.0.1
 )
 
 require (
@@ -134,7 +134,7 @@ require (
 	github.com/mgechev/revive v1.3.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moricho/tparallel v0.3.1 // indirect
 	github.com/nakabonne/nestif v0.3.1 // indirect
@@ -208,8 +208,8 @@ require (
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

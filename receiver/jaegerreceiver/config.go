@@ -109,16 +109,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.RemoteSampling != nil {
-		if err := checkPortFromEndpoint(cfg.RemoteSampling.HostEndpoint); err != nil {
-			return fmt.Errorf("invalid port number for the Remote Sampling endpoint: %w", err)
-		}
-
-		if len(cfg.RemoteSampling.StrategyFile) != 0 && cfg.GRPC == nil {
-			return fmt.Errorf("strategy file requires the gRPC protocol to be enabled")
-		}
-
-		if cfg.RemoteSampling.StrategyFileReloadInterval < 0 {
-			return fmt.Errorf("strategy file reload interval should be great or equal zero")
+		if disableJaegerReceiverRemoteSampling.IsEnabled() {
+			return fmt.Errorf("remote sampling config detected in the Jaeger receiver; use the `jaegerremotesampling` extension instead")
 		}
 	}
 

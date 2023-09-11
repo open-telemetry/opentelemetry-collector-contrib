@@ -5,64 +5,49 @@ package splitter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestMultilineBuild(t *testing.T) {
-	type args struct {
-		maxLogSize int
-	}
 	tests := []struct {
-		name           string
-		splitterConfig helper.SplitterConfig
-		args           args
-		wantErr        bool
+		name         string
+		multilineCfg tokenize.MultilineConfig
+		encoding     encoding.Encoding
+		maxLogSize   int
+		flushPeriod  time.Duration
+		wantErr      bool
 	}{
 		{
-			name:           "default configuration",
-			splitterConfig: helper.NewSplitterConfig(),
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: false,
-		},
-		{
-			name: "eoncoding error",
-			splitterConfig: helper.SplitterConfig{
-				EncodingConfig: helper.EncodingConfig{
-					Encoding: "error",
-				},
-				Flusher:   helper.NewFlusherConfig(),
-				Multiline: helper.NewMultilineConfig(),
-			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
+			name:         "default configuration",
+			multilineCfg: tokenize.NewMultilineConfig(),
+			encoding:     unicode.UTF8,
+			maxLogSize:   1024,
+			flushPeriod:  100 * time.Millisecond,
+			wantErr:      false,
 		},
 		{
 			name: "Multiline  error",
-			splitterConfig: helper.SplitterConfig{
-				EncodingConfig: helper.NewEncodingConfig(),
-				Flusher:        helper.NewFlusherConfig(),
-				Multiline: helper.MultilineConfig{
-					LineStartPattern: "START",
-					LineEndPattern:   "END",
-				},
+			multilineCfg: tokenize.MultilineConfig{
+				LineStartPattern: "START",
+				LineEndPattern:   "END",
 			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
+			flushPeriod: 100 * time.Millisecond,
+			encoding:    unicode.UTF8,
+			maxLogSize:  1024,
+			wantErr:     true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig)
-			got, err := factory.Build(tt.args.maxLogSize)
+			factory := NewMultilineFactory(tt.multilineCfg, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
+			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
 				return
