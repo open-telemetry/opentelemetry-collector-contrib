@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -122,17 +123,21 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func TestLogsTableCreationOnCluster(t *testing.T) {
-	db_name := "test_db_" + time.Now().Format("20060102150405")
+	dbName := "test_db_" + time.Now().Format("20060102150405")
 	var configMods []func(*Config)
 	configMods = append(configMods, func(cfg *Config) {
 		cfg.ClusterName = replicationCluster
-		cfg.Database = db_name
+		cfg.Database = dbName
 		cfg.TableEngine = TableEngine{Name: "ReplicatedMergeTree", Params: ""}
 	})
 
 	t.Run("Check database and table creation on cluster", func(t *testing.T) {
 		exporter := newTestLogsExporter(t, replicationEndpoint, configMods...)
 		require.NotEmpty(t, exporter.cfg.ClusterClause())
+
+		samplesCount := 5
+		mustPushLogsData(t, exporter, simpleLogs(samplesCount))
+		checkReplicatedTableCount(t, dbName, getTableNames(dbName, exporter.client), samplesCount)
 	})
 }
 
@@ -154,6 +159,47 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 		configMods = append(configMods, fns...)
 		return withDefaultConfig(configMods...)
 	}
+}
+
+// Opens Clickhouse client to `replicationEndpoint2` to check if table data was replicated.
+func checkReplicatedTableCount(t *testing.T, dbName string, tableNames []string, expectedCount int) {
+	// wait for replication
+	require.NotEmpty(t, tableNames)
+	time.Sleep(1 * time.Second)
+
+	config := withTestExporterConfig()(replicationEndpoint2)
+	client, err := newClickhouseClient(config)
+	require.NoError(t, err)
+	defer client.Close()
+
+	println("replication in db", dbName, "; url:", replicationEndpoint2)
+	for _, tableName := range tableNames {
+		println("check count in replicated table", tableName)
+		query := fmt.Sprintf("SELECT count(*) FROM %s.%s", dbName, tableName)
+		row := client.QueryRowContext(context.TODO(), query)
+		var count int
+		row.Scan(&count)
+		require.Equal(t, expectedCount, count)
+	}
+}
+
+// Get table names from database.
+func getTableNames(dbName string, client *sql.DB) []string {
+	rows, err := client.QueryContext(context.TODO(), "show tables from " + dbName)
+	defer rows.Close()
+
+	if err != nil {
+		return []string{}
+	}
+
+	var tableNames []string
+	for rows.Next() {
+		var tableName string
+		rows.Scan(&tableName)
+		tableNames = append(tableNames, tableName)
+	}
+
+	return tableNames
 }
 
 func simpleLogs(count int) plog.Logs {
