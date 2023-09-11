@@ -240,8 +240,8 @@ type Config struct {
 }
 
 const (
-	ServicePrincipal = "service_principal"
-	WorkloadIdentity = "workload_identity"
+	servicePrincipal = "service_principal"
+	workloadIdentity = "workload_identity"
 )
 
 // Validate validates the configuration by checking for missing or invalid fields
@@ -251,7 +251,7 @@ func (c Config) Validate() (err error) {
 	}
 
 	switch c.Authentication {
-	case ServicePrincipal:
+	case servicePrincipal:
 		if c.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -263,7 +263,7 @@ func (c Config) Validate() (err error) {
 		if c.ClientSecret == "" {
 			err = multierr.Append(err, errMissingClientSecret)
 		}
-	case WorkloadIdentity:
+	case workloadIdentity:
 		if c.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -276,7 +276,7 @@ func (c Config) Validate() (err error) {
 			err = multierr.Append(err, errMissingFedTokenFile)
 		}
 	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, ServicePrincipal, WorkloadIdentity)
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, servicePrincipal, workloadIdentity)
 	}
 
 	return

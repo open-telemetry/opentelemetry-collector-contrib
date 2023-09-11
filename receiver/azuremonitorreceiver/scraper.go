@@ -156,11 +156,11 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 
 func (s *azureScraper) loadCredentials() (err error) {
 	switch s.cfg.Authentication {
-	case ServicePrincipal:
+	case servicePrincipal:
 		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
 			return err
 		}
-	case WorkloadIdentity:
+	case workloadIdentity:
 		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
 			return err
 		}
