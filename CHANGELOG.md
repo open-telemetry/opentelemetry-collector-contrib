@@ -55,7 +55,6 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `snmpreceiver`: Timeout for SNMP requests can now be configured. (#25885)
 - `telemetrygen`: The telemetrygen now supports setting the log's body (#26031)
 - `awsxrayexporter`: add `exporter.awsxray.skiptimestampvalidation` Alpha feature gate to remove xray timestamp restriction on first 32 bits of trace id (#26041)
-- `k8sclusterreceiver`: Remove deprecated Kubernetes API resources (#26516)
 
 ### 🧰 Bug fixes 🧰
 
