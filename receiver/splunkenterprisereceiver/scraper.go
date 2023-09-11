@@ -72,11 +72,11 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
 	}
 
-    var (
-        req *http.Request
-        res *http.Response
-        err error
-    )
+	var (
+		req *http.Request
+		res *http.Response
+		err error
+	)
 
 	start := time.Now()
 
@@ -84,7 +84,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
 			errs.Add(err)
-            return
+			return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
@@ -98,18 +98,18 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
 			errs.Add(err)
-            return
+			return
 		}
 		res.Body.Close()
 
-        // if no errors and 200 returned scrape was succesful, return. Note we must make sure that
-        // the 200 is coming after the first request which provides a jobId to retrieve results
-        if sr.Return == 200 && sr.Jobid != nil {
-            break
-        }
+		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
+		// the 200 is coming after the first request which provides a jobId to retrieve results
+		if sr.Return == 200 && sr.Jobid != nil {
+			break
+		}
 
 		if sr.Return == 204 {
-		    time.Sleep(2 * time.Second)
+			time.Sleep(2 * time.Second)
 		}
 
 		if time.Since(start) > s.conf.MaxSearchWaitTime {
