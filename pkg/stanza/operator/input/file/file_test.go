@@ -133,7 +133,7 @@ func TestReadUsingNopEncoding(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			operator, logReceived, tempDir := newTestFileOperator(t, func(cfg *Config) {
 				cfg.MaxLogSize = 8
-				cfg.Splitter.Encoding = "nop"
+				cfg.Encoding = "nop"
 			})
 			// Create a file, then start
 			temp := openTemp(t, tempDir)

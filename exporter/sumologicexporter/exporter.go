@@ -140,7 +140,7 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	var (
-		currentMetadata  = newFields(pcommon.NewMap())
+		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
 		errs             error
 		droppedRecords   []plog.LogRecord
@@ -233,7 +233,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	var (
-		currentMetadata  = newFields(pcommon.NewMap())
+		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
 		errs             error
 		droppedRecords   []metricPair
