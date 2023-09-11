@@ -40,8 +40,8 @@ func NewSplitFuncFactory(
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *splitFuncFactory) Build() (bufio.SplitFunc, error) {
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *splitFuncFactory) SplitFunc() (bufio.SplitFunc, error) {
 	splitFunc, err := f.splitConfig.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
 	if err != nil {
 		return nil, err

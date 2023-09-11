@@ -18,7 +18,7 @@ import (
 func TestSplitFuncFactory(t *testing.T) {
 	tests := []struct {
 		name        string
-		splitFunc   split.Config
+		splitConfig split.Config
 		encoding    encoding.Encoding
 		maxLogSize  int
 		flushPeriod time.Duration
@@ -32,8 +32,8 @@ func TestSplitFuncFactory(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "Multiline  error",
-			splitFunc: split.Config{
+			name: "split config  error",
+			splitConfig: split.Config{
 				LineStartPattern: "START",
 				LineEndPattern:   "END",
 			},
@@ -45,10 +45,10 @@ func TestSplitFuncFactory(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewSplitFuncFactory(tt.splitFunc, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
-			got, err := factory.Build()
+			factory := NewSplitFuncFactory(tt.splitConfig, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
+			got, err := factory.SplitFunc()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("SplitFunc() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if err == nil {

@@ -226,7 +226,6 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPeriod time.Duration) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
 	enc, err := decode.LookupEncoding(defaultEncoding)
-	trimFunc := trim.Whitespace
 	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
@@ -236,7 +235,7 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewSplitFuncFactory(sCfg, enc, maxLogSize, trimFunc, flushPeriod),
+		splitterFactory: splitter.NewSplitFuncFactory(sCfg, enc, maxLogSize, trim.Whitespace, flushPeriod),
 		encoding:        enc,
 	}, emitChan
 }
