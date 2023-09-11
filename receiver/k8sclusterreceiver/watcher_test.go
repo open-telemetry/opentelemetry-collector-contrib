@@ -118,12 +118,6 @@ func TestIsKindSupported(t *testing.T) {
 			gvk:      gvk.Pod,
 			expected: true,
 		},
-		{
-			name:     "unsupported_kind",
-			client:   fake.NewSimpleClientset(),
-			gvk:      gvk.CronJobBeta,
-			expected: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -179,21 +173,9 @@ func TestPrepareSharedInformerFactory(t *testing.T) {
 						},
 					},
 					{
-						GroupVersion: "batch/v1beta1",
-						APIResources: []metav1.APIResource{
-							gvkToAPIResource(gvk.CronJobBeta),
-						},
-					},
-					{
 						GroupVersion: "autoscaling/v2",
 						APIResources: []metav1.APIResource{
 							gvkToAPIResource(gvk.HorizontalPodAutoscaler),
-						},
-					},
-					{
-						GroupVersion: "autoscaling/v2beta2",
-						APIResources: []metav1.APIResource{
-							gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 						},
 					},
 				}
