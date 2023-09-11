@@ -72,28 +72,19 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		search: searchDict[`SplunkLicenseIndexUsageSearch`],
 	}
 
+    var (
+        req *http.Request
+        res *http.Response
+        err error
+    )
+
 	start := time.Now()
-	req, err := s.splunkClient.createRequest(ctx, &sr)
-	if err != nil {
-		errs.Add(err)
-	}
 
-	res, err := s.splunkClient.makeRequest(req)
-	if err != nil {
-		errs.Add(err)
-		return
-	}
-
-	err = unmarshallSearchReq(res, &sr)
-	if err != nil {
-		errs.Add(err)
-	}
-	res.Body.Close()
-
-	for ok := true; ok; ok = (sr.Return == 204) {
+	for {
 		req, err = s.splunkClient.createRequest(ctx, &sr)
 		if err != nil {
 			errs.Add(err)
+            return
 		}
 
 		res, err = s.splunkClient.makeRequest(req)
@@ -104,16 +95,21 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		}
 
 		// if its a 204 the body will be empty because we are still waiting on search results
-
 		err = unmarshallSearchReq(res, &sr)
 		if err != nil {
 			errs.Add(err)
+            return
 		}
 		res.Body.Close()
 
+        // if no errors and 200 returned scrape was succesful, return. Note we must make sure that
+        // the 200 is coming after the first request which provides a jobId to retrieve results
+        if sr.Return == 200 && sr.Jobid != nil {
+            break
+        }
+
 		if sr.Return == 204 {
-			time.Sleep(2 * time.Second)
-			continue
+		    time.Sleep(2 * time.Second)
 		}
 
 		if time.Since(start) > s.conf.MaxSearchWaitTime {
