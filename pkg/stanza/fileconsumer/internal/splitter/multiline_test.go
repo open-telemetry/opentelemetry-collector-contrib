@@ -32,7 +32,7 @@ func TestSplitFuncFactory(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name: "split config  error",
+			name: "split config error",
 			splitConfig: split.Config{
 				LineStartPattern: "START",
 				LineEndPattern:   "END",
