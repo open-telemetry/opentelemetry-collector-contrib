@@ -4,7 +4,6 @@ exporter/awskinesisexporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
-exporter/elasticsearchexporter
 exporter/f5cloudexporter
 exporter/kafkaexporter
 exporter/loadbalancingexporter
