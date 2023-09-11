@@ -152,6 +152,16 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.kubelet.version:
+    description: The version of Kubelet running on the node.
+    type: string
+    enabled: false
+
+  k8s.kubeproxy.version:
+    description: The version of Kube Proxy running on the node.
+    type: string
+    enabled: false
+
   openshift.clusterquota.uid:
     description: The k8s ClusterResourceQuota uid.
     type: string
