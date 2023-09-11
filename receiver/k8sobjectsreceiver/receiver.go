@@ -198,11 +198,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 		case data, ok := <-res:
 			if data.Type == apiWatch.Error {
 				errObject := apierrors.FromObject(data.Object)
-				var statusErr *apierrors.StatusError
-				// FromObject guarantees an unwrapped StatusError or UnexpectedObjectError so this type checking is best
-				// nolint:errorlint
-				statusErr, ok = errObject.(*apierrors.StatusError)
-				if ok && statusErr.ErrStatus.Code == http.StatusGone {
+				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
 					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
 					// we received a 410 so we need to restart
 					return false
