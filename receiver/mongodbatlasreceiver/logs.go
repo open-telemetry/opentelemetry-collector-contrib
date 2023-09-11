@@ -169,7 +169,7 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 
 func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
 	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
-	whitelist := false
+	var allowed bool
 	var clusterNameSet map[string]struct{}
 	// check to include or exclude clusters
 	switch {
@@ -178,11 +178,11 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 		return clusters, nil
 	// include is initialized
 	case len(include) > 0 && len(exclude) == 0:
-		whitelist = true
+		allowed = true
 		clusterNameSet = projectCfg.includesByClusterName
 	// exclude is initialized
 	case len(exclude) > 0 && len(include) == 0:
-		whitelist = false
+		allowed = false
 		clusterNameSet = projectCfg.excludesByClusterName
 	// both are initialized
 	default:
@@ -191,7 +191,7 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 
 	var filtered []mongodbatlas.Cluster
 	for _, cluster := range clusters {
-		if _, ok := clusterNameSet[cluster.Name]; (!ok && !whitelist) || (ok && whitelist) {
+		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}
 	}
