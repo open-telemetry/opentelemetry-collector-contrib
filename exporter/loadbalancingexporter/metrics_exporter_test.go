@@ -677,15 +677,6 @@ func TestRollingUpdatesWhenConsumeMetrics(t *testing.T) {
 	require.Greater(t, counter2.Load(), int64(0))
 }
 
-func emptyEndpointConfig() *Config {
-	return &Config{
-		Resolver: ResolverSettings{
-			Static: &StaticResolver{},
-		},
-		RoutingKey: "service",
-	}
-}
-
 func endpoint2Config() *Config {
 	return &Config{
 		Resolver: ResolverSettings{
