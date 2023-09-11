@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	schemaUrl               = "https://opentelemetry.io/schemas/1.6.1"
+	schemaURL               = "https://opentelemetry.io/schemas/1.6.1"
 	libraryOne              = "first-library"
 	libraryTwo              = "second-library"
 	signalName1             = "name-1"
@@ -272,11 +272,11 @@ func TestSplitDifferentMetricsIntoDifferentBatches(t *testing.T) {
 	inBatch := pmetric.NewMetrics()
 
 	rs := inBatch.ResourceMetrics().AppendEmpty()
-	rs.SetSchemaUrl(schemaUrl)
+	rs.SetSchemaUrl(schemaURL)
 
 	// the first ILS has two metrics
 	ils := rs.ScopeMetrics().AppendEmpty()
-	ils.SetSchemaUrl(schemaUrl)
+	ils.SetSchemaUrl(schemaURL)
 	library := ils.Scope()
 	library.SetName(libraryOne)
 
@@ -315,9 +315,9 @@ func TestSplitMetricsWithNilName(t *testing.T) {
 	// prepare
 	inBatch := pmetric.NewMetrics()
 	rs := inBatch.ResourceMetrics().AppendEmpty()
-	rs.SetSchemaUrl(schemaUrl)
+	rs.SetSchemaUrl(schemaURL)
 	ils := rs.ScopeMetrics().AppendEmpty()
-	ils.SetSchemaUrl(schemaUrl)
+	ils.SetSchemaUrl(schemaURL)
 	firstMetric := ils.Metrics().AppendEmpty()
 	firstMetric.SetName("")
 
@@ -335,14 +335,14 @@ func TestSplitSameMetricIntoDifferentBatches(t *testing.T) {
 	// prepare
 	inBatch := pmetric.NewMetrics()
 	rs := inBatch.ResourceMetrics().AppendEmpty()
-	rs.SetSchemaUrl(schemaUrl)
+	rs.SetSchemaUrl(schemaURL)
 
 	// we have 1 ResourceMetrics with 2 ILS, resulting in two batches
-	rs.ScopeMetrics().EnsureCapacity(1) //2 ou 1??
+	rs.ScopeMetrics().EnsureCapacity(1)
 
 	// the first ILS has two metrics
 	firstILS := rs.ScopeMetrics().AppendEmpty()
-	firstILS.SetSchemaUrl(schemaUrl)
+	firstILS.SetSchemaUrl(schemaURL)
 
 	firstLibrary := firstILS.Scope()
 	firstLibrary.SetName(libraryOne)
@@ -355,7 +355,7 @@ func TestSplitSameMetricIntoDifferentBatches(t *testing.T) {
 
 	// the second ILS has one metric
 	secondILS := rs.ScopeMetrics().AppendEmpty()
-	secondILS.SetSchemaUrl(schemaUrl)
+	secondILS.SetSchemaUrl(schemaURL)
 
 	secondLibrary := secondILS.Scope()
 	secondLibrary.SetName(libraryTwo)
