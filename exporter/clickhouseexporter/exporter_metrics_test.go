@@ -28,7 +28,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t)
+		exporter := newTestMetricsExporter(t, defaultEndpoint)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, int32(15), items.Load())
@@ -40,7 +40,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t)
+		exporter := newTestMetricsExporter(t, defaultEndpoint)
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
@@ -92,7 +92,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t)
+		exporter := newTestMetricsExporter(t, defaultEndpoint)
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, int32(15), items.Load())
@@ -101,13 +101,25 @@ func TestExporter_pushMetricsData(t *testing.T) {
 
 func Benchmark_pushMetricsData(b *testing.B) {
 	pm := simpleMetrics(1)
-	exporter := newTestMetricsExporter(&testing.T{})
+	exporter := newTestMetricsExporter(&testing.T{}, defaultEndpoint)
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		err := exporter.pushMetricsData(context.TODO(), pm)
 		require.NoError(b, err)
 	}
+}
+
+func TestMetricsTablesCreationOnCluster(t *testing.T) {
+	var configMods []func(*Config)
+	configMods = append(configMods, func(cfg *Config) {
+		cfg.ClusterName = replicationCluster
+		cfg.Database = "test_db"
+	})
+
+	t.Run("Check database and table creation on cluster", func(t *testing.T) {
+		newTestMetricsExporter(t, replicationEndpoint, configMods...)
+	})
 }
 
 // simpleMetrics there will be added two ResourceMetrics and each of them have count data point
@@ -451,8 +463,8 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-func newTestMetricsExporter(t *testing.T) *metricsExporter {
-	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig()(defaultEndpoint))
+func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
+	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
 	require.NoError(t, exporter.start(context.TODO(), nil))
 

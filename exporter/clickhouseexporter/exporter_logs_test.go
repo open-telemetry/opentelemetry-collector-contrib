@@ -121,7 +121,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func TestDatabaseAndTableCreationOnCluster(t *testing.T) {
+func TestLogsTableCreationOnCluster(t *testing.T) {
 	var configMods []func(*Config)
 	configMods = append(configMods, func(cfg *Config) {
 		cfg.ClusterName = replicationCluster
@@ -131,7 +131,6 @@ func TestDatabaseAndTableCreationOnCluster(t *testing.T) {
 	t.Run("Check database and table creation on cluster", func(t *testing.T) {
 		newTestLogsExporter(t, replicationEndpoint, configMods...)
 	})
-
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {

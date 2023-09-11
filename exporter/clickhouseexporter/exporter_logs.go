@@ -128,7 +128,7 @@ func attributesToMap(attributes pcommon.Map) map[string]string {
 const (
 	// language=ClickHouse SQL
 	createLogsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s (
+CREATE TABLE IF NOT EXISTS %s %s (
      Timestamp DateTime64(9) CODEC(Delta, ZSTD(1)),
      TraceId String CODEC(ZSTD(1)),
      SpanId String CODEC(ZSTD(1)),
@@ -218,7 +218,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.ClusteredDatabaseName())
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.ClusterClause())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
@@ -239,7 +239,7 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
 
-	return fmt.Sprintf(createLogsTableSQL, cfg.ClusteredLogsTableName(), ttlExpr)
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterClause(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {

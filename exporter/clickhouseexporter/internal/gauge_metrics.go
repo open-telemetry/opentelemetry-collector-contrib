@@ -17,7 +17,7 @@ import (
 const (
 	// language=ClickHouse SQL
 	createGaugeTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_gauge (
+CREATE TABLE IF NOT EXISTS %s_gauge %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),

@@ -17,7 +17,7 @@ import (
 const (
 	// language=ClickHouse SQL
 	createExpHistogramTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
+CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
     ResourceAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ResourceSchemaUrl String CODEC(ZSTD(1)),
     ScopeName String CODEC(ZSTD(1)),
@@ -77,7 +77,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	StartTimeUnix,
 	TimeUnix,
 	Count,
-	Sum,                   
+	Sum,
     Scale,
     ZeroCount,
 	PositiveOffset,
