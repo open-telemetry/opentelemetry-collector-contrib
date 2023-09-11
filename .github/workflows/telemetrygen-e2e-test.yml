@@ -74,7 +74,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: otelcontribcol
+          name: telemetrygen
           path: /tmp
       - name: Load Docker image
         run: |
