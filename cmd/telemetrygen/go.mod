@@ -7,9 +7,9 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.84.1-0.20230908201109-ab3d6c5b6470
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470
-	go.opentelemetry.io/collector/semconv v0.84.1-0.20230908201109-ab3d6c5b6470
+	go.opentelemetry.io/collector/component v0.84.1-0.20230911164444-3d71035443ef
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230911164444-3d71035443ef
+	go.opentelemetry.io/collector/semconv v0.84.1-0.20230911164444-3d71035443ef
 	go.opentelemetry.io/otel v1.17.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.40.0
@@ -42,9 +42,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.84.1-0.20230908201109-ab3d6c5b6470 // indirect
-	go.opentelemetry.io/collector/confmap v0.84.1-0.20230908201109-ab3d6c5b6470 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.84.1-0.20230911164444-3d71035443ef // indirect
+	go.opentelemetry.io/collector/confmap v0.84.1-0.20230911164444-3d71035443ef // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230911164444-3d71035443ef // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.40.0 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
