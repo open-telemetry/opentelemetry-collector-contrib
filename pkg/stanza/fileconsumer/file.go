@@ -48,11 +48,11 @@ type Manager struct {
 	currentFps []*fingerprint.Fingerprint
 
 	// Following fields are used only when useThreadPool is enabled
-	workerWg       sync.WaitGroup
 	knownFilesLock sync.RWMutex
+	trieLock       sync.RWMutex
 
-	readerChan chan readerWrapper
-	trieLock   sync.RWMutex
+	workerWg   sync.WaitGroup
+	readerChan chan readerEnvelope
 
 	// TRIE - this data structure stores the fingerprint of the files which are currently being consumed
 	trie *trie.Trie

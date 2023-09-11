@@ -12,14 +12,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 )
 
-type readerWrapper struct {
+type readerEnvelope struct {
 	reader  *reader
 	trieKey *fingerprint.Fingerprint
 	close   bool // indicate if we should close the file after reading. Used when we detect lost readers
 }
 
 func (m *Manager) kickoffThreads(ctx context.Context) {
-	m.readerChan = make(chan readerWrapper, m.maxBatchFiles*2)
+	m.readerChan = make(chan readerEnvelope, m.maxBatchFiles*2)
 	for i := 0; i < m.maxBatchFiles; i++ {
 		m.workerWg.Add(1)
 		go m.worker(ctx)
@@ -82,7 +82,7 @@ func (m *Manager) worker(ctx context.Context) {
 				// this is a lost reader, close it and release the file descriptor
 				r.Close()
 			}
-			m.updateTrie(fp, false)
+			m.trieDelete(fp)
 		}
 	}
 }
@@ -124,8 +124,8 @@ func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
 		reader, fp := m.makeReaderConcurrent(path)
 		if reader != nil {
 			// add fingerprint to trie
-			m.updateTrie(fp, true)
-			m.readerChan <- readerWrapper{reader: reader, trieKey: fp}
+			m.triePut(fp)
+			m.readerChan <- readerEnvelope{reader: reader, trieKey: fp}
 		}
 	}
 }
@@ -136,14 +136,16 @@ func (m *Manager) isCurrentlyConsuming(fp *fingerprint.Fingerprint) bool {
 	return m.trie.HasKey(fp.FirstBytes)
 }
 
-func (m *Manager) updateTrie(fp *fingerprint.Fingerprint, insert bool) {
+func (m *Manager) triePut(fp *fingerprint.Fingerprint) {
 	m.trieLock.Lock()
 	defer m.trieLock.Unlock()
-	if insert {
-		m.trie.Put(fp.FirstBytes)
-	} else {
-		m.trie.Delete(fp.FirstBytes)
-	}
+	m.trie.Put(fp.FirstBytes)
+}
+
+func (m *Manager) trieDelete(fp *fingerprint.Fingerprint) {
+	m.trieLock.Lock()
+	defer m.trieLock.Unlock()
+	m.trie.Delete(fp.FirstBytes)
 }
 
 func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
@@ -160,14 +162,14 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 			break
 		}
 	}
-	oldReaders, m.knownFiles := m.knownFiles[:i], m.knownFiles[i:]
+	oldReaders, m.knownFiles = m.knownFiles[:i], m.knownFiles[i:]
 
 	for _, r := range oldReaders {
 		if m.isCurrentlyConsuming(r.Fingerprint) {
 			r.Close()
 		} else {
-			m.updateTrie(r.Fingerprint, true)
-			m.readerChan <- readerWrapper{reader: r, trieKey: r.Fingerprint, close: true}
+			m.triePut(r.Fingerprint)
+			m.readerChan <- readerEnvelope{reader: r, trieKey: r.Fingerprint, close: true}
 		}
 	}
 }

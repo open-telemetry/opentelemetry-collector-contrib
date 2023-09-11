@@ -99,7 +99,7 @@ func buildTestManager(t testing.TB, cfg *Config, opts ...testManagerOption) (*Ma
 	input, err := cfg.Build(testutil.Logger(t), testEmitFunc(tmc.emitChan))
 	require.NoError(t, err)
 	if tmc.initializeChannel && useThreadPool.IsEnabled() {
-		input.readerChan = make(chan readerWrapper, cfg.MaxConcurrentFiles)
+		input.readerChan = make(chan readerEnvelope, cfg.MaxConcurrentFiles)
 		ctx, cancel := context.WithCancel(context.Background())
 		input.cancel = cancel
 		for i := 0; i < cfg.MaxConcurrentFiles/2; i++ {
