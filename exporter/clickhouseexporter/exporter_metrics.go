@@ -42,7 +42,7 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	internal.SetLogger(e.logger)
-	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.ClusterClause(), e.cfg.TTLDays, e.client)
+	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.ClusterClause(), e.cfg.TableEngineString(), e.cfg.TTLDays, e.client)
 }
 
 // shutdown will shut down the exporter.

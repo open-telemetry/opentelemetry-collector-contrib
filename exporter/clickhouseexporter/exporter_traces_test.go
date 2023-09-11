@@ -54,6 +54,7 @@ func TestTracesTablesCreationOnCluster(t *testing.T) {
 	configMods = append(configMods, func(cfg *Config) {
 		cfg.ClusterName = replicationCluster
 		cfg.Database = db_name
+		cfg.TableEngine = TableEngine{Name: "ReplicatedMergeTree", Params: ""}
 	})
 	t.Run("Check database and table creation on cluster", func(t *testing.T) {
 		exporter := newTestTracesExporter(t, replicationEndpoint, configMods...)

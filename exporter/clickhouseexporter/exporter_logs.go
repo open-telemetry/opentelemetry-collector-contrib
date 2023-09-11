@@ -152,7 +152,7 @@ CREATE TABLE IF NOT EXISTS %s %s (
      INDEX idx_log_attr_key mapKeys(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_log_attr_value mapValues(LogAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SeverityText, toUnixTimestamp(Timestamp), TraceId)
@@ -239,7 +239,7 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
 
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterClause(), ttlExpr)
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterClause(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {

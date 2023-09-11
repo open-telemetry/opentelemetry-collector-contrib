@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS %s %s (
      INDEX idx_span_attr_key mapKeys(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_duration Duration TYPE minmax GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
@@ -254,7 +254,7 @@ create table IF NOT EXISTS %s_trace_id_ts %s (
      Start DateTime64(9) CODEC(Delta, ZSTD(1)),
      End DateTime64(9) CODEC(Delta, ZSTD(1)),
      INDEX idx_trace_id TraceId TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 ORDER BY (TraceId, toUnixTimestamp(Start))
 SETTINGS index_granularity=8192;
@@ -295,7 +295,7 @@ func renderCreateTracesTableSQL(cfg *Config) string {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.ClusterClause(), ttlExpr)
+	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.ClusterClause(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
@@ -303,7 +303,7 @@ func renderCreateTraceIDTsTableSQL(cfg *Config) string {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Start) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.ClusterClause(), ttlExpr)
+	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.ClusterClause(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderTraceIDTsMaterializedViewSQL(cfg *Config) string {

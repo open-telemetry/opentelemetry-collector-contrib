@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
 	INDEX idx_scope_attr_value mapValues(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_attr_key mapKeys(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_attr_value mapValues(Attributes) TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE MergeTree()
+) ENGINE = %s
 %s
 PARTITION BY toDate(TimeUnix)
 ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
