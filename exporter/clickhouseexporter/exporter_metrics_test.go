@@ -112,13 +112,15 @@ func Benchmark_pushMetricsData(b *testing.B) {
 
 func TestMetricsTablesCreationOnCluster(t *testing.T) {
 	var configMods []func(*Config)
+	db_name := "test_db_" + time.Now().Format("20060102150405")
 	configMods = append(configMods, func(cfg *Config) {
 		cfg.ClusterName = replicationCluster
-		cfg.Database = "test_db"
+		cfg.Database = db_name
 	})
 
 	t.Run("Check database and table creation on cluster", func(t *testing.T) {
-		newTestMetricsExporter(t, replicationEndpoint, configMods...)
+		exporter := newTestMetricsExporter(t, replicationEndpoint, configMods...)
+		require.NotEmpty(t, exporter.cfg.ClusterClause())
 	})
 }
 

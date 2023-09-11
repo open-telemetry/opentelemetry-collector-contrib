@@ -122,14 +122,16 @@ func TestExporter_pushLogsData(t *testing.T) {
 }
 
 func TestLogsTableCreationOnCluster(t *testing.T) {
+	db_name := "test_db_" + time.Now().Format("20060102150405")
 	var configMods []func(*Config)
 	configMods = append(configMods, func(cfg *Config) {
 		cfg.ClusterName = replicationCluster
-		cfg.Database = "test_db"
+		cfg.Database = db_name
 	})
 
 	t.Run("Check database and table creation on cluster", func(t *testing.T) {
-		newTestLogsExporter(t, replicationEndpoint, configMods...)
+		exporter := newTestLogsExporter(t, replicationEndpoint, configMods...)
+		require.NotEmpty(t, exporter.cfg.ClusterClause())
 	})
 }
 
