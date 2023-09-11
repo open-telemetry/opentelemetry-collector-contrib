@@ -236,7 +236,7 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewMultilineFactory(sCfg, enc, maxLogSize, trimFunc, flushPeriod),
+		splitterFactory: splitter.NewSplitFuncFactory(sCfg, enc, maxLogSize, trimFunc, flushPeriod),
 		encoding:        enc,
 	}, emitChan
 }

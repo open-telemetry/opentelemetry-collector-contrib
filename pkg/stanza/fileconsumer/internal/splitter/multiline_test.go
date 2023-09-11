@@ -15,14 +15,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-func TestMultilineBuild(t *testing.T) {
+func TestSplitFuncFactory(t *testing.T) {
 	tests := []struct {
-		name         string
-		multilineCfg split.Config
-		encoding     encoding.Encoding
-		maxLogSize   int
-		flushPeriod  time.Duration
-		wantErr      bool
+		name        string
+		splitFunc   split.Config
+		encoding    encoding.Encoding
+		maxLogSize  int
+		flushPeriod time.Duration
+		wantErr     bool
 	}{
 		{
 			name:        "default configuration",
@@ -33,7 +33,7 @@ func TestMultilineBuild(t *testing.T) {
 		},
 		{
 			name: "Multiline  error",
-			multilineCfg: split.Config{
+			splitFunc: split.Config{
 				LineStartPattern: "START",
 				LineEndPattern:   "END",
 			},
@@ -45,7 +45,7 @@ func TestMultilineBuild(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.multilineCfg, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
+			factory := NewSplitFuncFactory(tt.splitFunc, tt.encoding, tt.maxLogSize, trim.Nop, tt.flushPeriod)
 			got, err := factory.Build()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
