@@ -12,9 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/clusterresourcequota"
@@ -99,14 +97,8 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 	dc.metadataStore.ForEach(gvk.CronJob, func(o any) {
 		cronjob.RecordMetrics(dc.metricsBuilder, o.(*batchv1.CronJob), ts)
 	})
-	dc.metadataStore.ForEach(gvk.CronJobBeta, func(o any) {
-		cronjob.RecordMetricsBeta(dc.metricsBuilder, o.(*batchv1beta1.CronJob), ts)
-	})
 	dc.metadataStore.ForEach(gvk.HorizontalPodAutoscaler, func(o any) {
 		hpa.RecordMetrics(dc.metricsBuilder, o.(*autoscalingv2.HorizontalPodAutoscaler), ts)
-	})
-	dc.metadataStore.ForEach(gvk.HorizontalPodAutoscalerBeta, func(o any) {
-		hpa.RecordMetricsBeta(dc.metricsBuilder, o.(*autoscalingv2beta2.HorizontalPodAutoscaler), ts)
 	})
 	dc.metadataStore.ForEach(gvk.ClusterResourceQuota, func(o any) {
 		clusterresourcequota.RecordMetrics(dc.metricsBuilder, o.(*quotav1.ClusterResourceQuota), ts)
