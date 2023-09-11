@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxra
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.45.2
+	github.com/aws/aws-sdk-go v1.45.6
 	github.com/google/go-cmp v0.5.9
 	github.com/google/uuid v1.3.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy v0.84.0
