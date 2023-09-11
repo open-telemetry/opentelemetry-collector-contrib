@@ -42,6 +42,8 @@ type Config struct {
 	TTLDays uint `mapstructure:"ttl_days"`
 	// Used to generate ENGINE value when create table. See `TableEngineString` function for details.
 	TableEngine TableEngine `mapstructure:"table_engine"`
+	// If set then is used on database and table creation. For example: CREATE DATABASE IF NOT EXISTS db1 ON CLUSTER `ClusterName`
+	ClusterName string `mapstructure:"cluster_name"`
 }
 
 // QueueSettings is a subset of exporterhelper.QueueSettings.
@@ -164,4 +166,33 @@ func (cfg *Config) TableEngineString() (string) {
 	}
 
 	return fmt.Sprintf("%s(%s)", cfg.TableEngine.Name, cfg.TableEngine.Params)
+}
+
+// Adds `ON CLUSTER ClusterName` to `Database` if `ClusterName` is not empty.
+func (cfg *Config) ClusteredDatabaseName() (string) {
+	return cfg.clusteredName(cfg.Database)
+}
+
+// Adds `ON CLUSTER ClusterName` to `LogsTableName` if `ClusterName` is not empty.
+func (cfg *Config) ClusteredLogsTableName() (string) {
+	return cfg.clusteredName(cfg.LogsTableName)
+}
+
+// Adds `ON CLUSTER ClusterName` to `MetricsTableName` if `ClusterName` is not empty.
+func (cfg *Config) ClusteredMetricsTableName() (string) {
+	return cfg.clusteredName(cfg.MetricsTableName)
+}
+
+// Adds `ON CLUSTER ClusterName` to `TracesTableName` if `ClusterName` is not empty.
+func (cfg *Config) ClusteredTracesTableName() (string) {
+	return cfg.clusteredName(cfg.TracesTableName)
+}
+
+// If `ClusterName` is empty then return `name`. Otherwise return `name ON CLUSTER ClusterName`.
+func (cfg *Config) clusteredName(name string) (string) {
+	if cfg.ClusterName == "" {
+		return name
+	}
+
+	return fmt.Sprintf("%s ON CLUSTER %s", name, cfg.ClusterName)
 }

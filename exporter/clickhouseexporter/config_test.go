@@ -21,6 +21,8 @@ import (
 )
 
 const defaultEndpoint = "clickhouse://127.0.0.1:9000"
+const replicationEndpoint = "tcp://127.0.0.1:19000"
+const replicationCluster = "cluster_1S_2R"
 
 func TestTableEngineConfigParsing(t *testing.T) {
 	t.Parallel()

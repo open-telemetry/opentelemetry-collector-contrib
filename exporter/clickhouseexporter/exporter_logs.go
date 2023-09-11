@@ -218,7 +218,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.Database)
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", cfg.ClusteredDatabaseName())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
@@ -238,7 +238,8 @@ func renderCreateLogsTableSQL(cfg *Config) string {
 	if cfg.TTLDays > 0 {
 		ttlExpr = fmt.Sprintf(`TTL toDateTime(Timestamp) + toIntervalDay(%d)`, cfg.TTLDays)
 	}
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, ttlExpr)
+
+	return fmt.Sprintf(createLogsTableSQL, cfg.ClusteredLogsTableName(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {

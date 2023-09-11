@@ -121,6 +121,19 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
+func TestDatabaseAndTableCreationOnCluster(t *testing.T) {
+	var configMods []func(*Config)
+	configMods = append(configMods, func(cfg *Config) {
+		cfg.ClusterName = replicationCluster
+		cfg.Database = "test_db"
+	})
+
+	t.Run("Check database and table creation on cluster", func(t *testing.T) {
+		newTestLogsExporter(t, replicationEndpoint, configMods...)
+	})
+
+}
+
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)

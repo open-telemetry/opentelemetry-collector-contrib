@@ -1,0 +1,37 @@
+version: '1.0'
+services:
+  clickhouse-keeper-01:
+    image: "clickhouse/clickhouse-keeper:${CHKVER:-latest-alpine}"
+    user: "101:101"
+    container_name: clickhouse-keeper-01
+    hostname: clickhouse-keeper-01
+    volumes:
+      - ${PWD}/clickhouse-keeper-01/etc/clickhouse-keeper/keeper_config.xml:/etc/clickhouse-keeper/keeper_config.xml
+    ports:
+        - "127.0.0.1:9181:9181"
+  clickhouse-01:
+    image: "clickhouse/clickhouse-server:${CHVER:-latest}"
+    user: "101:101"
+    container_name: clickhouse-01
+    hostname: clickhouse-01
+    volumes:
+      - ${PWD}/clickhouse-01/etc/clickhouse-server/config.d:/etc/clickhouse-server/config.d
+      - ${PWD}/clickhouse-01/etc/clickhouse-server/users.d:/etc/clickhouse-server/users.d
+    ports:
+      - "127.0.0.1:18123:8123"
+      - "127.0.0.1:19000:9000"
+    depends_on:
+      - clickhouse-keeper-01
+  clickhouse-02:
+    image: "clickhouse/clickhouse-server:${CHVER:-latest}"
+    user: "101:101"
+    container_name: clickhouse-02
+    hostname: clickhouse-02
+    volumes:
+      - ${PWD}/clickhouse-02/etc/clickhouse-server/config.d:/etc/clickhouse-server/config.d
+      - ${PWD}/clickhouse-02/etc/clickhouse-server/users.d:/etc/clickhouse-server/users.d
+    ports:
+      - "127.0.0.1:18124:8123"
+      - "127.0.0.1:19001:9000"
+    depends_on:
+      - clickhouse-keeper-01
