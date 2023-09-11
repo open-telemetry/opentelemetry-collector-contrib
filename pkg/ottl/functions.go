@@ -249,6 +249,18 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 			return nil, err
 		}
 		return StandardPMapGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "DurationGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardDurationGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "TimeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTimeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argVal.Enum)
 		if err != nil {

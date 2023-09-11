@@ -103,10 +103,10 @@ func Test_newPathGetSetter(t *testing.T) {
 					Name: "observed_time",
 				},
 			},
-			orig:   time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
-			newVal: time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
 			modified: func(log plog.LogRecord, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
-				log.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+				log.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
