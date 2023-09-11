@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.84.1-0.20230908201109-ab3d6c5b6470
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.25.0
-	golang.org/x/oauth2 v0.11.0
+	golang.org/x/oauth2 v0.12.0
 	google.golang.org/grpc v1.58.0
 )
 
