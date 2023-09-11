@@ -48,6 +48,19 @@ func TestExporter_pushTracesData(t *testing.T) {
 	})
 }
 
+func TestTracesTablesCreationOnCluster(t *testing.T) {
+	var configMods []func(*Config)
+	db_name := "test_db_" + time.Now().Format("20060102150405")
+	configMods = append(configMods, func(cfg *Config) {
+		cfg.ClusterName = replicationCluster
+		cfg.Database = db_name
+	})
+	t.Run("Check database and table creation on cluster", func(t *testing.T) {
+		exporter := newTestTracesExporter(t, replicationEndpoint, configMods...)
+		require.NotEmpty(t, exporter.cfg.ClusterClause())
+	})
+}
+
 func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *tracesExporter {
 	exporter, err := newTracesExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
