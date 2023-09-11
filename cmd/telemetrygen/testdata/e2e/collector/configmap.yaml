@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check: {}
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: ${env:MY_POD_IP}:4317
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        logs:
+          exporters:
+          - otlp
+          receivers:
+          - otlp
+        metrics:
+          exporters:
+          - otlp
+          receivers:
+          - otlp
+        traces:
+          exporters:
+          - otlp
+          receivers:
+          - otlp
