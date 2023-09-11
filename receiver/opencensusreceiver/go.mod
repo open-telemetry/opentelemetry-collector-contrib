@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.17.1
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.84.0
