@@ -24,7 +24,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
@@ -55,7 +55,6 @@ func NewConfigWithID(operatorID string) *Config {
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			OneLogPerPacket: false,
-			Multiline:       tokenize.NewMultilineConfig(),
 			Encoding:        "utf-8",
 		},
 	}
@@ -75,7 +74,7 @@ type BaseConfig struct {
 	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
 	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
 	Encoding         string                      `mapstructure:"encoding,omitempty"`
-	Multiline        tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
+	SplitConfig      split.Config                `mapstructure:"multiline,omitempty"`
 	TrimConfig       trim.Config                 `mapstructure:",squash"`
 	MultiLineBuilder MultiLineBuilderFunc
 }
@@ -84,7 +83,7 @@ type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
 func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
 	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.Multiline.Build(enc, true, int(c.MaxLogSize), trimFunc)
+	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), trimFunc)
 	if err != nil {
 		return nil, err
 	}

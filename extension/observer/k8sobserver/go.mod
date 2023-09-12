@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.20
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.85.0
 	github.com/stretchr/testify v1.8.4
-	go.opentelemetry.io/collector/component v0.84.1-0.20230908201109-ab3d6c5b6470
-	go.opentelemetry.io/collector/confmap v0.84.1-0.20230908201109-ab3d6c5b6470
-	go.opentelemetry.io/collector/extension v0.84.1-0.20230908201109-ab3d6c5b6470
+	go.opentelemetry.io/collector/component v0.85.0
+	go.opentelemetry.io/collector/confmap v0.85.0
+	go.opentelemetry.io/collector/extension v0.85.0
 	go.uber.org/zap v1.25.0
 	k8s.io/api v0.28.1
 	k8s.io/apimachinery v0.28.1
@@ -44,9 +44,9 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.84.1-0.20230908201109-ab3d6c5b6470 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470 // indirect
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014 // indirect
 	go.opentelemetry.io/otel v1.17.0 // indirect
 	go.opentelemetry.io/otel/metric v1.17.0 // indirect
 	go.opentelemetry.io/otel/trace v1.17.0 // indirect
@@ -58,8 +58,8 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
-	google.golang.org/grpc v1.57.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
+	google.golang.org/grpc v1.58.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

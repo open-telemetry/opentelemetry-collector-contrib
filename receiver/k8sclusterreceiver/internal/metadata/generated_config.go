@@ -225,6 +225,8 @@ type ResourceAttributesConfig struct {
 	K8sHpaUID                    ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
+	K8sKubeletVersion            ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
+	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -287,6 +289,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sJobUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sKubeletVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sKubeproxyVersion: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
 			Enabled: true,

@@ -240,6 +240,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
+			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
+			rb.SetK8sKubeproxyVersion("k8s.kubeproxy.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
