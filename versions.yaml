@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.84.0
+    version: v0.85.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
