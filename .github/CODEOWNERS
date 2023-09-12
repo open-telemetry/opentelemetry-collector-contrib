@@ -41,7 +41,7 @@ connector/spanmetricsconnector/                                         @open-te
 examples/demo/                                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 exporter/alibabacloudlogserviceexporter/                                @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
-exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken
+exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
 exporter/awsemfexporter/                                                @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
 exporter/awskinesisexporter/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                                 @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
