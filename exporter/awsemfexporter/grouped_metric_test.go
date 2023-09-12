@@ -216,7 +216,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
 		require.Equal(t, 14, metrics.Len(), "mock metric creation failed")
-
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,

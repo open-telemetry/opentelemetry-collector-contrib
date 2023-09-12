@@ -323,8 +323,8 @@ func TestIsStaleOrNaN_NumberDataPointSlice(t *testing.T) {
 			}
 
 			numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata{}, numberDPS}
-
-			tc.expectedAssert(t, numberDatapointSlice.IsStaleOrNaN(0))
+			isStaleOrNan, _ := numberDatapointSlice.IsStaleOrNaN(0)
+			tc.expectedAssert(t, isStaleOrNan)
 		})
 	}
 }
@@ -584,7 +584,6 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 			}(),
 			boolAssertFunc: assert.True,
 			setFlagsFunc: func(point pmetric.HistogramDataPoint) pmetric.HistogramDataPoint {
-				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				return point
 			},
 		},
@@ -597,7 +596,8 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(histogramDatapointSlice.At(0))
 			}
-			tc.boolAssertFunc(t, histogramDatapointSlice.IsStaleOrNaN(0))
+			isStaleOrNan, _ := histogramDatapointSlice.IsStaleOrNaN(0)
+			tc.boolAssertFunc(t, isStaleOrNan)
 		})
 	}
 
@@ -767,8 +767,9 @@ func TestIsStaleOrNaN_ExponentialHistogramDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(exponentialHistogramDatapointSlice.At(0))
 			}
+			isStaleOrNaN, _ := exponentialHistogramDatapointSlice.IsStaleOrNaN(0)
 			// When calculate the delta datapoints for histograms
-			tc.boolAssertFunc(t, exponentialHistogramDatapointSlice.IsStaleOrNaN(0))
+			tc.boolAssertFunc(t, isStaleOrNaN)
 		})
 	}
 
@@ -860,7 +861,6 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 }
 
 func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
-
 	testCases := []struct {
 		name               string
 		summaryMetricValue map[string]interface{}
@@ -909,7 +909,8 @@ func TestIsStaleOrNaN_SummaryDataPointSlice(t *testing.T) {
 			if tc.setFlagsFunc != nil {
 				tc.setFlagsFunc(summaryDatapointSlice.At(0))
 			}
-			tc.expectedBoolAssert(t, summaryDatapointSlice.IsStaleOrNaN(0))
+			isStaleOrNaN, _ := summaryDatapointSlice.IsStaleOrNaN(0)
+			tc.expectedBoolAssert(t, isStaleOrNaN)
 		})
 	}
 
