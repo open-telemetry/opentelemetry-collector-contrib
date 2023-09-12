@@ -32,4 +32,3 @@ receiver/mysqlreceiver
 receiver/nsxtreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
-receiver/windowseventlogreceiver
