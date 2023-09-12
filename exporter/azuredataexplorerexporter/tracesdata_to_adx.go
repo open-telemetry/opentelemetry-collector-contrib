@@ -13,19 +13,19 @@ import (
 )
 
 type AdxTrace struct {
-	TraceID              string                 // TraceID associated to the Trace
-	SpanID               string                 // SpanID associated to the Trace
-	ParentID             string                 // ParentID associated to the Trace
-	SpanName             string                 // The SpanName of the Trace
-	SpanStatus           string                 // The SpanStatus associated to the Trace
-	SpanStatusAttributes *Status                // The SpanStatus attributes that contains the message and trace
-	SpanKind             string                 // The SpanKind of the Trace
-	StartTime            string                 // The start time of the occurrence. Formatted into string as RFC3339Nano
-	EndTime              string                 // The end time of the occurrence. Formatted into string as RFC3339Nano
-	ResourceAttributes   map[string]interface{} // JSON Resource attributes that can then be parsed.
-	TraceAttributes      map[string]interface{} // JSON attributes that can then be parsed.
-	Events               []*Event               // Array containing the events in a span
-	Links                []*Link                // Array containing the link in a span
+	TraceID            string                 // TraceID associated to the Trace
+	SpanID             string                 // SpanID associated to the Trace
+	ParentID           string                 // ParentID associated to the Trace
+	SpanName           string                 // The SpanName of the Trace
+	SpanStatus         string                 // The SpanStatus Code associated to the Trace
+	SpanStatusMessage  string                 // The SpanStatusMessage associated to the Trace
+	SpanKind           string                 // The SpanKind of the Trace
+	StartTime          string                 // The start time of the occurrence. Formatted into string as RFC3339Nano
+	EndTime            string                 // The end time of the occurrence. Formatted into string as RFC3339Nano
+	ResourceAttributes map[string]interface{} // JSON Resource attributes that can then be parsed.
+	TraceAttributes    map[string]interface{} // JSON attributes that can then be parsed.
+	Events             []*Event               // Array containing the events in a span
+	Links              []*Link                // Array containing the link in a span
 }
 
 type Event struct {
@@ -53,15 +53,12 @@ func mapToAdxTrace(resource pcommon.Resource, scope pcommon.InstrumentationScope
 	copyMap(clonedTraceAttrib, getScopeMap(scope))
 
 	return &AdxTrace{
-		TraceID:    traceutil.TraceIDToHexOrEmptyString(spanData.TraceID()),
-		SpanID:     traceutil.SpanIDToHexOrEmptyString(spanData.SpanID()),
-		ParentID:   traceutil.SpanIDToHexOrEmptyString(spanData.ParentSpanID()),
-		SpanName:   spanData.Name(),
-		SpanStatus: traceutil.StatusCodeStr(spanData.Status().Code()),
-		SpanStatusAttributes: &Status{
-			Code:    traceutil.StatusCodeStr(spanData.Status().Code()),
-			Message: spanData.Status().Message(),
-		},
+		TraceID:            traceutil.TraceIDToHexOrEmptyString(spanData.TraceID()),
+		SpanID:             traceutil.SpanIDToHexOrEmptyString(spanData.SpanID()),
+		ParentID:           traceutil.SpanIDToHexOrEmptyString(spanData.ParentSpanID()),
+		SpanName:           spanData.Name(),
+		SpanStatus:         traceutil.StatusCodeStr(spanData.Status().Code()),
+		SpanStatusMessage:  spanData.Status().Message(),
 		SpanKind:           traceutil.SpanKindStr(spanData.Kind()),
 		StartTime:          spanData.StartTimestamp().AsTime().Format(time.RFC3339Nano),
 		EndTime:            spanData.EndTimestamp().AsTime().Format(time.RFC3339Nano),

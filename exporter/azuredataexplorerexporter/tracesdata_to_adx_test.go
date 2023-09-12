@@ -33,7 +33,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		{
 			name: "valid",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -49,14 +48,11 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				TraceID:    "00000000000000000000000000000064",
-				SpanID:     "0000000000000032",
-				ParentID:   "",
-				SpanName:   "spanname",
-				SpanStatus: "STATUS_CODE_UNSET",
-				SpanStatusAttributes: &Status{
-					Code: "STATUS_CODE_UNSET",
-				},
+				TraceID:            "00000000000000000000000000000064",
+				SpanID:             "0000000000000032",
+				ParentID:           "",
+				SpanName:           "spanname",
+				SpanStatus:         "STATUS_CODE_UNSET",
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,
@@ -75,10 +71,7 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: pcommon.NewResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				SpanStatus: "STATUS_CODE_UNSET",
-				SpanStatusAttributes: &Status{
-					Code: "STATUS_CODE_UNSET",
-				},
+				SpanStatus:         "STATUS_CODE_UNSET",
 				SpanKind:           "SPAN_KIND_UNSPECIFIED",
 				StartTime:          defaultTime,
 				EndTime:            defaultTime,
@@ -90,7 +83,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		}, {
 			name: "with_events_links",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -115,14 +107,11 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				TraceID:    "00000000000000000000000000000064",
-				SpanID:     "0000000000000032",
-				ParentID:   "",
-				SpanName:   "spanname",
-				SpanStatus: "STATUS_CODE_UNSET",
-				SpanStatusAttributes: &Status{
-					Code: "STATUS_CODE_UNSET",
-				},
+				TraceID:            "00000000000000000000000000000064",
+				SpanID:             "0000000000000032",
+				ParentID:           "",
+				SpanName:           "spanname",
+				SpanStatus:         "STATUS_CODE_UNSET",
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,
@@ -143,7 +132,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 				}},
 			},
 		},
-
 		{
 			name: "with_status_message_for_error",
 			spanDatafn: func() ptrace.Span {
@@ -171,15 +159,12 @@ func Test_mapToAdxTrace(t *testing.T) {
 			resourceFn: newDummyResource,
 			insScopeFn: newScopeWithData,
 			expectedAdxTrace: &AdxTrace{
-				TraceID:    "00000000000000000000000000000064",
-				SpanID:     "0000000000000032",
-				ParentID:   "",
-				SpanName:   "spanname-status-message",
-				SpanStatus: "STATUS_CODE_ERROR",
-				SpanStatusAttributes: &Status{
-					Code:    "STATUS_CODE_ERROR",
-					Message: "An error occurred",
-				},
+				TraceID:            "00000000000000000000000000000064",
+				SpanID:             "0000000000000032",
+				ParentID:           "",
+				SpanName:           "spanname-status-message",
+				SpanStatus:         "STATUS_CODE_ERROR",
+				SpanStatusMessage:  "An error occurred",
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,

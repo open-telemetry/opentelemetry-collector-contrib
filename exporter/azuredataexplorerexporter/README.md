@@ -143,7 +143,7 @@ The following tables need to be created in the database specified in the configu
 
 // This is an optional column to store the status code and message as a dynamic field. This augments the status field with Status code and status message
 
-.alter-merge table <Traces-Table-Name> (SpanStatusAttributes:dynamic) 
+.alter-merge table <Traces-Table-Name> (SpanStatusMessage:string) 
 
 //Enable streaming ingestion( for managed streaming) for the created tables using
 .alter table <Table-Name> policy streamingingestion enable
