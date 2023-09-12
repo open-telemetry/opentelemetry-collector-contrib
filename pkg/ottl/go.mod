@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 go 1.20
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0
+	github.com/alecthomas/participle/v2 v2.1.0
 	github.com/gobwas/glob v0.2.3
 	github.com/google/uuid v1.3.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014

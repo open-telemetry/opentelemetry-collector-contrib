@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscon
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.45.2
+	github.com/aws/aws-sdk-go v1.45.7
 	github.com/google/cadvisor v0.47.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.85.0
 	github.com/shirou/gopsutil/v3 v3.23.8
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.0
@@ -37,7 +37,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v24.0.5+incompatible // indirect
+	github.com/docker/docker v24.0.6+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.84.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.85.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/opencontainers/runc v1.1.5 // indirect
@@ -122,7 +122,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
-	golang.org/x/oauth2 v0.11.0 // indirect
+	golang.org/x/oauth2 v0.12.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/term v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect

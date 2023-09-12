@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.15.0
+	github.com/antonmedv/expr v1.15.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.85.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.0
 	go.opentelemetry.io/collector/confmap v0.85.0
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0 // indirect
+	github.com/alecthomas/participle/v2 v2.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect

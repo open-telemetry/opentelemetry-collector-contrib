@@ -89,9 +89,8 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	// Build multiline
-	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize, trimFunc)
+	// Build SplitFunc
+	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize, c.TrimConfig.Func())
 	if err != nil {
 		return nil, err
 	}

@@ -249,10 +249,8 @@ func TestOctetFramingSplitFunc(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		splitFunc, err := OctetMultiLineBuilder(nil)
+		splitFunc, err := OctetSplitFuncBuilder(nil)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 }
-
-// TODO refactor test dependency away from internal?
