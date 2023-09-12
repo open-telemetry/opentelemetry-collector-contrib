@@ -8,10 +8,10 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.48.0
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.85.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opencensus.io v0.24.0
