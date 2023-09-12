@@ -1,5 +1,4 @@
 connector/servicegraphconnector
-exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
