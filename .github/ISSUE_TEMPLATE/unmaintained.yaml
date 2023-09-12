@@ -57,8 +57,6 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing

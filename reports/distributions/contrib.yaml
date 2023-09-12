@@ -35,8 +35,6 @@ components:
         - honeycombmarker
         - influxdb
         - instana
-        - jaeger
-        - jaeger_thrift
         - kafka
         - loadbalancing
         - logicmonitor
