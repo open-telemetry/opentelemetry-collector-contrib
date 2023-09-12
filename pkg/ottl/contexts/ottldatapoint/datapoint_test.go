@@ -111,7 +111,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			name: "start_time_unix_nano",
 			path: []ottl.Field{
 				{
-					Name: "start_time",
+					Name: "start_time_unix_nano",
 				},
 			},
 			orig:   int64(100_000_000),
