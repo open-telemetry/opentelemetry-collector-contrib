@@ -40,13 +40,13 @@ func (c *Config) Validate() error {
 
 	if c.Logs.TLS != nil {
 		// When TLS cert is specified, but nothing for key
-		if c.Logs.TLS.CertFile != "" && c.Logs.TLS.KeyFile == "" {
-			return errNoKey
+		if c.Logs.TLS.KeyFile == "" {
+			errs = multierr.Append(errs, errNoKey)
 		}
 
 		// When TLS key is specified, but nothing for cert
-		if c.Logs.TLS.CertFile == "" && c.Logs.TLS.KeyFile != "" {
-			return errNoCert
+		if c.Logs.TLS.CertFile == "" {
+			errs = multierr.Append(errs, errNoCert)
 		}
 	}
 
