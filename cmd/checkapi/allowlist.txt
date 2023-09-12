@@ -14,7 +14,6 @@ exporter/sentryexporter
 exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-extension/observer/k8sobserver
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
