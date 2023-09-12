@@ -181,6 +181,18 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "DurationGetter"):
+		arg, err := buildSlice[DurationGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "TimeGetter"):
+		arg, err := buildSlice[TimeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
 		return nil, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
 	}

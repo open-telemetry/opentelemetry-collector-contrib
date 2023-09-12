@@ -1,13 +1,9 @@
 connector/servicegraphconnector
-exporter/alibabacloudlogserviceexporter
-exporter/awscloudwatchlogsexporter
 exporter/awskinesisexporter
 exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
-exporter/elasticsearchexporter
 exporter/f5cloudexporter
-exporter/jaegerexporter
 exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logzioexporter
@@ -36,5 +32,4 @@ receiver/mysqlreceiver
 receiver/nsxtreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
-receiver/statsdreceiver
 receiver/windowseventlogreceiver

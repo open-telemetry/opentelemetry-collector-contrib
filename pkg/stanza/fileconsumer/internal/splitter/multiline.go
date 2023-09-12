@@ -5,22 +5,46 @@ package splitter // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bufio"
+	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"golang.org/x/text/encoding"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type multilineFactory struct {
-	splitterCfg tokenize.SplitterConfig
-	maxLogSize  int
+	multilineCfg split.Config
+	encoding     encoding.Encoding
+	maxLogSize   int
+	trimFunc     trim.Func
+	flushPeriod  time.Duration
 }
 
 var _ Factory = (*multilineFactory)(nil)
 
-func NewMultilineFactory(splitterCfg tokenize.SplitterConfig, maxLogSize int) Factory {
-	return &multilineFactory{splitterCfg: splitterCfg, maxLogSize: maxLogSize}
+func NewMultilineFactory(
+	multilineCfg split.Config,
+	encoding encoding.Encoding,
+	maxLogSize int,
+	trimFunc trim.Func,
+	flushPeriod time.Duration,
+) Factory {
+	return &multilineFactory{
+		multilineCfg: multilineCfg,
+		encoding:     encoding,
+		maxLogSize:   maxLogSize,
+		trimFunc:     trimFunc,
+		flushPeriod:  flushPeriod,
+	}
 }
 
 // Build builds Multiline Splitter struct
 func (f *multilineFactory) Build() (bufio.SplitFunc, error) {
-	return f.splitterCfg.Build(false, f.maxLogSize)
+	splitFunc, err := f.multilineCfg.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
+	if err != nil {
+		return nil, err
+	}
+	return flush.WithPeriod(splitFunc, f.trimFunc, f.flushPeriod), nil
 }
