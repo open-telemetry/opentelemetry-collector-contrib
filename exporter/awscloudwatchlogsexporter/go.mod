@@ -6,8 +6,8 @@ require (
 	github.com/aws/aws-sdk-go v1.45.2
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.3.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.85.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.0
 	go.opentelemetry.io/collector/confmap v0.85.0

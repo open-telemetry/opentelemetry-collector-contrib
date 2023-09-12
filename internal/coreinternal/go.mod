@@ -5,8 +5,8 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/docker/go-connections v0.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.85.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.23.0
 	go.opentelemetry.io/collector v0.85.0
