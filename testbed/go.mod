@@ -279,8 +279,6 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../exporter/jaegerexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter => ../exporter/opencensusexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter => ../exporter/prometheusexporter
