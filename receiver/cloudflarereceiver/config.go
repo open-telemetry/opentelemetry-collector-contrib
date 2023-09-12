@@ -38,19 +38,19 @@ func (c *Config) Validate() error {
 		return errNoEndpoint
 	}
 
+	var errs error
 	if c.Logs.TLS != nil {
-		// When TLS cert is specified, but nothing for key
+		// Missing key
 		if c.Logs.TLS.KeyFile == "" {
 			errs = multierr.Append(errs, errNoKey)
 		}
 
-		// When TLS key is specified, but nothing for cert
+		// Missing cert
 		if c.Logs.TLS.CertFile == "" {
 			errs = multierr.Append(errs, errNoCert)
 		}
 	}
 
-	var errs error
 	_, _, err := net.SplitHostPort(c.Logs.Endpoint)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to split endpoint into 'host:port' pair: %w", err))
