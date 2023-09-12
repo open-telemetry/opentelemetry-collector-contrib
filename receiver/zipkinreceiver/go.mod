@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/jaegertracing/jaeger v1.48.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.85.0
 	github.com/openzipkin/zipkin-go v0.4.2
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector v0.85.0

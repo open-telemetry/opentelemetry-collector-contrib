@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.84.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.85.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v4 v4.3.12
 	go.opentelemetry.io/collector v0.85.0
