@@ -1,0 +1,25 @@
+nodeSelector:
+  alpha.eksctl.io/nodegroup-name: ng-6
+clusterRole:
+  name: "opentelemetry-collector-ds"
+  clusterRoleBinding:
+    name: opentelemetry-collector-ds
+config:
+  exporters:
+    otlp:
+      endpoint: opentelemetry-collector-gateway:4317
+      tls:
+        insecure: true
+  service:
+    pipelines:
+      metrics:
+        exporters: [otlp]
+      traces:
+        exporters: [otlp]
+      logs:
+        exporters: [otlp]
+resources:
+  limits:
+    # necessary to decrease memory from 2 to 1 Gi in order to
+    # have sufficient memory to schedule all pods on Nodes.
+    memory: 1Gi

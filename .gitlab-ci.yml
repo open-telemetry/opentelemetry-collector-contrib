@@ -60,7 +60,7 @@ build-ci-image:
     - TAG=ci-image-2
     - docker build --file ci/Dockerfile.gitlab --tag $BUILD_DD_REGISTRY:$TAG .
     - docker push $BUILD_DD_REGISTRY:$TAG
-staging-deploy-gateway-eks:
+.staging-deploy: &staging-deploy
   stage: staging-deploy
   tags: ["runner:docker", "size:large"]
   image: $CI_IMAGE
@@ -79,28 +79,23 @@ staging-deploy-gateway-eks:
     - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
     # # For debugging
     # - aws sts get-caller-identity
-    - bash ./ci/scripts/ci-deploy-gateway.sh
-
+    - bash $SCRIPT $NAMESPACE $VALUES
 staging-deploy-demo-eks:
-  stage: staging-deploy
-  tags: ["runner:docker", "size:large"]
-  image: $CI_IMAGE
-  dependencies:
-    - push-image-staging
-  rules:
-    - if: '$CI_COMMIT_REF_NAME =~ /-staging$/'
-  script:
-    # # For debugging
-    #- aws sts get-caller-identity
-    - >-
-      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-api-key --with-decryption --query Parameter.Value --out text)
-    - >-
-      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-access-key --with-decryption --query Parameter.Value --out text)
-    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
-    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
-    # # For debugging
-    # - aws sts get-caller-identity
-    - bash ./ci/scripts/ci-deploy-staging.sh
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-staging.sh
+    NAMESPACE: otel-staging
+    VALUES: ./ci/values-staging.yaml
+staging-deploy-gateway-eks:
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-staging.sh
+    NAMESPACE: otel-gateway
+    VALUES: ./ci/values-gateway.yaml
+staging-deploy-ds-gateway-eks:
+  !!merge <<: *staging-deploy
+  variables:
+    SCRIPT: ./ci/scripts/ci-deploy-ds-gateway.sh
 prod-deploy-demo-eks:
   stage: prod-deploy
   tags: ["runner:docker", "size:large"]

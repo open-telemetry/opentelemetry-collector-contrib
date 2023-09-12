@@ -7,7 +7,7 @@ securityContext:
   runAsGroup: 0
 resources:
   limits:
-    cpu: 256m
+    cpu: 512m
     memory: 2Gi
 presets:
   logsCollection:

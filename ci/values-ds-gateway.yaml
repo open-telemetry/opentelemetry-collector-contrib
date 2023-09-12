@@ -1,0 +1,11 @@
+mode: deployment
+replicaCount: 3
+nodeSelector:
+  alpha.eksctl.io/nodegroup-name: ng-6
+clusterRole:
+  name: "opentelemetry-collector-ds-gateway"
+  clusterRoleBinding:
+    name: opentelemetry-collector-ds-gateway
+presets:
+  logsCollection:
+    enabled: false
