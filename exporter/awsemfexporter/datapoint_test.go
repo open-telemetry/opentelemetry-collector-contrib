@@ -584,6 +584,7 @@ func TestIsStaleOrNaN_HistogramDataPointSlice(t *testing.T) {
 			}(),
 			boolAssertFunc: assert.True,
 			setFlagsFunc: func(point pmetric.HistogramDataPoint) pmetric.HistogramDataPoint {
+				point.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 				return point
 			},
 		},
