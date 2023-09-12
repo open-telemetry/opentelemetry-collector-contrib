@@ -422,6 +422,8 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
+| k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false |
+| k8s.kubeproxy.version | The version of Kube Proxy running on the node. | Any Str | false |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
 | k8s.node.name | The k8s node name. | Any Str | true |

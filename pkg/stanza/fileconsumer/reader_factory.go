@@ -29,7 +29,7 @@ type readerFactory struct {
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
-	lineSplitFunc, err := f.splitterFactory.Build()
+	lineSplitFunc, err := f.splitterFactory.SplitFunc()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
 	var err error
 	lineSplitFunc := old.lineSplitFunc
 	if lineSplitFunc == nil {
-		lineSplitFunc, err = f.splitterFactory.Build()
+		lineSplitFunc, err = f.splitterFactory.SplitFunc()
 		if err != nil {
 			return nil, err
 		}
