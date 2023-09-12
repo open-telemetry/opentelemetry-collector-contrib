@@ -114,10 +114,10 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 					Name: "start_time",
 				},
 			},
-			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
-			newVal: time.Date(1970, 1, 1, 0, 0, 0, 86400000000000, time.UTC),
+			orig:   int64(100_000_000),
+			newVal: int64(200_000_000),
 			modified: func(datapoint pmetric.NumberDataPoint) {
-				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
 			},
 		},
 		{
