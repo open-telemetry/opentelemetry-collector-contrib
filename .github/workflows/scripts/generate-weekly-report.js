@@ -13,11 +13,11 @@ function debug(msg) {
   console.log(JSON.stringify(msg, null, 2))
 }
 
-async function getIssues(github, queryParams, filterPrs = true) {
+async function getIssues(octokit, queryParams, filterPrs = true) {
   let allIssues = [];
   try {
     while (true) {
-      const response = await github.issues.listForRepo(queryParams);
+      const response = await octokit.issues.listForRepo(queryParams);
       // filter out pull requests
       const issues = filterPrs ? response.data.filter(issue => !issue.pull_request) : response.data;
       allIssues = allIssues.concat(issues);
@@ -57,7 +57,7 @@ function filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }) {
   return createdAt >= sevenDaysAgo && createdAt <= midnightYesterday;
 }
 
-async function getNewIssues({github, context}) {
+async function getNewIssues({octokit, context}) {
   const { sevenDaysAgo, midnightYesterday } = genLookbackDates();
   const queryParams = {
     owner: REPO_OWNER,
@@ -69,7 +69,7 @@ async function getNewIssues({github, context}) {
   };
 
   try {
-    const allIssues = await getIssues(github, queryParams)
+    const allIssues = await getIssues(octokit, queryParams)
     const filteredIssues = allIssues.filter(issue => filterOnDateRange({ issue, sevenDaysAgo, midnightYesterday }));
     return filteredIssues;
   } catch (error) {
@@ -100,7 +100,7 @@ async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
 /**
  * Get data required for issues report
  */
-async function getIssuesData({github, context}) {
+async function getIssuesData({octokit, context}) {
   const targetLabels = {
     "needs triage": {
       filterPrs: true,
@@ -116,11 +116,11 @@ async function getIssuesData({github, context}) {
     },
   };
 
-  const issuesNew = await getNewIssues({github: github.rest, context});
+  const issuesNew = await getNewIssues({octokit, context});
   const issuesWithLabels = {};
   for (const lbl of Object.keys(targetLabels)) {
     const filterPrs = targetLabels[lbl].filterPrs;
-    const resp = await getTargetLabelIssues({octokit: github.rest, labels: lbl, filterPrs, context});
+    const resp = await getTargetLabelIssues({octokit, labels: lbl, filterPrs, context});
     issuesWithLabels[lbl] = resp;
   }
 
@@ -256,25 +256,29 @@ function generateReport({ issuesData, previousReport, componentData }) {
   return report;
 }
 
-async function createIssue({ github, lookbackData, report, context }) {
+async function createIssue({ octokit, lookbackData, report, context }) {
   const title = `Weekly Report: ${lookbackData.sevenDaysAgo.toISOString().slice(0, 10)} - ${lookbackData.midnightYesterday.toISOString().slice(0, 10)}`;
-  return github.rest.issues.create({
+  return octokit.issues.create({
+    // NOTE: we use the owner from the context because folks forking this repo might not have permission to (nor should they when developing) 
+    // create issues in the upstream repository
     owner: context.payload.repository.owner.login,
-    repo: "opentelemetry-collector-contrib",
+    repo: REPO_NAME,
     title,
     body: report,
     labels: ["report"]
   })
 }
 
-async function getLastWeeksReport({ github, since, context }) {
-  const issues = await github.rest.issues.listForRepo({
+async function getLastWeeksReport({ octokit, since, context }) {
+  const issues = await octokit.issues.listForRepo({
+
     owner: context.payload.repository.owner.login,
-    repo: 'opentelemetry-collector-contrib',
+    repo: REPO_NAME,
     state: 'all', // To get both open and closed issues
     labels: ["report"],
     since: since.toISOString(),
     per_page: 1,
+    sort: "created",
     direction: "asc"
   });
   if (issues.data.length === 0) {
@@ -297,12 +301,12 @@ function parseJsonFromText(text) {
   }
 }
 
-async function processIssues({ github, context, lookbackData }) {
-  const issuesData = await getIssuesData({github, context});
+async function processIssues({ octokit, context, lookbackData }) {
+  const issuesData = await getIssuesData({octokit, context});
 
   const prevReportLookback = new Date(lookbackData.sevenDaysAgo)
   prevReportLookback.setDate(prevReportLookback.getDate() - 7)
-  const previousReportIssue = await getLastWeeksReport({github, since: prevReportLookback, context});
+  const previousReportIssue = await getLastWeeksReport({octokit, since: prevReportLookback, context});
   // initialize to zeros
   let previousReport = null;
 
@@ -342,7 +346,7 @@ const findFilesByName = (startPath, filter) => {
       if (stat.isDirectory()) {
           const innerResults = findFilesByName(filename, filter); // Recursive call
           results = results.concat(innerResults);
-      } else if (filename.indexOf(filter) >= 0) {
+      } else if (path.basename(filename) == filter) {
           results.push(filename);
       }
   }
@@ -353,7 +357,6 @@ function processFiles(files) {
   const results = {};
 
   for (let filePath of files) {
-      const component = path.basename(path.dirname(path.dirname(filePath)));  // Top level directory
       const name = path.basename(path.dirname(filePath));                      // Directory of the file
       const fileData = fs.readFileSync(filePath, 'utf8');                   // Read the file as a string
 
@@ -363,6 +366,13 @@ function processFiles(files) {
       } catch (err) {
           console.error(`Error parsing YAML for file ${filePath}:`, err);
           continue;  // Skip this file if there's an error in parsing
+      }
+
+      let component = path.basename(path.dirname(path.dirname(filePath)));
+      try {
+        // if component is defined in metadata status, prefer to use that
+        component = data.status.class;
+      } catch(err) {
       }
 
       if (!results[component]) {
@@ -414,13 +424,14 @@ async function processComponents() {
 
 async function main({ github, context }) {
   debug({msg: "running..."})
+  const octokit = github.rest;
   const lookbackData = genLookbackDates();
-  const {issuesData, previousReport} = await processIssues({ github, context, lookbackData })
+  const {issuesData, previousReport} = await processIssues({ octokit, context, lookbackData })
   const componentData = await processComponents()
 
   const report = generateReport({ issuesData, previousReport, componentData })
 
-  await createIssue({github, lookbackData, report, context});
+  await createIssue({octokit, lookbackData, report, context});
 }
 
 module.exports = async ({ github, context }) => {
