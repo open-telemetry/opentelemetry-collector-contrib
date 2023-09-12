@@ -25,7 +25,7 @@ func NewCustomFactory(splitFunc bufio.SplitFunc, flushPeriod time.Duration) Fact
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *customFactory) Build() (bufio.SplitFunc, error) {
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *customFactory) SplitFunc() (bufio.SplitFunc, error) {
 	return flush.WithPeriod(f.splitFunc, trim.Nop, f.flushPeriod), nil
 }
