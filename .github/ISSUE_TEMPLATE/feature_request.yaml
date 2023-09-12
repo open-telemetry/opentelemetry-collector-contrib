@@ -50,8 +50,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/loadbalancing
       - exporter/logicmonitor
