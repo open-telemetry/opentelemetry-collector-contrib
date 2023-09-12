@@ -90,7 +90,6 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		res, err = s.splunkClient.makeRequest(req)
 		if err != nil {
 			errs.Add(err)
-			res.Body.Close()
 			return
 		}
 
