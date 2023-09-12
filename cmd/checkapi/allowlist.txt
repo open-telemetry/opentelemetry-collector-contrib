@@ -26,7 +26,6 @@ receiver/dockerstatsreceiver
 receiver/fluentforwardreceiver
 receiver/jaegerreceiver
 receiver/journaldreceiver
-receiver/kafkareceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver

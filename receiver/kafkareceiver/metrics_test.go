@@ -10,7 +10,7 @@ import (
 )
 
 func TestMetrics(t *testing.T) {
-	metricViews := MetricViews()
+	metricViews := metricViews()
 	viewNames := []string{
 		"kafka_receiver_messages",
 		"kafka_receiver_current_offset",
