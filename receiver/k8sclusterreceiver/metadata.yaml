@@ -265,13 +265,13 @@ metrics:
   k8s.deployment.desired:
     enabled: true
     description: Number of desired pods in this deployment
-    unit: 1
+    unit: "{pod}"
     gauge:
       value_type: int
   k8s.deployment.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
-    unit: 1
+    unit: "{pod}"
     gauge:
      value_type: int
 
