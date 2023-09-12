@@ -5,7 +5,7 @@ package splunkenterprisereceiver // import "github.com/open-telemetry/openteleme
 
 // metric name and its associated search as a key value pair
 var searchDict = map[string]string{
-	`SplunkLicenseIndexUsageSearch`: `search=search index=_internal source=*license_usage.log type="Usage"| fields idx, b| eval indexname = if(len(idx)=0 OR isnull(idx),"(UNKNOWN)",idx)| stats sum(b) as b by indexname| eval GB=round(b/1024/1024/1024, 3)| fields indexname, GB`,
+	`SplunkLicenseIndexUsageSearch`: `search=search index=_internal source=*license_usage.log type="Usage"| fields idx, b| eval indexname = if(len(idx)=0 OR isnull(idx),"(UNKNOWN)",idx)| stats sum(b) as b by indexname| eval By=round(b, 9)| fields indexname, By`,
 }
 
 var apiDict = map[string]string{

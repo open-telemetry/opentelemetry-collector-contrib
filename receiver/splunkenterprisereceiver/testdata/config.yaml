@@ -12,5 +12,5 @@ splunkenterprise:
   metrics:
     splunk.license.index.usage:
       enabled: true
-    splunk.server.introspection.indexer.throughput:
+    splunk.indexer.throughput:
       enabled: false

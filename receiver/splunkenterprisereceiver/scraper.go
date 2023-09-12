@@ -124,13 +124,13 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 		case "indexname":
 			indexName = f.Value
 			continue
-		case "GB":
+		case "By":
 			v, err := strconv.ParseFloat(f.Value, 64)
 			if err != nil {
 				errs.Add(err)
 				continue
 			}
-			s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, v, indexName)
+			s.mb.RecordSplunkLicenseIndexUsageDataPoint(now, int64(v), indexName)
 		}
 	}
 }
@@ -161,7 +161,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	var it indexThroughput
 	var ept string
 
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled {
 		return
 	}
 
@@ -190,6 +190,6 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	}
 
 	for _, entry := range it.Entries {
-		s.mb.RecordSplunkServerIntrospectionIndexerThroughputDataPoint(now, entry.Content.AvgKb, entry.Content.Status)
+		s.mb.RecordSplunkIndexerThroughputDataPoint(now, 1000*entry.Content.AvgKb, entry.Content.Status)
 	}
 }

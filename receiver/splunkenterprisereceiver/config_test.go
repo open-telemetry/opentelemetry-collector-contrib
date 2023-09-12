@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 
 	testmetrics := metadata.DefaultMetricsBuilderConfig()
 	testmetrics.Metrics.SplunkLicenseIndexUsage.Enabled = true
-	testmetrics.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled = false
+	testmetrics.Metrics.SplunkIndexerThroughput.Enabled = false
 
 	expected := &Config{
 		Username:          "admin",

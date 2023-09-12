@@ -9,30 +9,27 @@ status:
     active: [shalper2, MovieStoreGuy]
 
 attributes:
-  index.name:
+  splunk.index.name:
     description: The name of the index reporting a specific KPI
     type: string
-  status:
+  splunk.indexer.status:
     description: The status message reported for a specific object
-    type: string
-  bucket.dir:
-    description: The bucket super-directory (home, cold, thawed) for each index
     type: string
 
 metrics:
   splunk.license.index.usage:
     enabled: true
     description: Gauge tracking the indexed license usage per index
-    unit: GBy
+    unit: By
     gauge:
-      value_type: double
-    attributes: [index.name]
+      value_type: int 
+    attributes: [splunk.index.name]
   # 'services/server/introspection/indexer'
-  splunk.server.introspection.indexer.throughput:
+  splunk.indexer.throughput:
     enabled: true
     description: Gauge tracking average KBps throughput of indexer
-    unit: KBy
+    unit: By/s
     gauge:
       value_type: double
     # attribute `status` can be one of the following `normal`, `throttled`, `stopped`
-    attributes: [status]
+    attributes: [splunk.indexer.status]

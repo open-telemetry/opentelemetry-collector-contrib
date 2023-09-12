@@ -50,7 +50,7 @@ func TestScraper(t *testing.T) {
 
 	// in the future add more metrics
 	metricsettings := metadata.MetricsBuilderConfig{}
-	metricsettings.Metrics.SplunkServerIntrospectionIndexerThroughput.Enabled = true
+	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
 
 	cfg := &Config{
 		Username:          "admin",
