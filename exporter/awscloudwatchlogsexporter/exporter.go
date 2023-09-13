@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
-type exporter struct {
+type cwlExporter struct {
 	Config           *Config
 	logger           *zap.Logger
 	retryCount       int
@@ -47,7 +47,7 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, error) {
+func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -79,7 +79,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, e
 
 	pusherMap[pusherKey] = pusher
 
-	logsExporter := &exporter{
+	logsExporter := &cwlExporter{
 		svcStructuredLog: svcStructuredLog,
 		Config:           expConfig,
 		logger:           params.Logger,
@@ -108,7 +108,7 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 	)
 }
 
-func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	logEvents, _ := logsToCWLogs(e.logger, ld, e.Config)
 	if len(logEvents) == 0 {
 		return nil
@@ -146,7 +146,7 @@ func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	return nil
 }
 
-func (e *exporter) getLogPusher(logEvent *cwlogs.Event) cwlogs.Pusher {
+func (e *cwlExporter) getLogPusher(logEvent *cwlogs.Event) cwlogs.Pusher {
 	e.pusherMapLock.Lock()
 	defer e.pusherMapLock.Unlock()
 	pusherKey := cwlogs.PusherKey{
@@ -160,7 +160,7 @@ func (e *exporter) getLogPusher(logEvent *cwlogs.Event) cwlogs.Pusher {
 	return e.pusherMap[pusherKey]
 }
 
-func (e *exporter) shutdown(_ context.Context) error {
+func (e *cwlExporter) shutdown(_ context.Context) error {
 	if e.pusherMap != nil {
 		for _, pusher := range e.pusherMap {
 			pusher.ForceFlush()

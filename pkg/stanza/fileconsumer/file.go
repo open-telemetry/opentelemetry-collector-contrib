@@ -69,7 +69,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnw("finding files", "error", err.Error())
+		m.Warnf("finding files: %v", err)
 	}
 
 	// If useThreadPool is enabled, kick off the worker threads
@@ -143,7 +143,7 @@ func (m *Manager) pollRegular(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Errorf("error finding files: %s", err)
+		m.Warnf("finding files: %v", err)
 	}
 
 	for len(matches) > m.maxBatchFiles {
@@ -160,18 +160,6 @@ func (m *Manager) pollRegular(ctx context.Context) {
 		matches = matches[m.maxBatchFiles:]
 	}
 	m.consume(ctx, matches)
-}
-
-func (m *Manager) readToEnd(ctx context.Context, r *reader) bool {
-	r.ReadToEnd(ctx)
-	if m.deleteAfterRead && r.eof {
-		r.Close()
-		if err := os.Remove(r.file.Name()); err != nil {
-			m.Errorf("could not delete %s", r.file.Name())
-		}
-		return true
-	}
-	return false
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
@@ -194,7 +182,11 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader) {
 			defer wg.Done()
-			m.readToEnd(ctx, r)
+			r.ReadToEnd(ctx)
+			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
+			if m.deleteAfterRead && r.eof {
+				r.Delete()
+			}
 		}(r)
 	}
 	wg.Wait()

@@ -24,7 +24,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -54,7 +55,6 @@ func NewConfigWithID(operatorID string) *Config {
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
 			OneLogPerPacket: false,
-			Multiline:       tokenize.NewMultilineConfig(),
 			Encoding:        "utf-8",
 		},
 	}
@@ -68,22 +68,22 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
-	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
-	OneLogPerPacket             bool                        `mapstructure:"one_log_per_packet,omitempty"`
-	Encoding                    string                      `mapstructure:"encoding,omitempty"`
-	Multiline                   tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
-	MultiLineBuilder            MultiLineBuilderFunc
+	MaxLogSize       helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                      `mapstructure:"listen_address,omitempty"`
+	TLS              *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                      `mapstructure:"encoding,omitempty"`
+	SplitConfig      split.Config                `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config                 `mapstructure:",squash"`
+	SplitFuncBuilder SplitFuncBuilder
 }
 
-type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
+type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
 func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, int(c.MaxLogSize))
+	trimFunc := c.TrimConfig.Func()
+	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), trimFunc)
 	if err != nil {
 		return nil, err
 	}
@@ -120,12 +120,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if c.MultiLineBuilder == nil {
-		c.MultiLineBuilder = c.defaultMultilineBuilder
+	if c.SplitFuncBuilder == nil {
+		c.SplitFuncBuilder = c.defaultMultilineBuilder
 	}
 
-	// Build multiline
-	splitFunc, err := c.MultiLineBuilder(enc)
+	// Build split func
+	splitFunc, err := c.SplitFuncBuilder(enc)
 	if err != nil {
 		return nil, err
 	}

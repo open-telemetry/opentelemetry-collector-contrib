@@ -5,69 +5,110 @@ package splitter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/text/encoding/unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-func TestMultilineBuild(t *testing.T) {
-	type args struct {
-		maxLogSize int
+func TestSplitFuncError(t *testing.T) {
+	sCfg := split.Config{
+		LineStartPattern: "START",
+		LineEndPattern:   "END",
 	}
-	tests := []struct {
-		name           string
-		splitterConfig tokenize.SplitterConfig
-		args           args
-		wantErr        bool
-	}{
-		{
-			name:           "default configuration",
-			splitterConfig: tokenize.NewSplitterConfig(),
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: false,
-		},
-		{
-			name: "eoncoding error",
-			splitterConfig: tokenize.SplitterConfig{
-				Encoding:  "error",
-				Flusher:   tokenize.NewFlusherConfig(),
-				Multiline: tokenize.NewMultilineConfig(),
-			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
-		},
-		{
-			name: "Multiline  error",
-			splitterConfig: tokenize.SplitterConfig{
-				Encoding: "utf-8",
-				Flusher:  tokenize.NewFlusherConfig(),
-				Multiline: tokenize.MultilineConfig{
-					LineStartPattern: "START",
-					LineEndPattern:   "END",
-				},
-			},
-			args: args{
-				maxLogSize: 1024,
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := NewMultilineFactory(tt.splitterConfig, tt.args.maxLogSize)
-			got, err := factory.Build()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if err == nil {
-				assert.NotNil(t, got)
-			}
-		})
-	}
+	factory := NewSplitFuncFactory(sCfg, unicode.UTF8, 1024, trim.Nop, 0)
+	splitFunc, err := factory.SplitFunc()
+	assert.Error(t, err)
+	assert.Nil(t, splitFunc)
+}
+
+func TestSplitFunc(t *testing.T) {
+	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Nop, 0)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+}
+
+func TestSplitFuncWithFlush(t *testing.T) {
+	flushPeriod := 100 * time.Millisecond
+	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Nop, flushPeriod)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+
+	time.Sleep(2 * flushPeriod)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, advance)
+	assert.Equal(t, []byte(" extra "), token)
+}
+
+func TestSplitFuncWithTrim(t *testing.T) {
+	flushPeriod := 100 * time.Millisecond
+	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Whitespace, flushPeriod)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte("hello"), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte("world"), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+
+	time.Sleep(2 * flushPeriod)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, advance)
+	assert.Equal(t, []byte("extra"), token) // Ensure trim applies to flushed token
 }

@@ -18,7 +18,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -44,9 +45,8 @@ func NewConfigWithID(operatorID string) *Config {
 		BaseConfig: BaseConfig{
 			Encoding:        "utf-8",
 			OneLogPerPacket: false,
-			Multiline: tokenize.MultilineConfig{
-				LineStartPattern: "",
-				LineEndPattern:   ".^", // Use never matching regex to not split data by default
+			SplitConfig: split.Config{
+				LineEndPattern: ".^", // Use never matching regex to not split data by default
 			},
 		},
 	}
@@ -60,13 +60,12 @@ type Config struct {
 
 // BaseConfig is the details configuration of a udp input operator.
 type BaseConfig struct {
-	ListenAddress               string                   `mapstructure:"listen_address,omitempty"`
-	OneLogPerPacket             bool                     `mapstructure:"one_log_per_packet,omitempty"`
-	AddAttributes               bool                     `mapstructure:"add_attributes,omitempty"`
-	Encoding                    string                   `mapstructure:"encoding,omitempty"`
-	Multiline                   tokenize.MultilineConfig `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                     `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                     `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	ListenAddress   string       `mapstructure:"listen_address,omitempty"`
+	OneLogPerPacket bool         `mapstructure:"one_log_per_packet,omitempty"`
+	AddAttributes   bool         `mapstructure:"add_attributes,omitempty"`
+	Encoding        string       `mapstructure:"encoding,omitempty"`
+	SplitConfig     split.Config `mapstructure:"multiline,omitempty"`
+	TrimConfig      trim.Config  `mapstructure:",squash"`
 }
 
 // Build will build a udp input operator.
@@ -90,8 +89,8 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	// Build multiline
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, MaxUDPSize)
+	// Build SplitFunc
+	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize, c.TrimConfig.Func())
 	if err != nil {
 		return nil, err
 	}

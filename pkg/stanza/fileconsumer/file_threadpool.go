@@ -73,12 +73,15 @@ func (m *Manager) worker(ctx context.Context) {
 				return
 			}
 			r, fp := wrapper.reader, wrapper.trieKey
-			if !m.readToEnd(ctx, r) && !wrapper.close {
-				// Save off any files that were not fully read or if deleteAfterRead is disabled.
+			r.ReadToEnd(ctx)
+			if m.deleteAfterRead && r.eof {
+				r.Delete()
+			} else if !wrapper.close {
+				// Save off any files that were not fully read.
 				m.knownFilesLock.Lock()
 				m.knownFiles = append(m.knownFiles, r)
 				m.knownFilesLock.Unlock()
-			} else if wrapper.close {
+			} else {
 				// this is a lost reader, close it and release the file descriptor
 				r.Close()
 			}

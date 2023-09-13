@@ -26,9 +26,15 @@ type Config struct {
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.2
 	ClientID string `mapstructure:"client_id"`
 
+	// ClientIDFile is the file path to read the application's ID from.
+	ClientIDFile string `mapstructure:"client_id_file"`
+
 	// ClientSecret is the application's secret.
 	// See https://datatracker.ietf.org/doc/html/rfc6749#section-2.3.1
 	ClientSecret configopaque.String `mapstructure:"client_secret"`
+
+	// ClientSecretFile is the file pathg to read the application's secret from.
+	ClientSecretFile string `mapstructure:"client_secret_file"`
 
 	// EndpointParams specifies additional parameters for requests to the token endpoint.
 	EndpointParams url.Values `mapstructure:"endpoint_params"`
@@ -54,10 +60,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return errNoClientSecretProvided
 	}
 	if cfg.TokenURL == "" {
