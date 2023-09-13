@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -36,7 +37,7 @@ const (
 
 	responseOK                      = "OK"
 	responseInvalidMethod           = "Only \"POST\" method is supported"
-	responseInvalidContentType      = "\"Content-Type\" must be \"application/x-protobuf\""
+	responseInvalidContentType      = "\"Content-Type\" must be \"application/x-protobuf\" or \"application/x-protobuf;format=otlp\""
 	responseInvalidEncoding         = "\"Content-Encoding\" must be \"gzip\" or empty"
 	responseErrGzipReader           = "Error on gzip body"
 	responseErrReadBody             = "Failed to read message body"
@@ -47,6 +48,7 @@ const (
 
 	// Centralizing some HTTP and related string constants.
 	protobufContentType       = "application/x-protobuf"
+	otlpProtobufContentType   = "application/x-protobuf;format=otlp"
 	gzipEncoding              = "gzip"
 	httpContentTypeHeader     = "Content-Type"
 	httpContentEncodingHeader = "Content-Encoding"
@@ -167,21 +169,22 @@ func (r *sfxReceiver) Shutdown(context.Context) error {
 	return err
 }
 
-func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) ([]byte, bool) {
+func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, req *http.Request) (string, []byte, bool) {
 	if req.Method != http.MethodPost {
 		r.failRequest(ctx, resp, http.StatusBadRequest, invalidMethodRespBody, nil)
-		return nil, false
+		return "", nil, false
 	}
 
-	if req.Header.Get(httpContentTypeHeader) != protobufContentType {
+	contentType := req.Header.Get(httpContentTypeHeader)
+	if contentType != protobufContentType && contentType != otlpProtobufContentType {
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidContentRespBody, nil)
-		return nil, false
+		return "", nil, false
 	}
 
 	encoding := req.Header.Get(httpContentEncodingHeader)
 	if encoding != "" && encoding != gzipEncoding {
 		r.failRequest(ctx, resp, http.StatusUnsupportedMediaType, invalidEncodingRespBody, nil)
-		return nil, false
+		return "", nil, false
 	}
 
 	bodyReader := req.Body
@@ -190,16 +193,16 @@ func (r *sfxReceiver) readBody(ctx context.Context, resp http.ResponseWriter, re
 		bodyReader, err = gzip.NewReader(bodyReader)
 		if err != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, errGzipReaderRespBody, err)
-			return nil, false
+			return "", nil, false
 		}
 	}
 
 	body, err := io.ReadAll(bodyReader)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusBadRequest, errReadBodyRespBody, err)
-		return nil, false
+		return "", nil, false
 	}
-	return body, true
+	return contentType, body, true
 }
 
 func (r *sfxReceiver) writeResponse(ctx context.Context, resp http.ResponseWriter, err error) {
@@ -223,26 +226,46 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 		return
 	}
 
-	body, ok := r.readBody(ctx, resp, req)
+	contentType, body, ok := r.readBody(ctx, resp, req)
 	if !ok {
 		return
 	}
 
-	msg := &sfxpb.DataPointUploadMessage{}
-	if err := msg.Unmarshal(body); err != nil {
-		r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
-		return
-	}
+	var err error
+	var dataPointCnt int
+	var md pmetric.Metrics
+	if contentType == otlpProtobufContentType {
+		metricsUnmarshaler := &pmetric.ProtoUnmarshaler{}
+		md, err = metricsUnmarshaler.UnmarshalMetrics(body)
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+			return
+		}
 
-	if len(msg.Datapoints) == 0 {
-		r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
-		_, _ = resp.Write(okRespBody)
-		return
-	}
+		dataPointCnt = md.DataPointCount()
+		if dataPointCnt == 0 {
+			r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+			_, _ = resp.Write(okRespBody)
+			return
+		}
+	} else {
+		msg := &sfxpb.DataPointUploadMessage{}
+		if err = msg.Unmarshal(body); err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, errUnmarshalBodyRespBody, err)
+			return
+		}
 
-	md, err := translator.ToMetrics(msg.Datapoints)
-	if err != nil {
-		r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
+		dataPointCnt = len(msg.Datapoints)
+		if dataPointCnt == 0 {
+			r.obsrecv.EndMetricsOp(ctx, metadata.Type, 0, nil)
+			_, _ = resp.Write(okRespBody)
+			return
+		}
+
+		md, err = translator.ToMetrics(msg.Datapoints)
+		if err != nil {
+			r.settings.Logger.Debug("SignalFx conversion error", zap.Error(err))
+		}
 	}
 
 	if r.config.AccessTokenPassthrough {
@@ -256,7 +279,7 @@ func (r *sfxReceiver) handleDatapointReq(resp http.ResponseWriter, req *http.Req
 	}
 
 	err = r.metricsConsumer.ConsumeMetrics(ctx, md)
-	r.obsrecv.EndMetricsOp(ctx, metadata.Type, len(msg.Datapoints), err)
+	r.obsrecv.EndMetricsOp(ctx, metadata.Type, dataPointCnt, err)
 
 	r.writeResponse(ctx, resp, err)
 }
@@ -269,7 +292,7 @@ func (r *sfxReceiver) handleEventReq(resp http.ResponseWriter, req *http.Request
 		return
 	}
 
-	body, ok := r.readBody(ctx, resp, req)
+	_, body, ok := r.readBody(ctx, resp, req)
 	if !ok {
 		return
 	}

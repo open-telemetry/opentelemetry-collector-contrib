@@ -17,7 +17,7 @@
 The SignalFx receiver accepts:
 
 - Metrics in the [SignalFx proto
-format](https://github.com/signalfx/com_signalfx_metrics_protobuf).
+format](https://github.com/signalfx/com_signalfx_metrics_protobuf) or [OTLP proto format](https://github.com/open-telemetry/opentelemetry-proto/blob/c4dfbc51f3cd4089778555a2ac5d9bc093ed2956/opentelemetry/proto/metrics/v1/metrics.proto#L38). If accept OTLP metrics, incoming requests have the header set to `application/x-protobuf;format=otlp`.
 - Events (Logs) in the [SignalFx proto
 format](https://github.com/signalfx/com_signalfx_metrics_protobuf/blob/master/proto/signalfx_metrics.proto#L137).
 More information about sending custom events can be found in the [SignalFx

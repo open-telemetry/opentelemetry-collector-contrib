@@ -184,6 +184,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 	currentTime := time.Now().Unix() * 1e3
 	sFxMsg := buildSFxDatapointMsg(currentTime, 13, 3)
+	otlpMsg := buildOtlpDatapointMsg()
 
 	tests := []struct {
 		name             string
@@ -265,10 +266,34 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "otlp_bad_data_in_body",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader([]byte{1, 2, 3, 4}))
+				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrUnmarshalBody, body)
+			},
+		},
+		{
 			name: "empty_body",
 			req: func() *http.Request {
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(nil))
 				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseOK, body)
+			},
+		},
+		{
+			name: "otlp_empty_body",
+			req: func() *http.Request {
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(nil))
+				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -283,6 +308,21 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/x-protobuf")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseOK, body)
+			},
+		},
+		{
+			name: "otlp_msg_accepted",
+			req: func() *http.Request {
+				marshaler := &pmetric.ProtoMarshaler{}
+				msgBytes, err := marshaler.MarshalMetrics(otlpMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
 				return req
 			}(),
 			assertResponse: func(t *testing.T, status int, body string) {
@@ -313,6 +353,29 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 			},
 		},
 		{
+			name: "otlp_msg_accepted_gzipped",
+			req: func() *http.Request {
+				marshaler := &pmetric.ProtoMarshaler{}
+				msgBytes, err := marshaler.MarshalMetrics(otlpMsg)
+				require.NoError(t, err)
+
+				var buf bytes.Buffer
+				gzipWriter := gzip.NewWriter(&buf)
+				_, err = gzipWriter.Write(msgBytes)
+				require.NoError(t, err)
+				require.NoError(t, gzipWriter.Close())
+
+				req := httptest.NewRequest("POST", "http://localhost", &buf)
+				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
+				req.Header.Set("Content-Encoding", "gzip")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, responseOK, body)
+			},
+		},
+		{
 			name: "bad_gzipped_msg",
 			req: func() *http.Request {
 				msgBytes, err := sFxMsg.Marshal()
@@ -320,6 +383,23 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 
 				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
 				req.Header.Set("Content-Type", "application/x-protobuf")
+				req.Header.Set("Content-Encoding", "gzip")
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseErrGzipReader, body)
+			},
+		},
+		{
+			name: "otlp_bad_gzipped_msg",
+			req: func() *http.Request {
+				marshaler := &pmetric.ProtoMarshaler{}
+				msgBytes, err := marshaler.MarshalMetrics(otlpMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost", bytes.NewReader(msgBytes))
+				req.Header.Set("Content-Type", "application/x-protobuf;format=otlp")
 				req.Header.Set("Content-Encoding", "gzip")
 				return req
 			}(),
@@ -764,6 +844,18 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			}
 		})
 	}
+}
+
+func buildOtlpDatapointMsg() pmetric.Metrics {
+	md := pmetric.NewMetrics()
+	ilm := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	m := ilm.Metrics().AppendEmpty()
+	m.SetName("expohisto")
+	ep := m.SetEmptyExponentialHistogram()
+	ep.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	dp := ep.DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("mykey", "myvalue")
+	return md
 }
 
 func buildSFxDatapointMsg(time int64, value int64, dimensions uint) *sfxpb.DataPointUploadMessage {
