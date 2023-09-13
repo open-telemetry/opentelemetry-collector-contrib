@@ -14,7 +14,7 @@ require (
 )
 
 require (
-	github.com/alecthomas/participle/v2 v2.0.0 // indirect
+	github.com/alecthomas/participle/v2 v2.1.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
