@@ -22,17 +22,17 @@ type Multiline struct {
 // NewMultilineConfig creates a new Multiline config
 func NewMultilineConfig() MultilineConfig {
 	return MultilineConfig{
-		LineStartPattern:      "",
-		LineEndPattern:        "",
-		OmitPatternFromRecord: false,
+		LineStartPattern: "",
+		LineEndPattern:   "",
+		OmitPattern:      false,
 	}
 }
 
 // MultilineConfig is the configuration of a multiline helper
 type MultilineConfig struct {
-	LineStartPattern      string `mapstructure:"line_start_pattern"`
-	LineEndPattern        string `mapstructure:"line_end_pattern"`
-	OmitPatternFromRecord bool   `mapstructure:"omit_pattern_from_record"`
+	LineStartPattern string `mapstructure:"line_start_pattern"`
+	LineEndPattern   string `mapstructure:"line_end_pattern"`
+	OmitPattern      bool   `mapstructure:"omit_pattern"`
 }
 
 // Build will build a Multiline operator.
@@ -67,13 +67,13 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, ma
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
-		splitFunc = LineEndSplitFunc(re, c.OmitPatternFromRecord, flushAtEOF, trimFunc)
+		splitFunc = LineEndSplitFunc(re, c.OmitPattern, flushAtEOF, trimFunc)
 	case startPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
-		splitFunc = LineStartSplitFunc(re, c.OmitPatternFromRecord, flushAtEOF, trimFunc)
+		splitFunc = LineStartSplitFunc(re, c.OmitPattern, flushAtEOF, trimFunc)
 	default:
 		return nil, fmt.Errorf("unreachable")
 	}
@@ -82,7 +82,7 @@ func (c MultilineConfig) getSplitFunc(enc encoding.Encoding, flushAtEOF bool, ma
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that start with a match to the regex pattern provided
-func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEOF bool, trimFunc trim.Func) bufio.SplitFunc {
+func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool, trimFunc trim.Func) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		firstLoc := re.FindIndex(data)
 		if firstLoc == nil {
@@ -109,7 +109,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEO
 		}
 
 		if firstMatchEnd == len(data) {
-			if omitPatternFromRecord {
+			if omitPattern {
 				// read more data and try again
 				return firstMatchEnd, nil, nil
 			}
@@ -120,7 +120,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEO
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			if omitPatternFromRecord {
+			if omitPattern {
 				token = trimFunc(data[firstMatchEnd:])
 			} else {
 				token = trimFunc(data)
@@ -132,7 +132,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEO
 		secondLocOfset := firstMatchEnd + 1
 		secondLoc := re.FindIndex(data[secondLocOfset:])
 		if secondLoc == nil {
-			if omitPatternFromRecord {
+			if omitPattern {
 				// read more data and try again
 				return firstMatchEnd, nil, nil
 			}
@@ -143,7 +143,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEO
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
 		advance = secondMatchStart // start scanning at the beginning of the second match
-		if omitPatternFromRecord {
+		if omitPattern {
 			token = trimFunc(data[firstMatchEnd:secondMatchStart]) // the token begins after the first match, and ends at the beginning of the second match
 		} else {
 			token = trimFunc(data[firstMatchStart:secondMatchStart]) // the token begins at the first match, and ends at the beginning of the second match
@@ -155,7 +155,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEO
 
 // LineEndSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
 // tokens that end with a match to the regex pattern provided
-func LineEndSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEOF bool, trimFunc trim.Func) bufio.SplitFunc {
+func LineEndSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool, trimFunc trim.Func) bufio.SplitFunc {
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		loc := re.FindIndex(data)
 		if loc == nil {
@@ -175,7 +175,7 @@ func LineEndSplitFunc(re *regexp.Regexp, omitPatternFromRecord bool, flushAtEOF 
 		}
 
 		advance = loc[1]
-		if omitPatternFromRecord {
+		if omitPattern {
 			token = trimFunc(data[:loc[0]])
 		} else {
 			token = trimFunc(data[:loc[1]])

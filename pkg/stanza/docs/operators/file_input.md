@@ -44,7 +44,7 @@ If set, the `multiline` configuration block instructs the `file_input` operator 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
 match either the beginning of a new log entry, or the end of a log entry.
 
-You can set the `omit_pattern_from_record` in case you want to omit the start/end pattern from each entry.
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
 
 If using multiline, last log can sometimes be not flushed due to waiting for more content.
 In order to forcefully flush last buffered log after certain period of time,

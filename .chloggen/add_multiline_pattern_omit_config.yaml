@@ -5,7 +5,7 @@ change_type: enhancement
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add option to send multiple logs in a single text, split to multiple entries and omit the delimiter pattern from each entry. use the 'omit_pattern_from_record' setting in multiline configuration to omit the start/end pattern from log entry.
+note: Add option to send multiple logs in a single text, split to multiple entries and omit the delimiter pattern from each entry. use the 'omit_pattern_from' setting in multiline configuration to omit the start/end pattern from log entry.
 
 # One or more tracking issues related to the change
 issues: [26381]
