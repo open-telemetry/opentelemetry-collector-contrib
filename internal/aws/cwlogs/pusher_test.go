@@ -247,3 +247,90 @@ func TestAddLogEventWithValidation(t *testing.T) {
 	logEvent = NewEvent(timestampMs, "")
 	assert.NotNil(t, p.addLogEvent(logEvent))
 }
+
+func TestStreamManager(t *testing.T) {
+	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
+	mockCwAPI := svc.svc.(*mockCloudWatchLogsClient)
+	manager := NewLogStreamManager(*svc)
+
+	// Verify that the stream is created in the first time
+	assert.Nil(t, manager.InitStream(StreamKey{
+		LogGroupName:  "foo",
+		LogStreamName: "bar",
+	}))
+
+	mockCwAPI.AssertCalled(t, "CreateLogStream", mock.Anything)
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
+
+	// Verify that the stream is not created in the second time
+	assert.Nil(t, manager.InitStream(StreamKey{
+		LogGroupName:  "foo",
+		LogStreamName: "bar",
+	}))
+
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
+
+	// Verify that a different stream is created
+	assert.Nil(t, manager.InitStream(StreamKey{
+		LogGroupName:  "foo",
+		LogStreamName: "bar2",
+	}))
+
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 2)
+}
+
+func TestMultiStreamFactory(t *testing.T) {
+	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
+	logStreamManager := NewLogStreamManager(*svc)
+	factory := NewMultiStreamPusherFactory(logStreamManager, *svc, nil)
+
+	pusher := factory.CreateMultiStreamPusher()
+
+	assert.IsType(t, &multiStreamPusher{}, pusher)
+}
+
+func TestMultiStreamPusher(t *testing.T) {
+	inputs := make([]*cloudwatchlogs.PutLogEventsInput, 0)
+	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
+		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
+		inputs = append(inputs, input)
+	})
+	mockCwAPI := svc.svc.(*mockCloudWatchLogsClient)
+	manager := NewLogStreamManager(*svc)
+	zap := zap.NewNop()
+	pusher := newMultiStreamPusher(manager, *svc, zap)
+	event := NewEvent(time.Now().UnixMilli(), "testing")
+	event.StreamKey.LogGroupName = "foo"
+	event.StreamKey.LogStreamName = "bar"
+	event.GeneratedTime = time.Now()
+
+	assert.Nil(t, pusher.AddLogEntry(event))
+	assert.Nil(t, pusher.AddLogEntry(event))
+	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 0)
+	assert.Nil(t, pusher.ForceFlush())
+
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 2)
+	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 1)
+
+	assert.Equal(t, 1, len(inputs))
+	assert.Equal(t, 2, len(inputs[0].LogEvents))
+	assert.Equal(t, "foo", *inputs[0].LogGroupName)
+	assert.Equal(t, "bar", *inputs[0].LogStreamName)
+
+	event2 := NewEvent(time.Now().UnixMilli(), "testing")
+	event2.StreamKey.LogGroupName = "foo"
+	event2.StreamKey.LogStreamName = "bar2"
+	event2.GeneratedTime = time.Now()
+
+	assert.Nil(t, pusher.AddLogEntry(event2))
+	assert.Nil(t, pusher.ForceFlush())
+
+	// We get 4 calls because the first call is for a tentative stream creation
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 4)
+	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 2)
+
+	assert.Equal(t, 2, len(inputs))
+	assert.Equal(t, 1, len(inputs[1].LogEvents))
+	assert.Equal(t, "foo", *inputs[1].LogGroupName)
+	assert.Equal(t, "bar2", *inputs[1].LogStreamName)
+}

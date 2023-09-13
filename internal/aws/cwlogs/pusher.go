@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -344,4 +345,111 @@ func (p *logPusher) renewEventBatch() *eventBatch {
 	}
 
 	return prevBatch
+}
+
+// A Pusher that is able to send events to multiple streams.
+type multiStreamPusher struct {
+	logStreamManager LogStreamManager
+	client           Client
+	pusherMap        map[StreamKey]Pusher
+	logger           *zap.Logger
+}
+
+func newMultiStreamPusher(logStreamManager LogStreamManager, client Client, logger *zap.Logger) *multiStreamPusher {
+	return &multiStreamPusher{
+		logStreamManager: logStreamManager,
+		client:           client,
+		logger:           logger,
+		pusherMap:        make(map[StreamKey]Pusher),
+	}
+}
+
+func (m *multiStreamPusher) AddLogEntry(event *Event) error {
+	if err := m.logStreamManager.InitStream(event.StreamKey); err != nil {
+		return err
+	}
+
+	var pusher Pusher
+
+	if _, ok := m.pusherMap[event.StreamKey]; !ok {
+		pusher = NewPusher(event.StreamKey, 1, m.client, m.logger)
+		m.pusherMap[event.StreamKey] = pusher
+	} else {
+		pusher = m.pusherMap[event.StreamKey]
+	}
+
+	return pusher.AddLogEntry(event)
+}
+
+func (m *multiStreamPusher) ForceFlush() error {
+	var errors error
+	for _, val := range m.pusherMap {
+		err := val.ForceFlush()
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+
+	return errors
+}
+
+// Factory for a Pusher that has capability of sending events to multiple log streams
+type MultiStreamPusherFactory interface {
+	CreateMultiStreamPusher() Pusher
+}
+
+type multiStreamPusherFactory struct {
+	logStreamManager LogStreamManager
+	logger           *zap.Logger
+	client           Client
+}
+
+// Creates a new MultiStreamPusherFactory
+func NewMultiStreamPusherFactory(logStreamManager LogStreamManager, client Client, logger *zap.Logger) MultiStreamPusherFactory {
+	return &multiStreamPusherFactory{
+		logStreamManager: logStreamManager,
+		client:           client,
+		logger:           logger,
+	}
+}
+
+// Factory method to create a Pusher that has support to sending events to multiple log streams
+func (msf *multiStreamPusherFactory) CreateMultiStreamPusher() Pusher {
+	return newMultiStreamPusher(msf.logStreamManager, msf.client, msf.logger)
+}
+
+// Manages the creation of streams
+type LogStreamManager interface {
+	// Initialize a stream so that it can receive logs
+	// This will make sure that the stream exists and if it does not exist,
+	// It will create one. Implementations of this method MUST be thread safe.
+	InitStream(streamKey StreamKey) error
+}
+
+type logStreamManager struct {
+	logStreamMutex sync.Mutex
+	streams        map[StreamKey]bool
+	client         Client
+}
+
+func NewLogStreamManager(svcStructuredLog Client) LogStreamManager {
+	return &logStreamManager{
+		client:  svcStructuredLog,
+		streams: make(map[StreamKey]bool),
+	}
+}
+
+func (lsm *logStreamManager) InitStream(streamKey StreamKey) error {
+	if _, ok := lsm.streams[streamKey]; !ok {
+		lsm.logStreamMutex.Lock()
+		defer lsm.logStreamMutex.Unlock()
+
+		if _, ok := lsm.streams[streamKey]; !ok {
+			_, err := lsm.client.CreateStream(&streamKey.LogGroupName, &streamKey.LogStreamName)
+			lsm.streams[streamKey] = true
+			return err
+		}
+	}
+	return nil
+	// does not do anything if stream already exists
 }
