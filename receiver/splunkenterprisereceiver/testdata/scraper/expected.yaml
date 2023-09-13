@@ -2,7 +2,7 @@ resourceMetrics:
   - resource: {}
     scopeMetrics:
       - metrics:
-          - description: Gauge tracking average KBps throughput of indexer
+          - description: Gauge tracking average bytes per second throughput of indexer
             gauge:
               dataPoints:
                 - asDouble: 25579.690815904476

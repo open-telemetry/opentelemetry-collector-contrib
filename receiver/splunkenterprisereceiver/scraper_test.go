@@ -76,6 +76,8 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
+    // golden.WriteMetrics(t, expectedFile, actualMetrics) // run tests with this line whenever metrics are modified
+
 
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
