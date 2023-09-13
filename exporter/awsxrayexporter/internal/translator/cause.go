@@ -118,41 +118,34 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
+	// The logic to record error and fault should be kept in sync with the ADOT pulse repo whenever possible except for the throttle
+    // https://github.com/aws-observability/aws-apm-java-instrumentation/blob/main/awsagentprovider/src/main/java/software/amazon/opentelemetry/javaagent/providers/AwsSpanMetricsProcessor.java
 	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
 
-	switch {
 	// The segment status for http spans will be based on their http.statuscode as we found some http
 	// spans does not fill with status.Code() but always filled with http.statuscode
-	case ok:
-		code := val.Int()
-		// We only differentiate between faults (server errors) and errors (client errors) for HTTP spans.
-		switch {
-		case code >= 400 && code <= 499:
-			isError = true
-			isFault = false
-			if code == 429 {
-				isThrottle = true
-			}
-		case code >= 500 && code <= 599:
+	var code int64
+	if ok {
+		code = val.Int()
+	}
+	isThrottle = false
+	switch {
+	case !ok || code < 400 || code > 599:
+		if status.Code() == ptrace.StatusCodeError {
 			isError = false
-			isThrottle = false
 			isFault = true
-		case status.Code() == ptrace.StatusCodeError:
+		} else {
 			isError = false
-			isThrottle = false
-			isFault = true
-		default:
-			isError = false
-			isThrottle = false
 			isFault = false
 		}
-	case status.Code() != ptrace.StatusCodeError:
-		isError = false
-		isThrottle = false
+	case code >= 400 && code <= 499:
+		isError = true
 		isFault = false
-	default:
+		if code == 429 {
+			isThrottle = true
+		}
+	case code >= 500 && code <= 599:
 		isError = false
-		isThrottle = false
 		isFault = true
 	}
 
