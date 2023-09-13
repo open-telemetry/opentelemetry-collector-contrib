@@ -24,8 +24,6 @@ const (
 	perEventHeaderBytes    = 26
 	maxRequestPayloadBytes = 1024 * 1024 * 1
 
-	minPusherIntervalMs = 200 // 5 TPS
-
 	truncatedSuffix = "[Truncated...]"
 
 	eventTimestampLimitInPast  = 14 * 24 * time.Hour // None of the log events in the batch can be older than 14 days
@@ -297,10 +295,7 @@ func (p *logPusher) pushEventBatch(req interface{}) error {
 	if tmpToken != nil {
 		p.streamToken = *tmpToken
 	}
-	diff := time.Since(startTime)
-	if timeLeft := minPusherIntervalMs*time.Millisecond - diff; timeLeft > 0 {
-		time.Sleep(timeLeft)
-	}
+
 	return nil
 }
 
