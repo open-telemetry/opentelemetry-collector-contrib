@@ -19,34 +19,26 @@ type Config struct {
 }
 
 // Func will return a bufio.SplitFunc based on the config
-func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
-	endPattern := c.LineEndPattern
-	startPattern := c.LineStartPattern
-
-	var (
-		splitFunc bufio.SplitFunc
-		err       error
-	)
-
+func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (splitFunc bufio.SplitFunc, err error) {
 	switch {
-	case endPattern != "" && startPattern != "":
+	case c.LineEndPattern != "" && c.LineStartPattern != "":
 		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
-	case enc == encoding.Nop && (endPattern != "" || startPattern != ""):
+	case enc == encoding.Nop && (c.LineEndPattern != "" || c.LineStartPattern != ""):
 		return nil, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding")
 	case enc == encoding.Nop:
 		return NoSplitFunc(maxLogSize), nil
-	case endPattern == "" && startPattern == "":
+	case c.LineEndPattern == "" && c.LineStartPattern == "":
 		splitFunc, err = NewlineSplitFunc(enc, flushAtEOF)
 		if err != nil {
 			return nil, err
 		}
-	case endPattern != "":
+	case c.LineEndPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineEndPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
 		splitFunc = LineEndSplitFunc(re, flushAtEOF)
-	case startPattern != "":
+	case c.LineStartPattern != "":
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
@@ -64,9 +56,7 @@ func LineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if firstLoc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = data
-				advance = len(data)
-				return
+				return len(data), data, nil
 			}
 			return 0, nil, nil // read more data and try again.
 		}
@@ -91,9 +81,7 @@ func LineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = data
-			advance = len(data)
-			return
+			return len(data), data, nil
 		}
 
 		secondLocOfset := firstMatchEnd + 1
@@ -103,10 +91,9 @@ func LineStartSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		}
 		secondMatchStart := secondLoc[0] + secondLocOfset
 
-		advance = secondMatchStart                     // start scanning at the beginning of the second match
-		token = data[firstMatchStart:secondMatchStart] // the token begins at the first match, and ends at the beginning of the second match
-		err = nil
-		return
+		// start scanning at the beginning of the second match
+		// the token begins at the first match, and ends at the beginning of the second match
+		return secondMatchStart, data[firstMatchStart:secondMatchStart], nil
 	}
 }
 
@@ -118,9 +105,7 @@ func LineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if loc == nil {
 			// Flush if no more data is expected
 			if len(data) != 0 && atEOF && flushAtEOF {
-				token = data
-				advance = len(data)
-				return
+				return len(data), data, nil
 			}
 			return 0, nil, nil // read more data and try again
 		}
@@ -130,11 +115,7 @@ func LineEndSplitFunc(re *regexp.Regexp, flushAtEOF bool) bufio.SplitFunc {
 		if loc[1] == len(data)-1 && !atEOF {
 			return 0, nil, nil
 		}
-
-		advance = loc[1]
-		token = data[:loc[1]]
-		err = nil
-		return
+		return loc[1], data[:loc[1]], nil
 	}
 }
 
@@ -168,9 +149,7 @@ func NewlineSplitFunc(enc encoding.Encoding, flushAtEOF bool) (bufio.SplitFunc, 
 
 		// Flush if no more data is expected
 		if atEOF && flushAtEOF {
-			token = data
-			advance = len(data)
-			return
+			return len(data), data, nil
 		}
 
 		// Request more data.
