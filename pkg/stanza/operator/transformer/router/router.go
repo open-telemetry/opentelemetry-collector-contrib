@@ -48,8 +48,8 @@ type RouteConfig struct {
 }
 
 // Build will build a router operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	basicOperator, err := c.BasicConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, err
 	}

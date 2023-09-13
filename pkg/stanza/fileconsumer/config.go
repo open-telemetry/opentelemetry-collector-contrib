@@ -90,7 +90,7 @@ type HeaderConfig struct {
 }
 
 // Build will build a file input operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, error) {
+func (c Config) Build(buildInfo *operator.BuildInfoInternal, emit emit.Callback) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -106,7 +106,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		return nil, err
 	}
 
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(buildInfo, emit, factory)
 }
 
 // BuildWithSplitFunc will build a file input operator with customized splitFunc function
@@ -125,10 +125,10 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 		return nil, err
 	}
 
-	return c.buildManager(logger, emit, factory)
+	return c.buildManager(&operator.BuildInfoInternal{Logger: logger}, emit, factory)
 }
 
-func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
+func (c Config) buildManager(buildInfo *operator.BuildInfoInternal, emit emit.Callback, factory splitter.Factory) (*Manager, error) {
 	if emit == nil {
 		return nil, fmt.Errorf("must provide emit function")
 	}
@@ -159,7 +159,15 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 	if err != nil {
 		return nil, err
 	}
+	logger := buildInfo.Logger
 
+	var telemetry *fileConsumerTelemetry
+	if buildInfo.CreateSettings != nil {
+		telemetry, err = newFileConsumerTelemetry(buildInfo.CreateSettings, buildInfo.TelemetryUseOtel)
+		if err != nil {
+			_ = fmt.Errorf("failed to create fileConsumer telemetry: %w", err)
+		}
+	}
 	return &Manager{
 		SugaredLogger: logger.With("component", "fileconsumer"),
 		cancel:        func() {},
@@ -187,6 +195,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		deleteAfterRead: c.DeleteAfterRead,
 		knownFiles:      make([]*reader, 0, 10),
 		seenPaths:       make(map[string]struct{}, 100),
+		telemetry:       telemetry,
 	}, nil
 }
 

@@ -19,7 +19,7 @@ var testHeader = "name,sev,msg"
 func newTestParser(t *testing.T) *Parser {
 	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -28,7 +28,7 @@ func newTestParserIgnoreQuotes(t *testing.T) *Parser {
 	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	cfg.IgnoreQuotes = true
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -36,7 +36,7 @@ func newTestParserIgnoreQuotes(t *testing.T) *Parser {
 func TestParserBuildFailure(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.Logger(t))
+	_, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -46,7 +46,7 @@ func TestParserBuildFailureLazyIgnoreQuotes(t *testing.T) {
 	cfg.Header = testHeader
 	cfg.LazyQuotes = true
 	cfg.IgnoreQuotes = true
-	_, err := cfg.Build(testutil.Logger(t))
+	_, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.Error(t, err)
 	require.ErrorContains(t, err, "only one of 'ignore_quotes' or 'lazy_quotes' can be true")
 }
@@ -55,7 +55,7 @@ func TestParserBuildFailureInvalidDelimiter(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Header = testHeader
 	cfg.FieldDelimiter = ";;"
-	_, err := cfg.Build(testutil.Logger(t))
+	_, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid 'delimiter': ';;'")
 }
@@ -64,7 +64,7 @@ func TestParserBuildFailureBadHeaderConfig(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Header = "testheader"
 	cfg.HeaderAttribute = "testheader"
-	_, err := cfg.Build(testutil.Logger(t))
+	_, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "only one header parameter can be set: 'header' or 'header_attribute'")
 }
@@ -793,7 +793,7 @@ func TestParserCSV(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return
@@ -1037,7 +1037,7 @@ cc""",dddd,eeee`,
 			cfg.OutputIDs = []string{"fake"}
 			cfg.Header = "A,B,C,D,E"
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -1059,7 +1059,7 @@ func TestParserCSVInvalidJSONInput(t *testing.T) {
 		cfg.OutputIDs = []string{"fake"}
 		cfg.Header = testHeader
 
-		op, err := cfg.Build(testutil.Logger(t))
+		op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.NoError(t, err)
 
 		fake := testutil.NewFakeOutput(t)
@@ -1084,21 +1084,21 @@ func TestBuildParserCSV(t *testing.T) {
 
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
-		_, err := c.Build(testutil.Logger(t))
+		_, err := c.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.NoError(t, err)
 	})
 
 	t.Run("MissingHeaderField", func(t *testing.T) {
 		c := newBasicParser()
 		c.Header = ""
-		_, err := c.Build(testutil.Logger(t))
+		_, err := c.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.Error(t, err)
 	})
 
 	t.Run("InvalidHeaderFieldMissingDelimiter", func(t *testing.T) {
 		c := newBasicParser()
 		c.Header = "name"
-		_, err := c.Build(testutil.Logger(t))
+		_, err := c.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "missing field delimiter in header")
 	})
@@ -1106,7 +1106,7 @@ func TestBuildParserCSV(t *testing.T) {
 	t.Run("InvalidHeaderFieldWrongDelimiter", func(t *testing.T) {
 		c := newBasicParser()
 		c.Header = "name;position;number"
-		_, err := c.Build(testutil.Logger(t))
+		_, err := c.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.Error(t, err)
 	})
 
@@ -1114,7 +1114,7 @@ func TestBuildParserCSV(t *testing.T) {
 		c := newBasicParser()
 		c.Header = "name,position,number"
 		c.FieldDelimiter = ":"
-		_, err := c.Build(testutil.Logger(t))
+		_, err := c.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "missing field delimiter in header")
 	})

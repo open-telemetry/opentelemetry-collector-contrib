@@ -18,14 +18,14 @@ import (
 
 func newTestParser(t *testing.T) *Parser {
 	config := NewConfigWithID("test")
-	op, err := config.Build(testutil.Logger(t))
+	op, err := config.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	return op.(*Parser)
 }
 
 func TestConfigBuild(t *testing.T) {
 	config := NewConfigWithID("test")
-	op, err := config.Build(testutil.Logger(t))
+	op, err := config.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
 }
@@ -33,7 +33,7 @@ func TestConfigBuild(t *testing.T) {
 func TestConfigBuildFailure(t *testing.T) {
 	config := NewConfigWithID("test")
 	config.OnError = "invalid_on_error"
-	_, err := config.Build(testutil.Logger(t))
+	_, err := config.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -143,7 +143,7 @@ func TestParser(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)

@@ -619,7 +619,7 @@ func TestBuild(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			input, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)}, nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -785,7 +785,7 @@ func TestBuildWithHeader(t *testing.T) {
 			cfg := basicConfig()
 			tc.modifyBaseConfig(cfg)
 
-			input, err := cfg.Build(testutil.Logger(t), nopEmitFunc)
+			input, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)}, nopEmitFunc)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

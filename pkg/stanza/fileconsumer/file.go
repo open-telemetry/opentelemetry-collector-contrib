@@ -45,6 +45,8 @@ type Manager struct {
 	seenPaths  map[string]struct{}
 
 	currentFps []*fingerprint.Fingerprint
+
+	telemetry *fileConsumerTelemetry
 }
 
 func (m *Manager) Start(persister operator.Persister) error {

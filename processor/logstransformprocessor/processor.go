@@ -48,7 +48,7 @@ func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,
-	}.Build(p.logger.Sugar())
+	}.Build(&operator.BuildInfoInternal{Logger: p.logger.Sugar()})
 	if err != nil {
 		return nil, err
 	}

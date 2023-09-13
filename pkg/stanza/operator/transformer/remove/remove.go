@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -40,8 +38,8 @@ type Config struct {
 }
 
 // Build will build a Remove operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(logger)
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, err
 	}

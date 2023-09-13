@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -46,7 +44,8 @@ type Config struct {
 }
 
 // Build will build a regex parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	logger := buildInfo.Logger
 	parserOperator, err := c.ParserConfig.Build(logger)
 	if err != nil {
 		return nil, err

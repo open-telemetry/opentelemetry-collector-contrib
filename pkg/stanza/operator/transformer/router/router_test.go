@@ -183,7 +183,7 @@ func TestTransformer(t *testing.T) {
 			cfg.Routes = tc.routes
 			cfg.Default = tc.defaultOutput
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			require.NoError(t, err)
 
 			results := map[string]int{}

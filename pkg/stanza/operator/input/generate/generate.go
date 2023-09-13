@@ -9,8 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -36,8 +34,8 @@ type Config struct {
 }
 
 // Build will build a generate input operator.
-func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c *Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, err
 	}

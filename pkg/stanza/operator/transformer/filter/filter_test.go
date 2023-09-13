@@ -159,7 +159,7 @@ func TestTransformer(t *testing.T) {
 			cfg := NewConfigWithID("test")
 			cfg.Expression = tc.expression
 
-			op, err := cfg.Build(testutil.Logger(t))
+			op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			require.NoError(t, err)
 
 			filtered := true
@@ -184,7 +184,7 @@ func TestFilterDropRatio(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.Expression = `body.message == "test_message"`
 	cfg.DropRatio = 0.5
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 
 	processedEntries := 0

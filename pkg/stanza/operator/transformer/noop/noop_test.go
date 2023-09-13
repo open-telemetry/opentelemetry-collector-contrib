@@ -16,14 +16,14 @@ import (
 
 func TestBuildValid(t *testing.T) {
 	cfg := NewConfigWithID("test")
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	require.IsType(t, &Transformer{}, op)
 }
 
 func TestBuildInvalid(t *testing.T) {
 	cfg := NewConfigWithID("test")
-	_, err := cfg.Build(nil)
+	_, err := cfg.Build(&operator.BuildInfoInternal{Logger: nil})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }
@@ -31,7 +31,7 @@ func TestBuildInvalid(t *testing.T) {
 func TestProcess(t *testing.T) {
 	cfg := NewConfigWithID("test")
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 
 	fake := testutil.NewFakeOutput(t)

@@ -475,7 +475,7 @@ func TestTransformer(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			op, err := tc.config.Build(testutil.Logger(t))
+			op, err := tc.config.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewMockPersister("test")))
 			recombine := op.(*Transformer)
@@ -505,7 +505,7 @@ func TestTransformer(t *testing.T) {
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
-		op, err := cfg.Build(testutil.Logger(t))
+		op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 		require.NoError(t, err)
 		recombine := op.(*Transformer)
 
@@ -541,7 +541,7 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.IsFirstEntry = "body startsWith 'log-0'"
 	cfg.OutputIDs = []string{"fake"}
 	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
-	op, err := cfg.Build(testutil.Logger(b))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(b)})
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -584,7 +584,7 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	cfg.IsFirstEntry = "body == 'start'"
 	cfg.MaxLogSize = 6
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.Logger(b))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(b)})
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -626,7 +626,7 @@ func TestTimeout(t *testing.T) {
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -669,7 +669,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	cfg.CombineWith = ""
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -713,7 +713,7 @@ func TestSourceBatchDelete(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	cfg.MaxLogSize = 6
-	op, err := cfg.Build(testutil.Logger(t))
+	op, err := cfg.Build(&operator.BuildInfoInternal{Logger: testutil.Logger(t)})
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 

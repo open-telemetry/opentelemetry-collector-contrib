@@ -38,7 +38,7 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 	p, err := pipeline.Config{
 		Operators:     metadataOperators,
 		DefaultOutput: newPipelineOutput(nopLogger),
-	}.Build(nopLogger)
+	}.Build(&operator.BuildInfoInternal{Logger: nopLogger})
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)

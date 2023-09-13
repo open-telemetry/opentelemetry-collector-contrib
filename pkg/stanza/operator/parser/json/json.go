@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	jsoniter "github.com/json-iterator/go"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -39,8 +38,8 @@ type Config struct {
 }
 
 // Build will build a JSON parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	parserOperator, err := c.ParserConfig.Build(logger)
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	parserOperator, err := c.ParserConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, err
 	}

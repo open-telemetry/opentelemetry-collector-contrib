@@ -12,7 +12,6 @@ import (
 
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/vm"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -62,8 +61,8 @@ type Config struct {
 }
 
 // Build creates a new Transformer from a config
-func (c *Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	transformer, err := c.TransformerConfig.Build(logger)
+func (c *Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	transformer, err := c.TransformerConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %w", err)
 	}

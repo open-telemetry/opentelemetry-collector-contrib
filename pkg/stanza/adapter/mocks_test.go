@@ -8,7 +8,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -41,8 +40,8 @@ func NewUnstartableConfig() operator.Config {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	o, _ := c.OutputConfig.Build(logger)
+func (c *UnstartableConfig) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	o, _ := c.OutputConfig.Build(buildInfo.Logger)
 	return &UnstartableOperator{OutputOperator: o}, nil
 }
 

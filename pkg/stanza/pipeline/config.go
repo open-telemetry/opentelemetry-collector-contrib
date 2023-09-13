@@ -21,7 +21,8 @@ type Config struct {
 }
 
 // Build will build a pipeline from the config.
-func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (*DirectedPipeline, error) {
+	logger := buildInfo.Logger
 	if logger == nil {
 		return nil, errors.NewError("logger must be provided", "")
 	}
@@ -38,12 +39,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
 			return zapcore.NewSamplerWithOptions(core, time.Second, 1, 10000)
 		}),
 	).Sugar()
+	buildInfo.Logger = sampledLogger
 
 	dedeplucateIDs(c.Operators)
 
 	ops := make([]operator.Operator, 0, len(c.Operators))
 	for _, opCfg := range c.Operators {
-		op, err := opCfg.Build(sampledLogger)
+		op, err := opCfg.Build(buildInfo)
 		if err != nil {
 			return nil, err
 		}

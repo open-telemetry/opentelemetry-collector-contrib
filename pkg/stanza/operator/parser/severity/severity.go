@@ -6,8 +6,6 @@ package severity // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -39,7 +37,8 @@ type Config struct {
 }
 
 // Build will build a severity parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	logger := buildInfo.Logger
 	transformerOperator, err := c.TransformerConfig.Build(logger)
 	if err != nil {
 		return nil, err

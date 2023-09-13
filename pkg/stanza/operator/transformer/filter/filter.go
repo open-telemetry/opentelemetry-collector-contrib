@@ -49,8 +49,8 @@ type Config struct {
 }
 
 // Build will build a filter operator from the supplied configuration
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	transformer, err := c.TransformerConfig.Build(logger)
+func (c Config) Build(buildInfo *operator.BuildInfoInternal) (operator.Operator, error) {
+	transformer, err := c.TransformerConfig.Build(buildInfo.Logger)
 	if err != nil {
 		return nil, err
 	}
