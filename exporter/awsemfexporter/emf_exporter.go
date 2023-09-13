@@ -105,8 +105,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 
 	for _, groupedMetric := range groupedMetrics {
-		cWMetric := translateGroupedMetricToCWMetric(groupedMetric, emf.config)
-		putLogEvent, err := translateCWMetricToEMF(cWMetric, emf.config)
+		putLogEvent, err := translateGroupedMetricToEmf(groupedMetric, emf.config, defaultLogStream)
 		if err != nil {
 			return err
 		}
@@ -118,16 +117,8 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				fmt.Println(*putLogEvent.InputLogEvent.Message)
 			}
 		} else if strings.EqualFold(outputDestination, outputDestinationCloudWatch) {
-			logGroup := groupedMetric.metadata.logGroup
-			logStream := groupedMetric.metadata.logStream
-			if logStream == "" {
-				logStream = defaultLogStream
-			}
 
-			emfPusher := emf.getPusher(cwlogs.StreamKey{
-				LogGroupName:  logGroup,
-				LogStreamName: logStream,
-			})
+			emfPusher := emf.getPusher(putLogEvent.StreamKey)
 			if emfPusher != nil {
 				returnError := emfPusher.AddLogEntry(putLogEvent)
 				if returnError != nil {

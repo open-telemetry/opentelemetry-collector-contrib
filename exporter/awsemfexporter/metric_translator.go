@@ -445,3 +445,25 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 
 	return logEvent, nil
 }
+
+// Utility function that converts from groupedMetric to a cloudwatch event
+func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, defaultLogStream string) (*cwlogs.Event, error) {
+	cWMetric := translateGroupedMetricToCWMetric(groupedMetric, config)
+	event, err := translateCWMetricToEMF(cWMetric, config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	logGroup := groupedMetric.metadata.logGroup
+	logStream := groupedMetric.metadata.logStream
+
+	if logStream == "" {
+		logStream = defaultLogStream
+	}
+
+	event.LogGroupName = logGroup
+	event.LogStreamName = logStream
+
+	return event, nil
+}
