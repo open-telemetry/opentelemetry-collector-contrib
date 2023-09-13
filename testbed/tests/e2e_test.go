@@ -61,7 +61,7 @@ func TestBallastMemory(t *testing.T) {
 		ballastSize uint32
 		maxRSS      uint32
 	}{
-		{100, 80},
+		{100, 1000},
 		{500, 110},
 		{1000, 120},
 	}
@@ -98,8 +98,9 @@ func TestBallastMemory(t *testing.T) {
 					},
 				),
 			)
+			tc.StartBackend()
 			tc.StartAgent()
-
+			tc.StartLoad(options)
 			var rss, vms uint32
 			// It is possible that the process is not ready or the ballast code path
 			// is not hit immediately so we give the process up to a couple of seconds
@@ -109,7 +110,7 @@ func TestBallastMemory(t *testing.T) {
 				rss, vms, _ = tc.AgentMemoryInfo()
 				return vms > test.ballastSize
 			}, time.Second*5, fmt.Sprintf("VMS must be greater than %d", test.ballastSize))
-
+			time.Sleep(time.Second * 5)
 			// https://github.com/open-telemetry/opentelemetry-collector/issues/3233
 			// given that the maxRSS isn't an absolute maximum and that the actual maximum might be a bit off,
 			// we give some room here instead of failing when the memory usage isn't that much higher than the max

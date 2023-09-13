@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"testing"
@@ -295,6 +296,32 @@ func (tc *TestCase) indicateError(err error) {
 
 	// Signal the error via channel
 	close(tc.errorSignal)
+}
+
+// Used to search for text in agent.log
+// It can be used to verify if we've hit QueuedRetry sender or memory limitter
+func (tc *TestCase) SearchText(text string) string {
+	cmd := exec.Command("cat", tc.composeTestResultFileName("agent.log"))
+	grep := exec.Command("grep", "-E", text)
+
+	pipe, err := cmd.StdoutPipe()
+	defer pipe.Close()
+	grep.Stdin = pipe
+
+	if err != nil {
+		log.Printf("Error while searching %s in %s", text, tc.composeTestResultFileName("agent.log"))
+		return ""
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Print("Error while executing command: ", err.Error())
+		return ""
+	}
+
+	res, _ := grep.Output()
+
+	return string(res)
 }
 
 func (tc *TestCase) logStats() {

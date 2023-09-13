@@ -56,11 +56,11 @@ var GlobalConfig = struct {
 // DoTestMain is intended to be run from TestMain somewhere in the test suit.
 // This enables the testbed.
 func DoTestMain(m *testing.M, resultsSummary TestResultsSummary) {
-	testBedConfigFile := os.Getenv(testBedEnableEnvVarName)
-	if testBedConfigFile == "" {
-		log.Printf(testBedEnableEnvVarName + " is not defined, skipping E2E tests.")
-		os.Exit(0)
-	}
+	// testBedConfigFile := os.Getenv(testBedEnableEnvVarName)
+	// if testBedConfigFile == "" {
+	// 	log.Printf(testBedEnableEnvVarName + " is not defined, skipping E2E tests.")
+	// 	os.Exit(0)
+	// }
 
 	// Load the test bed config first.
 	err := Start(resultsSummary)
