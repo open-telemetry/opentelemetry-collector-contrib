@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.12
+          go-version: ~1.20.8
           cache: false
       - name: Cache Go
         id: go-cache
@@ -54,7 +54,7 @@ jobs:
       DD_APP_KEY_3: ${{ secrets.DD_APP_KEY_3 }}
     steps:
       - name: Checkout system tests
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: 'DataDog/system-tests'
       - name: Cache Go
