@@ -76,6 +76,11 @@ jobs:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
           cluster_name: kind
+          config: ~/.github/workflows/configs/e2e-kind-config.yaml
+      - name: Fix kubelet TLS server
+        run: |
+          kubectl get csr
+          kubectl get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl certificate approve
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
@@ -95,4 +100,3 @@ jobs:
         run: |    
           cd processor/k8sattributesprocessor
           go test -v --tags=e2e
-
