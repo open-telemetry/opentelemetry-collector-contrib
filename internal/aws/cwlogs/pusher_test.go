@@ -66,7 +66,7 @@ func newMockPusherWithEventCheck(check func(msg string)) Pusher {
 			check(eventMsg)
 		}
 	})
-	p := newLogPusher(PusherKey{
+	p := newLogPusher(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
 	}, *svc, zap.NewNop())
@@ -166,7 +166,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 // Need to remove the tmp state folder after testing.
 func newMockPusher() *logPusher {
 	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
-	return newLogPusher(PusherKey{
+	return newLogPusher(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
 	}, *svc, zap.NewNop())
@@ -182,7 +182,7 @@ var msg = "test log message"
 func TestPusher_newLogEventBatch(t *testing.T) {
 	p := newMockPusher()
 
-	logEventBatch := newEventBatch(PusherKey{
+	logEventBatch := newEventBatch(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
 	})

@@ -109,7 +109,7 @@ func TestConsumeMetricsWithLogGroupStreamConfig(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	pusherMap, ok := exp.pusherMap[cwlogs.PusherKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
 	}]
@@ -140,7 +140,7 @@ func TestConsumeMetricsWithLogGroupStreamValidPlaceholder(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	pusherMap, ok := exp.pusherMap[cwlogs.PusherKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  "/aws/ecs/containerinsights/test-cluster-name/performance",
 		LogStreamName: "test-task-id",
 	}]
@@ -171,7 +171,7 @@ func TestConsumeMetricsWithOnlyLogStreamPlaceholder(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	pusherMap, ok := exp.pusherMap[cwlogs.PusherKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: "test-task-id",
 	}]
@@ -202,7 +202,7 @@ func TestConsumeMetricsWithWrongPlaceholder(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
-	pusherMap, ok := exp.pusherMap[cwlogs.PusherKey{
+	pusherMap, ok := exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
 	}]
@@ -229,8 +229,8 @@ func TestPushMetricsDataWithErr(t *testing.T) {
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
 	logPusher.On("ForceFlush", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("some error").Once()
-	exp.pusherMap = map[cwlogs.PusherKey]cwlogs.Pusher{}
-	exp.pusherMap[cwlogs.PusherKey{
+	exp.pusherMap = map[cwlogs.StreamKey]cwlogs.Pusher{}
+	exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  "test-logGroupName",
 		LogStreamName: "test-logStreamName",
 	}] = logPusher

@@ -55,7 +55,8 @@ func NewEvent(timestampMs int64, message string) *Event {
 	return event
 }
 
-type PusherKey struct {
+// Uniquely identify a cloudwatch logs stream
+type StreamKey struct {
 	LogGroupName  string
 	LogStreamName string
 }
@@ -111,7 +112,7 @@ type eventBatch struct {
 }
 
 // Create a new log event batch if needed.
-func newEventBatch(key PusherKey) *eventBatch {
+func newEventBatch(key StreamKey) *eventBatch {
 	return &eventBatch{
 		putLogEventsInput: &cloudwatchlogs.PutLogEventsInput{
 			LogGroupName:  aws.String(key.LogGroupName),
@@ -197,10 +198,10 @@ type logPusher struct {
 }
 
 // NewPusher creates a logPusher instance
-func NewPusher(pusherKey PusherKey, retryCnt int,
+func NewPusher(streamKey StreamKey, retryCnt int,
 	svcStructuredLog Client, logger *zap.Logger) Pusher {
 
-	pusher := newLogPusher(pusherKey, svcStructuredLog, logger)
+	pusher := newLogPusher(streamKey, svcStructuredLog, logger)
 
 	pusher.retryCnt = defaultRetryCount
 	if retryCnt > 0 {
@@ -211,15 +212,15 @@ func NewPusher(pusherKey PusherKey, retryCnt int,
 }
 
 // Only create a logPusher, but not start the instance.
-func newLogPusher(pusherKey PusherKey,
+func newLogPusher(streamKey StreamKey,
 	svcStructuredLog Client, logger *zap.Logger) *logPusher {
 	pusher := &logPusher{
-		logGroupName:     aws.String(pusherKey.LogGroupName),
-		logStreamName:    aws.String(pusherKey.LogStreamName),
+		logGroupName:     aws.String(streamKey.LogGroupName),
+		logStreamName:    aws.String(streamKey.LogStreamName),
 		svcStructuredLog: svcStructuredLog,
 		logger:           logger,
 	}
-	pusher.logEventBatch = newEventBatch(pusherKey)
+	pusher.logEventBatch = newEventBatch(streamKey)
 
 	return pusher
 }
@@ -318,7 +319,7 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 	currentBatch := p.logEventBatch
 	if currentBatch.exceedsLimit(logEvent.eventPayloadBytes()) || !currentBatch.isActive(logEvent.InputLogEvent.Timestamp) {
 		prevBatch = currentBatch
-		currentBatch = newEventBatch(PusherKey{
+		currentBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
 		})
@@ -336,7 +337,7 @@ func (p *logPusher) renewEventBatch() *eventBatch {
 	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {
 		prevBatch = p.logEventBatch
-		p.logEventBatch = newEventBatch(PusherKey{
+		p.logEventBatch = newEventBatch(StreamKey{
 			LogGroupName:  *p.logGroupName,
 			LogStreamName: *p.logStreamName,
 		})

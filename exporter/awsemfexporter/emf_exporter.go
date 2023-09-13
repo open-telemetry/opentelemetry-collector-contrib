@@ -29,7 +29,7 @@ const (
 )
 
 type emfExporter struct {
-	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
+	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
 	svcStructuredLog *cwlogs.Client
 	config           *Config
 
@@ -68,7 +68,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		metricTranslator: newMetricTranslator(*config),
 		retryCnt:         *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        map[cwlogs.PusherKey]cwlogs.Pusher{},
+		pusherMap:        map[cwlogs.StreamKey]cwlogs.Pusher{},
 	}
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
@@ -124,7 +124,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 				logStream = defaultLogStream
 			}
 
-			emfPusher := emf.getPusher(cwlogs.PusherKey{
+			emfPusher := emf.getPusher(cwlogs.StreamKey{
 				LogGroupName:  logGroup,
 				LogStreamName: logStream,
 			})
@@ -156,7 +156,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	return nil
 }
 
-func (emf *emfExporter) getPusher(key cwlogs.PusherKey) cwlogs.Pusher {
+func (emf *emfExporter) getPusher(key cwlogs.StreamKey) cwlogs.Pusher {
 
 	var ok bool
 	if _, ok = emf.pusherMap[key]; !ok {

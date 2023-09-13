@@ -291,7 +291,7 @@ func TestConsumeLogs(t *testing.T) {
 	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.pusherMap[cwlogs.PusherKey{
+	exp.pusherMap[cwlogs.StreamKey{
 		LogGroupName:  expCfg.LogGroupName,
 		LogStreamName: expCfg.LogStreamName,
 	}] = logPusher
