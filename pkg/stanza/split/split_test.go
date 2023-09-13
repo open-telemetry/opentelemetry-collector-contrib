@@ -24,13 +24,13 @@ func TestConfigFunc(t *testing.T) {
 	maxLogSize := 100
 
 	t.Run("BothStartAndEnd", func(t *testing.T) {
-		cfg := &Config{LineStartPattern: "foo", LineEndPattern: "bar"}
+		cfg := Config{LineStartPattern: "foo", LineEndPattern: "bar"}
 		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "only one of line_start_pattern or line_end_pattern can be set")
 	})
 
 	t.Run("NopEncoding", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := Config{}
 		f, err := cfg.Func(encoding.Nop, false, maxLogSize)
 		assert.NoError(t, err)
 
@@ -42,7 +42,7 @@ func TestConfigFunc(t *testing.T) {
 	})
 
 	t.Run("Newline", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := Config{}
 		f, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.NoError(t, err)
 
@@ -53,13 +53,13 @@ func TestConfigFunc(t *testing.T) {
 	})
 
 	t.Run("InvalidStartRegex", func(t *testing.T) {
-		cfg := &Config{LineStartPattern: "["}
+		cfg := Config{LineStartPattern: "["}
 		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "compile line start regex: error parsing regexp: missing closing ]: `[`")
 	})
 
 	t.Run("InvalidEndRegex", func(t *testing.T) {
-		cfg := &Config{LineEndPattern: "["}
+		cfg := Config{LineEndPattern: "["}
 		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "compile line end regex: error parsing regexp: missing closing ]: `[`")
 	})
@@ -161,7 +161,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		cfg := &Config{LineStartPattern: tc.Pattern}
+		cfg := Config{LineStartPattern: tc.Pattern}
 		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
@@ -205,7 +205,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		}
 		for _, tc := range flushAtEOFCases {
-			cfg := &Config{LineStartPattern: `^LOGSTART \d+`}
+			cfg := Config{LineStartPattern: `^LOGSTART \d+`}
 			splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
 			require.NoError(t, err)
 			t.Run(tc.Name, tc.Run(splitFunc))
@@ -214,7 +214,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 
 	// TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := &Config{LineStartPattern: ` LOGSTART \d+ `}
+		cfg := Config{LineStartPattern: ` LOGSTART \d+ `}
 		input := []byte(" LOGSTART 123 log1  LOGSTART 234 log2  LOGSTART 345 foo")
 		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
@@ -337,14 +337,14 @@ func TestLineEndSplitFunc(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		cfg := &Config{LineEndPattern: tc.Pattern}
+		cfg := Config{LineEndPattern: tc.Pattern}
 		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 
 	t.Run("FlushAtEOF", func(t *testing.T) {
-		cfg := &Config{LineEndPattern: `^LOGSTART \d+`}
+		cfg := Config{LineEndPattern: `^LOGSTART \d+`}
 		splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
 		require.NoError(t, err)
 		splittest.TestCase{
@@ -356,7 +356,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 
 	// TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := &Config{LineEndPattern: ` LOGEND `}
+		cfg := Config{LineEndPattern: ` LOGEND `}
 		input := []byte(" log1 LOGEND  log2 LOGEND ")
 		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
@@ -494,7 +494,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 
 	// // TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := Config{}
 		input := []byte(" log1 \n log2 \n")
 		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
@@ -589,11 +589,11 @@ func TestNoSplitFunc(t *testing.T) {
 }
 
 func TestNoopEncodingError(t *testing.T) {
-	endCfg := &Config{LineEndPattern: "\n"}
+	endCfg := Config{LineEndPattern: "\n"}
 	_, err := endCfg.Func(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
-	startCfg := &Config{LineStartPattern: "\n"}
+	startCfg := Config{LineStartPattern: "\n"}
 	_, err = startCfg.Func(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
