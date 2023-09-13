@@ -17,7 +17,8 @@ func TestDefaultConfig_exporterSettings(t *testing.T) {
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+			NumConsumers: 1,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 	assert.Equal(t, want, createDefaultConfig())

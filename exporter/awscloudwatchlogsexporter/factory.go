@@ -31,7 +31,8 @@ func createDefaultConfig() component.Config {
 		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+			NumConsumers: 1,
 		},
 	}
 }

@@ -43,7 +43,8 @@ func TestLoadConfig(t *testing.T) {
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				QueueSettings: QueueSettings{
-					QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: 1,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 			},
 		},
@@ -62,7 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
 				QueueSettings: QueueSettings{
-					QueueSize: 2,
+					NumConsumers: 1,
+					QueueSize:    2,
 				},
 			},
 		},
@@ -80,7 +82,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_setting"),
-			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
+			errorMessage: `'sending_queue' has invalid keys: enabled`,
 		},
 	}
 
@@ -114,7 +116,8 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+			NumConsumers: 1,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
@@ -214,7 +217,8 @@ func TestValidateTags(t *testing.T) {
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				QueueSettings: QueueSettings{
-					QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+					NumConsumers: 1,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 			}
 			if tt.errorMessage != "" {

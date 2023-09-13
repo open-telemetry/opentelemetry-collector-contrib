@@ -42,7 +42,7 @@ type Config struct {
 	Tags map[string]*string `mapstructure:"tags"`
 
 	// QueueSettings is a subset of exporterhelper.QueueSettings,
-	// because only QueueSize is user-settable due to how AWS CloudWatch API works
+	// because we want to force the queue to always be enabled
 	QueueSettings QueueSettings `mapstructure:"sending_queue"`
 
 	logger *zap.Logger
@@ -57,6 +57,8 @@ type Config struct {
 type QueueSettings struct {
 	// QueueSize set the length of the sending queue
 	QueueSize int `mapstructure:"queue_size"`
+	// NumConsumers set the number of consumers consuming from the queue
+	NumConsumers int `mapstructure:"num_consumers"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -72,6 +74,9 @@ func (config *Config) Validate() error {
 	if config.QueueSettings.QueueSize < 1 {
 		return errors.New("'sending_queue.queue_size' must be 1 or greater")
 	}
+	if config.QueueSettings.NumConsumers < 1 {
+		return errors.New("'sending_queue.num_consumers' must be 1 or greater")
+	}
 	if retErr := cwlogs.ValidateRetentionValue(config.LogRetention); retErr != nil {
 		return retErr
 	}
@@ -81,9 +86,8 @@ func (config *Config) Validate() error {
 
 func (config *Config) enforcedQueueSettings() exporterhelper.QueueSettings {
 	return exporterhelper.QueueSettings{
-		Enabled: true,
-		// due to the sequence token, there can be only one request in flight
-		NumConsumers: 1,
+		Enabled:      true,
+		NumConsumers: config.QueueSettings.NumConsumers,
 		QueueSize:    config.QueueSettings.QueueSize,
 	}
 }
