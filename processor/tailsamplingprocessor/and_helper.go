@@ -10,14 +10,14 @@ import (
 )
 
 func getNewAndPolicy(settings component.TelemetrySettings, config *AndCfg) (sampling.PolicyEvaluator, error) {
-	var subPolicyEvaluators []sampling.PolicyEvaluator
+	subPolicyEvaluators := make([]sampling.PolicyEvaluator, len(config.SubPolicyCfg))
 	for i := range config.SubPolicyCfg {
 		policyCfg := &config.SubPolicyCfg[i]
 		policy, err := getAndSubPolicyEvaluator(settings, policyCfg)
 		if err != nil {
 			return nil, err
 		}
-		subPolicyEvaluators = append(subPolicyEvaluators, policy)
+		subPolicyEvaluators[i] = policy
 	}
 	return sampling.NewAnd(settings.Logger, subPolicyEvaluators), nil
 }

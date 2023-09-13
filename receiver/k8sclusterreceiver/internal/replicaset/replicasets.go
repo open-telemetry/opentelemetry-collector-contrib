@@ -4,17 +4,12 @@
 package replicaset // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/replicaset"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadataphase "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 // Transform transforms the replica set to remove the fields that we don't use to reduce RAM utilization.
@@ -31,21 +26,18 @@ func Transform(rs *appsv1.ReplicaSet) *appsv1.ReplicaSet {
 	}
 }
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadataphase.MetricsBuilderConfig, rs *appsv1.ReplicaSet) pmetric.Metrics {
-
-	mbphase := imetadataphase.NewMetricsBuilder(metricsBuilderConfig, set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
+func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommon.Timestamp) {
 	if rs.Spec.Replicas != nil {
-		mbphase.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
-		mbphase.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
+		mb.RecordK8sReplicasetDesiredDataPoint(ts, int64(*rs.Spec.Replicas))
+		mb.RecordK8sReplicasetAvailableDataPoint(ts, int64(rs.Status.AvailableReplicas))
 	}
 
-	rb := imetadataphase.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(rs.Namespace)
 	rb.SetK8sReplicasetName(rs.Name)
 	rb.SetK8sReplicasetUID(string(rs.UID))
 	rb.SetOpencensusResourcetype("k8s")
-	return mbphase.Emit(imetadataphase.WithResource(rb.Emit()))
+	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func GetMetadata(rs *appsv1.ReplicaSet) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {

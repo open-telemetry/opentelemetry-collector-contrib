@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib, splunk, observiq, sumo]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, TylerHelmuth]
 
 sem_conv_version: 1.18.0
 
@@ -152,6 +152,16 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.kubelet.version:
+    description: The version of Kubelet running on the node.
+    type: string
+    enabled: false
+
+  k8s.kubeproxy.version:
+    description: The version of Kube Proxy running on the node.
+    type: string
+    enabled: false
+
   openshift.clusterquota.uid:
     description: The k8s ClusterResourceQuota uid.
     type: string
@@ -245,17 +255,23 @@ metrics:
     unit: 1
     gauge:
       value_type: int
+  k8s.pod.status_reason:
+    enabled: false
+    description: Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)
+    unit: 1
+    gauge:
+      value_type: int
 
   k8s.deployment.desired:
     enabled: true
     description: Number of desired pods in this deployment
-    unit: 1
+    unit: "{pod}"
     gauge:
       value_type: int
   k8s.deployment.available:
     enabled: true
     description: Total number of available pods (ready for at least minReadySeconds) targeted by this deployment
-    unit: 1
+    unit: "{pod}"
     gauge:
      value_type: int
 

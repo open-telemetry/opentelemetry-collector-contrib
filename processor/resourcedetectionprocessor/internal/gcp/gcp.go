@@ -116,6 +116,8 @@ func (d *detector) Detect(context.Context) (resource pcommon.Resource, schemaURL
 			d.rb.SetFromCallable(d.rb.SetHostType, d.detector.GCEHostType),
 			d.rb.SetFromCallable(d.rb.SetHostID, d.detector.GCEHostID),
 			d.rb.SetFromCallable(d.rb.SetHostName, d.detector.GCEHostName),
+			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceHostname, d.detector.GCEInstanceHostname),
+			d.rb.SetFromCallable(d.rb.SetGcpGceInstanceName, d.detector.GCEInstanceName),
 		)
 	default:
 		// We don't support this platform yet, so just return with what we have

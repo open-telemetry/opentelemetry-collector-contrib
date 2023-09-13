@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -243,7 +244,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			cfg := &Config{
 				Endpoint:         tt.fields.Endpoint,
 				Username:         tt.fields.Username,
-				Password:         tt.fields.Password,
+				Password:         configopaque.String(tt.fields.Password),
 				Database:         tt.fields.Database,
 				ConnectionParams: tt.fields.ConnectionParams,
 			}

@@ -17,18 +17,18 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHaproxyAlgo("haproxy.algo-val")
 			rb.SetHaproxyIid("haproxy.iid-val")
 			rb.SetHaproxyPid("haproxy.pid-val")
+			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServiceName("haproxy.service_name-val")
 			rb.SetHaproxySid("haproxy.sid-val")
 			rb.SetHaproxyType("haproxy.type-val")
 			rb.SetHaproxyURL("haproxy.url-val")
-			rb.SetProxyName("proxy_name-val")
-			rb.SetServiceName("service_name-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
@@ -58,6 +58,16 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "haproxy.pid-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("haproxy.proxy_name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "haproxy.proxy_name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("haproxy.service_name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "haproxy.service_name-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("haproxy.sid")
 			assert.True(t, ok)
 			if ok {
@@ -72,16 +82,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "haproxy.url-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("proxy_name")
-			assert.Equal(t, test == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "proxy_name-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("service_name")
-			assert.Equal(t, test == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "service_name-val", val.Str())
 			}
 		})
 	}

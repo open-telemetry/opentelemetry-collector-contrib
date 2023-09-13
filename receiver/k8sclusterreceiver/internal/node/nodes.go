@@ -32,6 +32,10 @@ func Transform(node *corev1.Node) *corev1.Node {
 		ObjectMeta: metadata.TransformObjectMeta(node.ObjectMeta),
 		Status: corev1.NodeStatus{
 			Allocatable: node.Status.Allocatable,
+			NodeInfo: corev1.NodeSystemInfo{
+				KubeletVersion:   node.Status.NodeInfo.KubeletVersion,
+				KubeProxyVersion: node.Status.NodeInfo.KubeProxyVersion,
+			},
 		},
 	}
 	for _, c := range node.Status.Conditions {
@@ -43,17 +47,11 @@ func Transform(node *corev1.Node) *corev1.Node {
 	return newNode
 }
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig metadata.MetricsBuilderConfig, node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string) pmetric.Metrics {
-	ts := pcommon.NewTimestampFromTime(time.Now())
-	ms := pmetric.NewMetrics()
-	rm := ms.ResourceMetrics().AppendEmpty()
+func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
+	allocatableTypesToReport []string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
+	rm := pmetric.NewResourceMetrics()
 
-	// TODO: Generate a schema URL for the node metrics in the metadata package and use them here.
-	rm.SetSchemaUrl(conventions.SchemaURL)
 	sm := rm.ScopeMetrics().AppendEmpty()
-	sm.Scope().SetName("otelcol/k8sclusterreceiver")
-	sm.Scope().SetVersion(set.BuildInfo.Version)
-
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
@@ -85,13 +83,23 @@ func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig metadata.Metri
 		setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
 		dp.SetTimestamp(ts)
 	}
-	rb := metadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+
+	if sm.Metrics().Len() == 0 {
+		return pmetric.NewResourceMetrics()
+	}
+
+	// TODO: Generate a schema URL for the node metrics in the metadata package and use them here.
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	sm.Scope().SetName("otelcol/k8sclusterreceiver")
+	sm.Scope().SetVersion(set.BuildInfo.Version)
+
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetOpencensusResourcetype("k8s")
+	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
+	rb.SetK8sKubeproxyVersion(node.Status.NodeInfo.KubeProxyVersion)
 	rb.Emit().MoveTo(rm.Resource())
-	return ms
-
+	return rm
 }
 
 var nodeConditionValues = map[corev1.ConditionStatus]int64{
