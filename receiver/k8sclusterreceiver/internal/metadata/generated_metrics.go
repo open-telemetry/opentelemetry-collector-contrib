@@ -757,7 +757,7 @@ type metricK8sDeploymentAvailable struct {
 func (m *metricK8sDeploymentAvailable) init() {
 	m.data.SetName("k8s.deployment.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this deployment")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -806,7 +806,7 @@ type metricK8sDeploymentDesired struct {
 func (m *metricK8sDeploymentDesired) init() {
 	m.data.SetName("k8s.deployment.desired")
 	m.data.SetDescription("Number of desired pods in this deployment")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 

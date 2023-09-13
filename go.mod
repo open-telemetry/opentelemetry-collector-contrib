@@ -25,8 +25,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.85.0
@@ -777,10 +775,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googl
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter => ./exporter/influxdbexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter => ./exporter/instanaexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ./exporter/jaegerexporter
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ./exporter/jaegerthrifthttpexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
 
