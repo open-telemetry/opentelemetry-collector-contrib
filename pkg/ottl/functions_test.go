@@ -1191,7 +1191,7 @@ func functionWithErr() (ExprFunc[any], error) {
 }
 
 type stringSliceArguments struct {
-	Strings []string `ottlarg:"0"`
+	Strings []string
 }
 
 func functionWithStringSlice(strs []string) (ExprFunc[any], error) {
@@ -1201,7 +1201,7 @@ func functionWithStringSlice(strs []string) (ExprFunc[any], error) {
 }
 
 type floatSliceArguments struct {
-	Floats []float64 `ottlarg:"0"`
+	Floats []float64
 }
 
 func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
@@ -1211,7 +1211,7 @@ func functionWithFloatSlice(floats []float64) (ExprFunc[interface{}], error) {
 }
 
 type intSliceArguments struct {
-	Ints []int64 `ottlarg:"0"`
+	Ints []int64
 }
 
 func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
@@ -1221,7 +1221,7 @@ func functionWithIntSlice(ints []int64) (ExprFunc[interface{}], error) {
 }
 
 type byteSliceArguments struct {
-	Bytes []byte `ottlarg:"0"`
+	Bytes []byte
 }
 
 func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
@@ -1231,7 +1231,7 @@ func functionWithByteSlice(bytes []byte) (ExprFunc[interface{}], error) {
 }
 
 type getterSliceArguments struct {
-	Getters []Getter[any] `ottlarg:"0"`
+	Getters []Getter[any]
 }
 
 func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1241,7 +1241,7 @@ func functionWithGetterSlice(getters []Getter[interface{}]) (ExprFunc[interface{
 }
 
 type stringGetterSliceArguments struct {
-	StringGetters []StringGetter[any] `ottlarg:"0"`
+	StringGetters []StringGetter[any]
 }
 
 func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1251,7 +1251,7 @@ func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFun
 }
 
 type durationGetterSliceArguments struct {
-	DurationGetters []DurationGetter[any] `ottlarg:"0"`
+	DurationGetters []DurationGetter[any]
 }
 
 func functionWithDurationGetterSlice(_ []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1261,7 +1261,7 @@ func functionWithDurationGetterSlice(_ []DurationGetter[interface{}]) (ExprFunc[
 }
 
 type timeGetterSliceArguments struct {
-	TimeGetters []TimeGetter[any] `ottlarg:"0"`
+	TimeGetters []TimeGetter[any]
 }
 
 func functionWithTimeGetterSlice(_ []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1271,7 +1271,7 @@ func functionWithTimeGetterSlice(_ []TimeGetter[interface{}]) (ExprFunc[interfac
 }
 
 type floatGetterSliceArguments struct {
-	FloatGetters []FloatGetter[any] `ottlarg:"0"`
+	FloatGetters []FloatGetter[any]
 }
 
 func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1281,7 +1281,7 @@ func functionWithFloatGetterSlice(getters []FloatGetter[interface{}]) (ExprFunc[
 }
 
 type intGetterSliceArguments struct {
-	IntGetters []IntGetter[any] `ottlarg:"0"`
+	IntGetters []IntGetter[any]
 }
 
 func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1291,7 +1291,7 @@ func functionWithIntGetterSlice(getters []IntGetter[interface{}]) (ExprFunc[inte
 }
 
 type pMapGetterSliceArguments struct {
-	PMapGetters []PMapGetter[any] `ottlarg:"0"`
+	PMapGetters []PMapGetter[any]
 }
 
 func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1301,7 +1301,7 @@ func functionWithPMapGetterSlice(getters []PMapGetter[interface{}]) (ExprFunc[in
 }
 
 type stringLikeGetterSliceArguments struct {
-	StringLikeGetters []StringLikeGetter[any] `ottlarg:"0"`
+	StringLikeGetters []StringLikeGetter[any]
 }
 
 func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1311,7 +1311,7 @@ func functionWithStringLikeGetterSlice(getters []StringLikeGetter[interface{}]) 
 }
 
 type floatLikeGetterSliceArguments struct {
-	FloatLikeGetters []FloatLikeGetter[any] `ottlarg:"0"`
+	FloatLikeGetters []FloatLikeGetter[any]
 }
 
 func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1321,7 +1321,7 @@ func functionWithFloatLikeGetterSlice(getters []FloatLikeGetter[interface{}]) (E
 }
 
 type intLikeGetterSliceArguments struct {
-	IntLikeGetters []IntLikeGetter[any] `ottlarg:"0"`
+	IntLikeGetters []IntLikeGetter[any]
 }
 
 func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1331,7 +1331,7 @@ func functionWithIntLikeGetterSlice(getters []IntLikeGetter[interface{}]) (ExprF
 }
 
 type setterArguments struct {
-	SetterArg Setter[any] `ottlarg:"0"`
+	SetterArg Setter[any]
 }
 
 func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1341,7 +1341,7 @@ func functionWithSetter(Setter[interface{}]) (ExprFunc[interface{}], error) {
 }
 
 type getSetterArguments struct {
-	GetSetterArg GetSetter[any] `ottlarg:"0"`
+	GetSetterArg GetSetter[any]
 }
 
 func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1351,7 +1351,7 @@ func functionWithGetSetter(GetSetter[interface{}]) (ExprFunc[interface{}], error
 }
 
 type getterArguments struct {
-	GetterArg Getter[any] `ottlarg:"0"`
+	GetterArg Getter[any]
 }
 
 func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1361,7 +1361,7 @@ func functionWithGetter(Getter[interface{}]) (ExprFunc[interface{}], error) {
 }
 
 type stringGetterArguments struct {
-	StringGetterArg StringGetter[any] `ottlarg:"0"`
+	StringGetterArg StringGetter[any]
 }
 
 func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1371,7 +1371,7 @@ func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}],
 }
 
 type durationGetterArguments struct {
-	DurationGetterArg DurationGetter[any] `ottlarg:"0"`
+	DurationGetterArg DurationGetter[any]
 }
 
 func functionWithDurationGetter(DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1381,7 +1381,7 @@ func functionWithDurationGetter(DurationGetter[interface{}]) (ExprFunc[interface
 }
 
 type timeGetterArguments struct {
-	TimeGetterArg TimeGetter[any] `ottlarg:"0"`
+	TimeGetterArg TimeGetter[any]
 }
 
 func functionWithTimeGetter(TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1391,7 +1391,7 @@ func functionWithTimeGetter(TimeGetter[interface{}]) (ExprFunc[interface{}], err
 }
 
 type functionGetterArguments struct {
-	FunctionGetterArg FunctionGetter[any] `ottlarg:"0"`
+	FunctionGetterArg FunctionGetter[any]
 }
 
 func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1401,7 +1401,7 @@ func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface
 }
 
 type stringLikeGetterArguments struct {
-	StringLikeGetterArg StringLikeGetter[any] `ottlarg:"0"`
+	StringLikeGetterArg StringLikeGetter[any]
 }
 
 func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1411,7 +1411,7 @@ func functionWithStringLikeGetter(StringLikeGetter[interface{}]) (ExprFunc[inter
 }
 
 type floatGetterArguments struct {
-	FloatGetterArg FloatGetter[any] `ottlarg:"0"`
+	FloatGetterArg FloatGetter[any]
 }
 
 func functionWithFloatGetter(FloatGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1421,7 +1421,7 @@ func functionWithFloatGetter(FloatGetter[interface{}]) (ExprFunc[interface{}], e
 }
 
 type floatLikeGetterArguments struct {
-	FloatLikeGetterArg FloatLikeGetter[any] `ottlarg:"0"`
+	FloatLikeGetterArg FloatLikeGetter[any]
 }
 
 func functionWithFloatLikeGetter(FloatLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1431,7 +1431,7 @@ func functionWithFloatLikeGetter(FloatLikeGetter[interface{}]) (ExprFunc[interfa
 }
 
 type intGetterArguments struct {
-	IntGetterArg IntGetter[any] `ottlarg:"0"`
+	IntGetterArg IntGetter[any]
 }
 
 func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1441,7 +1441,7 @@ func functionWithIntGetter(IntGetter[interface{}]) (ExprFunc[interface{}], error
 }
 
 type intLikeGetterArguments struct {
-	IntLikeGetterArg IntLikeGetter[any] `ottlarg:"0"`
+	IntLikeGetterArg IntLikeGetter[any]
 }
 
 func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1451,7 +1451,7 @@ func functionWithIntLikeGetter(IntLikeGetter[interface{}]) (ExprFunc[interface{}
 }
 
 type pMapGetterArguments struct {
-	PMapArg PMapGetter[any] `ottlarg:"0"`
+	PMapArg PMapGetter[any]
 }
 
 func functionWithPMapGetter(PMapGetter[interface{}]) (ExprFunc[interface{}], error) {
@@ -1461,7 +1461,7 @@ func functionWithPMapGetter(PMapGetter[interface{}]) (ExprFunc[interface{}], err
 }
 
 type stringArguments struct {
-	StringArg string `ottlarg:"0"`
+	StringArg string
 }
 
 func functionWithString(string) (ExprFunc[interface{}], error) {
@@ -1471,7 +1471,7 @@ func functionWithString(string) (ExprFunc[interface{}], error) {
 }
 
 type floatArguments struct {
-	FloatArg float64 `ottlarg:"0"`
+	FloatArg float64
 }
 
 func functionWithFloat(float64) (ExprFunc[interface{}], error) {
@@ -1481,7 +1481,7 @@ func functionWithFloat(float64) (ExprFunc[interface{}], error) {
 }
 
 type intArguments struct {
-	IntArg int64 `ottlarg:"0"`
+	IntArg int64
 }
 
 func functionWithInt(int64) (ExprFunc[interface{}], error) {
@@ -1491,7 +1491,7 @@ func functionWithInt(int64) (ExprFunc[interface{}], error) {
 }
 
 type boolArguments struct {
-	BoolArg bool `ottlarg:"0"`
+	BoolArg bool
 }
 
 func functionWithBool(bool) (ExprFunc[interface{}], error) {
@@ -1501,10 +1501,10 @@ func functionWithBool(bool) (ExprFunc[interface{}], error) {
 }
 
 type multipleArgsArguments struct {
-	GetSetterArg GetSetter[any] `ottlarg:"0"`
-	StringArg    string         `ottlarg:"1"`
-	FloatArg     float64        `ottlarg:"2"`
-	IntArg       int64          `ottlarg:"3"`
+	GetSetterArg GetSetter[any]
+	StringArg    string
+	FloatArg     float64
+	IntArg       int64
 }
 
 func functionWithMultipleArgs(GetSetter[interface{}], string, float64, int64) (ExprFunc[interface{}], error) {
@@ -1523,7 +1523,7 @@ func functionThatHasAnError() (ExprFunc[interface{}], error) {
 }
 
 type enumArguments struct {
-	EnumArg Enum `ottlarg:"0"`
+	EnumArg Enum
 }
 
 func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
