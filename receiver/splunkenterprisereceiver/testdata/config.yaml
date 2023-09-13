@@ -1,0 +1,16 @@
+# Example config for the Splunk Enterprise Receiver.
+
+splunkenterprise:
+  # required settings
+  username: "admin"
+  password: "securityFirst"
+  endpoint: "https://localhost:8089"
+  # Optional settings
+  collection_interval: 10s
+  max_search_wait_time: 11s
+  # Also optional: metric settings
+  metrics:
+    splunk.license.index.usage:
+      enabled: true
+    splunk.indexer.throughput:
+      enabled: false

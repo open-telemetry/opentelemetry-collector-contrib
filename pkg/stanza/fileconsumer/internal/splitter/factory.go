@@ -8,5 +8,5 @@ import (
 )
 
 type Factory interface {
-	Build() (bufio.SplitFunc, error)
+	SplitFunc() (bufio.SplitFunc, error)
 }
