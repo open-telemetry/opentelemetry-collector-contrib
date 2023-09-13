@@ -11,33 +11,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCustomFactory(t *testing.T) {
-	tests := []struct {
-		name        string
-		splitter    bufio.SplitFunc
-		flushPeriod time.Duration
-		wantErr     bool
-	}{
-		{
-			name: "default configuration",
-			splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-				return len(data), data, nil
-			},
-			flushPeriod: 100 * time.Millisecond,
-			wantErr:     false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := NewCustomFactory(tt.splitter, tt.flushPeriod)
-			got, err := factory.Build()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if err == nil {
-				assert.NotNil(t, got)
-			}
-		})
-	}
+func TestCustom(t *testing.T) {
+	factory := NewCustomFactory(bufio.ScanLines, 0)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+}
+
+func TestCustomWithFlush(t *testing.T) {
+	flushPeriod := 100 * time.Millisecond
+	factory := NewCustomFactory(bufio.ScanLines, flushPeriod)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+
+	time.Sleep(2 * flushPeriod)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, advance)
+	assert.Equal(t, []byte(" extra "), token)
 }
