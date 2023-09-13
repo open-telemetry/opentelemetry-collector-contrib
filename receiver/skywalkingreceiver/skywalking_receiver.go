@@ -11,8 +11,6 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
-
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -27,6 +25,7 @@ import (
 	profile "skywalking.apache.org/repo/goapi/collect/language/profile/v3"
 	management "skywalking.apache.org/repo/goapi/collect/management/v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
 )
 
