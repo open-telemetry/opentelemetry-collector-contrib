@@ -1,0 +1,100 @@
+name: datadog-system-tests
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  pull_request:
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: ~1.19.12
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Install dependencies
+        if: steps.go-cache.outputs.cache-hit != 'true'
+        run: make -j2 gomoddownload
+      - name: Build Docker Image
+        run: |
+          make docker-otelcontribcol
+      - name: export image to tar
+        run: |
+          docker save otelcontribcol:latest > /tmp/otelcontribcol.tar
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp/otelcontribcol.tar
+
+  datadog-opentelemetry-system-test:
+    runs-on: ubuntu-latest
+    needs: docker-build
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+      DD_API_KEY_2: ${{ secrets.DD_API_KEY_2 }}
+      DD_APP_KEY_2: ${{ secrets.DD_APP_KEY_2 }}
+      DD_API_KEY_3: ${{ secrets.DD_API_KEY_3 }}
+      DD_APP_KEY_3: ${{ secrets.DD_APP_KEY_3 }}
+    steps:
+      - name: Checkout system tests
+        uses: actions/checkout@v3
+        with:
+          repository: 'DataDog/system-tests'
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }} 
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: otelcontribcol
+          path: /tmp
+      - name: Load Docker image
+        run: docker load --input /tmp/otelcontribcol.tar
+      - name: Install runner
+        uses: ./.github/actions/install_runner
+      - name: Pull mitmproxy image
+        run: docker pull datadog/system-tests:proxy-v1 || true
+      - name: Build system test images
+        id: build
+        run: ./build.sh java_otel
+      - name: Run OTEL_TRACING_E2E scenario
+        if: always() && steps.build.outcome == 'success'
+        run: ./run.sh OTEL_TRACING_E2E
+      - name: Run OTEL_METRIC_E2E scenario
+        if: always() && steps.build.outcome == 'success'
+        run: ./run.sh OTEL_METRIC_E2E
+      - name: Run OTEL_LOG_E2E scenario
+        if: always() && steps.build.outcome == 'success'
+        run: ./run.sh OTEL_LOG_E2E
+      - name: Compress logs
+        if: always() && steps.build.outcome == 'success'
+        run: tar -czvf artifact.tar.gz $(ls | grep logs)
+      - name: Upload artifact
+        if: always() && steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: logs_java-otel_spring-boot-native_prod
+          path: artifact.tar.gz
