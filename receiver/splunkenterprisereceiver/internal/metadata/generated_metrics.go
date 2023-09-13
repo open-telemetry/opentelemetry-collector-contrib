@@ -20,7 +20,7 @@ type metricSplunkIndexerThroughput struct {
 // init fills splunk.indexer.throughput metric with initial data.
 func (m *metricSplunkIndexerThroughput) init() {
 	m.data.SetName("splunk.indexer.throughput")
-	m.data.SetDescription("Gauge tracking average KBps throughput of indexer")
+	m.data.SetDescription("Gauge tracking average bytes per second throughput of indexer")
 	m.data.SetUnit("By/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

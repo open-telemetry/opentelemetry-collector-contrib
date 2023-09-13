@@ -14,7 +14,7 @@ metrics:
 
 ### splunk.indexer.throughput
 
-Gauge tracking average KBps throughput of indexer
+Gauge tracking average bytes per second throughput of indexer
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

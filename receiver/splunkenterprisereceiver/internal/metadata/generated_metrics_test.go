@@ -89,7 +89,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["splunk.indexer.throughput"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Gauge tracking average KBps throughput of indexer", ms.At(i).Description())
+					assert.Equal(t, "Gauge tracking average bytes per second throughput of indexer", ms.At(i).Description())
 					assert.Equal(t, "By/s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
