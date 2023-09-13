@@ -24,7 +24,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver/internal/metadata"
 )
 
@@ -124,7 +123,6 @@ func testdataConfigYamlAsMap() *Config {
 			IncludeFileNameResolved: false,
 			IncludeFilePathResolved: false,
 			PollInterval:            200 * time.Millisecond,
-			Splitter:                tokenize.NewSplitterConfig(),
 			Encoding:                "utf-8",
 			StartAt:                 "end",
 			FingerprintSize:         1000,

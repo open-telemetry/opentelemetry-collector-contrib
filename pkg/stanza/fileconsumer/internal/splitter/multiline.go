@@ -10,29 +10,29 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-type multilineFactory struct {
-	splitterCfg tokenize.SplitterConfig
+type splitFuncFactory struct {
+	splitConfig split.Config
 	encoding    encoding.Encoding
 	maxLogSize  int
 	trimFunc    trim.Func
 	flushPeriod time.Duration
 }
 
-var _ Factory = (*multilineFactory)(nil)
+var _ Factory = (*splitFuncFactory)(nil)
 
-func NewMultilineFactory(
-	splitterCfg tokenize.SplitterConfig,
+func NewSplitFuncFactory(
+	splitConfig split.Config,
 	encoding encoding.Encoding,
 	maxLogSize int,
 	trimFunc trim.Func,
 	flushPeriod time.Duration,
 ) Factory {
-	return &multilineFactory{
-		splitterCfg: splitterCfg,
+	return &splitFuncFactory{
+		splitConfig: splitConfig,
 		encoding:    encoding,
 		maxLogSize:  maxLogSize,
 		trimFunc:    trimFunc,
@@ -40,9 +40,9 @@ func NewMultilineFactory(
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *multilineFactory) Build() (bufio.SplitFunc, error) {
-	splitFunc, err := f.splitterCfg.Build(f.encoding, false, f.maxLogSize, f.trimFunc)
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *splitFuncFactory) SplitFunc() (bufio.SplitFunc, error) {
+	splitFunc, err := f.splitConfig.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
 	if err != nil {
 		return nil, err
 	}

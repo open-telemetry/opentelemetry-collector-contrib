@@ -25,7 +25,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
 func TestCleanStop(t *testing.T) {
@@ -547,7 +546,6 @@ func TestNoNewline(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	cfg.Splitter = tokenize.NewSplitterConfig()
 	cfg.FlushPeriod = time.Nanosecond
 	operator, emitCalls := buildTestManager(t, cfg)
 
