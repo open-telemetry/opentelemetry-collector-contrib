@@ -404,7 +404,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		DatasetURL: server.URL,
 		APIKey:     "key-lib",
 		BufferSettings: BufferSettings{
-			MaxLifetime:          time.Millisecond,
+			MaxLifetime:          500 * time.Millisecond,
 			GroupBy:              []string{"attributes.container_id"},
 			RetryInitialInterval: time.Second,
 			RetryMaxInterval:     time.Minute,

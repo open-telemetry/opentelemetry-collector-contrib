@@ -7,4 +7,4 @@ status:
     alpha: [logs]
   distributions: [contrib, observiq]
   codeowners:
-    active: [oded-dd, povilasv, matej-g]
+    active: [povilasv, matej-g]

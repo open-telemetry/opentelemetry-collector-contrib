@@ -4,25 +4,19 @@
 package namespace // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/namespace"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
 	corev1 "k8s.io/api/core/v1"
 
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
-func GetMetrics(set receiver.CreateSettings, metricsBuilderConfig imetadata.MetricsBuilderConfig, ns *corev1.Namespace) pmetric.Metrics {
-	mb := imetadata.NewMetricsBuilder(metricsBuilderConfig, set)
-	ts := pcommon.NewTimestampFromTime(time.Now())
+func RecordMetrics(mb *imetadata.MetricsBuilder, ns *corev1.Namespace, ts pcommon.Timestamp) {
 	mb.RecordK8sNamespacePhaseDataPoint(ts, int64(namespacePhaseValues[ns.Status.Phase]))
-	rb := imetadata.NewResourceBuilder(metricsBuilderConfig.ResourceAttributes)
+	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceUID(string(ns.UID))
 	rb.SetK8sNamespaceName(ns.Name)
 	rb.SetOpencensusResourcetype("k8s")
-	return mb.Emit(imetadata.WithResource(rb.Emit()))
+	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
 var namespacePhaseValues = map[corev1.NamespacePhase]int32{

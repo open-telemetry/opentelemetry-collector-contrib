@@ -64,29 +64,14 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			functionThatHasAnError,
 		),
 		createFactory(
-			"no_struct_tag",
-			&noStructTagFunctionArguments{},
-			functionThatHasAnError,
+			"testing_unknown_function",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
 		),
-		createFactory(
-			"wrong_struct_tag",
-			&wrongTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"bad_struct_tag",
-			&badStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"negative_struct_tag",
-			&negativeStructTagFunctionArguments{},
-			functionThatHasAnError,
-		),
-		createFactory(
-			"out_of_bounds_struct_tag",
-			&outOfBoundsStructTagFunctionArguments{},
-			functionThatHasAnError,
+		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
 		),
 	)
 
@@ -106,6 +91,17 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			inv: editor{
 				Function:  "unknownfunc",
 				Arguments: []value{},
+			},
+		},
+		{
+			name: "Invalid Function Name",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						String: (ottltest.Strp("SHA256")),
+					},
+				},
 			},
 		},
 		{
@@ -312,64 +308,20 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "Unknown Function",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("SHA256")),
+					},
+				},
+			},
+		},
+		{
 			name: "factory definition uses a non-pointer Arguments value",
 			inv: editor{
 				Function: "non_pointer",
-			},
-		},
-		{
-			name: "no struct tags",
-			inv: editor{
-				Function: "no_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "using the wrong struct tag",
-			inv: editor{
-				Function: "wrong_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "non-integer struct tags",
-			inv: editor{
-				Function: "bad_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "struct tag index too low",
-			inv: editor{
-				Function: "negative_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
-			},
-		},
-		{
-			name: "struct tag index too high",
-			inv: editor{
-				Function: "out_of_bounds_struct_tag",
-				Arguments: []value{
-					{
-						String: ottltest.Strp("str"),
-					},
-				},
 			},
 		},
 	}
@@ -635,6 +587,40 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "durationgetter slice arg",
+			inv: editor{
+				Function: "testing_durationgetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "timegetter slice arg",
+			inv: editor{
+				Function: "testing_timegetter_slice",
+				Arguments: []value{
+					{
+						List: &list{
+							Values: []value{
+								{
+									String: ottltest.Strp("test"),
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			name: "floatgetter slice arg",
@@ -940,6 +926,52 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "durationgetter arg",
+			inv: editor{
+				Function: "testing_durationgetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "timegetter arg",
+			inv: editor{
+				Function: "testing_timegetter",
+				Arguments: []value{
+					{
+						String: ottltest.Strp("test"),
+					},
+				},
+			},
+		},
+		{
+			name: "functiongetter arg (Uppercase)",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("SHA256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
+			name: "functiongetter arg",
+			inv: editor{
+				Function: "testing_functiongetter",
+				Arguments: []value{
+					{
+						FunctionName: (ottltest.Strp("Sha256")),
+					},
+				},
+			},
+			want: "hashstring",
+		},
+		{
 			name: "stringlikegetter arg",
 			inv: editor{
 				Function: "testing_stringlikegetter",
@@ -1152,6 +1184,12 @@ func functionWithNoArguments() (ExprFunc[any], error) {
 	}, nil
 }
 
+func functionWithErr() (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return nil, nil
+	}, fmt.Errorf("error")
+}
+
 type stringSliceArguments struct {
 	Strings []string `ottlarg:"0"`
 }
@@ -1209,6 +1247,26 @@ type stringGetterSliceArguments struct {
 func functionWithStringGetterSlice(getters []StringGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return len(getters), nil
+	}, nil
+}
+
+type durationGetterSliceArguments struct {
+	DurationGetters []DurationGetter[any] `ottlarg:"0"`
+}
+
+func functionWithDurationGetterSlice(_ []DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return nil, nil
+	}, nil
+}
+
+type timeGetterSliceArguments struct {
+	TimeGetters []TimeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithTimeGetterSlice(_ []TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return nil, nil
 	}, nil
 }
 
@@ -1309,6 +1367,36 @@ type stringGetterArguments struct {
 func functionWithStringGetter(StringGetter[interface{}]) (ExprFunc[interface{}], error) {
 	return func(context.Context, interface{}) (interface{}, error) {
 		return "anything", nil
+	}, nil
+}
+
+type durationGetterArguments struct {
+	DurationGetterArg DurationGetter[any] `ottlarg:"0"`
+}
+
+func functionWithDurationGetter(DurationGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type timeGetterArguments struct {
+	TimeGetterArg TimeGetter[any] `ottlarg:"0"`
+}
+
+func functionWithTimeGetter(TimeGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "anything", nil
+	}, nil
+}
+
+type functionGetterArguments struct {
+	FunctionGetterArg FunctionGetter[any] `ottlarg:"0"`
+}
+
+func functionWithFunctionGetter(FunctionGetter[interface{}]) (ExprFunc[interface{}], error) {
+	return func(context.Context, interface{}) (interface{}, error) {
+		return "hashstring", nil
 	}, nil
 }
 
@@ -1444,26 +1532,6 @@ func functionWithEnum(Enum) (ExprFunc[interface{}], error) {
 	}, nil
 }
 
-type noStructTagFunctionArguments struct {
-	StringArg string
-}
-
-type badStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"a"`
-}
-
-type negativeStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"-1"`
-}
-
-type outOfBoundsStructTagFunctionArguments struct {
-	StringArg string `ottlarg:"1"`
-}
-
-type wrongTagFunctionArguments struct {
-	StringArg string `argument:"1"`
-}
-
 func createFactory[A any](name string, args A, fn any) Factory[any] {
 	createFunction := func(fCtx FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
 		fArgs, ok := oArgs.(A)
@@ -1537,6 +1605,16 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithStringGetterSlice,
 		),
 		createFactory[any](
+			"testing_durationgetter_slice",
+			&durationGetterSliceArguments{},
+			functionWithDurationGetterSlice,
+		),
+		createFactory[any](
+			"testing_timegetter_slice",
+			&timeGetterSliceArguments{},
+			functionWithTimeGetterSlice,
+		),
+		createFactory[any](
 			"testing_stringlikegetter_slice",
 			&stringLikeGetterSliceArguments{},
 			functionWithStringLikeGetterSlice,
@@ -1582,7 +1660,32 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			functionWithGetter,
 		),
 		createFactory[any](
+			"testing_durationgetter",
+			&durationGetterArguments{},
+			functionWithDurationGetter,
+		),
+		createFactory[any](
+			"testing_timegetter",
+			&timeGetterArguments{},
+			functionWithTimeGetter,
+		),
+		createFactory[any](
 			"testing_stringgetter",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"testing_functiongetter",
+			&functionGetterArguments{},
+			functionWithFunctionGetter,
+		),
+		createFactory[any](
+			"SHA256",
+			&stringGetterArguments{},
+			functionWithStringGetter,
+		),
+		createFactory[any](
+			"Sha256",
 			&stringGetterArguments{},
 			functionWithStringGetter,
 		),

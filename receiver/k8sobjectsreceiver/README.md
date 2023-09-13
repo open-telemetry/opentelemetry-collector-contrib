@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib], [splunk], [sumo] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8sobjects%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8sobjects) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8sobjects%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8sobjects) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -50,6 +50,7 @@ the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 - `label_selector`: select objects by label(s)
 - `field_selector`: select objects by field(s)
 - `interval`: the interval at which object is pulled, default 60 minutes. Only useful for `pull` mode.
+- `exclude_watch_type`: allows excluding specific watch types. Valid values are `ADDED`, `MODIFIED`, `DELETED`, `BOOKMARK`, and `ERROR`. Only usable in `watch` mode.
 - `resource_version` allows watch resources starting from a specific version (default = `1`). Only available for `watch` mode. If not specified, the receiver will do an initial list to get the resourceVersion before starting the watch. See [Efficient Detection of Change](https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes) for details on why this is necessary.
 - `namespaces`: An array of `namespaces` to collect events from. (default = `all`)
 - `group`: API group name. It is an optional config. When given resource object is present in multiple groups,
@@ -121,7 +122,8 @@ Use the below commands to create a `ClusterRole` with required permissions and a
 Following config will work for collecting pods and events only. You need to add
 appropriate rule for collecting other objects.
 
-When using watch mode without specifying a `resource_version` you must also specify `list` verb so that the receiver has permission to do its initial list. 
+When using watch mode you must also specify `list` verb so that the receiver has permission to do its initial list if no
+`resource_version` was supplied or a list to recover from [410 Gone scenarios](https://kubernetes.io/docs/reference/using-api/api-concepts/#410-gone-responses). 
 
 ```bash
 <<EOF | kubectl apply -f -

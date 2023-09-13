@@ -21,6 +21,7 @@ body:
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/datadog
       - connector/exceptions
       - connector/routing
       - connector/servicegraph
@@ -49,8 +50,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/loadbalancing
       - exporter/logicmonitor
@@ -82,6 +81,7 @@ body:
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -97,6 +97,7 @@ body:
       - extension/storage/filestorage
       - internal/aws
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig
@@ -186,6 +187,7 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
+      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
