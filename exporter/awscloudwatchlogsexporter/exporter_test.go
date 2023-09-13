@@ -63,8 +63,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 				},
-				LogGroupName:  "",
-				LogStreamName: "",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "",
+					LogStreamName: "",
+				},
 			},
 		},
 		{
@@ -78,8 +80,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
 				},
-				LogGroupName:  "",
-				LogStreamName: "",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "",
+					LogStreamName: "",
+				},
 			},
 		},
 		{
@@ -96,8 +100,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
 				},
-				LogGroupName:  "tLogGroup",
-				LogStreamName: "tStreamName",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "tLogGroup",
+					LogStreamName: "tStreamName",
+				},
 			},
 		},
 		{
@@ -115,8 +121,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`hello world`),
 				},
-				LogGroupName:  "tLogGroup",
-				LogStreamName: "tStreamName",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "tLogGroup",
+					LogStreamName: "tStreamName",
+				},
 			},
 		},
 		{
@@ -134,8 +142,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
 				},
-				LogGroupName:  "Foo",
-				LogStreamName: "tStreamName",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "Foo",
+					LogStreamName: "tStreamName",
+				},
 			},
 		},
 		{
@@ -153,8 +163,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","LogStreamName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
 				},
-				LogGroupName:  "Foo",
-				LogStreamName: "Foo",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "Foo",
+					LogStreamName: "Foo",
+				},
 			},
 		},
 		{
@@ -172,8 +184,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
 				},
-				LogGroupName:  "Foo",
-				LogStreamName: "tStreamName",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "Foo",
+					LogStreamName: "tStreamName",
+				},
 			},
 		},
 		{
@@ -191,8 +205,10 @@ func TestLogToCWLog(t *testing.T) {
 					Timestamp: aws.Int64(1609719139),
 					Message:   aws.String(`{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
 				},
-				LogGroupName:  "Foo",
-				LogStreamName: "Foo",
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "Foo",
+					LogStreamName: "Foo",
+				},
 			},
 		},
 	}

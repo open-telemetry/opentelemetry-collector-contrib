@@ -268,8 +268,10 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 			Timestamp: aws.Int64(int64(log.Timestamp()) / int64(time.Millisecond)), // in milliseconds
 			Message:   aws.String(string(bodyJSON)),
 		},
-		LogGroupName:  logGroupName,
-		LogStreamName: logStreamName,
+		StreamKey: cwlogs.StreamKey{
+			LogGroupName:  logGroupName,
+			LogStreamName: logStreamName,
+		},
 		GeneratedTime: time.Now(),
 	}, nil
 }
