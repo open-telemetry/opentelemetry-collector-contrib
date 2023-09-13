@@ -115,6 +115,7 @@ func (m *Manager) startPoller(ctx context.Context) {
 				return
 			case <-globTicker.C:
 			}
+
 			m.poll(ctx)
 		}
 	}()

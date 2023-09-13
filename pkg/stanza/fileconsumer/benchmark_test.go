@@ -26,7 +26,10 @@ type fileInputBenchmark struct {
 }
 
 type fileSizeBenchmark struct {
-	sizes [2]int
+	logs          []int
+	maxConcurrent int
+	name          string
+	desiredFiles  int
 }
 
 type benchFile struct {
@@ -190,65 +193,114 @@ func BenchmarkFileInput(b *testing.B) {
 	}
 }
 
-func max(x, y int) int {
-	if x < y {
-		return y
+func max(nums ...int) int {
+	_max := 0
+	for _, n := range nums {
+		if _max < n {
+			_max = n
+		}
 	}
-	return x
+	return _max
 }
 
-func (fileSize fileSizeBenchmark) createFiles(b *testing.B, rootDir string) {
-	// create 50 files, some with large file sizes, other's with rather small
+func (fileSize fileSizeBenchmark) createFiles(b *testing.B, rootDir string) int {
+
+	// the number of logs written to a file is selected in round-robin fashion from fileSize.logs
+	// eg. fileSize.logs = [10,100]
+	// It will create one half of files with 10*b.N lines and other with 100*b.N lines
+	// ileSize.logs = [10,100,500]
+	// It will create one third of files with 10*b.N lines and other with 100*b.N and remaining third with 500*b.N
+
 	getMessage := func(m int) string { return fmt.Sprintf("message %d", m) }
-	logs := make([]string, 0)
-	for i := 0; i < max(fileSize.sizes[0], fileSize.sizes[1]); i++ {
+	logs := make([]string, 0, b.N) // collect all the logs at beginning itself to and reuse same to write to files
+	for i := 0; i < max(fileSize.logs...)*b.N; i++ {
 		logs = append(logs, getMessage(i))
 	}
-
-	for i := 0; i < 50; i++ {
+	totalLogs := 0
+	for i := 0; i < fileSize.desiredFiles; i++ {
 		file := openFile(b, filepath.Join(rootDir, fmt.Sprintf("file_%s.log", uuid.NewString())))
-		file.WriteString(uuid.NewString() + strings.Join(logs[:fileSize.sizes[i%2]], "\n") + "\n")
+		// Use uuid.NewString() to introduce some randomness in file logs
+		// or else file consumer will detect a duplicate based on fingerprint
+		linesToWrite := b.N * fileSize.logs[i%len(fileSize.logs)]
+		file.WriteString(uuid.NewString() + strings.Join(logs[:linesToWrite], "\n") + "\n")
+		totalLogs += linesToWrite
 	}
+	return totalLogs
 }
 
 func BenchmarkFileSizeVarying(b *testing.B) {
-	fileSize := fileSizeBenchmark{
-		sizes: [2]int{b.N * 5000, b.N * 10}, // Half the files will be huge, other half will be smaller
+	testCases := []fileSizeBenchmark{
+		{
+			name:          "varying_sizes",
+			logs:          []int{10, 1000},
+			maxConcurrent: 50,
+			desiredFiles:  100,
+		},
+		{
+			name:          "varying_sizes_more_files",
+			logs:          []int{10, 1000},
+			maxConcurrent: 50,
+			desiredFiles:  200,
+		},
+		{
+			name:          "varying_sizes_more_files_throttled",
+			logs:          []int{10, 1000},
+			maxConcurrent: 30,
+			desiredFiles:  200,
+		},
+		{
+			name:          "same_size_small",
+			logs:          []int{10},
+			maxConcurrent: 50,
+			desiredFiles:  50,
+		},
+		{
+			name:          "same_size_small_throttled",
+			logs:          []int{10},
+			maxConcurrent: 10,
+			desiredFiles:  100,
+		},
 	}
-	rootDir := b.TempDir()
-	cfg := NewConfig().includeDir(rootDir)
-	cfg.StartAt = "beginning"
-	cfg.MaxConcurrentFiles = 50
-	totalLogs := fileSize.sizes[0]*50 + fileSize.sizes[1]*50
-	emitCalls := make(chan *emitParams, totalLogs+10)
+	for _, fileSize := range testCases {
+		b.Run(fileSize.name, func(b *testing.B) {
+			rootDir := b.TempDir()
+			cfg := NewConfig().includeDir(rootDir)
+			cfg.StartAt = "beginning"
+			cfg.MaxConcurrentFiles = fileSize.maxConcurrent
+			emitCalls := make(chan *emitParams, max(fileSize.logs...)*b.N) // large enough to hold all the logs
 
-	operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls), withReaderChan())
-	operator.persister = testutil.NewMockPersister("test")
-	defer func() {
-		require.NoError(b, operator.Stop())
-	}()
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		var once sync.Once
-		for i := 0; i < totalLogs; i++ {
-			once.Do(func() {
-				// Reset once we get the first log
-				b.ResetTimer()
-			})
-			<-emitCalls
-		}
-		// Stop the timer, as we're measuring log throughput
-		b.StopTimer()
-	}()
-	// create first set of files
-	fileSize.createFiles(b, rootDir)
-	operator.poll(context.Background())
+			operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls), withReaderChan())
+			operator.persister = testutil.NewMockPersister("test")
+			defer func() {
+				require.NoError(b, operator.Stop())
+			}()
 
-	// create new set of files, call poll() again
-	fileSize.createFiles(b, rootDir)
-	operator.poll(context.Background())
+			// create first set of files
+			totalLogs := fileSize.createFiles(b, rootDir)
+			var wg sync.WaitGroup
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				var once sync.Once
+				// wait for logs from two poll() cycles
+				for i := 0; i < totalLogs*2; i++ {
+					once.Do(func() {
+						// Reset once we get the first log
+						b.ResetTimer()
+					})
+					<-emitCalls
+				}
+				// Stop the timer, as we're measuring log throughput
+				b.StopTimer()
+			}()
+			operator.poll(context.Background())
 
-	wg.Wait()
+			// create new set of files, call poll() again
+			fileSize.createFiles(b, rootDir)
+			operator.poll(context.Background())
+
+			wg.Wait()
+		})
+
+	}
 }
