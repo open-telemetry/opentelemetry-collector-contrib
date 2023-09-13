@@ -76,7 +76,7 @@ jobs:
           node_image: kindest/node:${{ matrix.k8s-version }}
           kubectl_version: ${{ matrix.k8s-version }}
           cluster_name: kind
-          config: ~/.github/workflows/configs/e2e-kind-config.yaml
+          config: ./.github/workflows/configs/e2e-kind-config.yaml
       - name: Fix kubelet TLS server
         run: |
           kubectl get csr
