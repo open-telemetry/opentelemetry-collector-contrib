@@ -754,6 +754,32 @@ func Test_newPathGetSetter(t *testing.T) {
 				pcommon.NewResource().CopyTo(resource)
 			},
 		},
+		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
+			name: "end_time",
+			path: []ottl.Field{
+				{
+					Name: "end_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(span ptrace.Span, il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+				span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
