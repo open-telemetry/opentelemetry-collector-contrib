@@ -27,12 +27,15 @@ type worker struct {
 	index          int             // worker index
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, attributes []attribute.KeyValue) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	var i int64
 	value := 24.42
-	attrs := attribute.NewSet(attributes...)
+	attrs := attribute.NewSet(attribute.KeyValue{
+		Key:   attribute.Key("status.code"),
+		Value: attribute.StringValue("STATUS_CODE_OK"),
+	})
 
 	for w.running.Load() {
 		rm := metricdata.ResourceMetrics{
@@ -46,8 +49,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 								DataPoints: []metricdata.DataPoint[int64]{
 									{
 										Attributes: attrs,
-										Time:       time.Now(),
-										Value:      i,
+										Time:  time.Now(),
+										Value: i,
 									},
 								},
 							},

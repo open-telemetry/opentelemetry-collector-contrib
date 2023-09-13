@@ -112,7 +112,7 @@ func Run(c *Config, exp sdkmetric.Exporter, logger *zap.Logger) error {
 			index:          i,
 		}
 
-		go w.simulateMetrics(res, exp, c.GetAttributes())
+		go w.simulateMetrics(res, exp)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
