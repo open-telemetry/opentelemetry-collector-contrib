@@ -71,6 +71,68 @@ service:
 	)
 }
 
+// CreateConfigYamlSporadic creates a yaml config for an otel collector given a testbed sender, testbed receiver, any
+// processors, a pipeline type and a sporadic connector.
+func CreateConfigYamlSporadic(
+	sender testbed.DataSender,
+	receiver testbed.DataReceiver,
+	processors map[string]string,
+	pipelineType string,
+	decision int,
+) string {
+
+	// Prepare extra processor config section and comma-separated list of extra processor
+	// names to use in corresponding "processors" settings.
+	processorsSections := ""
+	processorsList := ""
+	if len(processors) > 0 {
+		first := true
+		for name, cfg := range processors {
+			processorsSections += cfg + "\n"
+			if !first {
+				processorsList += ","
+			}
+			processorsList += name
+			first = false
+		}
+	}
+
+	format := `
+receivers:%v
+exporters:%v
+processors:
+  %s
+connectors:
+  sporadic: 
+	decision: %d
+extensions:
+
+service:
+  extensions:
+  pipelines:
+    %s:
+      receivers: [%v]
+      processors: [%s]
+      exporters: [sporadic]
+	%s/sporadic:
+	  receivers: [sporadic]
+	  exporters: %v
+`
+
+	return fmt.Sprintf(
+		format,
+		sender.GenConfigYAMLStr(),
+		receiver.GenConfigYAMLStr(),
+		processorsSections,
+		decision,
+		pipelineType,
+		sender.ProtocolName(),
+		processorsList,
+		pipelineType,
+		receiver.ProtocolName(),
+	)
+}
+
 // PipelineDef holds the information necessary to run a single testbed configuration.
 type PipelineDef struct {
 	Receiver     string
