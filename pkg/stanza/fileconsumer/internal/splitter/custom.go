@@ -5,26 +5,29 @@ package splitter // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"bufio"
+	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type customFactory struct {
-	flusherCfg tokenize.FlusherConfig
-	splitFunc  bufio.SplitFunc
+	splitFunc   bufio.SplitFunc
+	trimFunc    trim.Func
+	flushPeriod time.Duration
 }
 
 var _ Factory = (*customFactory)(nil)
 
-func NewCustomFactory(flusherCfg tokenize.FlusherConfig, splitFunc bufio.SplitFunc) Factory {
+func NewCustomFactory(splitFunc bufio.SplitFunc, trimFunc trim.Func, flushPeriod time.Duration) Factory {
 	return &customFactory{
-		flusherCfg: flusherCfg,
-		splitFunc:  splitFunc,
+		splitFunc:   splitFunc,
+		trimFunc:    trimFunc,
+		flushPeriod: flushPeriod,
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *customFactory) Build() (bufio.SplitFunc, error) {
-	return f.flusherCfg.Wrap(f.splitFunc, trim.Whitespace(true, true)), nil
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *customFactory) SplitFunc() (bufio.SplitFunc, error) {
+	return trim.WithFunc(flush.WithPeriod(f.splitFunc, f.flushPeriod), f.trimFunc), nil
 }

@@ -12,7 +12,7 @@ import (
 )
 
 type FnvArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewFnvFactory[K any]() ottl.Factory[K] {

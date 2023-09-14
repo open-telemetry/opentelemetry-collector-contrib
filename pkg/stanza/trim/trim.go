@@ -4,45 +4,58 @@
 package trim // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 
 import (
+	"bufio"
 	"bytes"
 )
 
 type Func func([]byte) []byte
 
-func Whitespace(preserveLeading, preserveTrailing bool) Func {
-	if preserveLeading && preserveTrailing {
-		return noTrim
+func WithFunc(splitFunc bufio.SplitFunc, trimFunc Func) bufio.SplitFunc {
+	if trimFunc == nil {
+		return splitFunc
 	}
-	if preserveLeading {
-		return trimTrailingWhitespacesFunc
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		advance, token, err = splitFunc(data, atEOF)
+		return advance, trimFunc(token), err
 	}
-	if preserveTrailing {
-		return trimLeadingWhitespacesFunc
-	}
-	return trimWhitespacesFunc
 }
 
-func noTrim(token []byte) []byte {
+type Config struct {
+	PreserveLeading  bool `mapstructure:"preserve_leading_whitespaces,omitempty"`
+	PreserveTrailing bool `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+}
+
+func (c Config) Func() Func {
+	if c.PreserveLeading && c.PreserveTrailing {
+		return Nop
+	}
+	if c.PreserveLeading {
+		return Trailing
+	}
+	if c.PreserveTrailing {
+		return Leading
+	}
+	return Whitespace
+}
+
+var Nop Func = func(token []byte) []byte {
 	return token
 }
 
-func trimLeadingWhitespacesFunc(data []byte) []byte {
-	// TrimLeft to strip EOF whitespaces in case of using $ in regex
-	// For some reason newline and carriage return are being moved to beginning of next log
+var Leading Func = func(data []byte) []byte {
 	token := bytes.TrimLeft(data, "\r\n\t ")
-
-	// TrimLeft will return nil if data is an empty slice
 	if token == nil {
-		return []byte{}
+		// TrimLeft sometimes overwrites something with nothing.
+		// We need to override this behavior in order to preserve empty tokens.
+		return data
 	}
 	return token
 }
 
-func trimTrailingWhitespacesFunc(data []byte) []byte {
-	// TrimRight to strip all whitespaces from the end of log
+var Trailing Func = func(data []byte) []byte {
 	return bytes.TrimRight(data, "\r\n\t ")
 }
 
-func trimWhitespacesFunc(data []byte) []byte {
-	return trimLeadingWhitespacesFunc(trimTrailingWhitespacesFunc(data))
+var Whitespace Func = func(data []byte) []byte {
+	return Leading(Trailing(data))
 }
