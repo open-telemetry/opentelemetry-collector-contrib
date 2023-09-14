@@ -16,6 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 type Config struct {
@@ -69,12 +70,15 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 		return nil, fmt.Errorf("failed to compile `pattern`: %w", err)
 	}
 
-	splitFunc, err := split.NewlineSplitFunc(enc, false, func(b []byte) []byte {
-		return bytes.Trim(b, "\r\n")
-	})
+	splitFunc, err := split.NewlineSplitFunc(enc, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create split func: %w", err)
 	}
+
+	var trimFunc trim.Func = func(b []byte) []byte {
+		return bytes.Trim(b, "\r\n")
+	}
+	splitFunc = trim.WithFunc(splitFunc, trimFunc)
 
 	return &Config{
 		regex:             regex,

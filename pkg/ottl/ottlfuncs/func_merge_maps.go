@@ -19,9 +19,9 @@ const (
 )
 
 type MergeMapsArguments[K any] struct {
-	Target   ottl.PMapGetter[K] `ottlarg:"0"`
-	Source   ottl.PMapGetter[K] `ottlarg:"1"`
-	Strategy string             `ottlarg:"2"`
+	Target   ottl.PMapGetter[K]
+	Source   ottl.PMapGetter[K]
+	Strategy string
 }
 
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {

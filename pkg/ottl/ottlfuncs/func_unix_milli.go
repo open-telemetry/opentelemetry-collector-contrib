@@ -11,7 +11,7 @@ import (
 )
 
 type UnixMilliArguments[K any] struct {
-	Time ottl.TimeGetter[K] `ottlarg:"0"`
+	Time ottl.TimeGetter[K]
 }
 
 func NewUnixMilliFactory[K any]() ottl.Factory[K] {
