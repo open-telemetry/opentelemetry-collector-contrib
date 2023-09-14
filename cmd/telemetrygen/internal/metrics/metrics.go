@@ -24,10 +24,7 @@ import (
 
 // Start starts the metric telemetry generator
 func Start(cfg *Config) error {
-	logger, err := common.CreateLogger()
-	if err != nil {
-		return err
-	}
+	logger := common.GetLogger()
 
 	grpcExpOpt := []otlpmetricgrpc.Option{
 		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
@@ -52,6 +49,7 @@ func Start(cfg *Config) error {
 	}
 
 	var exp sdkmetric.Exporter
+	var err error
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
 		exp, err = otlpmetrichttp.New(context.Background(), httpExpOpt...)

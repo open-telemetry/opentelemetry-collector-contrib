@@ -4,20 +4,26 @@
 package common
 
 import (
-	"fmt"
-
 	grpcZap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 )
 
-// CreateLogger creates a logger for use by telemetrygen
-func CreateLogger() (*zap.Logger, error) {
-	logger, err := zap.NewDevelopment()
+var (
+	logger *zap.Logger
+)
+
+func init() {
+	var err error
+	logger, err = zap.NewDevelopment()
 	if err != nil {
-		return nil, fmt.Errorf("failed to obtain logger: %w", err)
+		panic(err)
 	}
 	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
 		zap.AddCallerSkip(3),
 	))
-	return logger, err
+}
+
+// GetLogger gets a logger for use by telemetrygen
+func GetLogger() *zap.Logger {
+	return logger
 }
