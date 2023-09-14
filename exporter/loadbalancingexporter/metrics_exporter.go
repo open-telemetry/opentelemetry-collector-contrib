@@ -57,7 +57,7 @@ func newMetricsExporter(params exporter.CreateSettings, cfg component.Config) (*
 	case "metric":
 		metricExporter.routingKey = metricNameRouting
 	default:
-		return nil, fmt.Errorf("unsupported routing_key: '%s'", cfg.(*Config).RoutingKey)
+		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
 	}
 	return &metricExporter, nil
 
