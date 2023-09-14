@@ -21,7 +21,7 @@ const (
 )
 
 type LenArguments[K any] struct {
-	Target ottl.Getter[K] `ottlarg:"0"`
+	Target ottl.Getter[K]
 }
 
 func NewLenFactory[K any]() ottl.Factory[K] {

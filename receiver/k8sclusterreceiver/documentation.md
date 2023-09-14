@@ -138,7 +138,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.deployment.desired
 
@@ -146,7 +146,7 @@ Number of desired pods in this deployment
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.current_replicas
 
