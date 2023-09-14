@@ -144,7 +144,7 @@ func (m *Manager) pollRegular(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Warnf("finding files: %v", err)
+		m.Infof("finding files: %v", err)
 	}
 
 	for len(matches) > m.maxBatchFiles {
