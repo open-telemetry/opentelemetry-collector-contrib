@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -101,35 +102,32 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
 	pusher := e.pusherFactory.CreateMultiStreamPusher()
 
-	logEvents, _ := logsToCWLogs(e.logger, ld, e.Config)
+	_, err := logsToCWLogs(e.logger, ld, e.Config, pusher)
 
-	if len(logEvents) == 0 {
-		return nil
+	if err != nil {
+		return fmt.Errorf("Error pushing logs:  %w", err)
 	}
 
-	for _, logEvent := range logEvents {
-		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
-		err := pusher.AddLogEntry(logEvent)
-		if err != nil {
-			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
-		}
+	err = pusher.ForceFlush()
+
+	if err != nil {
+		return fmt.Errorf("Error flushing logs:  %w", err)
 	}
 
-	return pusher.ForceFlush()
+	return nil
 }
 
 func (e *cwlExporter) shutdown(_ context.Context) error {
 	return nil
 }
 
-func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config) ([]*cwlogs.Event, int) {
+func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) (int, error) {
 	n := ld.ResourceLogs().Len()
 	if n == 0 {
-		return []*cwlogs.Event{}, 0
+		return 0, nil
 	}
 
 	var dropped int
-	var out []*cwlogs.Event
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -147,12 +145,16 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config) ([]*cwlogs.E
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
 					dropped++
 				} else {
-					out = append(out, event)
+					logger.Debug("Adding log event", zap.Any("event", event))
+					err := pusher.AddLogEntry(event)
+					if err != nil {
+						return dropped, err
+					}
 				}
 			}
 		}
 	}
-	return out, dropped
+	return dropped, nil
 }
 
 type cwLogBody struct {
