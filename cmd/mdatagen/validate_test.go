@@ -4,8 +4,12 @@
 package main
 
 import (
+	"fmt"
+	"io/fs"
+	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -100,4 +104,49 @@ func TestValidate(t *testing.T) {
 			require.EqualError(t, err, tt.wantErr)
 		})
 	}
+}
+
+func TestValidateMetricDuplicates(t *testing.T) {
+	allowedMetrics := map[string][]string{
+		"container.cpu.utilization": {"docker_stats", "kubeletstats"},
+		"container.memory.rss":      {"docker_stats", "kubeletstats"},
+		"container.uptime":          {"docker_stats", "kubeletstats"},
+	}
+	allMetrics := map[string][]string{}
+	err := filepath.Walk("../../receiver", func(path string, info fs.FileInfo, err error) error {
+		if info.Name() == "metadata.yaml" {
+			md, err := loadMetadata(path)
+			assert.NoError(t, err)
+			if len(md.Metrics) > 0 {
+				for metricName := range md.Metrics {
+					allMetrics[md.Type] = append(allMetrics[md.Type], string(metricName))
+				}
+			}
+		}
+		return nil
+	})
+	assert.NoError(t, err)
+
+	seen := make(map[string]string)
+	for receiver, metrics := range allMetrics {
+		for _, metricName := range metrics {
+			val, exists := seen[metricName]
+			if receivers, allowed := allowedMetrics[metricName]; allowed {
+				if contains(receiver, receivers) && contains(val, receivers) {
+					continue
+				}
+			}
+			assert.False(t, exists, fmt.Sprintf("Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val))
+			seen[metricName] = receiver
+		}
+	}
+}
+
+func contains(r string, rs []string) bool {
+	for _, s := range rs {
+		if s == r {
+			return true
+		}
+	}
+	return false
 }
