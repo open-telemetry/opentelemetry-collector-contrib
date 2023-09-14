@@ -76,18 +76,13 @@ type BaseConfig struct {
 	Encoding         string                      `mapstructure:"encoding,omitempty"`
 	SplitConfig      split.Config                `mapstructure:"multiline,omitempty"`
 	TrimConfig       trim.Config                 `mapstructure:",squash"`
-	MultiLineBuilder MultiLineBuilderFunc
+	SplitFuncBuilder SplitFuncBuilder
 }
 
-type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
+type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
-func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	trimFunc := c.TrimConfig.Func()
-	splitFunc, err := c.SplitConfig.Func(enc, true, int(c.MaxLogSize), trimFunc)
-	if err != nil {
-		return nil, err
-	}
-	return splitFunc, nil
+func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	return c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
 }
 
 // Build will build a tcp input operator.
@@ -120,15 +115,16 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	if c.MultiLineBuilder == nil {
-		c.MultiLineBuilder = c.defaultMultilineBuilder
+	if c.SplitFuncBuilder == nil {
+		c.SplitFuncBuilder = c.defaultSplitFuncBuilder
 	}
 
-	// Build multiline
-	splitFunc, err := c.MultiLineBuilder(enc)
+	// Build split func
+	splitFunc, err := c.SplitFuncBuilder(enc)
 	if err != nil {
 		return nil, err
 	}
+	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
 	var resolver *helper.IPResolver
 	if c.AddAttributes {

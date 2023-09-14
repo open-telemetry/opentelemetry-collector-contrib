@@ -24,19 +24,14 @@ func TestConfigFunc(t *testing.T) {
 	maxLogSize := 100
 
 	t.Run("BothStartAndEnd", func(t *testing.T) {
-		cfg := &Config{
-			LineStartPattern: "foo",
-			LineEndPattern:   "bar",
-		}
-
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		cfg := Config{LineStartPattern: "foo", LineEndPattern: "bar"}
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "only one of line_start_pattern or line_end_pattern can be set")
 	})
 
 	t.Run("NopEncoding", func(t *testing.T) {
-		cfg := &Config{}
-
-		f, err := cfg.Func(encoding.Nop, false, maxLogSize, trim.Nop)
+		cfg := Config{}
+		f, err := cfg.Func(encoding.Nop, false, maxLogSize)
 		assert.NoError(t, err)
 
 		raw := splittest.GenerateBytes(maxLogSize * 2)
@@ -47,9 +42,8 @@ func TestConfigFunc(t *testing.T) {
 	})
 
 	t.Run("Newline", func(t *testing.T) {
-		cfg := &Config{}
-
-		f, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		cfg := Config{}
+		f, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.NoError(t, err)
 
 		advance, token, err := f([]byte("foo\nbar\nbaz\n"), false)
@@ -59,20 +53,14 @@ func TestConfigFunc(t *testing.T) {
 	})
 
 	t.Run("InvalidStartRegex", func(t *testing.T) {
-		cfg := &Config{
-			LineStartPattern: "[",
-		}
-
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		cfg := Config{LineStartPattern: "["}
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "compile line start regex: error parsing regexp: missing closing ]: `[`")
 	})
 
 	t.Run("InvalidEndRegex", func(t *testing.T) {
-		cfg := &Config{
-			LineEndPattern: "[",
-		}
-
-		_, err := cfg.Func(unicode.UTF8, false, maxLogSize, trim.Nop)
+		cfg := Config{LineEndPattern: "["}
+		_, err := cfg.Func(unicode.UTF8, false, maxLogSize)
 		assert.EqualError(t, err, "compile line end regex: error parsing regexp: missing closing ]: `[`")
 	})
 }
@@ -92,8 +80,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
 			ExpectedTokens: []string{
-				`LOGSTART 123 log1`,
-				`LOGSTART 234 log2`,
+				`LOGSTART 123 log1 `,
+				`LOGSTART 234 log2 `,
 			},
 		},
 		{
@@ -101,8 +89,8 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `^LOGSTART \d+ `,
 			Input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
 			ExpectedTokens: []string{
-				"LOGSTART 123 LOGSTART 345 log1",
-				"LOGSTART 234 log2",
+				"LOGSTART 123 LOGSTART 345 log1\n",
+				"LOGSTART 234 log2\n",
 			},
 		},
 		{
@@ -115,7 +103,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `LOGSTART \d+ `,
 			Input:   []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
 			ExpectedTokens: []string{
-				`part that doesn't match`,
+				`part that doesn't match `,
 				`LOGSTART 123 part that matches`,
 			},
 		},
@@ -161,12 +149,12 @@ func TestLineStartSplitFunc(t *testing.T) {
 			Pattern: `^LOGSTART \d+`,
 			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
 			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1",
-				"LOGSTART 17 log2\nLOGPART log2\nanother line",
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
+				"LOGSTART 17 log2\nLOGPART log2\nanother line\n",
 			},
 		},
 		{
-			Name:    "LogsWithoutFlusher",
+			Name:    "NoMatch",
 			Pattern: `^LOGSTART \d+`,
 			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
@@ -174,17 +162,13 @@ func TestLineStartSplitFunc(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := Config{LineStartPattern: tc.Pattern}
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 
 	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, trim.Nop)
+		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false)
 		data := []byte(`LOGSTART`)
 
 		t.Run("NotAtEOF", func(t *testing.T) {
@@ -221,21 +205,21 @@ func TestLineStartSplitFunc(t *testing.T) {
 			},
 		}
 		for _, tc := range flushAtEOFCases {
-			cfg := &Config{
-				LineStartPattern: `^LOGSTART \d+`,
-			}
-			splitFunc, err := cfg.Func(unicode.UTF8, true, 0, trim.Nop)
+			cfg := Config{LineStartPattern: `^LOGSTART \d+`}
+			splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
 			require.NoError(t, err)
 			t.Run(tc.Name, tc.Run(splitFunc))
 		}
 	})
 
+	// TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
 		cfg := Config{LineStartPattern: ` LOGSTART \d+ `}
 		input := []byte(" LOGSTART 123 log1  LOGSTART 234 log2  LOGSTART 345 foo")
-
-		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
+
+		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
 		t.Run("TrimLeading", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -243,8 +227,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				`LOGSTART 234 log2 `,
 			}}.Run(splitTrimLeading))
 
-		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
-		require.NoError(t, err)
+		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
 		t.Run("TrimTrailing", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -252,8 +235,7 @@ func TestLineStartSplitFunc(t *testing.T) {
 				` LOGSTART 234 log2`,
 			}}.Run(splitTrimTrailing))
 
-		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
-		require.NoError(t, err)
+		splitTrimBoth := trim.WithFunc(splitFunc, trim.Whitespace)
 		t.Run("TrimBoth", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -288,7 +270,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 			Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
 			ExpectedTokens: []string{
 				"log1 LOGEND LOGEND",
-				"log2 LOGEND",
+				"\nlog2 LOGEND",
 			},
 		},
 		{
@@ -339,16 +321,16 @@ func TestLineEndSplitFunc(t *testing.T) {
 			ExpectedError: errors.New("bufio.Scanner: token too long"),
 		},
 		{
-			Name:    "MultipleMultilineLogs",
+			Name:    "MultiplesplitLogs",
 			Pattern: `^LOGEND.*$`,
 			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
 			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1",
-				"LOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
+				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   ",
+				"\nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
 			},
 		},
 		{
-			Name:    "LogsWithoutFlusher",
+			Name:    "NoMatch",
 			Pattern: `^LOGEND.*$`,
 			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
 		},
@@ -356,21 +338,14 @@ func TestLineEndSplitFunc(t *testing.T) {
 
 	for _, tc := range testCases {
 		cfg := Config{LineEndPattern: tc.Pattern}
-
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0, trimFunc)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 
 	t.Run("FlushAtEOF", func(t *testing.T) {
-		cfg := &Config{
-			LineEndPattern: `^LOGSTART \d+`,
-		}
-		splitFunc, err := cfg.Func(unicode.UTF8, true, 0, trim.Nop)
+		cfg := Config{LineEndPattern: `^LOGSTART \d+`}
+		splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
 		require.NoError(t, err)
 		splittest.TestCase{
 			Name:           "NoMatch",
@@ -379,12 +354,14 @@ func TestLineEndSplitFunc(t *testing.T) {
 		}.Run(splitFunc)(t)
 	})
 
+	// TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
 		cfg := Config{LineEndPattern: ` LOGEND `}
 		input := []byte(" log1 LOGEND  log2 LOGEND ")
-
-		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
+
+		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
 		t.Run("TrimLeading", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -392,8 +369,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				`log2 LOGEND `,
 			}}.Run(splitTrimLeading))
 
-		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
-		require.NoError(t, err)
+		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
 		t.Run("TrimTrailing", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -401,8 +377,7 @@ func TestLineEndSplitFunc(t *testing.T) {
 				` log2 LOGEND`,
 			}}.Run(splitTrimTrailing))
 
-		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
-		require.NoError(t, err)
+		splitTrimBoth := trim.WithFunc(splitFunc, trim.Whitespace)
 		t.Run("TrimBoth", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -484,7 +459,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 			Input: []byte("LOGPART log1"),
 		},
 		{
-			Name:  "DefaultFlusherSplits",
+			Name:  "DefaultSplits",
 			Input: []byte("log1\nlog2\n"),
 			ExpectedTokens: []string{
 				"log1",
@@ -499,48 +474,16 @@ func TestNewlineSplitFunc(t *testing.T) {
 				"LOGEND 333",
 			},
 		},
-		{
-			Name:  "PreserveLeadingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				" LOGEND 333",
-			},
-			PreserveLeadingWhitespaces: true,
-		},
-		{
-			Name:  "PreserveTrailingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				"LOGEND 333 ",
-			},
-			PreserveTrailingWhitespaces: true,
-		},
-		{
-			Name:  "PreserveBothLeadingAndTrailingWhitespaces",
-			Input: []byte("\n LOGEND 333 \nAnother one "),
-			ExpectedTokens: []string{
-				"",
-				" LOGEND 333 ",
-			},
-			PreserveLeadingWhitespaces:  true,
-			PreserveTrailingWhitespaces: true,
-		},
 	}
 
 	for _, tc := range testCases {
-		trimFunc := trim.Config{
-			PreserveLeading:  tc.PreserveLeadingWhitespaces,
-			PreserveTrailing: tc.PreserveTrailingWhitespaces,
-		}.Func()
-		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false, trimFunc)
+		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false)
 		require.NoError(t, err)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
 
 	t.Run("FlushAtEOF", func(t *testing.T) {
-		splitFunc, err := Config{}.Func(unicode.UTF8, true, 0, trim.Nop)
+		splitFunc, err := Config{}.Func(unicode.UTF8, true, 0)
 		require.NoError(t, err)
 		splittest.TestCase{
 			Name:           "FlushAtEOF",
@@ -549,12 +492,14 @@ func TestNewlineSplitFunc(t *testing.T) {
 		}.Run(splitFunc)(t)
 	})
 
+	// // TODO move to internal/splitter?
 	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := &Config{}
+		cfg := Config{}
 		input := []byte(" log1 \n log2 \n")
-
-		splitTrimLeading, err := cfg.Func(unicode.UTF8, false, 0, trim.Leading)
+		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
+
+		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
 		t.Run("TrimLeading", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -562,8 +507,7 @@ func TestNewlineSplitFunc(t *testing.T) {
 				`log2 `,
 			}}.Run(splitTrimLeading))
 
-		splitTrimTrailing, err := cfg.Func(unicode.UTF8, false, 0, trim.Trailing)
-		require.NoError(t, err)
+		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
 		t.Run("TrimTrailing", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -571,8 +515,9 @@ func TestNewlineSplitFunc(t *testing.T) {
 				` log2`,
 			}}.Run(splitTrimTrailing))
 
-		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0, trim.Whitespace)
+		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0)
 		require.NoError(t, err)
+		splitTrimBoth = trim.WithFunc(splitTrimBoth, trim.Whitespace)
 		t.Run("TrimBoth", splittest.TestCase{
 			Input: input,
 			ExpectedTokens: []string{
@@ -645,13 +590,11 @@ func TestNoSplitFunc(t *testing.T) {
 
 func TestNoopEncodingError(t *testing.T) {
 	endCfg := Config{LineEndPattern: "\n"}
-
-	_, err := endCfg.Func(encoding.Nop, false, 0, trim.Nop)
+	_, err := endCfg.Func(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 
 	startCfg := Config{LineStartPattern: "\n"}
-
-	_, err = startCfg.Func(encoding.Nop, false, 0, trim.Nop)
+	_, err = startCfg.Func(encoding.Nop, false, 0)
 	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
@@ -712,7 +655,7 @@ func TestNewlineSplitFunc_Encodings(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewlineSplitFunc(tc.encoding, false, trim.Nop)
+			splitFunc, err := NewlineSplitFunc(tc.encoding, false)
 			require.NoError(t, err)
 			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
 			scanner.Split(splitFunc)

@@ -11,8 +11,8 @@ import (
 )
 
 type SetArguments[K any] struct {
-	Target ottl.Setter[K] `ottlarg:"0"`
-	Value  ottl.Getter[K] `ottlarg:"1"`
+	Target ottl.Setter[K]
+	Value  ottl.Getter[K]
 }
 
 func NewSetFactory[K any]() ottl.Factory[K] {

@@ -13,19 +13,21 @@ import (
 
 type customFactory struct {
 	splitFunc   bufio.SplitFunc
+	trimFunc    trim.Func
 	flushPeriod time.Duration
 }
 
 var _ Factory = (*customFactory)(nil)
 
-func NewCustomFactory(splitFunc bufio.SplitFunc, flushPeriod time.Duration) Factory {
+func NewCustomFactory(splitFunc bufio.SplitFunc, trimFunc trim.Func, flushPeriod time.Duration) Factory {
 	return &customFactory{
 		splitFunc:   splitFunc,
+		trimFunc:    trimFunc,
 		flushPeriod: flushPeriod,
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *customFactory) Build() (bufio.SplitFunc, error) {
-	return flush.WithPeriod(f.splitFunc, trim.Nop, f.flushPeriod), nil
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *customFactory) SplitFunc() (bufio.SplitFunc, error) {
+	return trim.WithFunc(flush.WithPeriod(f.splitFunc, f.flushPeriod), f.trimFunc), nil
 }

@@ -13,7 +13,6 @@ exporter/sentryexporter
 exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-extension/observer/k8sobserver
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
@@ -28,7 +27,6 @@ receiver/journaldreceiver
 receiver/mongodbatlasreceiver
 receiver/mongodbreceiver
 receiver/mysqlreceiver
-receiver/nsxtreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
 receiver/windowseventlogreceiver
