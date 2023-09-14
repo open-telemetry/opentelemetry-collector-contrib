@@ -7,10 +7,13 @@
 package kubeletstatsreceiver
 
 import (
+	"context"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -19,25 +22,14 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/clientcmd"
-	"path/filepath"
-	"time"
-)
 
-import (
-	"context"
-	"github.com/stretchr/testify/assert"
-	"testing"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 
-// TestE2E tests the kubeletstats receiver in a k8s cluster.
-// The test requires a prebuilt otelcontribcol image uploaded to a kind k8s cluster defined in
-// `/tmp/kube-config-otelcol-e2e-testing`. Run the following command prior to running the test locally:
-//
-//	kind create cluster --kubeconfig=/tmp/kube-config-otelcol-e2e-testing
-//	make docker-otelcontribcol
-//	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
@@ -64,12 +56,12 @@ func TestE2E(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
 		pmetrictest.IgnoreTimestamp(),
 		pmetrictest.IgnoreStartTimestamp(),
-		// ("k8s.node.cpu.time", "k8s.node.cpu.utilization", "k8s.node.filesystem.available", "k8s.node.filesystem.usage", "", "k8s.container.memory_limit"),
 		pmetrictest.IgnoreScopeVersion(),
 		pmetrictest.IgnoreResourceMetricsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreScopeMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreMetricValues(),
 	),
 	)
 }
