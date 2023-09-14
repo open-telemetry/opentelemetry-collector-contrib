@@ -93,7 +93,7 @@ This exporter maps OpenTelemetry  [trace](https://opentelemetry.io/docs/referenc
 | ParentId                    | A parent spanId, for the current span                                                          |
 | SpanName                    | The span name                                                                                  |
 | SpanStatus             | [Status Code](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span. |
-| SpanStatusAttributes             | [Status](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span that includes the Code and Message as a dynamic field |
+| SpanStatusMessage             | [Status Message](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#set-status) of the Span |
 | SpanKind                   | [SpanKind](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/api.md#spankind) describes the relationship between the Span, its parents, and its children in a Trace |
 | StartTime                   | A start timestamp                                                                               |
 | EndTime                   | An end timestamp                                                                                  |
