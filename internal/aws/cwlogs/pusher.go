@@ -189,7 +189,6 @@ type logPusher struct {
 
 	logEventBatch *eventBatch
 
-	streamToken      string // no init value
 	svcStructuredLog Client
 	retryCnt         int
 }
@@ -261,27 +260,9 @@ func (p *logPusher) pushEventBatch(req interface{}) error {
 	logEventBatch.sortLogEvents()
 	putLogEventsInput := logEventBatch.putLogEventsInput
 
-	if p.streamToken == "" {
-		var err error
-		// log part and retry logic are already done inside the CreateStream
-		// when the error is not nil, the stream token is "", which is handled in the below logic.
-		p.streamToken, err = p.svcStructuredLog.CreateStream(p.logGroupName, p.logStreamName)
-		// TODO Known issue: createStream will fail if the corresponding logGroup and logStream has been created.
-		// The retry mechanism helps get the first stream token, yet the first batch will be sent twice in this situation.
-		if err != nil {
-			p.logger.Warn("Failed to create stream token", zap.Error(err))
-		}
-	}
-
-	if p.streamToken != "" {
-		putLogEventsInput.SequenceToken = aws.String(p.streamToken)
-	}
-
 	startTime := time.Now()
 
-	var tmpToken *string
-	var err error
-	tmpToken, err = p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
+	_, err := p.svcStructuredLog.PutLogEvents(putLogEventsInput, p.retryCnt)
 
 	if err != nil {
 		return err
@@ -291,10 +272,6 @@ func (p *logPusher) pushEventBatch(req interface{}) error {
 		zap.Int("NumOfLogEvents", len(putLogEventsInput.LogEvents)),
 		zap.Float64("LogEventsSize", float64(logEventBatch.byteTotal)/float64(1024)),
 		zap.Int64("Time", time.Since(startTime).Nanoseconds()/int64(time.Millisecond)))
-
-	if tmpToken != nil {
-		p.streamToken = *tmpToken
-	}
 
 	return nil
 }

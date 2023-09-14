@@ -57,7 +57,11 @@ func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.Bu
 func (client *Client) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput, retryCnt int) (*string, error) {
 	var response *cloudwatchlogs.PutLogEventsOutput
 	var err error
-	var token = input.SequenceToken
+	// CloudWatch Logs API was changed to ignore the sequenceToken
+	// PutLogEvents actions are now accepted and never return
+	// InvalidSequenceTokenException or DataAlreadyAcceptedException even
+	// if the sequence token is not valid.
+	token := aws.String("Noop")
 
 	for i := 0; i <= retryCnt; i++ {
 		input.SequenceToken = token

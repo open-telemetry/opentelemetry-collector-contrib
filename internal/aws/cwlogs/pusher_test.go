@@ -253,7 +253,7 @@ func TestMultiStreamPusher(t *testing.T) {
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 0)
 	assert.Nil(t, pusher.ForceFlush())
 
-	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 2)
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 1)
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 1)
 
 	assert.Equal(t, 1, len(inputs))
@@ -269,8 +269,7 @@ func TestMultiStreamPusher(t *testing.T) {
 	assert.Nil(t, pusher.AddLogEntry(event2))
 	assert.Nil(t, pusher.ForceFlush())
 
-	// We get 4 calls because the first call is for a tentative stream creation
-	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 4)
+	mockCwAPI.AssertNumberOfCalls(t, "CreateLogStream", 2)
 	mockCwAPI.AssertNumberOfCalls(t, "PutLogEvents", 2)
 
 	assert.Equal(t, 2, len(inputs))

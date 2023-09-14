@@ -146,7 +146,7 @@ func TestPutLogEvents_NonAWSError(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_InvalidParameterException(t *testing.T) {
@@ -167,7 +167,7 @@ func TestPutLogEvents_InvalidParameterException(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_InvalidSequenceTokenException(t *testing.T) {
@@ -232,7 +232,7 @@ func TestPutLogEvents_OperationAbortedException(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
@@ -253,7 +253,7 @@ func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_UnknownException(t *testing.T) {
@@ -274,7 +274,7 @@ func TestPutLogEvents_UnknownException(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_ThrottlingException(t *testing.T) {
@@ -295,7 +295,7 @@ func TestPutLogEvents_ThrottlingException(t *testing.T) {
 	tokenP, _ := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
 
 	svc.AssertExpectations(t)
-	assert.Equal(t, previousSequenceToken, *tokenP)
+	assert.Equal(t, "Noop", *tokenP)
 }
 
 func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
