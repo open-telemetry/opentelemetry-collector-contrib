@@ -259,7 +259,7 @@ func createTraces() (ptrace.Traces, string, map[string]interface{}) {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
-	span.setStatusMessage("STATUS_MESSAGE")
+	span.Status().SetMessage("STATUS_MESSAGE")
 	attrs := map[string]interface{}{
 		"k0": "v0",
 		"k1": "v1",
