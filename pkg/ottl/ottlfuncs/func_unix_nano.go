@@ -11,7 +11,7 @@ import (
 )
 
 type UnixNanoArguments[K any] struct {
-	Time ottl.TimeGetter[K] `ottlarg:"0"`
+	Time ottl.TimeGetter[K]
 }
 
 func NewUnixNanoFactory[K any]() ottl.Factory[K] {
