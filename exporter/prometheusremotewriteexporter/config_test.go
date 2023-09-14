@@ -40,8 +40,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				MaxBatchByteSize: 3000000,
-				TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
+				MaxBatchSizeBytes: 3000000,
+				TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
 				RetrySettings: exporterhelper.RetrySettings{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,

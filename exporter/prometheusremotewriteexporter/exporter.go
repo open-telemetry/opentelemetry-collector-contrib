@@ -33,17 +33,18 @@ import (
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL     *url.URL
-	client          *http.Client
-	wg              *sync.WaitGroup
-	closeChan       chan struct{}
-	concurrency     int
-	userAgentHeader string
-	clientSettings  *confighttp.HTTPClientSettings
-	settings        component.TelemetrySettings
-	retrySettings   exporterhelper.RetrySettings
-	wal              *prweWAL
-	exporterSettings prometheusremotewrite.Settings
+	endpointURL       *url.URL
+	client            *http.Client
+	wg                *sync.WaitGroup
+	closeChan         chan struct{}
+	concurrency       int
+	userAgentHeader   string
+	maxBatchSizeBytes int
+	clientSettings    *confighttp.HTTPClientSettings
+	settings          component.TelemetrySettings
+	retrySettings     exporterhelper.RetrySettings
+	wal               *prweWAL
+	exporterSettings  prometheusremotewrite.Settings
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
@@ -61,14 +62,15 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
 
 	prwe := &prwExporter{
-		endpointURL:     endpointURL,
-		wg:              new(sync.WaitGroup),
-		closeChan:       make(chan struct{}),
-		userAgentHeader: userAgentHeader,
-		concurrency:     cfg.RemoteWriteQueue.NumConsumers,
-		clientSettings:  &cfg.HTTPClientSettings,
-		settings:        set.TelemetrySettings,
-		retrySettings:   cfg.RetrySettings,
+		endpointURL:       endpointURL,
+		wg:                new(sync.WaitGroup),
+		closeChan:         make(chan struct{}),
+		userAgentHeader:   userAgentHeader,
+		maxBatchSizeBytes: cfg.MaxBatchSizeBytes,
+		concurrency:       cfg.RemoteWriteQueue.NumConsumers,
+		clientSettings:    &cfg.HTTPClientSettings,
+		settings:          set.TelemetrySettings,
+		retrySettings:     cfg.RetrySettings,
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -156,7 +158,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchByteSize)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes)
 	if err != nil {
 		return err
 	}

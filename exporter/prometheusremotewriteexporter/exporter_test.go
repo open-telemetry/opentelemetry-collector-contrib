@@ -131,11 +131,11 @@ func Test_NewPRWExporter(t *testing.T) {
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
-		TimeoutSettings:  exporterhelper.TimeoutSettings{},
-		RetrySettings:    exporterhelper.RetrySettings{},
-		MaxBatchByteSize: 3000000,
-		Namespace:        "",
-		ExternalLabels:   map[string]string{},
+		TimeoutSettings:   exporterhelper.TimeoutSettings{},
+		RetrySettings:     exporterhelper.RetrySettings{},
+		MaxBatchSizeBytes: 3000000,
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
@@ -685,8 +685,8 @@ func Test_PushMetrics(t *testing.T) {
 							ReadBufferSize:  0,
 							WriteBufferSize: 512 * 1024,
 						},
-						MaxBatchByteSize: 3000000,
-						RemoteWriteQueue: RemoteWriteQueue{NumConsumers: 1},
+						MaxBatchSizeBytes: 3000000,
+						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
