@@ -79,7 +79,7 @@ jobs:
         run: docker pull datadog/system-tests:proxy-v1 || true
       - name: Build system test images
         id: build
-        run: ./build.sh java_otel
+        run: echo "datadog/agent:7.48.0-rc.4" > binaries/agent-image && ./build.sh java_otel
       - name: Run OTEL_TRACING_E2E scenario
         if: always() && steps.build.outcome == 'success'
         run: ./run.sh OTEL_TRACING_E2E
