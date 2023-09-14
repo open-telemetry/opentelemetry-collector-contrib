@@ -119,7 +119,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	}
 
 	// The logic to record error and fault should be kept in sync with the ADOT pulse repo whenever possible except for the throttle
-    // https://github.com/aws-observability/aws-apm-java-instrumentation/blob/main/awsagentprovider/src/main/java/software/amazon/opentelemetry/javaagent/providers/AwsSpanMetricsProcessor.java
+	// https://github.com/aws-observability/aws-apm-java-instrumentation/blob/main/awsagentprovider/src/main/java/software/amazon/opentelemetry/javaagent/providers/AwsSpanMetricsProcessor.java
 	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
 
 	// The segment status for http spans will be based on their http.statuscode as we found some http
@@ -128,6 +128,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	if ok {
 		code = val.Int()
 	}
+
 	isThrottle = false
 	switch {
 	case !ok || code < 400 || code > 599:
