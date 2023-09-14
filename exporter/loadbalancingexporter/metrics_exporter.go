@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
@@ -151,7 +152,7 @@ func routingIdentifiersFromMetrics(mds pmetric.Metrics, key routingKey) (map[str
 		switch key {
 		default:
 		case svcRouting, traceIDRouting:
-			svc, ok := resource.Attributes().Get("service.name")
+			svc, ok := resource.Attributes().Get(conventions.AttributeServiceName)
 			if !ok {
 				return nil, errors.New("unable to get service name")
 			}
