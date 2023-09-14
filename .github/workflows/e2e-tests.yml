@@ -99,3 +99,7 @@ jobs:
         run: |    
           cd processor/k8sattributesprocessor
           go test -v --tags=e2e
+      - name: run k8sattributesprocessor e2e tests
+        run: |
+          cd receiver/kubeletstatsreceiver
+          go test -v --tags=e2e
