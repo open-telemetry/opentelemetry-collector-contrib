@@ -19,12 +19,17 @@ body:
       # Do not manually edit it.
       # Start Collector components list
       - cmd/configschema
+      - cmd/githubgen
       - cmd/mdatagen
+      - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
       - connector/count
+      - connector/datadog
+      - connector/exceptions
+      - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
       - examples/demo
@@ -51,8 +56,6 @@ body:
       - exporter/googlemanagedprometheus
       - exporter/influxdb
       - exporter/instana
-      - exporter/jaeger
-      - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/loadbalancing
       - exporter/logicmonitor
@@ -60,6 +63,7 @@ body:
       - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
+      - exporter/opensearch
       - exporter/parquet
       - exporter/prometheus
       - exporter/prometheusremotewrite
@@ -78,13 +82,16 @@ body:
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
+      - extension/encoding
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
+      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
+      - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
       - extension/observer/hostobserver
       - extension/observer/k8sobserver
@@ -96,6 +103,7 @@ body:
       - extension/storage/filestorage
       - internal/aws
       - internal/core
+      - internal/datadog
       - internal/docker
       - internal/filter
       - internal/k8sconfig
@@ -134,6 +142,7 @@ body:
       - processor/metricstransform
       - processor/probabilisticsampler
       - processor/redaction
+      - processor/remoteobserver
       - processor/resource
       - processor/resourcedetection
       - processor/resourcedetection/internal/azure
@@ -146,7 +155,6 @@ body:
       - processor/spanmetrics
       - processor/tailsampling
       - processor/transform
-      - processor/websocket
       - receiver/activedirectoryds
       - receiver/aerospike
       - receiver/apache
@@ -176,6 +184,7 @@ body:
       - receiver/filestats
       - receiver/flinkmetrics
       - receiver/fluentforward
+      - receiver/gitprovider
       - receiver/googlecloudpubsub
       - receiver/googlecloudspanner
       - receiver/haproxy
@@ -184,6 +193,7 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
+      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
@@ -205,7 +215,6 @@ body:
       - receiver/podman
       - receiver/postgresql
       - receiver/prometheus
-      - receiver/prometheusexec
       - receiver/pulsar
       - receiver/purefa
       - receiver/purefb

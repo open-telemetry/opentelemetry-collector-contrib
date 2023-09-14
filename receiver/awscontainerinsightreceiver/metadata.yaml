@@ -5,3 +5,6 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, aws, observiq, sumo]
+  warnings: [Other]
+  codeowners:
+    active: [Aneurysm9, pxaws]

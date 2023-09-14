@@ -1160,7 +1160,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 
 		// complex
 		{
-			name: "single static resource attribute include",
+			name: "complex",
 			condition: &filterconfig.MatchConfig{
 				Include: &filterconfig.MatchProperties{
 					Config: filterset.Config{
@@ -1258,7 +1258,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 
 	for _, tt := range testCases {
 		origVal := useOTTLBridge.IsEnabled()
-		err := featuregate.GlobalRegistry().Set("useOTTLBridge", true)
+		err := featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", true)
 		assert.NoError(b, err)
 
 		skipExpr, err := NewSkipExpr(tt.mc)
@@ -1290,7 +1290,7 @@ func BenchmarkFilterspan_NewSkipExpr(b *testing.B) {
 			}
 		})
 
-		err = featuregate.GlobalRegistry().Set("useOTTLBridge", origVal)
+		err = featuregate.GlobalRegistry().Set("filter.filterspan.useOTTLBridge", origVal)
 		assert.NoError(b, err)
 	}
 }

@@ -240,6 +240,7 @@ func CompareMetric(expected pmetric.Metric, actual pmetric.Metric) error {
 		return errs
 	}
 
+	//exhaustive:enforce
 	switch actual.Type() {
 	case pmetric.MetricTypeGauge:
 		errs = multierr.Append(errs, compareNumberDataPointSlices(expected.Gauge().DataPoints(),
@@ -272,6 +273,7 @@ func CompareMetric(expected pmetric.Metric, actual pmetric.Metric) error {
 	case pmetric.MetricTypeSummary:
 		errs = multierr.Append(errs, compareSummaryDataPointSlices(expected.Summary().DataPoints(),
 			actual.Summary().DataPoints()))
+	case pmetric.MetricTypeEmpty:
 	}
 
 	return errs

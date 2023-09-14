@@ -4,4 +4,12 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, observiq, sumo]
+  distributions:
+  - contrib
+  - grafana
+  - observiq
+  - redhat
+  - splunk
+  - sumo
+  codeowners:
+    active: [jpkrohling, svrakitin, frzifus]

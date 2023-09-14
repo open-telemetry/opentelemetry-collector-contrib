@@ -39,6 +39,8 @@ func (mh *mockHostFactories) GetFactory(kind component.Kind, componentType compo
 		return mh.factories.Exporters[componentType]
 	case component.KindExtension:
 		return mh.factories.Extensions[componentType]
+	case component.KindConnector:
+		return mh.factories.Connectors[componentType]
 	}
 	return nil
 }

@@ -29,10 +29,11 @@ type Segment struct {
 	StartTime *float64 `json:"start_time"`
 
 	// Segment-only optional fields
-	Service     *ServiceData `json:"service,omitempty"`
-	Origin      *string      `json:"origin,omitempty"`
-	User        *string      `json:"user,omitempty"`
-	ResourceARN *string      `json:"resource_arn,omitempty"`
+	Service     *ServiceData   `json:"service,omitempty"`
+	Origin      *string        `json:"origin,omitempty"`
+	User        *string        `json:"user,omitempty"`
+	ResourceARN *string        `json:"resource_arn,omitempty"`
+	Links       []SpanLinkData `json:"links,omitempty"`
 
 	// Optional fields for both Segment and subsegments
 	TraceID     *string                           `json:"trace_id,omitempty"`
@@ -264,4 +265,11 @@ type ServiceData struct {
 	Version         *string `json:"version,omitempty"`
 	CompilerVersion *string `json:"compiler_version,omitempty"`
 	Compiler        *string `json:"compiler,omitempty"`
+}
+
+// SpanLinkData provides the shape for unmarshalling the span links in the span link field.
+type SpanLinkData struct {
+	TraceID    *string                `json:"trace_id"`
+	SpanID     *string                `json:"id"`
+	Attributes map[string]interface{} `json:"attributes,omitempty"`
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 const (
@@ -22,6 +23,8 @@ const (
 	filterOPDoesNotExist = "does-not-exist"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
+	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
+	clusterUID = "k8s.cluster.uid"
 )
 
 // option represents a configuration option that can be passes.
@@ -46,21 +49,84 @@ func withPassthrough() option {
 	}
 }
 
+// enabledAttributes returns the list of resource attributes enabled by default.
+func enabledAttributes() (attributes []string) {
+	defaultConfig := metadata.DefaultResourceAttributesConfig()
+	if defaultConfig.K8sClusterUID.Enabled {
+		attributes = append(attributes, clusterUID)
+	}
+	if defaultConfig.ContainerID.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerID)
+	}
+	if defaultConfig.ContainerImageName.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerImageName)
+	}
+	if defaultConfig.ContainerImageTag.Enabled {
+		attributes = append(attributes, conventions.AttributeContainerImageTag)
+	}
+	if defaultConfig.K8sContainerName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SContainerName)
+	}
+	if defaultConfig.K8sCronjobName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SCronJobName)
+	}
+	if defaultConfig.K8sDaemonsetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDaemonSetName)
+	}
+	if defaultConfig.K8sDaemonsetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDaemonSetUID)
+	}
+	if defaultConfig.K8sDeploymentName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDeploymentName)
+	}
+	if defaultConfig.K8sDeploymentUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SDeploymentUID)
+	}
+	if defaultConfig.K8sJobName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SJobName)
+	}
+	if defaultConfig.K8sJobUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SJobUID)
+	}
+	if defaultConfig.K8sNamespaceName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SNamespaceName)
+	}
+	if defaultConfig.K8sNodeName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SNodeName)
+	}
+	if defaultConfig.K8sPodHostname.Enabled {
+		attributes = append(attributes, specPodHostName)
+	}
+	if defaultConfig.K8sPodName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SPodName)
+	}
+	if defaultConfig.K8sPodStartTime.Enabled {
+		attributes = append(attributes, metadataPodStartTime)
+	}
+	if defaultConfig.K8sPodUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SPodUID)
+	}
+	if defaultConfig.K8sReplicasetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SReplicaSetName)
+	}
+	if defaultConfig.K8sReplicasetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SReplicaSetUID)
+	}
+	if defaultConfig.K8sStatefulsetName.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SStatefulSetName)
+	}
+	if defaultConfig.K8sStatefulsetUID.Enabled {
+		attributes = append(attributes, conventions.AttributeK8SStatefulSetUID)
+	}
+	return
+}
+
 // withExtractMetadata allows specifying options to control extraction of pod metadata.
-// If no fields explicitly provided, all metadata extracted by default.
+// If no fields explicitly provided, the defaults are pulled from metadata.yaml.
 func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
 		if len(fields) == 0 {
-			fields = []string{
-				conventions.AttributeK8SNamespaceName,
-				conventions.AttributeK8SPodName,
-				conventions.AttributeK8SPodUID,
-				metadataPodStartTime,
-				conventions.AttributeK8SDeploymentName,
-				conventions.AttributeK8SNodeName,
-				conventions.AttributeContainerImageName,
-				conventions.AttributeContainerImageTag,
-			}
+			fields = enabledAttributes()
 		}
 		for _, field := range fields {
 			switch field {
@@ -106,8 +172,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageName = true
 			case conventions.AttributeContainerImageTag:
 				p.rules.ContainerImageTag = true
-			default:
-				return fmt.Errorf("\"%s\" is not a supported metadata field", field)
+			case clusterUID:
+				p.rules.ClusterUID = true
 			}
 		}
 		return nil
@@ -143,14 +209,8 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 	for _, a := range fields {
 		name := a.TagName
 
-		switch a.From {
-		// By default if the From field is not set for labels and annotations we want to extract them from pod
-		case "", kube.MetadataFromPod:
+		if a.From == "" {
 			a.From = kube.MetadataFromPod
-		case kube.MetadataFromNamespace:
-			a.From = kube.MetadataFromNamespace
-		default:
-			return rules, fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", a.From)
 		}
 
 		if name == "" && a.Key != "" {
@@ -168,10 +228,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			r, err = regexp.Compile(a.Regex)
 			if err != nil {
 				return rules, err
-			}
-			names := r.SubexpNames()
-			if len(names) != 2 || names[1] != "value" {
-				return rules, fmt.Errorf("regex must contain exactly one named submatch (value)")
 			}
 		}
 
@@ -221,14 +277,8 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		var labels []kube.FieldFilter
 		for _, f := range filters {
-			if f.Op == "" {
-				f.Op = filterOPEquals
-			}
-
 			var op selection.Operator
 			switch f.Op {
-			case filterOPEquals:
-				op = selection.Equals
 			case filterOPNotEquals:
 				op = selection.NotEquals
 			case filterOPExists:
@@ -236,7 +286,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 			case filterOPDoesNotExist:
 				op = selection.DoesNotExist
 			default:
-				return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+				op = selection.Equals
 			}
 			labels = append(labels, kube.FieldFilter{
 				Key:   f.Key,
@@ -254,18 +304,12 @@ func withFilterFields(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
 		var fields []kube.FieldFilter
 		for _, f := range filters {
-			if f.Op == "" {
-				f.Op = filterOPEquals
-			}
-
 			var op selection.Operator
 			switch f.Op {
-			case filterOPEquals:
-				op = selection.Equals
 			case filterOPNotEquals:
 				op = selection.NotEquals
 			default:
-				return fmt.Errorf("'%s' is not a valid field filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+				op = selection.Equals
 			}
 			fields = append(fields, kube.FieldFilter{
 				Key:   f.Key,

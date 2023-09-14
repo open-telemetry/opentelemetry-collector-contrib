@@ -4,50 +4,35 @@
 package namespace
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"github.com/stretchr/testify/require"
-	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestNamespaceMetrics(t *testing.T) {
-	n := newNamespace("1")
+	n := testutils.NewNamespace("1")
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, n, ts)
+	m := mb.Emit()
 
-	actualResourceMetrics := GetMetrics(n)
-
-	require.Equal(t, 1, len(actualResourceMetrics))
-
-	require.Equal(t, 1, len(actualResourceMetrics[0].Metrics))
-	testutils.AssertResource(t, actualResourceMetrics[0].Resource, constants.K8sType,
-		map[string]string{
-			"k8s.namespace.uid":  "test-namespace-1-uid",
-			"k8s.namespace.name": "test-namespace",
-		},
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
 	)
-
-	testutils.AssertMetricsInt(t, actualResourceMetrics[0].Metrics[0], "k8s.namespace.phase",
-		metricspb.MetricDescriptor_GAUGE_INT64, 0)
-}
-
-func newNamespace(id string) *corev1.Namespace {
-	return &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-namespace-" + id,
-			Namespace: "test-namespace",
-			UID:       types.UID("test-namespace-" + id + "-uid"),
-			Labels: map[string]string{
-				"foo":  "bar",
-				"foo1": "",
-			},
-		},
-		Status: corev1.NamespaceStatus{
-			Phase: corev1.NamespaceTerminating,
-		},
-	}
 }

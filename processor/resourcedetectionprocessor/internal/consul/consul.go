@@ -15,6 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/consul"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul/internal/metadata"
 )
 
 const (
@@ -28,6 +29,7 @@ var _ internal.Detector = (*Detector)(nil)
 type Detector struct {
 	provider consul.Provider
 	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -57,26 +59,25 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 	}
 
 	provider := consul.NewProvider(client, userCfg.MetaLabels)
-	return &Detector{provider: provider, logger: p.Logger}, nil
+	return &Detector{provider: provider, logger: p.Logger, rb: metadata.NewResourceBuilder(userCfg.ResourceAttributes)}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
 func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
-
-	metadata, err := d.provider.Metadata(ctx)
+	md, err := d.provider.Metadata(ctx)
 	if err != nil {
-		return res, "", fmt.Errorf("failed to get consul metadata: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed to get consul metadata: %w", err)
 	}
 
-	for key, element := range metadata.HostMetadata {
-		attrs.PutStr(key, element)
-	}
+	d.rb.SetHostName(md.Hostname)
+	d.rb.SetCloudRegion(md.Datacenter)
+	d.rb.SetHostID(md.NodeID)
 
-	attrs.PutStr(conventions.AttributeHostName, metadata.Hostname)
-	attrs.PutStr(conventions.AttributeCloudRegion, metadata.Datacenter)
-	attrs.PutStr(conventions.AttributeHostID, metadata.NodeID)
+	res := d.rb.Emit()
+
+	for key, element := range md.HostMetadata {
+		res.Attributes().PutStr(key, element)
+	}
 
 	return res, conventions.SchemaURL, nil
 }

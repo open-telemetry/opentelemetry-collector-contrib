@@ -13,12 +13,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
@@ -30,6 +32,132 @@ const (
 )
 
 var testPolicy = []PolicyCfg{{sharedPolicyCfg: sharedPolicyCfg{Name: "test-policy", Type: AlwaysSample}}}
+var testLatencyPolicy = []PolicyCfg{
+	{
+		sharedPolicyCfg: sharedPolicyCfg{
+			Name:       "test-policy",
+			Type:       Latency,
+			LatencyCfg: LatencyCfg{ThresholdMs: 1},
+		},
+	},
+}
+
+type TestPolicyEvaluator struct {
+	Started       chan struct{}
+	CouldContinue chan struct{}
+	pe            sampling.PolicyEvaluator
+}
+
+func (t *TestPolicyEvaluator) Evaluate(ctx context.Context, traceID pcommon.TraceID, trace *sampling.TraceData) (sampling.Decision, error) {
+	close(t.Started)
+	<-t.CouldContinue
+	return t.pe.Evaluate(ctx, traceID, trace)
+}
+
+type spanInfo struct {
+	span     ptrace.Span
+	resource pcommon.Resource
+	scope    pcommon.InstrumentationScope
+}
+
+func TestTraceIntegrity(t *testing.T) {
+	const spanCount = 4
+	// Generate trace with several spans with different scopes
+	traces := ptrace.NewTraces()
+	spans := make(map[pcommon.SpanID]spanInfo, 0)
+
+	// Fill resource
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resource := resourceSpans.Resource()
+	resourceSpans.Resource().Attributes().PutStr("key1", "value1")
+	resourceSpans.Resource().Attributes().PutInt("key2", 0)
+
+	// Fill scopeSpans 1
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	scope := scopeSpans.Scope()
+	scopeSpans.Scope().SetName("scope1")
+	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+
+	// Add spans to scopeSpans 1
+	span := scopeSpans.Spans().AppendEmpty()
+	spanID := [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{1, 2, 3, 4}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{9, 10, 11, 12, 13, 14, 15, 16}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{5, 6, 7, 8}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	// Fill scopeSpans 2
+	scopeSpans = resourceSpans.ScopeSpans().AppendEmpty()
+	scope = scopeSpans.Scope()
+	scopeSpans.Scope().SetName("scope2")
+	scopeSpans.Scope().Attributes().PutStr("key1", "value1")
+	scopeSpans.Scope().Attributes().PutInt("key2", 0)
+
+	// Add spans to scopeSpans 2
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{17, 18, 19, 20, 21, 22, 23, 24}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{9, 10, 11, 12}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	span = scopeSpans.Spans().AppendEmpty()
+	spanID = [8]byte{25, 26, 27, 28, 29, 30, 31, 32}
+	span.SetSpanID(pcommon.SpanID(spanID))
+	span.SetTraceID(pcommon.TraceID([16]byte{13, 14, 15, 16}))
+	spans[spanID] = spanInfo{span: span, resource: resource, scope: scope}
+
+	require.Equal(t, spanCount, len(spans))
+
+	msp := new(consumertest.TracesSink)
+	mpe := &mockPolicyEvaluator{}
+	mtt := &manualTTicker{}
+	tsp := &tailSamplingSpanProcessor{
+		ctx:             context.Background(),
+		nextConsumer:    msp,
+		maxNumTraces:    spanCount,
+		logger:          zap.NewNop(),
+		decisionBatcher: newSyncIDBatcher(1),
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		deleteChan:      make(chan pcommon.TraceID, spanCount),
+		policyTicker:    mtt,
+		tickerFrequency: 100 * time.Millisecond,
+		numTracesOnMap:  &atomic.Uint64{},
+	}
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	require.NoError(t, tsp.ConsumeTraces(context.Background(), traces))
+
+	tsp.samplingPolicyOnTick()
+	mpe.NextDecision = sampling.Sampled
+	tsp.samplingPolicyOnTick()
+
+	consumed := msp.AllTraces()
+	require.Equal(t, 4, len(consumed))
+	for _, trace := range consumed {
+		require.Equal(t, 1, trace.SpanCount())
+		require.Equal(t, 1, trace.ResourceSpans().Len())
+		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().Len())
+		require.Equal(t, 1, trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+
+		span := trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
+		if spanInfo, ok := spans[span.SpanID()]; ok {
+			require.Equal(t, spanInfo.span, span)
+			require.Equal(t, spanInfo.resource, trace.ResourceSpans().At(0).Resource())
+			require.Equal(t, spanInfo.scope, trace.ResourceSpans().At(0).ScopeSpans().At(0).Scope())
+		} else {
+			require.Fail(t, "Span not found")
+		}
+	}
+}
 
 func TestSequentialTraceArrival(t *testing.T) {
 	traceIds, batches := generateIdsAndBatches(128)
@@ -61,7 +189,6 @@ func TestSequentialTraceArrival(t *testing.T) {
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10205")
 	traceIds, batches := generateIdsAndBatches(128)
 
 	var wg sync.WaitGroup
@@ -100,6 +227,51 @@ func TestConcurrentTraceArrival(t *testing.T) {
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
 	}
+}
+
+func TestConcurrentArrivalAndEvaluation(t *testing.T) {
+	traceIds, batches := generateIdsAndBatches(1)
+	evalStarted := make(chan struct{})
+	continueEvaluation := make(chan struct{})
+
+	var wg sync.WaitGroup
+	cfg := Config{
+		DecisionWait:            defaultTestDecisionWait,
+		NumTraces:               uint64(2 * len(traceIds)),
+		ExpectedNewTracesPerSec: 64,
+		PolicyCfgs:              testLatencyPolicy,
+	}
+	sp, _ := newTracesProcessor(context.Background(), componenttest.NewNopTelemetrySettings(), consumertest.NewNop(), cfg)
+	tsp := sp.(*tailSamplingSpanProcessor)
+	tsp.tickerFrequency = 1 * time.Millisecond
+	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, tsp.Shutdown(context.Background()))
+	}()
+
+	tpe := &TestPolicyEvaluator{
+		Started:       evalStarted,
+		CouldContinue: continueEvaluation,
+		pe:            tsp.policies[0].evaluator,
+	}
+	tsp.policies[0].evaluator = tpe
+
+	for _, batch := range batches {
+		wg.Add(1)
+		go func(td ptrace.Traces) {
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			<-evalStarted
+			close(continueEvaluation)
+			for i := 0; i < 10; i++ {
+				require.NoError(t, tsp.ConsumeTraces(context.Background(), td))
+			}
+			wg.Done()
+		}(batch)
+	}
+
+	wg.Wait()
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {
@@ -624,6 +796,30 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 		require.EqualValues(t, expected, got)
 	}
+}
+
+func TestPolicyLoggerAddsPolicyName(t *testing.T) {
+	// prepare
+	zc, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(zc)
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = logger
+
+	cfg := &sharedPolicyCfg{
+		Type: AlwaysSample, // we test only one evaluator
+	}
+
+	evaluator, err := getSharedPolicyEvaluator(set, cfg)
+	require.NoError(t, err)
+
+	// test
+	_, err = evaluator.Evaluate(context.Background(), pcommon.TraceID{}, nil)
+	require.NoError(t, err)
+
+	// verify
+	assert.Len(t, logs.All(), 1)
+	assert.Equal(t, AlwaysSample, logs.All()[0].ContextMap()["policy"])
 }
 
 func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {

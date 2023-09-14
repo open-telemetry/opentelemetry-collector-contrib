@@ -1,0 +1,93 @@
+default:
+all_set:
+  resource_attributes:
+    container.id:
+      enabled: true
+    container.image.name:
+      enabled: true
+    container.image.tag:
+      enabled: true
+    k8s.cluster.uid:
+      enabled: true
+    k8s.container.name:
+      enabled: true
+    k8s.cronjob.name:
+      enabled: true
+    k8s.daemonset.name:
+      enabled: true
+    k8s.daemonset.uid:
+      enabled: true
+    k8s.deployment.name:
+      enabled: true
+    k8s.deployment.uid:
+      enabled: true
+    k8s.job.name:
+      enabled: true
+    k8s.job.uid:
+      enabled: true
+    k8s.namespace.name:
+      enabled: true
+    k8s.node.name:
+      enabled: true
+    k8s.pod.hostname:
+      enabled: true
+    k8s.pod.name:
+      enabled: true
+    k8s.pod.start_time:
+      enabled: true
+    k8s.pod.uid:
+      enabled: true
+    k8s.replicaset.name:
+      enabled: true
+    k8s.replicaset.uid:
+      enabled: true
+    k8s.statefulset.name:
+      enabled: true
+    k8s.statefulset.uid:
+      enabled: true
+none_set:
+  resource_attributes:
+    container.id:
+      enabled: false
+    container.image.name:
+      enabled: false
+    container.image.tag:
+      enabled: false
+    k8s.cluster.uid:
+      enabled: false
+    k8s.container.name:
+      enabled: false
+    k8s.cronjob.name:
+      enabled: false
+    k8s.daemonset.name:
+      enabled: false
+    k8s.daemonset.uid:
+      enabled: false
+    k8s.deployment.name:
+      enabled: false
+    k8s.deployment.uid:
+      enabled: false
+    k8s.job.name:
+      enabled: false
+    k8s.job.uid:
+      enabled: false
+    k8s.namespace.name:
+      enabled: false
+    k8s.node.name:
+      enabled: false
+    k8s.pod.hostname:
+      enabled: false
+    k8s.pod.name:
+      enabled: false
+    k8s.pod.start_time:
+      enabled: false
+    k8s.pod.uid:
+      enabled: false
+    k8s.replicaset.name:
+      enabled: false
+    k8s.replicaset.uid:
+      enabled: false
+    k8s.statefulset.name:
+      enabled: false
+    k8s.statefulset.uid:
+      enabled: false

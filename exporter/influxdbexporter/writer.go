@@ -33,6 +33,8 @@ type influxHTTPWriter struct {
 	httpClientSettings confighttp.HTTPClientSettings
 	telemetrySettings  component.TelemetrySettings
 	writeURL           string
+	payloadMaxLines    int
+	payloadMaxBytes    int
 
 	logger common.Logger
 }
@@ -55,6 +57,8 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 		httpClientSettings: config.HTTPClientSettings,
 		telemetrySettings:  telemetrySettings,
 		writeURL:           writeURL,
+		payloadMaxLines:    config.PayloadMaxLines,
+		payloadMaxBytes:    config.PayloadMaxBytes,
 		logger:             logger,
 	}, nil
 }
@@ -120,20 +124,24 @@ var _ otel2influx.InfluxWriterBatch = (*influxHTTPWriterBatch)(nil)
 
 type influxHTTPWriterBatch struct {
 	*influxHTTPWriter
-	encoder *lineprotocol.Encoder
+	encoder      *lineprotocol.Encoder
+	payloadLines int
 }
 
 func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 	return &influxHTTPWriterBatch{
 		influxHTTPWriter: w,
-		encoder:          w.encoderPool.Get().(*lineprotocol.Encoder),
 	}
 }
 
 // EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
 // to the internal line protocol buffer.
-// Errors are always "permanent".
-func (b *influxHTTPWriterBatch) EnqueuePoint(measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+// If the buffer is full, it will be flushed by calling WriteBatch.
+func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+	if b.encoder == nil {
+		b.encoder = b.encoderPool.Get().(*lineprotocol.Encoder)
+	}
+
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
@@ -146,7 +154,16 @@ func (b *influxHTTPWriterBatch) EnqueuePoint(measurement string, tags map[string
 	if err := b.encoder.Err(); err != nil {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
+		b.encoderPool.Put(b.encoder)
+		b.encoder = nil
 		return consumererror.NewPermanent(fmt.Errorf("failed to encode point: %w", err))
+	}
+
+	b.payloadLines++
+	if b.payloadLines >= b.payloadMaxLines || len(b.encoder.Bytes()) >= b.payloadMaxBytes {
+		if err := b.WriteBatch(ctx); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -154,11 +171,16 @@ func (b *influxHTTPWriterBatch) EnqueuePoint(measurement string, tags map[string
 
 // WriteBatch sends the internal line protocol buffer to InfluxDB.
 func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
+	if b.encoder == nil {
+		return nil
+	}
+
 	defer func() {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
 		b.encoderPool.Put(b.encoder)
 		b.encoder = nil
+		b.payloadLines = 0
 	}()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.writeURL, bytes.NewReader(b.encoder.Bytes()))

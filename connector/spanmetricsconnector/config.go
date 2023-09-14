@@ -38,7 +38,8 @@ type Config struct {
 	// - status.code
 	// The dimensions will be fetched from the span's attributes. Examples of some conventionally used attributes:
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
-	Dimensions []Dimension `mapstructure:"dimensions"`
+	Dimensions        []Dimension `mapstructure:"dimensions"`
+	ExcludeDimensions []string    `mapstructure:"exclude_dimensions"`
 
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
@@ -54,12 +55,20 @@ type Config struct {
 
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
+
+	// Exemplars defines the configuration for exemplars.
+	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
 }
 
 type HistogramConfig struct {
+	Disable     bool                        `mapstructure:"disable"`
 	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+}
+
+type ExemplarsConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type ExponentialHistogramConfig struct {

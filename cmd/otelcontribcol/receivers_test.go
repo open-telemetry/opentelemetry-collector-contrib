@@ -29,6 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver"
@@ -157,6 +158,11 @@ func TestDefaultReceivers(t *testing.T) {
 		},
 		{
 			receiver: "datadog",
+			getConfigFn: func() component.Config {
+				cfg := rcvrFactories["datadog"].CreateDefaultConfig().(*datadogreceiver.Config)
+				cfg.Endpoint = "localhost:0" // Using a randomly assigned address
+				return cfg
+			},
 		},
 		{
 			receiver:     "docker_stats",

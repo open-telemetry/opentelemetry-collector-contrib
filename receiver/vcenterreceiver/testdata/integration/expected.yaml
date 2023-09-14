@@ -166,7 +166,7 @@ resourceMetrics:
                   attributes:
                     - key: disk_state
                       value:
-                        stringValue: used
+                        stringValue: available
                   startTimeUnixNano: "1682367880520917116"
                   timeUnixNano: "1682367880570405002"
             unit: By
@@ -604,6 +604,9 @@ resourceMetrics:
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_C0/Resources
     scopeMetrics:
       - metrics:
           - description: The amount of shares of CPU in the resource pool.
@@ -632,6 +635,9 @@ resourceMetrics:
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
+        - key: vcenter.resource_pool.inventory_path
+          value:
+            stringValue: /DC0/host/DC0_H0/Resources
     scopeMetrics:
       - metrics:
           - description: The amount of shares of CPU in the resource pool.

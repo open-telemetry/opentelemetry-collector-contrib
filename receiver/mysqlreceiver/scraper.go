@@ -37,13 +37,11 @@ func newMySQLScraper(
 	settings receiver.CreateSettings,
 	config *Config,
 ) *mySQLScraper {
-	ms := &mySQLScraper{
+	return &mySQLScraper{
 		logger: settings.Logger,
 		config: config,
 		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 	}
-
-	return ms
 }
 
 // start starts the scraper by initializing the db client connection.
@@ -104,7 +102,9 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// colect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
 
-	m.mb.EmitForResource(metadata.WithMysqlInstanceEndpoint(m.config.Endpoint))
+	rb := m.mb.NewResourceBuilder()
+	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
+	m.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	return m.mb.Emit(), errs.Combine()
 }
@@ -192,7 +192,6 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorAborted))
 		case "Locked_connects":
-			addPartialIfError(errs, m.mb.RecordMysqlLockedConnectsDataPoint(now, v))
 			addPartialIfError(errs, m.mb.RecordMysqlConnectionErrorsDataPoint(now, v,
 				metadata.AttributeConnectionErrorLocked))
 

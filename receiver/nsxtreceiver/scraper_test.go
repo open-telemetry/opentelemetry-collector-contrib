@@ -25,7 +25,7 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 
 	mockClient.On("ClusterNodes", mock.Anything).Return(loadTestClusterNodes())
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 }
 
 func TestScrapeTransportNodeErrors(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
@@ -84,7 +84,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 }
 
 func TestScrapeClusterNodeErrors(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 
 	mockClient.On("ClusterNodes", mock.Anything).Return(nil, errUnauthorized)
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
@@ -146,36 +146,29 @@ func TestScraperRecordNoStat(_ *testing.T) {
 }
 
 func loadTestNodeStatus(t *testing.T, nodeID string, class nodeClass) (*dm.NodeStatus, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "status.json"))
 	require.NoError(t, err)
-	switch class {
-	case transportClass:
+	if class == transportClass {
 		var stats dm.TransportNodeStatus
 		err = json.Unmarshal(testFile, &stats)
 		require.NoError(t, err)
 		return &stats.NodeStatus, err
-	default:
-		var stats dm.NodeStatus
-		err = json.Unmarshal(testFile, &stats)
-		require.NoError(t, err)
-		return &stats, err
 	}
+
+	var stats dm.NodeStatus
+	err = json.Unmarshal(testFile, &stats)
+	require.NoError(t, err)
+	return &stats, err
 }
 
 func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.NetworkInterface, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", "index.json"))
 	require.NoError(t, err)
@@ -186,12 +179,9 @@ func loadTestNodeInterfaces(t *testing.T, nodeID string, class nodeClass) ([]dm.
 }
 
 func loadInterfaceStats(t *testing.T, nodeID, interfaceID string, class nodeClass) (*dm.NetworkInterfaceStats, error) {
-	var classType string
-	switch class {
-	case transportClass:
+	classType := "cluster"
+	if class == transportClass {
 		classType = "transport"
-	default:
-		classType = "cluster"
 	}
 	testFile, err := os.ReadFile(filepath.Join("testdata", "metrics", "nodes", classType, nodeID, "interfaces", interfaceID, "stats.json"))
 	require.NoError(t, err)
