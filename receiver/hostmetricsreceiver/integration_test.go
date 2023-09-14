@@ -12,20 +12,23 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 )
 
 func Test_ProcessScrape(t *testing.T) {
 	expectedFile := filepath.Join("testdata", "e2e", "expected_process.yaml")
 	cmd := exec.Command("/bin/sleep", "300")
 	require.NoError(t, cmd.Start())
-	defer cmd.Process.Kill()
+	defer func() {
+		require.NoError(t, cmd.Process.Kill())
+	}()
 
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
