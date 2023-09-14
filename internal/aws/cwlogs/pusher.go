@@ -189,10 +189,8 @@ type logPusher struct {
 	// log stream name of the current logPusher
 	logStreamName *string
 
-	batchUpdateLock sync.Mutex
-	logEventBatch   *eventBatch
+	logEventBatch *eventBatch
 
-	pushLock         sync.Mutex
 	streamToken      string // no init value
 	svcStructuredLog Client
 	retryCnt         int
@@ -256,8 +254,6 @@ func (p *logPusher) ForceFlush() error {
 }
 
 func (p *logPusher) pushEventBatch(req interface{}) error {
-	p.pushLock.Lock()
-	defer p.pushLock.Unlock()
 
 	// http://docs.aws.amazon.com/goto/SdkForGoV1/logs-2014-03-28/PutLogEvents
 	// The log events in the batch must be in chronological ordered by their
@@ -313,9 +309,6 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 		return nil
 	}
 
-	p.batchUpdateLock.Lock()
-	defer p.batchUpdateLock.Unlock()
-
 	var prevBatch *eventBatch
 	currentBatch := p.logEventBatch
 	if currentBatch.exceedsLimit(logEvent.eventPayloadBytes()) || !currentBatch.isActive(logEvent.InputLogEvent.Timestamp) {
@@ -332,8 +325,6 @@ func (p *logPusher) addLogEvent(logEvent *Event) *eventBatch {
 }
 
 func (p *logPusher) renewEventBatch() *eventBatch {
-	p.batchUpdateLock.Lock()
-	defer p.batchUpdateLock.Unlock()
 
 	var prevBatch *eventBatch
 	if len(p.logEventBatch.putLogEventsInput.LogEvents) > 0 {

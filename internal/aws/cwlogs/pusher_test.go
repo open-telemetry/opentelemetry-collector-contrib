@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -17,61 +16,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 )
-
-func TestConcurrentPushAndFlush(t *testing.T) {
-	maxEventPayloadBytes = 128
-
-	concurrency := 10
-	current := time.Now().UnixNano() / 1e6
-	collection := map[string]interface{}{}
-
-	emfPusher := newMockPusherWithEventCheck(func(msg string) {
-		if _, ok := collection[msg]; ok {
-			t.Errorf("Sending duplicated event message %s", msg)
-		} else {
-			collection[msg] = struct{}{}
-		}
-	})
-
-	wg := sync.WaitGroup{}
-	wg.Add(concurrency)
-	for i := 0; i < concurrency; i++ {
-		go func(ii int) {
-			for j := 0; j < 10; j++ {
-				err := emfPusher.AddLogEntry(NewEvent(current, fmt.Sprintf("batch-%d-%d", ii, j)))
-				if err != nil {
-					t.Errorf("Error adding log entry: %v", err)
-				}
-			}
-			time.Sleep(1000 * time.Millisecond)
-			err := emfPusher.ForceFlush()
-			if err != nil {
-				t.Errorf("Error flushing: %v", err)
-
-			}
-			wg.Done()
-		}(i)
-	}
-	wg.Wait()
-	assert.Equal(t, concurrency*10, len(collection))
-
-	maxEventPayloadBytes = defaultMaxEventPayloadBytes
-}
-
-func newMockPusherWithEventCheck(check func(msg string)) Pusher {
-	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {
-		input := args.Get(0).(*cloudwatchlogs.PutLogEventsInput)
-		for _, event := range input.LogEvents {
-			eventMsg := *event.Message
-			check(eventMsg)
-		}
-	})
-	p := newLogPusher(StreamKey{
-		LogGroupName:  logGroup,
-		LogStreamName: logStreamName,
-	}, *svc, zap.NewNop())
-	return p
-}
 
 // logEvent Tests
 func TestLogEvent_eventPayloadBytes(t *testing.T) {
