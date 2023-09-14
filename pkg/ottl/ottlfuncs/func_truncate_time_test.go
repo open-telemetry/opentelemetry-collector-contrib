@@ -51,6 +51,21 @@ func Test_TruncateTime(t *testing.T) {
 			},
 			expected: time.Date(2022, 1, 1, 1, 1, 1, 999000000, time.Local),
 		},
+		{
+			name: "truncate old time",
+			time: &ottl.StandardTimeGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					return time.Date(1980, 9, 9, 9, 59, 59, 999999999, time.Local), nil
+				},
+			},
+			duration: &ottl.StandardDurationGetter[interface{}]{
+				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
+					d, _ := time.ParseDuration("1h")
+					return d, nil
+				},
+			},
+			expected: time.Date(1980, 9, 9, 9, 0, 0, 0, time.Local),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
