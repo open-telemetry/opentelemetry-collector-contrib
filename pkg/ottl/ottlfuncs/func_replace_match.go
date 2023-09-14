@@ -13,9 +13,9 @@ import (
 )
 
 type ReplaceMatchArguments[K any] struct {
-	Target      ottl.GetSetter[K]    `ottlarg:"0"`
-	Pattern     string               `ottlarg:"1"`
-	Replacement ottl.StringGetter[K] `ottlarg:"2"`
+	Target      ottl.GetSetter[K]
+	Pattern     string
+	Replacement ottl.StringGetter[K]
 }
 
 func NewReplaceMatchFactory[K any]() ottl.Factory[K] {

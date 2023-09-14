@@ -11,7 +11,7 @@ import (
 )
 
 type MillisecondsArguments[K any] struct {
-	Duration ottl.DurationGetter[K] `ottlarg:"0"`
+	Duration ottl.DurationGetter[K]
 }
 
 func NewMillisecondsFactory[K any]() ottl.Factory[K] {
