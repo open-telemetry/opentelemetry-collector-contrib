@@ -20,7 +20,7 @@
 
 This is an exporter that will consistently export spans, metrics and logs depending on the `routing_key` configured.
 
-The options for `routing_key` are: `service`, `traceID`, `metric`, `resource`.
+The options for `routing_key` are: `service`, `traceID`, `metric` (metric name), `resource`.
 
 | routing_key        | can be used for |
 | ------------- |-----------|
