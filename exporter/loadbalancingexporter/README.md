@@ -29,11 +29,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | resource | metrics |
 | metric | metrics |
 
-**Important**: Don't use traceID in metric pipeline.
-
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
-
-If no routing_key is configured, the default routing mechanism is traceID for traces, while service is the default for metrics
 
 It requires a source of backend information to be provided: static, with a fixed list of backends, or DNS, with a hostname that will resolve to all IP addresses to use. The DNS resolver will periodically check for updates.
 
