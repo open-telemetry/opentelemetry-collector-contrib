@@ -19,7 +19,7 @@ require (
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.0 // indirect
-	github.com/antonmedv/expr v1.15.1 // indirect
+	github.com/antonmedv/expr v1.15.2 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect

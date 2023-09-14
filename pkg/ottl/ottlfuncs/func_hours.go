@@ -11,7 +11,7 @@ import (
 )
 
 type HoursArguments[K any] struct {
-	Duration ottl.DurationGetter[K] `ottlarg:"0"`
+	Duration ottl.DurationGetter[K]
 }
 
 func NewHoursFactory[K any]() ottl.Factory[K] {

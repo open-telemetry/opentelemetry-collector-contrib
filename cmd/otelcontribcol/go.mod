@@ -34,8 +34,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlemanagedprometheusexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter v0.85.0
@@ -290,7 +288,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/aliyun/aliyun-log-go-sdk v0.1.54 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/antonmedv/expr v1.15.1 // indirect
+	github.com/antonmedv/expr v1.15.2 // indirect
 	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/pulsar-client-go v0.8.1 // indirect
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220120090717-25e59572242e // indirect
@@ -750,8 +748,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxr
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver => ../../receiver/postgresqlreceiver
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter => ../../exporter/jaegerexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
@@ -795,8 +791,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flink
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsecscontainermetricsreceiver => ../../receiver/awsecscontainermetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension => ../../extension/oidcauthextension
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter => ../../exporter/jaegerthrifthttpexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter => ../../exporter/awskinesisexporter
 
