@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestFlusher(t *testing.T) {
@@ -22,7 +20,7 @@ func TestFlusher(t *testing.T) {
 	// always use atEOF=false.
 
 	flushPeriod := 100 * time.Millisecond
-	f := WithPeriod(bufio.ScanWords, trim.Nop, flushPeriod)
+	f := WithPeriod(bufio.ScanWords, flushPeriod)
 
 	content := []byte("foo bar hellowo")
 
@@ -64,7 +62,7 @@ func TestNoFlushPeriod(t *testing.T) {
 	// In other words, we should expect exactly the behavior of bufio.ScanWords.
 
 	flushPeriod := time.Duration(0)
-	f := WithPeriod(bufio.ScanWords, trim.Nop, flushPeriod)
+	f := WithPeriod(bufio.ScanWords, flushPeriod)
 
 	content := []byte("foo bar hellowo")
 

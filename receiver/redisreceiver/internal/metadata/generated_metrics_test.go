@@ -74,6 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
 			allMetricsCount++
+			mb.RecordRedisCmdLatencyDataPoint(ts, 1, "cmd-val", AttributePercentileP50)
+
+			allMetricsCount++
 			mb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
 
 			defaultMetricsCount++
@@ -275,6 +278,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
 					assert.EqualValues(t, "cmd-val", attrVal.Str())
+				case "redis.cmd.latency":
+					assert.False(t, validatedMetrics["redis.cmd.latency"], "Found a duplicate in the metrics slice: redis.cmd.latency")
+					validatedMetrics["redis.cmd.latency"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Command execution latency", ms.At(i).Description())
+					assert.Equal(t, "us", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cmd")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cmd-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("percentile")
+					assert.True(t, ok)
+					assert.EqualValues(t, "p50", attrVal.Str())
 				case "redis.cmd.usec":
 					assert.False(t, validatedMetrics["redis.cmd.usec"], "Found a duplicate in the metrics slice: redis.cmd.usec")
 					validatedMetrics["redis.cmd.usec"] = true

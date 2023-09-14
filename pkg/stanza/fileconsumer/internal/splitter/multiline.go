@@ -42,9 +42,14 @@ func NewSplitFuncFactory(
 
 // SplitFunc builds a bufio.SplitFunc based on the configuration
 func (f *splitFuncFactory) SplitFunc() (bufio.SplitFunc, error) {
-	splitFunc, err := f.splitConfig.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
+	splitFunc, err := f.splitConfig.Func(f.encoding, false, f.maxLogSize)
 	if err != nil {
 		return nil, err
 	}
-	return flush.WithPeriod(splitFunc, f.trimFunc, f.flushPeriod), nil
+	splitFunc = flush.WithPeriod(splitFunc, f.flushPeriod)
+	if f.encoding == encoding.Nop {
+		// Special case where we should never trim
+		return splitFunc, nil
+	}
+	return trim.WithFunc(splitFunc, f.trimFunc), nil
 }
