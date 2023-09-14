@@ -305,7 +305,7 @@ func thriftExample() []byte {
 		},
 	}
 
-	return zipkin2.SerializeThrift(zSpans)
+	return zipkin2.SerializeThrift(context.TODO(), zSpans)
 }
 
 func compressGzip(body []byte) (*bytes.Buffer, error) {

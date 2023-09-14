@@ -22,3 +22,49 @@ The supervisor is currently undergoing heavy development and is not ready for an
    ```
 
 4. The supervisor should connect to the OpAMP server and start a Collector instance.
+
+## Status
+
+The OpenTelemetry OpAMP Supervisor is intended to be the reference
+implementation of an OpAMP Supervisor, and as such will support all OpAMP
+capabilities. Additionally, it follows a design document for the features it
+intends to support.
+
+For a list of open issues related to the Supervisor, see [these issues](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Acmd%2Fopampsupervisor).
+
+**Key**:
+
+✅: Fully implemented
+
+⚠️: Implemented with caveats
+
+📅: Planned, but no issue to track implementation
+
+### OpAMP capabilities
+
+| OpAMP capability               | Status                                                                           |
+|--------------------------------|----------------------------------------------------------------------------------|
+| AcceptsRemoteConfig            | ✅                                                                               |
+| ReportsEffectiveConfig         | ⚠️                                                                               |
+| AcceptsPackages                | 📅                                                                               |
+| ReportsPackageStatuses         | 📅                                                                               |
+| ReportsOwnTraces               | 📅                                                                               |
+| ReportsOwnMetrics              | ⚠️                                                                               |
+| ReportsOwnLogs                 | 📅                                                                               |
+| AcceptsOpAMPConnectionSettings | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043> |
+| AcceptsOtherConnectionSettings | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21043> |
+| AcceptsRestartCommand          | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077> |
+| ReportsHealth                  | ⚠️                                                                               |
+| ReportsRemoteConfig            | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079> |
+
+### Supervisor specification features
+
+| Feature                                                            | Status                                                                           |
+|--------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| Offers Supervisor configuration including configuring capabilities | ✅                                                                               |
+| Starts and stops a Collector using remote configuration            | ⚠️                                                                               |
+| Communicates with OpAMP extension running in the Collector         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071> |
+| Updates the Collector binary                                       | 📅                                                                               |
+| Configures the Collector to report it's own metrics over OTLP      | 📅                                                                               |
+| Configures the Collector to report it's own logs over OTLP         | 📅                                                                               |
+| Sanitization or restriction of Collector config                    | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24310> |

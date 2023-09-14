@@ -14,7 +14,7 @@ import (
 )
 
 type TraceIDArguments[K any] struct {
-	Bytes []byte `ottlarg:"0"`
+	Bytes []byte
 }
 
 func NewTraceIDFactory[K any]() ottl.Factory[K] {
