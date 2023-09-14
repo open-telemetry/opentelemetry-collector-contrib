@@ -284,6 +284,14 @@ func createPLog(log string) plog.LogRecord {
 	return pLog
 }
 
+type mockFactory struct {
+	*mockPusher
+}
+
+func (mf *mockFactory) CreateMultiStreamPusher() cwlogs.Pusher {
+	return mf.mockPusher
+}
+
 func TestConsumeLogs(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -294,6 +302,9 @@ func TestConsumeLogs(t *testing.T) {
 	expCfg.LogStreamName = "testStream"
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsPusher(expCfg, exportertest.NewNopCreateSettings())
+
+	logPusher := new(mockPusher)
+	exp.pusherFactory = &mockFactory{logPusher}
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	ld := plog.NewLogs()
@@ -304,13 +315,8 @@ func TestConsumeLogs(t *testing.T) {
 	logRecords.AppendEmpty()
 	assert.Equal(t, 1, ld.LogRecordCount())
 
-	logPusher := new(mockPusher)
 	logPusher.On("AddLogEntry", nil).Return("").Once()
 	logPusher.On("ForceFlush", nil).Return("").Twice()
-	exp.pusherMap[cwlogs.StreamKey{
-		LogGroupName:  expCfg.LogGroupName,
-		LogStreamName: expCfg.LogStreamName,
-	}] = logPusher
 	require.NoError(t, exp.consumeLogs(ctx, ld))
 	require.NoError(t, exp.shutdown(ctx))
 }

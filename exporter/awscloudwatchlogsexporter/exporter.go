@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -32,8 +31,7 @@ type cwlExporter struct {
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	pusherMap        map[cwlogs.StreamKey]cwlogs.Pusher
-	pusherMapLock    sync.RWMutex
+	pusherFactory    cwlogs.MultiStreamPusherFactory
 }
 
 type awsMetadata struct {
@@ -68,16 +66,8 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 		return nil, err
 	}
 
-	streamKey := cwlogs.StreamKey{
-		LogGroupName:  expConfig.LogGroupName,
-		LogStreamName: expConfig.LogStreamName,
-	}
-
-	pusher := cwlogs.NewPusher(streamKey, *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
-
-	pusherMap := make(map[cwlogs.StreamKey]cwlogs.Pusher)
-
-	pusherMap[streamKey] = pusher
+	logStreamManager := cwlogs.NewLogStreamManager(*svcStructuredLog)
+	multiStreamPusherFactory := cwlogs.NewMultiStreamPusherFactory(logStreamManager, *svcStructuredLog, params.Logger)
 
 	logsExporter := &cwlExporter{
 		svcStructuredLog: svcStructuredLog,
@@ -85,7 +75,7 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        pusherMap,
+		pusherFactory:    multiStreamPusherFactory,
 	}
 	return logsExporter, nil
 }
@@ -109,63 +99,26 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 }
 
 func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+	pusher := e.pusherFactory.CreateMultiStreamPusher()
+
 	logEvents, _ := logsToCWLogs(e.logger, ld, e.Config)
+
 	if len(logEvents) == 0 {
 		return nil
 	}
 
-	logPushersUsed := make(map[cwlogs.StreamKey]cwlogs.Pusher)
 	for _, logEvent := range logEvents {
-		streamKey := cwlogs.StreamKey{
-			LogGroupName:  logEvent.LogGroupName,
-			LogStreamName: logEvent.LogStreamName,
-		}
-		cwLogsPusher := e.getLogPusher(logEvent)
 		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
-		err := cwLogsPusher.AddLogEntry(logEvent)
+		err := pusher.AddLogEntry(logEvent)
 		if err != nil {
 			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
 		}
-		logPushersUsed[streamKey] = cwLogsPusher
 	}
-	var flushErrArray []error
-	for _, pusher := range logPushersUsed {
-		flushErr := pusher.ForceFlush()
-		if flushErr != nil {
-			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-			flushErrArray = append(flushErrArray, flushErr)
-		}
-	}
-	if len(flushErrArray) != 0 {
-		errorString := ""
-		for _, err := range flushErrArray {
-			errorString += err.Error()
-		}
-		return errors.New(errorString)
-	}
-	return nil
-}
 
-func (e *cwlExporter) getLogPusher(logEvent *cwlogs.Event) cwlogs.Pusher {
-	e.pusherMapLock.Lock()
-	defer e.pusherMapLock.Unlock()
-	streamKey := cwlogs.StreamKey{
-		LogGroupName:  logEvent.LogGroupName,
-		LogStreamName: logEvent.LogStreamName,
-	}
-	if e.pusherMap[streamKey] == nil {
-		pusher := cwlogs.NewPusher(streamKey, e.retryCount, *e.svcStructuredLog, e.logger)
-		e.pusherMap[streamKey] = pusher
-	}
-	return e.pusherMap[streamKey]
+	return pusher.ForceFlush()
 }
 
 func (e *cwlExporter) shutdown(_ context.Context) error {
-	if e.pusherMap != nil {
-		for _, pusher := range e.pusherMap {
-			pusher.ForceFlush()
-		}
-	}
 	return nil
 }
 
