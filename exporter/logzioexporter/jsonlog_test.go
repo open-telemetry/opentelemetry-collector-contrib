@@ -33,18 +33,11 @@ func GenerateLogRecordWithMultiTypeValues() plog.LogRecord {
 	return lr
 }
 
-func GenerateLogWithScopeName() plog.LogRecord {
-	lr := plog.NewLogRecord()
-	fillLogScopeName(lr)
-	return lr
-}
-
 func TestConvertLogRecordToJSON(t *testing.T) {
 	type convertLogRecordToJSONTest struct {
-		log       plog.LogRecord
-		resource  pcommon.Resource
-		expected  map[string]interface{}
-		scopeName string
+		log      plog.LogRecord
+		resource pcommon.Resource
+		expected map[string]interface{}
 	}
 
 	var convertLogRecordToJSONTests = []convertLogRecordToJSONTest{
@@ -61,7 +54,7 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"nested":       map[string]interface{}{"number": float64(499), "string": "v1"},
 				"spanID":       "0102040800000000",
 				"traceID":      "08040201000000000000000000000000",
-			}, "",
+			},
 		},
 		{GenerateLogRecordWithMultiTypeValues(),
 			pcommon.NewResource(),
@@ -73,28 +66,15 @@ func TestConvertLogRecordToJSON(t *testing.T) {
 				"@timestamp": TestLogTimeUnixMilli,
 				"message":    "something happened",
 				"number":     float64(64),
-			}, "",
-		},
-		{GenerateLogWithScopeName(),
-			pcommon.NewResource(),
-			map[string]interface{}{
-				"25":           float64(36),
-				"app":          "log4j2",
-				"instance_num": float64(1),
-				"level":        "Info",
-				"message":      "something happened in this scope",
-				"@timestamp":   TestLogTimeUnixMilli,
-				"spanID":       "0102040800000000",
-				"traceID":      "08040201000000000000000000000000",
-				"scopeName":    "test.class",
-			}, "test.class",
+			},
 		},
 	}
 	for _, test := range convertLogRecordToJSONTests {
-		output := convertLogRecordToJSON(test.log, test.scopeName, test.resource)
+		output := convertLogRecordToJSON(test.log, test.log.Attributes())
 		require.Equal(t, output, test.expected)
 	}
 }
+
 func TestSetTimeStamp(t *testing.T) {
 	var recordedRequests []byte
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {

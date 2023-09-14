@@ -131,16 +131,15 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
-			details := merge(resource.Attributes(), scope.Attributes())
-			details.PutStr(`scope.name`, scope.Name())
+			details := mergeMapEntries(resource.Attributes(), scope.Attributes())
+			details.PutStr(`scopeName`, scope.Name())
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
-				jsonLog := convertLogRecordToJSON(log, scope.Name(), resource)
-				logzioLog, err := json.Marshal(jsonLog)
+				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
 				if err != nil {
 					return err
 				}
-				_, err = dataBuffer.Write(append(logzioLog, '\n'))
+				_, err = dataBuffer.Write(append(jsonLog, '\n'))
 				if err != nil {
 					return err
 				}
@@ -153,33 +152,31 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 	return err
 }
 
-func merge(maps ...pcommon.Map) pcommon.Map {
+func mergeMapEntries(maps ...pcommon.Map) pcommon.Map {
 	res := map[string]any{}
 	for _, m := range maps {
 		for key, val := range m.AsRaw() {
-			// Check if (k,v) was added before:
+			// Check if the key was already added
 			if resMapValue, keyExists := res[key]; keyExists {
 				rt := reflect.TypeOf(resMapValue)
 				switch rt.Kind() {
 				case reflect.Slice:
-					res[key] = append(resMapValue.([]interface{}), val)
+					res[key] = append(resMapValue.([]any), val)
 				default:
-					// Create a new slice if the key exists:
-					valslice := make([]interface{}, 2)
+					// Create a new slice and append values if the key exists:
+					valslice := []any{}
 					res[key] = append(valslice, resMapValue, val)
 				}
+			} else {
+				res[key] = val
 			}
-
-			res[key] = val
 		}
 	}
-
 	pcommonRes := pcommon.NewMap()
 	err := pcommonRes.FromRaw(res)
 	if err != nil {
 		return pcommon.Map{}
 	}
-
 	return pcommonRes
 }
 
