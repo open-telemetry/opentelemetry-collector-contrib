@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver"
@@ -51,7 +50,6 @@ func Components() (
 	errs = multierr.Append(errs, err)
 
 	exporters, err := exporter.MakeFactoryMap(
-		jaegerexporter.NewFactory(),
 		loggingexporter.NewFactory(),
 		opencensusexporter.NewFactory(),
 		otlpexporter.NewFactory(),
