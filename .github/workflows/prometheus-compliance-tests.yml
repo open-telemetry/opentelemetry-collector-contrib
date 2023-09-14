@@ -50,5 +50,5 @@ jobs:
         # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
         run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_0.42.0_linux_amd64
       - name: Run compliance tests
-        run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
+        run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+"
         working-directory: compliance/remote_write_sender
