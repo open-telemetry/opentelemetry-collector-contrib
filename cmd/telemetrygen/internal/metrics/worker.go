@@ -33,9 +33,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
-		if w.metricType == metricTypeGauge || w.metricType == metricTypeAll {
+		if w.metricType == metricTypeGauge {
 			metrics = append(metrics, metricdata.Metrics{
-				Name: "gen.metric.gauge",
+				Name: "gen",
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
@@ -45,9 +45,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					},
 				},
 			})
-		} else if w.metricType == metricTypeSum || w.metricType == metricTypeAll {
+		} else if w.metricType == metricTypeSum {
 			metrics = append(metrics, metricdata.Metrics{
-				Name: "gen.metric.sum",
+				Name: "gen",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.DeltaTemporality,
@@ -56,22 +56,6 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 							StartTime: time.Now().Add(-1 * time.Second),
 							Time:      time.Now(),
 							Value:     i,
-						},
-					},
-				},
-			})
-		} else if w.metricType == metricTypeHistogram || w.metricType == metricTypeAll {
-			value := 24.42
-			metrics = append(metrics, metricdata.Metrics{
-				Name: "gen.metric.histogram",
-				Data: metricdata.Histogram[float64]{
-					Temporality: metricdata.CumulativeTemporality,
-					DataPoints: []metricdata.HistogramDataPoint[float64]{
-						{
-							Sum:   float64(float32(value)),
-							Max:   metricdata.NewExtrema(float64(float32(value))),
-							Min:   metricdata.NewExtrema(float64(float32(value))),
-							Count: 1,
 						},
 					},
 				},

@@ -7,10 +7,8 @@ import (
 type metricType string
 
 const (
-	metricTypeAll       metricType = "all"
-	metricTypeGauge     metricType = "gauge"
-	metricTypeHistogram metricType = "histogram"
-	metricTypeSum       metricType = "sum"
+	metricTypeGauge     = "Gauge"
+	metricTypeSum       = "Sum"
 )
 
 // String is used both by fmt.Print and by Cobra in help text
@@ -21,11 +19,11 @@ func (e *metricType) String() string {
 // Set must have pointer receiver so it doesn't change the value of a copy
 func (e *metricType) Set(v string) error {
 	switch v {
-	case "gauge", "sum", "histogram", "all":
+	case "Gauge", "Sum":
 		*e = metricType(v)
 		return nil
 	default:
-		return errors.New(`must be one of "gauge", "sum", "histogram" or "all"`)
+		return errors.New(`must be one of "Gauge" or "Sum"`)
 	}
 }
 
