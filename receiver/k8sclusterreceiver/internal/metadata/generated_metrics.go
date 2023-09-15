@@ -757,7 +757,7 @@ type metricK8sDeploymentAvailable struct {
 func (m *metricK8sDeploymentAvailable) init() {
 	m.data.SetName("k8s.deployment.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this deployment")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -806,7 +806,7 @@ type metricK8sDeploymentDesired struct {
 func (m *metricK8sDeploymentDesired) init() {
 	m.data.SetName("k8s.deployment.desired")
 	m.data.SetDescription("Number of desired pods in this deployment")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1377,6 +1377,55 @@ func (m *metricK8sPodPhase) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodPhase(cfg MetricConfig) metricK8sPodPhase {
 	m := metricK8sPodPhase{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodStatusReason struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.status_reason metric with initial data.
+func (m *metricK8sPodStatusReason) init() {
+	m.data.SetName("k8s.pod.status_reason")
+	m.data.SetDescription("Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4 - Shutdown, 5 - UnexpectedAdmissionError, 6 - Unknown)")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPodStatusReason) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodStatusReason) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodStatusReason) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodStatusReason(cfg MetricConfig) metricK8sPodStatusReason {
+	m := metricK8sPodStatusReason{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2120,6 +2169,7 @@ type MetricsBuilder struct {
 	metricK8sJobSuccessfulPods                metricK8sJobSuccessfulPods
 	metricK8sNamespacePhase                   metricK8sNamespacePhase
 	metricK8sPodPhase                         metricK8sPodPhase
+	metricK8sPodStatusReason                  metricK8sPodStatusReason
 	metricK8sReplicasetAvailable              metricK8sReplicasetAvailable
 	metricK8sReplicasetDesired                metricK8sReplicasetDesired
 	metricK8sReplicationControllerAvailable   metricK8sReplicationControllerAvailable
@@ -2180,6 +2230,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sJobSuccessfulPods:                newMetricK8sJobSuccessfulPods(mbc.Metrics.K8sJobSuccessfulPods),
 		metricK8sNamespacePhase:                   newMetricK8sNamespacePhase(mbc.Metrics.K8sNamespacePhase),
 		metricK8sPodPhase:                         newMetricK8sPodPhase(mbc.Metrics.K8sPodPhase),
+		metricK8sPodStatusReason:                  newMetricK8sPodStatusReason(mbc.Metrics.K8sPodStatusReason),
 		metricK8sReplicasetAvailable:              newMetricK8sReplicasetAvailable(mbc.Metrics.K8sReplicasetAvailable),
 		metricK8sReplicasetDesired:                newMetricK8sReplicasetDesired(mbc.Metrics.K8sReplicasetDesired),
 		metricK8sReplicationControllerAvailable:   newMetricK8sReplicationControllerAvailable(mbc.Metrics.K8sReplicationControllerAvailable),
@@ -2284,6 +2335,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sJobSuccessfulPods.emit(ils.Metrics())
 	mb.metricK8sNamespacePhase.emit(ils.Metrics())
 	mb.metricK8sPodPhase.emit(ils.Metrics())
+	mb.metricK8sPodStatusReason.emit(ils.Metrics())
 	mb.metricK8sReplicasetAvailable.emit(ils.Metrics())
 	mb.metricK8sReplicasetDesired.emit(ils.Metrics())
 	mb.metricK8sReplicationControllerAvailable.emit(ils.Metrics())
@@ -2456,6 +2508,11 @@ func (mb *MetricsBuilder) RecordK8sNamespacePhaseDataPoint(ts pcommon.Timestamp,
 // RecordK8sPodPhaseDataPoint adds a data point to k8s.pod.phase metric.
 func (mb *MetricsBuilder) RecordK8sPodPhaseDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sPodPhase.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodStatusReasonDataPoint adds a data point to k8s.pod.status_reason metric.
+func (mb *MetricsBuilder) RecordK8sPodStatusReasonDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricK8sPodStatusReason.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sReplicasetAvailableDataPoint adds a data point to k8s.replicaset.available metric.

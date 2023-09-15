@@ -392,6 +392,8 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 		return int64(value), nil
 	case uint32:
 		return int64(value), nil
+	case uint64:
+		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)
 	}
