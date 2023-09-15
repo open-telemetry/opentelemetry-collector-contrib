@@ -13,17 +13,19 @@ import (
 )
 
 type latency struct {
-	logger      *zap.Logger
+	logger           *zap.Logger
 	thresholdMs int64
+	upperThresholdMs int64
 }
 
 var _ PolicyEvaluator = (*latency)(nil)
 
 // NewLatency creates a policy evaluator sampling traces with a duration higher than a configured threshold
-func NewLatency(settings component.TelemetrySettings, thresholdMs int64) PolicyEvaluator {
+func NewLatency(settings component.TelemetrySettings, thresholdMs int64, upperThresholdMs int64) PolicyEvaluator {
 	return &latency{
-		logger:      settings.Logger,
-		thresholdMs: thresholdMs,
+		logger:           settings.Logger,
+		thresholdMs:      thresholdMs,
+		upperThresholdMs: upperThresholdMs,
 	}
 }
 
@@ -47,6 +49,9 @@ func (l *latency) Evaluate(_ context.Context, _ pcommon.TraceID, traceData *Trac
 		}
 
 		duration := maxTime.AsTime().Sub(minTime.AsTime())
-		return duration.Milliseconds() >= l.thresholdMs
+		if l.upperThresholdMs == 0 {
+			return duration.Milliseconds() >= l.thresholdMs
+		}
+		return (l.thresholdMs < duration.Milliseconds() && duration.Milliseconds() <= l.upperThresholdMs)
 	}), nil
 }
