@@ -7,6 +7,73 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.85.0
+
+### 🛑 Breaking changes 🛑
+
+- `alibabacloudlogserviceexporter`: Do not export the function `NewLogServiceClient` (#26304)
+- `awss3exporter`: Do not export the function `NewMarshaler` (#26304)
+- `statsdreceiver`: rename and do not export function `New` to `newReceiver` to pass checkapi (#26304)
+- `chronyreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26113)
+- `dockerstatsreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26114)
+- `elasticsearchexporter`: Do not export the function `DurationAsMicroseconds` (#26304)
+- `jaegerexporter`: Do not export the function `MetricViews` (#26304)
+- `k8sobjectsreceiver`: Do not export the function `NewTicker` (#26304)
+- `pkg/stanza`: Rename 'pkg/stanza/decoder' to 'pkg/stanza/decode' (#26340)
+- `pkg/stanza`: Move tokenize.SplitterConfig.Encoding to fileconsumer.Config.Encoding (#26511)
+- `pkg/stanza`: Remove Flusher from tokenize.SplitterConfig (#26517)
+  Removes the following in favor of flush.WithPeriod - tokenize.DefaultFlushPeriod - tokenize.FlusherConfig - tokenize.NewFlusherConfig
+- `pkg/stanza`: Remove tokenize.SplitterConfig (#26537)
+- `pkg/stanza`: Rename "tokenize" package to "split" (#26540)
+  - Remove 'Multiline' struct
+  - Remove 'NewMultilineConfig' struct
+  - Rename 'MultilineConfig' to 'split.Config'
+  
+- `pkg/stanza`: Extract whitespace trim configuration into trim.Config (#26511)
+  - PreserveLeading and PreserveTrailing removed from tokenize.SplitterConfig.
+  - PreserveLeadingWhitespaces and PreserveTrailingWhitespaces removed from tcp.BaseConfig and udp.BaseConfig.
+  
+
+### 💡 Enhancements 💡
+
+- `oauth2clientauthextension`: Enable dynamically reading ClientID and ClientSecret from files (#26117)
+  - Read the client ID and/or secret from a file by specifying the file path to the ClientIDFile (`client_id_file`) and ClientSecretFile (`client_secret_file`) fields respectively.
+  - The file is read every time the client issues a new token. This means that the corresponding value can change dynamically during the execution by modifying the file contents.
+  
+
+## v0.84.0
+
+### 🛑 Breaking changes 🛑
+
+- `memcachedreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26084)
+- `podmanreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26083)
+- `zookeeperreceiver`: Removes duplicate `Timeout` field. This change has no impact on end users of the component. (#26082)
+- `jaegerreceiver`: Deprecate remote_sampling config in the jaeger receiver (#24186)
+  The jaeger receiver will fail to start if remote_sampling config is specified in it.  The `receiver.jaeger.DisableRemoteSampling` feature gate can be set to let the receiver start and treat  remote_sampling config as no-op. In a future version this feature gate will be removed and the receiver will always  fail when remote_sampling config is specified.
+  
+- `pkg/ottl`: use IntGetter argument for Substring function (#25852)
+- `pkg/stanza`: Remove deprecated 'helper.Encoding' and 'helper.EncodingConfig.Build' (#25846)
+- `pkg/stanza`: Remove deprecated fileconsumer config structs (#24853)
+  Includes | - MatchingCriteria - OrderingCriteria - NumericSortRule - AlphabeticalSortRule - TimestampSortRule
+- `googlecloudexporter`: remove retry_on_failure from the googlecloud exporter. The exporter itself handles retries, and retrying can cause issues. (#57233)
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate 'helper.EncodingConfig' and 'helper.NewEncodingConfig' (#25846)
+- `pkg/stanza`: Deprecate encoding related elements of helper pacakge, in favor of new decoder package (#26019)
+  Includes the following deprecations | - Decoder - NewDecoder - LookupEncoding - IsNop
+- `pkg/stanza`: Deprecate tokenization related elements of helper pacakge, in favor of new tokenize package (#25914)
+  Includes the following deprecations | - Flusher - FlusherConfig - NewFlusherConfig - Multiline - MultilineConfig - NewMultilineConfig - NewLineStartSplitFunc - NewLineEndSplitFunc - NewNewlineSplitFunc - Splitter - SplitterConfig - NewSplitterConfig - SplitNone
+
+### 💡 Enhancements 💡
+
+- `googlemanagedprometheus`: Add a `add_metric_suffixes` option to the googlemanagedprometheus exporter. When set to false, metric suffixes are not added. (#26071)
+- `receiver/prometheus`: translate units from prometheus to UCUM (#23208)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/influxdb`: add allowable inputs to line protocol precision parameter (#24974)
+
 ## v0.83.0
 
 ### 🛑 Breaking changes 🛑

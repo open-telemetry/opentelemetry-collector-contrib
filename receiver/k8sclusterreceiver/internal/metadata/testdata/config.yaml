@@ -57,6 +57,8 @@ all_set:
       enabled: true
     k8s.pod.phase:
       enabled: true
+    k8s.pod.status_reason:
+      enabled: true
     k8s.replicaset.available:
       enabled: true
     k8s.replicaset.desired:
@@ -113,6 +115,10 @@ all_set:
     k8s.job.name:
       enabled: true
     k8s.job.uid:
+      enabled: true
+    k8s.kubelet.version:
+      enabled: true
+    k8s.kubeproxy.version:
       enabled: true
     k8s.namespace.name:
       enabled: true
@@ -206,6 +212,8 @@ none_set:
       enabled: false
     k8s.pod.phase:
       enabled: false
+    k8s.pod.status_reason:
+      enabled: false
     k8s.replicaset.available:
       enabled: false
     k8s.replicaset.desired:
@@ -262,6 +270,10 @@ none_set:
     k8s.job.name:
       enabled: false
     k8s.job.uid:
+      enabled: false
+    k8s.kubelet.version:
+      enabled: false
+    k8s.kubeproxy.version:
       enabled: false
     k8s.namespace.name:
       enabled: false

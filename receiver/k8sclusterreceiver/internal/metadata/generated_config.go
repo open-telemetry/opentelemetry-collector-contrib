@@ -53,6 +53,7 @@ type MetricsConfig struct {
 	K8sJobSuccessfulPods                MetricConfig `mapstructure:"k8s.job.successful_pods"`
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
 	K8sReplicasetDesired                MetricConfig `mapstructure:"k8s.replicaset.desired"`
 	K8sReplicationControllerAvailable   MetricConfig `mapstructure:"k8s.replication_controller.available"`
@@ -155,6 +156,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodPhase: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodStatusReason: MetricConfig{
+			Enabled: false,
+		},
 		K8sReplicasetAvailable: MetricConfig{
 			Enabled: true,
 		},
@@ -221,6 +225,8 @@ type ResourceAttributesConfig struct {
 	K8sHpaUID                    ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
 	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
 	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
+	K8sKubeletVersion            ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
+	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
 	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
@@ -283,6 +289,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sJobUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sKubeletVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sKubeproxyVersion: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
 			Enabled: true,

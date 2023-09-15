@@ -177,6 +177,7 @@ func accessDataPoints[K MetricContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (interface{}, error) {
 			metric := tCtx.GetMetric()
+			//exhaustive:enforce
 			switch metric.Type() {
 			case pmetric.MetricTypeSum:
 				return metric.Sum().DataPoints(), nil
@@ -193,6 +194,7 @@ func accessDataPoints[K MetricContext]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(ctx context.Context, tCtx K, val interface{}) error {
 			metric := tCtx.GetMetric()
+			//exhaustive:enforce
 			switch metric.Type() {
 			case pmetric.MetricTypeSum:
 				if newDataPoints, ok := val.(pmetric.NumberDataPointSlice); ok {
