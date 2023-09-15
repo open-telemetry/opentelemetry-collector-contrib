@@ -177,14 +177,17 @@ func TestFindFiles(t *testing.T) {
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
 
-				file, err := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				var file *os.File
+				file, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
 				require.NoError(t, err)
 
 				_, err = file.WriteString(filepath.Base(f))
 				require.NoError(t, err)
 				require.NoError(t, file.Close())
 			}
-			assert.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
+			files, err := FindFiles(tc.include, tc.exclude)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, files)
 		})
 	}
 }

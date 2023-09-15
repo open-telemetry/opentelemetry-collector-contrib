@@ -20,10 +20,13 @@ func Validate(globs []string) error {
 }
 
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
-func FindFiles(includes []string, excludes []string) []string {
+func FindFiles(includes []string, excludes []string) ([]string, error) {
 	all := make([]string, 0, len(includes))
 	for _, include := range includes {
-		matches, _ := doublestar.FilepathGlob(include, doublestar.WithFilesOnly()) // compile error checked in build
+		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
+		if err != nil {
+			return all, err
+		}
 	INCLUDE:
 		for _, match := range matches {
 			for _, exclude := range excludes {
@@ -42,5 +45,5 @@ func FindFiles(includes []string, excludes []string) []string {
 		}
 	}
 
-	return all
+	return all, nil
 }

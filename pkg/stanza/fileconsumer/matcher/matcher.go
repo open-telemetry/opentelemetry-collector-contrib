@@ -109,7 +109,10 @@ type Matcher struct {
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
 func (m Matcher) MatchFiles() ([]string, error) {
-	files := finder.FindFiles(m.include, m.exclude)
+	files, err := finder.FindFiles(m.include, m.exclude)
+	if err != nil {
+		return files, err
+	}
 	if len(files) == 0 {
 		return files, fmt.Errorf("no files match the configured criteria")
 	}
