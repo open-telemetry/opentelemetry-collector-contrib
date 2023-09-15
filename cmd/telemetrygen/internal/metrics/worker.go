@@ -39,8 +39,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime: time.Now(),
-							Time:      time.Now().Add(1 * time.Second),
+							Time:      time.Now(),
 							Value:     i,
 						},
 					},
