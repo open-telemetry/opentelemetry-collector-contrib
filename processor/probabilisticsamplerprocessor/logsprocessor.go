@@ -52,7 +52,6 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		rl.ScopeLogs().RemoveIf(func(ill plog.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
-
 				tagPolicyValue := "always_sampling"
 				// pick the sampling source.
 				var lidBytes []byte
@@ -71,8 +70,10 @@ func (lsp *logSamplerProcessor) processLogs(ctx context.Context, ld plog.Logs) (
 						case pcommon.ValueTypeBytes:
 							lidBytes = value.Bytes().AsRaw()
 						default:
-							lsp.logger.Warn("incompatible log record attribute, only String or Bytes supported; skipping log record",
+							lsp.logger.Warn("Incompatible log record attribute, only String or Bytes supported; skipping log record",
 								zap.String("log_record_attribute", lsp.samplingSource), zap.Stringer("attribute_type", value.Type()))
+
+							return true
 						}
 
 					}
