@@ -1,4 +1,4 @@
-package spoardicconnector
+package sporadicconnector
 
 import (
 	"context"
@@ -7,6 +7,10 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 )
+
+func createDefaultConfig() component.Config {
+	return &Config{}
+}
 
 func NewFactory() connector.Factory {
 	return connector.NewFactory(
@@ -19,7 +23,7 @@ func NewFactory() connector.Factory {
 }
 func createTracesToTraces(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
 	tc := newTracesConnector(params.Logger, cfg)
-	tc.traceConsumer = nextConsumer
+	tc.tracesConsumer = nextConsumer
 	return tc, nil
 }
 

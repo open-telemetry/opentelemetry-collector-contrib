@@ -1,4 +1,4 @@
-package spoardicconnector
+package sporadicconnector
 
 import (
 	"context"
@@ -24,19 +24,20 @@ func (c *baseConnector) Capabilities() consumer.Capabilities {
 type metricsConnector struct {
 	baseConnector
 
-	config          Config
+	config          *Config
 	metricsConsumer consumer.Metrics
 }
 
 func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsConnector {
+	cfg := config.(*Config)
 	return &metricsConnector{
-		config:        config.(*Config),
+		config:        cfg,
 		baseConnector: baseConnector{},
 	}
 }
 
 func (mc *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	switch mc.config.decision {
+	switch mc.config.Decision {
 	case 1:
 		if err := randomNonPermanentError(); err != nil {
 			return err
@@ -54,19 +55,20 @@ func (mc *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 type logsConnector struct {
 	baseConnector
 
-	config       Config
+	config       *Config
 	logsConsumer consumer.Logs
 }
 
-func newlogsConnector(logger *zap.Logger, config component.Config) *logsConnector {
+func newLogsConnector(logger *zap.Logger, config component.Config) *logsConnector {
+	cfg := config.(*Config)
 	return &logsConnector{
-		config:        config.(*Config),
+		config:        cfg,
 		baseConnector: baseConnector{},
 	}
 }
 
 func (lc *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	switch lc.config.decision {
+	switch lc.config.Decision {
 	case 1:
 		if err := randomNonPermanentError(); err != nil {
 			return err
@@ -84,19 +86,21 @@ func (lc *logsConnector) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 type traceConnector struct {
 	baseConnector
 
-	config         Config
+	config         *Config
 	tracesConsumer consumer.Traces
 }
 
-func newTraceConnector(logger *zap.Logger, config component.Config) *traceConnector {
+func newTracesConnector(logger *zap.Logger, config component.Config) *traceConnector {
+	cfg := config.(*Config)
+
 	return &traceConnector{
-		config:        config.(*Config),
+		config:        cfg,
 		baseConnector: baseConnector{},
 	}
 }
 
 func (tc *traceConnector) ConsumeTraces(ctx context.Context, tr ptrace.Traces) error {
-	switch tc.config.decision {
+	switch tc.config.Decision {
 	case 1:
 		if err := randomNonPermanentError(); err != nil {
 			return err

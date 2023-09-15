@@ -1,17 +1,16 @@
-package spoardicconnector
+package sporadicconnector
 
 import "go.opentelemetry.io/collector/component"
 
-type Config struct {
+var _ component.ConfigValidator = (*Config)(nil)
 
-	// 1 for random non-permanent errors
-	// 2 for random permanent errors
-	// 3 for random avaibility
-	decision int `mapstructure:"decision"`
+type Config struct {
+	// 0 for random non-permanent errors
+	// 1 for random permanent errors
+	// 2 for random avaibility
+	Decision int `mapstructure:"decision"`
 }
 
-func createDefaultConfig() component.Config {
-	return &Config{
-		decision: 1,
-	}
+func (c *Config) Validate() error {
+	return nil
 }

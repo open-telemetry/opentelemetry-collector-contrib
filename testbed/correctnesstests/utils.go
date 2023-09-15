@@ -103,8 +103,9 @@ exporters:%v
 processors:
   %s
 connectors:
-  sporadic: 
-	decision: %d
+  sporadic:
+   decision: %d
+
 extensions:
 
 service:
@@ -114,9 +115,10 @@ service:
       receivers: [%v]
       processors: [%s]
       exporters: [sporadic]
-	%s/sporadic:
-	  receivers: [sporadic]
-	  exporters: %v
+
+    %s/sporadic:
+      receivers: [sporadic]
+      exporters: [%v]
 `
 
 	return fmt.Sprintf(

@@ -23,9 +23,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/connectors/sporadicconnector v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatareceivers/mockawsxrayreceiver v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/connectors/sporadicconnector v0.85.0
 	github.com/prometheus/common v0.44.0
 	github.com/prometheus/prometheus v0.47.0
 	github.com/shirou/gopsutil/v3 v3.23.8
@@ -38,6 +38,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.85.0
 	go.opentelemetry.io/collector/config/configtls v0.85.0
 	go.opentelemetry.io/collector/confmap v0.85.0
+	go.opentelemetry.io/collector/connector v0.85.0
 	go.opentelemetry.io/collector/consumer v0.85.0
 	go.opentelemetry.io/collector/exporter v0.85.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.85.0
@@ -46,7 +47,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.85.0
 	go.opentelemetry.io/collector/extension/ballastextension v0.85.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.85.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470
 	go.opentelemetry.io/collector/processor v0.85.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.85.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.85.0
@@ -222,9 +223,8 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v0.85.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.85.0 // indirect
-	go.opentelemetry.io/collector/connector v0.85.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.85.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.43.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.43.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.17.0 // indirect

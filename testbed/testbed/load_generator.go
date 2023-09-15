@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"golang.org/x/text/message"
 )
 
@@ -24,6 +25,10 @@ type LoadGenerator struct {
 
 	// Number of data items (spans or metric data points) sent.
 	dataItemsSent atomic.Uint64
+
+	// Number of permanent errors received
+	permanentErrors    atomic.Uint64
+	nonPermanentErrors atomic.Uint64
 
 	stopOnce   sync.Once
 	stopWait   sync.WaitGroup
@@ -109,6 +114,14 @@ func (lg *LoadGenerator) DataItemsSent() uint64 {
 	return lg.dataItemsSent.Load()
 }
 
+func (lg *LoadGenerator) PermanentErrors() uint64 {
+	return lg.permanentErrors.Load()
+}
+
+func (lg *LoadGenerator) NonPermanentErrors() uint64 {
+	return lg.nonPermanentErrors.Load()
+}
+
 // IncDataItemsSent is used when a test bypasses the LoadGenerator and sends data
 // directly via TestCases's Sender. This is necessary so that the total number of sent
 // items in the end is correct, because the reports are printed from LoadGenerator's
@@ -184,12 +197,21 @@ func (lg *LoadGenerator) generateTrace() {
 		return
 	}
 
-	err := traceSender.ConsumeTraces(context.Background(), traceData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send traces: %v", err)
+	for {
+		err := traceSender.ConsumeTraces(context.Background(), traceData)
+		if err == nil {
+			lg.prevErr = nil
+		} else if !consumererror.IsPermanent(err) {
+			lg.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+			continue
+		} else {
+			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+				lg.prevErr = err
+				log.Printf("Cannot send traces: %v")
+			}
+			lg.permanentErrors.Add(uint64(traceData.SpanCount()))
+		}
+		break
 	}
 }
 
@@ -200,13 +222,21 @@ func (lg *LoadGenerator) generateMetrics() {
 	if done {
 		return
 	}
-
-	err := metricSender.ConsumeMetrics(context.Background(), metricData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send metrics: %v", err)
+	for {
+		err := metricSender.ConsumeMetrics(context.Background(), metricData)
+		if err == nil {
+			lg.prevErr = nil
+		} else if !consumererror.IsPermanent(err) {
+			lg.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
+			continue
+		} else {
+			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+				lg.prevErr = err
+				log.Printf("Cannot send metrics: %v", err)
+			}
+			lg.permanentErrors.Add(uint64(metricData.DataPointCount()))
+		}
+		break
 	}
 }
 
@@ -217,12 +247,20 @@ func (lg *LoadGenerator) generateLog() {
 	if done {
 		return
 	}
-
-	err := logSender.ConsumeLogs(context.Background(), logData)
-	if err == nil {
-		lg.prevErr = nil
-	} else if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
-		lg.prevErr = err
-		log.Printf("Cannot send logs: %v", err)
+	for {
+		err := logSender.ConsumeLogs(context.Background(), logData)
+		if err == nil {
+			lg.prevErr = nil
+		} else if !consumererror.IsPermanent(err) {
+			lg.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+			continue
+		} else {
+			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
+				lg.prevErr = err
+				log.Printf("Cannot send logs: %v", err)
+			}
+			lg.permanentErrors.Add(uint64(logData.LogRecordCount()))
+		}
+		break
 	}
 }
