@@ -5,7 +5,6 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -142,11 +141,6 @@ func createKubernetesProcessor(
 ) (*kubernetesprocessor, error) {
 	kp := &kubernetesprocessor{logger: params.Logger}
 
-	err := errWrongKeyConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	allOptions := append(createProcessorOpts(cfg), options...)
 
 	for _, opt := range allOptions {
@@ -190,16 +184,4 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExcludes(oCfg.Exclude))
 
 	return opts
-}
-
-func errWrongKeyConfig(cfg component.Config) error {
-	oCfg := cfg.(*Config)
-
-	for _, r := range append(oCfg.Extract.Labels, oCfg.Extract.Annotations...) {
-		if r.Key != "" && r.KeyRegex != "" {
-			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", r.Key, r.KeyRegex)
-		}
-	}
-
-	return nil
 }

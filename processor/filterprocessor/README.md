@@ -5,7 +5,8 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [core], [contrib], [aws], [observiq], [redhat], [splunk], [sumo] |
 | Warnings      | [Orphaned Telemetry, Other](#warnings) |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ffilter%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ffilter%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ffilter%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ffilter) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ffilter%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ffilter) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@boostchicken](https://www.github.com/boostchicken) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -80,6 +81,37 @@ processors:
         - 'IsMatch(body, ".*password.*")'
         - 'severity_number < SEVERITY_NUMBER_WARN'
 ```
+
+#### Dropping non-HTTP spans
+```yaml
+processors:
+  filter/httponly:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["http.request.method"] == nil
+```
+
+#### Dropping HTTP spans
+```yaml
+processors:
+  filter/drophttp:
+    error_mode: ignore
+    traces:
+      span:
+        - attributes["http.request.method"] != nil
+```
+
+#### Dropping metrics with invalid type
+```yaml
+processors:
+  filter/dropempty:
+    error_mode: ignore
+    metrics:
+      metric:
+        - type == METRIC_DATA_TYPE_NONE
+```
+
 
 ### OTTL Functions
 

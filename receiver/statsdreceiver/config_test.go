@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -49,6 +49,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "timing",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 170,
+						},
+					},
+					{
+						StatsdType:   "distribution",
 						ObserverType: "histogram",
 						Histogram: protocol.HistogramConfig{
 							MaxSize: 170,

@@ -5,6 +5,8 @@ status:
   stability:
     development: [metrics]
   distributions: [contrib]
+  codeowners:
+    active: [altuner, codeboten]
 
 resource_attributes:
   azuremonitor.tenant_id:

@@ -5,7 +5,8 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib], [observiq], [splunk], [sumo] |
 | Warnings      | [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other](#warnings) |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftransform%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftransform) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftransform%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftransform) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@kentquirk](https://www.github.com/kentquirk), [@bogdandrutu](https://www.github.com/bogdandrutu), [@evan-bradley](https://www.github.com/evan-bradley) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -115,7 +116,7 @@ transform:
       statements:
         - set(severity_text, "FAIL") where body == "request failed"
         - replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")
-        - replace_all_patterns(attributes, "/account/\\d{4}", "/account/{accountId}")
+        - replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")
         - set(body, attributes["http.route"])
 ```
 
@@ -217,6 +218,54 @@ Examples:
 
 - `convert_gauge_to_sum("delta", true)`
 
+### extract_count_metric
+
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
+
+`extract_count_metric(is_monotonic)`
+
+The `extract_count_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's count value. A metric will only be created if there is at least one data point.
+
+`is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<original metric name>_count`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+> [!WARNING]  
+> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
+
+Examples:
+
+- `extract_count_metric(true)`
+
+- `extract_count_metric(false)`
+
+### extract_sum_metric
+
+> [!NOTE]  
+> This function supports Histograms, ExponentialHistograms and Summaries.
+
+`extract_sum_metric(is_monotonic)`
+
+The `extract_sum_metric` function creates a new Sum metric from a Histogram, ExponentialHistogram or Summary's sum value. If the sum value of a Histogram or ExponentialHistogram data point is missing, no data point is added to the output metric. A metric will only be created if there is at least one data point.
+
+`is_monotonic` is a boolean representing the monotonicity of the new metric.
+
+The name for the new metric will be `<original metric name>_sum`. The fields that are copied are: `timestamp`, `starttimestamp`, `attibutes`, `description`, and `aggregation_temporality`. As metrics of type Summary don't have an `aggregation_temporality` field, this field will be set to `AGGREGATION_TEMPORALITY_CUMULATIVE` for those metrics.
+
+The new metric that is created will be passed to all subsequent statements in the metrics statements list.
+
+> [!WARNING]  
+> This function may cause a metric to break semantics for [Sum metrics](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/data-model.md#sums). Use only if you're confident you know what the resulting monotonicity should be.
+
+Examples:
+
+- `extract_sum_metric(true)`
+
+- `extract_sum_metric(false)`
+
 ### convert_summary_count_val_to_sum
 
 `convert_summary_count_val_to_sum(aggregation_temporality, is_monotonic)`
@@ -316,7 +365,7 @@ transform:
     - context: resource
       statements:
         # Use Concat function to combine any number of string, separated by a delimiter.
-        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " ")
+        - set(attributes["test"], Concat([attributes["foo"], attributes["bar"]], " "))
 ```
 
 ### Parsing JSON logs
@@ -363,7 +412,7 @@ See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-
 
 ## Warnings
 
-The transform processor's implementation of the [OpenTelemetry Transformation Language]https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#opentelemetry-transformation-language) (OTTL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
+The transform processor's implementation of the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#opentelemetry-transformation-language) (OTTL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
 
 - [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.

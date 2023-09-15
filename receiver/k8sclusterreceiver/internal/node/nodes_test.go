@@ -6,9 +6,12 @@ package node
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -16,12 +19,14 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), n,
+	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
+	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -40,7 +45,11 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 			"hugepages-2Mi",
 			"not-present",
 		},
+		pcommon.Timestamp(time.Now().UnixNano()),
 	)
+	m := pmetric.NewMetrics()
+	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
+
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
@@ -52,7 +61,37 @@ func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	),
 	)
 }
+func TestNodeOptionalMetrics(t *testing.T) {
+	n := testutils.NewNode("2")
+	rac := metadata.DefaultResourceAttributesConfig()
+	rac.K8sKubeletVersion.Enabled = true
+	rac.K8sKubeproxyVersion.Enabled = true
 
+	rb := metadata.NewResourceBuilder(rac)
+	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
+		[]string{},
+		[]string{
+			"cpu",
+			"memory",
+		},
+
+		pcommon.Timestamp(time.Now().UnixNano()),
+	)
+	m := pmetric.NewMetrics()
+	rm.MoveTo(m.ResourceMetrics().AppendEmpty())
+
+	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected_optional.yaml"))
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+	),
+	)
+
+}
 func TestNodeConditionValue(t *testing.T) {
 	type args struct {
 		node     *corev1.Node
@@ -153,6 +192,18 @@ func TestTransform(t *testing.T) {
 					Address: "192.168.1.100",
 				},
 			},
+			NodeInfo: corev1.NodeSystemInfo{
+				MachineID:               "24736a453e8f47a1ad2f9d95d31085f5",
+				SystemUUID:              "444005f7-e2e8-42fd-ab87-9f8496790a29",
+				BootID:                  "d7ee9a98-ff89-4eed-b723-cffd38ea6c0f",
+				KernelVersion:           "6.4.12-arch1-1",
+				OSImage:                 "Ubuntu 22.04.1 LTS",
+				ContainerRuntimeVersion: "containerd://1.6.9",
+				KubeletVersion:          "v1.25.3",
+				KubeProxyVersion:        "v1.25.3",
+				OperatingSystem:         "linux",
+				Architecture:            "amd64",
+			},
 		},
 	}
 	wantNode := &corev1.Node{
@@ -173,6 +224,10 @@ func TestTransform(t *testing.T) {
 			Allocatable: corev1.ResourceList{
 				corev1.ResourceCPU:    resource.MustParse("4"),
 				corev1.ResourceMemory: resource.MustParse("8Gi"),
+			},
+			NodeInfo: corev1.NodeSystemInfo{
+				KubeletVersion:   "v1.25.3",
+				KubeProxyVersion: "v1.25.3",
 			},
 		},
 	}

@@ -9,3 +9,6 @@ status:
   - grafana
   - observiq
   - sumo
+  - aws
+  codeowners:
+    active: [jpkrohling]

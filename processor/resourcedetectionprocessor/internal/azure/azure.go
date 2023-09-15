@@ -25,18 +25,18 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is an Azure metadata detector
 type Detector struct {
-	provider           azure.Provider
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider azure.Provider
+	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new Azure metadata detector
 func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &Detector{
-		provider:           azure.NewProvider(),
-		logger:             p.Logger,
-		resourceAttributes: cfg.ResourceAttributes,
+		provider: azure.NewProvider(),
+		logger:   p.Logger,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
 	}, nil
 }
 
@@ -49,21 +49,19 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-
-	rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
-	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureVM)
-	rb.SetHostName(compute.Name)
-	rb.SetCloudRegion(compute.Location)
-	rb.SetHostID(compute.VMID)
-	rb.SetCloudAccountID(compute.SubscriptionID)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureVM)
+	d.rb.SetHostName(compute.Name)
+	d.rb.SetCloudRegion(compute.Location)
+	d.rb.SetHostID(compute.VMID)
+	d.rb.SetCloudAccountID(compute.SubscriptionID)
 
 	// Also save compute.Name in "azure.vm.name" as host.id (AttributeHostName) is
 	// used by system detector.
-	rb.SetAzureVMName(compute.Name)
-	rb.SetAzureVMSize(compute.VMSize)
-	rb.SetAzureVMScalesetName(compute.VMScaleSetName)
-	rb.SetAzureResourcegroupName(compute.ResourceGroupName)
+	d.rb.SetAzureVMName(compute.Name)
+	d.rb.SetAzureVMSize(compute.VMSize)
+	d.rb.SetAzureVMScalesetName(compute.VMScaleSetName)
+	d.rb.SetAzureResourcegroupName(compute.ResourceGroupName)
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

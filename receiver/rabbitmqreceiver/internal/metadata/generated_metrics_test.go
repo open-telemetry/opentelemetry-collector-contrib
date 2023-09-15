@@ -78,7 +78,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithRabbitmqNodeName("rabbitmq.node.name-val"), WithRabbitmqQueueName("rabbitmq.queue.name-val"), WithRabbitmqVhostName("rabbitmq.vhost.name-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetRabbitmqNodeName("rabbitmq.node.name-val")
+			rb.SetRabbitmqQueueName("rabbitmq.queue.name-val")
+			rb.SetRabbitmqVhostName("rabbitmq.vhost.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -87,32 +92,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("rabbitmq.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "rabbitmq.node.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.queue.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqQueueName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqQueueName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "rabbitmq.queue.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("rabbitmq.vhost.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RabbitmqVhostName.Enabled, ok)
-			if mb.resourceAttributesConfig.RabbitmqVhostName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "rabbitmq.vhost.name-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 3)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {

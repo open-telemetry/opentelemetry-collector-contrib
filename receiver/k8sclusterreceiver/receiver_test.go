@@ -222,6 +222,7 @@ func setupReceiver(
 		NodeConditionTypesToReport: []string{"Ready"},
 		AllocatableTypesToReport:   []string{"cpu", "memory"},
 		Distribution:               distribution,
+		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 	}
 
 	r, _ := newReceiver(context.Background(), tt.ToReceiverCreateSettings(), config)
@@ -272,12 +273,6 @@ func newFakeClientWithAllResources() *fake.Clientset {
 			GroupVersion: "autoscaling/v2",
 			APIResources: []v1.APIResource{
 				gvkToAPIResource(gvk.HorizontalPodAutoscaler),
-			},
-		},
-		{
-			GroupVersion: "autoscaling/v2beta2",
-			APIResources: []v1.APIResource{
-				gvkToAPIResource(gvk.HorizontalPodAutoscalerBeta),
 			},
 		},
 	}

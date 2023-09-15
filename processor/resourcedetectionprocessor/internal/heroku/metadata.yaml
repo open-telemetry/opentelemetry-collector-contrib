@@ -2,6 +2,11 @@ type: resourcedetectionprocessor/heroku
 
 parent: resourcedetection
 
+status:
+  class: processor
+  codeowners:
+    active: [atoulme]
+
 resource_attributes:
   cloud.provider:
     description: The cloud.provider

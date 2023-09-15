@@ -32,6 +32,7 @@ type zookeeperMetricsScraper struct {
 	logger *zap.Logger
 	config *Config
 	cancel context.CancelFunc
+	rb     *metadata.ResourceBuilder
 	mb     *metadata.MetricsBuilder
 
 	// For mocking.
@@ -57,6 +58,7 @@ func newZookeeperMetricsScraper(settings receiver.CreateSettings, config *Config
 	z := &zookeeperMetricsScraper{
 		logger:                settings.Logger,
 		config:                config,
+		rb:                    metadata.NewResourceBuilder(config.ResourceAttributes),
 		mb:                    metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		closeConnection:       closeConnection,
 		setConnectionDeadline: setConnectionDeadline,
@@ -75,25 +77,20 @@ func (z *zookeeperMetricsScraper) shutdown(_ context.Context) error {
 }
 
 func (z *zookeeperMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var ctxWithTimeout context.Context
-	ctxWithTimeout, z.cancel = context.WithTimeout(ctx, z.config.Timeout)
-
-	responseMntr, err := z.runCommand(ctxWithTimeout, "mntr")
+	responseMntr, err := z.runCommand(ctx, "mntr")
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
 
-	responseRuok, err := z.runCommand(ctxWithTimeout, "ruok")
+	responseRuok, err := z.runCommand(ctx, "ruok")
 	if err != nil {
 		return pmetric.NewMetrics(), err
 	}
 
-	resourceOpts := make([]metadata.ResourceMetricsOption, 0, 2)
-
-	resourceOpts = z.processMntr(responseMntr, resourceOpts)
+	z.processMntr(responseMntr)
 	z.processRuok(responseRuok)
 
-	return z.mb.Emit(resourceOpts...), nil
+	return z.mb.Emit(metadata.WithResource(z.rb.Emit())), nil
 }
 
 func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string) ([]string, error) {
@@ -135,7 +132,7 @@ func (z *zookeeperMetricsScraper) runCommand(ctx context.Context, command string
 	return response, nil
 }
 
-func (z *zookeeperMetricsScraper) processMntr(response []string, resourceOpts []metadata.ResourceMetricsOption) []metadata.ResourceMetricsOption {
+func (z *zookeeperMetricsScraper) processMntr(response []string) {
 	creator := newMetricCreator(z.mb)
 	now := pcommon.NewTimestampFromTime(time.Now())
 	for _, line := range response {
@@ -152,10 +149,10 @@ func (z *zookeeperMetricsScraper) processMntr(response []string, resourceOpts []
 		metricValue := parts[2]
 		switch metricKey {
 		case zkVersionKey:
-			resourceOpts = append(resourceOpts, metadata.WithZkVersion(metricValue))
+			z.rb.SetZkVersion(metricValue)
 			continue
 		case serverStateKey:
-			resourceOpts = append(resourceOpts, metadata.WithServerState(metricValue))
+			z.rb.SetServerState(metricValue)
 			continue
 		default:
 			// Skip metric if there is no descriptor associated with it.
@@ -178,7 +175,6 @@ func (z *zookeeperMetricsScraper) processMntr(response []string, resourceOpts []
 
 	// Generate computed metrics
 	creator.generateComputedMetrics(z.logger, now)
-	return resourceOpts
 }
 
 func (z *zookeeperMetricsScraper) processRuok(response []string) {

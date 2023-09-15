@@ -11,8 +11,8 @@ import (
 	"sync"
 	"time"
 
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/api"
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -82,8 +82,9 @@ func translatorFromConfig(logger *zap.Logger, cfg *Config, sourceProvider source
 	case CumulativeMonotonicSumModeToDelta:
 		numberMode = otlpmetrics.NumberModeCumulativeToDelta
 	}
-
 	options = append(options, otlpmetrics.WithNumberMode(numberMode))
+	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
+		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
 	return otlpmetrics.NewTranslator(logger, options...)
 }
@@ -189,7 +190,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			if md.ResourceMetrics().Len() > 0 {
 				attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 			}
-			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs)
+			go hostmetadata.RunPusher(exp.ctx, exp.params, newMetadataConfigfromConfig(exp.cfg), exp.sourceProvider, attrs, exp.metadataReporter)
 		})
 
 		// Consume resources for host metadata
@@ -218,7 +219,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	}
 
 	var sl sketches.SketchSeriesList
-	var sp []pb.ClientStatsPayload
+	var sp []*pb.ClientStatsPayload
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
 		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)

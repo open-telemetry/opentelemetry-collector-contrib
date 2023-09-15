@@ -98,7 +98,8 @@ func (mp *mockPrometheus) Close() {
 // -------------------------
 
 var (
-	expectedScrapeMetricCount = 5
+	expectedScrapeMetricCount      = 5
+	expectedExtraScrapeMetricCount = 8
 )
 
 type testData struct {
@@ -116,11 +117,11 @@ type testData struct {
 func setupMockPrometheus(tds ...*testData) (*mockPrometheus, *promcfg.Config, error) {
 	jobs := make([]map[string]interface{}, 0, len(tds))
 	endpoints := make(map[string][]mockPrometheusResponse)
-	var metricPaths []string
-	for _, t := range tds {
+	metricPaths := make([]string, len(tds))
+	for i, t := range tds {
 		metricPath := fmt.Sprintf("/%s/metrics", t.name)
 		endpoints[metricPath] = t.pages
-		metricPaths = append(metricPaths, metricPath)
+		metricPaths[i] = metricPath
 	}
 	mp := newMockPrometheus(endpoints)
 	u, _ := url.Parse(mp.srv.URL)
@@ -227,7 +228,8 @@ func getValidScrapes(t *testing.T, rms []pmetric.ResourceMetrics, normalizedName
 	// rms will include failed scrapes and scrapes that received no metrics but have internal scrape metrics, filter those out
 	for i := 0; i < len(rms); i++ {
 		allMetrics := getMetrics(rms[i])
-		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount {
+		if expectedScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedScrapeMetricCount ||
+			expectedExtraScrapeMetricCount < len(allMetrics) && countScrapeMetrics(allMetrics, normalizedNames) == expectedExtraScrapeMetricCount {
 			if isFirstFailedScrape(allMetrics, normalizedNames) {
 				continue
 			}
@@ -250,7 +252,7 @@ func isFirstFailedScrape(metrics []pmetric.Metric, normalizedNames bool) bool {
 	}
 
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			continue
 		}
 
@@ -312,7 +314,7 @@ func countScrapeMetricsRM(got pmetric.ResourceMetrics, normalizedNames bool) int
 func countScrapeMetrics(metrics []pmetric.Metric, normalizedNames bool) int {
 	n := 0
 	for _, m := range metrics {
-		if isDefaultMetrics(m, normalizedNames) {
+		if isDefaultMetrics(m, normalizedNames) || isExtraScrapeMetrics(m) {
 			n++
 		}
 	}
@@ -332,6 +334,14 @@ func isDefaultMetrics(m pmetric.Metric, normalizedNames bool) bool {
 	default:
 	}
 	return false
+}
+func isExtraScrapeMetrics(m pmetric.Metric) bool {
+	switch m.Name() {
+	case "scrape_body_size_bytes", "scrape_sample_limit", "scrape_timeout_seconds":
+		return true
+	default:
+		return false
+	}
 }
 
 type metricTypeComparator func(*testing.T, pmetric.Metric)
@@ -368,7 +378,7 @@ func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetri
 	})
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
+func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, metricUnitExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
 	return func(t *testing.T, rm pmetric.ResourceMetrics) {
 		allMetrics := getMetrics(rm)
 		var present bool
@@ -379,6 +389,7 @@ func assertMetricPresent(name string, metricTypeExpectations metricTypeComparato
 
 			present = true
 			metricTypeExpectations(t, m)
+			metricUnitExpectations(t, m)
 			for i, de := range dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
@@ -421,6 +432,12 @@ func assertMetricAbsent(name string) testExpectation {
 func compareMetricType(typ pmetric.MetricType) metricTypeComparator {
 	return func(t *testing.T, metric pmetric.Metric) {
 		assert.Equal(t, typ.String(), metric.Type().String(), "Metric type does not match")
+	}
+}
+
+func compareMetricUnit(unit string) metricTypeComparator {
+	return func(t *testing.T, metric pmetric.Metric) {
+		assert.Equal(t, unit, metric.Unit(), "Metric unit does not match")
 	}
 }
 

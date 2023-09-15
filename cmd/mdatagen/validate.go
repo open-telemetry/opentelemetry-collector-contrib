@@ -48,8 +48,10 @@ func (md *metadata) validateStatus() error {
 	if err := md.Status.validateClass(); err != nil {
 		errs = multierr.Append(errs, err)
 	}
-	if err := md.Status.validateStability(); err != nil {
-		errs = multierr.Append(errs, err)
+	if md.Parent == "" {
+		if err := md.Status.validateStability(); err != nil {
+			errs = multierr.Append(errs, err)
+		}
 	}
 	return errs
 }

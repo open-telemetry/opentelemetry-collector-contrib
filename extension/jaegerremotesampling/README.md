@@ -4,7 +4,8 @@
 | ------------- |-----------|
 | Stability     | [alpha]  |
 | Distributions | [contrib], [grafana], [redhat], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fjaegerremotesampling%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fjaegerremotesampling%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fjaegerremotesampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fjaegerremotesampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fjaegerremotesampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fjaegerremotesampling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@frzifus](https://www.github.com/frzifus) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -23,7 +24,7 @@ Note that the port `14250` will clash with the Jaeger Receiver. When both are us
 
 Although this extension is derived from Jaeger, it can be used by any clients who can consume this standard, such as the [OpenTelemetry Java SDK](https://github.com/open-telemetry/opentelemetry-java/tree/v1.9.1/sdk-extensions/jaeger-remote-sampler).
 
-At this moment, the `reload_interval` option is only effective for the `file` source. In the future, this property will be used to control a local cache for a `remote` source.
+The `reload_interval` option is used to poll a file when using the `file` source. It is used to control a local cache for a `remote` source.
 
 The `file` source can be used to load files from the local file system or from remote HTTP/S sources. The `remote` source must be used with a gRPC server that provides a Jaeger remote sampling service.
 
@@ -33,6 +34,7 @@ The `file` source can be used to load files from the local file system or from r
 extensions:
   jaegerremotesampling:
     source:
+      reload_interval: 30s
       remote:
         endpoint: jaeger-collector:14250
   jaegerremotesampling/1:

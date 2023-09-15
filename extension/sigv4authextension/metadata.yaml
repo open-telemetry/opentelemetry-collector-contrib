@@ -9,3 +9,5 @@ status:
   - aws
   - grafana
   - sumo
+  codeowners:
+    active: [Aneurysm9, erichsueh3]

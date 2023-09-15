@@ -5,7 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [aws], [grafana], [observiq], [splunk], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Ftailsampling%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Ftailsampling) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Ftailsampling%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Ftailsampling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -202,6 +203,210 @@ processors:
 ```
 
 Refer to [tail_sampling_config.yaml](./testdata/tail_sampling_config.yaml) for detailed examples on using the processor.
+
+## A Practical Example
+
+Imagine that you wish to configure the processor to implement the following rules:
+
+1. **Rule 1:** Not all teams are ready to move to tail sampling. Therefore, sample all traces that are not from the team `team_a`.
+
+1. **Rule 2:** Sample only 1 percent of Readiness/liveness probes
+
+1. **Rule 3:** `service-1` has a noisy endpoint `/v1/name/{id}`. Sample only 1 percent of such traces.
+
+1. **Rule 4:** Other traces from `service-1` should be sampled at 100 percent.
+
+1. **Rule 5:** Sample all traces if there is an error in any span in the trace.
+
+1. **Rule 6:** Add an escape hatch. If there is an attribute called `app.force_sample` in the span, then sample the trace at 100 percent.
+
+Here is what the configuration would look like:
+
+```yaml
+tail_sampling:
+  decision_wait: 10s
+  num_traces: 100
+  expected_new_traces_per_sec: 10
+  policies: [
+      {
+        # Rule 1: use always_sample policy for services that don't belong to team_a and are not ready to use tail sampling
+        name: backwards-compatibility-policy,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: services-using-tail_sampling-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: service.name,
+                      values:
+                        [
+                          list,
+                          of,
+                          services,
+                          using,
+                          tail_sampling,
+                        ],
+                      invert_match: true,
+                    },
+                },
+                { name: sample-all-policy, type: always_sample },
+              ],
+          },
+      },
+      # BEGIN: policies for team_a
+      {
+        # Rule 2: low sampling for readiness/liveness probes
+        name: team_a-probe,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  # filter by service name
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: service.name,
+                      values: [service-1, service-2, service-3],
+                    },
+                },
+                {
+                  # filter by route
+                  name: route-live-ready-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: http.route,
+                      values: [/live, /ready],
+                      enabled_regex_matching: true,
+                    },
+                },
+                {
+                  # apply probabilistic sampling
+                  name: probabilistic-policy,
+                  type: probabilistic,
+                  probabilistic: { sampling_percentage: 0.1 },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 3: low sampling for a noisy endpoint
+        name: team_a-noisy-endpoint-1,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    { key: service.name, values: [service-1] },
+                },
+                {
+                  # filter by route
+                  name: route-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: http.route,
+                      values: [/v1/name/.+],
+                      enabled_regex_matching: true,
+                    },
+                },
+                {
+                  # apply probabilistic sampling
+                  name: probabilistic-policy,
+                  type: probabilistic,
+                  probabilistic: { sampling_percentage: 1 },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 4: high sampling for other endpoints
+        name: team_a-service-1,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    { key: service.name, values: [service-1] },
+                },
+                {
+                  # invert match - apply to all routes except the ones specified
+                  name: route-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: http.route,
+                      values: [/v1/name/.+],
+                      enabled_regex_matching: true,
+                      invert_match: true,
+                    },
+                },
+                {
+                  # apply probabilistic sampling
+                  name: probabilistic-policy,
+                  type: probabilistic,
+                  probabilistic: { sampling_percentage: 100 },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 5: always sample if there is an error
+        name: team_a-status-policy,
+        type: and,
+        and:
+          {
+            and_sub_policy:
+              [
+                {
+                  name: service-name-policy,
+                  type: string_attribute,
+                  string_attribute:
+                    {
+                      key: service.name,
+                      values:
+                        [
+                          list,
+                          of,
+                          services,
+                          using,
+                          tail_sampling,
+                        ],
+                    },
+                },
+                {
+                  name: trace-status-policy,
+                  type: status_code,
+                  status_code: { status_codes: [ERROR] },
+                },
+              ],
+          },
+      },
+      {
+        # Rule 6:
+        # always sample if the force_sample attribute is set to true
+        name: team_a-force-sample,
+        type: boolean_attribute,
+        boolean_attribute: { key: app.force_sample, value: true },
+      },
+      # END: policies for team_a
+    ]
+```
 
 ### Scaling collectors with the tail sampling processor
 

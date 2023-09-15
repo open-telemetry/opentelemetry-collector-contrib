@@ -7,11 +7,13 @@ import (
 )
 
 // ResourceBuilder is a helper struct to build resources predefined in metadata.yaml.
+// The ResourceBuilder is not thread-safe and must not to be used in multiple goroutines.
 type ResourceBuilder struct {
 	config ResourceAttributesConfig
 	res    pcommon.Resource
 }
 
+// NewResourceBuilder creates a new ResourceBuilder. This method should be called on the start of the application.
 func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	return &ResourceBuilder{
 		config: rac,
@@ -37,6 +39,13 @@ func (rb *ResourceBuilder) SetContainerImageName(val string) {
 func (rb *ResourceBuilder) SetContainerImageTag(val string) {
 	if rb.config.ContainerImageTag.Enabled {
 		rb.res.Attributes().PutStr("container.image.tag", val)
+	}
+}
+
+// SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
+	if rb.config.K8sClusterUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
 	}
 }
 

@@ -28,8 +28,8 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	fs                 fileSystem
-	resourceAttributes metadata.ResourceAttributesConfig
+	fs fileSystem
+	rb *metadata.ResourceBuilder
 }
 
 type EbMetaData struct {
@@ -40,7 +40,7 @@ type EbMetaData struct {
 
 func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{fs: &ebFileSystem{}, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
 func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -67,12 +67,11 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 		return pcommon.NewResource(), "", err
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-	rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	rb.SetServiceInstanceID(strconv.Itoa(ebmd.DeploymentID))
-	rb.SetDeploymentEnvironment(ebmd.EnvironmentName)
-	rb.SetServiceVersion(ebmd.VersionLabel)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	d.rb.SetServiceInstanceID(strconv.Itoa(ebmd.DeploymentID))
+	d.rb.SetDeploymentEnvironment(ebmd.EnvironmentName)
+	d.rb.SetServiceVersion(ebmd.VersionLabel)
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

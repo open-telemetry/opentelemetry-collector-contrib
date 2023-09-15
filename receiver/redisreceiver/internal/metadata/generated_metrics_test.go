@@ -74,6 +74,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
 			allMetricsCount++
+			mb.RecordRedisCmdLatencyDataPoint(ts, 1, "cmd-val", AttributePercentileP50)
+
+			allMetricsCount++
 			mb.RecordRedisCmdUsecDataPoint(ts, 1, "cmd-val")
 
 			defaultMetricsCount++
@@ -182,7 +185,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisUptimeDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithRedisVersion("redis.version-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetRedisVersion("redis.version-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -191,18 +197,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("redis.version")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.RedisVersion.Enabled, ok)
-			if mb.resourceAttributesConfig.RedisVersion.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "redis.version-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -283,6 +278,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
 					assert.EqualValues(t, "cmd-val", attrVal.Str())
+				case "redis.cmd.latency":
+					assert.False(t, validatedMetrics["redis.cmd.latency"], "Found a duplicate in the metrics slice: redis.cmd.latency")
+					validatedMetrics["redis.cmd.latency"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Command execution latency", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("cmd")
+					assert.True(t, ok)
+					assert.EqualValues(t, "cmd-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("percentile")
+					assert.True(t, ok)
+					assert.EqualValues(t, "p50", attrVal.Str())
 				case "redis.cmd.usec":
 					assert.False(t, validatedMetrics["redis.cmd.usec"], "Found a duplicate in the metrics slice: redis.cmd.usec")
 					validatedMetrics["redis.cmd.usec"] = true

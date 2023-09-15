@@ -5,7 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fgooglemanagedprometheus%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fgooglemanagedprometheus) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aabmass](https://www.github.com/aabmass), [@dashpole](https://www.github.com/dashpole), [@jsuereth](https://www.github.com/jsuereth), [@punya](https://www.github.com/punya), [@damemi](https://www.github.com/damemi), [@psx95](https://www.github.com/psx95) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -27,17 +28,13 @@ The following configuration options are supported:
   - `compression` (optional): Compression format for Metrics gRPC requests. Supported values: [`gzip`].  Defaults to no compression.
   - `grpc_pool_size` (optional): Sets the size of the connection pool in the GCP client. Defaults to a single connection.
   - `use_insecure` (optional): If true, disables gRPC client transport security. Only has applies if Endpoint is not "".
+  - `add_metric_suffixes` (default=`true`): Add type and unit suffixes to metrics.
   - `extra_metrics_config` (optional): Enable or disable additional metrics.
     - `enable_target_info` (default=`true`): Add `target_info` metric based on resource.
     - `enable_scope_info` (default=`true`): Add `otel_scope_info` metric and `scope_name`/`scope_version` attributes to all other metrics.
   - `resource_filters` (optional): Provides a list of filters to match resource attributes which will be included in metric labels.
     - `prefix` (optional): Match resource attribute keys by prefix.
     - `regex` (optional): Match resource attribute keys by regex.
-- `retry_on_failure` (optional): Configuration for how to handle retries when sending data to Google Cloud fails.
-  - `enabled` (default = false)
-  - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
-  - `max_interval` (default = 30s): Is the upper bound on backoff; ignored if `enabled` is `false`
-  - `max_elapsed_time` (default = 120s): Is the maximum amount of time spent trying to send a batch; ignored if `enabled` is `false`
 - `sending_queue` (optional): Configuration for how to buffer traces before sending.
   - `enabled` (default = true)
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
@@ -46,7 +43,7 @@ The following configuration options are supported:
     - `num_seconds` is the number of seconds to buffer in case of a backend outage
     - `requests_per_second` is the average number of requests per seconds.
 
-Note: These `retry_on_failure` and `sending_queue` are provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
+Note: The `sending_queue` is provided (and documented) by the [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
 
 ## Example Configuration
 
@@ -162,7 +159,7 @@ processors:
   resource:
     attributes:
     - key: "location"
-      value: "us-east-1"
+      value: "us-east1"
       action: upsert
 ```
 

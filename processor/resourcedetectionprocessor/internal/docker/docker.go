@@ -26,9 +26,9 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider           docker.Provider
-	logger             *zap.Logger
-	resourceAttributes metadata.ResourceAttributesConfig
+	provider docker.Provider
+	logger   *zap.Logger
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -39,9 +39,9 @@ func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (inter
 	}
 
 	return &Detector{
-		provider:           dockerProvider,
-		logger:             p.Logger,
-		resourceAttributes: cfg.(Config).ResourceAttributes,
+		provider: dockerProvider,
+		logger:   p.Logger,
+		rb:       metadata.NewResourceBuilder(cfg.(Config).ResourceAttributes),
 	}, nil
 }
 
@@ -57,9 +57,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS hostname: %w", err)
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-	rb.SetHostName(hostname)
-	rb.SetOsType(osType)
+	d.rb.SetHostName(hostname)
+	d.rb.SetOsType(osType)
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

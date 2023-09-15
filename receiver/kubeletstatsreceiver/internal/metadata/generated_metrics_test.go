@@ -98,6 +98,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerMemoryWorkingSetDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordContainerUptimeDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
@@ -149,6 +152,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
+
+			allMetricsCount++
+			mb.RecordK8sNodeUptimeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -202,6 +208,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodNetworkIoDataPoint(ts, 1, "interface-val", AttributeDirectionReceive)
 
+			allMetricsCount++
+			mb.RecordK8sPodUptimeDataPoint(ts, 1)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sVolumeAvailableDataPoint(ts, 1)
@@ -222,7 +231,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sVolumeInodesUsedDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithAwsVolumeID("aws.volume.id-val"), WithContainerID("container.id-val"), WithFsType("fs.type-val"), WithGcePdName("gce.pd.name-val"), WithGlusterfsEndpointsName("glusterfs.endpoints.name-val"), WithGlusterfsPath("glusterfs.path-val"), WithK8sContainerName("k8s.container.name-val"), WithK8sNamespaceName("k8s.namespace.name-val"), WithK8sNodeName("k8s.node.name-val"), WithK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val"), WithK8sPodName("k8s.pod.name-val"), WithK8sPodUID("k8s.pod.uid-val"), WithK8sVolumeName("k8s.volume.name-val"), WithK8sVolumeType("k8s.volume.type-val"), WithPartition("partition-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetAwsVolumeID("aws.volume.id-val")
+			rb.SetContainerID("container.id-val")
+			rb.SetFsType("fs.type-val")
+			rb.SetGcePdName("gce.pd.name-val")
+			rb.SetGlusterfsEndpointsName("glusterfs.endpoints.name-val")
+			rb.SetGlusterfsPath("glusterfs.path-val")
+			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPodName("k8s.pod.name-val")
+			rb.SetK8sPodUID("k8s.pod.uid-val")
+			rb.SetK8sVolumeName("k8s.volume.name-val")
+			rb.SetK8sVolumeType("k8s.volume.type-val")
+			rb.SetPartition("partition-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
 			if test.configSet == testSetNone {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -231,116 +257,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("aws.volume.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.AwsVolumeID.Enabled, ok)
-			if mb.resourceAttributesConfig.AwsVolumeID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "aws.volume.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("container.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ContainerID.Enabled, ok)
-			if mb.resourceAttributesConfig.ContainerID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "container.id-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("fs.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FsType.Enabled, ok)
-			if mb.resourceAttributesConfig.FsType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "fs.type-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("gce.pd.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.GcePdName.Enabled, ok)
-			if mb.resourceAttributesConfig.GcePdName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "gce.pd.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.endpoints.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.GlusterfsEndpointsName.Enabled, ok)
-			if mb.resourceAttributesConfig.GlusterfsEndpointsName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "glusterfs.endpoints.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("glusterfs.path")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.GlusterfsPath.Enabled, ok)
-			if mb.resourceAttributesConfig.GlusterfsPath.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "glusterfs.path-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.container.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sContainerName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sContainerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.container.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.namespace.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNamespaceName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNamespaceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.namespace.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.node.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.persistentvolumeclaim.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sPersistentvolumeclaimName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sPersistentvolumeclaimName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.persistentvolumeclaim.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sPodName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sPodName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.pod.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.pod.uid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sPodUID.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sPodUID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.pod.uid-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sVolumeName.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sVolumeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.volume.name-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("k8s.volume.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.K8sVolumeType.Enabled, ok)
-			if mb.resourceAttributesConfig.K8sVolumeType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "k8s.volume.type-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("partition")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.Partition.Enabled, ok)
-			if mb.resourceAttributesConfig.Partition.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "partition-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 15)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
 			if test.configSet == testSetDefault {
@@ -482,6 +399,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Container memory working_set", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "container.uptime":
+					assert.False(t, validatedMetrics["container.uptime"], "Found a duplicate in the metrics slice: container.uptime")
+					validatedMetrics["container.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the container started", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -660,6 +591,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.node.uptime":
+					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
+					validatedMetrics["k8s.node.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the node started", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.pod.cpu.time":
 					assert.False(t, validatedMetrics["k8s.pod.cpu.time"], "Found a duplicate in the metrics slice: k8s.pod.cpu.time")
 					validatedMetrics["k8s.pod.cpu.time"] = true
@@ -834,6 +779,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "receive", attrVal.Str())
+				case "k8s.pod.uptime":
+					assert.False(t, validatedMetrics["k8s.pod.uptime"], "Found a duplicate in the metrics slice: k8s.pod.uptime")
+					validatedMetrics["k8s.pod.uptime"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The time since the pod started", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "k8s.volume.available":
 					assert.False(t, validatedMetrics["k8s.volume.available"], "Found a duplicate in the metrics slice: k8s.volume.available")
 					validatedMetrics["k8s.volume.available"] = true

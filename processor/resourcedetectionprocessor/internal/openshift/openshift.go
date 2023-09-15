@@ -36,16 +36,16 @@ func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (in
 	}
 
 	return &detector{
-		logger:             set.Logger,
-		provider:           ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
-		resourceAttributes: userCfg.ResourceAttributes,
+		logger:   set.Logger,
+		provider: ocp.NewProvider(userCfg.Address, userCfg.Token, tlsCfg),
+		rb:       metadata.NewResourceBuilder(userCfg.ResourceAttributes),
 	}, nil
 }
 
 type detector struct {
-	logger             *zap.Logger
-	provider           ocp.Provider
-	resourceAttributes metadata.ResourceAttributesConfig
+	logger   *zap.Logger
+	provider ocp.Provider
+	rb       *metadata.ResourceBuilder
 }
 
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
@@ -56,35 +56,33 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", nil
 	}
 
-	rb := metadata.NewResourceBuilder(d.resourceAttributes)
-
 	if infra.Status.InfrastructureName != "" {
-		rb.SetK8sClusterName(infra.Status.InfrastructureName)
+		d.rb.SetK8sClusterName(infra.Status.InfrastructureName)
 	}
 
 	switch strings.ToLower(infra.Status.PlatformStatus.Type) {
 	case "aws":
-		rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSOpenshift)
-		rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Aws.Region))
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Aws.Region))
 	case "azure":
-		rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureOpenshift)
-		rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName))
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderAzure)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAzureOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.Azure.CloudName))
 	case "gcp":
-		rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPOpenshift)
-		rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.GCP.Region))
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderGCP)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformGCPOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.GCP.Region))
 	case "ibmcloud":
-		rb.SetCloudProvider(conventions.AttributeCloudProviderIbmCloud)
-		rb.SetCloudPlatform(conventions.AttributeCloudPlatformIbmCloudOpenshift)
-		rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location))
+		d.rb.SetCloudProvider(conventions.AttributeCloudProviderIbmCloud)
+		d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformIbmCloudOpenshift)
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.IBMCloud.Location))
 	case "openstack":
-		rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName))
+		d.rb.SetCloudRegion(strings.ToLower(infra.Status.PlatformStatus.OpenStack.CloudName))
 	}
 
 	// TODO(frzifus): support conventions openshift and kubernetes cluster version.
 	// SEE: https://github.com/open-telemetry/opentelemetry-specification/issues/2913
 
-	return rb.Emit(), conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }
