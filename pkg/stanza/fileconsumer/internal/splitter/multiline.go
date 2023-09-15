@@ -14,37 +14,42 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-type multilineFactory struct {
-	multilineCfg split.Config
-	encoding     encoding.Encoding
-	maxLogSize   int
-	trimFunc     trim.Func
-	flushPeriod  time.Duration
+type splitFuncFactory struct {
+	splitConfig split.Config
+	encoding    encoding.Encoding
+	maxLogSize  int
+	trimFunc    trim.Func
+	flushPeriod time.Duration
 }
 
-var _ Factory = (*multilineFactory)(nil)
+var _ Factory = (*splitFuncFactory)(nil)
 
-func NewMultilineFactory(
-	multilineCfg split.Config,
+func NewSplitFuncFactory(
+	splitConfig split.Config,
 	encoding encoding.Encoding,
 	maxLogSize int,
 	trimFunc trim.Func,
 	flushPeriod time.Duration,
 ) Factory {
-	return &multilineFactory{
-		multilineCfg: multilineCfg,
-		encoding:     encoding,
-		maxLogSize:   maxLogSize,
-		trimFunc:     trimFunc,
-		flushPeriod:  flushPeriod,
+	return &splitFuncFactory{
+		splitConfig: splitConfig,
+		encoding:    encoding,
+		maxLogSize:  maxLogSize,
+		trimFunc:    trimFunc,
+		flushPeriod: flushPeriod,
 	}
 }
 
-// Build builds Multiline Splitter struct
-func (f *multilineFactory) Build() (bufio.SplitFunc, error) {
-	splitFunc, err := f.multilineCfg.Func(f.encoding, false, f.maxLogSize, f.trimFunc)
+// SplitFunc builds a bufio.SplitFunc based on the configuration
+func (f *splitFuncFactory) SplitFunc() (bufio.SplitFunc, error) {
+	splitFunc, err := f.splitConfig.Func(f.encoding, false, f.maxLogSize)
 	if err != nil {
 		return nil, err
 	}
-	return flush.WithPeriod(splitFunc, f.trimFunc, f.flushPeriod), nil
+	splitFunc = flush.WithPeriod(splitFunc, f.flushPeriod)
+	if f.encoding == encoding.Nop {
+		// Special case where we should never trim
+		return splitFunc, nil
+	}
+	return trim.WithFunc(splitFunc, f.trimFunc), nil
 }
