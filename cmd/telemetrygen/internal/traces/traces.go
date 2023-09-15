@@ -6,6 +6,8 @@ package traces
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -29,8 +31,15 @@ import (
 func Start(cfg *Config) error {
 	logger := common.GetLogger()
 
+	endpoint := cfg.Endpoint
+	if host, _, err := net.SplitHostPort(endpoint); err == nil {
+		if u, err := url.Parse(host); err == nil && u.Scheme == "" {
+			endpoint = fmt.Sprintf("passthrough:///%s", endpoint)
+		}
+	}
+
 	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
+		otlptracegrpc.WithEndpoint(endpoint),
 		otlptracegrpc.WithDialOption(
 			grpc.WithBlock(),
 		),

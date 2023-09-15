@@ -6,6 +6,8 @@ package logs
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -50,8 +52,14 @@ func Start(cfg *Config) error {
 		return fmt.Errorf("'telemetrygen logs' only supports insecure gRPC")
 	}
 
+	endpoint := cfg.Endpoint
+	if host, _, err := net.SplitHostPort(endpoint); err == nil {
+		if u, err := url.Parse(host); err == nil && u.Scheme == "" {
+			endpoint = fmt.Sprintf("passthrough:///%s", endpoint)
+		}
+	}
 	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	clientConn, err := grpc.DialContext(context.TODO(), endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
