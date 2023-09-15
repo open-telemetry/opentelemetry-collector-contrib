@@ -5,7 +5,9 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"io"
 	"os"
+	"sync"
 
 	"go.uber.org/zap"
 
@@ -15,11 +17,10 @@ import (
 type readerEnvelope struct {
 	reader  *reader
 	trieKey *fingerprint.Fingerprint
-	close   bool // indicate if we should close the file after reading. Used when we detect lost readers
 }
 
 func (m *Manager) kickoffThreads(ctx context.Context) {
-	m.readerChan = make(chan readerEnvelope, m.maxBatchFiles*2)
+	m.readerChan = make(chan readerEnvelope, m.maxBatchFiles)
 	for i := 0; i < m.maxBatchFiles; i++ {
 		m.workerWg.Add(1)
 		go m.worker(ctx)
@@ -48,14 +49,25 @@ func (m *Manager) pollConcurrent(ctx context.Context) {
 		m.knownFiles[i].generation++
 	}
 	m.knownFilesLock.Unlock()
-
+	batchesProcessed := 0
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
 		m.Errorf("error finding files: %s", err)
 	}
+	for len(matches) > m.maxBatchFiles {
+		m.consumeConcurrent(ctx, matches[:m.maxBatchFiles])
+
+		if m.maxBatches != 0 {
+			batchesProcessed++
+			if batchesProcessed >= m.maxBatches {
+				return
+			}
+		}
+
+		matches = matches[m.maxBatchFiles:]
+	}
 	m.consumeConcurrent(ctx, matches)
-	m.clearCurrentFingerprints()
 
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.fromBeginning = true
@@ -66,8 +78,6 @@ func (m *Manager) worker(ctx context.Context) {
 	defer m.workerWg.Done()
 	for {
 		select {
-		case <-ctx.Done():
-			return
 		case wrapper, ok := <-m.readerChan:
 			if !ok {
 				return
@@ -76,14 +86,11 @@ func (m *Manager) worker(ctx context.Context) {
 			r.ReadToEnd(ctx)
 			if m.deleteAfterRead && r.eof {
 				r.Delete()
-			} else if !wrapper.close {
+			} else {
 				// Save off any files that were not fully read.
 				m.knownFilesLock.Lock()
 				m.knownFiles = append(m.knownFiles, r)
 				m.knownFilesLock.Unlock()
-			} else {
-				// this is a lost reader, close it and release the file descriptor
-				r.Close()
 			}
 			m.trieDelete(fp)
 		}
@@ -122,6 +129,7 @@ func (m *Manager) makeReaderConcurrent(filePath string) (*reader, *fingerprint.F
 }
 
 func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
+	m.Debug("Consuming files")
 	m.clearOldReadersConcurrent(ctx)
 	for _, path := range paths {
 		reader, fp := m.makeReaderConcurrent(path)
@@ -131,6 +139,7 @@ func (m *Manager) consumeConcurrent(ctx context.Context, paths []string) {
 			m.readerChan <- readerEnvelope{reader: reader, trieKey: fp}
 		}
 	}
+	m.clearCurrentFingerprints()
 }
 
 func (m *Manager) isCurrentlyConsuming(fp *fingerprint.Fingerprint) bool {
@@ -157,24 +166,34 @@ func (m *Manager) clearOldReadersConcurrent(ctx context.Context) {
 	// Clear out old readers. They are sorted such that they are oldest first,
 	// so we can just find the first reader whose poll cycle is less than our
 	// limit i.e. last 3 cycles, and keep every reader after that
-	oldReaders := make([]*reader, 0)
 	i := 0
 	for ; i < len(m.knownFiles); i++ {
 		reader := m.knownFiles[i]
-		if reader.generation < 3 {
+		if reader.generation <= 3 {
 			break
 		}
 	}
-	oldReaders, m.knownFiles = m.knownFiles[:i], m.knownFiles[i:]
-
-	for _, r := range oldReaders {
-		if m.isCurrentlyConsuming(r.Fingerprint) {
+	m.knownFiles = m.knownFiles[i:]
+	var wg sync.WaitGroup
+	for _, r := range m.knownFiles {
+		if r.file == nil {
+			// already closed
+			continue
+		}
+		if m.checkTruncate(r) {
+			// if it's an updated version, we don't to readToEnd, it will cause duplicates.
+			// current poll() will take care of reading
 			r.Close()
 		} else {
-			m.triePut(r.Fingerprint)
-			m.readerChan <- readerEnvelope{reader: r, trieKey: r.Fingerprint, close: true}
+			wg.Add(1)
+			go func(r *reader) {
+				defer wg.Done()
+				r.ReadToEnd(ctx)
+				r.Close()
+			}(r)
 		}
 	}
+	wg.Wait()
 }
 
 func (m *Manager) newReaderConcurrent(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
@@ -201,4 +220,46 @@ func (m *Manager) syncLastPollFilesConcurrent(ctx context.Context) {
 	defer m.knownFilesLock.RUnlock()
 
 	m.syncLastPollFiles(ctx)
+}
+
+// check if current file is a different file after copy-truncate
+func (m *Manager) checkTruncate(r *reader) bool {
+	/*
+		Suppose file.log with content "ABCDEG" gets truncated to "".
+		But it has the cursor at position "5" (i.e. 'G') in memory.
+
+		If the updated file.log has it's content "QWERTYXYZ",
+		next call to read() on previously opened file with return "XYZ".
+		This is undesriable and will cause duplication.
+
+		NOTE: we haven't closed the previouly opened file
+		Check if it's updated version of previously opened file.
+	*/
+
+	// store current offset
+	oldOffset := r.Offset
+	oldCursor, err := r.file.Seek(0, 1)
+	if err != nil {
+		m.Errorw("Failed to seek", err)
+		return false
+	}
+
+	r.file.Seek(0, 0)
+	new := make([]byte, r.fingerprintSize)
+	n, err := r.file.Read(new)
+	if err != nil && err != io.EOF {
+		m.Errorw("Failed to read", err)
+		return false
+	}
+
+	// restore the offset in case if it's not a truncate
+	r.Offset = oldOffset
+	_, err = r.file.Seek(oldCursor, 0)
+	if err != nil {
+		m.Errorw("Failed to seek", err)
+		return false
+	}
+
+	newFp := fingerprint.Fingerprint{FirstBytes: new[:n]}
+	return !newFp.StartsWith(r.Fingerprint)
 }

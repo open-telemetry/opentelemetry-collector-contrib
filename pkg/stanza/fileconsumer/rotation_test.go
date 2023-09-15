@@ -418,8 +418,6 @@ func TestTrackMovedAwayFiles(t *testing.T) {
 	require.NoError(t, err)
 	writeString(t, movedFile, "testlog2\n")
 	operator.poll(context.Background())
-	operator.poll(context.Background())
-	operator.poll(context.Background())
 
 	waitForToken(t, emitCalls, []byte("testlog2"))
 }

@@ -981,9 +981,6 @@ func TestManyLogsDelivered(t *testing.T) {
 
 func TestFileBatching(t *testing.T) {
 	t.Parallel()
-	if useThreadPool.IsEnabled() {
-		t.Skip(`Skipping for thread pool feature gate, as there's no concept of batching for thread pool`)
-	}
 
 	files := 100
 	linesPerFile := 10
@@ -1371,9 +1368,6 @@ func TestDeleteAfterRead(t *testing.T) {
 }
 
 func TestMaxBatching(t *testing.T) {
-	if useThreadPool.IsEnabled() {
-		t.Skip(`Skipping for thread pool feature gate, as there's no concept of batching for thread pool`)
-	}
 	t.Parallel()
 
 	files := 50
@@ -1551,6 +1545,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	// Stop consuming before long file has been fully consumed
 	cancel()
 	operator.cancel()
+	if operator.readerChan != nil {
+		close(operator.readerChan)
+	}
 	operator.workerWg.Wait()
 	wg.Wait()
 

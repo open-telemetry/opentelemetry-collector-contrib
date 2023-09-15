@@ -196,7 +196,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 		seenPaths:       make(map[string]struct{}, 100),
 	}
 	if useThreadPool.IsEnabled() {
-		manager.readerChan = make(chan readerEnvelope, c.MaxConcurrentFiles)
+		manager.readerChan = make(chan readerEnvelope, c.MaxConcurrentFiles/2)
 		manager.trie = trie.NewTrie()
 	}
 	return &manager, nil
