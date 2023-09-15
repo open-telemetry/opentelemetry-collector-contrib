@@ -54,8 +54,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					Temporality: metricdata.DeltaTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime: time.Now(),
-							Time:      time.Now().Add(1 * time.Second),
+							StartTime: time.Now().Add(-1 * time.Second),
+							Time:      time.Now(),
 							Value:     i,
 						},
 					},
