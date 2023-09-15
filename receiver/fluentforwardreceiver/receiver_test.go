@@ -108,7 +108,7 @@ func TestMessageEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(Log{
+	require.NoError(t, plogtest.CompareLogs(logs(Log{
 		Timestamp: 1593031012000000000,
 		Body:      pcommon.NewValueStr("..."),
 		Attributes: map[string]interface{}{
@@ -138,7 +138,7 @@ func TestForwardEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logs(
 		Log{
 			Timestamp: 1593032377776693638,
 			Body:      pcommon.NewValueEmpty(),
@@ -217,7 +217,7 @@ func TestForwardPackedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logs(
 		Log{
 			Timestamp: 1593032517024597622,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
@@ -279,7 +279,7 @@ func TestForwardPackedCompressedEvent(t *testing.T) {
 		return len(converted) == 1
 	}, 5*time.Second, 10*time.Millisecond)
 
-	require.NoError(t, plogtest.CompareLogs(Logs(
+	require.NoError(t, plogtest.CompareLogs(logs(
 		Log{
 			Timestamp: 1593032426012197420,
 			Body:      pcommon.NewValueStr("starting fluentd worker pid=17 ppid=7 worker=0"),
