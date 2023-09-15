@@ -6,44 +6,63 @@ package splitter
 import (
 	"bufio"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
 )
 
-func TestCustomFactory(t *testing.T) {
-	type fields struct {
-		Flusher  tokenize.FlusherConfig
-		Splitter bufio.SplitFunc
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
-	}{
-		{
-			name: "default configuration",
-			fields: fields{
-				Flusher: tokenize.NewFlusherConfig(),
-				Splitter: func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-					return len(data), data, nil
-				},
-			},
-			wantErr: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			factory := NewCustomFactory(tt.fields.Flusher, tt.fields.Splitter)
-			got, err := factory.Build()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Build() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if err == nil {
-				assert.NotNil(t, got)
-			}
-		})
-	}
+func TestCustom(t *testing.T) {
+	factory := NewCustomFactory(bufio.ScanLines, 0)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+}
+
+func TestCustomWithFlush(t *testing.T) {
+	flushPeriod := 100 * time.Millisecond
+	factory := NewCustomFactory(bufio.ScanLines, flushPeriod)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" hello "), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte(" world "), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+
+	time.Sleep(2 * flushPeriod)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 7, advance)
+	assert.Equal(t, []byte(" extra "), token)
 }

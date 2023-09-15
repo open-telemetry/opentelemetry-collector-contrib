@@ -11,7 +11,7 @@ import (
 )
 
 type IsStringArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewIsStringFactory[K any]() ottl.Factory[K] {
