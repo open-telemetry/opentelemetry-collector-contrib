@@ -206,7 +206,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	fp, err := m.readerFactory.newFingerprint(file)
 	if err != nil {
 		if err = file.Close(); err != nil {
-			m.Errorw("problem closing file", zap.Error(err))
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -214,7 +214,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if len(fp.FirstBytes) == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
-			m.Errorw("problem closing file", zap.Error(err))
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -243,7 +243,7 @@ func (m *Manager) makeReader(path string) *reader {
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
 	if m.checkDuplicates(fp) {
 		if err := file.Close(); err != nil {
-			m.Errorw("problem closing file", zap.Error(err))
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil
 	}
