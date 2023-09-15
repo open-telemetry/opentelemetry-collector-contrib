@@ -66,6 +66,7 @@ exporter/instanaexporter/                                @open-telemetry/collect
 exporter/jaegerexporter/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 exporter/jaegerthrifthttpexporter/                       @open-telemetry/collector-contrib-approvers @jpkrohling @pavolloffay @frzifus
 exporter/kafkaexporter/                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+exporter/kineticaexporter/                               @open-telemetry/collector-contrib-approvers @am-kinetica @TylerHelmuth
 exporter/loadbalancingexporter/                          @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                           @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                 @open-telemetry/collector-contrib-approvers @Doron-Bargo @yotamloe
