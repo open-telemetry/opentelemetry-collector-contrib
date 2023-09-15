@@ -130,13 +130,14 @@ func TestValidateMetricDuplicates(t *testing.T) {
 	seen := make(map[string]string)
 	for receiver, metrics := range allMetrics {
 		for _, metricName := range metrics {
-			val, exists := seen[metricName]
-			if receivers, allowed := allowedMetrics[metricName]; allowed {
-				if contains(receiver, receivers) && contains(val, receivers) {
-					continue
-				}
+			if val, exists := seen[metricName]; exists {
+				receivers, allowed := allowedMetrics[metricName]
+				assert.True(
+					t,
+					allowed && contains(receiver, receivers) && contains(val, receivers),
+					fmt.Sprintf("Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val),
+				)
 			}
-			assert.False(t, exists, fmt.Sprintf("Duplicate metric %v in receivers %v and %v. Please validate that this is intentional by adding the metric name and receiver types in the allowedMetrics map in this test\n", metricName, receiver, val))
 			seen[metricName] = receiver
 		}
 	}
