@@ -175,12 +175,20 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for redis resource attributes.
 type ResourceAttributesConfig struct {
-	RedisVersion ResourceAttributeConfig `mapstructure:"redis.version"`
+	RedisVersion  ResourceAttributeConfig `mapstructure:"redis.version"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		RedisVersion: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

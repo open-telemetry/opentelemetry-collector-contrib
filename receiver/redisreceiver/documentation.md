@@ -348,3 +348,5 @@ Redis node's role
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | redis.version | Redis server's version. | Any Str | true |
+| server.address | Redis server's address | Any Str | true |
+| server.port | Redis server's port | Any Str | true |

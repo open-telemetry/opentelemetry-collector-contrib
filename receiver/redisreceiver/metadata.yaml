@@ -13,6 +13,14 @@ resource_attributes:
     description: Redis server's version.
     enabled: true
     type: string
+  server.address:
+    description: Redis server's address
+    enabled: true
+    type: string
+  server.port:
+    description: Redis server's port
+    enabled: true
+    type: string
 
 attributes:
   state:

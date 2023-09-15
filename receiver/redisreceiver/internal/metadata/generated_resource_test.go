@@ -14,15 +14,17 @@ func TestResourceBuilder(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
 			rb.SetRedisVersion("redis.version-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort("server.port-val")
 
 			res := rb.Emit()
-			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
+			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return 0
 
 			switch test {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -34,6 +36,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "redis.version-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("server.address")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "server.address-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("server.port")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "server.port-val", val.Str())
 			}
 		})
 	}
