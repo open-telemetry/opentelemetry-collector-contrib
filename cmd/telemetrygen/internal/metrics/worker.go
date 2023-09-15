@@ -33,19 +33,21 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
-		if w.metricType == metricTypeGauge {
+
+		switch w.metricType {
+		case metricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
 				Name: "gen",
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:      time.Now(),
-							Value:     i,
+							Time:  time.Now(),
+							Value: i,
 						},
 					},
 				},
 			})
-		} else if w.metricType == metricTypeSum {
+		case metricTypeSum:
 			metrics = append(metrics, metricdata.Metrics{
 				Name: "gen",
 				Data: metricdata.Sum[int64]{
@@ -60,7 +62,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					},
 				},
 			})
-		} else {
+		default:
 			w.logger.Fatal("unknown metric type")
 		}
 
