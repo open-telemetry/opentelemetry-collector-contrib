@@ -10,8 +10,8 @@ import (
 type metricType string
 
 const (
-	metricTypeGauge     = "Gauge"
-	metricTypeSum       = "Sum"
+	metricTypeGauge = "Gauge"
+	metricTypeSum   = "Sum"
 )
 
 // String is used both by fmt.Print and by Cobra in help text
