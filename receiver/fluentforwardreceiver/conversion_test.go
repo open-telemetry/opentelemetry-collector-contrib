@@ -23,7 +23,7 @@ func TestMessageEventConversion(t *testing.T) {
 	err := event.DecodeMsg(reader)
 	require.Nil(t, err)
 
-	expectedLog := logs(
+	expectedLog := Logs(
 		Log{
 			Timestamp: 1593031012000000000,
 			Body:      pcommon.NewValueStr("..."),
@@ -90,7 +90,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	le := event.LogRecords().At(0)
 
-	require.NoError(t, plogtest.CompareLogRecord(logs(
+	require.NoError(t, plogtest.CompareLogRecord(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      pcommon.NewValueEmpty(),
@@ -236,7 +236,7 @@ func TestBodyConversion(t *testing.T) {
 	cv := body.Map().PutEmptyMap("c")
 	cv.PutInt("d", 24)
 
-	require.NoError(t, plogtest.CompareLogRecord(logs(
+	require.NoError(t, plogtest.CompareLogRecord(Logs(
 		Log{
 			Timestamp: 5000000000000,
 			Body:      body,

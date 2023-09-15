@@ -16,11 +16,11 @@ type Log struct {
 	Attributes map[string]interface{}
 }
 
-// logs is a convenience function for constructing logs for tests in a way that is
+// Logs is a convenience function for constructing logs for tests in a way that is
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
-func logs(recs ...Log) plog.Logs {
+func Logs(recs ...Log) plog.Logs {
 	out := plog.NewLogs()
 	logSlice := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	logSlice.EnsureCapacity(len(recs))

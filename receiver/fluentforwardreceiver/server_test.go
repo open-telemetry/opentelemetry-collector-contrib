@@ -105,7 +105,7 @@ func TestDetermineNextEventMode(t *testing.T) {
 		c := cases[i]
 		t.Run(c.name, func(t *testing.T) {
 			peeker := bufio.NewReaderSize(bytes.NewReader(c.event()), 1024*100)
-			mode, err := determineNextEventMode(peeker)
+			mode, err := DetermineNextEventMode(peeker)
 			if c.expectedError != nil {
 				require.Equal(t, c.expectedError, err)
 			} else {
