@@ -207,7 +207,7 @@ func (lg *LoadGenerator) generateTrace() {
 		} else {
 			if lg.prevErr == nil || lg.prevErr.Error() != err.Error() {
 				lg.prevErr = err
-				log.Printf("Cannot send traces: %v")
+				log.Printf("Cannot send traces: %v", err)
 			}
 			lg.permanentErrors.Add(uint64(traceData.SpanCount()))
 		}
