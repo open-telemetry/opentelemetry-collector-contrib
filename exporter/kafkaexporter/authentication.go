@@ -62,8 +62,8 @@ type KerberosConfig struct {
 	KeyTabPath  string `mapstructure:"keytab_file"`
 }
 
-// ConfigureAuthentication configures authentication in sarama.Config.
-func ConfigureAuthentication(config Authentication, saramaConfig *sarama.Config) error {
+// configureAuthentication configures authentication in sarama.Config.
+func configureAuthentication(config Authentication, saramaConfig *sarama.Config) error {
 	if config.PlainText != nil {
 		configurePlaintext(*config.PlainText, saramaConfig)
 	}

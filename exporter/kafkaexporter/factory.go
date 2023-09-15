@@ -41,8 +41,8 @@ const (
 // FactoryOption applies changes to kafkaExporterFactory.
 type FactoryOption func(factory *kafkaExporterFactory)
 
-// WithTracesMarshalers adds tracesMarshalers.
-func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
+// withTracesMarshalers adds tracesMarshalers.
+func withTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range tracesMarshalers {
 			factory.tracesMarshalers[marshaler.Encoding()] = marshaler
@@ -50,8 +50,8 @@ func WithTracesMarshalers(tracesMarshalers ...TracesMarshaler) FactoryOption {
 	}
 }
 
-// WithMetricsMarshalers adds additional metric marshalers to the exporter factory.
-func WithMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
+// withMetricsMarshalers adds additional metric marshalers to the exporter factory.
+func withMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range metricMarshalers {
 			factory.metricsMarshalers[marshaler.Encoding()] = marshaler
@@ -60,7 +60,7 @@ func WithMetricsMarshalers(metricMarshalers ...MetricsMarshaler) FactoryOption {
 }
 
 // WithLogMarshalers adds additional log marshalers to the exporter factory.
-func WithLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
+func withLogsMarshalers(logsMarshalers ...LogsMarshaler) FactoryOption {
 	return func(factory *kafkaExporterFactory) {
 		for _, marshaler := range logsMarshalers {
 			factory.logsMarshalers[marshaler.Encoding()] = marshaler

@@ -4,7 +4,6 @@ exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/f5cloudexporter
-exporter/kafkaexporter
 exporter/loadbalancingexporter
 exporter/logzioexporter
 exporter/lokiexporter
