@@ -28,6 +28,7 @@ const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
+	defaultPollInterval       = 200 * time.Millisecond
 	defaultFlushPeriod        = 500 * time.Millisecond
 )
 
@@ -52,13 +53,14 @@ func NewConfig() *Config {
 		IncludeFilePath:         false,
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
-		PollInterval:            200 * time.Millisecond,
+		PollInterval:            defaultPollInterval,
 		Encoding:                defaultEncoding,
 		StartAt:                 "end",
 		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
+		FlushPeriod:             defaultFlushPeriod,
 	}
 }
 
@@ -119,7 +121,7 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 	}
 
 	// Ensure that splitter is buildable
-	factory := splitter.NewCustomFactory(splitFunc, c.FlushPeriod)
+	factory := splitter.NewCustomFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
 	if _, err := factory.SplitFunc(); err != nil {
 		return nil, err
 	}

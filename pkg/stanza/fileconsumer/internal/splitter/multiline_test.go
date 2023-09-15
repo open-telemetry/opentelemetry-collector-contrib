@@ -49,6 +49,30 @@ func TestSplitFunc(t *testing.T) {
 	assert.Nil(t, token)
 }
 
+func TestSplitFuncWithTrim(t *testing.T) {
+	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Whitespace, 0)
+	splitFunc, err := factory.SplitFunc()
+	assert.NoError(t, err)
+	assert.NotNil(t, splitFunc)
+
+	input := []byte(" hello \n world \n extra ")
+
+	advance, token, err := splitFunc(input, false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte("hello"), token)
+
+	advance, token, err = splitFunc(input[8:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 8, advance)
+	assert.Equal(t, []byte("world"), token)
+
+	advance, token, err = splitFunc(input[16:], false)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, advance)
+	assert.Nil(t, token)
+}
+
 func TestSplitFuncWithFlush(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
 	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Nop, flushPeriod)
@@ -81,7 +105,7 @@ func TestSplitFuncWithFlush(t *testing.T) {
 	assert.Equal(t, []byte(" extra "), token)
 }
 
-func TestSplitFuncWithTrim(t *testing.T) {
+func TestSplitFuncWithFlushTrim(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
 	factory := NewSplitFuncFactory(split.Config{}, unicode.UTF8, 1024, trim.Whitespace, flushPeriod)
 	splitFunc, err := factory.SplitFunc()
