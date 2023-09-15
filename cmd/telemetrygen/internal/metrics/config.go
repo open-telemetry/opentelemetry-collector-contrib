@@ -18,6 +18,7 @@ type Config struct {
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
+	// Use Gauge as default metric type.
 	c.MetricType = metricTypeGauge
 
 	c.CommonFlags(fs)
