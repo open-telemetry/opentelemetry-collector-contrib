@@ -13,10 +13,14 @@ import (
 type Config struct {
 	common.Config
 	NumMetrics int
+	MetricType metricType
 }
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
+	c.MetricType = metricTypeGauge
+
 	c.CommonFlags(fs)
+	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'gauge', 'sum', 'histogram' or 'all'")
 	fs.IntVar(&c.NumMetrics, "metrics", 1, "Number of metrics to generate in each worker (ignored if duration is provided)")
 }
