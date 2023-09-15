@@ -166,6 +166,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.86.0
 	go.opentelemetry.io/collector/exporter v0.86.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.86.0
