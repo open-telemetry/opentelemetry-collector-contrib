@@ -154,7 +154,7 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 
 }
 
-// TableEngineString generates ENGINE string
+// TableEngineString generates ENGINE string.
 // If `Name` and `TableEngine.Params` are set then return 'TableEngine.Name(TableEngine.Params)'. If `TableEngine.Params`is empty then return 'TableEngine.Name()'. Otherwise return 'defaultTableEngineName()'.
 func (cfg *Config) TableEngineString() (string) {
 	if cfg.TableEngine.Name == "" {
