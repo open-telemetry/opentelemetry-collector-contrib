@@ -219,17 +219,35 @@ func TestFindFilesWithIOErrors(t *testing.T) {
 		require.NoError(t, os.Chmod("no_permission", 0700))
 	}()
 
-	files, err := FindFiles(
-		[]string{
-			"*.log",
-			filepath.Join("no_permission", "*.log"),
-			filepath.Join("dir1", "*.log"),
-		}, []string{})
-	assert.ErrorContains(t, err, "no_permission/*.log")
-	assert.Equal(t, []string{
-		"1.log",
-		"2.log",
-		"dir1/1.log",
-		"dir1/2.log",
-	}, files)
+	cases := []struct {
+		name      string
+		include   []string
+		expected  []string
+		failedMsg string
+	}{
+		{
+			name: "failed pattern should not affect others",
+			include: []string{
+				"*.log",
+				filepath.Join("no_permission", "*.log"),
+				filepath.Join("dir1", "*.log"),
+			},
+			expected:  []string{"1.log", "2.log", "dir1/1.log", "dir1/2.log"},
+			failedMsg: "no_permission/*.log",
+		},
+		{
+			name:      "partial failure of FindFiles",
+			include:   []string{"**/*.log"},
+			expected:  []string{"1.log", "2.log", "dir1/1.log", "dir1/2.log"},
+			failedMsg: "**/*.log",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files, err := FindFiles(tc.include, []string{})
+			assert.ErrorContains(t, err, tc.failedMsg)
+			assert.Equal(t, tc.expected, files)
+		})
+	}
 }
