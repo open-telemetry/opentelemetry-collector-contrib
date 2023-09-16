@@ -61,8 +61,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bu
 			}
 			return 0, nil, nil // read more data and try again.
 		}
-		firstMatchStart := firstLoc[0]
-		firstMatchEnd := firstLoc[1]
+		firstMatchStart, firstMatchEnd := firstLoc[0], firstLoc[1]
 
 		if firstMatchStart != 0 {
 			// the beginning of the file does not match the start pattern, so return a token up to the first match so we don't lose data
