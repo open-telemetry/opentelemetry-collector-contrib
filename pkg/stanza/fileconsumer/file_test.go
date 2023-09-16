@@ -93,10 +93,10 @@ func TestAddFileFields(t *testing.T) {
 // AddFileResolvedFields tests that the `log.file.name_resolved` and `log.file.path_resolved` fields are included
 // when IncludeFileNameResolved and IncludeFilePathResolved are set to true
 func TestAddFileResolvedFields(t *testing.T) {
-	t.Parallel()
 	if runtime.GOOS == windowsOS {
 		t.Skip("Windows symlinks usage disabled for now. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21088")
 	}
+	t.Parallel()
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
@@ -460,7 +460,7 @@ func TestReadNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Poll once so we know this isn't a new file
@@ -488,7 +488,7 @@ func TestReadExistingAndNewLogs(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Start with a file with an entry in it, and expect that entry
@@ -512,7 +512,7 @@ func TestStartAtEnd(t *testing.T) {
 
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -540,7 +540,7 @@ func TestStartAtEndNewFile(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	operator.poll(context.Background())
@@ -656,7 +656,7 @@ func TestSplitWrite(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -676,7 +676,7 @@ func TestIgnoreEmptyFiles(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	temp := openTemp(t, tempDir)
@@ -997,7 +997,7 @@ func TestFileBatching(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1353,7 +1353,7 @@ func TestDeleteAfterRead(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, totalLines)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	operator.poll(context.Background())
@@ -1385,7 +1385,7 @@ func TestMaxBatching(t *testing.T) {
 	cfg.MaxConcurrentFiles = maxConcurrentFiles
 	cfg.MaxBatches = maxBatches
 	emitCalls := make(chan *emitParams, files*linesPerFile)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	core, observedLogs := observer.New(zap.DebugLevel)
@@ -1502,7 +1502,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cfg.StartAt = "beginning"
 	cfg.DeleteAfterRead = true
 	emitCalls := make(chan *emitParams, longFileLines+1)
-	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls), withReaderChan())
+	operator, _ := buildTestManager(t, cfg, withEmitChan(emitCalls))
 	operator.persister = testutil.NewMockPersister("test")
 
 	shortFile := openTemp(t, tempDir)
@@ -1544,6 +1544,9 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 
 	// Stop consuming before long file has been fully consumed
 	cancel()
+
+	// Stop the worker threads
+	// Following section is a no-op if feature gate is disabled, so no need to check explicitly
 	operator.cancel()
 	if operator.readerChan != nil {
 		close(operator.readerChan)
@@ -1661,7 +1664,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.FingerprintSize = 18
 	cfg.StartAt = "beginning"
-	operator, emitCalls := buildTestManager(t, cfg, withReaderChan())
+	operator, emitCalls := buildTestManager(t, cfg)
 	operator.persister = testutil.NewMockPersister("test")
 
 	// Both of they will be include

@@ -50,6 +50,7 @@ type Manager struct {
 	// Following fields are used only when useThreadPool is enabled
 	knownFilesLock sync.RWMutex
 	trieLock       sync.RWMutex
+	once           sync.Once
 
 	workerWg   sync.WaitGroup
 	readerChan chan readerEnvelope
@@ -74,7 +75,9 @@ func (m *Manager) Start(persister operator.Persister) error {
 
 	// If useThreadPool is enabled, kick off the worker threads
 	if useThreadPool.IsEnabled() {
-		m.kickoffThreads(ctx)
+		m.once.Do(func() {
+			m.kickoffThreads(ctx)
+		})
 	}
 
 	// Start polling goroutine

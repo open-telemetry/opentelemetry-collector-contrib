@@ -269,7 +269,7 @@ func BenchmarkFileSizeVarying(b *testing.B) {
 			cfg.MaxConcurrentFiles = fileSize.maxConcurrent
 			emitCalls := make(chan *emitParams, max(fileSize.logs...)*b.N) // large enough to hold all the logs
 
-			operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls), withReaderChan())
+			operator, _ := buildTestManager(b, cfg, withEmitChan(emitCalls))
 			operator.persister = testutil.NewMockPersister("test")
 			defer func() {
 				require.NoError(b, operator.Stop())
