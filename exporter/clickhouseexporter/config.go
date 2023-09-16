@@ -40,9 +40,9 @@ type Config struct {
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
 	TTLDays uint `mapstructure:"ttl_days"`
-	// Used to generate ENGINE value when create table. See `TableEngineString` function for details.
+	// TableEngine modifies ENGINE value when create table. See `TableEngineString` function for details.
 	TableEngine TableEngine `mapstructure:"table_engine"`
-	// If set then is used on database and table creation. For example: CREATE DATABASE IF NOT EXISTS db1 ON CLUSTER `ClusterName`
+	// ClusterName, if set, appends 'ON CLUSTER' definition when create database or table. For example: CREATE DATABASE IF NOT EXISTS db1 ON CLUSTER `ClusterName`
 	ClusterName string `mapstructure:"cluster_name"`
 }
 
@@ -52,7 +52,7 @@ type QueueSettings struct {
 	QueueSize int `mapstructure:"queue_size"`
 }
 
-// Encapsulates ENGINE value when create table. For example, Name = ReplicatedReplacingMergeTree and Params = "'par1', 'par2', par3".
+// TableEngine encapsulates ENGINE string value when create table. For example, Name = ReplicatedMergeTree and Params = "'par1', 'par2', par3" will generate ReplicatedMergeTree('par1', 'par2', par3) string value, see `Config.TableEngineString` for details.
 type TableEngine struct {
 	Name string `mapstructure:"name"`
 	Params string `mapstructure:"params"`
@@ -154,8 +154,8 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 
 }
 
-// Generate ENGINE string
-// If `TableEngine.Name` and `TableEngine.Params` are set then return 'TableEngine.Name(TableEngine.Params)'. If `TableEngine.Params`is empty then return 'TableEngine.Name()'. Otherwise return 'defaultTableEngine()'.
+// TableEngineString generates ENGINE string
+// If `Name` and `TableEngine.Params` are set then return 'TableEngine.Name(TableEngine.Params)'. If `TableEngine.Params`is empty then return 'TableEngine.Name()'. Otherwise return 'defaultTableEngineName()'.
 func (cfg *Config) TableEngineString() (string) {
 	if cfg.TableEngine.Name == "" {
 		return fmt.Sprintf("%s()", defaultTableEngineName)
@@ -168,7 +168,7 @@ func (cfg *Config) TableEngineString() (string) {
 	return fmt.Sprintf("%s(%s)", cfg.TableEngine.Name, cfg.TableEngine.Params)
 }
 
-// Produce `ON CLUSTER ClusterName` if `ClusterName` is not empty. Otherwise return "".
+// ClusterClause produces `ON CLUSTER ClusterName` if `ClusterName` is not empty. Otherwise return "".
 func (cfg *Config) ClusterClause() (string) {
 	if cfg.ClusterName == "" {
 		return ""
