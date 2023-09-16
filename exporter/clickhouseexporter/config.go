@@ -59,7 +59,7 @@ type TableEngine struct {
 }
 
 const defaultDatabase = "default"
-const defaultTableEngine = "MergeTree"
+const defaultTableEngineName = "MergeTree"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
@@ -158,7 +158,7 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 // If `TableEngine.Name` and `TableEngine.Params` are set then return 'TableEngine.Name(TableEngine.Params)'. If `TableEngine.Params`is empty then return 'TableEngine.Name()'. Otherwise return 'defaultTableEngine()'.
 func (cfg *Config) TableEngineString() (string) {
 	if cfg.TableEngine.Name == "" {
-		return fmt.Sprintf("%s()", defaultTableEngine)
+		return fmt.Sprintf("%s()", defaultTableEngineName)
 	}
 
 	if cfg.TableEngine.Params == "" {

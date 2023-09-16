@@ -146,7 +146,7 @@ func TestMetricsTableEngineConfigWithParams(t *testing.T) {
 }
 
 func TestMetricsEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	te := TableEngine{Name: ""}
 	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
@@ -157,7 +157,7 @@ func TestMetricsEmptyTableEngineConfig(t *testing.T) {
 func TestMetricsTableEngineConfigFail(t *testing.T) {
 	teName := "CustomEngine"
 	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
 		require.NotEmpty(t, exporter.cfg.TableEngine.Name)

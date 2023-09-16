@@ -85,7 +85,7 @@ func TestTracesTableEngineConfigWithParams(t *testing.T) {
 }
 
 func TestTracesEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	te := TableEngine{Name: ""}
 	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestTracesExporter(t, dsn, fns...)
@@ -96,7 +96,7 @@ func TestTracesEmptyTableEngineConfig(t *testing.T) {
 func TestTracesTableEngineConfigFail(t *testing.T) {
 	teName := "CustomEngine"
 	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestTracesExporter(t, dsn, fns...)
 		require.NotEmpty(t, exporter.cfg.TableEngine.Name)

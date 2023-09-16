@@ -158,7 +158,7 @@ func TestLogsTableEngineConfigWithParams(t *testing.T) {
 }
 
 func TestLogsEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	te := TableEngine{Name: ""}
 	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestLogsExporter(t, dsn, fns...)
@@ -169,7 +169,7 @@ func TestLogsEmptyTableEngineConfig(t *testing.T) {
 func TestLogsTableEngineConfigFail(t *testing.T) {
 	teName := "CustomEngine"
 	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
 	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
 		exporter := newTestLogsExporter(t, dsn, fns...)
 		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
@@ -205,7 +205,7 @@ func testTableEngineConfig(t *testing.T, tableEngine TableEngine, expectedTableE
 
 func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
 	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		require.NoError(t, checkClusterQueryStatememt(query, defaultCluster))
+		require.NoError(t, checkClusterQueryDefinition(query, defaultCluster))
 		return nil
 	})
 
@@ -220,7 +220,7 @@ func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
 
 func testClusterConfigOff(t *testing.T, completion exporterValuesProvider) {
 	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		require.Error(t, checkClusterQueryStatememt(query, defaultCluster))
+		require.Error(t, checkClusterQueryDefinition(query, defaultCluster))
 		return nil
 	})
 
@@ -252,7 +252,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-func checkClusterQueryStatememt(query string, clusterName string) error {
+func checkClusterQueryDefinition(query string, clusterName string) error {
 	line := getQueryFirstLine(query)
 	lowercasedLine := strings.ToLower(line)
 	suffix := fmt.Sprintf("ON CLUSTER %s", clusterName)
