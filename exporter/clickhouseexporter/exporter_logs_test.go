@@ -136,6 +136,73 @@ func TestLogsClusterConfigOff(t *testing.T) {
 	})
 }
 
+func TestLogsTableEngineConfig(t *testing.T) {
+	teName := "CustomEngine"
+	te := TableEngine{Name: teName}
+	expectedTEValue := fmt.Sprintf("%s()", teName)
+	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+	})
+}
+
+func TestLogsTableEngineConfigWithParams(t *testing.T) {
+	teName := "CustomEngine"
+	teParams := "'/x/y/z', 'some_param', another_param, last_param"
+	te := TableEngine{Name: teName, Params: teParams}
+	expectedTEValue := fmt.Sprintf("%s(%s)", teName, teParams)
+	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+	})
+}
+
+func TestLogsEmptyTableEngineConfig(t *testing.T) {
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	te := TableEngine{Name: ""}
+	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.Empty(t, exporter.cfg.TableEngine.Name)
+	})
+}
+
+func TestLogsTableEngineConfigFail(t *testing.T) {
+	teName := "CustomEngine"
+	te := TableEngine{Name: teName}
+	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngine)
+	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+	})
+}
+
+func testTableEngineConfig(t *testing.T, tableEngine TableEngine, expectedTableEngineValue string, shouldSucceed bool, completion exporterValuesProvider) {
+	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		firstLine := getQueryFirstLine(query)
+		if !strings.HasPrefix(strings.ToLower(firstLine), "create table") {
+			return nil
+		}
+
+		check := checkTableEngineQueryDefinition(query, expectedTableEngineValue)
+		if shouldSucceed {
+			require.NoError(t, check)
+		} else {
+			require.Error(t, check)
+		}
+
+		return nil
+	})
+
+	var configMods []func(*Config)
+	if tableEngine.Name != "" {
+		configMods = append(configMods, func(cfg *Config) {
+			cfg.TableEngine = tableEngine
+		})
+	}
+
+	completion(t, defaultEndpoint, configMods...)
+}
+
 func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
 	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 		require.NoError(t, checkClusterQueryStatememt(query, defaultCluster))
@@ -186,9 +253,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func checkClusterQueryStatememt(query string, clusterName string) error {
-	trimmed := strings.Trim(query, "\n")
-	line := strings.Split(trimmed, "\n")[0]
-	line = strings.Trim(line, " (")
+	line := getQueryFirstLine(query)
 	lowercasedLine := strings.ToLower(line)
 	suffix := fmt.Sprintf("ON CLUSTER %s", clusterName)
 	prefixes := []string{"create database", "create table", "create materialized view"}
@@ -201,6 +266,29 @@ func checkClusterQueryStatememt(query string, clusterName string) error {
 	}
 
 	return errors.New(fmt.Sprintf("Does not contain cluster clause: %s", line))
+}
+
+func checkTableEngineQueryDefinition(query string, expectedEngineName string) error {
+	lines := strings.Split(query, "\n")
+	for _, line := range lines {
+		if strings.Contains(strings.ToLower(line), "engine = ") {
+			engine := strings.Split(line, " = ")[1]
+			engine = strings.Trim(engine, " ")
+			if engine == expectedEngineName {
+				return nil
+			} else {
+				return errors.New(fmt.Sprintf("Wrong engine name: %s, expected: %s", engine, expectedEngineName))
+			}
+		}
+	}
+
+	return errors.New(fmt.Sprintf("Query does not contain engine definition: %s", query))
+}
+
+func getQueryFirstLine(query string) string {
+	trimmed := strings.Trim(query, "\n")
+	line := strings.Split(trimmed, "\n")[0]
+	return strings.Trim(line, " (")
 }
 
 func simpleLogs(count int) plog.Logs {
