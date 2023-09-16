@@ -227,6 +227,10 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 	emitChan := make(chan *emitParams, 100)
 	enc, err := decode.LookupEncoding(defaultEncoding)
 	require.NoError(t, err)
+
+	splitFunc, err := sCfg.Func(enc, false, maxLogSize)
+	require.NoError(t, err)
+
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
@@ -235,7 +239,7 @@ func testReaderFactory(t *testing.T, sCfg split.Config, maxLogSize int, flushPer
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: splitter.NewSplitFuncFactory(sCfg, enc, maxLogSize, trim.Whitespace, flushPeriod),
+		splitterFactory: splitter.NewFactory(splitFunc, trim.Whitespace, flushPeriod),
 		encoding:        enc,
 	}, emitChan
 }
