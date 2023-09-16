@@ -110,23 +110,17 @@ func Benchmark_pushMetricsData(b *testing.B) {
 	}
 }
 
-func TestMetricsTablesCreationOnCluster(t *testing.T) {
-	var configMods []func(*Config)
-	dbName := "test_db_" + time.Now().Format("20060102150405")
-	configMods = append(configMods, func(cfg *Config) {
-		cfg.ClusterName = replicationCluster
-		cfg.Database = dbName
-		cfg.TableEngine = TableEngine{Name: "ReplicatedMergeTree", Params: ""}
-	})
-
-	t.Run("Check database and table creation on cluster", func(t *testing.T) {
-		exporter := newTestMetricsExporter(t, replicationEndpoint, configMods...)
+func TestMetricsClusterConfigOn(t *testing.T) {
+	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestMetricsExporter(t, dsn, fns...)
 		require.NotEmpty(t, exporter.cfg.ClusterClause())
+	})
+}
 
-		samplesCount := 5
-		metrics := simpleMetrics(samplesCount)
-		mustPushMetricsData(t, exporter, metrics)
-		checkReplicatedTableCount(t, dbName, getTableNames(dbName, exporter.client), samplesCount * 3)
+func TestMetricsClusterConfigOff(t *testing.T) {
+	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestMetricsExporter(t, dsn, fns...)
+		require.Empty(t, exporter.cfg.ClusterClause())
 	})
 }
 

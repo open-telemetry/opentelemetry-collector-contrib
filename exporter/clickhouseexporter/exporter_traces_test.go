@@ -48,21 +48,17 @@ func TestExporter_pushTracesData(t *testing.T) {
 	})
 }
 
-func TestTracesTablesCreationOnCluster(t *testing.T) {
-	var configMods []func(*Config)
-	dbName := "test_db_" + time.Now().Format("20060102150405")
-	configMods = append(configMods, func(cfg *Config) {
-		cfg.ClusterName = replicationCluster
-		cfg.Database = dbName
-		cfg.TableEngine = TableEngine{Name: "ReplicatedMergeTree", Params: ""}
-	})
-	t.Run("Check database and table creation on cluster", func(t *testing.T) {
-		exporter := newTestTracesExporter(t, replicationEndpoint, configMods...)
+func TestTracesClusterConfigOn(t *testing.T) {
+	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
 		require.NotEmpty(t, exporter.cfg.ClusterClause())
+	})
+}
 
-		samplesCount := 5
-		mustPushTracesData(t, exporter, simpleTraces(samplesCount))
-		checkReplicatedTableCount(t, dbName, []string{exporter.cfg.TracesTableName}, samplesCount)
+func TestTracesClusterConfigOff(t *testing.T) {
+	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
+		require.Empty(t, exporter.cfg.ClusterClause())
 	})
 }
 

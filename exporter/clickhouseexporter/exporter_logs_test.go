@@ -122,23 +122,47 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func TestLogsTableCreationOnCluster(t *testing.T) {
-	dbName := "test_db_" + time.Now().Format("20060102150405")
+func TestLogsClusterConfigOn(t *testing.T) {
+	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.NotEmpty(t, exporter.cfg.ClusterClause())
+	})
+}
+
+func TestLogsClusterConfigOff(t *testing.T) {
+	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		require.Empty(t, exporter.cfg.ClusterClause())
+	})
+}
+
+func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
+	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		require.NoError(t, checkClusterQueryStatememt(query, defaultCluster))
+		return nil
+	})
+
 	var configMods []func(*Config)
 	configMods = append(configMods, func(cfg *Config) {
-		cfg.ClusterName = replicationCluster
-		cfg.Database = dbName
-		cfg.TableEngine = TableEngine{Name: "ReplicatedMergeTree", Params: ""}
+		cfg.ClusterName = defaultCluster
+		cfg.Database = "test_db_" + time.Now().Format("20060102150405")
 	})
 
-	t.Run("Check database and table creation on cluster", func(t *testing.T) {
-		exporter := newTestLogsExporter(t, replicationEndpoint, configMods...)
-		require.NotEmpty(t, exporter.cfg.ClusterClause())
+	completion(t, defaultEndpoint, configMods...)
+}
 
-		samplesCount := 5
-		mustPushLogsData(t, exporter, simpleLogs(samplesCount))
-		checkReplicatedTableCount(t, dbName, getTableNames(dbName, exporter.client), samplesCount)
+func testClusterConfigOff(t *testing.T, completion exporterValuesProvider) {
+	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		require.Error(t, checkClusterQueryStatememt(query, defaultCluster))
+		return nil
 	})
+
+	var configMods []func(*Config)
+	configMods = append(configMods, func(cfg *Config) {
+		cfg.Database = "test_db_" + time.Now().Format("20060102150405")
+	})
+
+	completion(t, defaultEndpoint, configMods...)
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
@@ -161,45 +185,22 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 	}
 }
 
-// Opens Clickhouse client to `replicationEndpoint2` to check if table data was replicated.
-func checkReplicatedTableCount(t *testing.T, dbName string, tableNames []string, expectedCount int) {
-	// wait for replication
-	require.NotEmpty(t, tableNames)
-	time.Sleep(1 * time.Second)
-
-	config := withTestExporterConfig()(replicationEndpoint2)
-	client, err := newClickhouseClient(config)
-	require.NoError(t, err)
-	defer client.Close()
-
-	println("replication in db", dbName, "; url:", replicationEndpoint2)
-	for _, tableName := range tableNames {
-		println("check count in replicated table", tableName)
-		query := fmt.Sprintf("SELECT count(*) FROM %s.%s", dbName, tableName)
-		row := client.QueryRowContext(context.TODO(), query)
-		var count int
-		row.Scan(&count)
-		require.Equal(t, expectedCount, count)
-	}
-}
-
-// Get table names from database.
-func getTableNames(dbName string, client *sql.DB) []string {
-	rows, err := client.QueryContext(context.TODO(), "show tables from " + dbName)
-	defer rows.Close()
-
-	if err != nil {
-		return []string{}
+func checkClusterQueryStatememt(query string, clusterName string) error {
+	trimmed := strings.Trim(query, "\n")
+	line := strings.Split(trimmed, "\n")[0]
+	line = strings.Trim(line, " (")
+	lowercasedLine := strings.ToLower(line)
+	suffix := fmt.Sprintf("ON CLUSTER %s", clusterName)
+	prefixes := []string{"create database", "create table", "create materialized view"}
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(lowercasedLine, prefix) {
+			if strings.HasSuffix(line, suffix) {
+				return nil
+			}
+		}
 	}
 
-	var tableNames []string
-	for rows.Next() {
-		var tableName string
-		rows.Scan(&tableName)
-		tableNames = append(tableNames, tableName)
-	}
-
-	return tableNames
+	return errors.New(fmt.Sprintf("Does not contain cluster clause: %s", line))
 }
 
 func simpleLogs(count int) plog.Logs {
@@ -233,6 +234,7 @@ func initClickhouseTestServer(t *testing.T, recorder recorder) {
 }
 
 type recorder func(query string, values []driver.Value) error
+type exporterValuesProvider func(t *testing.T, dsn string, fns ...func(*Config))
 
 type testClickhouseDriver struct {
 	recorder recorder
