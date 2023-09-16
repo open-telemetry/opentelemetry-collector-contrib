@@ -778,8 +778,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/insta
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter => ./exporter/kafkaexporter
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineticaexporter => ./exporter/kineticaexporter
-
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter => ./exporter/loadbalancingexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter => ./exporter/logicmonitorexporter
