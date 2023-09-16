@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,515 +75,374 @@ func TestConfigFunc(t *testing.T) {
 }
 
 func TestLineStartSplitFunc(t *testing.T) {
-	testCases := []splittest.TestCase{
+	testCases := []struct {
+		name        string
+		pattern     string
+		omitPattern bool
+		flushAtEOF  bool
+		input       []byte
+		steps       []splittest.Step
+	}{
 		{
-			Name:    "OneLogSimple",
-			Pattern: `LOGSTART \d+ `,
-			Input:   []byte("LOGSTART 123 log1LOGSTART 123 a"),
-			ExpectedTokens: []string{
-				`LOGSTART 123 log1`,
+			name:    "OneLogSimple",
+			pattern: `LOGSTART \d+ `,
+			input:   []byte("LOGSTART 123 log1LOGSTART 123 a"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 123 log1"),
 			},
 		},
 		{
-			Name:        "OneLogSimpleOmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte("LOGSTART 123 log1LOGSTART 123 a"),
-			ExpectedTokens: []string{
-				`log1`,
+			name:        "OneLogSimpleOmitPattern",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("LOGSTART 123 log1LOGSTART 123 a"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 log1"), "log1"),
 			},
 		},
 		{
-			Name:    "TwoLogsSimple",
-			Pattern: `LOGSTART \d+ `,
-			Input:   []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
-			ExpectedTokens: []string{
-				`LOGSTART 123 log1 `,
-				`LOGSTART 234 log2 `,
+			name:    "TwoLogsSimple",
+			pattern: `LOGSTART \d+ `,
+			input:   []byte("LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 123 log1 "),
+				splittest.ExpectToken("LOGSTART 234 log2 "),
 			},
 		},
 		{
-
-			Name:        "TwoLogsSimpleOmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte(`LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo`),
-			ExpectedTokens: []string{
-				`log1 `,
-				`log2 `,
+			name:        "TwoLogsSimpleOmitPattern",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("LOGSTART 123 log1 LOGSTART 234 log2 LOGSTART 345 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 log1 "), "log1 "),
+				splittest.ExpectAdvanceToken(len("LOGSTART 234 log2 "), "log2 "),
 			},
 		},
 		{
-			Name:    "TwoLogsLineStart",
-			Pattern: `^LOGSTART \d+ `,
-			Input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
-			ExpectedTokens: []string{
-				"LOGSTART 123 LOGSTART 345 log1\n",
-				"LOGSTART 234 log2\n",
+			name:    "TwoLogsLineStart",
+			pattern: `^LOGSTART \d+ `,
+			input:   []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 123 LOGSTART 345 log1\n"),
+				splittest.ExpectToken("LOGSTART 234 log2\n"),
 			},
 		},
 		{
-			Name:        "TwoLogsLineStartOmitPattern",
-			Pattern:     `^LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
-			ExpectedTokens: []string{
-				"LOGSTART 345 log1\n",
-				"log2\n",
+			name:        "TwoLogsLineStartOmitPattern",
+			pattern:     `^LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 LOGSTART 345 log1\n"), "LOGSTART 345 log1\n"),
+				splittest.ExpectAdvanceToken(len("LOGSTART 234 log2\n"), "log2\n"),
 			},
 		},
 		{
-			Name:        "TwoLogsLineStartOmitPatternNoStringBeginningToken",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
-			ExpectedTokens: []string{
-				"LOGSTART 345 log1\n",
-				"log2\n",
+			name:        "TwoLogsLineStartOmitPatternNoStringBeginningToken",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("LOGSTART 123 LOGSTART 345 log1\nLOGSTART 234 log2\nLOGSTART 345 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 LOGSTART 345 log1\n"), "LOGSTART 345 log1\n"),
+				splittest.ExpectAdvanceToken(len("LOGSTART 234 log2\n"), "log2\n"),
 			},
 		},
 		{
-			Name:    "NoMatches",
-			Pattern: `LOGSTART \d+ `,
-			Input:   []byte(`file that has no matches in it`),
+			name:    "NoMatches",
+			pattern: `LOGSTART \d+ `,
+			input:   []byte("file that has no matches in it"),
 		},
 		{
-
-			Name:        "NoMatchesOmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte(`file that has no matches in it`),
+			name:        "NoMatchesOmitPattern",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("file that has no matches in it"),
 		},
 		{
-			Name:    "PrecedingNonMatches",
-			Pattern: `LOGSTART \d+ `,
-			Input:   []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
-			ExpectedTokens: []string{
-				`part that doesn't match `,
-				`LOGSTART 123 part that matches`,
+			name:    "PrecedingNonMatches",
+			pattern: `LOGSTART \d+ `,
+			input:   []byte("part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("part that doesn't match "),
+				splittest.ExpectToken("LOGSTART 123 part that matches"),
 			},
 		},
 		{
-			Name:        "PrecedingNonMatchesOmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input:       []byte(`part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo`),
-			ExpectedTokens: []string{
-				`part that doesn't match `,
-				`part that matches`,
+			name:        "PrecedingNonMatchesOmitPattern",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("part that doesn't match LOGSTART 123 part that matchesLOGSTART 123 foo"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("part that doesn't match "), "part that doesn't match "),
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 part that matches"), "part that matches"),
 			},
 		},
 		{
-			Name:    "HugeLog100",
-			Pattern: `LOGSTART \d+ `,
-			Input: func() []byte {
-				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, splittest.GenerateBytes(100)...)
-				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-				return newInput
-			}(),
-			ExpectedTokens: []string{
-				`LOGSTART 123 ` + string(splittest.GenerateBytes(100)),
-			},
-		},
-		{
-			Name:        "HugeLog100OmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-
-			Input: func() []byte {
-				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, splittest.GenerateBytes(100)...)
-				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-				return newInput
-			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(100)),
-			},
-		},
-		{
-			Name:    "HugeLog10000",
-			Pattern: `LOGSTART \d+ `,
-			Input: func() []byte {
+			name:    "HugeLog10000",
+			pattern: `LOGSTART \d+ `,
+			input: func() []byte {
 				newInput := []byte(`LOGSTART 123 `)
 				newInput = append(newInput, splittest.GenerateBytes(10000)...)
 				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
 				return newInput
 			}(),
-			ExpectedTokens: []string{
-				`LOGSTART 123 ` + string(splittest.GenerateBytes(10000)),
+			steps: []splittest.Step{
+				splittest.ExpectToken(`LOGSTART 123 ` + string(splittest.GenerateBytes(10000))),
 			},
 		},
 		{
-			Name:    "ErrTooLong",
-			Pattern: `LOGSTART \d+ `,
-			Input: func() []byte {
-				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, splittest.GenerateBytes(1000000)...)
-				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
+			name:        "HugeLog10000OmitPattern",
+			pattern:     `LOGSTART \d+ `,
+			omitPattern: true,
+			input: func() []byte {
+				newInput := []byte("LOGSTART 123 ")
+				newInput = append(newInput, splittest.GenerateBytes(10000)...)
+				newInput = append(newInput, []byte("LOGSTART 234 endlog")...)
 				return newInput
 			}(),
-			ExpectedError: errors.New("bufio.Scanner: token too long"),
-		},
-		{
-			Name:        "ErrTooLongOmitPattern",
-			Pattern:     `LOGSTART \d+ `,
-			OmitPattern: true,
-			Input: func() []byte {
-				newInput := []byte(`LOGSTART 123 `)
-				newInput = append(newInput, splittest.GenerateBytes(1000000)...)
-				newInput = append(newInput, []byte(`LOGSTART 234 endlog`)...)
-				return newInput
-			}(),
-			ExpectedError: errors.New("bufio.Scanner: token too long"),
-		},
-		{
-			Name:    "MultipleMultilineLogs",
-			Pattern: `^LOGSTART \d+`,
-			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
-			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
-				"LOGSTART 17 log2\nLOGPART log2\nanother line\n",
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 123 ")+10000, string(splittest.GenerateBytes(10000))),
 			},
 		},
 		{
-			Name:        "MultipleMultilineLogsOmitPattern",
-			Pattern:     `^LOGSTART \d+`,
-			OmitPattern: true,
-			Input:       []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
-			ExpectedTokens: []string{
-				" log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
-				" log2\nLOGPART log2\nanother line\n",
+			name:    "MultipleMultilineLogs",
+			pattern: `^LOGSTART \d+ `,
+			input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n"),
+				splittest.ExpectToken("LOGSTART 17 log2\nLOGPART log2\nanother line\n"),
 			},
 		},
 		{
-
-			Name:        "LogsWithoutFlusherOmitPattern",
-			Pattern:     `^LOGSTART \d+`,
-			OmitPattern: true,
-			Input:       []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			name:        "MultipleMultilineLogsOmitPattern",
+			pattern:     `^LOGSTART \d+ `,
+			omitPattern: true,
+			input:       []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line\nLOGSTART 43 log5"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n"), "log1\t  \nLOGPART log1\nLOGPART log1\t   \n"),
+				splittest.ExpectAdvanceToken(len("LOGSTART 17 log2\nLOGPART log2\nanother line\n"), "log2\nLOGPART log2\nanother line\n"),
+			},
 		},
 		{
-			Name:    "NoMatch",
-			Pattern: `^LOGSTART \d+`,
-			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			name:       "FlushAtEOFNoMatch",
+			pattern:    `^LOGSTART \d+ `,
+			flushAtEOF: true,
+			input:      []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGPART log1\nLOGPART log1\t   \n"),
+			},
+		},
+		{
+			name:        "FlushAtEOFNoMatchOmitPattern",
+			pattern:     `^LOGSTART \d+ `,
+			omitPattern: true,
+			flushAtEOF:  true,
+			input:       []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGPART log1\nLOGPART log1\t   \n"),
+			},
+		},
+		{
+			name:       "FlushAtEOFMatchThenNoMatch",
+			pattern:    `^LOGSTART \d+ `,
+			flushAtEOF: true,
+			input:      []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n"),
+				splittest.ExpectToken("LOGSTART 17 log2\nLOGPART log2\nanother line"),
+			},
+		},
+		{
+			name:        "FlushAtEOFMatchThenNoMatchOmitPattern",
+			pattern:     `^LOGSTART \d+ `,
+			omitPattern: true,
+			flushAtEOF:  true,
+			input:       []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n"), "log1\t  \nLOGPART log1\nLOGPART log1\t   \n"),
+				splittest.ExpectAdvanceToken(len("LOGSTART 17 log2\nLOGPART log2\nanother line"), "log2\nLOGPART log2\nanother line"),
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		cfg := Config{LineStartPattern: tc.Pattern, OmitPattern: tc.OmitPattern}
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
+		cfg := Config{
+			LineStartPattern: tc.pattern,
+			OmitPattern:      tc.omitPattern,
+		}
+		splitFunc, err := cfg.Func(unicode.UTF8, tc.flushAtEOF, 0)
 		require.NoError(t, err)
-		t.Run(tc.Name, tc.Run(splitFunc))
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
-
-	t.Run("FirstMatchHitsEndOfBuffer", func(t *testing.T) {
-		splitFunc := LineStartSplitFunc(regexp.MustCompile("LOGSTART"), false, false)
-		data := []byte(`LOGSTART`)
-
-		t.Run("NotAtEOF", func(t *testing.T) {
-			advance, token, err := splitFunc(data, false)
-			require.NoError(t, err)
-			require.Equal(t, 0, advance)
-			require.Nil(t, token)
-		})
-
-		t.Run("AtEOF", func(t *testing.T) {
-			advance, token, err := splitFunc(data, true)
-			require.NoError(t, err)
-			require.Equal(t, 0, advance)
-			require.Nil(t, token)
-		})
-	})
-
-	t.Run("FlushAtEOF", func(t *testing.T) {
-		flushAtEOFCases := []splittest.TestCase{
-			{
-				Name:           "NoMatch",
-				Pattern:        `^LOGSTART \d+`,
-				Input:          []byte("LOGPART log1\nLOGPART log1\t   \n"),
-				ExpectedTokens: []string{"LOGPART log1\nLOGPART log1\t   \n"},
-			},
-			{
-				Name:    "MatchThenNoMatch",
-				Pattern: `^LOGSTART \d+`,
-				Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \nLOGSTART 17 log2\nLOGPART log2\nanother line"),
-				ExpectedTokens: []string{
-					"LOGSTART 12 log1\t  \nLOGPART log1\nLOGPART log1\t   \n",
-					"LOGSTART 17 log2\nLOGPART log2\nanother line",
-				},
-			},
-		}
-		for _, tc := range flushAtEOFCases {
-			cfg := Config{LineStartPattern: `^LOGSTART \d+`}
-			splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
-			require.NoError(t, err)
-			t.Run(tc.Name, tc.Run(splitFunc))
-		}
-	})
-
-	// TODO move to internal/splitter?
-	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := Config{LineStartPattern: ` LOGSTART \d+ `}
-		input := []byte(" LOGSTART 123 log1  LOGSTART 234 log2  LOGSTART 345 foo")
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
-		require.NoError(t, err)
-
-		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
-		t.Run("TrimLeading", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`LOGSTART 123 log1 `,
-				`LOGSTART 234 log2 `,
-			}}.Run(splitTrimLeading))
-
-		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
-		t.Run("TrimTrailing", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				` LOGSTART 123 log1`,
-				` LOGSTART 234 log2`,
-			}}.Run(splitTrimTrailing))
-
-		splitTrimBoth := trim.WithFunc(splitFunc, trim.Whitespace)
-		t.Run("TrimBoth", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`LOGSTART 123 log1`,
-				`LOGSTART 234 log2`,
-			}}.Run(splitTrimBoth))
-	})
 }
 
-func TestLineEndSplitFunc(t *testing.T) {
-	testCases := []splittest.TestCase{
+func TestLineEndSplitFunc_Detailed(t *testing.T) {
+	testCases := []struct {
+		name        string
+		pattern     string
+		omitPattern bool
+		flushAtEOF  bool
+		input       []byte
+		steps       []splittest.Step
+	}{
 		{
-			Name:    "OneLogSimple",
-			Pattern: `LOGEND \d+`,
-			Input:   []byte(`my log LOGEND 123`),
-			ExpectedTokens: []string{
-				`my log LOGEND 123`,
+			name:    "OneLogSimple",
+			pattern: `LOGEND \d+ `,
+			input:   []byte("my log LOGEND 123 "),
+			steps: []splittest.Step{
+				splittest.ExpectToken("my log LOGEND 123 "),
 			},
 		},
 		{
-			Name:        "OneLogSimpleOmitPattern",
-			Pattern:     `LOGEND \d+`,
-			OmitPattern: true,
-			Input:       []byte(`my log LOGEND 123`),
-			ExpectedTokens: []string{
-				`my log `,
+			name:        "OneLogSimpleOmitPattern",
+			pattern:     `LOGEND \d+ `,
+			omitPattern: true,
+			input:       []byte("my log LOGEND 123 "),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("my log LOGEND 123 "), "my log "),
 			},
 		},
 		{
-			Name:    "TwoLogsSimple",
-			Pattern: `LOGEND \d+`,
-			Input:   []byte(`log1 LOGEND 123log2 LOGEND 234`),
-			ExpectedTokens: []string{
-				`log1 LOGEND 123`,
-				`log2 LOGEND 234`,
+			name:    "TwoLogsSimple",
+			pattern: `LOGEND \d+ `,
+			input:   []byte("log1 LOGEND 123 log2 LOGEND 234 "),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 LOGEND 123 "),
+				splittest.ExpectToken("log2 LOGEND 234 "),
 			},
 		},
 		{
-			Name:        "TwoLogsSimpleOmitPattern",
-			Pattern:     `LOGEND \d+`,
-			OmitPattern: true,
-			Input:       []byte(`log1 LOGEND 123log2 LOGEND 234`),
-			ExpectedTokens: []string{
-				`log1 `,
-				`log2 `,
+			name:        "TwoLogsSimpleOmitPattern",
+			pattern:     `LOGEND \d+ `,
+			omitPattern: true,
+			input:       []byte("log1 LOGEND 123 log2 LOGEND 234 "),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1 LOGEND 123 "), "log1 "),
+				splittest.ExpectAdvanceToken(len("log2 LOGEND 234 "), "log2 "),
 			},
 		},
 		{
-			Name:    "TwoLogsLineEndSimple",
-			Pattern: `LOGEND$`,
-			Input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
-			ExpectedTokens: []string{
-				"log1 LOGEND LOGEND",
-				"\nlog2 LOGEND",
+			name:    "TwoLogsLineEndSimple",
+			pattern: `LOGEND$`,
+			input:   []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1 LOGEND LOGEND"),
+				splittest.ExpectToken("\nlog2 LOGEND"),
 			},
 		},
 		{
-			Name:        "TwoLogsLineEndSimpleOmitPattern",
-			Pattern:     `LOGEND$`,
-			OmitPattern: true,
-			Input:       []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
-			ExpectedTokens: []string{
-				"log1 LOGEND ",
-				"\nlog2 ",
+			name:        "TwoLogsLineEndSimpleOmitPattern",
+			pattern:     `LOGEND$`,
+			omitPattern: true,
+			input:       []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1 LOGEND LOGEND"), "log1 LOGEND "),
+				splittest.ExpectAdvanceToken(len("\nlog2 LOGEND"), "\nlog2 "),
 			},
 		},
 		{
-			Name:        "TwoLogsLineEndSimpleOmitPatternNoStringEndingToken",
-			Pattern:     `LOGEND`,
-			OmitPattern: true,
-			Input:       []byte("log1 LOGEND LOGEND\nlog2 LOGEND\n"),
-			ExpectedTokens: []string{
-				"log1 ",
-				" ",
-				"\nlog2 ",
+			name:    "NoMatches",
+			pattern: `LOGEND \d+ `,
+			input:   []byte("file that has no matches in it"),
+		},
+		{
+			name:        "NoMatchesOmitPattern",
+			omitPattern: true,
+			pattern:     `LOGEND \d+ `,
+			input:       []byte("file that has no matches in it"),
+		},
+		{
+			name:    "NonMatchesAfter",
+			pattern: `LOGEND \d+ `,
+			input:   []byte("part that matches LOGEND 123 part that doesn't match"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("part that matches LOGEND 123 "),
 			},
 		},
 		{
-			Name:    "NoMatches",
-			Pattern: `LOGEND \d+`,
-			Input:   []byte(`file that has no matches in it`),
-		},
-		{
-			Name:        "NoMatchesOmitPattern",
-			OmitPattern: true,
-			Pattern:     `LOGEND \d+`,
-			Input:       []byte(`file that has no matches in it`),
-		},
-		{
-			Name:    "NonMatchesAfter",
-			Pattern: `LOGEND \d+`,
-			Input:   []byte(`part that matches LOGEND 123 part that doesn't match`),
-			ExpectedTokens: []string{
-				`part that matches LOGEND 123`,
+			name:        "NonMatchesAfterOmitPattern",
+			pattern:     `LOGEND \d+ `,
+			omitPattern: true,
+			input:       []byte("part that matches LOGEND 123 part that doesn't match"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("part that matches LOGEND 123 "), "part that matches "),
 			},
 		},
 		{
-			Name:        "NonMatchesAfterOmitPattern",
-			Pattern:     `LOGEND \d+`,
-			OmitPattern: true,
-			Input:       []byte(`part that matches LOGEND 123 part that doesn't match`),
-			ExpectedTokens: []string{
-				`part that matches `,
-			},
-		},
-		{
-			Name:    "HugeLog100",
-			Pattern: `LOGEND \d`,
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(100)
-				newInput = append(newInput, []byte(`LOGEND 1 `)...)
-				return newInput
-			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(100)) + `LOGEND 1`,
-			},
-		},
-		{
-			Name:        "HugeLog100OmitPattern",
-			Pattern:     `LOGEND \d`,
-			OmitPattern: true,
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(100)
-				newInput = append(newInput, []byte(`LOGEND 1 `)...)
-				return newInput
-			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(100)),
-			},
-		},
-		{
-			Name:    "HugeLog10000",
-			Pattern: `LOGEND \d`,
-			Input: func() []byte {
+			name:    "HugeLog10000",
+			pattern: `LOGEND \d `,
+			input: func() []byte {
 				newInput := splittest.GenerateBytes(10000)
-				newInput = append(newInput, []byte(`LOGEND 1 `)...)
+				newInput = append(newInput, []byte("LOGEND 1 ")...)
 				return newInput
 			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(10000)) + `LOGEND 1`,
+			steps: []splittest.Step{
+				splittest.ExpectToken(string(splittest.GenerateBytes(10000)) + "LOGEND 1 "),
 			},
 		},
 		{
-			Name:    "HugeLog1000000",
-			Pattern: `LOGEND \d`,
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(1000000)
-				newInput = append(newInput, []byte(`LOGEND 1 `)...)
+			name:        "HugeLog10000OmitPattern",
+			pattern:     `LOGEND \d `,
+			omitPattern: true,
+			input: func() []byte {
+				newInput := splittest.GenerateBytes(10000)
+				newInput = append(newInput, []byte("LOGEND 1 ")...)
 				return newInput
 			}(),
-			ExpectedError: errors.New("bufio.Scanner: token too long"),
-		},
-		{
-			Name:        "HugeLog1000000OmitPattern",
-			Pattern:     `LOGEND \d`,
-			OmitPattern: true,
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(1000000)
-				newInput = append(newInput, []byte(`LOGEND 1 `)...)
-				return newInput
-			}(),
-			ExpectedError: errors.New("bufio.Scanner: token too long"),
-		},
-		{
-			Name:    "MultiplesplitLogs",
-			Pattern: `^LOGEND.*$`,
-			Input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
-			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   ",
-				"\nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2",
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10000+len("LOGEND 1 "), string(splittest.GenerateBytes(10000))),
 			},
 		},
 		{
-			Name:        "MultipleMultilineLogsOmitPattern",
-			Pattern:     `^LOGEND.*$`,
-			OmitPattern: true,
-			Input:       []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
-			ExpectedTokens: []string{
-				"LOGSTART 12 log1\t  \nLOGPART log1\n",
-				"\nLOGSTART 17 log2\nLOGPART log2\n",
+			name:    "MultiplesplitLogs",
+			pattern: `^LOGEND.*\n`,
+			input:   []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \n"),
+				splittest.ExpectToken("LOGSTART 17 log2\nLOGPART log2\nLOGEND log2\n"),
 			},
 		},
 		{
-			Name:    "NoMatch",
-			Pattern: `^LOGEND.*$`,
-			Input:   []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			name:        "MultipleMultilineLogsOmitPattern",
+			pattern:     `^LOGEND.*\n`,
+			omitPattern: true,
+			input:       []byte("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \nLOGSTART 17 log2\nLOGPART log2\nLOGEND log2\nLOGSTART 43 log5"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGSTART 12 log1\t  \nLOGPART log1\nLOGEND log1\t   \n"), "LOGSTART 12 log1\t  \nLOGPART log1\n"),
+				splittest.ExpectAdvanceToken(len("LOGSTART 17 log2\nLOGPART log2\nLOGEND log2\n"), "LOGSTART 17 log2\nLOGPART log2\n"),
+			},
+		},
+		{
+			name:       "FlushAtEOFNoMatch",
+			pattern:    `^LOGSTART \d+`,
+			flushAtEOF: true,
+			input:      []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGPART log1\nLOGPART log1\t   \n"),
+			},
+		},
+		{
+			name:        "FlushAtEOFNoMatchOmitPattern",
+			pattern:     `^LOGSTART \d+`,
+			omitPattern: true,
+			flushAtEOF:  true,
+			input:       []byte("LOGPART log1\nLOGPART log1\t   \n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("LOGPART log1\nLOGPART log1\t   \n"),
+			},
 		},
 	}
 
 	for _, tc := range testCases {
-		cfg := Config{LineEndPattern: tc.Pattern, OmitPattern: tc.OmitPattern}
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
+		cfg := Config{
+			LineEndPattern: tc.pattern,
+			OmitPattern:    tc.omitPattern,
+		}
+		splitFunc, err := cfg.Func(unicode.UTF8, tc.flushAtEOF, 0)
 		require.NoError(t, err)
-		t.Run(tc.Name, tc.Run(splitFunc))
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
-
-	t.Run("FlushAtEOF", func(t *testing.T) {
-		cfg := Config{LineEndPattern: `^LOGSTART \d+`}
-		splitFunc, err := cfg.Func(unicode.UTF8, true, 0)
-		require.NoError(t, err)
-		splittest.TestCase{
-			Name:           "NoMatch",
-			Input:          []byte("LOGPART log1\nLOGPART log1\t   \n"),
-			ExpectedTokens: []string{"LOGPART log1\nLOGPART log1\t   \n"},
-		}.Run(splitFunc)(t)
-	})
-
-	// TODO move to internal/splitter?
-	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := Config{LineEndPattern: ` LOGEND `}
-		input := []byte(" log1 LOGEND  log2 LOGEND ")
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
-		require.NoError(t, err)
-
-		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
-		t.Run("TrimLeading", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`log1 LOGEND `,
-				`log2 LOGEND `,
-			}}.Run(splitTrimLeading))
-
-		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
-		t.Run("TrimTrailing", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				` log1 LOGEND`,
-				` log2 LOGEND`,
-			}}.Run(splitTrimTrailing))
-
-		splitTrimBoth := trim.WithFunc(splitFunc, trim.Whitespace)
-		t.Run("TrimBoth", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`log1 LOGEND`,
-				`log2 LOGEND`,
-			}}.Run(splitTrimBoth))
-	})
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
