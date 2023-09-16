@@ -4,6 +4,7 @@
 package matcher // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -109,23 +110,24 @@ type Matcher struct {
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
 func (m Matcher) MatchFiles() ([]string, error) {
+	var errs error
 	files, err := finder.FindFiles(m.include, m.exclude)
 	if err != nil {
-		return files, err
+		errs = errors.Join(errs, err)
 	}
 	if len(files) == 0 {
-		return files, fmt.Errorf("no files match the configured criteria")
+		return files, errors.Join(errs, fmt.Errorf("no files match the configured criteria"))
 	}
 	if len(m.filterOpts) == 0 {
-		return files, nil
+		return files, errs
 	}
 
 	result, err := filter.Filter(files, m.regex, m.filterOpts...)
 	if len(result) == 0 {
-		return result, err
+		return result, errors.Join(errs, err)
 	}
 
 	// Return only the first item.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23788
-	return result[:1], err
+	return result[:1], errors.Join(errs, err)
 }

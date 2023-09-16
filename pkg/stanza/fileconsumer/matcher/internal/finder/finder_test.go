@@ -191,3 +191,45 @@ func TestFindFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestFindFilesWithIOErrors(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(t.TempDir()))
+	defer func() {
+		require.NoError(t, os.Chdir(cwd))
+	}()
+
+	for _, f := range []string{
+		"1.log",
+		"2.log",
+		filepath.Join("no_permission", "1.log"),
+		filepath.Join("no_permission", "2.log"),
+		filepath.Join("dir1", "1.log"),
+		filepath.Join("dir1", "2.log"),
+	} {
+		require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
+
+		_, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, os.Chmod("no_permission", 0000))
+	defer func() {
+		require.NoError(t, os.Chmod("no_permission", 0700))
+	}()
+
+	files, err := FindFiles(
+		[]string{
+			"*.log",
+			filepath.Join("no_permission", "*.log"),
+			filepath.Join("dir1", "*.log"),
+		}, []string{})
+	assert.ErrorContains(t, err, "no_permission/*.log")
+	assert.Equal(t, []string{
+		"1.log",
+		"2.log",
+		"dir1/1.log",
+		"dir1/2.log",
+	}, files)
+}
