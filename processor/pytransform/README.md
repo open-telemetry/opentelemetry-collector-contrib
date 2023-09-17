@@ -476,4 +476,4 @@ service:
 
 ### Warnings
 
-The Pytransform processor allows you to modify all aspects of you telemetry data. This can result in valid or bad data being propogated if you are not careful. It is your responsibility to inspect the data and ensure it is valid.
+The Pytransform processor allows you to modify all aspects of you telemetry data. This can result in invalid or bad data being propogated if you are not careful. It is your responsibility to inspect the data and ensure it is valid.
