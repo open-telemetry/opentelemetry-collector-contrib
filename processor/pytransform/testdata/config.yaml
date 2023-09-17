@@ -1,0 +1,124 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:4318"
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+  filelog:
+    start_at: beginning
+    include_file_name: true
+    include: 
+      - $LOGFILE
+
+    operators:
+      - type: move
+        from: attributes["log.file.name"]
+        to: resource["log.file.name"]
+
+      - type: add
+        field: attributes.app
+        value: dev
+
+processors:
+  pytransform/logs:
+    code: |
+      # edit resource attributes
+      for data in event['resourceLogs']:
+        for attr in data['resource']['attributes']:
+          attr['value']['stringValue'] = 'source.log'
+
+      # filter/delete logs
+      for data in event['resourceLogs']:
+        for slog in  data['scopeLogs']:
+          slog['logRecords'] = [ lr for lr in slog['logRecords'] if 'internal' not in lr['body']['stringValue']]
+          
+          # add an attribute to each log
+          for lr in slog['logRecords']:
+            lr['attributes'].append({
+              'key': 'language',
+              'value': {
+                'stringValue': 'golang'
+              }})
+              
+      send(event)
+
+  pytransform/metrics:
+    code: |
+      for md in event['resourceMetrics']:
+        # if resources are empty
+        if not md['resource']:
+          md['resource'] = {
+            'attributes': [
+              {
+                "key": "source",
+                "value": {
+                  "stringValue": "pytransform"
+                }
+              }
+            ]
+          }
+
+        # prefix each metric name with pytransform
+        for sm in md['scopeMetrics']:
+          for m in sm['metrics']:
+            m['name'] = 'pytransform.' + m['name']
+
+      send(event)
+
+  pytransform/traces:
+    code: |
+      for td in event['resourceSpans']:
+        # add resource attribute
+        td['resource']['attributes'].append({
+          'key': 'source',
+          'value': {
+            'stringValue': 'pytransform'
+          }
+        })
+
+        # filter spans with http.target /roll attribute
+        has_roll = lambda attrs: [a for a in attrs if a['key'] == 'http.target' and a['value']['stringValue'] == '/roll']
+        for sd in td['scopeSpans']:
+          sd['spans'] = [
+            s for s in sd['spans']
+            if not has_roll(s['attributes'])
+          ]
+
+      send(event)
+
+exporters:
+  logging:
+    verbosity: detailed
+
+
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      processors:
+      - pytransform/logs
+      exporters:
+      - logging
+
+    metrics:
+      receivers:
+      - otlp
+      processors:
+      - pytransform/metrics
+      exporters:
+      - logging
+
+    traces:
+      receivers:
+      - otlp
+      processors:
+      - pytransform/traces
+      exporters:
+      - logging
+
+  # telemetry:
+  #   logs:
+  #     level: debug
