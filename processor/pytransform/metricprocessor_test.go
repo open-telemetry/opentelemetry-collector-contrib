@@ -37,7 +37,7 @@ func TestMetricConsumer(t *testing.T) {
 	next := &fakeMetricConsumer{t: t, expected: `{"resourceMetrics":[{"resource":{},"scopeMetrics":[{"scope":{"name":"otelcol/hostmetricsreceiver/memory","version":"0.84.0"},"metrics":[{"name":"system.memory.usage","description":"Bytes of memory in use.","unit":"By","sum":{"dataPoints":[{"attributes":[{"key":"state","value":{"stringValue":"used"}}],"startTimeUnixNano":"1694171569000000000","timeUnixNano":"1694189699786689531","asInt":"1874247680"},{"attributes":[{"key":"state","value":{"stringValue":"free"}}],"startTimeUnixNano":"1694171569000000000","timeUnixNano":"1694189699786689531","asInt":"29214199808"}],"aggregationTemporality":2}}]}],"schemaUrl":"https://opentelemetry.io/schemas/1.9.0"}]}`}
 	mp := newMetricsProcessor(context.Background(), zap.NewNop(), createDefaultConfig().(*Config), ep, next)
 
-	f, err := os.Open("testdata/metrics.json")
+	f, err := os.Open("testdata/metric_event_example.json")
 	require.NoError(t, err)
 
 	defer f.Close()
