@@ -121,6 +121,32 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
+			name: "start_time",
+			path: []ottl.Field{
+				{
+					Name: "start_time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 100000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 86400000000000, time.UTC),
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(86400, 0)))
+			},
+		},
+		{
+			name: "time",
+			path: []ottl.Field{
+				{
+					Name: "time",
+				},
+			},
+			orig:   time.Date(1970, 1, 1, 0, 0, 0, 500000000, time.UTC),
+			newVal: time.Date(1970, 1, 1, 0, 0, 0, 200000000, time.UTC),
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				datapoint.SetTimestamp(pcommon.NewTimestampFromTime(time.UnixMilli(200)))
+			},
+		},
+		{
 			name: "time_unix_nano",
 			path: []ottl.Field{
 				{
@@ -518,6 +544,7 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 			tt.modified(exNumberDataPoint)
 
 			assert.Equal(t, exNumberDataPoint, numberDataPoint)
+
 		})
 	}
 }

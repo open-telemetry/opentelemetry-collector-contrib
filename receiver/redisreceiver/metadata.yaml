@@ -94,7 +94,7 @@ metrics:
   redis.cmd.latency:
     enabled: false
     description: Command execution latency
-    unit: us
+    unit: s
     gauge:
       value_type: double
     attributes: [cmd, percentile]
