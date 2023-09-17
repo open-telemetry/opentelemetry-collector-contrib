@@ -30,7 +30,9 @@ processors:
 
 ## How it works
 
-The python language is embedded to the Open Telemetry binary, this allows you to run this processor without having python installed on the host itself.
+The python language is embedded to the Open Telemetry binary, this allows you to run this processor without having python installed on the host itself. 
+
+This design is based on Embedded Python for Go Project found [here](https://github.com/kluctl/go-embed-python).
 
 When a python transform is executed, a controlled subprocess is called using the embedded python implementation that calls the user code. 
 
