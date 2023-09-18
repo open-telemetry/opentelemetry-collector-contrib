@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.85.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 )
 
 require (
@@ -35,7 +35,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.13.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.6 // indirect
 	github.com/aws/smithy-go v1.14.2 // indirect
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
