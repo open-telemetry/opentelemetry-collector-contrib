@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkae
 go 1.20
 
 require (
-	github.com/IBM/sarama v1.41.1
+	github.com/IBM/sarama v1.41.2
 	github.com/aws/aws-sdk-go v1.45.7
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.2
