@@ -6,4 +6,4 @@ status:
     development: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [jmacd, lquerel]
+    active: [jmacd, moh-osman3, codeboten]

@@ -86,7 +86,7 @@ func createMetrics(
 	return nil, fmt.Errorf("unimplemented")
 }
 
-// createLog creates a log receiver based on provided config.
+// createLogs creates a log receiver based on provided config.
 func createLogs(
 	_ context.Context,
 	_ receiver.CreateSettings,
