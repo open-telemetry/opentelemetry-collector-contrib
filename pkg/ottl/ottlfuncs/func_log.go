@@ -12,7 +12,7 @@ import (
 )
 
 type LogArguments[K any] struct {
-	Target ottl.FloatLikeGetter[K] `ottlarg:"0"`
+	Target ottl.FloatLikeGetter[K]
 }
 
 func NewLogFactory[K any]() ottl.Factory[K] {
