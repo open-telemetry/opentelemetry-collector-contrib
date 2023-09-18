@@ -3,13 +3,12 @@
 
 package service // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/service"
 import (
+	"context"
 	"fmt"
-
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 
@@ -44,30 +43,34 @@ func GetPodServiceTags(pod *corev1.Pod, services cache.Store) map[string]string 
 	return properties
 }
 
-func RecordMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, svc *corev1.Service, ts pcommon.Timestamp) {
+func RecordMetrics(mb *imetadata.MetricsBuilder, svc *corev1.Service, ts pcommon.Timestamp) {
+	svcDetails := GetServiceDetails(svc)
+	mb.RecordK8sServicePortCountDataPoint(ts, int64(len(svcDetails.Spec.Ports)))
 
-	mb.RecordK8sServicePortCountDataPoint(ts, int64(len(svc.Spec.Ports)))
 	rb := mb.NewResourceBuilder()
-
-	rb.SetK8sServiceClusterIP(svc.Spec.ClusterIP)
+	rb.SetK8sServiceUID(string(svc.UID))
 	rb.SetK8sServiceName(svc.ObjectMeta.Name)
 	rb.SetK8sServiceNamespace(svc.ObjectMeta.Namespace)
-	rb.SetK8sServiceUID(string(svc.UID))
-	rb.SetK8sServiceType(string(svc.Spec.Type))
+	rb.SetK8sServiceClusterIP(svcDetails.Spec.ClusterIP)
+	rb.SetK8sServiceType(string(svcDetails.Spec.Type))
+	rb.SetK8sServiceClusterIP(svcDetails.Spec.ClusterIP)
 	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
-func getResourceForService(svc *corev1.Service) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: "k8s",
-		Labels: map[string]string{
-			"k8s.service.uid":                     string(svc.UID),
-			conventions.AttributeServiceNamespace: svc.ObjectMeta.Namespace,
-			conventions.AttributeServiceName:      svc.ObjectMeta.Name,
-			"k8s.service.cluster_ip":              svc.Spec.ClusterIP,
-			"k8s.service.type":                    string(svc.Spec.Type),
-			"k8s.cluster.name":                    "unknown",
-		},
+func GetServiceDetails(svc *corev1.Service) *corev1.Service {
+	var svcObject *corev1.Service
+
+	client, _ := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+
+	service, err := client.CoreV1().Services(svc.ObjectMeta.Namespace).Get(context.TODO(), svc.ObjectMeta.Name, v1.GetOptions{})
+	if err != nil {
+		panic(err)
+	} else {
+		svcObject = service
 	}
+
+	return svcObject
 }
