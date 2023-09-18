@@ -29,25 +29,17 @@ type readerFactory struct {
 }
 
 func (f *readerFactory) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader, error) {
-	lineSplitFunc, err := f.splitterFactory.SplitFunc()
-	if err != nil {
-		return nil, err
-	}
 	return f.build(file, &readerMetadata{
 		Fingerprint:    fp,
 		FileAttributes: map[string]any{},
-	}, lineSplitFunc)
+	}, f.splitterFactory.SplitFunc())
 }
 
 // copy creates a deep copy of a reader
 func (f *readerFactory) copy(old *reader, newFile *os.File) (*reader, error) {
-	var err error
 	lineSplitFunc := old.lineSplitFunc
 	if lineSplitFunc == nil {
-		lineSplitFunc, err = f.splitterFactory.SplitFunc()
-		if err != nil {
-			return nil, err
-		}
+		lineSplitFunc = f.splitterFactory.SplitFunc()
 	}
 	return f.build(newFile, &readerMetadata{
 		Fingerprint:     old.Fingerprint.Copy(),
