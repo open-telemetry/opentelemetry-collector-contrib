@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.85.0
 	go.opentelemetry.io/otel/trace v1.17.0
 	go.uber.org/goleak v1.2.1
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 )
 
 require (
