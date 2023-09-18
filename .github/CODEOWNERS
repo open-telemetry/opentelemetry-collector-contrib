@@ -64,6 +64,7 @@ exporter/googlemanagedprometheusexporter/                               @open-te
 exporter/influxdbexporter/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/instanaexporter/                                               @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
 exporter/kafkaexporter/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+exporter/kineticaexporter/                                              @open-telemetry/collector-contrib-approvers @am-kinetica @TylerHelmuth
 exporter/loadbalancingexporter/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                                          @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                                @open-telemetry/collector-contrib-approvers @Doron-Bargo @yotamloe
