@@ -6,11 +6,14 @@ package googlecloudspannerreceiver // import "github.com/open-telemetry/opentele
 import (
 	"context"
 	_ "embed"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver/internal/datasource"
@@ -41,18 +44,26 @@ func newGoogleCloudSpannerReceiver(logger *zap.Logger, config *Config) *googleCl
 }
 
 func (r *googleCloudSpannerReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
-	var allMetricsDataPoints []*metadata.MetricsDataPoint
+	var (
+		allMetricsDataPoints []*metadata.MetricsDataPoint
+		err                  error
+	)
 
 	for _, projectReader := range r.projectReaders {
-		dataPoints, err := projectReader.Read(ctx)
-		if err != nil {
-			return pmetric.Metrics{}, err
+		dataPoints, readErr := projectReader.Read(ctx)
+		err = multierr.Combine(err, readErr)
+		if err == nil {
+			allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
 		}
-
-		allMetricsDataPoints = append(allMetricsDataPoints, dataPoints...)
 	}
 
-	return r.metricsBuilder.Build(allMetricsDataPoints)
+	result, buildErr := r.metricsBuilder.Build(allMetricsDataPoints)
+
+	if buildErr == nil {
+		err = scrapererror.NewPartialScrapeError(err, len(multierr.Errors(err)))
+	}
+
+	return result, errors.Join(err, buildErr)
 }
 
 func (r *googleCloudSpannerReceiver) Start(ctx context.Context, _ component.Host) error {
