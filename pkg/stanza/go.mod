@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
 	go.opentelemetry.io/collector/receiver v0.85.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/sys v0.12.0
 	golang.org/x/text v0.13.0
 	gonum.org/v1/gonum v0.14.0
@@ -31,7 +31,6 @@ require (
 )
 
 require (
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
