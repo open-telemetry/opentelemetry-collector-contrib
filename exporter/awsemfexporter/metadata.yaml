@@ -6,4 +6,4 @@ status:
     beta: [metrics]
   distributions: [contrib, aws, observiq]
   codeowners:
-    active: [Aneurysm9, shaochengwang, mxiamxia]
+    active: [Aneurysm9, shaochengwang, mxiamxia, bryan-aguilar]
