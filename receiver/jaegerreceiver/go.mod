@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.85.0
 	go.opentelemetry.io/collector/semconv v0.85.0
 	go.uber.org/multierr v1.11.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/net v0.15.0
 	google.golang.org/grpc v1.58.0
 )
