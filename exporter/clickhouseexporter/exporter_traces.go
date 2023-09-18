@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS %s (
      INDEX idx_span_attr_value mapValues(SpanAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
      INDEX idx_duration Duration TYPE minmax GRANULARITY 1
 ) ENGINE MergeTree()
-%s
+TTL Timestamp + INTERVAL 12 HOUR
 PARTITION BY toDate(Timestamp)
 ORDER BY (ServiceName, SpanName, toUnixTimestamp(Timestamp), TraceId)
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
@@ -259,6 +259,7 @@ create table IF NOT EXISTS %s_trace_id_ts (
 ORDER BY (TraceId, toUnixTimestamp(Start))
 SETTINGS index_granularity=8192;
 `
+  // This is definitely not needed...
 	createTraceIDTsMaterializedViewSQL = `
 CREATE MATERIALIZED VIEW IF NOT EXISTS %s_trace_id_ts_mv
 TO %s.%s_trace_id_ts
