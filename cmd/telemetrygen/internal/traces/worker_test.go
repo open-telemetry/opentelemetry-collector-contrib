@@ -131,46 +131,53 @@ func TestSpanStatuses(t *testing.T) {
 		spanStatus  codes.Code
 		validInput  bool
 	}{
-		{inputStatus: `"Unset"`, spanStatus: codes.Unset, validInput: true},
-		{inputStatus: `"Error"`, spanStatus: codes.Error, validInput: true},
-		{inputStatus: `"Ok"`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `Unset`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `Error`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `Ok`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `unset`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `error`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `ok`, spanStatus: codes.Ok, validInput: true},
+		{inputStatus: `UNSET`, spanStatus: codes.Unset, validInput: true},
+		{inputStatus: `ERROR`, spanStatus: codes.Error, validInput: true},
+		{inputStatus: `OK`, spanStatus: codes.Ok, validInput: true},
 		{inputStatus: `0`, spanStatus: codes.Unset, validInput: true},
 		{inputStatus: `1`, spanStatus: codes.Error, validInput: true},
 		{inputStatus: `2`, spanStatus: codes.Ok, validInput: true},
-		{inputStatus: `"Foo"`, spanStatus: codes.Unset, validInput: false},
-		{inputStatus: `"UNSET"`, spanStatus: codes.Unset, validInput: false},
+		{inputStatus: `Foo`, spanStatus: codes.Unset, validInput: false},
 		{inputStatus: `-1`, spanStatus: codes.Unset, validInput: false},
 		{inputStatus: `3`, spanStatus: codes.Unset, validInput: false},
+		{inputStatus: `Err`, spanStatus: codes.Unset, validInput: false},
 	}
 
 	for _, tt := range tests {
-		syncer := &mockSyncer{}
+		t.Run(fmt.Sprintf("inputStatus=%s", tt.inputStatus), func(t *testing.T) {
+			syncer := &mockSyncer{}
 
-		tracerProvider := sdktrace.NewTracerProvider()
-		sp := sdktrace.NewSimpleSpanProcessor(syncer)
-		tracerProvider.RegisterSpanProcessor(sp)
-		otel.SetTracerProvider(tracerProvider)
+			tracerProvider := sdktrace.NewTracerProvider()
+			sp := sdktrace.NewSimpleSpanProcessor(syncer)
+			tracerProvider.RegisterSpanProcessor(sp)
+			otel.SetTracerProvider(tracerProvider)
 
-		cfg := &Config{
-			Config: common.Config{
-				WorkerCount: 1,
-			},
-			NumTraces:  1,
-			StatusCode: tt.inputStatus,
-		}
-
-		// test the program given input, including erroneous inputs
-		if tt.validInput {
-			require.NoError(t, Run(cfg, zap.NewNop()))
-			// verify that the default the span status is set as expected
-			for _, span := range syncer.spans {
-				assert.Equal(t, span.Status().Code, tt.spanStatus, fmt.Sprintf("span status: %v and expected status %v", span.Status().Code, tt.spanStatus))
+			cfg := &Config{
+				Config: common.Config{
+					WorkerCount: 1,
+				},
+				NumTraces:  1,
+				StatusCode: tt.inputStatus,
 			}
-		} else {
-			require.Error(t, Run(cfg, zap.NewNop()))
-		}
-	}
 
+			// test the program given input, including erroneous inputs
+			if tt.validInput {
+				require.NoError(t, Run(cfg, zap.NewNop()))
+				// verify that the default the span status is set as expected
+				for _, span := range syncer.spans {
+					assert.Equal(t, span.Status().Code, tt.spanStatus, fmt.Sprintf("span status: %v and expected status %v", span.Status().Code, tt.spanStatus))
+				}
+			} else {
+				require.Error(t, Run(cfg, zap.NewNop()))
+			}
+		})
+	}
 }
 
 var _ sdktrace.SpanExporter = (*mockSyncer)(nil)
