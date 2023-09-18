@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
@@ -29,6 +30,7 @@ const (
 	defaultMaxLogSize         = 1024 * 1024
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
+	defaultPollInterval       = 200 * time.Millisecond
 	defaultFlushPeriod        = 500 * time.Millisecond
 )
 
@@ -60,13 +62,14 @@ func NewConfig() *Config {
 		IncludeFilePath:         false,
 		IncludeFileNameResolved: false,
 		IncludeFilePathResolved: false,
-		PollInterval:            200 * time.Millisecond,
+		PollInterval:            defaultPollInterval,
 		Encoding:                defaultEncoding,
 		StartAt:                 "end",
 		FingerprintSize:         fingerprint.DefaultSize,
 		MaxLogSize:              defaultMaxLogSize,
 		MaxConcurrentFiles:      defaultMaxConcurrentFiles,
 		MaxBatches:              0,
+		FlushPeriod:             defaultFlushPeriod,
 	}
 }
 
@@ -107,12 +110,18 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback) (*Manager, 
 		return nil, err
 	}
 
-	// Ensure that splitter is buildable
-	factory := splitter.NewSplitFuncFactory(c.SplitConfig, enc, int(c.MaxLogSize), c.TrimConfig.Func(), c.FlushPeriod)
-	if _, err := factory.SplitFunc(); err != nil {
+	splitFunc, err := c.SplitConfig.Func(enc, false, int(c.MaxLogSize))
+	if err != nil {
 		return nil, err
 	}
 
+	trimFunc := trim.Nop
+	if enc != encoding.Nop {
+		trimFunc = c.TrimConfig.Func()
+	}
+
+	// Ensure that splitter is buildable
+	factory := splitter.NewFactory(splitFunc, trimFunc, c.FlushPeriod)
 	return c.buildManager(logger, emit, factory)
 }
 
@@ -122,16 +131,8 @@ func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback
 		return nil, err
 	}
 
-	if splitFunc == nil {
-		return nil, fmt.Errorf("must provide split function")
-	}
-
 	// Ensure that splitter is buildable
-	factory := splitter.NewCustomFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
-	if _, err := factory.SplitFunc(); err != nil {
-		return nil, err
-	}
-
+	factory := splitter.NewFactory(splitFunc, c.TrimConfig.Func(), c.FlushPeriod)
 	return c.buildManager(logger, emit, factory)
 }
 
