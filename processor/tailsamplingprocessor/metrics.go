@@ -27,7 +27,8 @@ var (
 
 	statPolicyEvaluationErrorCount = stats.Int64("sampling_policy_evaluation_error", "Count of sampling policy evaluation errors", stats.UnitDimensionless)
 
-	statCountTracesSampled = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not", stats.UnitDimensionless)
+	statCountTracesSampled       = stats.Int64("count_traces_sampled", "Count of traces that were sampled or not per sampling policy", stats.UnitDimensionless)
+	statCountGlobalTracesSampled = stats.Int64("global_count_traces_sampled", "Global count of traces that were sampled or not by at least one policy", stats.UnitDimensionless)
 
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
@@ -88,6 +89,14 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		Aggregation: view.Sum(),
 	}
 
+	countGlobalTracesSampledView := &view.View{
+		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountGlobalTracesSampled.Name()),
+		Measure:     statCountGlobalTracesSampled,
+		Description: statCountGlobalTracesSampled.Description(),
+		TagKeys:     []tag.Key{tagSampledKey},
+		Aggregation: view.Sum(),
+	}
+
 	countTraceDroppedTooEarlyView := &view.View{
 		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statDroppedTooEarlyCount.Name()),
 		Measure:     statDroppedTooEarlyCount,
@@ -117,6 +126,7 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 		countPolicyEvaluationErrorView,
 
 		countTracesSampledView,
+		countGlobalTracesSampledView,
 
 		countTraceDroppedTooEarlyView,
 		countTraceIDArrivalView,

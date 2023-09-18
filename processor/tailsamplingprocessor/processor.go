@@ -295,6 +295,21 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		}
 	}
 
+	switch finalDecision {
+	case sampling.Sampled:
+		_ = stats.RecordWithTags(
+			tsp.ctx,
+			[]tag.Mutator{tag.Upsert(tagSampledKey, "true")},
+			statCountGlobalTracesSampled.M(int64(1)),
+		)
+	case sampling.NotSampled:
+		_ = stats.RecordWithTags(
+			tsp.ctx,
+			[]tag.Mutator{tag.Upsert(tagSampledKey, "false")},
+			statCountGlobalTracesSampled.M(int64(1)),
+		)
+	}
+
 	return finalDecision, matchingPolicy
 }
 
