@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.repository_owner == 'open-telemetry' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
     
       - name: Run ping-codeowners-on-new-issue.sh
         run: ./.github/workflows/scripts/ping-codeowners-on-new-issue.sh

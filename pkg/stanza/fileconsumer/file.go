@@ -58,7 +58,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnw("finding files", "error", err.Error())
+		m.Warnf("finding files: %v", err)
 	}
 
 	// Start polling goroutine
@@ -115,7 +115,7 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Errorf("error finding files: %s", err)
+		m.Infof("finding files: %v", err)
 	}
 
 	for len(matches) > m.maxBatchFiles {
@@ -157,10 +157,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 			r.ReadToEnd(ctx)
 			// Delete a file if deleteAfterRead is enabled and we reached the end of the file
 			if m.deleteAfterRead && r.eof {
-				r.Close()
-				if err := os.Remove(r.file.Name()); err != nil {
-					m.Errorf("could not delete %s", r.file.Name())
-				}
+				r.Delete()
 			}
 		}(r)
 	}

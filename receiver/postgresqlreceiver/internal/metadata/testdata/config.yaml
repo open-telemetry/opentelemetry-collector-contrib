@@ -21,6 +21,8 @@ all_set:
       enabled: true
     postgresql.database.count:
       enabled: true
+    postgresql.database.locks:
+      enabled: true
     postgresql.db_size:
       enabled: true
     postgresql.deadlocks:
@@ -36,6 +38,8 @@ all_set:
     postgresql.rollbacks:
       enabled: true
     postgresql.rows:
+      enabled: true
+    postgresql.sequential_scans:
       enabled: true
     postgresql.table.count:
       enabled: true
@@ -78,6 +82,8 @@ none_set:
       enabled: false
     postgresql.database.count:
       enabled: false
+    postgresql.database.locks:
+      enabled: false
     postgresql.db_size:
       enabled: false
     postgresql.deadlocks:
@@ -93,6 +99,8 @@ none_set:
     postgresql.rollbacks:
       enabled: false
     postgresql.rows:
+      enabled: false
+    postgresql.sequential_scans:
       enabled: false
     postgresql.table.count:
       enabled: false

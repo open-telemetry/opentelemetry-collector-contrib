@@ -12,8 +12,8 @@ import (
 )
 
 type TimeArguments[K any] struct {
-	Time   ottl.StringGetter[K] `ottlarg:"0"`
-	Format string               `ottlarg:"1"`
+	Time   ottl.StringGetter[K]
+	Format string
 }
 
 func NewTimeFactory[K any]() ottl.Factory[K] {
