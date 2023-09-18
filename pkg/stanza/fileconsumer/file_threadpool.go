@@ -19,7 +19,8 @@ type readerEnvelope struct {
 	trieKey *fingerprint.Fingerprint
 }
 
-func (m *Manager) kickoffThreads(ctx context.Context) {
+// startConsumers starts a given number of goroutines consuming items from the channel
+func (m *Manager) startConsumers(ctx context.Context) {
 	m.readerChan = make(chan readerEnvelope, m.maxBatchFiles)
 	for i := 0; i < m.maxBatchFiles; i++ {
 		m.workerWg.Add(1)
@@ -27,17 +28,19 @@ func (m *Manager) kickoffThreads(ctx context.Context) {
 	}
 }
 
-func (m *Manager) shutdownThreads() {
+// stopConsumers closes the channel created during startConsumers, wait for the consumers to finish execution
+// and saves any files left
+func (m *Manager) stopConsumers() {
 	if m.readerChan != nil {
 		close(m.readerChan)
 	}
 	m.workerWg.Wait()
 	// save off any files left
 	// As we already cancelled our current context, create a new one to save any left offsets
-	// This is only applicable for `filelog.useThreadPool` featuregate
 	ctx, cancel := context.WithCancel(context.Background())
 	m.syncLastPollFilesConcurrent(ctx)
 	cancel()
+	m.once = sync.Once{}
 }
 
 // poll checks all the watched paths for new entries

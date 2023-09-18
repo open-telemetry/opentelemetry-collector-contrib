@@ -95,7 +95,7 @@ func buildTestManager(t testing.TB, cfg *Config, opts ...testManagerOption) (*Ma
 		ctx, cancel := context.WithCancel(context.Background())
 		input.cancel = cancel
 		input.once.Do(func() {
-			input.kickoffThreads(ctx)
+			input.startConsumers(ctx)
 		})
 	}
 	return input, tmc.emitChan

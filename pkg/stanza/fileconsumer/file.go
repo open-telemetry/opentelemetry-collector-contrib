@@ -76,7 +76,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	// If useThreadPool is enabled, kick off the worker threads
 	if useThreadPool.IsEnabled() {
 		m.once.Do(func() {
-			m.kickoffThreads(ctx)
+			m.startConsumers(ctx)
 		})
 	}
 
@@ -91,7 +91,7 @@ func (m *Manager) Stop() error {
 	m.cancel()
 	m.wg.Wait()
 	if useThreadPool.IsEnabled() {
-		m.shutdownThreads()
+		m.stopConsumers()
 	}
 
 	m.roller.cleanup()
