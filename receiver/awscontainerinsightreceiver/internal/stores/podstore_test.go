@@ -346,7 +346,6 @@ const (
 	PodUnknownMetricName   = "pod_status_unknown"
 	PodReadyMetricName     = "pod_status_ready"
 	PodScheduledMetricName = "pod_status_scheduled"
-	PodAgeMetricName       = "pod_age"
 )
 
 func TestPodStore_enhanced_metrics_disabled(t *testing.T) {
@@ -392,14 +391,6 @@ func TestPodStore_addStatus_adds_pod_succeeded_metric(t *testing.T) {
 	assert.Equal(t, 0, decoratedResultMetric.GetField(PodPendingMetricName))
 	assert.Equal(t, 0, decoratedResultMetric.GetField(PodRunningMetricName))
 	assert.Equal(t, 1, decoratedResultMetric.GetField(PodSucceededMetricName))
-}
-
-func TestPodStore_addStatus_pod_age(t *testing.T) {
-	decoratedResultMetric := runAddStatusToGetDecoratedCIMetric("./test_resources/pod_in_phase_succeeded.json", true)
-	year := time.Hour * 24 * 365
-
-	assert.Greater(t, decoratedResultMetric.GetField(PodAgeMetricName), 3*year.Seconds())
-	assert.Less(t, decoratedResultMetric.GetField(PodAgeMetricName), 100*year.Seconds())
 }
 
 func TestPodStore_addStatus_enhanced_metrics_disabled(t *testing.T) {

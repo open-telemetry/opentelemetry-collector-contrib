@@ -714,8 +714,6 @@ kubectl apply -f config.yaml
 | pod_status_pending                    | Count        |
 | pod_status_running                    | Count        |
 | pod_status_succeeded                  | Count        |
-| pod_age                               | Seconds      |
-
 
 | Resource Attribute   |
 |----------------------|
