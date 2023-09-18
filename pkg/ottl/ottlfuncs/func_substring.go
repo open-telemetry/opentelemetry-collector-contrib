@@ -11,9 +11,9 @@ import (
 )
 
 type SubstringArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
-	Start  ottl.IntGetter[K]    `ottlarg:"1"`
-	Length ottl.IntGetter[K]    `ottlarg:"2"`
+	Target ottl.StringGetter[K]
+	Start  ottl.IntGetter[K]
+	Length ottl.IntGetter[K]
 }
 
 func NewSubstringFactory[K any]() ottl.Factory[K] {
