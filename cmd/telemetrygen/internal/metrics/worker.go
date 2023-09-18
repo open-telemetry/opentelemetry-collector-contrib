@@ -52,7 +52,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Name: "gen",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
-					Temporality: metricdata.DeltaTemporality,
+					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							StartTime: time.Now().Add(-1 * time.Second),
