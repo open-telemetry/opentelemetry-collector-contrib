@@ -262,6 +262,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetK8sServiceNamespace("k8s.service.namespace-val")
 			rb.SetK8sServiceType("k8s.service.type-val")
 			rb.SetK8sServiceUID("k8s.service.uid-val")
+			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")

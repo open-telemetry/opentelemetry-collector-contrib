@@ -96,15 +96,15 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 	addFilesystemMetrics(a.mbs.PodMetricsBuilder, metadata.PodFilesystemMetrics, s.EphemeralStorage, currentTime)
 	addNetworkMetrics(a.mbs.PodMetricsBuilder, metadata.PodNetworkMetrics, s.Network, currentTime)
 
+	serviceName := a.getServiceName(s.PodRef.UID)
+	serviceAccountName := a.getServiceAccountName(s.PodRef.UID)
+
 	rb := a.mbs.PodMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sPodUID(s.PodRef.UID)
 	rb.SetK8sPodName(s.PodRef.Name)
 	rb.SetK8sNamespaceName(s.PodRef.Namespace)
-	rb.SetK8sPodUID(s.PodRef.UID)
-	rb.SetK8sPodName(s.PodRef.Name)
-	rb.SetK8sNamespaceName(s.PodRef.Namespace)
-	rb.SetK8sServiceName(a.getServiceName(s.PodRef.UID))
-	rb.SetK8sServiceAccountName(a.getServiceAccountName(s.PodRef.UID))
+	rb.SetK8sServiceName(serviceName)
+	rb.SetK8sServiceAccountName(serviceAccountName)
 	rb.SetK8sClusterName("unknown")
 	a.m = append(a.m, a.mbs.PodMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
@@ -114,7 +114,6 @@ func (a *metricDataAccumulator) podStats(s stats.PodStats) {
 
 // getch k8s service name from metadata
 func (a *metricDataAccumulator) getServiceName(podUID string) string {
-	//k8sAPIClient, err := k8sconfig.MakeClient(k8sconfig.APIConfig{})
 	k8sAPIClient, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
 		AuthType: k8sconfig.AuthTypeServiceAccount,
 	})

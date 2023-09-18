@@ -87,7 +87,7 @@ func (dc *DataCollector) CollectMetricData(currentTime time.Time) pmetric.Metric
 		resourcequota.RecordMetrics(dc.metricsBuilder, o.(*corev1.ResourceQuota), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Service, func(o any) {
-		service.RecordMetrics(dc.settings.Logger, dc.metricsBuilder, o.(*corev1.Service), ts)
+		service.RecordMetrics(dc.metricsBuilder, o.(*corev1.Service), ts)
 	})
 	dc.metadataStore.ForEach(gvk.Deployment, func(o any) {
 		deployment.RecordMetrics(dc.metricsBuilder, o.(*appsv1.Deployment), ts)

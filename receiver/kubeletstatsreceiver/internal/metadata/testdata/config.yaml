@@ -185,7 +185,7 @@ none_set:
     k8s.node.uptime:
       enabled: false
     k8s.pod.cpu.time:
-      enabled: false
+      enabled: true
     k8s.pod.cpu.utilization:
       enabled: false
     k8s.pod.filesystem.available:

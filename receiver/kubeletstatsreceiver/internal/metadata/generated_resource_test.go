@@ -38,7 +38,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 15, res.Attributes().Len())
+				assert.Equal(t, 18, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 19, res.Attributes().Len())
 			case "none_set":
@@ -79,7 +79,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "glusterfs.path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
 			}
@@ -119,12 +119,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "k8s.pod.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.service.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.service.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.service_account.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.service_account.name-val", val.Str())
 			}

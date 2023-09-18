@@ -45,6 +45,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sServiceNamespace("k8s.service.namespace-val")
 			rb.SetK8sServiceType("k8s.service.type-val")
 			rb.SetK8sServiceUID("k8s.service.uid-val")
+			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpencensusResourcetype("opencensus.resourcetype-val")
@@ -56,9 +57,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 37, res.Attributes().Len())
+				assert.Equal(t, 38, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 37, res.Attributes().Len())
+				assert.Equal(t, 38, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -225,6 +226,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.service.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service_account.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service_account.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
 			assert.True(t, ok)

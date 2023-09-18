@@ -33,6 +33,11 @@ resource_attributes:
     type: string
     enabled: true
 
+  k8s.service_account.name:
+    description: The name of the Service-account
+    type: string
+    enabled: true
+
   k8s.service.namespace:
     description: The namespace of the service
     type: string

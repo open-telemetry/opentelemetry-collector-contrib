@@ -4,6 +4,9 @@
 package pod // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/pod"
 
 import (
+	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"k8s.io/apimachinery/pkg/labels"
 	"strings"
 	"time"
 
@@ -77,11 +80,61 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetOpencensusResourcetype("k8s")
+	rb.SetK8sServiceName(getServiceNameForPod(pod))
+	rb.SetK8sServiceAccountName(getServiceAccountNameForPod(pod))
+	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	for _, c := range pod.Spec.Containers {
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
 	}
+}
+
+func getServiceNameForPod(pod *corev1.Pod) string {
+	var serviceName string
+
+	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+	if err != nil {
+		return ""
+	}
+
+	serviceList, err := client.CoreV1().Services(pod.Namespace).List(context.TODO(), v1.ListOptions{})
+	if err != nil {
+		return ""
+	}
+
+	for _, svc := range serviceList.Items {
+		if svc.Spec.Selector != nil {
+			if labels.Set(svc.Spec.Selector).AsSelectorPreValidated().Matches(labels.Set(pod.Labels)) {
+				serviceName = svc.Name
+				return serviceName
+			}
+		}
+	}
+
+	return ""
+}
+
+func getServiceAccountNameForPod(pod *corev1.Pod) string {
+	var serviceAccountName string
+
+	client, err := k8sconfig.MakeClient(k8sconfig.APIConfig{
+		AuthType: k8sconfig.AuthTypeServiceAccount,
+	})
+	if err != nil {
+		panic(err)
+		return ""
+	}
+
+	podDetails, err := client.CoreV1().Pods(pod.Namespace).Get(context.TODO(), pod.Name, v1.GetOptions{})
+	if err != nil {
+		return ""
+	}
+
+	serviceAccountName = podDetails.Spec.ServiceAccountName
+	return serviceAccountName
 }
 
 func reasonToInt(reason string) int32 {

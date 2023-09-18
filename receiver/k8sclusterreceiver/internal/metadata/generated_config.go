@@ -247,6 +247,7 @@ type ResourceAttributesConfig struct {
 	K8sServiceNamespace          ResourceAttributeConfig `mapstructure:"k8s.service.namespace"`
 	K8sServiceType               ResourceAttributeConfig `mapstructure:"k8s.service.type"`
 	K8sServiceUID                ResourceAttributeConfig `mapstructure:"k8s.service.uid"`
+	K8sServiceAccountName        ResourceAttributeConfig `mapstructure:"k8s.service_account.name"`
 	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
 	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
 	OpencensusResourcetype       ResourceAttributeConfig `mapstructure:"opencensus.resourcetype"`
@@ -350,6 +351,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sServiceUID: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sServiceAccountName: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		K8sStatefulsetName: ResourceAttributeConfig{
