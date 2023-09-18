@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/client9/misspell v0.3.4
-	github.com/daixiang0/gci v0.11.1
+	github.com/daixiang0/gci v0.11.2
 	github.com/golangci/golangci-lint v1.54.1
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
