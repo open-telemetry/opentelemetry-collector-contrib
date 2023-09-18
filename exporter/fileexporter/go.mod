@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileex
 go 1.20
 
 require (
-	github.com/klauspost/compress v1.16.7
+	github.com/klauspost/compress v1.17.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.85.0
 	github.com/stretchr/testify v1.8.4
