@@ -28,14 +28,13 @@ type worker struct {
 	totalDuration    time.Duration   // how long to run the test for (overrides `numTraces`)
 	limitPerSecond   rate.Limit      // how many spans per second to generate
 	wg               *sync.WaitGroup // notify when done
+	loadSize         int             // desired minimum size in MB of string data for each trace generated
+	spanDuration     time.Duration   // duration of generated spans
 	logger           *zap.Logger
-	loadSize         int
 }
 
 const (
 	fakeIP string = "1.2.3.4"
-
-	fakeSpanDuration = 123 * time.Microsecond
 
 	charactersPerMB = 1024 * 1024 // One character takes up one byte of space, so this number comes from the number of bytes in a megabyte
 )
@@ -76,7 +75,7 @@ func (w worker) simulateTraces() {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
 
-		opt := trace.WithTimestamp(time.Now().Add(fakeSpanDuration))
+		opt := trace.WithTimestamp(time.Now().Add(w.spanDuration))
 		child.SetStatus(w.statusCode, "")
 		child.End(opt)
 		sp.SetStatus(w.statusCode, "")

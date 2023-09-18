@@ -147,6 +147,7 @@ func Run(c *Config, logger *zap.Logger) error {
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
 			loadSize:         c.LoadSize,
+			spanDuration:     c.SpanDuration,
 		}
 
 		go w.simulateTraces()
