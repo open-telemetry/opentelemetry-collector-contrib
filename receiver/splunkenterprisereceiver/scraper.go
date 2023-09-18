@@ -243,7 +243,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 		}
 		if f.Content.TotalSize != "" {
 			mb, err := strconv.ParseFloat(f.Content.TotalSize, 64)
-			totalSize = int64(mb*1024*1024)
+			totalSize = int64(mb * 1024 * 1024)
 			if err != nil {
 				fmt.Println("Failed to parse total_size from response")
 				errs.Add(err)
@@ -390,7 +390,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 		}
 		if f.Content.TotalRawSize != "" {
 			mb, err := strconv.ParseFloat(f.Content.TotalRawSize, 64)
-			totalRawSize = int64(mb*1024*1024)
+			totalRawSize = int64(mb * 1024 * 1024)
 			if err != nil {
 				fmt.Println("Failed to parse total_raw_size from response")
 				errs.Add(err)
