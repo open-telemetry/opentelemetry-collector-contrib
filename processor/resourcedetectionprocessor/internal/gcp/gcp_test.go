@@ -13,6 +13,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
 	localMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp/internal/metadata"
 )
@@ -26,6 +27,7 @@ func TestDetect(t *testing.T) {
 		detector         internal.Detector
 		expectErr        bool
 		expectedResource map[string]any
+		addFaasID        bool
 	}{
 		{
 			desc: "zonal GKE cluster",
@@ -160,6 +162,28 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Cloud Run with feature gate disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:       "my-project",
+				cloudPlatform:   gcp.CloudRun,
+				faaSID:          "1472385723456792345",
+				faaSCloudRegion: "us-central1",
+				faaSName:        "my-service",
+				faaSVersion:     "123456",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSVersion:    "123456",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+			},
+			addFaasID: true,
+		},
+		{
 			desc: "Cloud Run Job",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:               "my-project",
@@ -182,6 +206,30 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "Cloud Run Job with feature gate disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:               "my-project",
+				cloudPlatform:           gcp.CloudRunJob,
+				faaSID:                  "1472385723456792345",
+				faaSCloudRegion:         "us-central1",
+				faaSName:                "my-service",
+				gcpCloudRunJobExecution: "my-service-ajg89",
+				gcpCloudRunJobTaskIndex: "2",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudRun,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+				"gcp.cloud_run.job.execution":       "my-service-ajg89",
+				"gcp.cloud_run.job.task_index":      "2",
+			},
+			addFaasID: true,
+		},
+		{
 			desc: "Cloud Functions",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:       "my-project",
@@ -200,6 +248,28 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSVersion:    "123456",
 				conventions.AttributeFaaSInstance:   "1472385723456792345",
 			},
+		},
+		{
+			desc: "Cloud Functions with feature gate disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:       "my-project",
+				cloudPlatform:   gcp.CloudFunctions,
+				faaSID:          "1472385723456792345",
+				faaSCloudRegion: "us-central1",
+				faaSName:        "my-service",
+				faaSVersion:     "123456",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  conventions.AttributeCloudPlatformGCPCloudFunctions,
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeFaaSName:       "my-service",
+				conventions.AttributeFaaSVersion:    "123456",
+				conventions.AttributeFaaSInstance:   "1472385723456792345",
+				conventions.AttributeFaaSID:         "1472385723456792345",
+			},
+			addFaasID: true,
 		},
 		{
 			desc: "App Engine Standard",
@@ -224,6 +294,30 @@ func TestDetect(t *testing.T) {
 			},
 		},
 		{
+			desc: "App Engine Standard with feature gate disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                 "my-project",
+				cloudPlatform:             gcp.AppEngineStandard,
+				appEngineServiceInstance:  "1472385723456792345",
+				appEngineAvailabilityZone: "us-central1-c",
+				appEngineRegion:           "us-central1",
+				appEngineServiceName:      "my-service",
+				appEngineServiceVersion:   "123456",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPAppEngine,
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				conventions.AttributeFaaSName:              "my-service",
+				conventions.AttributeFaaSVersion:           "123456",
+				conventions.AttributeFaaSInstance:          "1472385723456792345",
+				conventions.AttributeFaaSID:                "1472385723456792345",
+			},
+			addFaasID: true,
+		},
+		{
 			desc: "App Engine Flex",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:                 "my-project",
@@ -244,6 +338,30 @@ func TestDetect(t *testing.T) {
 				conventions.AttributeFaaSVersion:           "123456",
 				conventions.AttributeFaaSInstance:          "1472385723456792345",
 			},
+		},
+		{
+			desc: "App Engine Flex with feature gate disabled",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                 "my-project",
+				cloudPlatform:             gcp.AppEngineFlex,
+				appEngineServiceInstance:  "1472385723456792345",
+				appEngineAvailabilityZone: "us-central1-c",
+				appEngineRegion:           "us-central1",
+				appEngineServiceName:      "my-service",
+				appEngineServiceVersion:   "123456",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:         conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID:        "my-project",
+				conventions.AttributeCloudPlatform:         conventions.AttributeCloudPlatformGCPAppEngine,
+				conventions.AttributeCloudRegion:           "us-central1",
+				conventions.AttributeCloudAvailabilityZone: "us-central1-c",
+				conventions.AttributeFaaSName:              "my-service",
+				conventions.AttributeFaaSVersion:           "123456",
+				conventions.AttributeFaaSInstance:          "1472385723456792345",
+				conventions.AttributeFaaSID:                "1472385723456792345",
+			},
+			addFaasID: true,
 		},
 		{
 			desc: "Unknown Platform",
@@ -268,6 +386,7 @@ func TestDetect(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
+			defer testutil.SetFeatureGateForTest(t, removeGCPFaasID, !tc.addFaasID)()
 			res, schema, err := tc.detector.Detect(context.TODO())
 			if tc.expectErr {
 				assert.Error(t, err)

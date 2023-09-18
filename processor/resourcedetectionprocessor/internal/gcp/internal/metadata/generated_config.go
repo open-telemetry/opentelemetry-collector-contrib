@@ -14,6 +14,7 @@ type ResourceAttributesConfig struct {
 	CloudPlatform           ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider           ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	CloudRegion             ResourceAttributeConfig `mapstructure:"cloud.region"`
+	FaasID                  ResourceAttributeConfig `mapstructure:"faas.id"`
 	FaasInstance            ResourceAttributeConfig `mapstructure:"faas.instance"`
 	FaasName                ResourceAttributeConfig `mapstructure:"faas.name"`
 	FaasVersion             ResourceAttributeConfig `mapstructure:"faas.version"`
@@ -42,6 +43,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		CloudRegion: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		FaasID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 		FaasInstance: ResourceAttributeConfig{
