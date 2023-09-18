@@ -71,10 +71,10 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.event.count
             unit: '{events}'
-          - description: Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+          - description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
             gauge:
               dataPoints:
-                - asDouble: 67544.059
+                - asInt: "70825079209"
                   attributes:
                     - key: splunk.index.name
                       value:
@@ -82,11 +82,11 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.raw.size
-            unit: MBy
-          - description: Size (fractional MB) on disk of this index
+            unit: By
+          - description: Size in bytes on disk of this index
             gauge:
               dataPoints:
-                - asDouble: 19854.039
+                - asInt: "20818468798"
                   attributes:
                     - key: splunk.index.name
                       value:
@@ -94,7 +94,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.total.size
-            unit: MBy
+            unit: By
           - description: Gauge tracking average bytes per second throughput of indexer
             gauge:
               dataPoints:

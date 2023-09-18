@@ -42,10 +42,10 @@ metrics:
   # 'services/data/indexes-extended'
   splunk.data.indexes.extended.total.size:
     enabled: true
-    description: 	Size (fractional MB) on disk of this index
-    unit: MBy
+    description: 	Size in bytes on disk of this index
+    unit: By
     gauge:
-      value_type: double
+      value_type: int
     attributes: [splunk.index.name]
   splunk.data.indexes.extended.event.count:
     enabled: true
@@ -63,10 +63,10 @@ metrics:
     attributes: [splunk.index.name]
   splunk.data.indexes.extended.raw.size:
     enabled: true
-    description: Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
-    unit: MBy
+    description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+    unit: By
     gauge:
-      value_type: double
+      value_type: int
     attributes: [splunk.index.name]
   ## Broken down `bucket_dirs`
   splunk.data.indexes.extended.bucket.event.count:

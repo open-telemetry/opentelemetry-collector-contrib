@@ -278,20 +278,20 @@ type metricSplunkDataIndexesExtendedRawSize struct {
 // init fills splunk.data.indexes.extended.raw.size metric with initial data.
 func (m *metricSplunkDataIndexesExtendedRawSize) init() {
 	m.data.SetName("splunk.data.indexes.extended.raw.size")
-	m.data.SetDescription("Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen")
-	m.data.SetUnit("MBy")
+	m.data.SetDescription("Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 }
 
@@ -329,20 +329,20 @@ type metricSplunkDataIndexesExtendedTotalSize struct {
 // init fills splunk.data.indexes.extended.total.size metric with initial data.
 func (m *metricSplunkDataIndexesExtendedTotalSize) init() {
 	m.data.SetName("splunk.data.indexes.extended.total.size")
-	m.data.SetDescription("Size (fractional MB) on disk of this index")
-	m.data.SetUnit("MBy")
+	m.data.SetDescription("Size in bytes on disk of this index")
+	m.data.SetUnit("By")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
 	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
+	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 }
 
@@ -736,12 +736,12 @@ func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedEventCountDataPoint(ts 
 }
 
 // RecordSplunkDataIndexesExtendedRawSizeDataPoint adds a data point to splunk.data.indexes.extended.raw.size metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
 	mb.metricSplunkDataIndexesExtendedRawSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedTotalSizeDataPoint adds a data point to splunk.data.indexes.extended.total.size metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
 	mb.metricSplunkDataIndexesExtendedTotalSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
 }
 

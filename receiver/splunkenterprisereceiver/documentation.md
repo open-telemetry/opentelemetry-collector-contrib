@@ -42,11 +42,11 @@ Count of events for index, excluding frozen events. Approximately equal to the e
 
 ### splunk.data.indexes.extended.raw.size
 
-Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| MBy | Gauge | Double |
+| By | Gauge | Int |
 
 #### Attributes
 
@@ -56,11 +56,11 @@ Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of 
 
 ### splunk.data.indexes.extended.total.size
 
-Size (fractional MB) on disk of this index
+Size in bytes on disk of this index
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| MBy | Gauge | Double |
+| By | Gauge | Int |
 
 #### Attributes
 
