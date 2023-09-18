@@ -89,11 +89,12 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, err
 	}
 
-	// Build SplitFunc
-	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize, c.TrimConfig.Func())
+	// Build split func
+	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}
+	splitFunc = trim.WithFunc(splitFunc, c.TrimConfig.Func())
 
 	var resolver *helper.IPResolver
 	if c.AddAttributes {
