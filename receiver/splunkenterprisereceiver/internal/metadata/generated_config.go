@@ -25,16 +25,52 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for splunkenterprise metrics.
 type MetricsConfig struct {
-	SplunkIndexerThroughput MetricConfig `mapstructure:"splunk.indexer.throughput"`
-	SplunkLicenseIndexUsage MetricConfig `mapstructure:"splunk.license.index.usage"`
+	SplunkDataIndexesExtendedBucketCount        MetricConfig `mapstructure:"splunk.data.indexes.extended.bucket.count"`
+	SplunkDataIndexesExtendedBucketEventCount   MetricConfig `mapstructure:"splunk.data.indexes.extended.bucket.event.count"`
+	SplunkDataIndexesExtendedBucketHotCount     MetricConfig `mapstructure:"splunk.data.indexes.extended.bucket.hot.count"`
+	SplunkDataIndexesExtendedBucketWarmCount    MetricConfig `mapstructure:"splunk.data.indexes.extended.bucket.warm.count"`
+	SplunkDataIndexesExtendedEventCount         MetricConfig `mapstructure:"splunk.data.indexes.extended.event.count"`
+	SplunkDataIndexesExtendedRawSize            MetricConfig `mapstructure:"splunk.data.indexes.extended.raw.size"`
+	SplunkDataIndexesExtendedTotalSize          MetricConfig `mapstructure:"splunk.data.indexes.extended.total.size"`
+	SplunkIndexerThroughput                     MetricConfig `mapstructure:"splunk.indexer.throughput"`
+	SplunkLicenseIndexUsage                     MetricConfig `mapstructure:"splunk.license.index.usage"`
+	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
+	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		SplunkDataIndexesExtendedBucketCount: MetricConfig{
+			Enabled: true,
+		},
+		SplunkDataIndexesExtendedBucketEventCount: MetricConfig{
+			Enabled: false,
+		},
+		SplunkDataIndexesExtendedBucketHotCount: MetricConfig{
+			Enabled: false,
+		},
+		SplunkDataIndexesExtendedBucketWarmCount: MetricConfig{
+			Enabled: false,
+		},
+		SplunkDataIndexesExtendedEventCount: MetricConfig{
+			Enabled: true,
+		},
+		SplunkDataIndexesExtendedRawSize: MetricConfig{
+			Enabled: true,
+		},
+		SplunkDataIndexesExtendedTotalSize: MetricConfig{
+			Enabled: true,
+		},
 		SplunkIndexerThroughput: MetricConfig{
 			Enabled: true,
 		},
 		SplunkLicenseIndexUsage: MetricConfig{
+			Enabled: true,
+		},
+		SplunkServerIntrospectionQueuesCurrent: MetricConfig{
+			Enabled: true,
+		},
+		SplunkServerIntrospectionQueuesCurrentBytes: MetricConfig{
 			Enabled: true,
 		},
 	}

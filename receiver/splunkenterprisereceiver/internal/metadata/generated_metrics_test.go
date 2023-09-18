@@ -56,11 +56,44 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts, 1, "splunk.index.name-val")
+
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val")
+
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val")
+
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts, 1, "splunk.index.name-val", "splunk.bucket.dir-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedEventCountDataPoint(ts, 1, "splunk.index.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts, 1, "splunk.index.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 1, "splunk.index.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts, 1, "splunk.queue.name-val")
 
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
@@ -84,6 +117,120 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "splunk.data.indexes.extended.bucket.count":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
+					validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of buckets per index", ms.At(i).Description())
+					assert.Equal(t, "{buckets}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+				case "splunk.data.indexes.extended.bucket.event.count":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
+					validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of events in this bucket super-directory", ms.At(i).Description())
+					assert.Equal(t, "{events}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+				case "splunk.data.indexes.extended.bucket.hot.count":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
+					validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "(If size > 0) Number of hot buckets", ms.At(i).Description())
+					assert.Equal(t, "{buckets}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+				case "splunk.data.indexes.extended.bucket.warm.count":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
+					validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "(If size > 0) Number of warm buckets", ms.At(i).Description())
+					assert.Equal(t, "{buckets}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+				case "splunk.data.indexes.extended.event.count":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
+					validatedMetrics["splunk.data.indexes.extended.event.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.", ms.At(i).Description())
+					assert.Equal(t, "{events}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+				case "splunk.data.indexes.extended.raw.size":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
+					validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Cumulative size (fractional MB) on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen", ms.At(i).Description())
+					assert.Equal(t, "MBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+				case "splunk.data.indexes.extended.total.size":
+					assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
+					validatedMetrics["splunk.data.indexes.extended.total.size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Size (fractional MB) on disk of this index", ms.At(i).Description())
+					assert.Equal(t, "MBy", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("splunk.index.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.indexer.throughput":
 					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 					validatedMetrics["splunk.indexer.throughput"] = true
@@ -114,6 +261,36 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+				case "splunk.server.introspection.queues.current":
+					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
+					validatedMetrics["splunk.server.introspection.queues.current"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking current length of queue", ms.At(i).Description())
+					assert.Equal(t, "{queues}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
+				case "splunk.server.introspection.queues.current.bytes":
+					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
+					validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Gauge tracking current bytes waiting in queue", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
 				}
 			}
 		})
