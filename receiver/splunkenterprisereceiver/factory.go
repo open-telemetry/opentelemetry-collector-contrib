@@ -28,6 +28,7 @@ func createDefaultConfig() component.Config {
     }
 	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scfg.CollectionInterval = defaultInterval
+    scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
         HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -35,7 +36,6 @@ func createDefaultConfig() component.Config {
         },
 		ScraperControllerSettings: scfg,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		MaxSearchWaitTime:         defaultMaxSearchWaitTime,
 	}
 }
 
