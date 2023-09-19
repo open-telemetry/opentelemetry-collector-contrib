@@ -91,7 +91,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", 1, "Number of workers (goroutines) to run")
 	fs.Int64Var(&c.Rate, "rate", 0, "Approximately how many metrics per second each worker should generate. Zero means no throttling.")
 	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
-	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval (default 1 second)")
+	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval")
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", "", "Destination endpoint for exporting logs, metrics and traces")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")

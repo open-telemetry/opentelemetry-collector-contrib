@@ -24,7 +24,7 @@ type Config struct {
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	c.CommonFlags(fs)
 
-	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/traces", "Which URL path to write to (default /v1/traces)")
+	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/traces", "Which URL path to write to")
 
 	fs.IntVar(&c.NumTraces, "traces", 1, "Number of traces to generate in each worker (ignored if duration is provided)")
 	fs.BoolVar(&c.PropagateContext, "marshal", false, "Whether to marshal trace context via HTTP headers")
