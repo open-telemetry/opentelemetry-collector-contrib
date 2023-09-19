@@ -6,7 +6,7 @@ exporter/dynatraceexporter
 exporter/f5cloudexporter
 exporter/kafkaexporter
 exporter/kineticaexporter
-exporter/loadbalancingexporter
+exporter/logzioexporter
 exporter/lokiexporter
 exporter/pulsarexporter
 exporter/sentryexporter
