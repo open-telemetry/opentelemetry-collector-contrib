@@ -10,7 +10,7 @@ splunkenterprise:
   endpoint: "https://localhost:8089"
   # Optional settings
   collection_interval: 10s
-  max_search_wait_time: 11s
+  timeout: 11s
   # Also optional: metric settings
   metrics:
     splunk.license.index.usage:

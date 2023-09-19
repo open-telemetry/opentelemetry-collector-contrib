@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/url"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
@@ -26,7 +25,6 @@ type Config struct {
 	confighttp.HTTPClientSettings           `mapstructure:",squash"`
 	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	MaxSearchWaitTime time.Duration         `mapstructure:"max_search_wait_time"`
 }
 
 func (cfg *Config) Validate() (errors error) {
