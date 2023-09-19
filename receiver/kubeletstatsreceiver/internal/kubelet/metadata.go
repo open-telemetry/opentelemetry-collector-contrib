@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -56,34 +55,23 @@ type Metadata struct {
 }
 
 type resources struct {
-	cpuLimit      float64
 	cpuRequest    float64
-	memoryLimit   float64
-	memoryRequest float64
+	cpuLimit      float64
+	memoryRequest int64
+	memoryLimit   int64
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
 	if r == nil {
 		return resources{}
 	}
-	var containerResource resources
-	cpuLimit, err := strconv.ParseFloat(r.Limits.Cpu().AsDec().String(), 64)
-	if err == nil {
-		containerResource.cpuLimit = cpuLimit
+
+	return resources{
+		cpuRequest:    r.Requests.Cpu().AsApproximateFloat64(),
+		cpuLimit:      r.Limits.Cpu().AsApproximateFloat64(),
+		memoryRequest: r.Requests.Memory().Value(),
+		memoryLimit:   r.Limits.Memory().Value(),
 	}
-	cpuRequest, err := strconv.ParseFloat(r.Requests.Cpu().AsDec().String(), 64)
-	if err == nil {
-		containerResource.cpuRequest = cpuRequest
-	}
-	memoryLimit, err := strconv.ParseFloat(r.Limits.Memory().AsDec().String(), 64)
-	if err == nil {
-		containerResource.memoryLimit = memoryLimit
-	}
-	memoryRequest, err := strconv.ParseFloat(r.Requests.Memory().AsDec().String(), 64)
-	if err == nil {
-		containerResource.memoryRequest = memoryRequest
-	}
-	return containerResource
 }
 
 func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
@@ -280,7 +268,7 @@ func (m *Metadata) getContainerCPURequest(podUID string, containerName string) *
 	return nil
 }
 
-func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
+func (m *Metadata) getPodMemoryLimit(uid string) *int64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
 		return nil
@@ -291,7 +279,7 @@ func (m *Metadata) getPodMemoryLimit(uid string) *float64 {
 	return nil
 }
 
-func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) *float64 {
+func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) *int64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
 		return nil
@@ -302,7 +290,7 @@ func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) 
 	return nil
 }
 
-func (m *Metadata) getPodMemoryRequest(uid string) *float64 {
+func (m *Metadata) getPodMemoryRequest(uid string) *int64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
 		return nil
@@ -313,7 +301,7 @@ func (m *Metadata) getPodMemoryRequest(uid string) *float64 {
 	return nil
 }
 
-func (m *Metadata) getContainerMemoryRequest(podUID string, containerName string) *float64 {
+func (m *Metadata) getContainerMemoryRequest(podUID string, containerName string) *int64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
 		return nil
