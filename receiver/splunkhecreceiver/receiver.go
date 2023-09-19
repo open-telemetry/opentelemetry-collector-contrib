@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
@@ -265,7 +267,21 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen, err := splunkHecRawToLogData(bodyReader, req.URL.Query(), resourceCustomizer, r.config)
+	query := req.URL.Query()
+	var timestamp pcommon.Timestamp
+	if query.Has(queryTime) {
+		t, err := strconv.ParseInt(query.Get(queryTime), 10, 64)
+		if t < 0 {
+			err = errors.New("time cannot be less than 0")
+		}
+		if err != nil {
+			r.failRequest(ctx, resp, http.StatusBadRequest, invalidFormatRespBody, 0, err)
+			return
+		}
+		timestamp = pcommon.NewTimestampFromTime(time.Unix(t, 0))
+	}
+
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, query, resourceCustomizer, r.config, timestamp)
 	if err != nil {
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
 		return

@@ -996,6 +996,44 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 				assert.Equal(t, responseErrGzipReader, body)
 			},
 		},
+		{
+			name: "raw_endpoint_bad_time_negative_number",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+
+				q := req.URL.Query()
+				q.Add(queryTime, "-5")
+				req.URL.RawQuery = q.Encode()
+
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseInvalidDataFormat, body)
+			},
+		},
+		{
+			name: "raw_endpoint_bad_time_not_a_number",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+
+				req := httptest.NewRequest("POST", "http://localhost/service/collector/raw", bytes.NewReader(msgBytes))
+
+				q := req.URL.Query()
+				q.Add(queryTime, "notANumber")
+				req.URL.RawQuery = q.Encode()
+
+				return req
+			}(),
+			assertResponse: func(t *testing.T, status int, body string) {
+				assert.Equal(t, http.StatusBadRequest, status)
+				assert.Equal(t, responseInvalidDataFormat, body)
+			},
+		},
 	}
 
 	for _, tt := range tests {

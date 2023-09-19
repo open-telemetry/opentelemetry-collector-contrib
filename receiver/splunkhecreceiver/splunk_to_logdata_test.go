@@ -342,6 +342,9 @@ func Test_SplunkHecToLogData(t *testing.T) {
 }
 
 func Test_SplunkHecRawToLogData(t *testing.T) {
+	const (
+		testTimestampVal = 1695146885
+	)
 	hecConfig := &Config{
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     "mysource",
@@ -356,6 +359,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 		query          map[string][]string
 		assertResource func(t *testing.T, got plog.Logs, slLen int)
 		config         *Config
+		time           pcommon.Timestamp
 	}{
 		{
 			name: "all_mapping",
@@ -397,9 +401,10 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 				} else {
 					assert.Fail(t, "index is not added to attributes")
 				}
-				assert.Equal(t, time.Unix(1695146885, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
+				assert.Equal(t, time.Unix(testTimestampVal, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
 			},
 			config: hecConfig,
+			time:   pcommon.NewTimestampFromTime(time.Unix(testTimestampVal, 0)),
 		},
 		{
 			name: "some_mapping",
@@ -439,19 +444,18 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 				return reader
 			}(),
 			query: func() map[string][]string {
-				m := make(map[string][]string)
-				m[queryTime] = []string{"1695146885"}
-				return m
+				return map[string][]string{}
 			}(),
 			assertResource: func(t *testing.T, got plog.Logs, slLen int) {
 				assert.Equal(t, 1, got.LogRecordCount())
-				assert.Equal(t, time.Unix(1695146885, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
+				assert.Equal(t, time.Unix(testTimestampVal, 0).Unix(), got.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Timestamp().AsTime().Unix())
 			},
 			config: func() *Config {
 				return &Config{
 					Splitting: SplittingStrategyNone,
 				}
 			}(),
+			time: pcommon.NewTimestampFromTime(time.Unix(testTimestampVal, 0)),
 		},
 		{
 			name: "line splitting",
@@ -473,7 +477,7 @@ func Test_SplunkHecRawToLogData(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config)
+			result, slLen, err := splunkHecRawToLogData(tt.sc, tt.query, func(resource pcommon.Resource) {}, tt.config, tt.time)
 			require.NoError(t, err)
 			tt.assertResource(t, result, slLen)
 		})
