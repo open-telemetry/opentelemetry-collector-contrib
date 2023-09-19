@@ -110,17 +110,10 @@ func Benchmark_pushMetricsData(b *testing.B) {
 	}
 }
 
-func TestMetricsClusterConfigOn(t *testing.T) {
-	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+func TestMetricsClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, test clusterTestConfig, fns ...func(*Config)) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.ClusterClause())
-	})
-}
-
-func TestMetricsClusterConfigOff(t *testing.T) {
-	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.ClusterClause())
+		test.sanityCheck(t, exporter.cfg)
 	})
 }
 

@@ -122,17 +122,10 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
-func TestLogsClusterConfigOn(t *testing.T) {
-	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+func TestLogsClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, test clusterTestConfig, fns ...func(*Config)) {
 		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.ClusterClause())
-	})
-}
-
-func TestLogsClusterConfigOff(t *testing.T) {
-	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.ClusterClause())
+		test.sanityCheck(t, exporter.cfg)
 	})
 }
 
@@ -141,6 +134,42 @@ func TestLogsTableEngineConfig(t *testing.T) {
 		exporter := newTestLogsExporter(t, dsn, fns...)
 		test.sanityCheck(t, exporter.cfg.TableEngine)
 	})
+}
+
+func testClusterConfig(t *testing.T, completion clusterTestCompletion) {
+	tests := []clusterTestConfig {
+		{
+			name:    "on",
+			cluster: defaultCluster,
+			shouldSucceed: true,
+		},
+		{
+			name:    "off",
+			cluster: "",
+			shouldSucceed: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run("test cluster config " + tt.name, func(t *testing.T) {
+			initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+				if tt.shouldSucceed {
+					require.NoError(t, checkClusterQueryDefinition(query, tt.cluster))
+				} else {
+					require.Error(t, checkClusterQueryDefinition(query, tt.cluster))
+				}
+				return nil
+			})
+
+			var configMods []func(*Config)
+			configMods = append(configMods, func(cfg *Config) {
+				cfg.ClusterName = tt.cluster
+				cfg.Database = "test_db_" + time.Now().Format("20060102150405")
+			})
+
+			completion(t, defaultEndpoint, tt, configMods...)
+		})
+	}
 }
 
 func testTableEngineConfig(t *testing.T, completion tableEngineTestCompletion) {
@@ -206,35 +235,6 @@ func testTableEngineConfig(t *testing.T, completion tableEngineTestCompletion) {
 			completion(t, defaultEndpoint, tt, configMods...)
 		})
 	}
-}
-
-func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
-	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		require.NoError(t, checkClusterQueryDefinition(query, defaultCluster))
-		return nil
-	})
-
-	var configMods []func(*Config)
-	configMods = append(configMods, func(cfg *Config) {
-		cfg.ClusterName = defaultCluster
-		cfg.Database = "test_db_" + time.Now().Format("20060102150405")
-	})
-
-	completion(t, defaultEndpoint, configMods...)
-}
-
-func testClusterConfigOff(t *testing.T, completion exporterValuesProvider) {
-	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		require.Error(t, checkClusterQueryDefinition(query, defaultCluster))
-		return nil
-	})
-
-	var configMods []func(*Config)
-	configMods = append(configMods, func(cfg *Config) {
-		cfg.Database = "test_db_" + time.Now().Format("20060102150405")
-	})
-
-	completion(t, defaultEndpoint, configMods...)
 }
 
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
@@ -327,11 +327,17 @@ func initClickhouseTestServer(t *testing.T, recorder recorder) {
 }
 
 type recorder func(query string, values []driver.Value) error
-type exporterValuesProvider func(t *testing.T, dsn string, fns ...func(*Config))
+type clusterTestCompletion func(t *testing.T, dsn string, test clusterTestConfig, fns ...func(*Config))
 type tableEngineTestCompletion func(t *testing.T, dsn string, test tableEngineTestConfig, fns ...func(*Config))
 
 type testClickhouseDriver struct {
 	recorder recorder
+}
+
+type clusterTestConfig struct {
+	name					string
+	cluster				string
+	shouldSucceed bool
 }
 
 type tableEngineTestConfig struct {
@@ -347,6 +353,14 @@ func (teTest tableEngineTestConfig) sanityCheck(t *testing.T, te TableEngine) {
 		require.Empty(t, te.Name)
 	} else {
 		require.NotEmpty(t, te.Name)
+	}
+}
+
+func (test clusterTestConfig) sanityCheck(t *testing.T, cfg *Config) {
+	if test.cluster == "" {
+		require.Empty(t, cfg.ClusterClause())
+	} else {
+		require.NotEmpty(t, cfg.ClusterClause())
 	}
 }
 

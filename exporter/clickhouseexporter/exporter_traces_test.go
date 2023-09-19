@@ -48,17 +48,10 @@ func TestExporter_pushTracesData(t *testing.T) {
 	})
 }
 
-func TestTracesClusterConfigOn(t *testing.T) {
-	testClusterConfigOn(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
+func TestTracesClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, test clusterTestConfig, fns ...func(*Config)) {
 		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.ClusterClause())
-	})
-}
-
-func TestTracesClusterConfigOff(t *testing.T) {
-	testClusterConfigOff(t, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.ClusterClause())
+		test.sanityCheck(t, exporter.cfg)
 	})
 }
 
