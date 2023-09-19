@@ -1,0 +1,7 @@
+type: honeycomb
+
+status:
+  class: exporter
+  stability:
+    development: [logs]
+  distributions: []
