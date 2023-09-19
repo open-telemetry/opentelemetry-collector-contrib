@@ -13,8 +13,8 @@ import (
 )
 
 type TruncateAllArguments[K any] struct {
-	Target ottl.PMapGetter[K] `ottlarg:"0"`
-	Limit  int64              `ottlarg:"1"`
+	Target ottl.PMapGetter[K]
+	Limit  int64
 }
 
 func NewTruncateAllFactory[K any]() ottl.Factory[K] {

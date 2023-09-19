@@ -58,7 +58,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	}
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnw("finding files", "error", err.Error())
+		m.Warnf("finding files: %v", err)
 	}
 
 	// Start polling goroutine
@@ -115,7 +115,7 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Errorf("error finding files: %s", err)
+		m.Infof("finding files: %v", err)
 	}
 
 	for len(matches) > m.maxBatchFiles {
