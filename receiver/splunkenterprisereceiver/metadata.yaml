@@ -42,7 +42,7 @@ metrics:
   # 'services/data/indexes-extended'
   splunk.data.indexes.extended.total.size:
     enabled: true
-    description: 	Size in bytes on disk of this index
+    description: Size in bytes on disk of this index
     unit: By
     gauge:
       value_type: int

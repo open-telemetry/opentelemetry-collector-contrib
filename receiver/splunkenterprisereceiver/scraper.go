@@ -178,6 +178,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -190,11 +191,13 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	for _, entry := range it.Entries {
@@ -216,6 +219,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -228,11 +232,13 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -245,7 +251,6 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 			mb, err := strconv.ParseFloat(f.Content.TotalSize, 64)
 			totalSize = int64(mb * 1024 * 1024)
 			if err != nil {
-				fmt.Println("Failed to parse total_size from response")
 				errs.Add(err)
 			}
 		}
@@ -268,6 +273,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -280,11 +286,13 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -312,6 +320,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -324,11 +333,13 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -340,7 +351,6 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 		if f.Content.TotalBucketCount != "" {
 			totalBucketCount, err = strconv.ParseInt(f.Content.TotalBucketCount, 10, 64)
 			if err != nil {
-				fmt.Println("Failed to parse total_bucket_count from response")
 				errs.Add(err)
 			}
 		}
@@ -363,6 +373,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -375,11 +386,13 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -392,7 +405,6 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 			mb, err := strconv.ParseFloat(f.Content.TotalRawSize, 64)
 			totalRawSize = int64(mb * 1024 * 1024)
 			if err != nil {
-				fmt.Println("Failed to parse total_raw_size from response")
 				errs.Add(err)
 			}
 		}
@@ -414,6 +426,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -426,11 +439,13 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -444,7 +459,6 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "cold"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Cold.EventCount, 10, 64)
 			if err != nil {
-				fmt.Println("Failed to parse cold bucket dir event_count from response")
 				errs.Add(err)
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
@@ -453,7 +467,6 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "home"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.EventCount, 10, 64)
 			if err != nil {
-				fmt.Println("Failed to parse home bucket dir event_count from response")
 				errs.Add(err)
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
@@ -462,7 +475,6 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 			bucketDir = "thawed"
 			bucketEventCount, err = strconv.ParseInt(f.Content.BucketDirs.Thawed.EventCount, 10, 64)
 			if err != nil {
-				fmt.Println("Failed to parse thawed bucket dir event_count from response")
 				errs.Add(err)
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(now, bucketEventCount, name, bucketDir)
@@ -484,6 +496,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -496,11 +509,13 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -515,7 +530,6 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 			bucketHotCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.HotBucketCount, 10, 64)
 			bucketDir = "hot"
 			if err != nil {
-				fmt.Println("Failed to parse hot_bucket_count from response")
 				errs.Add(err)
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(now, bucketHotCount, name, bucketDir)
@@ -524,7 +538,6 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 			bucketWarmCount, err = strconv.ParseInt(f.Content.BucketDirs.Home.WarmBucketCount, 10, 64)
 			bucketDir = "warm"
 			if err != nil {
-				fmt.Println("Failed to parse warm_bucket_count from response")
 				errs.Add(err)
 			}
 			s.mb.RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(now, bucketWarmCount, name, bucketDir)
@@ -546,6 +559,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -558,11 +572,13 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	var name string
@@ -573,7 +589,6 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 
 		currentQueuesSize := int64(f.Content.CurrentSize)
 		if err != nil {
-			fmt.Println("Failed to parse current_size from response")
 			errs.Add(err)
 		}
 
@@ -595,6 +610,7 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	res, err := s.splunkClient.makeRequest(req)
@@ -607,11 +623,13 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 
 	err = json.Unmarshal(body, &it)
 	if err != nil {
 		errs.Add(err)
+		return
 	}
 	var name string
 	for _, f := range it.Entries {
@@ -621,7 +639,6 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 
 		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
 		if err != nil {
-			fmt.Println("Failed to parse current_size_bytes from response")
 			errs.Add(err)
 		}
 
