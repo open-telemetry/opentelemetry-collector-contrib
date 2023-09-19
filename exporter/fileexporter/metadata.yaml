@@ -7,3 +7,41 @@ status:
   distributions: [core, contrib, observiq, splunk, sumo, aws]
   codeowners:
     active: [atingchen]
+config:
+  type: object
+  additionalProperties: false
+  description: "Config defines configuration for file exporter."
+  required: ["path"]
+  properties:
+    path:
+      type: string
+      description: "Path of the file to write to. Path is relative to the current directory."
+    rotation:
+      type: object
+      properties:
+        max_megabytes:
+          type: integer
+        max_days:
+          type: integer
+        max_backups:
+          type: integer
+        localtime:
+          type: boolean
+    format:
+      type: string
+      default: "json"
+      enum: ["json", "proto"]
+      description: |-
+        FormatType defines the data format of encoded telemetry data
+        Options:
+        - json [default]: OTLP json bytes.
+        - proto: OTLP binary protobuf bytes.
+    compression:
+      type: string
+      description: "Compression Codec used to export telemetry data. Supported compression algorithms: `zstd`."
+      enum: ["", zstd]
+    flush_interval:
+      type: string
+      format: duration
+      description:
+      minLength: 1

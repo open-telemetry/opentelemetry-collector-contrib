@@ -26,14 +26,16 @@ const (
 )
 
 func main() {
+	genConfig := flag.Bool("genConfig", false, "generate config files")
 	flag.Parse()
 	yml := flag.Arg(0)
-	if err := run(yml); err != nil {
+	if err := run(yml, *genConfig); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(ymlPath string) error {
+func run(ymlPath string, genConfig bool) error {
+
 	if ymlPath == "" {
 		return errors.New("argument must be metadata.yaml file")
 	}
@@ -47,6 +49,18 @@ func run(ymlPath string) error {
 	md, err := loadMetadata(ymlPath)
 	if err != nil {
 		return fmt.Errorf("failed loading %v: %w", ymlPath, err)
+	}
+
+	// generate configuration
+	if genConfig {
+		if md.Config == nil {
+			return fmt.Errorf("no config found in %v", ymlPath)
+		}
+		err := GenerateConfig(md.Config)
+		if err != nil {
+			return fmt.Errorf("error generating config %w", err)
+		}
+		os.Exit(0)
 	}
 
 	tmplDir := "templates"

@@ -216,6 +216,8 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+	// Config is the component configuration.
+	Config any `mapstructure:"config"`
 }
 
 func setAttributesFullName(attrs map[attributeName]attribute) {
