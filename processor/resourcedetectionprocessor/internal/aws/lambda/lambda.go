@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/lambda/internal/metadata"
 )
 
 const (
@@ -33,54 +34,51 @@ var _ internal.Detector = (*detector)(nil)
 
 type detector struct {
 	logger *zap.Logger
+	rb     *metadata.ResourceBuilder
 }
 
-func NewDetector(set processor.CreateSettings, _ internal.DetectorConfig) (internal.Detector, error) {
-	return &detector{logger: set.Logger}, nil
+func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+	cfg := dcfg.(Config)
+	return &detector{logger: set.Logger, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
-func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
-
+func (d *detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	functionName, ok := os.LookupEnv(awsLambdaFunctionNameEnvVar)
 	if !ok || functionName == "" {
 		d.logger.Debug("Unable to identify AWS Lambda environment", zap.Error(err))
-		return res, "", err
+		return pcommon.NewResource(), "", err
 	}
 
-	attrs := res.Attributes()
-
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSLambda)
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSLambda)
 	if value, ok := os.LookupEnv(awsRegionEnvVar); ok {
-		attrs.PutStr(conventions.AttributeCloudRegion, value)
+		d.rb.SetCloudRegion(value)
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/instrumentation/aws-lambda.md#resource-detector
-	attrs.PutStr(conventions.AttributeFaaSName, functionName)
+	d.rb.SetFaasName(functionName)
 	if value, ok := os.LookupEnv(awsLambdaFunctionVersionEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSVersion, value)
+		d.rb.SetFaasVersion(value)
 	}
+
 	// Note: The FaaS spec (https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/faas.md)
 	//       recommends setting faas.instance to the full log stream name for AWS Lambda.
 	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSInstance, value)
+		d.rb.SetFaasInstance(value)
 	}
 	if value, ok := os.LookupEnv(awsLambdaFunctionMemorySizeEnvVar); ok {
-		attrs.PutStr(conventions.AttributeFaaSMaxMemory, value)
+		d.rb.SetFaasMaxMemory(value)
 	}
 
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud_provider/aws/logs.md
 	if value, ok := os.LookupEnv(awsLambdaLogGroupNameEnvVar); ok {
-		logGroupNames := attrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames)
-		logGroupNames.AppendEmpty().SetStr(value)
+		d.rb.SetAwsLogGroupNames([]any{value})
 	}
 	if value, ok := os.LookupEnv(awsLambdaLogStreamNameEnvVar); ok {
-		logStreamNames := attrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames)
-		logStreamNames.AppendEmpty().SetStr(value)
+		d.rb.SetAwsLogStreamNames([]any{value})
 	}
 
-	return res, conventions.SchemaURL, nil
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

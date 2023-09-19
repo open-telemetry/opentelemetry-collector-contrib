@@ -108,7 +108,7 @@ func TestCollectDataFromEndpointWithConsumerError(t *testing.T) {
 type invalidFakeClient struct {
 }
 
-func (f invalidFakeClient) GetResponse(path string) ([]byte, error) {
+func (f invalidFakeClient) GetResponse(_ string) ([]byte, error) {
 	return nil, fmt.Errorf("intentional error")
 }
 

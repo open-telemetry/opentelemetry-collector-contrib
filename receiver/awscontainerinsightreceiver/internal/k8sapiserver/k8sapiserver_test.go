@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -91,15 +92,15 @@ func (client *MockClient) ServiceToPodNum() map[k8sclient.Service]int {
 type mockEventBroadcaster struct {
 }
 
-func (m *mockEventBroadcaster) StartRecordingToSink(sink record.EventSink) watch.Interface {
+func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(logf func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder {
+func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorder {
 	return record.NewFakeRecorder(100)
 }
 
@@ -127,6 +128,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+					case pmetric.NumberDataPointValueTypeEmpty:
 					}
 
 					return
@@ -221,7 +223,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		}
 	}
 
-	k8sAPIServer.Shutdown()
+	require.NoError(t, k8sAPIServer.Shutdown())
 }
 
 func TestK8sAPIServer_init(t *testing.T) {

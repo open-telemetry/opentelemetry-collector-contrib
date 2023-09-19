@@ -22,23 +22,23 @@ import (
 
 const nginxPort = "80"
 
-func TestNginxIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
-		testcontainers.ContainerRequest{
-			FromDockerfile: testcontainers.FromDockerfile{
-				Context:    filepath.Join("testdata", "integration"),
-				Dockerfile: "Dockerfile.nginx",
-			},
-			ExposedPorts: []string{nginxPort},
-			WaitingFor:   wait.ForListeningPort(nginxPort),
-		},
+		scraperinttest.WithContainerRequest(
+			testcontainers.ContainerRequest{
+				FromDockerfile: testcontainers.FromDockerfile{
+					Context:    filepath.Join("testdata", "integration"),
+					Dockerfile: "Dockerfile.nginx",
+				},
+				ExposedPorts: []string{nginxPort},
+				WaitingFor:   wait.ForListeningPort(nginxPort),
+			}),
 		scraperinttest.WithCustomConfig(
-			func(cfg component.Config, host string, mappedPort scraperinttest.MappedPortFunc) {
-				port := mappedPort(nginxPort)
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/status", host, port)
+				rCfg.Endpoint = fmt.Sprintf("http://%s:%s/status", ci.Host(t), ci.MappedPort(t, nginxPort))
 			}),
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreMetricValues(),

@@ -661,8 +661,8 @@ func (t *mockTransport) SendEvents(transactions []*sentry.Event) {
 	t.called = true
 }
 
-func (t *mockTransport) Configure(options sentry.ClientOptions) {}
-func (t *mockTransport) Flush(ctx context.Context) bool {
+func (t *mockTransport) Configure(_ sentry.ClientOptions) {}
+func (t *mockTransport) Flush(_ context.Context) bool {
 	return true
 }
 

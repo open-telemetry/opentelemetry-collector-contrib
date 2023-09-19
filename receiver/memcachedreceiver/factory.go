@@ -31,11 +31,12 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
-		Timeout: defaultTimeout,
+		ScraperControllerSettings: cfg,
 		NetAddr: confignet.NetAddr{
 			Endpoint: defaultEndpoint,
 		},

@@ -20,8 +20,6 @@ import (
 )
 
 const (
-	typeStr            = "kubeletstats"
-	stability          = component.StabilityLevelBeta
 	metricGroupsConfig = "metric_groups"
 )
 
@@ -34,13 +32,13 @@ var defaultMetricGroups = []kubelet.MetricGroup{
 // NewFactory creates a factory for kubeletstats receiver.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, stability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultScraperControllerSettings(typeStr)
+	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scs.CollectionInterval = 10 * time.Second
 
 	return &Config{
@@ -55,7 +53,7 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	set receiver.CreateSettings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,

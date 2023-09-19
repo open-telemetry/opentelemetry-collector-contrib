@@ -1,0 +1,13 @@
+type: resourcedetectionprocessor/eks
+
+parent: resourcedetection
+
+resource_attributes:
+  cloud.provider:
+    description: The cloud.provider
+    type: string
+    enabled: true
+  cloud.platform:
+    description: The cloud.platform
+    type: string
+    enabled: true

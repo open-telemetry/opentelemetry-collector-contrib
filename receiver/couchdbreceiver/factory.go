@@ -27,10 +27,8 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 1 * time.Minute,
-		},
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			TLSSetting: configtls.TLSClientSetting{},
 			Endpoint:   defaultEndpoint,

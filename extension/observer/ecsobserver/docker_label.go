@@ -54,11 +54,11 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 }
 
 func dockerLabelConfigToMatchers(cfgs []DockerLabelConfig) []matcherConfig {
-	var matchers []matcherConfig
-	for _, cfg := range cfgs {
+	matchers := make([]matcherConfig, len(cfgs))
+	for i, cfg := range cfgs {
 		// NOTE: &cfg points to the temp var, whose value would end up be the last one in the slice.
 		copied := cfg
-		matchers = append(matchers, &copied)
+		matchers[i] = &copied
 	}
 	return matchers
 }
@@ -78,7 +78,7 @@ func (d *dockerLabelMatcher) matcherType() matcherType {
 // MatchTargets first checks the port label to find the expected port value.
 // Then it checks if that port is specified in container definition.
 // It only returns match target when both conditions are met.
-func (d *dockerLabelMatcher) matchTargets(t *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
+func (d *dockerLabelMatcher) matchTargets(_ *taskAnnotated, c *ecs.ContainerDefinition) ([]matchedTarget, error) {
 	portLabel := d.cfg.PortLabel
 
 	// Only check port label

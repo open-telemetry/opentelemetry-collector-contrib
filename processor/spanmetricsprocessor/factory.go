@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package spanmetricsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor"
 
 import (
@@ -11,21 +13,16 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "spanmetrics"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDeprecated
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/metadata"
 )
 
 // NewFactory creates a factory for the spanmetrics processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithTraces(createTracesProcessor, stability),
+		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
 	)
 }
 

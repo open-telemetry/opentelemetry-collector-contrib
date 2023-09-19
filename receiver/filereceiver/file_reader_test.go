@@ -39,10 +39,12 @@ func TestFileReader_Cancellation(t *testing.T) {
 		stringReader: blockingStringReader{},
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	errs := make(chan error)
 	go func() {
-		_ = fr.readAll(ctx)
+		errs <- fr.readAll(ctx)
 	}()
 	cancel()
+	require.Equal(t, 0, len(errs))
 }
 
 func TestFileReader_ReadAll(t *testing.T) {

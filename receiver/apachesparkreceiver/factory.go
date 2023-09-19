@@ -18,11 +18,6 @@ import (
 
 var errConfigNotSpark = errors.New("config was not a Spark receiver config")
 
-type SparkReceiver struct {
-	component.StartFunc
-	component.ShutdownFunc
-}
-
 // NewFactory creates a new receiver factory for Spark
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -33,13 +28,15 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config for Spark with as many default values as possible
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
+		ScraperControllerSettings: cfg,
 		HTTPClientSettings: confighttp.HTTPClientSettings{
 			Endpoint: defaultEndpoint,
 		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -50,10 +47,18 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	_, ok := config.(*Config)
+	sparkConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errConfigNotSpark
 	}
 
-	return SparkReceiver{}, nil
+	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
+	scraper, err := scraperhelper.NewScraper(metadata.Type, sparkScraper.scrape,
+		scraperhelper.WithStart(sparkScraper.start))
+	if err != nil {
+		return nil, err
+	}
+
+	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ScraperControllerSettings, params,
+		consumer, scraperhelper.AddScraper(scraper))
 }

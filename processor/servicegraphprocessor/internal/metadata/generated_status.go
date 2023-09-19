@@ -8,5 +8,5 @@ import (
 
 const (
 	Type            = "servicegraph"
-	TracesStability = component.StabilityLevelAlpha
+	TracesStability = component.StabilityLevelDeprecated
 )

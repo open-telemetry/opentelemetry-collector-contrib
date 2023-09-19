@@ -20,6 +20,8 @@ const (
 	// this constant was set to 1 hour - max allowed interval by Prometheus.
 	backfillIntervalDuration = time.Hour
 	topLockStatsMetricName   = "top minute lock stats"
+	topQueryStatsMetricName  = "top minute query stats"
+	maxLengthTruncateText    = 1024
 )
 
 type intervalStatsReader struct {
@@ -27,6 +29,7 @@ type intervalStatsReader struct {
 	timestampsGenerator               *timestampsGenerator
 	lastPullTimestamp                 time.Time
 	hideTopnLockstatsRowrangestartkey bool
+	truncateText                      bool
 }
 
 func newIntervalStatsReader(
@@ -51,6 +54,7 @@ func newIntervalStatsReader(
 		currentStatsReader:                reader,
 		timestampsGenerator:               tsGenerator,
 		hideTopnLockstatsRowrangestartkey: config.HideTopnLockstatsRowrangestartkey,
+		truncateText:                      config.TruncateText,
 	}
 }
 
@@ -78,6 +82,11 @@ func (reader *intervalStatsReader) Read(ctx context.Context) ([]*metadata.Metric
 		if reader.hideTopnLockstatsRowrangestartkey && metricMetadata != nil && metricMetadata.Name == topLockStatsMetricName {
 			for _, dataPoint := range dataPoints {
 				dataPoint.HideLockStatsRowrangestartkeyPII()
+			}
+		}
+		if reader.truncateText && metricMetadata != nil && metricMetadata.Name == topQueryStatsMetricName {
+			for _, dataPoint := range dataPoints {
+				dataPoint.TruncateQueryText(maxLengthTruncateText)
 			}
 		}
 

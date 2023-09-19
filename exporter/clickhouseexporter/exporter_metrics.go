@@ -6,11 +6,11 @@ package clickhouseexporter // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
@@ -42,14 +42,11 @@ func (e *metricsExporter) start(ctx context.Context, _ component.Host) error {
 	}
 
 	internal.SetLogger(e.logger)
-	if err := internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client); err != nil {
-		return err
-	}
-	return nil
+	return internal.NewMetricsTable(ctx, e.cfg.MetricsTableName, e.cfg.TTLDays, e.client)
 }
 
 // shutdown will shut down the exporter.
-func (e *metricsExporter) shutdown(ctx context.Context) error {
+func (e *metricsExporter) shutdown(_ context.Context) error {
 	if e.client != nil {
 		return e.client.Close()
 	}
@@ -68,17 +65,20 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				var errs error
+				//exhaustive:enforce
 				switch r.Type() {
 				case pmetric.MetricTypeGauge:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeGauge].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Gauge(), r.Name(), r.Description(), r.Unit()))
+					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeGauge].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Gauge(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSum:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSum].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Sum(), r.Name(), r.Description(), r.Unit()))
+					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeSum].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Sum(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Histogram(), r.Name(), r.Description(), r.Unit()))
+					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Histogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeExponentialHistogram:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit()))
+					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeExponentialHistogram].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.ExponentialHistogram(), r.Name(), r.Description(), r.Unit()))
 				case pmetric.MetricTypeSummary:
-					errs = multierr.Append(errs, metricsMap[pmetric.MetricTypeSummary].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Summary(), r.Name(), r.Description(), r.Unit()))
+					errs = errors.Join(errs, metricsMap[pmetric.MetricTypeSummary].Add(resAttr, metrics.SchemaUrl(), scopeInstr, scopeURL, r.Summary(), r.Name(), r.Description(), r.Unit()))
+				case pmetric.MetricTypeEmpty:
+					return fmt.Errorf("metrics type is unset")
 				default:
 					return fmt.Errorf("unsupported metrics type")
 				}
@@ -89,8 +89,5 @@ func (e *metricsExporter) pushMetricsData(ctx context.Context, md pmetric.Metric
 		}
 	}
 	// batch insert https://clickhouse.com/docs/en/about-us/performance/#performance-when-inserting-data
-	if err := internal.InsertMetrics(ctx, e.client, metricsMap); err != nil {
-		return err
-	}
-	return nil
+	return internal.InsertMetrics(ctx, e.client, metricsMap)
 }

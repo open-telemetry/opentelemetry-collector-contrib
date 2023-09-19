@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/processor/processortest"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/docker"
 )
@@ -37,7 +37,9 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 
-	detector := &Detector{provider: md, logger: zap.NewNop()}
+	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	require.NoError(t, err)
+	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)

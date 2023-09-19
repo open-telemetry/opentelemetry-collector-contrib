@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for httpcheckreceiver metrics.
+// MetricsConfig provides config for httpcheck metrics.
 type MetricsConfig struct {
 	HttpcheckDuration MetricConfig `mapstructure:"httpcheck.duration"`
 	HttpcheckError    MetricConfig `mapstructure:"httpcheck.error"`
@@ -44,7 +44,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for httpcheckreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for httpcheck metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

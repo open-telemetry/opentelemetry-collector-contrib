@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanmetricsprocessor/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -25,7 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			name: "configuration with dimensions size cache",
-			id:   component.NewIDWithName(typeStr, "dimensions"),
+			id:   component.NewIDWithName(metadata.Type, "dimensions"),
 			expected: &Config{
 				MetricsExporter:        "prometheus",
 				AggregationTemporality: cumulative,
@@ -35,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name: "configuration with aggregation temporality",
-			id:   component.NewIDWithName(typeStr, "temp"),
+			id:   component.NewIDWithName(metadata.Type, "temp"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: cumulative,
@@ -45,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name: "configuration with all available parameters",
-			id:   component.NewIDWithName(typeStr, "full"),
+			id:   component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				MetricsExporter:        "otlp/spanmetrics",
 				AggregationTemporality: delta,

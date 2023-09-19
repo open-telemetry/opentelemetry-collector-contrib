@@ -1,8 +1,10 @@
-type: generic_webhook
+type: webhookevent
 
 status:
   class: receiver
   stability:
-    development: [logs]
-  distributions: 
-  
+    alpha: [logs]
+  distributions:
+  codeowners:
+    active: ["atoulme", "shalper2"]
+    emeritus:

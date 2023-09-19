@@ -5,7 +5,6 @@ package haproxyreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,10 +24,8 @@ func NewFactory() receiver.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 1 * time.Minute,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -39,19 +36,16 @@ func newReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	haProxyCfg := cfg.(*Config)
-	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsBuilderConfig, settings)
-
-	mp := newScraper(metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
-	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	mp := newScraper(haProxyCfg, settings)
+	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape, scraperhelper.WithStart(mp.start))
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&haProxyCfg.ScraperControllerSettings,
 		settings,
 		consumer,
-		opt,
+		scraperhelper.AddScraper(s),
 	)
 }

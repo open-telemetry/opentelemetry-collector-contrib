@@ -88,6 +88,10 @@ func requireMetricOk(t *testing.T, m pmetric.Metric) {
 			require.Less(t, dp.StartTimestamp(), dp.Timestamp())
 			requirePointOk(t, dp)
 		}
+	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeHistogram:
+	case pmetric.MetricTypeExponentialHistogram:
+	case pmetric.MetricTypeSummary:
 	}
 }
 
@@ -101,7 +105,7 @@ func requireResourceOk(t *testing.T, resource pcommon.Resource) {
 }
 
 func TestWorkingSetMem(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.working_set")
 	requireContains(t, metrics, "container.memory.working_set")
 
@@ -111,7 +115,7 @@ func TestWorkingSetMem(t *testing.T) {
 }
 
 func TestPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.page_faults")
 	requireContains(t, metrics, "container.memory.page_faults")
 
@@ -121,7 +125,7 @@ func TestPageFaults(t *testing.T) {
 }
 
 func TestMajorPageFaults(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	requireContains(t, metrics, "k8s.pod.memory.major_page_faults")
 	requireContains(t, metrics, "container.memory.major_page_faults")
 
@@ -130,8 +134,36 @@ func TestMajorPageFaults(t *testing.T) {
 	require.Equal(t, int64(12), value)
 }
 
+func TestUptime(t *testing.T) {
+	rc := &fakeRestClient{}
+	statsProvider := NewStatsProvider(rc)
+	summary, _ := statsProvider.StatsSummary()
+	mgs := map[MetricGroup]bool{
+		ContainerMetricGroup: true,
+		PodMetricGroup:       true,
+		NodeMetricGroup:      true,
+	}
+
+	cfg := metadata.DefaultMetricsBuilderConfig()
+	cfg.Metrics.K8sNodeUptime.Enabled = true
+	cfg.Metrics.K8sPodUptime.Enabled = true
+	cfg.Metrics.ContainerUptime.Enabled = true
+
+	mbs := &metadata.MetricsBuilders{
+		NodeMetricsBuilder:      metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+		PodMetricsBuilder:       metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+		ContainerMetricsBuilder: metadata.NewMetricsBuilder(cfg, receivertest.NewNopCreateSettings()),
+	}
+
+	metrics := indexedFakeMetrics(MetricsData(zap.NewNop(), summary, Metadata{}, mgs, mbs))
+
+	requireContains(t, metrics, "k8s.node.uptime")
+	requireContains(t, metrics, "k8s.pod.uptime")
+	requireContains(t, metrics, "container.uptime")
+}
+
 func TestEmitMetrics(t *testing.T) {
-	metrics := indexedFakeMetrics()
+	metrics := indexedFakeMetrics(fakeMetrics())
 	metricNames := []string{
 		"k8s.node.network.io",
 		"k8s.node.network.errors",
@@ -154,8 +186,7 @@ func requireContains(t *testing.T, metrics map[string][]pmetric.Metric, metricNa
 	require.True(t, found)
 }
 
-func indexedFakeMetrics() map[string][]pmetric.Metric {
-	mds := fakeMetrics()
+func indexedFakeMetrics(mds []pmetric.Metrics) map[string][]pmetric.Metric {
 	metrics := make(map[string][]pmetric.Metric)
 	for _, md := range mds {
 		for i := 0; i < md.ResourceMetrics().Len(); i++ {

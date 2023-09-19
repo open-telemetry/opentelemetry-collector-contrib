@@ -51,7 +51,7 @@ func (m *mockEC2Metadata) getRegion() string {
 type mockEBSVolume struct {
 }
 
-func (m *mockEBSVolume) getEBSVolumeID(devName string) string {
+func (m *mockEBSVolume) getEBSVolumeID(_ string) string {
 	return "ebs-volume-id"
 }
 

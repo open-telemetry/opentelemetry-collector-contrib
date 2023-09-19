@@ -62,6 +62,108 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":      AttributeStateWait,
 }
 
+type metricSystemCPULogicalCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.logical.count metric with initial data.
+func (m *metricSystemCPULogicalCount) init() {
+	m.data.SetName("system.cpu.logical.count")
+	m.data.SetDescription("Number of available logical CPUs.")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemCPULogicalCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPULogicalCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPULogicalCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPULogicalCount(cfg MetricConfig) metricSystemCPULogicalCount {
+	m := metricSystemCPULogicalCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemCPUPhysicalCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.cpu.physical.count metric with initial data.
+func (m *metricSystemCPUPhysicalCount) init() {
+	m.data.SetName("system.cpu.physical.count")
+	m.data.SetDescription("Number of available physical CPUs.")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSystemCPUPhysicalCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemCPUPhysicalCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemCPUPhysicalCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemCPUPhysicalCount(cfg MetricConfig) metricSystemCPUPhysicalCount {
+	m := metricSystemCPUPhysicalCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSystemCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -71,7 +173,7 @@ type metricSystemCPUTime struct {
 // init fills system.cpu.time metric with initial data.
 func (m *metricSystemCPUTime) init() {
 	m.data.SetName("system.cpu.time")
-	m.data.SetDescription("Total CPU seconds broken down by different states.")
+	m.data.SetDescription("Total seconds each logical CPU spent on each mode.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -125,7 +227,7 @@ type metricSystemCPUUtilization struct {
 // init fills system.cpu.utilization metric with initial data.
 func (m *metricSystemCPUUtilization) init() {
 	m.data.SetName("system.cpu.utilization")
-	m.data.SetDescription("Percentage of CPU time broken down by different states.")
+	m.data.SetDescription("Difference in system.cpu.time since the last measurement per logical CPU, divided by the elapsed time (value in interval [0,1]).")
 	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -171,13 +273,15 @@ func newMetricSystemCPUUtilization(cfg MetricConfig) metricSystemCPUUtilization 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                  pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity            int                 // maximum observed number of metrics per resource.
-	resourceCapacity           int                 // maximum observed number of resource attributes.
-	metricsBuffer              pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                  component.BuildInfo // contains version information
-	metricSystemCPUTime        metricSystemCPUTime
-	metricSystemCPUUtilization metricSystemCPUUtilization
+	config                       MetricsBuilderConfig // config of the metrics builder.
+	startTime                    pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity              int                  // maximum observed number of metrics per resource.
+	metricsBuffer                pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                    component.BuildInfo  // contains version information.
+	metricSystemCPULogicalCount  metricSystemCPULogicalCount
+	metricSystemCPUPhysicalCount metricSystemCPUPhysicalCount
+	metricSystemCPUTime          metricSystemCPUTime
+	metricSystemCPUUtilization   metricSystemCPUUtilization
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -192,11 +296,14 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  settings.BuildInfo,
-		metricSystemCPUTime:        newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
-		metricSystemCPUUtilization: newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
+		config:                       mbc,
+		startTime:                    pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                pmetric.NewMetrics(),
+		buildInfo:                    settings.BuildInfo,
+		metricSystemCPULogicalCount:  newMetricSystemCPULogicalCount(mbc.Metrics.SystemCPULogicalCount),
+		metricSystemCPUPhysicalCount: newMetricSystemCPUPhysicalCount(mbc.Metrics.SystemCPUPhysicalCount),
+		metricSystemCPUTime:          newMetricSystemCPUTime(mbc.Metrics.SystemCPUTime),
+		metricSystemCPUUtilization:   newMetricSystemCPUUtilization(mbc.Metrics.SystemCPUUtilization),
 	}
 	for _, op := range options {
 		op(mb)
@@ -209,13 +316,18 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
 type ResourceMetricsOption func(pmetric.ResourceMetrics)
+
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
+	}
+}
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
@@ -245,11 +357,12 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/cpu")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
+	mb.metricSystemCPULogicalCount.emit(ils.Metrics())
+	mb.metricSystemCPUPhysicalCount.emit(ils.Metrics())
 	mb.metricSystemCPUTime.emit(ils.Metrics())
 	mb.metricSystemCPUUtilization.emit(ils.Metrics())
 
@@ -270,6 +383,16 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
+}
+
+// RecordSystemCPULogicalCountDataPoint adds a data point to system.cpu.logical.count metric.
+func (mb *MetricsBuilder) RecordSystemCPULogicalCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemCPULogicalCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemCPUPhysicalCountDataPoint adds a data point to system.cpu.physical.count metric.
+func (mb *MetricsBuilder) RecordSystemCPUPhysicalCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemCPUPhysicalCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemCPUTimeDataPoint adds a data point to system.cpu.time metric.

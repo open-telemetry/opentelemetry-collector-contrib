@@ -5,7 +5,6 @@ package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -25,10 +24,8 @@ func NewFactory() receiver.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: 1 * time.Minute,
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -39,9 +36,8 @@ func newReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	fileStatsConfig := cfg.(*Config)
-	metricsBuilder := metadata.NewMetricsBuilder(fileStatsConfig.MetricsBuilderConfig, settings)
 
-	mp := newScraper(metricsBuilder, fileStatsConfig, settings.TelemetrySettings.Logger)
+	mp := newScraper(fileStatsConfig, settings)
 	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
 	if err != nil {
 		return nil, err

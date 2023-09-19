@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
 	"go.opentelemetry.io/otel/propagation"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -70,7 +69,7 @@ func initProvider() func() {
 			),
 		),
 	)
-	global.SetMeterProvider(meterProvider)
+	otel.SetMeterProvider(meterProvider)
 
 	traceClient := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
@@ -113,7 +112,7 @@ func main() {
 	shutdown := initProvider()
 	defer shutdown()
 
-	meter := global.Meter("demo-server-meter")
+	meter := otel.Meter("demo-server-meter")
 	serverAttribute := attribute.String("server-attribute", "foo")
 	commonLabels := []attribute.KeyValue{serverAttribute}
 	requestCount, _ := meter.Int64Counter(

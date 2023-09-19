@@ -71,6 +71,8 @@ all_set:
       enabled: true
     vcenter.vm.memory.usage:
       enabled: true
+    vcenter.vm.memory.utilization:
+      enabled: true
     vcenter.vm.network.packet.count:
       enabled: true
     vcenter.vm.network.throughput:
@@ -83,6 +85,8 @@ all_set:
     vcenter.datastore.name:
       enabled: true
     vcenter.host.name:
+      enabled: true
+    vcenter.resource_pool.inventory_path:
       enabled: true
     vcenter.resource_pool.name:
       enabled: true
@@ -162,6 +166,8 @@ none_set:
       enabled: false
     vcenter.vm.memory.usage:
       enabled: false
+    vcenter.vm.memory.utilization:
+      enabled: false
     vcenter.vm.network.packet.count:
       enabled: false
     vcenter.vm.network.throughput:
@@ -174,6 +180,8 @@ none_set:
     vcenter.datastore.name:
       enabled: false
     vcenter.host.name:
+      enabled: false
+    vcenter.resource_pool.inventory_path:
       enabled: false
     vcenter.resource_pool.name:
       enabled: false

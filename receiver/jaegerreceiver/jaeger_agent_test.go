@@ -180,9 +180,9 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configu
 		err = jr.Start(context.Background(), componenttest.NewNopHost())
 		if err == nil {
 			break
-		} else {
-			time.Sleep(50 * time.Millisecond)
 		}
+
+		time.Sleep(50 * time.Millisecond)
 	}
 	require.NoError(t, err, "Start failed")
 

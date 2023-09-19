@@ -36,7 +36,7 @@ func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
 	}
 }
 
-func (s *scraper) start(ctx context.Context, host component.Host) error {
+func (s *scraper) start(_ context.Context, host component.Host) error {
 	s.host = host
 	client, err := newClient(s.config, s.settings, s.host, s.settings.Logger)
 	if err != nil {
@@ -197,12 +197,12 @@ func (s *scraper) recordNodeInterface(colTime pcommon.Timestamp, nodeProps dm.No
 	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.RxBytes, metadata.AttributeDirectionReceived)
 	s.mb.RecordNsxtNodeNetworkIoDataPoint(colTime, i.stats.TxBytes, metadata.AttributeDirectionTransmitted)
 
-	s.mb.EmitForResource(
-		metadata.WithDeviceID(i.iFace.InterfaceId),
-		metadata.WithNsxtNodeName(nodeProps.Name),
-		metadata.WithNsxtNodeType(nodeProps.ResourceType),
-		metadata.WithNsxtNodeID(nodeProps.ID),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetDeviceID(i.iFace.InterfaceId)
+	rb.SetNsxtNodeName(nodeProps.Name)
+	rb.SetNsxtNodeType(nodeProps.ResourceType)
+	rb.SetNsxtNodeID(nodeProps.ID)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *scraper) recordNode(
@@ -225,11 +225,11 @@ func (s *scraper) recordNode(
 	// ensure division by zero is safeguarded
 	s.mb.RecordNsxtNodeFilesystemUtilizationDataPoint(colTime, float64(ss.DiskSpaceUsed)/math.Max(float64(ss.DiskSpaceTotal), 1))
 
-	s.mb.EmitForResource(
-		metadata.WithNsxtNodeName(info.nodeProps.Name),
-		metadata.WithNsxtNodeID(info.nodeProps.ID),
-		metadata.WithNsxtNodeType(info.nodeType),
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetNsxtNodeName(info.nodeProps.Name)
+	rb.SetNsxtNodeID(info.nodeProps.ID)
+	rb.SetNsxtNodeType(info.nodeType)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func clusterNodeType(node dm.ClusterNode) string {

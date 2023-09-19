@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for kubeletstatsreceiver metrics.
+// MetricsConfig provides config for kubeletstats metrics.
 type MetricsConfig struct {
 	ContainerCPUTime               MetricConfig `mapstructure:"container.cpu.time"`
 	ContainerCPUUtilization        MetricConfig `mapstructure:"container.cpu.utilization"`
@@ -36,6 +36,7 @@ type MetricsConfig struct {
 	ContainerMemoryRss             MetricConfig `mapstructure:"container.memory.rss"`
 	ContainerMemoryUsage           MetricConfig `mapstructure:"container.memory.usage"`
 	ContainerMemoryWorkingSet      MetricConfig `mapstructure:"container.memory.working_set"`
+	ContainerUptime                MetricConfig `mapstructure:"container.uptime"`
 	K8sNodeCPUTime                 MetricConfig `mapstructure:"k8s.node.cpu.time"`
 	K8sNodeCPUUtilization          MetricConfig `mapstructure:"k8s.node.cpu.utilization"`
 	K8sNodeFilesystemAvailable     MetricConfig `mapstructure:"k8s.node.filesystem.available"`
@@ -49,6 +50,7 @@ type MetricsConfig struct {
 	K8sNodeMemoryWorkingSet        MetricConfig `mapstructure:"k8s.node.memory.working_set"`
 	K8sNodeNetworkErrors           MetricConfig `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo               MetricConfig `mapstructure:"k8s.node.network.io"`
+	K8sNodeUptime                  MetricConfig `mapstructure:"k8s.node.uptime"`
 	K8sPodCPUTime                  MetricConfig `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUtilization           MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
 	K8sPodFilesystemAvailable      MetricConfig `mapstructure:"k8s.pod.filesystem.available"`
@@ -62,6 +64,7 @@ type MetricsConfig struct {
 	K8sPodMemoryWorkingSet         MetricConfig `mapstructure:"k8s.pod.memory.working_set"`
 	K8sPodNetworkErrors            MetricConfig `mapstructure:"k8s.pod.network.errors"`
 	K8sPodNetworkIo                MetricConfig `mapstructure:"k8s.pod.network.io"`
+	K8sPodUptime                   MetricConfig `mapstructure:"k8s.pod.uptime"`
 	K8sVolumeAvailable             MetricConfig `mapstructure:"k8s.volume.available"`
 	K8sVolumeCapacity              MetricConfig `mapstructure:"k8s.volume.capacity"`
 	K8sVolumeInodes                MetricConfig `mapstructure:"k8s.volume.inodes"`
@@ -104,6 +107,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerMemoryWorkingSet: MetricConfig{
 			Enabled: true,
 		},
+		ContainerUptime: MetricConfig{
+			Enabled: false,
+		},
 		K8sNodeCPUTime: MetricConfig{
 			Enabled: true,
 		},
@@ -142,6 +148,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		K8sNodeNetworkIo: MetricConfig{
 			Enabled: true,
+		},
+		K8sNodeUptime: MetricConfig{
+			Enabled: false,
 		},
 		K8sPodCPUTime: MetricConfig{
 			Enabled: true,
@@ -182,6 +191,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		K8sPodNetworkIo: MetricConfig{
 			Enabled: true,
 		},
+		K8sPodUptime: MetricConfig{
+			Enabled: false,
+		},
 		K8sVolumeAvailable: MetricConfig{
 			Enabled: true,
 		},
@@ -205,7 +217,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for kubeletstatsreceiver resource attributes.
+// ResourceAttributesConfig provides config for kubeletstats resource attributes.
 type ResourceAttributesConfig struct {
 	AwsVolumeID                  ResourceAttributeConfig `mapstructure:"aws.volume.id"`
 	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
@@ -274,7 +286,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for kubeletstatsreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for kubeletstats metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

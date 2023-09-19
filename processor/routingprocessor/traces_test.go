@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -168,7 +169,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 	rs := tr.ResourceSpans().AppendEmpty()
 	rs.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-	t.Run("non default route is properly used", func(t *testing.T) {
+	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
@@ -183,7 +184,7 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 		)
 	})
 
-	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
+	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeTraces(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
@@ -194,6 +195,38 @@ func TestTraces_RoutingWorks_Context(t *testing.T) {
 			"trace should be routed to default exporter",
 		)
 		assert.Len(t, tExp.AllTraces(), 1,
+			"trace should not be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeTraces(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"acme"},
+				})}),
+			tr,
+		))
+		assert.Len(t, defaultExp.AllTraces(), 1,
+			"trace should not be routed to default exporter",
+		)
+		assert.Len(t, tExp.AllTraces(), 2,
+			"trace should be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeTraces(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"some-custom-value1"},
+				})}),
+			tr,
+		))
+		assert.Len(t, defaultExp.AllTraces(), 2,
+			"trace should be routed to default exporter",
+		)
+		assert.Len(t, tExp.AllTraces(), 2,
 			"trace should not be routed to non default exporter",
 		)
 	})
@@ -422,6 +455,48 @@ func TestTracesAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		assert.True(t, ok, "routing attribute must exists")
 		assert.Equal(t, attr.Int(), int64(-1))
 	})
+}
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestTracesAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockTracesExporter{}
+	firstExp := &mockTracesExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeTraces: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newTracesProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	tr := ptrace.NewTraces()
+	rl := tr.ResourceSpans().AppendEmpty()
+	rl.Resource().Attributes().PutInt("value", 1)
+	span := rl.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetName("span")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeTraces(context.Background(), tr))
+
+	// verify
+	assert.Len(t, defaultExp.AllTraces(), 1)
+	assert.Len(t, firstExp.AllTraces(), 0)
+
 }
 
 func TestTraceProcessorCapabilities(t *testing.T) {

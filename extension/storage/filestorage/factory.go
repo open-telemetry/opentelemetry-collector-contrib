@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package filestorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
 
 import (
@@ -9,10 +11,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-)
 
-// The value of extension "type" in configuration.
-const typeStr component.Type = "file_storage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage/internal/metadata"
+)
 
 const (
 	// use default bbolt value
@@ -26,10 +27,10 @@ const (
 // NewFactory creates a factory for HostObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		createExtension,
-		component.StabilityLevelBeta,
+		metadata.ExtensionStability,
 	)
 }
 

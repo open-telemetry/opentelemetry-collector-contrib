@@ -181,6 +181,14 @@ func (v *byteSliceLabelValue) ModifyValue(s string) {
 	v.value = s
 }
 
+func (v *stringSliceLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
+func (v *stringLabelValue) ModifyValue(s string) {
+	v.value = s
+}
+
 func newByteSliceLabelValue(metadata LabelValueMetadata, valueHolder interface{}) LabelValue {
 	return byteSliceLabelValue{
 		metadata: metadata,
@@ -277,6 +285,8 @@ func NewLabelValueMetadata(name string, columnName string, valueType ValueType) 
 			var valueHolder []*lockRequest
 			return &valueHolder
 		}
+	case UnknownValueType, FloatValueType, NullFloatValueType:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("invalid value type received for label %q", name)
 	}

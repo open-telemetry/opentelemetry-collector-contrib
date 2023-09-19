@@ -7,7 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
+	"github.com/shirou/gopsutil/v3/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system/internal/metadata"
 )
 
 const (
@@ -33,9 +36,10 @@ var _ internal.Detector = (*Detector)(nil)
 
 // Detector is a system metadata detector
 type Detector struct {
-	provider        system.Provider
-	logger          *zap.Logger
-	hostnameSources []string
+	provider system.Provider
+	logger   *zap.Logger
+	cfg      Config
+	rb       *metadata.ResourceBuilder
 }
 
 // NewDetector creates a new system metadata detector
@@ -45,40 +49,65 @@ func NewDetector(p processor.CreateSettings, dcfg internal.DetectorConfig) (inte
 		cfg.HostnameSources = []string{"dns", "os"}
 	}
 
-	return &Detector{provider: system.NewProvider(), logger: p.Logger, hostnameSources: cfg.HostnameSources}, nil
+	return &Detector{
+		provider: system.NewProvider(),
+		logger:   p.Logger,
+		cfg:      cfg,
+		rb:       metadata.NewResourceBuilder(cfg.ResourceAttributes),
+	}, nil
 }
 
 // Detect detects system metadata and returns a resource with the available ones
-func (d *Detector) Detect(_ context.Context) (resource pcommon.Resource, schemaURL string, err error) {
+func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	var hostname string
-
-	res := pcommon.NewResource()
-	attrs := res.Attributes()
 
 	osType, err := d.provider.OSType()
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting OS type: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
 
-	hostID, err := d.provider.HostID()
+	hostArch, err := d.provider.HostArch()
 	if err != nil {
-		return res, "", fmt.Errorf("failed getting host ID: %w", err)
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host architecture: %w", err)
 	}
 
-	for _, source := range d.hostnameSources {
+	osDescription, err := d.provider.OSDescription(ctx)
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
+	}
+
+	cpuInfo, err := cpu.Info()
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+	}
+
+	for _, source := range d.cfg.HostnameSources {
 		getHostFromSource := hostnameSourcesMap[source]
 		hostname, err = getHostFromSource(d)
 		if err == nil {
-			attrs.PutStr(conventions.AttributeHostName, hostname)
-			attrs.PutStr(conventions.AttributeOSType, osType)
-			attrs.PutStr(conventions.AttributeHostID, hostID)
-
-			return res, conventions.SchemaURL, nil
+			d.rb.SetHostName(hostname)
+			d.rb.SetOsType(osType)
+			if d.cfg.ResourceAttributes.HostID.Enabled {
+				if hostID, hostIDErr := d.provider.HostID(ctx); hostIDErr == nil {
+					d.rb.SetHostID(hostID)
+				} else {
+					d.logger.Warn("failed to get host ID", zap.Error(hostIDErr))
+				}
+			}
+			d.rb.SetHostArch(hostArch)
+			d.rb.SetOsDescription(osDescription)
+			if len(cpuInfo) > 0 {
+				err = setHostCPUInfo(d, cpuInfo[0])
+				if err != nil {
+					d.logger.Warn("failed to get host cpuinfo", zap.Error(err))
+				}
+			}
+			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
 		d.logger.Debug(err.Error())
 	}
 
-	return res, "", errors.New("all hostname sources failed to get hostname")
+	return pcommon.NewResource(), "", errors.New("all hostname sources failed to get hostname")
 }
 
 // getHostname returns OS hostname
@@ -113,4 +142,25 @@ func reverseLookupHost(d *Detector) (string, error) {
 		return "", fmt.Errorf("reverseLookupHost failed to lookup host: %w", err)
 	}
 	return hostname, nil
+}
+
+func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
+	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
+	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
+	family, err := strconv.ParseInt(cpuInfo.Family, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert cpuinfo family to integer: %w", err)
+	}
+	d.rb.SetHostCPUFamily(family)
+
+	model, err := strconv.ParseInt(cpuInfo.Model, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to convert cpuinfo model to integer: %w", err)
+	}
+	d.rb.SetHostCPUModelID(model)
+
+	d.rb.SetHostCPUModelName(cpuInfo.ModelName)
+	d.rb.SetHostCPUStepping(int64(cpuInfo.Stepping))
+	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
+	return nil
 }

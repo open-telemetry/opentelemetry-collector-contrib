@@ -87,6 +87,7 @@ func createDefaultConfig() component.Config {
 		HTTPClientSettings: defaultHTTPClientSettings(),
 		Override:           true,
 		Attributes:         nil,
+		DetectorConfig:     detectorCreateDefaultConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
@@ -166,7 +167,9 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-
+	if oCfg.Attributes != nil {
+		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
+	}
 	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err

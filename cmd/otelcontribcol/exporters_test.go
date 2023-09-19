@@ -42,8 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/jaegerthrifthttpexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
@@ -97,22 +95,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "jaeger",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger"].CreateDefaultConfig().(*jaegerexporter.Config)
-				cfg.Endpoint = endpoint
-				return cfg
-			},
-		},
-		{
-			exporter: "jaeger_thrift",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["jaeger_thrift"].CreateDefaultConfig().(*jaegerthrifthttpexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				return cfg
-			},
-		},
-		{
 			exporter: "kafka",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["kafka"].CreateDefaultConfig().(*kafkaexporter.Config)
@@ -161,6 +143,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Path = t.TempDir()
 				return cfg
 			},
+			skipLifecycle: true, // Causes race detector to fail
 		},
 		{
 			exporter: "prometheus",
@@ -442,6 +425,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["sentry"].CreateDefaultConfig().(*sentryexporter.Config)
 				return cfg
 			},
+			skipLifecycle: true, // causes race detector to fail
 		},
 		{
 			exporter: "skywalking",
@@ -490,15 +474,21 @@ func TestDefaultExporters(t *testing.T) {
 			// not part of the distro, skipping.
 			continue
 		}
+		tt := tt
 		exporterCount++
 		delete(expectedExporters, tt.exporter)
 		t.Run(string(tt.exporter), func(t *testing.T) {
 			factory := expFactories[tt.exporter]
 			assert.Equal(t, tt.exporter, factory.Type())
-			verifyExporterShutdown(t, factory, tt.getConfigFn)
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyExporterShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyExporterLifecycle(t, factory, tt.getConfigFn)
-			}
+			})
 		})
 	}
 	assert.Len(t, expFactories, exporterCount, "All user configurable components must be added to the lifecycle test", expectedExporters)

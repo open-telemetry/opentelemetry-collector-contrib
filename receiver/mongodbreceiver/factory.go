@@ -27,10 +27,8 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: time.Minute,
-		},
-		Timeout: time.Minute,
+		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		Timeout:                   time.Minute,
 		Hosts: []confignet.NetAddr{
 			{
 				Endpoint: "localhost:27017",

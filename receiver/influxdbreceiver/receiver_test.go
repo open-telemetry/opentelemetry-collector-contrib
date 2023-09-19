@@ -46,7 +46,7 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		batchPoints, err := influxdb1.NewBatchPoints(influxdb1.BatchPointsConfig{})
+		batchPoints, err := influxdb1.NewBatchPoints(influxdb1.BatchPointsConfig{Precision: "µs"})
 		require.NoError(t, err)
 		point, err := influxdb1.NewPoint("cpu_temp", map[string]string{"foo": "bar"}, map[string]interface{}{"gauge": 87.332})
 		require.NoError(t, err)
@@ -68,7 +68,9 @@ func TestWriteLineProtocol_v2API(t *testing.T) {
 	t.Run("influxdb-client-v2", func(t *testing.T) {
 		nextConsumer.lastMetricsConsumed = pmetric.NewMetrics()
 
-		client := influxdb2.NewClient("http://"+addr, "")
+		o := influxdb2.DefaultOptions()
+		o.SetPrecision(time.Microsecond)
+		client := influxdb2.NewClientWithOptions("http://"+addr, "", o)
 		t.Cleanup(client.Close)
 
 		err := client.WriteAPIBlocking("my-org", "my-bucket").WriteRecord(context.Background(), "cpu_temp,foo=bar gauge=87.332")
@@ -94,7 +96,7 @@ func (m *mockConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (m *mockConsumer) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (m *mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	m.lastMetricsConsumed = pmetric.NewMetrics()
 	md.CopyTo(m.lastMetricsConsumed)
 	return nil

@@ -4,4 +4,6 @@ status:
   class: processor
   stability:
     development: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib, observiq, sumo, aws]
+  codeowners:
+    active: [Aneurysm9]

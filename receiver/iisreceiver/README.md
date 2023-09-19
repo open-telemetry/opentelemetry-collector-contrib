@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib], [observiq], [sumo] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fiis%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fiis) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fiis%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fiis) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Mrod1598](https://www.github.com/Mrod1598), [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -20,6 +22,7 @@ Because of this, it is a Windows only receiver.
 The following settings are optional:
 
 - `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
 Example:
 
@@ -27,6 +30,7 @@ Example:
     receivers:
       iis:
         collection_interval: 10s
+        initial_delay: 1s
 
 ```
 

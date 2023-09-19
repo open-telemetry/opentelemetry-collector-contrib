@@ -7,13 +7,15 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type datadogProcessor struct {
@@ -28,7 +30,7 @@ type datadogProcessor struct {
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
-	agent ingester
+	agent datadog.Ingester
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
@@ -36,7 +38,7 @@ type datadogProcessor struct {
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
-	in chan pb.StatsPayload
+	in chan *pb.StatsPayload
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
@@ -44,15 +46,16 @@ type datadogProcessor struct {
 
 func newProcessor(ctx context.Context, logger *zap.Logger, config component.Config, nextConsumer consumer.Traces) (*datadogProcessor, error) {
 	cfg := config.(*Config)
-	in := make(chan pb.StatsPayload, 100)
+	in := make(chan *pb.StatsPayload, 100)
 	trans, err := metrics.NewTranslator(logger)
 	if err != nil {
 		return nil, err
 	}
+	logger.Warn("This component is deprecated in favor of the Datadog connector")
 	return &datadogProcessor{
 		logger:       logger,
 		nextConsumer: nextConsumer,
-		agent:        newAgent(ctx, in),
+		agent:        datadog.NewAgent(ctx, in),
 		translator:   trans,
 		in:           in,
 		cfg:          cfg,
@@ -61,10 +64,10 @@ func newProcessor(ctx context.Context, logger *zap.Logger, config component.Conf
 }
 
 // Start implements the component.Component interface.
-func (p *datadogProcessor) Start(ctx context.Context, host component.Host) error {
+func (p *datadogProcessor) Start(_ context.Context, host component.Host) error {
 	var datadogs []exporter.Metrics
 loop:
-	for k, exp := range host.GetExporters()[component.DataTypeMetrics] {
+	for k, exp := range host.GetExporters()[component.DataTypeMetrics] { //nolint:staticcheck
 		mexp, ok := exp.(exporter.Metrics)
 		if !ok {
 			return fmt.Errorf("the exporter %q isn't a metrics exporter", k.String())

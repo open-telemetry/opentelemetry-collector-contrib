@@ -448,6 +448,7 @@ func TestCollectMetrics(t *testing.T) {
 						continue
 					}
 
+					require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
 					require.Regexp(t, `variableLabels: \[.*label_1.+label_2.+job.+instance.*\]`, m.Desc().String())
 
 					pbMetric := io_prometheus_client.Metric{}
@@ -466,13 +467,11 @@ func TestCollectMetrics(t *testing.T) {
 
 					switch tt.metricType {
 					case prometheus.CounterValue:
-						require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric_total\"")
 						require.Equal(t, tt.value, *pbMetric.Counter.Value)
 						require.Nil(t, pbMetric.Gauge)
 						require.Nil(t, pbMetric.Histogram)
 						require.Nil(t, pbMetric.Summary)
 					case prometheus.GaugeValue:
-						require.Contains(t, m.Desc().String(), "fqName: \"test_space_test_metric\"")
 						require.Equal(t, tt.value, *pbMetric.Gauge.Value)
 						require.Nil(t, pbMetric.Counter)
 						require.Nil(t, pbMetric.Histogram)

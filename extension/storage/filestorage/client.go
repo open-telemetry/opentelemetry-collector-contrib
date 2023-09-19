@@ -92,7 +92,7 @@ func (c *fileStorageClient) Delete(ctx context.Context, key string) error {
 }
 
 // Batch executes the specified operations in order. Get operation results are updated in place
-func (c *fileStorageClient) Batch(ctx context.Context, ops ...storage.Operation) error {
+func (c *fileStorageClient) Batch(_ context.Context, ops ...storage.Operation) error {
 	batch := func(tx *bbolt.Tx) error {
 		bucket := tx.Bucket(defaultBucket)
 		if bucket == nil {

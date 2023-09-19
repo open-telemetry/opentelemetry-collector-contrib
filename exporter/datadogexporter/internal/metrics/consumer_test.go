@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -60,10 +60,11 @@ func TestRunningMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	metadata, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
 	var runningHostnames []string
-	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}) {
+	for _, metric := range consumer.runningMetrics(0, component.BuildInfo{}, metadata) {
 		for _, res := range metric.Resources {
 			runningHostnames = append(runningHostnames, *res.Name)
 		}
@@ -103,9 +104,10 @@ func TestTagsMetrics(t *testing.T) {
 
 	ctx := context.Background()
 	consumer := NewConsumer()
-	assert.NoError(t, tr.MapMetrics(ctx, ms, consumer))
+	metadata, err := tr.MapMetrics(ctx, ms, consumer)
+	assert.NoError(t, err)
 
-	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{})
+	runningMetrics := consumer.runningMetrics(0, component.BuildInfo{}, metadata)
 	var runningTags []string
 	var runningHostnames []string
 	for _, metric := range runningMetrics {
@@ -121,16 +123,17 @@ func TestTagsMetrics(t *testing.T) {
 }
 
 func TestConsumeAPMStats(t *testing.T) {
+	var md metrics.Metadata
 	c := NewConsumer()
 	for _, sp := range testutil.StatsPayloads {
 		c.ConsumeAPMStats(sp)
 	}
 	require.Len(t, c.as, len(testutil.StatsPayloads))
 	require.ElementsMatch(t, c.as, testutil.StatsPayloads)
-	_, _, out := c.All(0, component.BuildInfo{}, []string{})
+	_, _, out := c.All(0, component.BuildInfo{}, []string{}, md)
 	require.ElementsMatch(t, out, testutil.StatsPayloads)
-	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"})
-	var copies []pb.ClientStatsPayload
+	_, _, out = c.All(0, component.BuildInfo{}, []string{"extra:key"}, md)
+	var copies []*pb.ClientStatsPayload
 	for _, sp := range testutil.StatsPayloads {
 		sp.Tags = append(sp.Tags, "extra:key")
 		copies = append(copies, sp)

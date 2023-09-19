@@ -14,15 +14,15 @@ import (
 )
 
 type convertSummarySumValToSumArguments struct {
-	StringAggTemp string `ottlarg:"0"`
-	Monotonic     bool   `ottlarg:"1"`
+	StringAggTemp string
+	Monotonic     bool
 }
 
 func newConvertSummarySumValToSumFactory() ottl.Factory[ottldatapoint.TransformContext] {
 	return ottl.NewFactory("convert_summary_sum_val_to_sum", &convertSummarySumValToSumArguments{}, createConvertSummarySumValToSumFunction)
 }
 
-func createConvertSummarySumValToSumFunction(fCtx ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
+func createConvertSummarySumValToSumFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottldatapoint.TransformContext], error) {
 	args, ok := oArgs.(*convertSummarySumValToSumArguments)
 
 	if !ok {

@@ -29,6 +29,31 @@ type sumologicexporter struct {
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
+
+	if cfg.MetricFormat == GraphiteFormat {
+		settings.Logger.Warn("`metric_format: graphite` nad `graphite_template` are deprecated and are going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	if cfg.MetricFormat == Carbon2Format {
+		settings.Logger.Warn("`metric_format: carbon` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	if len(cfg.MetadataAttributes) > 0 {
+		settings.Logger.Warn("`metadata_attributes: []` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	if cfg.SourceCategory != "" {
+		settings.Logger.Warn("`source_category: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	if cfg.SourceHost != "" {
+		settings.Logger.Warn("`source_host: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
+	if cfg.SourceName != "" {
+		settings.Logger.Warn("`source_name: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	}
+
 	sfs := newSourceFormats(cfg)
 
 	f, err := newFilter(cfg.MetadataAttributes)
@@ -115,7 +140,7 @@ func (se *sumologicexporter) start(_ context.Context, host component.Host) (err 
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	var (
-		currentMetadata  = newFields(pcommon.NewMap())
+		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
 		errs             error
 		droppedRecords   []plog.LogRecord
@@ -208,7 +233,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	var (
-		currentMetadata  = newFields(pcommon.NewMap())
+		currentMetadata  fields
 		previousMetadata = newFields(pcommon.NewMap())
 		errs             error
 		droppedRecords   []metricPair

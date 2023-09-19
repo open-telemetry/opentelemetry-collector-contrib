@@ -17,10 +17,10 @@ import (
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
-	ctx context.Context,
-	params receiver.CreateSettings,
-	cfg component.Config,
-	consumer consumer.Metrics,
+	_ context.Context,
+	_ receiver.CreateSettings,
+	_ component.Config,
+	_ consumer.Metrics,
 ) (receiver.Metrics, error) {
 	return nil, errors.New("the sqlserver receiver is only supported on Windows")
 }

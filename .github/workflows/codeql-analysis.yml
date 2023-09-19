@@ -14,10 +14,10 @@ jobs:
       CODEQL_EXTRACTOR_GO_BUILD_TRACING: 'on'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.8
+          go-version: ~1.20.8
           cache: false
 
       # Initializes the CodeQL tools for scanning.

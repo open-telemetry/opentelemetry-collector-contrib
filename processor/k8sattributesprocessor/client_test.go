@@ -33,7 +33,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ *zap.Logger, apiCfg k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, exclude kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
+func newFakeClient(_ *zap.Logger, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()

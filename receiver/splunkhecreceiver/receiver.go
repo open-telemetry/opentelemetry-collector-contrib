@@ -4,7 +4,6 @@
 package splunkhecreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver"
 
 import (
-	"bufio"
 	"compress/gzip"
 	"context"
 	"errors"
@@ -32,7 +31,7 @@ import (
 const (
 	defaultServerTimeout = 20 * time.Second
 
-	responseOK                        = "OK"
+	responseOK                        = `{"text": "Success", "code": 0}`
 	responseHecHealthy                = `{"text": "HEC is healthy", "code": 17}`
 	responseInvalidMethod             = `Only "POST" method is supported`
 	responseInvalidEncoding           = `"Content-Encoding" must be "gzip" or empty`
@@ -265,9 +264,12 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 		defer r.gzipReaderPool.Put(reader)
 	}
 
-	sc := bufio.NewScanner(bodyReader)
 	resourceCustomizer := r.createResourceCustomizer(req)
-	ld, slLen := splunkHecRawToLogData(sc, req.URL.Query(), resourceCustomizer, r.config)
+	ld, slLen, err := splunkHecRawToLogData(bodyReader, req.URL.Query(), resourceCustomizer, r.config)
+	if err != nil {
+		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, slLen, err)
+		return
+	}
 	consumerErr := r.logsConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()
@@ -374,8 +376,7 @@ func (r *splunkReceiver) consumeMetrics(ctx context.Context, events []*splunk.Ev
 		r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), decodeErr)
 	} else {
 		resp.WriteHeader(http.StatusOK)
-		_, err := resp.Write(okRespBody)
-		if err != nil {
+		if _, err := resp.Write(okRespBody); err != nil {
 			r.failRequest(ctx, resp, http.StatusInternalServerError, errInternalServerError, len(events), err)
 		}
 	}

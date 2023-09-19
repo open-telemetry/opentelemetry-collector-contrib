@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [observiq], [splunk] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsplunkhec%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsplunkhec) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsplunkhec%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsplunkhec) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@dmitryax](https://www.github.com/dmitryax) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -42,6 +44,7 @@ The following configuration options can also be configured:
 - `max_content_length_traces` (default: 2097152): Maximum trace payload size in bytes. Trace batches of bigger size
   will be broken down into several requests. Default value is 2097152 bytes (2 MiB). Maximum allowed value is 838860800
   (~ 800 MB). When set to 0, it will treat as infinite length and it will create only one request per batch.
+- `max_event_size` (default: 5242880): Maximum raw uncompressed individual event size in bytes. Maximum allowed value is 838860800 (~ 800 MB).
 - `splunk_app_name` (default: "OpenTelemetry Collector Contrib") App name is used to track telemetry information for Splunk App's using HEC by App name.
 - `splunk_app_version` (default: Current OpenTelemetry Collector Contrib Build Version): App version is used to track telemetry information for Splunk App's using HEC by App version. 
 - `log_data_enabled` (default: true): Specifies whether the log data is exported. Set it to `false` if you want the log 
@@ -59,6 +62,7 @@ The following configuration options can also be configured:
 - `otel_to_hec_fields/severity_number` (default = `otel.log.severity.number`): Specifies the name of the field to map the severity number field of log events.
 - `otel_to_hec_fields/name` (default = `"otel.log.name`): Specifies the name of the field to map the name field of log events.
 - `heartbeat/interval` (no default): Specifies the interval of sending hec heartbeat to the destination. If not specified, heartbeat is not enabled.
+- `heartbeat/startup` (default: false): Check heartbeat at start up time. This action enforces a synchronous heartbeat action during the collector start up sequence. The collector will fail to start if the heartbeat returns an error.
 - `telemetry/enabled` (default: false): Specifies whether to enable telemetry inside splunk hec exporter.
 - `telemetry/override_metrics_names` (default: empty map): Specifies the metrics name to overrides in splunk hec exporter.
 - `telemetry/extra_attributes` (default: empty map): Specifies the extra metrics attributes in splunk hec exporter.

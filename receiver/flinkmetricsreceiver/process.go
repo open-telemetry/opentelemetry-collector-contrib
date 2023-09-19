@@ -13,6 +13,9 @@ import (
 )
 
 func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jobmanagerMetrics *models.JobmanagerMetrics) {
+	if jobmanagerMetrics == nil {
+		return
+	}
 	for _, metric := range jobmanagerMetrics.Metrics {
 		switch metric.ID {
 		case "Status.JVM.CPU.Load":
@@ -63,10 +66,10 @@ func (s *flinkmetricsScraper) processJobmanagerMetrics(now pcommon.Timestamp, jo
 			_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
 		}
 	}
-	s.mb.EmitForResource(
-		metadata.WithHostName(jobmanagerMetrics.Host),
-		metadata.WithFlinkResourceTypeJobmanager,
-	)
+	rb := s.mb.NewResourceBuilder()
+	rb.SetHostName(jobmanagerMetrics.Host)
+	rb.SetFlinkResourceTypeJobmanager()
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, taskmanagerMetricInstances []*models.TaskmanagerMetrics) {
@@ -121,11 +124,11 @@ func (s *flinkmetricsScraper) processTaskmanagerMetrics(now pcommon.Timestamp, t
 				_ = s.mb.RecordFlinkJvmMemoryHeapUsedDataPoint(now, metric.Value)
 			}
 		}
-		s.mb.EmitForResource(
-			metadata.WithHostName(taskmanagerMetrics.Host),
-			metadata.WithFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID),
-			metadata.WithFlinkResourceTypeTaskmanager,
-		)
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(taskmanagerMetrics.Host)
+		rb.SetFlinkTaskmanagerID(taskmanagerMetrics.TaskmanagerID)
+		rb.SetFlinkResourceTypeTaskmanager()
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -147,10 +150,10 @@ func (s *flinkmetricsScraper) processJobsMetrics(now pcommon.Timestamp, jobsMetr
 				_ = s.mb.RecordFlinkJobCheckpointCountDataPoint(now, metric.Value, metadata.AttributeCheckpointFailed)
 			}
 		}
-		s.mb.EmitForResource(
-			metadata.WithHostName(jobsMetrics.Host),
-			metadata.WithFlinkJobName(jobsMetrics.JobName),
-		)
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(jobsMetrics.Host)
+		rb.SetFlinkJobName(jobsMetrics.JobName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -180,12 +183,12 @@ func (s *flinkmetricsScraper) processSubtaskMetrics(now pcommon.Timestamp, subta
 				_ = s.mb.RecordFlinkOperatorWatermarkOutputDataPoint(now, metric.Value, operatorName[0])
 			}
 		}
-		s.mb.EmitForResource(
-			metadata.WithHostName(subtaskMetrics.Host),
-			metadata.WithFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID),
-			metadata.WithFlinkJobName(subtaskMetrics.JobName),
-			metadata.WithFlinkTaskName(subtaskMetrics.TaskName),
-			metadata.WithFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex),
-		)
+		rb := s.mb.NewResourceBuilder()
+		rb.SetHostName(subtaskMetrics.Host)
+		rb.SetFlinkTaskmanagerID(subtaskMetrics.TaskmanagerID)
+		rb.SetFlinkJobName(subtaskMetrics.JobName)
+		rb.SetFlinkTaskName(subtaskMetrics.TaskName)
+		rb.SetFlinkSubtaskIndex(subtaskMetrics.SubtaskIndex)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }

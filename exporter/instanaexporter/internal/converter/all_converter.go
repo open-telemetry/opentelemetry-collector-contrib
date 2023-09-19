@@ -20,7 +20,7 @@ type ConvertAllConverter struct {
 	logger     *zap.Logger
 }
 
-func (c *ConvertAllConverter) AcceptsSpans(attributes pcommon.Map, spanSlice ptrace.SpanSlice) bool {
+func (c *ConvertAllConverter) AcceptsSpans(_ pcommon.Map, _ ptrace.SpanSlice) bool {
 	return true
 }
 

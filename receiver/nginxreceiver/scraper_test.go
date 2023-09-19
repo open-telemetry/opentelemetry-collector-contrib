@@ -41,19 +41,22 @@ func TestScraper(t *testing.T) {
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
 }
 
-func TestScraperWithConnectionsAsSum(t *testing.T) {
+func TestScraperWithConnectionsAsGauge(t *testing.T) {
 	nginxMock := newMockServer(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, true))
+	require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, false))
+		require.NoError(t, featuregate.GlobalRegistry().Set(connectionsAsSum, true))
 	}()
 
 	scraper := newNginxScraper(receivertest.NewNopCreateSettings(), cfg)
@@ -64,12 +67,15 @@ func TestScraperWithConnectionsAsSum(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.NoError(t, err)
 
-	expectedFile := filepath.Join("testdata", "scraper", "expected_with_connections_as_sum.yaml")
+	expectedFile := filepath.Join("testdata", "scraper", "expected_with_connections_as_gauge.yaml")
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreMetricsOrder()))
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
 }
 
 func TestScraperError(t *testing.T) {

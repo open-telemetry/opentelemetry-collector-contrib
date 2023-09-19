@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 )
 
@@ -312,4 +314,66 @@ func rotationTestConfig(tempDir string) *FileLogConfig {
 			return *c
 		}(),
 	}
+}
+
+// TestConsumeContract tests the contract between the filelog receiver and the next consumer with enabled retry.
+func TestConsumeContract(t *testing.T) {
+	tmpDir := t.TempDir()
+	filePattern := "test-*.log"
+	flg := &fileLogGenerator{t: t, tmpDir: tmpDir, filePattern: filePattern}
+
+	cfg := createDefaultConfig()
+	cfg.RetryOnFailure.Enabled = true
+	cfg.RetryOnFailure.InitialInterval = 1 * time.Millisecond
+	cfg.RetryOnFailure.MaxInterval = 10 * time.Millisecond
+	cfg.InputConfig.Include = []string{filepath.Join(tmpDir, filePattern)}
+	cfg.InputConfig.StartAt = "beginning"
+	jsonParser := json.NewConfig()
+	tsField := entry.NewAttributeField("ts")
+	jsonParser.TimeParser = &helper.TimeParser{
+		ParseFrom:  &tsField,
+		Layout:     time.RFC3339,
+		LayoutType: "gotime",
+	}
+	jsonParser.ParseTo = entry.RootableField{Field: entry.NewAttributeField()}
+	logField := entry.NewAttributeField("log")
+	jsonParser.BodyField = &logField
+	cfg.Operators = []operator.Config{{Builder: jsonParser}}
+
+	receivertest.CheckConsumeContract(receivertest.CheckConsumeContractParams{
+		T:             t,
+		Factory:       NewFactory(),
+		DataType:      component.DataTypeLogs,
+		Config:        cfg,
+		Generator:     flg,
+		GenerateCount: 10000,
+	})
+}
+
+type fileLogGenerator struct {
+	t           *testing.T
+	tmpDir      string
+	filePattern string
+	tmpFile     *os.File
+	sequenceNum int64
+}
+
+func (g *fileLogGenerator) Start() {
+	tmpFile, err := os.CreateTemp(g.tmpDir, g.filePattern)
+	require.NoError(g.t, err)
+	g.tmpFile = tmpFile
+}
+
+func (g *fileLogGenerator) Stop() {
+	require.NoError(g.t, g.tmpFile.Close())
+	require.NoError(g.t, os.Remove(g.tmpFile.Name()))
+}
+
+func (g *fileLogGenerator) Generate() []receivertest.UniqueIDAttrVal {
+	id := receivertest.UniqueIDAttrVal(fmt.Sprintf("%d", atomic.AddInt64(&g.sequenceNum, 1)))
+	logLine := fmt.Sprintf(`{"ts": "%s", "log": "log-%s", "%s": "%s"}`, time.Now().Format(time.RFC3339), id,
+		receivertest.UniqueIDAttrName, id)
+	_, err := g.tmpFile.WriteString(logLine + "\n")
+	require.NoError(g.t, err)
+	return []receivertest.UniqueIDAttrVal{id}
 }

@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [dmitryax, hughesjj]
 
 resource_attributes:
   redis.version:
@@ -43,6 +45,13 @@ attributes:
   cmd:
     description: Redis command name
     type: string
+  percentile:
+    description: Percentile
+    type: string
+    enum:
+      - p50
+      - p99
+      - p99.9
 
 metrics:
   redis.maxmemory:
@@ -55,20 +64,21 @@ metrics:
   redis.role:
     enabled: false
     description: Redis node's role
+    unit: "{role}"
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [role]
 
   redis.cmd.calls:
     enabled: false
     description: Total number of calls for a command
-    unit: ""
+    unit: "{call}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cmd]
 
   redis.cmd.usec:
@@ -78,8 +88,16 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cmd]
+
+  redis.cmd.latency:
+    enabled: false
+    description: Command execution latency
+    unit: s
+    gauge:
+      value_type: double
+    attributes: [cmd, percentile]
 
   redis.uptime:
     enabled: true
@@ -88,7 +106,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.cpu.time:
     enabled: true
@@ -97,77 +115,77 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [state]
 
   redis.clients.connected:
     enabled: true
     description: Number of client connections (excluding connections from replicas)
-    unit:
+    unit: "{client}"
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.clients.max_input_buffer:
     enabled: true
     description: Biggest input buffer among current client connections
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.clients.max_output_buffer:
     enabled: true
     description: Longest output list among current client connections
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.clients.blocked:
     enabled: true
     description: Number of clients pending on a blocking call
-    unit: ""
+    unit: "{client}"
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keys.expired:
     enabled: true
     description: Total number of key expiration events
-    unit: ""
+    unit: "{event}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
 
   redis.keys.evicted:
     enabled: true
     description: Number of evicted keys due to maxmemory limit
-    unit: ""
+    unit: "{key}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.connections.received:
     enabled: true
     description: Total number of connections accepted by the server
-    unit:
+    unit: "{connection}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.connections.rejected:
     enabled: true
     description: Number of connections rejected because of maxclients limit
-    unit:
+    unit: "{connection}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.memory.used:
     enabled: true
@@ -200,18 +218,18 @@ metrics:
   redis.memory.fragmentation_ratio:
     enabled: true
     description: Ratio between used_memory_rss and used_memory
-    unit: ""
+    unit: 1
     gauge:
       value_type: double
 
   redis.rdb.changes_since_last_save:
     enabled: true
     description: Number of changes since the last dump
-    unit: ""
+    unit: "{change}"
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.commands:
     enabled: true
@@ -223,11 +241,11 @@ metrics:
   redis.commands.processed:
     enabled: true
     description: Total number of commands processed by the server
-    unit: ""
+    unit: "{command}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.net.input:
     enabled: true
@@ -236,7 +254,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.net.output:
     enabled: true
@@ -245,25 +263,25 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keyspace.hits:
     enabled: true
     description: Number of successful lookup of keys in the main dictionary
-    unit: ""
+    unit: "{hit}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.keyspace.misses:
     enabled: true
     description: Number of failed lookup of keys in the main dictionary
-    unit: ""
+    unit: "{miss}"
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.latest_fork:
     enabled: true
@@ -275,30 +293,30 @@ metrics:
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
-    unit: ""
+    unit: "{replica}"
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
 
   redis.replication.backlog_first_byte_offset:
     enabled: true
     description: The master offset of the replication backlog buffer
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.replication.offset:
     enabled: true
     description: The server's current replication offset
-    unit: ""
+    unit: "By"
     gauge:
       value_type: int
 
   redis.db.keys:
     enabled: true
     description: "Number of keyspace keys"
-    unit: ""
+    unit: "{key}"
     gauge:
       value_type: int
     attributes: [db]
@@ -306,7 +324,7 @@ metrics:
   redis.db.expires:
     enabled: true
     description: "Number of keyspace keys with an expiration"
-    unit: ""
+    unit: "{key}"
     gauge:
       value_type: int
     attributes: [db]

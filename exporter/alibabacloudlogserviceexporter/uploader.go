@@ -14,10 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// LogServiceClient log Service's client wrapper
-type LogServiceClient interface {
-	// SendLogs send message to LogService
-	SendLogs(logs []*sls.Log) error
+// logServiceClient log Service's client wrapper
+type logServiceClient interface {
+	// sendLogs send message to LogService
+	sendLogs(logs []*sls.Log) error
 }
 
 type logServiceClientImpl struct {
@@ -41,8 +41,8 @@ func getIPAddress() (ipAddress string, err error) {
 	return ipAddress, err
 }
 
-// NewLogServiceClient Create Log Service client
-func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, error) {
+// newLogServiceClient Create Log Service client
+func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
 	if config == nil || config.Endpoint == "" || config.Project == "" || config.Logstore == "" {
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
@@ -53,6 +53,8 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 	producerConfig.AccessKeySecret = string(config.AccessKeySecret)
 	if config.ECSRamRole != "" || config.TokenFilePath != "" {
 		tokenUpdateFunc, _ := slsutil.NewTokenUpdateFunc(config.ECSRamRole, config.TokenFilePath)
+		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26987
+		// nolint
 		producerConfig.UpdateStsToken = tokenUpdateFunc
 		producerConfig.StsTokenShutDown = make(chan struct{})
 	}
@@ -71,8 +73,8 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 	return c, nil
 }
 
-// SendLogs send message to LogService
-func (c *logServiceClientImpl) SendLogs(logs []*sls.Log) error {
+// sendLogs send message to LogService
+func (c *logServiceClientImpl) sendLogs(logs []*sls.Log) error {
 	return c.clientInstance.SendLogListWithCallBack(c.project, c.logstore, c.topic, c.source, logs, c)
 }
 

@@ -80,6 +80,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		return true
 	})
 	metricFieldName := splunkMetricValue + ":" + m.Name()
+	//exhaustive:enforce
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		pts := m.Gauge().DataPoints()
@@ -204,6 +205,11 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 			}
 		}
 		return splunkMetrics
+	case pmetric.MetricTypeExponentialHistogram:
+		logger.Warn(
+			"Point with unsupported type ExponentialHistogram",
+			zap.Any("metric", m))
+		return nil
 	case pmetric.MetricTypeEmpty:
 		return nil
 	default:
@@ -278,10 +284,11 @@ func mergeEventsToMultiMetricFormat(events []*splunk.Event) ([]*splunk.Event, er
 	hashes := map[uint32]*splunk.Event{}
 	hasher := fnv.New32a()
 	var merged []*splunk.Event
+	marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
 
 	for _, e := range events {
 		cloned := copyEventWithoutValues(e)
-		marshaler := jsoniter.ConfigCompatibleWithStandardLibrary
+
 		data, err := marshaler.Marshal(cloned)
 		if err != nil {
 			return nil, err

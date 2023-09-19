@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -20,6 +21,8 @@ import (
 
 // NewFactory creates a factory for the legacy Loki exporter.
 func NewFactory() exporter.Factory {
+	_ = view.Register(MetricViews()...)
+
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
@@ -38,6 +41,12 @@ func createDefaultConfig() component.Config {
 		},
 		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+		DefaultLabelsEnabled: map[string]bool{
+			"exporter": true,
+			"job":      true,
+			"instance": true,
+			"level":    true,
+		},
 	}
 }
 

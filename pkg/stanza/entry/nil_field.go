@@ -9,17 +9,17 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 type NilField struct{}
 
 // Get will return always return nil
-func (l NilField) Get(entry *Entry) (interface{}, bool) {
+func (l NilField) Get(_ *Entry) (interface{}, bool) {
 	return nil, true
 }
 
 // Set will do nothing and return no error
-func (l NilField) Set(entry *Entry, val interface{}) error {
+func (l NilField) Set(_ *Entry, _ interface{}) error {
 	return nil
 }
 
 // Delete will do nothing and return no error
-func (l NilField) Delete(entry *Entry) (interface{}, bool) {
+func (l NilField) Delete(_ *Entry) (interface{}, bool) {
 	return nil, true
 }
 

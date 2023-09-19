@@ -16,7 +16,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -30,11 +31,11 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewID(typeStr),
+			id:       component.NewID(metadata.Type),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "receiver_settings"),
+			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
 				NetAddr: confignet.NetAddr{
 					Endpoint:  "localhost:12345",
@@ -48,6 +49,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "timing",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 170,
+						},
+					},
+					{
+						StatsdType:   "distribution",
 						ObserverType: "histogram",
 						Histogram: protocol.HistogramConfig{
 							MaxSize: 170,
@@ -83,8 +91,8 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
-		observerTypeNotSupportErr      = "observer_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
 	)
 
 	tests := []test{

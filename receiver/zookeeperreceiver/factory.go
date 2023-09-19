@@ -17,28 +17,28 @@ import (
 )
 
 const (
-	typeStr                   = "zookeeper"
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
+	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg.CollectionInterval = defaultCollectionInterval
+	cfg.Timeout = defaultTimeout
+
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
-			CollectionInterval: defaultCollectionInterval,
-		},
+		ScraperControllerSettings: cfg,
 		TCPAddr: confignet.TCPAddr{
 			Endpoint: ":2181",
 		},
-		Timeout:              defaultTimeout,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
@@ -57,7 +57,7 @@ func createMetricsReceiver(
 	}
 
 	scrp, err := scraperhelper.NewScraper(
-		typeStr,
+		metadata.Type,
 		zms.scrape,
 		scraperhelper.WithShutdown(zms.shutdown),
 	)

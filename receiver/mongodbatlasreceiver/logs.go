@@ -44,7 +44,7 @@ type ProjectContext struct {
 const collectionInterval = time.Minute * 5
 
 func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) *logsReceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, cfg.PrivateKey, cfg.RetrySettings, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
 
 	for _, p := range cfg.Logs.Projects {
 		p.populateIncludesAndExcludes()
@@ -60,7 +60,7 @@ func newMongoDBAtlasLogsReceiver(settings rcvr.CreateSettings, cfg *Config, cons
 }
 
 // Log receiver logic
-func (s *logsReceiver) Start(ctx context.Context, host component.Host) error {
+func (s *logsReceiver) Start(ctx context.Context, _ component.Host) error {
 	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
@@ -83,7 +83,7 @@ func (s *logsReceiver) Start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (s *logsReceiver) Shutdown(ctx context.Context) error {
+func (s *logsReceiver) Shutdown(_ context.Context) error {
 	close(s.stopperChan)
 	s.wg.Wait()
 	return s.client.Shutdown()
@@ -169,7 +169,7 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 
 func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) ([]mongodbatlas.Cluster, error) {
 	include, exclude := projectCfg.IncludeClusters, projectCfg.ExcludeClusters
-	whitelist := false
+	var allowed bool
 	var clusterNameSet map[string]struct{}
 	// check to include or exclude clusters
 	switch {
@@ -178,11 +178,11 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 		return clusters, nil
 	// include is initialized
 	case len(include) > 0 && len(exclude) == 0:
-		whitelist = true
+		allowed = true
 		clusterNameSet = projectCfg.includesByClusterName
 	// exclude is initialized
 	case len(exclude) > 0 && len(include) == 0:
-		whitelist = false
+		allowed = false
 		clusterNameSet = projectCfg.excludesByClusterName
 	// both are initialized
 	default:
@@ -191,7 +191,7 @@ func filterClusters(clusters []mongodbatlas.Cluster, projectCfg ProjectConfig) (
 
 	var filtered []mongodbatlas.Cluster
 	for _, cluster := range clusters {
-		if _, ok := clusterNameSet[cluster.Name]; (!ok && !whitelist) || (ok && whitelist) {
+		if _, ok := clusterNameSet[cluster.Name]; (!ok && !allowed) || (ok && allowed) {
 			filtered = append(filtered, cluster)
 		}
 	}

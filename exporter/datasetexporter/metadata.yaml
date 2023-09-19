@@ -3,5 +3,7 @@ type: dataset
 status:
   class: exporter
   stability:
-    development: [logs, traces]
-  distributions: []
+    alpha: [logs, traces]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, martin-majlis-s1, zdaratom, tomaz-s1]

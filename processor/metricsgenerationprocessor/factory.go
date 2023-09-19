@@ -11,13 +11,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
 
-const (
-	// The value of "type" key in configuration.
-	typeStr = "experimental_metricsgeneration"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -25,9 +20,9 @@ var processorCapabilities = consumer.Capabilities{MutatesData: true}
 // NewFactory returns a new factory for the Metrics Generation processor.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		createDefaultConfig,
-		processor.WithMetrics(createMetricsProcessor, stability))
+		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability))
 }
 
 func createDefaultConfig() component.Config {

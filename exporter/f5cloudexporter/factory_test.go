@@ -16,12 +16,13 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"golang.org/x/oauth2"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestFactory_TestType(t *testing.T) {
 	f := NewFactory()
-	assert.Equal(t, f.Type(), component.Type(typeStr))
+	assert.Equal(t, f.Type(), component.Type(metadata.Type))
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {

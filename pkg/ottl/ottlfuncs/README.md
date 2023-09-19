@@ -148,9 +148,12 @@ Examples:
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -162,13 +165,17 @@ Examples:
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -186,9 +193,12 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
-`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is a string.
+`target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -200,11 +210,15 @@ Examples:
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
-`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is a string.
+`target` is a path expression to a telemetry field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
 The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+
+There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
+If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
@@ -263,14 +277,32 @@ Unlike functions, they do not modify any input telemetry and always return a val
 Available Converters:
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [ExtractPatterns](#extractpatterns)
+- [FNV](#fnv)
+- [Hours](#hours)
+- [Duration](#duration)
 - [Int](#int)
+- [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsString](#isstring)
+- [Len](#len)
 - [Log](#log)
+- [Microseconds](#microseconds)
+- [Milliseconds](#milliseconds)
+- [Minutes](#minutes)
+- [Nanoseconds](#nanoseconds)
 - [ParseJSON](#parsejson)
+- [Seconds](#seconds)
+- [SHA1](#sha1)
+- [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
-- [TraceID](#traceid)
 - [Substring](#substring)
+- [Time](#time)
+- [UnixMicro](#unixmicro)
+- [UnixMilli](#unixmilli)
+- [UnixNano](#unixnano)
+- [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 
 ### Concat
@@ -316,6 +348,71 @@ Examples:
 
 - `ConvertCase(metric.name, "snake")`
 
+### Duration
+
+`Duration(duration)`
+
+The `Duration` Converter takes a string representation of a duration and converts it to a [Golang `time.duration`](https://pkg.go.dev/time#ParseDuration).
+
+`duration` is a string. Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+
+If either `duration` is nil or is in a format that cannot be converted to Golang `time.duration`, an error is returned.
+
+Examples:
+
+- `Duration("3s")`
+- `Duration("333ms")`
+- `Duration("1000000h")`
+
+### ExtractPatterns
+
+`ExtractPatterns(target, pattern)`
+
+The `ExtractPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a regex string. 
+
+If `target` is not a string or nil `ExtractPatterns` will return an error. If `pattern` does not contain at least 1 named capture group then `ExtractPatterns` will error on startup. 
+
+Examples:
+
+- `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
+### FNV
+
+`FNV(value)`
+
+The `FNV` Converter converts the `value` to an FNV hash/digest.
+
+The returned type is int64.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `FNV(attributes["device.name"])`
+
+
+- `FNV("name")`
+
+### Hours
+
+`Hours(value)`
+
+The `Hours` Converter returns the duration as a floating point number of hours.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Hours(Duration("1h"))`
+
 ### Int
 
 `Int(value)`
@@ -341,6 +438,23 @@ Examples:
 
 - `Int("2.0")`
 
+### IsMap
+
+`IsMap(value)`
+
+The `IsMap` Converter returns true if the given value is a map.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `map[string]any` or a `pcommon.ValueTypeMap` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsMap(body)`
+
+
+- `IsMap(attributes["maybe a map"])`
+
 ### IsMatch
 
 `IsMatch(target, pattern)`
@@ -360,12 +474,45 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsString
+
+`IsString(value)`
+
+The `IsString` Converter returns true if the given value is a string.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `string` or a `pcommon.ValueTypeStr` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsString(body)`
+
+- `IsString(attributes["maybe a string"])`
+
+### Len
+
+`Len(target)`
+
+The `Len` Converter returns the int64 length of the target string or slice.
+
+`target` is either a `string`, `slice`, `map`, `pcommon.Slice`, `pcommon.Map`, or `pcommon.Value` with type `pcommon.ValueTypeStr`, `pcommon.ValueTypeSlice`, or `pcommon.ValueTypeMap`.
+
+If the `target` is not an acceptable type, the `Len` Converter will return an error.
+
+Examples:
+
+- `Len(body)`
 
 ### Log
 
@@ -392,6 +539,62 @@ Examples:
 
 
 - `Int(Log(attributes["duration_ms"])`
+
+### Microseconds
+
+`Microseconds(value)`
+
+The `Microseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Microseconds(Duration("1h"))`
+
+### Milliseconds
+
+`Milliseconds(value)`
+
+The `Milliseconds` Converter returns the duration as an integer millisecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Milliseconds(Duration("1h"))`
+
+### Minutes
+
+`Minutes(value)`
+
+The `Minutes` Converter returns the duration as a floating point number of minutes.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Minutes(Duration("1h"))`
+
+### Nanoseconds
+
+`Nanoseconds(value)`
+
+The `Nanoseconds` Converter returns the duration as an integer nanosecond count.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Nanoseconds(Duration("1h"))`
 
 ### ParseJSON
 
@@ -424,6 +627,62 @@ Examples:
 
 - `ParseJSON(body)`
 
+### Seconds
+
+`Seconds(value)`
+
+The `Seconds` Converter returns the duration as a floating point number of seconds.
+
+`value` is a `time.Duration`. If `value` is another type an error is returned.
+
+The returned type is `float64`.
+
+Examples:
+
+- `Seconds(Duration("1h"))`
+
+### SHA1
+
+`SHA1(value)`
+
+The `SHA1` Converter converts the `value` to a sha1 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA1(attributes["device.name"])`
+
+
+- `SHA1("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA1 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
+### SHA256
+
+`SHA256(value)`
+
+The `SHA256` Converter converts the `value` to a sha256 hash/digest.
+
+The returned type is string.
+
+`value` is either a path expression to a string telemetry field or a literal string. If `value` is another type an error is returned.
+
+If an error occurs during hashing it will be returned.
+
+Examples:
+
+- `SHA256(attributes["device.name"])`
+
+
+- `SHA256("name")`
+
+**Note:** According to the National Institute of Standards and Technology (NIST), SHA256 is no longer a recommended hash function. It should be avoided except when required for compatibility. New uses should prefer FNV whenever possible.
+
 ### SpanID
 
 `SpanID(bytes)`
@@ -446,21 +705,12 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
+There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
+[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
+
 Examples:
 
 - ```Split("A|B|C", "|")```
-
-### TraceID
-
-`TraceID(bytes)`
-
-The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
-
-`bytes` is a byte slice of exactly 16 bytes.
-
-Examples:
-
-- `TraceID(0x00000000000000000000000000000000)`
 
 ### Substring
 
@@ -476,6 +726,86 @@ If the start/length exceed the length of the `target` string, an error is return
 Examples:
 
 - `Substring("123456789", 0, 3)`
+
+### Time
+
+The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
+
+`time` is a string. `format` is a string.
+
+If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
+
+Examples:
+
+- `Time("02/04/2023", "%m/%d/%Y")`
+
+### TraceID
+
+`TraceID(bytes)`
+
+The `TraceID` Converter returns a `pdata.TraceID` struct from the given byte slice.
+
+`bytes` is a byte slice of exactly 16 bytes.
+
+Examples:
+
+- `TraceID(0x00000000000000000000000000000000)`
+
+### UnixMicro
+
+`UnixMicro(value)`
+
+The `UnixMicro` Converter returns the time as a Unix time, the number of microseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixMicro(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixMilli
+
+`UnixMilli(value)`
+
+The `UnixMilli` Converter returns the time as a Unix time, the number of milliseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixMilli(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixNano
+
+`UnixNano(value)`
+
+The `UnixNano` Converter returns the time as a Unix time, the number of nanoseconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixNano(Time("02/04/2023", "%m/%d/%Y"))`
+
+### UnixSeconds
+
+`UnixSeconds(value)`
+
+The `UnixSeconds` Converter returns the time as a Unix time, the number of seconds elapsed since January 1, 1970 UTC.
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
 ### UUID
 

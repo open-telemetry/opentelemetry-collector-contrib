@@ -1,0 +1,16 @@
+receivers:
+  gitprovider:
+
+processors:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [gitprovider]
+      processors: [nop]
+      exporters: [nop]
+

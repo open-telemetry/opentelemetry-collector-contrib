@@ -51,7 +51,7 @@ func (v *traceVisitor) visit(
 	return true
 }
 
-func (exporter *traceExporter) onTraceData(context context.Context, traceData ptrace.Traces) error {
+func (exporter *traceExporter) onTraceData(_ context.Context, traceData ptrace.Traces) error {
 	spanCount := traceData.SpanCount()
 	if spanCount == 0 {
 		return nil

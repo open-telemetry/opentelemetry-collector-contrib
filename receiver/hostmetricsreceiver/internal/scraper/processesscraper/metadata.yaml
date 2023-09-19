@@ -1,5 +1,7 @@
 type: hostmetricsreceiver/processes
 
+parent: hostmetrics
+
 sem_conv_version: 1.9.0
 
 attributes:
@@ -15,7 +17,7 @@ metrics:
     unit: "{processes}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
 
   system.processes.count:
@@ -24,6 +26,6 @@ metrics:
     unit: "{processes}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [status]

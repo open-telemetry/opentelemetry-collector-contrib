@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -34,7 +35,7 @@ type Config struct {
 	Endpoint                                string                        `mapstructure:"endpoint"`
 	TLSName                                 string                        `mapstructure:"tlsname"`
 	Username                                string                        `mapstructure:"username"`
-	Password                                string                        `mapstructure:"password"`
+	Password                                configopaque.String           `mapstructure:"password"`
 	CollectClusterMetrics                   bool                          `mapstructure:"collect_cluster_metrics"`
 	Timeout                                 time.Duration                 `mapstructure:"timeout"`
 	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
@@ -51,7 +52,7 @@ func (c *Config) Validate() error {
 
 	host, portStr, err := net.SplitHostPort(c.Endpoint)
 	if err != nil {
-		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err))
+		return multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadEndpoint, err.Error()))
 	}
 
 	if host == "" {
@@ -60,7 +61,7 @@ func (c *Config) Validate() error {
 
 	port, err := strconv.ParseInt(portStr, 10, 32)
 	if err != nil {
-		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err))
+		allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errBadPort, err.Error()))
 	}
 
 	if port < 0 || port > 65535 {
@@ -81,7 +82,7 @@ func (c *Config) Validate() error {
 	if c.TLS != nil {
 		_, err := c.TLS.LoadTLSConfig()
 		if err != nil {
-			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err))
+			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error()))
 		}
 	}
 

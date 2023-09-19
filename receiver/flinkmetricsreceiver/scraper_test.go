@@ -259,6 +259,8 @@ func TestScraperScrape(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 		})
 	}

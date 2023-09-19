@@ -45,6 +45,16 @@ spec:
             - name: varlibdockercontainers
               mountPath: /var/lib/docker/containers
               readOnly: true
+          env:
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          # The k8s.pod.ip is used to associate pods with k8sattributes.
+          # It is useful to have in the Collector pod because receiver metrics can also
+          # benefit from the tags.
+          - name: OTEL_RESOURCE_ATTRIBUTES
+            value: "k8s.pod.ip=$(POD_IP)"
       volumes:
         - name: otlpgen
           hostPath:

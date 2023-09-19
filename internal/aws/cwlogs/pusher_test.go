@@ -198,14 +198,14 @@ func TestPusher_newLogEventBatch(t *testing.T) {
 func TestPusher_addLogEventBatch(t *testing.T) {
 	p := newMockPusher()
 
-	cap := cap(p.logEventBatch.putLogEventsInput.LogEvents)
+	c := cap(p.logEventBatch.putLogEventsInput.LogEvents)
 	logEvent := NewEvent(timestampMs, msg)
 
-	for i := 0; i < cap; i++ {
+	for i := 0; i < c; i++ {
 		p.logEventBatch.putLogEventsInput.LogEvents = append(p.logEventBatch.putLogEventsInput.LogEvents, logEvent.InputLogEvent)
 	}
 
-	assert.Equal(t, cap, len(p.logEventBatch.putLogEventsInput.LogEvents))
+	assert.Equal(t, c, len(p.logEventBatch.putLogEventsInput.LogEvents))
 
 	assert.NotNil(t, p.addLogEvent(logEvent))
 	// the actual log event add operation happens after the func newLogEventBatchIfNeeded

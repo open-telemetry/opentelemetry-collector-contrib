@@ -7,10 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
-
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
@@ -22,7 +19,7 @@ type Enum int64
 func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	f, ok := p.functions[ed.Function]
 	if !ok {
-		return Expr[K]{}, fmt.Errorf("undefined function %v", ed.Function)
+		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
 	args := f.CreateDefaultArguments()
 
@@ -32,12 +29,12 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
 		if reflect.TypeOf(args).Kind() != reflect.Pointer {
-			return Expr[K]{}, fmt.Errorf("factory for %s must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
+			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
 
 		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
-			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to '%v': %w", ed.Function, err)
+			return Expr[K]{}, fmt.Errorf("error while parsing arguments for call to %q: %w", ed.Function, err)
 		}
 	}
 
@@ -54,37 +51,33 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
 	}
 
-	argsType := argsVal.Type()
-
 	for i := 0; i < argsVal.NumField(); i++ {
 		field := argsVal.Field(i)
 		fieldType := field.Type()
-
-		fieldTag, ok := argsType.Field(i).Tag.Lookup("ottlarg")
-
-		if !ok {
-			return fmt.Errorf("no `ottlarg` struct tag on Arguments field '%s'", argsType.Field(i).Name)
-		}
-
-		argNum, err := strconv.Atoi(fieldTag)
-
-		if err != nil {
-			return fmt.Errorf("ottlarg struct tag on field '%s' is not a valid integer: %w", argsType.Field(i).Name, err)
-		}
-
-		if argNum < 0 || argNum >= len(ed.Arguments) {
-			return fmt.Errorf("ottlarg struct tag on field '%s' has value %d, but must be between 0 and %d", argsType.Field(i).Name, argNum, len(ed.Arguments))
-		}
-
-		argVal := ed.Arguments[argNum]
-
+		argVal := ed.Arguments[i]
 		var val any
-		if fieldType.Kind() == reflect.Slice {
+		var err error
+		switch {
+		case strings.HasPrefix(fieldType.Name(), "FunctionGetter"):
+			var name string
+			switch {
+			case argVal.Enum != nil:
+				name = string(*argVal.Enum)
+			case argVal.FunctionName != nil:
+				name = *argVal.FunctionName
+			default:
+				return fmt.Errorf("invalid function name given")
+			}
+			f, ok := p.functions[name]
+			if !ok {
+				return fmt.Errorf("undefined function %s", name)
+			}
+			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
+		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(argVal, fieldType)
-		} else {
+		default:
 			val, err = p.buildArg(argVal, fieldType)
 		}
-
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
@@ -156,8 +149,32 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "IntGetter"):
+		arg, err := buildSlice[IntGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := buildSlice[IntLikeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "DurationGetter"):
+		arg, err := buildSlice[DurationGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "TimeGetter"):
+		arg, err := buildSlice[TimeGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	default:
-		return nil, fmt.Errorf("unsupported slice type '%s' for function", argType.Elem().Name())
+		return nil, fmt.Errorf("unsupported slice type %q for function", argType.Elem().Name())
 	}
 }
 
@@ -187,7 +204,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, string]{Getter: arg.Get}, nil
+		return StandardStringGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "StringLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -199,7 +216,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, float64]{Getter: arg.Get}, nil
+		return StandardFloatGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "FloatLikeGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
@@ -211,13 +228,31 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, int64]{Getter: arg.Get}, nil
+		return StandardIntGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "IntLikeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardIntLikeGetter[K]{Getter: arg.Get}, nil
 	case strings.HasPrefix(name, "PMapGetter"):
 		arg, err := p.newGetter(argVal)
 		if err != nil {
 			return nil, err
 		}
-		return StandardTypeGetter[K, pcommon.Map]{Getter: arg.Get}, nil
+		return StandardPMapGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "DurationGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardDurationGetter[K]{Getter: arg.Get}, nil
+	case strings.HasPrefix(name, "TimeGetter"):
+		arg, err := p.newGetter(argVal)
+		if err != nil {
+			return nil, err
+		}
+		return StandardTimeGetter[K]{Getter: arg.Get}, nil
 	case name == "Enum":
 		arg, err := p.enumParser(argVal.Enum)
 		if err != nil {

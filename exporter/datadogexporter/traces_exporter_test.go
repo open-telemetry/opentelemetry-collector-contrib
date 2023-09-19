@@ -17,6 +17,7 @@ import (
 
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
@@ -38,10 +38,10 @@ func TestMain(m *testing.M) {
 type testlogger struct{}
 
 // Trace implements Logger.
-func (testlogger) Trace(v ...interface{}) {}
+func (testlogger) Trace(_ ...interface{}) {}
 
 // Tracef implements Logger.
-func (testlogger) Tracef(format string, params ...interface{}) {}
+func (testlogger) Tracef(_ string, _ ...interface{}) {}
 
 // Debug implements Logger.
 func (testlogger) Debug(v ...interface{}) { fmt.Println("DEBUG", fmt.Sprint(v...)) }
@@ -329,7 +329,7 @@ func TestPushTraceData(t *testing.T) {
 	assert.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

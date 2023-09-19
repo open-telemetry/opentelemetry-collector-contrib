@@ -7,7 +7,6 @@
 package bigipreceiver
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -18,47 +17,33 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestBigIpIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	mockServer := setupMockIControlServer(t)
 	defer mockServer.Close()
 
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	// Set endpoint of config to match mocked IControl REST API server
-	cfg.Endpoint = mockServer.URL
-	// Any username/password will work with mocked server right now
-	cfg.Username = "otelu"
-	cfg.Password = "otelp"
-	cfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
-
-	consumer := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopCreateSettings()
-	rcvr, err := factory.CreateMetricsReceiver(context.Background(), settings, cfg, consumer)
-
-	require.NoError(t, err, "failed creating metrics receiver")
-	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
-	require.Eventuallyf(t, func() bool {
-		return consumer.DataPointCount() > 0
-	}, 2*time.Minute, 1*time.Second, "failed to receive more than 0 metrics")
-	require.NoError(t, rcvr.Shutdown(context.Background()))
-
-	actualMetrics := consumer.AllMetrics()[0]
-
-	expectedFile := filepath.Join("testdata", "integration", "expected.yaml")
-	expectedMetrics, err := golden.ReadMetrics(expectedFile)
-	require.NoError(t, err)
-
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreResourceMetricsOrder(), pmetrictest.IgnoreMetricValues(),
-		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.CollectionInterval = 100 * time.Millisecond
+				rCfg.Endpoint = mockServer.URL
+				// Any username/password will work with mocked server right now
+				rCfg.Username = "otelu"
+				rCfg.Password = "otelp"
+			}),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp()),
+	).Run(t)
 }
 
 const (

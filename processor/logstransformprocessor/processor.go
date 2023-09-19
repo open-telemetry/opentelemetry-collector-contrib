@@ -62,7 +62,7 @@ func (ltp *logsTransformProcessor) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: true}
 }
 
-func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
+func (ltp *logsTransformProcessor) Shutdown(_ context.Context) error {
 	ltp.logger.Info("Stopping logs transform processor")
 	pipelineErr := ltp.pipe.Stop()
 	ltp.converter.Stop()
@@ -72,7 +72,7 @@ func (ltp *logsTransformProcessor) Shutdown(ctx context.Context) error {
 	return pipelineErr
 }
 
-func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Host) error {
+func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) error {
 
 	// There is no need for this processor to use storage
 	err := ltp.pipe.Start(storage.NewNopClient())
@@ -116,7 +116,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, host component.Hos
 	return nil
 }
 
-func (ltp *logsTransformProcessor) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (ltp *logsTransformProcessor) ConsumeLogs(_ context.Context, ld plog.Logs) error {
 	// Add the logs to the chain
 	return ltp.fromConverter.Batch(ld)
 }

@@ -26,14 +26,14 @@ type mock struct {
 	sn              *session.Session
 }
 
-func (m *mock) getEC2Region(s *session.Session) (string, error) {
+func (m *mock) getEC2Region(_ *session.Session) (string, error) {
 	if m.getEC2RegionErr != nil {
 		return "", m.getEC2RegionErr
 	}
 	return ec2Region, nil
 }
 
-func (m *mock) newAWSSession(roleArn string, region string, logger *zap.Logger) (*session.Session, error) {
+func (m *mock) newAWSSession(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
 	return m.sn, nil
 }
 

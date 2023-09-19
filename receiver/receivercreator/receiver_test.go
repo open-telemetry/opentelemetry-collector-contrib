@@ -40,11 +40,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 type mockObserver struct {
 }
 
-func (m *mockObserver) Start(ctx context.Context, host component.Host) error {
+func (m *mockObserver) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (m *mockObserver) Shutdown(ctx context.Context) error {
+func (m *mockObserver) Shutdown(_ context.Context) error {
 	return nil
 }
 

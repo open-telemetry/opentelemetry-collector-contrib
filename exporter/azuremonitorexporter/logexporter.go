@@ -18,7 +18,7 @@ type logExporter struct {
 	logger           *zap.Logger
 }
 
-func (exporter *logExporter) onLogData(context context.Context, logData plog.Logs) error {
+func (exporter *logExporter) onLogData(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
 	logPacker := newLogPacker(exporter.logger)
 

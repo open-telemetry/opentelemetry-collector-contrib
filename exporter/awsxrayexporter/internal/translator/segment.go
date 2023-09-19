@@ -33,6 +33,12 @@ const (
 	OriginAppRunner  = "AWS::AppRunner::Service"
 )
 
+// x-ray only span attributes - https://github.com/open-telemetry/opentelemetry-java-contrib/pull/802
+const (
+	awsLocalService  = "aws.local.service"
+	awsRemoteService = "aws.remote.service"
+)
+
 var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
@@ -56,8 +62,8 @@ var (
 )
 
 // MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames)
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
 	if err != nil {
 		return "", err
 	}
@@ -71,7 +77,7 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
-func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string) (*awsxray.Segment, error) {
+func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (*awsxray.Segment, error) {
 	var segmentType string
 
 	storeResource := true
@@ -83,7 +89,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	// convert trace id
-	traceID, err := convertToAmazonTraceID(span.TraceID())
+	traceID, err := convertToAmazonTraceID(span.TraceID(), skipTimestampValidation)
 	if err != nil {
 		return nil, err
 	}
@@ -101,15 +107,35 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		sqlfiltered, sql                                   = makeSQL(span, awsfiltered)
 		additionalAttrs                                    = addSpecialAttributes(sqlfiltered, indexedAttrs, attributes)
 		user, annotations, metadata                        = makeXRayAttributes(additionalAttrs, resource, storeResource, indexedAttrs, indexAllAttrs)
+		spanLinks, makeSpanLinkErr                         = makeSpanLinks(span.Links(), skipTimestampValidation)
 		name                                               string
 		namespace                                          string
 	)
 
+	if makeSpanLinkErr != nil {
+		return nil, makeSpanLinkErr
+	}
+
 	// X-Ray segment names are service names, unlike span names which are methods. Try to find a service name.
 
-	// peer.service should always be prioritized for segment names when set because it is what the user decided.
-	if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
-		name = peerService.Str()
+	// support x-ray specific service name attributes as segment name if it exists
+	if span.Kind() == ptrace.SpanKindServer || span.Kind() == ptrace.SpanKindConsumer {
+		if localServiceName, ok := attributes.Get(awsLocalService); ok {
+			name = localServiceName.Str()
+		}
+	}
+	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
+		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
+			name = remoteServiceName.Str()
+		}
+	}
+
+	// peer.service should always be prioritized for segment names when it set by users and
+	// the new x-ray specific service name attributes are not found
+	if name == "" {
+		if peerService, ok := attributes.Get(conventions.AttributePeerService); ok {
+			name = peerService.Str()
+		}
 	}
 
 	if namespace == "" {
@@ -200,6 +226,7 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 		Annotations: annotations,
 		Metadata:    metadata,
 		Type:        awsxray.String(segmentType),
+		Links:       spanLinks,
 	}, nil
 }
 
@@ -268,7 +295,7 @@ func determineAwsOrigin(resource pcommon.Resource) string {
 //   - For example, 10:00AM December 2nd, 2016 PST in epoch time is 1480615200 seconds,
 //     or 58406520 in hexadecimal.
 //   - A 96-bit identifier for the trace, globally unique, in 24 hexadecimal digits.
-func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
+func convertToAmazonTraceID(traceID pcommon.TraceID, skipTimestampValidation bool) (string, error) {
 	const (
 		// maxAge of 28 days.  AWS has a 30 day limit, let's be conservative rather than
 		// hit the limit
@@ -286,13 +313,16 @@ func convertToAmazonTraceID(traceID pcommon.TraceID) (string, error) {
 		b            = [4]byte{}
 	)
 
-	// If AWS traceID originally came from AWS, no problem.  However, if oc generated
-	// the traceID, then the epoch may be outside the accepted AWS range of within the
-	// past 30 days.
-	//
-	// In that case, we return invalid traceid error
-	if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
-		return "", fmt.Errorf("invalid xray traceid: %s", traceID)
+	// If feature gate is enabled, skip the timestamp validation logic
+	if !skipTimestampValidation {
+		// If AWS traceID originally came from AWS, no problem.  However, if oc generated
+		// the traceID, then the epoch may be outside the accepted AWS range of within the
+		// past 30 days.
+		//
+		// In that case, we return invalid traceid error
+		if delta := epochNow - epoch; delta > maxAge || delta < -maxSkew {
+			return "", fmt.Errorf("invalid xray traceid: %s", traceID)
+		}
 	}
 
 	binary.BigEndian.PutUint32(b[0:4], uint32(epoch))

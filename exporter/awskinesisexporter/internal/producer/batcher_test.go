@@ -25,7 +25,7 @@ type MockKinesisAPI struct {
 	op func(*kinesis.PutRecordsInput) (*kinesis.PutRecordsOutput, error)
 }
 
-func (mka *MockKinesisAPI) PutRecords(ctx context.Context, r *kinesis.PutRecordsInput, optFns ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error) {
+func (mka *MockKinesisAPI) PutRecords(_ context.Context, r *kinesis.PutRecordsInput, _ ...func(*kinesis.Options)) (*kinesis.PutRecordsOutput, error) {
 	return mka.op(r)
 }
 

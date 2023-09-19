@@ -8,6 +8,6 @@ import (
 
 const (
 	Type            = "dataset"
-	LogsStability   = component.StabilityLevelDevelopment
-	TracesStability = component.StabilityLevelDevelopment
+	LogsStability   = component.StabilityLevelAlpha
+	TracesStability = component.StabilityLevelAlpha
 )

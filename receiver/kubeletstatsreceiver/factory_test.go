@@ -115,6 +115,7 @@ func tlsConfig() *Config {
 	return &Config{
 		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 			CollectionInterval: 10 * time.Second,
+			InitialDelay:       time.Second,
 		},
 		ClientConfig: kube.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
@@ -179,6 +180,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 				intoCfg: &Config{
 					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 						CollectionInterval: 10 * time.Second,
+						InitialDelay:       time.Second,
 					},
 				},
 			},
@@ -189,6 +191,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 			result: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 20 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				MetricGroupsToCollect: []kubelet.MetricGroup{kubelet.ContainerMetricGroup},
 			},

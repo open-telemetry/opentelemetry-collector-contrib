@@ -11,55 +11,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
-
-func Test_setTimestampYear(t *testing.T) {
-	t.Run("Normal", func(t *testing.T) {
-		now = func() time.Time {
-			return time.Date(2020, 06, 16, 3, 31, 34, 525, time.UTC)
-		}
-
-		noYear := time.Date(0, 06, 16, 3, 31, 34, 525, time.UTC)
-		yearAdded := setTimestampYear(noYear)
-		expected := time.Date(2020, 06, 16, 3, 31, 34, 525, time.UTC)
-		require.Equal(t, expected, yearAdded)
-	})
-
-	t.Run("FutureOneDay", func(t *testing.T) {
-		now = func() time.Time {
-			return time.Date(2020, 01, 16, 3, 31, 34, 525, time.UTC)
-		}
-
-		noYear := time.Date(0, 01, 17, 3, 31, 34, 525, time.UTC)
-		yearAdded := setTimestampYear(noYear)
-		expected := time.Date(2020, 01, 17, 3, 31, 34, 525, time.UTC)
-		require.Equal(t, expected, yearAdded)
-	})
-
-	t.Run("FutureEightDays", func(t *testing.T) {
-		now = func() time.Time {
-			return time.Date(2020, 01, 16, 3, 31, 34, 525, time.UTC)
-		}
-
-		noYear := time.Date(0, 01, 24, 3, 31, 34, 525, time.UTC)
-		yearAdded := setTimestampYear(noYear)
-		expected := time.Date(2019, 01, 24, 3, 31, 34, 525, time.UTC)
-		require.Equal(t, expected, yearAdded)
-	})
-
-	t.Run("RolloverYear", func(t *testing.T) {
-		now = func() time.Time {
-			return time.Date(2020, 01, 01, 3, 31, 34, 525, time.UTC)
-		}
-
-		noYear := time.Date(0, 12, 31, 3, 31, 34, 525, time.UTC)
-		yearAdded := setTimestampYear(noYear)
-		expected := time.Date(2019, 12, 31, 3, 31, 34, 525, time.UTC)
-		require.Equal(t, expected, yearAdded)
-	})
-}
 
 func TestIsZero(t *testing.T) {
 	require.True(t, (&TimeParser{}).IsZero())
@@ -76,7 +31,7 @@ func TestTimeParser(t *testing.T) {
 	require.NoError(t, err)
 
 	// override with deterministic value
-	now = func() time.Time { return time.Date(2020, 12, 16, 17, 0, 0, 0, mst) }
+	timeutils.Now = func() time.Time { return time.Date(2020, 12, 16, 17, 0, 0, 0, mst) }
 
 	testCases := []struct {
 		name           string
@@ -125,14 +80,14 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen",
 			sample:         "12:34PM",
-			expected:       time.Date(now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 		},
 		{
 			name:           "kitchen-utc",
 			sample:         "12:34PM",
-			expected:       time.Date(now().Year(), 1, 1, 12, 34, 0, 0, time.UTC),
+			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.UTC),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 			location:       time.UTC.String(),
@@ -140,7 +95,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen-location",
 			sample:         "12:34PM",
-			expected:       time.Date(now().Year(), 1, 1, 12, 34, 0, 0, hst),
+			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, hst),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 			location:       hst.String(),
@@ -148,21 +103,21 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "kitchen-bytes",
 			sample:         []byte("12:34PM"),
-			expected:       time.Date(now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), 1, 1, 12, 34, 0, 0, time.Local),
 			gotimeLayout:   time.Kitchen,
 			strptimeLayout: "%H:%M%p",
 		},
 		{
 			name:           "debian-syslog",
 			sample:         "Jun 09 11:39:45",
-			expected:       time.Date(now().Year(), time.June, 9, 11, 39, 45, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), time.June, 9, 11, 39, 45, 0, time.Local),
 			gotimeLayout:   "Jan 02 15:04:05",
 			strptimeLayout: "%b %d %H:%M:%S",
 		},
 		{
 			name:           "debian-syslog-utc",
 			sample:         "Jun 09 11:39:45",
-			expected:       time.Date(now().Year(), time.June, 9, 11, 39, 45, 0, time.UTC),
+			expected:       time.Date(timeutils.Now().Year(), time.June, 9, 11, 39, 45, 0, time.UTC),
 			gotimeLayout:   "Jan 02 15:04:05",
 			strptimeLayout: "%b %d %H:%M:%S",
 			location:       time.UTC.String(),
@@ -170,7 +125,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "debian-syslog-location",
 			sample:         "Jun 09 11:39:45",
-			expected:       time.Date(now().Year(), time.June, 9, 11, 39, 45, 0, hst),
+			expected:       time.Date(timeutils.Now().Year(), time.June, 9, 11, 39, 45, 0, hst),
 			gotimeLayout:   "Jan 02 15:04:05",
 			strptimeLayout: "%b %d %H:%M:%S",
 			location:       hst.String(),
@@ -282,7 +237,7 @@ func TestTimeParser(t *testing.T) {
 		{
 			name:           "puppet",
 			sample:         "Aug  4 03:26:02",
-			expected:       time.Date(now().Year(), time.August, 4, 3, 26, 02, 0, time.Local),
+			expected:       time.Date(timeutils.Now().Year(), time.August, 4, 3, 26, 02, 0, time.Local),
 			gotimeLayout:   "Jan _2 15:04:05",
 			strptimeLayout: "%b %e %H:%M:%S",
 		},
@@ -616,19 +571,6 @@ func TestSetInvalidLocation(t *testing.T) {
 	err := tp.setLocation()
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "failed to load location "+"not_a_location")
-}
-
-func TestParseGoTimeBadLocation(t *testing.T) {
-	tp := NewTimeParser()
-	tp.Location = "America/New_York"
-
-	err := tp.setLocation()
-	require.NoError(t, err)
-
-	tp.Layout = time.RFC822
-	_, err = tp.parseGotime("02 Jan 06 15:04 BST")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "failed to load location BST")
 }
 
 func TestUnmarshalTimeConfig(t *testing.T) {

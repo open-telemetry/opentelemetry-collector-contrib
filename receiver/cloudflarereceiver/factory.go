@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -24,7 +23,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createLogsReceiver(
-	ctx context.Context,
+	_ context.Context,
 	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,
@@ -37,7 +36,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		Logs: LogsConfig{
 			TimestampField: defaultTimestampField,
-			TLS:            &configtls.TLSServerSetting{},
 		},
 	}
 }

@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 }
 
 func (f *factory) createTracesExporter(
-	ctx context.Context,
+	_ context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
@@ -67,7 +67,7 @@ func (f *factory) createTracesExporter(
 }
 
 func (f *factory) createLogsExporter(
-	ctx context.Context,
+	_ context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
@@ -82,7 +82,7 @@ func (f *factory) createLogsExporter(
 }
 
 func (f *factory) createMetricsExporter(
-	ctx context.Context,
+	_ context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {

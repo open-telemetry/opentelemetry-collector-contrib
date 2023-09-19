@@ -112,8 +112,5 @@ func (c *dbStorageClient) Close(_ context.Context) error {
 	if err := c.deleteQuery.Close(); err != nil {
 		return err
 	}
-	if err := c.getQuery.Close(); err != nil {
-		return err
-	}
-	return nil
+	return c.getQuery.Close()
 }

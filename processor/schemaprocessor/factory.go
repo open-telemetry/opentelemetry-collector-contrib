@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package schemaprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor"
 
 import (
@@ -11,12 +13,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-)
 
-const (
-	typeStr = "schema"
-	// The stability level of the processor.
-	stability = component.StabilityLevelDevelopment
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
@@ -35,11 +33,11 @@ func newDefaultConfiguration() component.Config {
 func NewFactory() processor.Factory {
 	f := &factory{}
 	return processor.NewFactory(
-		typeStr,
+		metadata.Type,
 		newDefaultConfiguration,
-		processor.WithLogs(f.createLogsProcessor, stability),
-		processor.WithMetrics(f.createMetricsProcessor, stability),
-		processor.WithTraces(f.createTracesProcessor, stability),
+		processor.WithLogs(f.createLogsProcessor, metadata.LogsStability),
+		processor.WithMetrics(f.createMetricsProcessor, metadata.MetricsStability),
+		processor.WithTraces(f.createTracesProcessor, metadata.TracesStability),
 	)
 }
 

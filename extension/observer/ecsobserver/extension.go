@@ -38,7 +38,7 @@ func (e *ecsObserver) Start(_ context.Context, host component.Host) error {
 	return nil
 }
 
-func (e *ecsObserver) Shutdown(ctx context.Context) error {
+func (e *ecsObserver) Shutdown(_ context.Context) error {
 	e.logger.Info("Stopping ECSDiscovery")
 	e.cancel()
 	return nil
