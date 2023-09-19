@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"fmt"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -64,42 +63,9 @@ func TestTracesClusterConfigOff(t *testing.T) {
 }
 
 func TestTracesTableEngineConfig(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", teName)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, test tableEngineTestConfig, fns ...func(*Config)) {
 		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestTracesTableEngineConfigWithParams(t *testing.T) {
-	teName := "CustomEngine"
-	teParams := "'/x/y/z', 'some_param', another_param, last_param"
-	te := TableEngine{Name: teName, Params: teParams}
-	expectedTEValue := fmt.Sprintf("%s(%s)", teName, teParams)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestTracesEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	te := TableEngine{Name: ""}
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestTracesTableEngineConfigFail(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestTracesExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+		test.sanityCheck(t, exporter.cfg.TableEngine)
 	})
 }
 

@@ -137,70 +137,75 @@ func TestLogsClusterConfigOff(t *testing.T) {
 }
 
 func TestLogsTableEngineConfig(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", teName)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, test tableEngineTestConfig, fns ...func(*Config)) {
 		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+		test.sanityCheck(t, exporter.cfg.TableEngine)
 	})
 }
 
-func TestLogsTableEngineConfigWithParams(t *testing.T) {
-	teName := "CustomEngine"
-	teParams := "'/x/y/z', 'some_param', another_param, last_param"
-	te := TableEngine{Name: teName, Params: teParams}
-	expectedTEValue := fmt.Sprintf("%s(%s)", teName, teParams)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestLogsEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	te := TableEngine{Name: ""}
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestLogsTableEngineConfigFail(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestLogsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func testTableEngineConfig(t *testing.T, tableEngine TableEngine, expectedTableEngineValue string, shouldSucceed bool, completion exporterValuesProvider) {
-	initClickhouseTestServer(t, func(query string, values []driver.Value) error {
-		firstLine := getQueryFirstLine(query)
-		if !strings.HasPrefix(strings.ToLower(firstLine), "create table") {
-			return nil
-		}
-
-		check := checkTableEngineQueryDefinition(query, expectedTableEngineValue)
-		if shouldSucceed {
-			require.NoError(t, check)
-		} else {
-			require.Error(t, check)
-		}
-
-		return nil
-	})
-
-	var configMods []func(*Config)
-	if tableEngine.Name != "" {
-		configMods = append(configMods, func(cfg *Config) {
-			cfg.TableEngine = tableEngine
-		})
+func testTableEngineConfig(t *testing.T, completion tableEngineTestCompletion) {
+	tests := []tableEngineTestConfig {
+		{
+			name: "no params",
+			teName: "CustomEngine",
+			teParams: "",
+			expectedTableName: "CustomEngine",
+			shouldSucceed: true,
+		},
+		{
+			name: "with params",
+			teName: "CustomEngine",
+			teParams: "'/x/y/z', 'some_param', another_param, last_param",
+			expectedTableName: "CustomEngine",
+			shouldSucceed: true,
+		},
+		{
+			name: "with empty name",
+			teName: "",
+			teParams: "",
+			expectedTableName: defaultTableEngineName,
+			shouldSucceed: true,
+		},
+		{
+			name: "fail",
+			teName: "CustomEngine",
+			teParams: "",
+			expectedTableName: defaultTableEngineName,
+			shouldSucceed: false,
+		},
 	}
 
-	completion(t, defaultEndpoint, configMods...)
+	for _, tt := range tests {
+		te := TableEngine{Name: tt.teName, Params: tt.teParams}
+		expectedTEValue := fmt.Sprintf("%s(%s)", tt.expectedTableName, tt.teParams)
+
+		t.Run("test table engine config " + tt.name, func(t *testing.T) {
+			initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+				firstLine := getQueryFirstLine(query)
+				if !strings.HasPrefix(strings.ToLower(firstLine), "create table") {
+					return nil
+				}
+
+				check := checkTableEngineQueryDefinition(query, expectedTEValue)
+				if tt.shouldSucceed {
+					require.NoError(t, check)
+				} else {
+					require.Error(t, check)
+				}
+
+				return nil
+			})
+
+			var configMods []func(*Config)
+			if te.Name != "" {
+				configMods = append(configMods, func(cfg *Config) {
+					cfg.TableEngine = te
+				})
+			}
+
+			completion(t, defaultEndpoint, tt, configMods...)
+		})
+	}
 }
 
 func testClusterConfigOn(t *testing.T, completion exporterValuesProvider) {
@@ -323,9 +328,26 @@ func initClickhouseTestServer(t *testing.T, recorder recorder) {
 
 type recorder func(query string, values []driver.Value) error
 type exporterValuesProvider func(t *testing.T, dsn string, fns ...func(*Config))
+type tableEngineTestCompletion func(t *testing.T, dsn string, test tableEngineTestConfig, fns ...func(*Config))
 
 type testClickhouseDriver struct {
 	recorder recorder
+}
+
+type tableEngineTestConfig struct {
+	name							string
+	teName						string
+	teParams 					string
+	expectedTableName	string
+	shouldSucceed 		bool
+}
+
+func (teTest tableEngineTestConfig) sanityCheck(t *testing.T, te TableEngine) {
+	if teTest.teName == "" {
+		require.Empty(t, te.Name)
+	} else {
+		require.NotEmpty(t, te.Name)
+	}
 }
 
 func (t *testClickhouseDriver) Open(_ string) (driver.Conn, error) {

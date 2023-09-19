@@ -125,42 +125,9 @@ func TestMetricsClusterConfigOff(t *testing.T) {
 }
 
 func TestMetricsTableEngineConfig(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", teName)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, test tableEngineTestConfig, fns ...func(*Config)) {
 		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestMetricsTableEngineConfigWithParams(t *testing.T) {
-	teName := "CustomEngine"
-	teParams := "'/x/y/z', 'some_param', another_param, last_param"
-	te := TableEngine{Name: teName, Params: teParams}
-	expectedTEValue := fmt.Sprintf("%s(%s)", teName, teParams)
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestMetricsEmptyTableEngineConfig(t *testing.T) {
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	te := TableEngine{Name: ""}
-	testTableEngineConfig(t, te, expectedTEValue, true, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.Empty(t, exporter.cfg.TableEngine.Name)
-	})
-}
-
-func TestMetricsTableEngineConfigFail(t *testing.T) {
-	teName := "CustomEngine"
-	te := TableEngine{Name: teName}
-	expectedTEValue := fmt.Sprintf("%s()", defaultTableEngineName)
-	testTableEngineConfig(t, te, expectedTEValue, false, func(t *testing.T, dsn string, fns ...func(*Config)) {
-		exporter := newTestMetricsExporter(t, dsn, fns...)
-		require.NotEmpty(t, exporter.cfg.TableEngine.Name)
+		test.sanityCheck(t, exporter.cfg.TableEngine)
 	})
 }
 
