@@ -79,7 +79,6 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send metrics.")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
-	fs.StringVar(&c.HTTPPath, "otlp-http-url-path", "/v1/metrics", "Which URL path to write to (default /v1/metrics)")
 
 	// custom headers
 	c.Headers = make(map[string]string)
