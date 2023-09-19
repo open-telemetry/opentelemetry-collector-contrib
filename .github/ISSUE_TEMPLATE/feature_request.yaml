@@ -51,6 +51,7 @@ body:
       - exporter/influxdb
       - exporter/instana
       - exporter/kafka
+      - exporter/kinetica
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio

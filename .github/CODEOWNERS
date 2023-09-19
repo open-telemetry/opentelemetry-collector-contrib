@@ -41,7 +41,7 @@ connector/spanmetricsconnector/                                         @open-te
 examples/demo/                                                          @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 
 exporter/alibabacloudlogserviceexporter/                                @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
-exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken
+exporter/awscloudwatchlogsexporter/                                     @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
 exporter/awsemfexporter/                                                @open-telemetry/collector-contrib-approvers @Aneurysm9 @shaochengwang @mxiamxia
 exporter/awskinesisexporter/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                                 @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
@@ -64,6 +64,7 @@ exporter/googlemanagedprometheusexporter/                               @open-te
 exporter/influxdbexporter/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/instanaexporter/                                               @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
 exporter/kafkaexporter/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+exporter/kineticaexporter/                                              @open-telemetry/collector-contrib-approvers @am-kinetica @TylerHelmuth
 exporter/loadbalancingexporter/                                         @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                                          @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                                @open-telemetry/collector-contrib-approvers @Doron-Bargo @yotamloe

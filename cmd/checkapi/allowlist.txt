@@ -5,6 +5,7 @@ exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/f5cloudexporter
 exporter/kafkaexporter
+exporter/kineticaexporter
 exporter/loadbalancingexporter
 exporter/logzioexporter
 exporter/lokiexporter
@@ -21,7 +22,6 @@ processor/tailsamplingprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
-receiver/fluentforwardreceiver
 receiver/jaegerreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
