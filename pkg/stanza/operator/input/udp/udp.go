@@ -47,7 +47,6 @@ func NewConfigWithID(operatorID string) *Config {
 			OneLogPerPacket: false,
 			SplitConfig: split.Config{
 				LineEndPattern: ".^", // Use never matching regex to not split data by default
-				OmitPattern:    false,
 			},
 		},
 	}
