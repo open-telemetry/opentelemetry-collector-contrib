@@ -113,7 +113,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.MaxSearchWaitTime {
+		if time.Since(start) > s.conf.ScraperControllerSettings.Timeout {
 			errs.Add(errMaxSearchWaitTimeExceeded)
 			return
 		}
