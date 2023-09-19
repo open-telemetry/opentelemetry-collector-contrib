@@ -53,13 +53,15 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.InputConfig `mapstructure:",squash"`
 
-	Directory *string       `mapstructure:"directory,omitempty"`
-	Files     []string      `mapstructure:"files,omitempty"`
-	StartAt   string        `mapstructure:"start_at,omitempty"`
-	Units     []string      `mapstructure:"units,omitempty"`
-	Priority  string        `mapstructure:"priority,omitempty"`
-	Matches   []MatchConfig `mapstructure:"matches,omitempty"`
-	Grep      string        `mapstructure:"grep,omitempty"`
+	Directory   *string       `mapstructure:"directory,omitempty"`
+	Files       []string      `mapstructure:"files,omitempty"`
+	StartAt     string        `mapstructure:"start_at,omitempty"`
+	Units       []string      `mapstructure:"units,omitempty"`
+	Priority    string        `mapstructure:"priority,omitempty"`
+	Matches     []MatchConfig `mapstructure:"matches,omitempty"`
+	Identifiers []string      `mapstructure:"identifiers,omitempty"`
+	Grep        string        `mapstructure:"grep,omitempty"`
+	Dmesg       bool          `mapstructure:"dmesg,omitempty"`
 }
 
 type MatchConfig map[string]string
@@ -113,10 +115,18 @@ func (c Config) buildArgs() ([]string, error) {
 		args = append(args, "--unit", unit)
 	}
 
+	for _, identifier := range c.Identifiers {
+		args = append(args, "--identifier", identifier)
+	}
+
 	args = append(args, "--priority", c.Priority)
 
 	if len(c.Grep) > 0 {
 		args = append(args, "--grep", c.Grep)
+	}
+
+	if c.Dmesg {
+		args = append(args, "--dmesg")
 	}
 
 	switch {

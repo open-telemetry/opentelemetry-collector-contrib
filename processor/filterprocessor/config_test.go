@@ -99,7 +99,7 @@ func TestLoadingConfigStrict(t *testing.T) {
 func TestLoadingConfigStrictLogs(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_include",
@@ -109,7 +109,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		ResourceAttributes: []filterconfig.Attribute{
 			{
 				Key:   "should_exclude",
@@ -131,7 +131,7 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				Logs: LogFilters{
 					Include: &LogMatchProperties{
-						LogMatchType: Strict,
+						LogMatchType: strictType,
 					},
 				},
 			},
@@ -182,12 +182,12 @@ func TestLoadingConfigStrictLogs(t *testing.T) {
 func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType:  Strict,
+		LogMatchType:  strictType,
 		SeverityTexts: []string{"INFO"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType:  Strict,
+		LogMatchType:  strictType,
 		SeverityTexts: []string{"DEBUG", "DEBUG2", "DEBUG3", "DEBUG4"},
 	}
 
@@ -244,12 +244,12 @@ func TestLoadingConfigSeverityLogsStrict(t *testing.T) {
 // TestLoadingConfigSeverityLogsRegexp tests loading testdata/config_logs_severity_regexp.yaml
 func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType:  Regexp,
+		LogMatchType:  regexpType,
 		SeverityTexts: []string{"INFO[2-4]?"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType:  Regexp,
+		LogMatchType:  regexpType,
 		SeverityTexts: []string{"DEBUG[2-4]?"},
 	}
 
@@ -307,12 +307,12 @@ func TestLoadingConfigSeverityLogsRegexp(t *testing.T) {
 func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		LogBodies:    []string{"This is an important event"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Strict,
+		LogMatchType: strictType,
 		LogBodies:    []string{"This event is not important"},
 	}
 
@@ -370,12 +370,12 @@ func TestLoadingConfigBodyLogsStrict(t *testing.T) {
 func TestLoadingConfigBodyLogsRegexp(t *testing.T) {
 
 	testDataLogPropertiesInclude := &LogMatchProperties{
-		LogMatchType: Regexp,
+		LogMatchType: regexpType,
 		LogBodies:    []string{"^IMPORTANT:"},
 	}
 
 	testDataLogPropertiesExclude := &LogMatchProperties{
-		LogMatchType: Regexp,
+		LogMatchType: regexpType,
 		LogBodies:    []string{"^MINOR:"},
 	}
 
@@ -893,24 +893,19 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			errorMessage: "cannot use ottl conditions and include/exclude for logs at the same time",
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_span"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_span"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_spanevent"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
-			errorMessage: "unable to parse OTTL statement: 1:34: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_metric"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_datapoint"),
 		},
 		{
-			id:           component.NewIDWithName(metadata.Type, "bad_syntax_log"),
-			errorMessage: "unable to parse OTTL statement: 1:25: unexpected token \"test\" (expected (<string> | <int>) \"]\")",
+			id: component.NewIDWithName(metadata.Type, "bad_syntax_log"),
 		},
 	}
 
@@ -924,7 +919,11 @@ func TestLoadingConfigOTTL(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				if tt.errorMessage != "" {
+					assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				} else {
+					assert.Error(t, component.ValidateConfig(cfg))
+				}
 			} else {
 				assert.NoError(t, component.ValidateConfig(cfg))
 				assert.Equal(t, tt.expected, cfg)

@@ -75,6 +75,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
+- [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
+- [Curtis Robert](https://github.com/crobert-1), Splunk
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
 - [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
@@ -94,13 +96,13 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
-- [Ruslan Kovalov](https://github.com/kovrus), Grafana Labs
 - [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 
 Emeritus Approvers:
 
 - [Przemek Maciolek](https://github.com/pmm-sumo)
+- [Ruslan Kovalov](https://github.com/kovrus)
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 

@@ -33,11 +33,13 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
+	scs := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scs.Timeout = 10 * time.Second
+
 	assert.Equal(t, &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		ScraperControllerSettings: scs,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 		Endpoint:                  "udp://localhost:3030",
-		Timeout:                   10 * time.Second,
 	}, cfg)
 }
 
@@ -53,7 +55,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Valid udp configuration",
 			conf: Config{
 				Endpoint: "udp://localhost:323",
-				Timeout:  10 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
 			},
 			err: nil,
 		},
@@ -61,7 +67,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Invalid udp hostname",
 			conf: Config{
 				Endpoint: "udp://:323",
-				Timeout:  10 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
 			},
 			err: chrony.ErrInvalidNetwork,
 		},
@@ -69,7 +79,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Invalid udp port",
 			conf: Config{
 				Endpoint: "udp://localhost",
-				Timeout:  10 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
 			},
 			err: chrony.ErrInvalidNetwork,
 		},
@@ -77,7 +91,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Valid unix path",
 			conf: Config{
 				Endpoint: fmt.Sprintf("unix://%s", t.TempDir()),
-				Timeout:  10 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
 			},
 			err: nil,
 		},
@@ -85,7 +103,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Invalid unix path",
 			conf: Config{
 				Endpoint: "unix:///no/dir/to/socket",
-				Timeout:  10 * time.Second,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            10 * time.Second,
+				},
 			},
 			err: os.ErrNotExist,
 		},
@@ -93,7 +115,11 @@ func TestValidate(t *testing.T) {
 			scenario: "Invalid timeout set",
 			conf: Config{
 				Endpoint: "unix://no/dir/to/socket",
-				Timeout:  0,
+				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					CollectionInterval: time.Minute,
+					InitialDelay:       time.Second,
+					Timeout:            0,
+				},
 			},
 			err: errInvalidValue,
 		},

@@ -62,8 +62,6 @@ func TestStats(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -120,8 +118,6 @@ func TestStatsError(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -156,8 +152,6 @@ func TestList(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
@@ -229,8 +223,6 @@ func TestEvents(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)

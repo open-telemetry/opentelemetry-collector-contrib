@@ -12,9 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 2 minutes
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
   setup-environment:
@@ -24,13 +24,14 @@ jobs:
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
           cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -61,13 +62,14 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v4
         with:
-          go-version: 1.19
+          go-version: ~1.20.8
           cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -121,7 +123,7 @@ jobs:
     needs: [loadtest]
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v3
         with:
           name: benchmark-results

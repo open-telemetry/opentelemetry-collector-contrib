@@ -103,13 +103,13 @@ func compareConfigToClient(t *testing.T, client *snmpClient, cfg *Config) {
 		case "auth_no_priv":
 			require.Equal(t, gosnmp.AuthNoPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol)
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 		case "auth_priv":
 			require.Equal(t, gosnmp.AuthPriv, client.client.GetMsgFlags())
 			require.Equal(t, cfg.AuthType, securityParams.AuthenticationProtocol.String())
-			require.Equal(t, cfg.AuthPassword, securityParams.AuthenticationPassphrase)
+			require.Equal(t, string(cfg.AuthPassword), securityParams.AuthenticationPassphrase)
 			require.Equal(t, cfg.PrivacyType, securityParams.PrivacyProtocol.String())
-			require.Equal(t, cfg.PrivacyPassword, securityParams.PrivacyPassphrase)
+			require.Equal(t, string(cfg.PrivacyPassword), securityParams.PrivacyPassphrase)
 		}
 	}
 }
@@ -513,7 +513,7 @@ func TestGetScalarData(t *testing.T) {
 				expectedSNMPData := []SNMPData{}
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				pdu1 := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1",
 					Type:  gosnmp.Counter64,
 				}
@@ -883,7 +883,7 @@ func TestGetIndexedData(t *testing.T) {
 				mockGoSNMP := new(mocks.MockGoSNMPWrapper)
 				mockGoSNMP.On("GetVersion", mock.Anything).Return(gosnmp.Version2c)
 				pdu := gosnmp.SnmpPDU{
-					Value: uint64(math.MaxUint64),
+					Value: float64(math.MaxFloat64),
 					Name:  "1.1",
 					Type:  gosnmp.Counter64,
 				}

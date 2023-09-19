@@ -19,7 +19,7 @@ import (
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
-	clientCredentials *clientcredentials.Config
+	clientCredentials *clientCredentialsConfig
 	logger            *zap.Logger
 	client            *http.Client
 }
@@ -36,10 +36,10 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 var errFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return nil, errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return nil, errNoClientSecretProvided
 	}
 	if cfg.TokenURL == "" {
@@ -55,12 +55,16 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	transport.TLSClientConfig = tlsCfg
 
 	return &clientAuthenticator{
-		clientCredentials: &clientcredentials.Config{
-			ClientID:       cfg.ClientID,
-			ClientSecret:   string(cfg.ClientSecret),
-			TokenURL:       cfg.TokenURL,
-			Scopes:         cfg.Scopes,
-			EndpointParams: cfg.EndpointParams,
+		clientCredentials: &clientCredentialsConfig{
+			Config: clientcredentials.Config{
+				ClientID:       cfg.ClientID,
+				ClientSecret:   string(cfg.ClientSecret),
+				TokenURL:       cfg.TokenURL,
+				Scopes:         cfg.Scopes,
+				EndpointParams: cfg.EndpointParams,
+			},
+			ClientIDFile:     cfg.ClientIDFile,
+			ClientSecretFile: cfg.ClientSecretFile,
 		},
 		logger: logger,
 		client: &http.Client{

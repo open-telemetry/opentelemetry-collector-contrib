@@ -20,6 +20,10 @@ status:
   distributions: [string]
   # Optional: A list of warnings that should be brought to the attention of users looking to use this component
   warnings: [string]
+  # Optional: Metadata related to codeowners of the component
+  codeowners:
+    active: [string]
+    emeritus: [string]
 
 # Optional: OTel Semantic Conventions version that will be associated with the scraped metrics.
 # This attribute should be set for metrics compliant with OTel Semantic Conventions.
@@ -82,7 +86,7 @@ metrics:
       monotonic: bool
       # Required for sum metric: whether reported values incorporate previous measurements
       # (cumulative) or not (delta).
-      aggregation: <delta|cumulative>
+      aggregation_temporality: <delta|cumulative>
        # Optional: Indicates the type the metric needs to be parsed from. If set, the generated
        # functions will parse the value from string to value_type.
       input_type: string

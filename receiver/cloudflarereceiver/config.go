@@ -27,7 +27,6 @@ type LogsConfig struct {
 
 var (
 	errNoEndpoint = errors.New("an endpoint must be specified")
-	errNoTLS      = errors.New("tls must be configured")
 	errNoCert     = errors.New("tls was configured, but no cert file was specified")
 	errNoKey      = errors.New("tls was configured, but no key file was specified")
 
@@ -39,22 +38,22 @@ func (c *Config) Validate() error {
 		return errNoEndpoint
 	}
 
-	if c.Logs.TLS == nil {
-		return errNoTLS
+	var errs error
+	if c.Logs.TLS != nil {
+		// Missing key
+		if c.Logs.TLS.KeyFile == "" {
+			errs = multierr.Append(errs, errNoKey)
+		}
+
+		// Missing cert
+		if c.Logs.TLS.CertFile == "" {
+			errs = multierr.Append(errs, errNoCert)
+		}
 	}
 
-	var errs error
 	_, _, err := net.SplitHostPort(c.Logs.Endpoint)
 	if err != nil {
 		errs = multierr.Append(errs, fmt.Errorf("failed to split endpoint into 'host:port' pair: %w", err))
-	}
-
-	if c.Logs.TLS.CertFile == "" {
-		errs = multierr.Append(errs, errNoCert)
-	}
-
-	if c.Logs.TLS.KeyFile == "" {
-		errs = multierr.Append(errs, errNoKey)
 	}
 
 	return errs

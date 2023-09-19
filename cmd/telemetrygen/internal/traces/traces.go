@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -40,6 +41,7 @@ func Start(cfg *Config) error {
 
 	httpExpOpt := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 
 	if cfg.Insecure {
@@ -71,13 +73,16 @@ func Start(cfg *Config) error {
 		}
 	}()
 
-	ssp := sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
-	defer func() {
-		logger.Info("stop the batch span processor")
-		if tempError := ssp.Shutdown(context.Background()); tempError != nil {
-			logger.Error("failed to stop the batch span processor", zap.Error(err))
-		}
-	}()
+	var ssp sdktrace.SpanProcessor
+	if cfg.Batch {
+		ssp = sdktrace.NewBatchSpanProcessor(exp, sdktrace.WithBatchTimeout(time.Second))
+		defer func() {
+			logger.Info("stop the batch span processor")
+			if tempError := ssp.Shutdown(context.Background()); tempError != nil {
+				logger.Error("failed to stop the batch span processor", zap.Error(err))
+			}
+		}()
+	}
 
 	var attributes []attribute.KeyValue
 	// may be overridden by `-otlp-attributes service.name="foo"`
@@ -88,7 +93,9 @@ func Start(cfg *Config) error {
 		sdktrace.WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...)),
 	)
 
-	tracerProvider.RegisterSpanProcessor(ssp)
+	if cfg.Batch {
+		tracerProvider.RegisterSpanProcessor(ssp)
+	}
 	otel.SetTracerProvider(tracerProvider)
 
 	if err = Run(cfg, logger); err != nil {
@@ -115,6 +122,14 @@ func Run(c *Config, logger *zap.Logger) error {
 		logger.Info("generation of traces is limited", zap.Float64("per-second", float64(limit)))
 	}
 
+	var statusCode codes.Code
+	if c.StatusCode == "" {
+		statusCode = codes.Unset
+	} else {
+		if err := statusCode.UnmarshalJSON([]byte(c.StatusCode)); err != nil {
+			return fmt.Errorf("expected `status-code` to be one of (Unset, Error, Ok) or (0, 1, 2), got %q instead", c.StatusCode)
+		}
+	}
 	wg := sync.WaitGroup{}
 
 	running := &atomic.Bool{}
@@ -125,11 +140,13 @@ func Run(c *Config, logger *zap.Logger) error {
 		w := worker{
 			numTraces:        c.NumTraces,
 			propagateContext: c.PropagateContext,
+			statusCode:       statusCode,
 			limitPerSecond:   limit,
 			totalDuration:    c.TotalDuration,
 			running:          running,
 			wg:               &wg,
 			logger:           logger.With(zap.Int("worker", i)),
+			loadSize:         c.LoadSize,
 		}
 
 		go w.simulateTraces()

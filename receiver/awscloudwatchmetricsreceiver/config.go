@@ -9,8 +9,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"go.uber.org/multierr"
 )
 
 var (
@@ -78,7 +76,7 @@ func (cfg *Config) Validate() error {
 		return errInvalidPollInterval
 	}
 	var errs error
-	errs = multierr.Append(errs, cfg.validateMetricsConfig())
+	errs = errors.Join(errs, cfg.validateMetricsConfig())
 	return errs
 }
 
@@ -111,7 +109,7 @@ func (cfg *Config) validateDimensionsConfig() error {
 		if name.MetricName == "" {
 			return errNoMetricsConfigured
 		}
-		errs = multierr.Append(errs, validate(name.Dimensions))
+		errs = errors.Join(errs, validate(name.Dimensions))
 	}
 	return errs
 }

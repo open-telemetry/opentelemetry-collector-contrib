@@ -14,7 +14,7 @@ import (
 )
 
 type ParseJSONArguments[K any] struct {
-	Target ottl.StringGetter[K] `ottlarg:"0"`
+	Target ottl.StringGetter[K]
 }
 
 func NewParseJSONFactory[K any]() ottl.Factory[K] {
