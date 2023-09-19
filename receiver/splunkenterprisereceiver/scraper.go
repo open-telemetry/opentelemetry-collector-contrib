@@ -588,9 +588,6 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 		}
 
 		currentQueuesSize := int64(f.Content.CurrentSize)
-		if err != nil {
-			errs.Add(err)
-		}
 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(now, currentQueuesSize, name)
 	}
@@ -638,9 +635,6 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 		}
 
 		currentQueueSizeBytes := int64(f.Content.CurrentSizeBytes)
-		if err != nil {
-			errs.Add(err)
-		}
 
 		s.mb.RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(now, currentQueueSizeBytes, name)
 	}
