@@ -19,16 +19,17 @@ import (
 )
 
 const (
-	// the number of old log files to retain
-	defaultMaxBackups = 100
 
 	// the format of encoded telemetry data
 	formatTypeJSON  = "json"
 	formatTypeProto = "proto"
 
 	// the type of compression codec
-	compressionZSTD = "zstd"
 )
+
+var compressionZSTD = ConfigCompressionZstd
+
+const defaultMaxBackups int = 100
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {
@@ -41,9 +42,10 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	maxBackups := defaultMaxBackups
 	return &Config{
-		FormatType: formatTypeJSON,
-		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		Format:   formatTypeJSON,
+		Rotation: &ConfigRotation{MaxBackups: &maxBackups},
 	}
 }
 
@@ -122,15 +124,15 @@ func createLogsExporter(
 func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 	return &fileExporter{
 		path:             conf.Path,
-		formatType:       conf.FormatType,
+		formatType:       string(conf.Format),
 		file:             writer,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
+		tracesMarshaler:  tracesMarshalers[string(conf.Format)],
+		metricsMarshaler: metricsMarshalers[string(conf.Format)],
+		logsMarshaler:    logsMarshalers[string(conf.Format)],
 		exporter:         buildExportFunc(conf),
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
-		flushInterval:    conf.FlushInterval,
+		compression:      string(*conf.Compression),
+		compressor:       buildCompressor(string(*conf.Compression)),
+		flushInterval:    *conf.FlushInterval,
 	}
 }
 
@@ -144,10 +146,10 @@ func buildFileWriter(cfg *Config) (io.WriteCloser, error) {
 	}
 	return &lumberjack.Logger{
 		Filename:   cfg.Path,
-		MaxSize:    cfg.Rotation.MaxMegabytes,
-		MaxAge:     cfg.Rotation.MaxDays,
-		MaxBackups: cfg.Rotation.MaxBackups,
-		LocalTime:  cfg.Rotation.LocalTime,
+		MaxSize:    *cfg.Rotation.MaxMegabytes,
+		MaxAge:     *cfg.Rotation.MaxDays,
+		MaxBackups: *cfg.Rotation.MaxBackups,
+		LocalTime:  *cfg.Rotation.Localtime,
 	}, nil
 }
 

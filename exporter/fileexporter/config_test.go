@@ -4,6 +4,8 @@
 package fileexporter
 
 import (
+	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,8 +18,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 )
 
+func CreatePointer[T any](value T) *T {
+	return &value
+}
+
 func TestLoadConfig(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -31,84 +37,84 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
 				Path: "./filename.json",
-				Rotation: &Rotation{
-					MaxMegabytes: 10,
-					MaxDays:      3,
-					MaxBackups:   3,
-					LocalTime:    true,
+				Rotation: &ConfigRotation{
+					MaxMegabytes: CreatePointer(10),
+					MaxDays:      CreatePointer(3),
+					MaxBackups:   CreatePointer(3),
+					Localtime:    CreatePointer(true),
 				},
-				FormatType:    formatTypeJSON,
-				FlushInterval: time.Second,
+				Format:        formatTypeJSON,
+				FlushInterval: CreatePointer(time.Second),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "3"),
 			expected: &Config{
 				Path: "./filename",
-				Rotation: &Rotation{
-					MaxMegabytes: 10,
-					MaxDays:      3,
-					MaxBackups:   3,
-					LocalTime:    true,
+				Rotation: &ConfigRotation{
+					MaxMegabytes: CreatePointer(10),
+					MaxDays:      CreatePointer(3),
+					MaxBackups:   CreatePointer(3),
+					Localtime:    CreatePointer(true),
 				},
-				FormatType:    formatTypeProto,
-				Compression:   compressionZSTD,
-				FlushInterval: time.Second,
+				Format:        formatTypeProto,
+				Compression:   &compressionZSTD,
+				FlushInterval: CreatePointer(time.Second),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "rotation_with_default_settings"),
 			expected: &Config{
-				Path:       "./foo",
-				FormatType: formatTypeJSON,
-				Rotation: &Rotation{
-					MaxBackups: defaultMaxBackups,
+				Path:   "./foo",
+				Format: formatTypeJSON,
+				Rotation: &ConfigRotation{
+					MaxBackups: CreatePointer(defaultMaxBackups),
 				},
-				FlushInterval: time.Second,
+				FlushInterval: CreatePointer(time.Second),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "rotation_with_custom_settings"),
 			expected: &Config{
 				Path: "./foo",
-				Rotation: &Rotation{
-					MaxMegabytes: 1234,
-					MaxBackups:   defaultMaxBackups,
+				Rotation: &ConfigRotation{
+					MaxMegabytes: CreatePointer(1234),
+					MaxBackups:   CreatePointer(defaultMaxBackups),
 				},
-				FormatType:    formatTypeJSON,
-				FlushInterval: time.Second,
+				Format:        formatTypeJSON,
+				FlushInterval: CreatePointer(time.Second),
 			},
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "compression_error"),
-			errorMessage: "compression is not supported",
+			errorMessage: "invalid value (expected one of []interface {}{\"\", \"zstd\"}): \"gzip\"",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "format_error"),
-			errorMessage: "format type is not supported",
+			errorMessage: "invalid value (expected one of []interface {}{\"json\", \"proto\"}): \"text\"",
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_5"),
 			expected: &Config{
 				Path:          "./flushed",
-				FlushInterval: 5,
-				FormatType:    formatTypeJSON,
+				FlushInterval: CreatePointer(time.Duration(5)),
+				Format:        formatTypeJSON,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_5s"),
 			expected: &Config{
 				Path:          "./flushed",
-				FlushInterval: 5 * time.Second,
-				FormatType:    formatTypeJSON,
+				FlushInterval: CreatePointer(5 * time.Second),
+				Format:        formatTypeJSON,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "flush_interval_500ms"),
 			expected: &Config{
 				Path:          "./flushed",
-				FlushInterval: 500 * time.Millisecond,
-				FormatType:    formatTypeJSON,
+				FlushInterval: CreatePointer(500 * time.Millisecond),
+				Format:        formatTypeJSON,
 			},
 		},
 		{
@@ -134,9 +140,18 @@ func TestLoadConfig(t *testing.T) {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
+			dump(cfg)
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func dump(v any) {
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(jsonBytes))
 }

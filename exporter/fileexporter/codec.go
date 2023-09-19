@@ -11,7 +11,7 @@ type compressFunc func(src []byte) []byte
 var encoder, _ = zstd.NewWriter(nil)
 
 var encoders = map[string]compressFunc{
-	compressionZSTD: zstdCompress,
+	string(compressionZSTD): zstdCompress,
 }
 
 func buildCompressor(compression string) compressFunc {
