@@ -31,6 +31,7 @@ type Config struct {
 type targetConfig struct {
 	confighttp.HTTPClientSettings `mapstructure:",squash"`
 	Method                        string `mapstructure:"method"`
+	Body                          string `mapstructure:"body"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

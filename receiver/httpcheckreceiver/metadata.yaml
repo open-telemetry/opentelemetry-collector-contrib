@@ -54,6 +54,15 @@ metrics:
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]
+  httpcheck.body:
+    description: Reports 1 if the HTTP response body exact matches the `body` configuration item, 0 otherwise.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    unit: 1
+    attributes: [http.url]
 
 tests:
   config:

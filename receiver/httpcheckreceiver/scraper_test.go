@@ -4,7 +4,9 @@
 package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/httpcheckreceiver"
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -21,12 +23,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func newMockServer(t *testing.T, responseCode int) *httptest.Server {
+func newMockServer(t *testing.T, responseCode int, responseBody io.Reader) *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		rw.WriteHeader(responseCode)
 		// This could be expanded if the checks for the server include
 		// parsing the response content
-		_, err := rw.Write([]byte(``))
+		var err error
+		content := []byte(``)
+		if responseBody != nil {
+			content, err = io.ReadAll(responseBody)
+			require.NoError(t, err)
+		}
+		_, err = rw.Write(content)
 		require.NoError(t, err)
 	}))
 }
@@ -164,7 +172,7 @@ func TestScaperScrape(t *testing.T) {
 					}},
 				}
 			} else {
-				ms := newMockServer(t, tc.expectedResponse)
+				ms := newMockServer(t, tc.expectedResponse, http.NoBody)
 				defer ms.Close()
 				cfg.Targets = []*targetConfig{{
 					HTTPClientSettings: confighttp.HTTPClientSettings{
@@ -199,9 +207,9 @@ func TestNilClient(t *testing.T) {
 
 func TestScraperMultipleTargets(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	ms1 := newMockServer(t, 200)
+	ms1 := newMockServer(t, 200, http.NoBody)
 	defer ms1.Close()
-	ms2 := newMockServer(t, 404)
+	ms2 := newMockServer(t, 404, http.NoBody)
 	defer ms2.Close()
 
 	cfg.Targets = append(cfg.Targets, &targetConfig{
@@ -228,6 +236,50 @@ func TestScraperMultipleTargets(t *testing.T) {
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
 		pmetrictest.IgnoreMetricAttributeValue("http.url"),
 		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	))
+}
+
+func TestScraperBody(t *testing.T) {
+	respBody1 := bytes.NewReader([]byte(`{"foo":"bar"}`))
+	respBody2 := bytes.NewReader([]byte(`{"foo":"bar"}`))
+
+	cfg := createDefaultConfig().(*Config)
+	ms1 := newMockServer(t, 200, respBody1)
+	defer ms1.Close()
+	ms2 := newMockServer(t, 200, respBody2)
+	defer ms2.Close()
+
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms1.URL,
+		},
+		Body: "foo",
+	})
+	cfg.Targets = append(cfg.Targets, &targetConfig{
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Endpoint: ms2.URL,
+		},
+		Body: "far",
+	})
+	cfg.MetricsBuilderConfig.Metrics.HttpcheckBody.Enabled = true
+
+	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
+
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err)
+
+	goldenPath := filepath.Join("testdata", "expected_metrics", "body.yaml")
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
+	require.NoError(t, err)
+
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+		pmetrictest.IgnoreMetricAttributeValue("http.url"),
+		pmetrictest.IgnoreMetricValues("httpcheck.duration"),
+		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),

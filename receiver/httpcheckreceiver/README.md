@@ -37,6 +37,7 @@ Each target has the following properties:
 
 - `endpoint` (required): the URL to be monitored
 - `method` (optional, default: `GET`): The HTTP method used to call the endpoint
+- `body` (optional, default: ""): If set, the receiver will emit metrics based on whether the response body exact matches this string.
 
 Additionally, each target supports the client configuration options of [confighttp].
 

@@ -57,3 +57,27 @@ Records errors occurring during HTTP check.
 | http.status_code | HTTP response status code | Any Int |
 | http.method | HTTP request method | Any Str |
 | http.status_class | HTTP response status class | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### httpcheck.body
+
+Reports 1 if the HTTP response body exact matches the `body` configuration item, 0 otherwise.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| http.url | Full HTTP request URL. | Any Str |

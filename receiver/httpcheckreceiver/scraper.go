@@ -6,7 +6,9 @@ package httpcheckreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -85,6 +87,21 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint, int64(statusCode), req.Method, class)
 				}
 			}
+
+			if err == nil && len(h.cfg.Targets[targetIndex].Body) > 0 {
+				if body, err := io.ReadAll(resp.Body); err != nil {
+					h.settings.Logger.Error("failed to read response", zap.Error(err))
+				} else {
+					defer resp.Body.Close()
+
+					if strings.Contains(string(body), h.cfg.Targets[targetIndex].Body) {
+						h.mb.RecordHttpcheckBodyDataPoint(now, int64(1), h.cfg.Targets[targetIndex].Endpoint)
+					} else {
+						h.mb.RecordHttpcheckBodyDataPoint(now, int64(0), h.cfg.Targets[targetIndex].Endpoint)
+					}
+				}
+			}
+
 			mux.Unlock()
 		}(client, idx)
 	}
