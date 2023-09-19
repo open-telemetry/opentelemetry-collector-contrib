@@ -395,7 +395,7 @@ go.opentelemetry.io/collector/processor v0.85.1-0.20230919160920-512b9c3c8fec h1
 go.opentelemetry.io/collector/processor v0.85.1-0.20230919160920-512b9c3c8fec/go.mod h1:/djEi8qIECqLMTbFDKAFkDCp/hr4CclsWqZ2O1IqDTw=
 go.opentelemetry.io/collector/receiver v0.85.1-0.20230919160920-512b9c3c8fec h1:RfK3YJmBi045P8r9DUhAv9aiCSR0H0OmRx5hh6hCs6A=
 go.opentelemetry.io/collector/receiver v0.85.1-0.20230919160920-512b9c3c8fec/go.mod h1:9e77aEZEhB2XsnA5V0vDXiv1i1sXTueFEcDi16fz7tQ=
-go.opentelemetry.io/collector/semconv v0.85.0 h1:TVXgaWeYADXnytlhNq44zyv2W9m3VodBR1ffiMFDusI=
+go.opentelemetry.io/collector/semconv v0.85.1-0.20230919160920-512b9c3c8fec h1:5XkTiWGgrD4ZdEj16AJrAweBSIejVGB3XEtiUkxDh7I=
 go.opentelemetry.io/otel v1.18.0 h1:TgVozPGZ01nHyDZxK5WGPFB9QexeTMXEH7+tIClWfzs=
 go.opentelemetry.io/otel v1.18.0/go.mod h1:9lWqYO0Db579XzVuCKFNPDl4s73Voa+zEck3wHaAYQI=
 go.opentelemetry.io/otel/exporters/prometheus v0.41.0 h1:A3/bhjP5SmELy8dcpK+uttHeh9Qrh+YnS16/VzrztRQ=
