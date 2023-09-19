@@ -1,6 +1,5 @@
 connector/servicegraphconnector
 exporter/awskinesisexporter
-exporter/azuremonitorexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/f5cloudexporter
