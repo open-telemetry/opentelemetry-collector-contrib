@@ -23,7 +23,7 @@ func CreatePointer[T any](value T) *T {
 }
 
 func TestLoadConfig(t *testing.T) {
-	//t.Parallel()
+	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
