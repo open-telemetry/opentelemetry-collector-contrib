@@ -12,9 +12,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+// NewGRPCExporter creates and starts a gRPC-based OTLP trace exporter.
+// It configures the exporter with the provided endpoint, connection security settings, and headers.
 func NewGRPCExporter(cfg *Config) (*otlptrace.Exporter, error) {
 	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
+		otlptracegrpc.WithEndpoint(cfg.Endpoint()),
 		otlptracegrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
@@ -31,9 +33,11 @@ func NewGRPCExporter(cfg *Config) (*otlptrace.Exporter, error) {
 	return otlptracegrpc.New(context.Background(), grpcExpOpt...)
 }
 
+// NewHTTPExporter creates and starts an HTTP-based OTLP trace exporter.
+// It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
 func NewHTTPExporter(cfg *Config) (*otlptrace.Exporter, error) {
 	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithEndpoint(cfg.Endpoint()),
 		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 

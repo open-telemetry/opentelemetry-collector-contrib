@@ -8,13 +8,15 @@ import (
 
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"google.golang.org/grpc"
 )
 
-func NewGRPCExporter(cfg *Config) (sdkmetric.Exporter, error) {
+// NewGRPCExporter creates and starts a gRPC-based OTLP metric exporter.
+// It configures the exporter with the provided endpoint, connection security settings, and headers.
+func NewGRPCExporter(cfg *Config) (metric.Exporter, error) {
 	grpcExpOpt := []otlpmetricgrpc.Option{
-		otlpmetricgrpc.WithEndpoint(cfg.Endpoint),
+		otlpmetricgrpc.WithEndpoint(cfg.Endpoint()),
 		otlpmetricgrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
@@ -31,9 +33,11 @@ func NewGRPCExporter(cfg *Config) (sdkmetric.Exporter, error) {
 	return otlpmetricgrpc.New(context.Background(), grpcExpOpt...)
 }
 
-func NewHTTPExporter(cfg *Config) (sdkmetric.Exporter, error) {
+// NewHTTPExporter creates and starts an HTTP-based OTLP metric exporter.
+// It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
+func NewHTTPExporter(cfg *Config) (metric.Exporter, error) {
 	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint),
+		otlpmetrichttp.WithEndpoint(cfg.Endpoint()),
 		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
 	}
 
