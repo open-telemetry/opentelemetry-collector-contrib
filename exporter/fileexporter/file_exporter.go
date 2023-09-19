@@ -158,11 +158,11 @@ func (e *fileExporter) Shutdown(context.Context) error {
 }
 
 func buildExportFunc(cfg *Config) func(e *fileExporter, buf []byte) error {
-	if cfg.FormatType == formatTypeProto {
+	if cfg.Format == formatTypeProto {
 		return exportMessageAsBuffer
 	}
 	// if the data format is JSON and needs to be compressed, telemetry data can't be written to file in JSON format.
-	if cfg.FormatType == formatTypeJSON && cfg.Compression != "" {
+	if cfg.Format == formatTypeJSON && (cfg.Compression != nil && *cfg.Compression != ConfigCompressionBlank) {
 		return exportMessageAsBuffer
 	}
 	return exportMessageAsLine

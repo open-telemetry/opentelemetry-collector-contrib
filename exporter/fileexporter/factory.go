@@ -29,7 +29,7 @@ const (
 
 var compressionZSTD = ConfigCompressionZstd
 
-const defaultMaxBackups int = 100
+var defaultMaxBackups int = 100
 
 // NewFactory creates a factory for OTLP exporter.
 func NewFactory() exporter.Factory {

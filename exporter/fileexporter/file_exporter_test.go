@@ -27,7 +27,7 @@ import (
 )
 
 func buildUnCompressor(compressor string) func([]byte) ([]byte, error) {
-	if compressor == compressionZSTD {
+	if ConfigCompression(compressor) == compressionZSTD {
 		return decompress
 	}
 	return func(src []byte) ([]byte, error) {
@@ -48,8 +48,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:   tempFileName(t),
+					Format: "json",
 				},
 				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
@@ -59,8 +59,8 @@ func TestFileTracesExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "json",
-					Compression: compressionZSTD,
+					Format:      "json",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &ptrace.JSONUnmarshaler{},
 			},
@@ -69,8 +69,8 @@ func TestFileTracesExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:   tempFileName(t),
+					Format: "proto",
 				},
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
@@ -80,8 +80,8 @@ func TestFileTracesExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
+					Format:      "proto",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
@@ -91,13 +91,13 @@ func TestFileTracesExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
-					Rotation: &Rotation{
-						MaxMegabytes: 3,
-						MaxDays:      0,
-						MaxBackups:   defaultMaxBackups,
-						LocalTime:    false,
+					Format:      "proto",
+					Compression: &compressionZSTD,
+					Rotation: &ConfigRotation{
+						MaxMegabytes: CreatePointer(3),
+						MaxDays:      CreatePointer(0),
+						MaxBackups:   &defaultMaxBackups,
+						Localtime:    CreatePointer(false),
 					},
 				},
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
@@ -108,15 +108,15 @@ func TestFileTracesExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
-					Rotation: &Rotation{
-						MaxMegabytes: 3,
-						MaxDays:      0,
-						MaxBackups:   defaultMaxBackups,
-						LocalTime:    false,
+					Format:      "proto",
+					Compression: &compressionZSTD,
+					Rotation: &ConfigRotation{
+						MaxMegabytes: CreatePointer(3),
+						MaxDays:      CreatePointer(0),
+						MaxBackups:   &defaultMaxBackups,
+						Localtime:    CreatePointer(false),
 					},
-					FlushInterval: time.Second,
+					FlushInterval: CreatePointer(time.Second),
 				},
 				unmarshaler: &ptrace.ProtoUnmarshaler{},
 			},
@@ -129,13 +129,13 @@ func TestFileTracesExporter(t *testing.T) {
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:            conf.Path,
-				formatType:      conf.FormatType,
+				formatType:      string(conf.Format),
 				file:            writer,
-				tracesMarshaler: tracesMarshalers[conf.FormatType],
+				tracesMarshaler: tracesMarshalers[string(conf.Format)],
 				exporter:        buildExportFunc(conf),
-				compression:     conf.Compression,
-				compressor:      buildCompressor(conf.Compression),
-				flushInterval:   conf.FlushInterval,
+				compression:     string(*conf.Compression),
+				compressor:      buildCompressor(string(*conf.Compression)),
+				flushInterval:   *conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -201,8 +201,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:   tempFileName(t),
+					Format: "json",
 				},
 				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
@@ -212,8 +212,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "json",
-					Compression: compressionZSTD,
+					Format:      "json",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &pmetric.JSONUnmarshaler{},
 			},
@@ -222,8 +222,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:   tempFileName(t),
+					Format: "proto",
 				},
 				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
@@ -233,8 +233,8 @@ func TestFileMetricsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
+					Format:      "proto",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &pmetric.ProtoUnmarshaler{},
 			},
@@ -244,13 +244,13 @@ func TestFileMetricsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
-					Rotation: &Rotation{
-						MaxMegabytes: 3,
-						MaxDays:      0,
-						MaxBackups:   defaultMaxBackups,
-						LocalTime:    false,
+					Format:      "proto",
+					Compression: &compressionZSTD,
+					Rotation: &ConfigRotation{
+						MaxMegabytes: CreatePointer(3),
+						MaxDays:      CreatePointer(0),
+						MaxBackups:   &defaultMaxBackups,
+						Localtime:    CreatePointer(false),
 					},
 				},
 				unmarshaler: &pmetric.ProtoUnmarshaler{},
@@ -264,13 +264,13 @@ func TestFileMetricsExporter(t *testing.T) {
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:             conf.Path,
-				formatType:       conf.FormatType,
+				formatType:       string(conf.Format),
 				file:             writer,
-				metricsMarshaler: metricsMarshalers[conf.FormatType],
+				metricsMarshaler: metricsMarshalers[string(conf.Format)],
 				exporter:         buildExportFunc(conf),
-				compression:      conf.Compression,
-				compressor:       buildCompressor(conf.Compression),
-				flushInterval:    conf.FlushInterval,
+				compression:      string(*conf.Compression),
+				compressor:       buildCompressor(string(*conf.Compression)),
+				flushInterval:    *conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -338,8 +338,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "json: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "json",
+					Path:   tempFileName(t),
+					Format: "json",
 				},
 				unmarshaler: &plog.JSONUnmarshaler{},
 			},
@@ -349,8 +349,8 @@ func TestFileLogsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "json",
-					Compression: compressionZSTD,
+					Format:      "json",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &plog.JSONUnmarshaler{},
 			},
@@ -359,8 +359,8 @@ func TestFileLogsExporter(t *testing.T) {
 			name: "Proto: default configuration",
 			args: args{
 				conf: &Config{
-					Path:       tempFileName(t),
-					FormatType: "proto",
+					Path:   tempFileName(t),
+					Format: "proto",
 				},
 				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
@@ -370,8 +370,8 @@ func TestFileLogsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
+					Format:      "proto",
+					Compression: &compressionZSTD,
 				},
 				unmarshaler: &plog.ProtoUnmarshaler{},
 			},
@@ -381,13 +381,13 @@ func TestFileLogsExporter(t *testing.T) {
 			args: args{
 				conf: &Config{
 					Path:        tempFileName(t),
-					FormatType:  "proto",
-					Compression: compressionZSTD,
-					Rotation: &Rotation{
-						MaxMegabytes: 3,
-						MaxDays:      0,
-						MaxBackups:   defaultMaxBackups,
-						LocalTime:    false,
+					Format:      "proto",
+					Compression: &compressionZSTD,
+					Rotation: &ConfigRotation{
+						MaxMegabytes: CreatePointer(3),
+						MaxDays:      CreatePointer(0),
+						MaxBackups:   &defaultMaxBackups,
+						Localtime:    CreatePointer(false),
 					},
 				},
 				unmarshaler: &plog.ProtoUnmarshaler{},
@@ -401,13 +401,13 @@ func TestFileLogsExporter(t *testing.T) {
 			assert.NoError(t, err)
 			fe := &fileExporter{
 				path:          conf.Path,
-				formatType:    conf.FormatType,
+				formatType:    string(conf.Format),
 				file:          writer,
-				logsMarshaler: logsMarshalers[conf.FormatType],
+				logsMarshaler: logsMarshalers[string(conf.Format)],
 				exporter:      buildExportFunc(conf),
-				compression:   conf.Compression,
-				compressor:    buildCompressor(conf.Compression),
-				flushInterval: conf.FlushInterval,
+				compression:   string(*conf.Compression),
+				compressor:    buildCompressor(string(*conf.Compression)),
+				flushInterval: *conf.FlushInterval,
 			}
 			require.NotNil(t, fe)
 
@@ -633,7 +633,7 @@ func safeFileExporterWrite(e *fileExporter, d []byte) (int, error) {
 func TestFlushing(t *testing.T) {
 	cfg := &Config{
 		Path:          "",
-		FlushInterval: time.Second,
+		FlushInterval: CreatePointer(time.Second),
 	}
 
 	// Create a buffer to capture the output.

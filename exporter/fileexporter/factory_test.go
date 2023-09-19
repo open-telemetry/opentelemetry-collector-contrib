@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporterError(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
+		Format: formatTypeJSON,
 	}
 	_, err := createMetricsExporter(
 		context.Background(),
@@ -34,8 +34,8 @@ func TestCreateMetricsExporterError(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
-		Path:       tempFileName(t),
+		Format: formatTypeJSON,
+		Path:   tempFileName(t),
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
@@ -47,8 +47,8 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
-		Path:       tempFileName(t),
+		Format: formatTypeJSON,
+		Path:   tempFileName(t),
 	}
 	exp, err := createTracesExporter(
 		context.Background(),
@@ -60,7 +60,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateTracesExporterError(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
+		Format: formatTypeJSON,
 	}
 	_, err := createTracesExporter(
 		context.Background(),
@@ -71,8 +71,8 @@ func TestCreateTracesExporterError(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
-		Path:       tempFileName(t),
+		Format: formatTypeJSON,
+		Path:   tempFileName(t),
 	}
 	exp, err := createLogsExporter(
 		context.Background(),
@@ -84,7 +84,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 func TestCreateLogsExporterError(t *testing.T) {
 	cfg := &Config{
-		FormatType: formatTypeJSON,
+		Format: formatTypeJSON,
 	}
 	_, err := createLogsExporter(
 		context.Background(),
@@ -120,8 +120,8 @@ func TestBuildFileWriter(t *testing.T) {
 			args: args{
 				cfg: &Config{
 					Path: tempFileName(t),
-					Rotation: &Rotation{
-						MaxBackups: defaultMaxBackups,
+					Rotation: &ConfigRotation{
+						MaxBackups: &defaultMaxBackups,
 					},
 				},
 			},
@@ -136,11 +136,11 @@ func TestBuildFileWriter(t *testing.T) {
 			args: args{
 				cfg: &Config{
 					Path: tempFileName(t),
-					Rotation: &Rotation{
-						MaxMegabytes: 30,
-						MaxDays:      100,
-						MaxBackups:   3,
-						LocalTime:    true,
+					Rotation: &ConfigRotation{
+						MaxMegabytes: CreatePointer(30),
+						MaxDays:      CreatePointer(100),
+						MaxBackups:   CreatePointer(3),
+						Localtime:    CreatePointer(true),
 					},
 				},
 			},

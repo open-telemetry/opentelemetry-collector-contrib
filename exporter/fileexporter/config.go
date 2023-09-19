@@ -16,7 +16,7 @@ type Config struct {
 	// FlushInterval corresponds to the JSON schema field "flush_interval".
 	FlushInterval *time.Duration `json:"flush_interval,omitempty" yaml:"flush_interval,omitempty" mapstructure:"flush_interval,omitempty"`
 
-	// FormatType defines the data format of encoded telemetry data
+	// Format defines the data format of encoded telemetry data
 	// Options:
 	// - json [default]: OTLP json bytes.
 	// - proto: OTLP binary protobuf bytes.

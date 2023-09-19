@@ -32,7 +32,7 @@ config:
       default: "json"
       enum: ["json", "proto"]
       description: |-
-        FormatType defines the data format of encoded telemetry data
+        Format defines the data format of encoded telemetry data
         Options:
         - json [default]: OTLP json bytes.
         - proto: OTLP binary protobuf bytes.
