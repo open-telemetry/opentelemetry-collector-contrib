@@ -55,7 +55,7 @@ type Config struct {
 	ReportingInterval time.Duration
 
 	// OTLP config
-	endpoint           string
+	CustomEndpoint     string
 	Insecure           bool
 	UseHTTP            bool
 	HTTPPath           string
@@ -64,12 +64,15 @@ type Config struct {
 }
 
 // Endpoint returns the appropriate endpoint URL based on the selected communication mode (gRPC or HTTP)
-// and any custom endpoint provided in the configuration.
+// or custom endpoint provided in the configuration.
 func (c *Config) Endpoint() string {
-	if c.UseHTTP && c.endpoint == DefaultGRPCEndpoint {
+	if c.CustomEndpoint != "" {
+		return c.CustomEndpoint
+	}
+	if c.UseHTTP {
 		return DefaultHTTPEndpoint
 	}
-	return c.endpoint
+	return DefaultGRPCEndpoint
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
@@ -90,7 +93,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
 	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval (default 1 second)")
 
-	fs.StringVar(&c.endpoint, "otlp-endpoint", DefaultGRPCEndpoint, "Destination endpoint for exporting logs, metrics and traces to")
+	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", "", "Destination endpoint for exporting logs, metrics and traces")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 

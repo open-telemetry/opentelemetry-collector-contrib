@@ -59,13 +59,13 @@ func TestEndpoint(t *testing.T) {
 	}{
 		{
 			"default-no-http",
-			DefaultGRPCEndpoint,
+			"",
 			false,
 			DefaultGRPCEndpoint,
 		},
 		{
 			"default-with-http",
-			DefaultGRPCEndpoint,
+			"",
 			true,
 			DefaultHTTPEndpoint,
 		},
@@ -81,13 +81,19 @@ func TestEndpoint(t *testing.T) {
 			true,
 			"collector:4317",
 		},
+		{
+			"wrong-custom-endpoint-with-http",
+			DefaultGRPCEndpoint,
+			true,
+			DefaultGRPCEndpoint,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := &Config{
-				endpoint: tc.endpoint,
-				UseHTTP:  tc.http,
+				CustomEndpoint: tc.endpoint,
+				UseHTTP:        tc.http,
 			}
 
 			assert.Equal(t, tc.expected, cfg.Endpoint())
