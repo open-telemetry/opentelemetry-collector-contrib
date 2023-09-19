@@ -100,7 +100,6 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 }
 
 func (t *tcpServer) Close() error {
-	fmt.Println("FOFOODFD")
 	close(t.stopChan)
 	t.wg.Wait()
 	return t.listener.Close()
