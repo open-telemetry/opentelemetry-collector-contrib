@@ -690,11 +690,6 @@ func Test_FunctionGetter(t *testing.T) {
 			&multipleArgsArguments{},
 			functionWithStringGetter,
 		),
-		createFactory[any](
-			"no_struct_tag",
-			&noStructTagFunctionArguments{},
-			functionWithStringGetter,
-		),
 		NewFactory(
 			"cannot_create_function",
 			&stringGetterArguments{},
@@ -708,7 +703,7 @@ func Test_FunctionGetter(t *testing.T) {
 		Function    FunctionGetter[any]
 	}
 	type FuncArgs struct {
-		Input StringGetter[any] `ottlarg:"0"`
+		Input StringGetter[any]
 	}
 	tests := []struct {
 		name             string
@@ -752,18 +747,6 @@ func Test_FunctionGetter(t *testing.T) {
 			want:             "anything",
 			valid:            false,
 			expectedErrorMsg: "incorrect number of arguments. Expected: 4 Received: 1",
-		},
-		{
-			name: "Invalid Arguments struct tag",
-			getter: StandardStringGetter[interface{}]{
-				Getter: func(ctx context.Context, tCtx interface{}) (interface{}, error) {
-					return nil, nil
-				},
-			},
-			function:         StandardFunctionGetter[any]{fCtx: FunctionContext{Set: componenttest.NewNopTelemetrySettings()}, fact: functions["no_struct_tag"]},
-			want:             "anything",
-			valid:            false,
-			expectedErrorMsg: "no `ottlarg` struct tag on Arguments field \"StringArg\"",
 		},
 		{
 			name: "Cannot create function",

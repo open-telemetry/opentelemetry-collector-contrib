@@ -83,7 +83,7 @@ func testDuration[K any](duration string) (ExprFunc[K], error) {
 }
 
 type sumArguments struct {
-	Ints []int64 `ottlarg:"0"`
+	Ints []int64
 }
 
 //nolint:unparam
@@ -514,11 +514,11 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 		createFactory("threePointOne", &struct{}{}, threePointOne[any]),
 		createFactory("sum", &sumArguments{}, sum[any]),
 		createFactory("Time", &struct {
-			Time   string `ottlarg:"0"`
-			Format string `ottlarg:"1"`
+			Time   string
+			Format string
 		}{}, testTime[any]),
 		createFactory("Duration", &struct {
-			Duration string `ottlarg:"0"`
+			Duration string
 		}{}, testDuration[any]),
 	)
 
@@ -564,11 +564,11 @@ func Test_evaluateMathExpression_error(t *testing.T) {
 func Test_evaluateMathExpressionTimeDuration(t *testing.T) {
 	functions := CreateFactoryMap(
 		createFactory("Time", &struct {
-			Time   string `ottlarg:"0"`
-			Format string `ottlarg:"1"`
+			Time   string
+			Format string
 		}{}, testTime[any]),
 		createFactory("Duration", &struct {
-			Duration string `ottlarg:"0"`
+			Duration string
 		}{}, testDuration[any]),
 	)
 
