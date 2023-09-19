@@ -20,7 +20,7 @@ pre-determined amount of time before releasing the trace to the next processor.
 The expectation is that, generally, traces will be complete after the given time.
 
 This processor should be used whenever a processor requires grouped traces to make decisions,
-such as a tail-based sampler or a per-trace metrics processor. Note that [`tailsamplingprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/edit/main/processor/tailsamplingprocessor/README.md)
+such as a tail-based sampler or a per-trace metrics processor. Note that [`tailsamplingprocessor`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor) 
 also implements a similar mechanism and can be used independently.
 
 The batch processor shouldn't be used before this processor, as this one will 
