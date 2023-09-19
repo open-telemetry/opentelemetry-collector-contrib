@@ -18,7 +18,7 @@ import (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(MetricViews()...)
+	_ = view.Register(metricViews()...)
 
 	return exporter.NewFactory(
 		metadata.Type,
