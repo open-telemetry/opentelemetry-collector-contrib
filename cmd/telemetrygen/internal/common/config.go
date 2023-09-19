@@ -17,6 +17,11 @@ var (
 	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
 )
 
+const (
+	defaultGRPCEndpoint = "localhost:4317"
+	defaultHTTPEndpoint = "localhost:4318"
+)
+
 type KeyValue map[string]string
 
 var _ pflag.Value = (*KeyValue)(nil)
@@ -50,7 +55,7 @@ type Config struct {
 	ReportingInterval time.Duration
 
 	// OTLP config
-	Endpoint           string
+	endpoint           string
 	Insecure           bool
 	UseHTTP            bool
 	HTTPPath           string
@@ -69,6 +74,16 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 	return attributes
 }
 
+// Endpoint returns the canonical endpoint depending on we're in HTTP mode or have a custom endpoint set
+func (c *Config) Endpoint() string {
+	// if we are in HTTP mode and haven't set an override for the endpoint switch to the HTTP endpoint by default
+	if c.UseHTTP && c.endpoint == defaultGRPCEndpoint {
+		return defaultHTTPEndpoint
+	}
+
+	return c.endpoint
+}
+
 // CommonFlags registers common config flags.
 func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.IntVar(&c.WorkerCount, "workers", 1, "Number of workers (goroutines) to run")
@@ -76,7 +91,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.DurationVar(&c.TotalDuration, "duration", 0, "For how long to run the test")
 	fs.DurationVar(&c.ReportingInterval, "interval", 1*time.Second, "Reporting interval (default 1 second)")
 
-	fs.StringVar(&c.Endpoint, "otlp-endpoint", "localhost:4317", "Target to which the exporter is going to send metrics.")
+	fs.StringVar(&c.endpoint, "otlp-endpoint", defaultGRPCEndpoint, "Target to which the exporter is going to send metrics.")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 

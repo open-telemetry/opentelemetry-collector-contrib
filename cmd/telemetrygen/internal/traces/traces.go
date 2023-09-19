@@ -33,14 +33,14 @@ func Start(cfg *Config) error {
 	}
 
 	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
+		otlptracegrpc.WithEndpoint(cfg.Endpoint()),
 		otlptracegrpc.WithDialOption(
 			grpc.WithBlock(),
 		),
 	}
 
 	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
+		otlptracehttp.WithEndpoint(cfg.Endpoint()),
 		otlptracehttp.WithURLPath(cfg.HTTPPath),
 	}
 
