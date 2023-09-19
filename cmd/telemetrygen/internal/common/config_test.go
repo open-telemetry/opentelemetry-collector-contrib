@@ -61,13 +61,13 @@ func TestEndpoint(t *testing.T) {
 			"default-no-http",
 			"",
 			false,
-			DefaultGRPCEndpoint,
+			defaultGRPCEndpoint,
 		},
 		{
 			"default-with-http",
 			"",
 			true,
-			DefaultHTTPEndpoint,
+			defaultHTTPEndpoint,
 		},
 		{
 			"custom-endpoint-no-http",
@@ -83,9 +83,9 @@ func TestEndpoint(t *testing.T) {
 		},
 		{
 			"wrong-custom-endpoint-with-http",
-			DefaultGRPCEndpoint,
+			defaultGRPCEndpoint,
 			true,
-			DefaultGRPCEndpoint,
+			defaultGRPCEndpoint,
 		},
 	}
 

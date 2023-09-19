@@ -18,8 +18,8 @@ var (
 )
 
 const (
-	DefaultGRPCEndpoint = "localhost:4317"
-	DefaultHTTPEndpoint = "localhost:4318"
+	defaultGRPCEndpoint = "localhost:4317"
+	defaultHTTPEndpoint = "localhost:4318"
 )
 
 type KeyValue map[string]string
@@ -70,9 +70,9 @@ func (c *Config) Endpoint() string {
 		return c.CustomEndpoint
 	}
 	if c.UseHTTP {
-		return DefaultHTTPEndpoint
+		return defaultHTTPEndpoint
 	}
-	return DefaultGRPCEndpoint
+	return defaultGRPCEndpoint
 }
 
 func (c *Config) GetAttributes() []attribute.KeyValue {
