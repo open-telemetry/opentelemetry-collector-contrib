@@ -14,14 +14,11 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -32,35 +29,13 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	grpcExpOpt := []otlptracegrpc.Option{
-		otlptracegrpc.WithEndpoint(cfg.Endpoint()),
-		otlptracegrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlptracehttp.Option{
-		otlptracehttp.WithEndpoint(cfg.Endpoint()),
-		otlptracehttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
-	}
-
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
+		exp, err = NewHTTPExporter(cfg)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = otlptracegrpc.New(context.Background(), grpcExpOpt...)
+		exp, err = NewGRPCExporter(cfg)
 	}
 
 	if err != nil {

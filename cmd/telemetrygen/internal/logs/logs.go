@@ -54,7 +54,7 @@ func Start(cfg *Config) error {
 	}
 
 	// only support grpc in insecure mode
-	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint(), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	clientConn, err := grpc.DialContext(context.TODO(), cfg.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}

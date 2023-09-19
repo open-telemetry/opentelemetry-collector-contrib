@@ -11,13 +11,10 @@ import (
 	"time"
 
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
-	"google.golang.org/grpc"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -30,35 +27,13 @@ func Start(cfg *Config) error {
 	}
 	logger.Info("starting the metrics generator with configuration", zap.Any("config", cfg))
 
-	grpcExpOpt := []otlpmetricgrpc.Option{
-		otlpmetricgrpc.WithEndpoint(cfg.Endpoint()),
-		otlpmetricgrpc.WithDialOption(
-			grpc.WithBlock(),
-		),
-	}
-
-	httpExpOpt := []otlpmetrichttp.Option{
-		otlpmetrichttp.WithEndpoint(cfg.Endpoint()),
-		otlpmetrichttp.WithURLPath(cfg.HTTPPath),
-	}
-
-	if cfg.Insecure {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithInsecure())
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithInsecure())
-	}
-
-	if len(cfg.Headers) > 0 {
-		grpcExpOpt = append(grpcExpOpt, otlpmetricgrpc.WithHeaders(cfg.Headers))
-		httpExpOpt = append(httpExpOpt, otlpmetrichttp.WithHeaders(cfg.Headers))
-	}
-
 	var exp sdkmetric.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = otlpmetrichttp.New(context.Background(), httpExpOpt...)
+		exp, err = NewHTTPExporter(cfg)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = otlpmetricgrpc.New(context.Background(), grpcExpOpt...)
+		exp, err = NewGRPCExporter(cfg)
 	}
 
 	if err != nil {
