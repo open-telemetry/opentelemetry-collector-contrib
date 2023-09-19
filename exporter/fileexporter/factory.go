@@ -122,6 +122,10 @@ func createLogsExporter(
 }
 
 func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
+	compression := ConfigCompressionBlank
+	if conf.Compression != nil {
+		compression = *conf.Compression
+	}
 	return &fileExporter{
 		path:             conf.Path,
 		formatType:       string(conf.Format),
@@ -130,8 +134,8 @@ func newFileExporter(conf *Config, writer io.WriteCloser) *fileExporter {
 		metricsMarshaler: metricsMarshalers[string(conf.Format)],
 		logsMarshaler:    logsMarshalers[string(conf.Format)],
 		exporter:         buildExportFunc(conf),
-		compression:      string(*conf.Compression),
-		compressor:       buildCompressor(string(*conf.Compression)),
+		compression:      string(compression),
+		compressor:       buildCompressor(string(compression)),
 		flushInterval:    *conf.FlushInterval,
 	}
 }

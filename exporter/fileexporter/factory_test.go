@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -34,8 +35,9 @@ func TestCreateMetricsExporterError(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := &Config{
-		Format: formatTypeJSON,
-		Path:   tempFileName(t),
+		Format:        formatTypeJSON,
+		Path:          tempFileName(t),
+		FlushInterval: CreatePointer(time.Second),
 	}
 	exp, err := createMetricsExporter(
 		context.Background(),
