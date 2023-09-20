@@ -15,14 +15,12 @@ processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
 processor/servicegraphprocessor
-processor/tailsamplingprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/mongodbatlasreceiver
-receiver/mongodbreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
 receiver/windowseventlogreceiver
