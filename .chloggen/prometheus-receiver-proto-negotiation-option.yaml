@@ -7,7 +7,7 @@ change_type: enhancement
 component: prometheusreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: expose the EnableProtobufNegotiation flag
+note: add a new flag, enable_protobuf_negotiation, which enables protobuf negotiation when scraping prometheus clients
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [27027]
