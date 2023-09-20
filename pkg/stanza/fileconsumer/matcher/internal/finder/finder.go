@@ -28,6 +28,8 @@ func FindFiles(includes []string, excludes []string) ([]string, error) {
 		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
 		if err != nil {
 			errs = errors.Join(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
+			// the same pattern could cause an IO error due to one file or directory,
+			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
 			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())
 		}
 	INCLUDE:
