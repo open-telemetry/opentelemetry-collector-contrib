@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
-type mongodbatlasReceiver struct {
+type mongodbatlasreceiver struct {
 	log         *zap.Logger
 	cfg         *Config
 	client      *internal.MongoDBAtlasClient
@@ -35,9 +35,9 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasReceiver {
+func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mongodbatlasreceiver {
 	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.RetrySettings, settings.Logger)
-	return &mongodbatlasReceiver{
+	return &mongodbatlasreceiver{
 		log:         settings.Logger,
 		cfg:         cfg,
 		client:      client,
@@ -46,11 +46,11 @@ func newMongoDBAtlasReceiver(settings receiver.CreateSettings, cfg *Config) *mon
 	}
 }
 
-func newMongoDBAtlasScraper(recv *mongodbatlasReceiver) (scraperhelper.Scraper, error) {
+func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraperhelper.Scraper, error) {
 	return scraperhelper.NewScraper(metadata.Type, recv.scrape, scraperhelper.WithShutdown(recv.shutdown))
 }
 
-func (s *mongodbatlasReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *mongodbatlasreceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	now := time.Now()
 	if err := s.poll(ctx, s.timeConstraints(now)); err != nil {
 		return pmetric.Metrics{}, err
@@ -59,7 +59,7 @@ func (s *mongodbatlasReceiver) scrape(ctx context.Context) (pmetric.Metrics, err
 	return s.mb.Emit(), nil
 }
 
-func (s *mongodbatlasReceiver) timeConstraints(now time.Time) timeconstraints {
+func (s *mongodbatlasreceiver) timeConstraints(now time.Time) timeconstraints {
 	var start time.Time
 	if s.lastRun.IsZero() {
 		start = now.Add(s.cfg.CollectionInterval * -1)
@@ -73,11 +73,11 @@ func (s *mongodbatlasReceiver) timeConstraints(now time.Time) timeconstraints {
 	}
 }
 
-func (s *mongodbatlasReceiver) shutdown(context.Context) error {
+func (s *mongodbatlasreceiver) shutdown(context.Context) error {
 	return s.client.Shutdown()
 }
 
-func (s *mongodbatlasReceiver) poll(ctx context.Context, time timeconstraints) error {
+func (s *mongodbatlasreceiver) poll(ctx context.Context, time timeconstraints) error {
 	orgs, err := s.client.Organizations(ctx)
 	if err != nil {
 		return fmt.Errorf("error retrieving organizations: %w", err)
@@ -117,7 +117,7 @@ func (s *mongodbatlasReceiver) poll(ctx context.Context, time timeconstraints) e
 	return nil
 }
 
-func (s *mongodbatlasReceiver) getNodeClusterNameMap(
+func (s *mongodbatlasreceiver) getNodeClusterNameMap(
 	ctx context.Context,
 	projectID string,
 ) (map[string]string, error) {
@@ -140,7 +140,7 @@ func (s *mongodbatlasReceiver) getNodeClusterNameMap(
 	return clusterMap, nil
 }
 
-func (s *mongodbatlasReceiver) extractProcessMetrics(
+func (s *mongodbatlasreceiver) extractProcessMetrics(
 	ctx context.Context,
 	time timeconstraints,
 	orgName string,
@@ -176,7 +176,7 @@ func (s *mongodbatlasReceiver) extractProcessMetrics(
 	return nil
 }
 
-func (s *mongodbatlasReceiver) extractProcessDatabaseMetrics(
+func (s *mongodbatlasreceiver) extractProcessDatabaseMetrics(
 	ctx context.Context,
 	time timeconstraints,
 	orgName string,
@@ -224,7 +224,7 @@ func (s *mongodbatlasReceiver) extractProcessDatabaseMetrics(
 	return nil
 }
 
-func (s *mongodbatlasReceiver) extractProcessDiskMetrics(
+func (s *mongodbatlasreceiver) extractProcessDiskMetrics(
 	ctx context.Context,
 	time timeconstraints,
 	orgName string,

@@ -40,7 +40,7 @@ func TestTimeConstraints(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
 				// lastRun is nil
-				recv := mongodbatlasReceiver{
+				recv := mongodbatlasreceiver{
 					cfg: cfg,
 				}
 				now := time.Now()
@@ -55,7 +55,7 @@ func TestTimeConstraints(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
 				now := time.Now()
-				recv := mongodbatlasReceiver{
+				recv := mongodbatlasreceiver{
 					cfg: cfg,
 					// set last run to 1 collection ago
 					lastRun: now.Add(cfg.CollectionInterval * -1),
