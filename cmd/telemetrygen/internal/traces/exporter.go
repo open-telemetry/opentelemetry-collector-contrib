@@ -4,17 +4,14 @@
 package traces
 
 import (
-	"context"
-
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"google.golang.org/grpc"
 )
 
-// NewGRPCExporter creates and starts a gRPC-based OTLP trace exporter.
+// grpcExporterOptions creates the configuration options for a gRPC-based OTLP trace exporter.
 // It configures the exporter with the provided endpoint, connection security settings, and headers.
-func NewGRPCExporter(cfg *Config) (*otlptrace.Exporter, error) {
+func grpcExporterOptions(cfg *Config) []otlptracegrpc.Option {
 	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint()),
 		otlptracegrpc.WithDialOption(
@@ -30,12 +27,12 @@ func NewGRPCExporter(cfg *Config) (*otlptrace.Exporter, error) {
 		grpcExpOpt = append(grpcExpOpt, otlptracegrpc.WithHeaders(cfg.Headers))
 	}
 
-	return otlptracegrpc.New(context.Background(), grpcExpOpt...)
+	return grpcExpOpt
 }
 
-// NewHTTPExporter creates and starts an HTTP-based OTLP trace exporter.
+// httpExporterOptions creates the configuration options for an HTTP-based OTLP trace exporter.
 // It configures the exporter with the provided endpoint, URL path, connection security settings, and headers.
-func NewHTTPExporter(cfg *Config) (*otlptrace.Exporter, error) {
+func httpExporterOptions(cfg *Config) []otlptracehttp.Option {
 	httpExpOpt := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(cfg.Endpoint()),
 		otlptracehttp.WithURLPath(cfg.HTTPPath),
@@ -49,5 +46,5 @@ func NewHTTPExporter(cfg *Config) (*otlptrace.Exporter, error) {
 		httpExpOpt = append(httpExpOpt, otlptracehttp.WithHeaders(cfg.Headers))
 	}
 
-	return otlptracehttp.New(context.Background(), httpExpOpt...)
+	return httpExpOpt
 }

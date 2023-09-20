@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
@@ -32,10 +34,10 @@ func Start(cfg *Config) error {
 	var exp *otlptrace.Exporter
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
-		exp, err = NewHTTPExporter(cfg)
+		exp, err = otlptracehttp.New(context.Background(), httpExporterOptions(cfg)...)
 	} else {
 		logger.Info("starting gRPC exporter")
-		exp, err = NewGRPCExporter(cfg)
+		exp, err = otlptracegrpc.New(context.Background(), grpcExporterOptions(cfg)...)
 	}
 
 	if err != nil {
