@@ -109,10 +109,34 @@ func TestUnthrottled(t *testing.T) {
 	assert.True(t, len(exp.rms) > 100, "there should have been more than 100 metrics, had %d", len(exp.rms))
 }
 
-func TestNoTelemetryAttrs(t *testing.T) {
+func TestSumNoTelemetryAttrs(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithNoAttributes(qty)
+	cfg := configWithNoAttributes(metricTypeSum, qty)
+	exp := &mockExporter{}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, exp.rms, qty)
+
+	rms := exp.rms
+	for i := 0; i < qty; i++ {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, attr.Len(), 0, "it shouldn't have attrs here")
+	}
+}
+
+func TestGaugeNoTelemetryAttrs(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithNoAttributes(metricTypeGauge, qty)
 	exp := &mockExporter{}
 
 	// act
@@ -133,10 +157,36 @@ func TestNoTelemetryAttrs(t *testing.T) {
 	}
 }
 
-func TestSingleTelemetryAttr(t *testing.T) {
+func TestSumSingleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithOneAttribute(qty)
+	cfg := configWithOneAttribute(metricTypeSum, qty)
+	exp := &mockExporter{}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, exp.rms, qty)
+
+	rms := exp.rms
+	for i := 0; i < qty; i++ {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, attr.Len(), 1, "it must have a single attribute here")
+		actualValue, _ := attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
+	}
+}
+
+func TestGaugeSingleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithOneAttribute(metricTypeGauge, qty)
 	exp := &mockExporter{}
 
 	// act
@@ -159,10 +209,39 @@ func TestSingleTelemetryAttr(t *testing.T) {
 	}
 }
 
-func TestMultipleTelemetryAttr(t *testing.T) {
+func TestSumMultipleTelemetryAttr(t *testing.T) {
 	// arrange
 	qty := 2
-	cfg := configWithMultipleAttributes(qty)
+	cfg := configWithMultipleAttributes(metricTypeSum, qty)
+	exp := &mockExporter{}
+
+	// act
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	time.Sleep(1 * time.Second)
+
+	// asserts
+	require.Len(t, exp.rms, qty)
+
+	rms := exp.rms
+	var actualValue attribute.Value
+	for i := 0; i < qty; i++ {
+		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		// @note update when telemetrygen allow other metric types
+		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
+		assert.Equal(t, 2, attr.Len(), "it must have multiple attributes here")
+		actualValue, _ = attr.Value(telemetryAttrKeyOne)
+		assert.Equal(t, telemetryAttrValueOne, actualValue.AsString(), "it should be "+telemetryAttrValueOne)
+		actualValue, _ = attr.Value(telemetryAttrKeyTwo)
+		assert.Equal(t, telemetryAttrValueTwo, actualValue.AsString(), "it should be "+telemetryAttrValueTwo)
+	}
+}
+
+func TestGaugeMultipleTelemetryAttr(t *testing.T) {
+	// arrange
+	qty := 2
+	cfg := configWithMultipleAttributes(metricTypeGauge, qty)
 	exp := &mockExporter{}
 
 	// act
@@ -188,27 +267,29 @@ func TestMultipleTelemetryAttr(t *testing.T) {
 	}
 }
 
-func configWithNoAttributes(qty int) *Config {
+func configWithNoAttributes(metric metricType, qty int) *Config {
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
 		NumMetrics: qty,
+		MetricType: metric,
 	}
 }
 
-func configWithOneAttribute(qty int) *Config {
+func configWithOneAttribute(metric metricType, qty int) *Config {
 	return &Config{
 		Config: common.Config{
 			WorkerCount:         1,
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
 		NumMetrics: qty,
+		MetricType: metric,
 	}
 }
 
-func configWithMultipleAttributes(qty int) *Config {
+func configWithMultipleAttributes(metric metricType, qty int) *Config {
 	kvs := common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne, telemetryAttrKeyTwo: telemetryAttrValueTwo}
 	return &Config{
 		Config: common.Config{
@@ -216,5 +297,6 @@ func configWithMultipleAttributes(qty int) *Config {
 			TelemetryAttributes: kvs,
 		},
 		NumMetrics: qty,
+		MetricType: metric,
 	}
 }
