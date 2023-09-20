@@ -22,7 +22,6 @@ receiver/jaegerreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/mongodbatlasreceiver
-receiver/mongodbreceiver
 receiver/podmanreceiver
 receiver/pulsarreceiver
 receiver/windowseventlogreceiver
