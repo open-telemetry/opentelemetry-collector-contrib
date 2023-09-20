@@ -23,5 +23,4 @@ receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/mongodbatlasreceiver
 receiver/podmanreceiver
-receiver/pulsarreceiver
 receiver/windowseventlogreceiver
