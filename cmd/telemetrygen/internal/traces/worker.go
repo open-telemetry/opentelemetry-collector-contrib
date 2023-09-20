@@ -44,12 +44,18 @@ func (w worker) simulateTraces() {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 	var i int
 	for w.running.Load() {
+		spanStart := time.Now()
+		spanEnd := spanStart.Add(w.spanDuration)
+		endTimestampOption := trace.WithTimestamp(spanEnd)
+
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
 			semconv.NetPeerIPKey.String(fakeIP),
 			semconv.PeerServiceKey.String("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
+			trace.WithTimestamp(spanStart),
 		)
+
 		for j := 0; j < w.loadSize; j++ {
 			sp.SetAttributes(attribute.String(fmt.Sprintf("load-%v", j), string(make([]byte, charactersPerMB))))
 		}
@@ -69,17 +75,17 @@ func (w worker) simulateTraces() {
 			semconv.PeerServiceKey.String("telemetrygen-client"),
 		),
 			trace.WithSpanKind(trace.SpanKindServer),
+			trace.WithTimestamp(spanStart),
 		)
 
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter waited failed, retry", zap.Error(err))
 		}
 
-		opt := trace.WithTimestamp(time.Now().Add(w.spanDuration))
 		child.SetStatus(w.statusCode, "")
-		child.End(opt)
+		child.End(endTimestampOption)
 		sp.SetStatus(w.statusCode, "")
-		sp.End(opt)
+		sp.End(endTimestampOption)
 
 		i++
 		if w.numTraces != 0 {
