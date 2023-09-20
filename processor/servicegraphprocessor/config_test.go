@@ -69,5 +69,5 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func newConnectorFactory() connector.Factory {
-	return NewConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
+	return newConnectorFactoryFunc("servicegraph", component.StabilityLevelAlpha)()
 }

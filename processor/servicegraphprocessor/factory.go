@@ -54,8 +54,8 @@ func NewFactory() processor.Factory {
 	)
 }
 
-// NewConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
-func NewConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
+// newConnectorFactoryFunc creates a function that returns a factory for the servicegraph connector.
+func newConnectorFactoryFunc(cfgType component.Type, tracesToMetricsStability component.StabilityLevel) func() connector.Factory {
 	return func() connector.Factory {
 		// TODO: Handle this err
 		_ = view.Register(serviceGraphProcessorViews()...)
