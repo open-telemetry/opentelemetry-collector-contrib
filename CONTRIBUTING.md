@@ -101,7 +101,7 @@ With above guidelines, you can write code that is more portable and easier to ma
 ## Adding New Components
 
 **Before** any code is written, [open an
-issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=new+component&template=new_component.md&title=New%20component)
+issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
@@ -191,6 +191,19 @@ When submitting a component to the community, consider breaking it down into sep
   * This PR is usually trivial to review, so the size limit does not apply to
     it.
   * The component should use [`In Development` Stability](https://github.com/open-telemetry/opentelemetry-collector#development) in its README.
+  * Before submitting a PR, run the following commands from the root of the repository to ensure your new component is meeting the repo linting expectations:
+    * `make checkdoc`
+    * `make checkmetadata`
+    * `make checkapi`
+    * `make goporto`
+    * `make crosslink`
+    * `make gotidy`
+    * `make genotelcontribcol`
+    * `make genoteltestbedcol`
+    * `make generate`
+    * `make  gendependabot`
+    * `make multimod-verify`
+    * `make generate-gh-issue-templates`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.

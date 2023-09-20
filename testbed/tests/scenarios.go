@@ -188,8 +188,8 @@ type TestCase struct {
 	resultsSummary testbed.TestResultsSummary
 }
 
-func genRandByteString(len int) string {
-	b := make([]byte, len)
+func genRandByteString(length int) string {
+	b := make([]byte, length)
 	for i := range b {
 		b[i] = byte(rand.Intn(128))
 	}

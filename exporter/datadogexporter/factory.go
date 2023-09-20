@@ -246,7 +246,7 @@ func (f *factory) createMetricsExporter(
 				if md.ResourceMetrics().Len() > 0 {
 					attrs = md.ResourceMetrics().At(0).Resource().Attributes()
 				}
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 
 			// Consume resources for host metadata
@@ -331,7 +331,7 @@ func (f *factory) createTracesExporter(
 				if td.ResourceSpans().Len() > 0 {
 					attrs = td.ResourceSpans().At(0).Resource().Attributes()
 				}
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 			// Consume resources for host metadata
 			for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -402,7 +402,7 @@ func (f *factory) createLogsExporter(
 		pusher = func(_ context.Context, td plog.Logs) error {
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
-				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs)
+				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 			for i := 0; i < td.ResourceLogs().Len(); i++ {
 				res := td.ResourceLogs().At(i).Resource()
