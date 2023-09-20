@@ -116,7 +116,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		errs = errors.Join(errs, err)
 	}
 	if len(files) == 0 {
-		return files, errors.Join(errs, fmt.Errorf("no files match the configured criteria"))
+		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
 	}
 	if len(m.filterOpts) == 0 {
 		return files, errs
