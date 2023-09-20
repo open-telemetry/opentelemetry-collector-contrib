@@ -15,7 +15,6 @@ processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
 processor/servicegraphprocessor
-processor/tailsamplingprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
