@@ -7,7 +7,7 @@ change_type: breaking
 component: mongodbatlasreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not export the function `GetTestAuditEvent4_2`, `GetTestAuditEvent5_0`, `GetTestEvent4_2`, `GetTestEvent4_4` and pass checkapi.
+note: Do not export the functions `GetTestAuditEvent4_2`, `GetTestAuditEvent5_0`, `GetTestEvent4_2`, `GetTestEvent4_4` and rename struct to pass checkapi.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [26304]
