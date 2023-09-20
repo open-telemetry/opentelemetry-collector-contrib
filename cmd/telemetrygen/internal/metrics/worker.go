@@ -42,8 +42,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:  time.Now(),
-							Value: i,
+							Time:       time.Now(),
+							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 						},
 					},
@@ -57,9 +57,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					Temporality: metricdata.CumulativeTemporality,
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime: time.Now().Add(-1 * time.Second),
-							Time:      time.Now(),
-							Value:     i,
+							StartTime:  time.Now().Add(-1 * time.Second),
+							Time:       time.Now(),
+							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 						},
 					},
