@@ -34,8 +34,8 @@ var (
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
 )
 
-// SamplingProcessorMetricViews return the metrics views according to given telemetry level.
-func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
+// samplingProcessorMetricViews return the metrics views according to given telemetry level.
+func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
 		return nil
 	}
