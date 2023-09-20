@@ -12,9 +12,11 @@ assigneeGroups:
   approvers_maintainers:
     # Approvers
     - Aneurysm9
+    - astencel-sumo
     - atoulme
     - dashpole
     - fatsheep9146
+    - songy23
     # Maintainers
     - bogdandrutu
     - codeboten
