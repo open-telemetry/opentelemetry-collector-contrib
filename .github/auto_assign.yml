@@ -11,8 +11,8 @@ useAssigneeGroups: true
 assigneeGroups:
   approvers_maintainers:
     # Approvers
-    - astencel-sumo
     - Aneurysm9
+    - astencel-sumo
     - atoulme
     - dashpole
     - songy23
