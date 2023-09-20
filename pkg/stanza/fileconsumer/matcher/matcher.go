@@ -124,7 +124,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 
 	result, err := filter.Filter(files, m.regex, m.filterOpts...)
 	if len(result) == 0 {
-		return result, errors.Join(errs, err)
+		return result, errors.Join(err, errs)
 	}
 
 	// Return only the first item.
