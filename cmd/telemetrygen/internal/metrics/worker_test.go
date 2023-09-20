@@ -56,6 +56,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 			WorkerCount: 1,
 		},
 		NumMetrics: 5,
+		MetricType: metricTypeSum,
 	}
 
 	exp := &mockExporter{}
@@ -77,6 +78,7 @@ func TestRateOfMetrics(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
+		MetricType: metricTypeSum,
 	}
 	exp := &mockExporter{}
 
@@ -96,6 +98,7 @@ func TestUnthrottled(t *testing.T) {
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
+		MetricType: metricTypeSum,
 	}
 	exp := &mockExporter{}
 

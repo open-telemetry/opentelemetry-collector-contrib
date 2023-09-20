@@ -19,6 +19,7 @@ import (
 
 type worker struct {
 	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
+	metricType     metricType      // type of metric to generate
 	numMetrics     int             // how many metrics the worker has to generate (only when duration==0)
 	totalDuration  time.Duration   // how long to run the test for (overrides `numMetrics`)
 	limitPerSecond rate.Limit      // how many metrics per second to generate
@@ -29,30 +30,50 @@ type worker struct {
 
 func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
-	var i int64
 
+	var i int64
 	for w.running.Load() {
-		rm := metricdata.ResourceMetrics{
-			Resource: res,
-			ScopeMetrics: []metricdata.ScopeMetrics{
-				{
-					Metrics: []metricdata.Metrics{
+		var metrics []metricdata.Metrics
+
+		switch w.metricType {
+		case metricTypeGauge:
+			metrics = append(metrics, metricdata.Metrics{
+				Name: "gen",
+				Data: metricdata.Gauge[int64]{
+					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Name: "gen",
-							Data: metricdata.Gauge[int64]{
-								DataPoints: []metricdata.DataPoint[int64]{
-									{
-										Time:       time.Now(),
-										Value:      i,
-										Attributes: attribute.NewSet(signalAttrs...),
-									},
-								},
-							},
+							Time:  time.Now(),
+							Value: i,
+							Attributes: attribute.NewSet(signalAttrs...),
 						},
 					},
 				},
-			},
+			})
+		case metricTypeSum:
+			metrics = append(metrics, metricdata.Metrics{
+				Name: "gen",
+				Data: metricdata.Sum[int64]{
+					IsMonotonic: true,
+					Temporality: metricdata.CumulativeTemporality,
+					DataPoints: []metricdata.DataPoint[int64]{
+						{
+							StartTime: time.Now().Add(-1 * time.Second),
+							Time:      time.Now(),
+							Value:     i,
+							Attributes: attribute.NewSet(signalAttrs...),
+						},
+					},
+				},
+			})
+		default:
+			w.logger.Fatal("unknown metric type")
 		}
+
+		rm := metricdata.ResourceMetrics{
+			Resource:     res,
+			ScopeMetrics: []metricdata.ScopeMetrics{{Metrics: metrics}},
+		}
+
 		if err := exporter.Export(context.Background(), &rm); err != nil {
 			w.logger.Fatal("exporter failed", zap.Error(err))
 		}

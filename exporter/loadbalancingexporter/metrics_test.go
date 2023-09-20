@@ -17,7 +17,7 @@ func TestProcessorMetrics(t *testing.T) {
 		"loadbalancer_backend_latency",
 	}
 
-	views := MetricViews()
+	views := metricViews()
 	for i, viewName := range expectedViewNames {
 		assert.Equal(t, viewName, views[i].Name)
 	}

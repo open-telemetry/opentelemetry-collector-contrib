@@ -13,10 +13,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
-func TestCustom(t *testing.T) {
-	factory := NewCustomFactory(bufio.ScanLines, trim.Nop, 0)
-	splitFunc, err := factory.SplitFunc()
-	assert.NoError(t, err)
+func TestFactory(t *testing.T) {
+	factory := NewFactory(bufio.ScanLines, trim.Nop, 0)
+	splitFunc := factory.SplitFunc()
 	assert.NotNil(t, splitFunc)
 
 	input := []byte(" hello \n world \n extra ")
@@ -38,9 +37,8 @@ func TestCustom(t *testing.T) {
 }
 
 func TestCustomWithTrim(t *testing.T) {
-	factory := NewCustomFactory(bufio.ScanLines, trim.Whitespace, 0)
-	splitFunc, err := factory.SplitFunc()
-	assert.NoError(t, err)
+	factory := NewFactory(bufio.ScanLines, trim.Whitespace, 0)
+	splitFunc := factory.SplitFunc()
 	assert.NotNil(t, splitFunc)
 
 	input := []byte(" hello \n world \n extra ")
@@ -63,9 +61,8 @@ func TestCustomWithTrim(t *testing.T) {
 
 func TestCustomWithFlush(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	factory := NewCustomFactory(bufio.ScanLines, trim.Nop, flushPeriod)
-	splitFunc, err := factory.SplitFunc()
-	assert.NoError(t, err)
+	factory := NewFactory(bufio.ScanLines, trim.Nop, flushPeriod)
+	splitFunc := factory.SplitFunc()
 	assert.NotNil(t, splitFunc)
 
 	input := []byte(" hello \n world \n extra ")
@@ -95,9 +92,8 @@ func TestCustomWithFlush(t *testing.T) {
 
 func TestCustomWithFlushTrim(t *testing.T) {
 	flushPeriod := 100 * time.Millisecond
-	factory := NewCustomFactory(bufio.ScanLines, trim.Whitespace, flushPeriod)
-	splitFunc, err := factory.SplitFunc()
-	assert.NoError(t, err)
+	factory := NewFactory(bufio.ScanLines, trim.Whitespace, flushPeriod)
+	splitFunc := factory.SplitFunc()
 	assert.NotNil(t, splitFunc)
 
 	input := []byte(" hello \n world \n extra ")
