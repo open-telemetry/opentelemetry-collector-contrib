@@ -129,5 +129,5 @@ func (m Matcher) MatchFiles() ([]string, error) {
 
 	// Return only the first item.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23788
-	return result[:1], errors.Join(errs, err)
+	return result[:1], errors.Join(err, errs)
 }
