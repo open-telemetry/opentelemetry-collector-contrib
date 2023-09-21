@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package syslog
 
@@ -22,22 +11,65 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/syslog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize/tokenizetest"
 )
 
-func TestInput(t *testing.T) {
-	basicConfig := func() *syslog.Config {
+var (
+	basicConfig = func() *syslog.Config {
 		cfg := syslog.NewConfigWithID("test_syslog_parser")
 		return cfg
 	}
+	OctetCase = syslog.Case{
+		Name: "RFC6587 Octet Counting",
+		Config: func() *syslog.Config {
+			cfg := basicConfig()
+			cfg.Protocol = syslog.RFC5424
+			cfg.EnableOctetCounting = true
+			return cfg
+		}(),
+		Input: &entry.Entry{
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2016-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile215 <86>1 2017-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		Expect: &entry.Entry{
+			Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+			Severity:     entry.Info,
+			SeverityText: "info",
+			Attributes: map[string]interface{}{
+				"appname":  "SecureAuth0",
+				"facility": 10,
+				"hostname": "192.168.2.132",
+				"message":  "Found the user for retrieving user's profile",
+				"msg_id":   "ID52020",
+				"priority": 86,
+				"proc_id":  "23108",
+				"structured_data": map[string]map[string]string{
+					"SecureAuth@27389": {
+						"PEN":             "27389",
+						"Realm":           "SecureAuth0",
+						"UserHostAddress": "192.168.2.132",
+						"UserID":          "Tester2",
+					},
+				},
+				"version": 1,
+			},
+			Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+		},
+		ValidForTCP: true,
+	}
+)
+
+func TestInput(t *testing.T) {
 
 	cases, err := syslog.CreateCases(basicConfig)
 	require.NoError(t, err)
+	cases = append(cases, OctetCase)
 
 	for _, tc := range cases {
 		if tc.ValidForTCP {
@@ -148,3 +180,79 @@ func NewConfigWithUDP(syslogCfg *syslog.BaseConfig) *Config {
 	cfg.OutputIDs = []string{"fake"}
 	return cfg
 }
+
+func TestOctetFramingSplitFunc(t *testing.T) {
+	testCases := []tokenizetest.TestCase{
+		{
+			Name:  "OneLogSimple",
+			Input: []byte(`17 my log LOGEND 123`),
+			ExpectedTokens: []string{
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name:  "TwoLogsSimple",
+			Input: []byte(`17 my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokens: []string{
+				`17 my log LOGEND 123`,
+				`17 my log LOGEND 123`,
+			},
+		},
+		{
+			Name:  "NoMatches",
+			Input: []byte(`no matches in it`),
+			ExpectedTokens: []string{
+				`no matches in it`,
+			},
+		},
+		{
+			Name:  "NonMatchesAfter",
+			Input: []byte(`17 my log LOGEND 123my log LOGEND 12317 my log LOGEND 123`),
+			ExpectedTokens: []string{
+				`17 my log LOGEND 123`,
+				`my log LOGEND 12317 my log LOGEND 123`,
+			},
+		},
+		{
+			Name: "HugeLog100",
+			Input: func() []byte {
+				newRaw := tokenizetest.GenerateBytes(100)
+				newRaw = append([]byte(`100 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokens: []string{
+				`100 ` + string(tokenizetest.GenerateBytes(100)),
+			},
+		},
+		{
+			Name: "maxCapacity",
+			Input: func() []byte {
+				newRaw := tokenizetest.GenerateBytes(4091)
+				newRaw = append([]byte(`4091 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokens: []string{
+				`4091 ` + string(tokenizetest.GenerateBytes(4091)),
+			},
+		},
+		{
+			Name: "over capacity",
+			Input: func() []byte {
+				newRaw := tokenizetest.GenerateBytes(4092)
+				newRaw = append([]byte(`5000 `), newRaw...)
+				return newRaw
+			}(),
+			ExpectedTokens: []string{
+				`5000 ` + string(tokenizetest.GenerateBytes(4091)),
+				`j`,
+			},
+		},
+	}
+	for _, tc := range testCases {
+		splitFunc, err := OctetMultiLineBuilder(nil)
+		require.NoError(t, err)
+		t.Run(tc.Name, tc.Run(splitFunc))
+	}
+}
+
+// TODO refactor test dependency away from internal?

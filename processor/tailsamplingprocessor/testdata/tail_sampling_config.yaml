@@ -54,6 +54,21 @@ tail_sampling:
          boolean_attribute: { key: key4, value: true }
        },
        {
+         name: test-policy-11,
+         type: ottl_condition,
+         ottl_condition: {
+             error_mode: ignore,
+             span: [
+                "attributes[\"test_attr_key_1\"] == \"test_attr_val_1\"",
+                "attributes[\"test_attr_key_2\"] != \"test_attr_val_1\"",
+             ],
+             spanevent: [
+                "name != \"test_span_event_name\"",
+                "attributes[\"test_event_attr_key_2\"] != \"test_event_attr_val_1\"",
+             ]
+         }
+       },
+       {
           name: and-policy-1,
           type: and,
           and: {

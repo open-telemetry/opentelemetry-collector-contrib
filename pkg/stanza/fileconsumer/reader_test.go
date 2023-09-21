@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package fileconsumer
 
@@ -22,11 +11,49 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/splitter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
+
+func TestPersistFlusher(t *testing.T) {
+	flushPeriod := 100 * time.Millisecond
+	f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), defaultMaxLogSize, flushPeriod)
+
+	temp := openTemp(t, t.TempDir())
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
+	require.NoError(t, err)
+
+	_, err = temp.WriteString("log with newline\nlog without newline")
+	require.NoError(t, err)
+
+	// ReadToEnd will return when we hit eof, but we shouldn't emit the unfinished log yet
+	r.ReadToEnd(context.Background())
+	waitForToken(t, emitChan, []byte("log with newline"))
+
+	// Even trying again shouldn't produce the log yet because the flush period still hasn't expired.
+	r.ReadToEnd(context.Background())
+	expectNoTokensUntil(t, emitChan, 2*flushPeriod)
+
+	// A copy of the reader should remember that we last emitted about 200ms ago.
+	copyReader, err := f.copy(r, temp)
+	assert.NoError(t, err)
+
+	// This time, the flusher will kick in and we should emit the unfinished log.
+	// If the copy did not remember when we last emitted a log, then the flushPeriod
+	// will not be expired at this point so we won't see the unfinished log.
+	copyReader.ReadToEnd(context.Background())
+	waitForToken(t, emitChan, []byte("log without newline"))
+}
 
 func TestTokenization(t *testing.T) {
 	testCases := []struct {
@@ -83,13 +110,16 @@ func TestTokenization(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			f, emitChan := testReaderFactory(t)
+			f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), defaultMaxLogSize, defaultFlushPeriod)
 
 			temp := openTemp(t, t.TempDir())
 			_, err := temp.Write(tc.fileContent)
 			require.NoError(t, err)
 
-			r, err := f.newReaderBuilder().withFile(temp).build()
+			fp, err := f.newFingerprint(temp)
+			require.NoError(t, err)
+
+			r, err := f.newReader(temp, fp)
 			require.NoError(t, err)
 
 			r.ReadToEnd(context.Background())
@@ -110,14 +140,16 @@ func TestTokenizationTooLong(t *testing.T) {
 		[]byte("aaa"),
 	}
 
-	f, emitChan := testReaderFactory(t)
-	f.readerConfig.maxLogSize = 10
+	f, emitChan := testReaderFactory(t, tokenize.NewMultilineConfig(), 10, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
@@ -138,22 +170,18 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 		[]byte("2023-01-01 2"),
 	}
 
-	f, emitChan := testReaderFactory(t)
-
-	mlc := helper.NewMultilineConfig()
-	mlc.LineStartPattern = `\d+-\d+-\d+`
-	f.splitterFactory = newMultilineSplitterFactory(helper.SplitterConfig{
-		EncodingConfig: helper.NewEncodingConfig(),
-		Flusher:        helper.NewFlusherConfig(),
-		Multiline:      mlc,
-	})
-	f.readerConfig.maxLogSize = 15
+	mCfg := tokenize.NewMultilineConfig()
+	mCfg.LineStartPattern = `\d+-\d+-\d+`
+	f, emitChan := testReaderFactory(t, mCfg, 15, defaultFlushPeriod)
 
 	temp := openTemp(t, t.TempDir())
 	_, err := temp.Write(fileContent)
 	require.NoError(t, err)
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
@@ -167,34 +195,24 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 func TestHeaderFingerprintIncluded(t *testing.T) {
 	fileContent := []byte("#header-line\naaa\n")
 
-	f, _ := testReaderFactory(t)
-	f.readerConfig.maxLogSize = 10
+	f, _ := testReaderFactory(t, tokenize.NewMultilineConfig(), 10, defaultFlushPeriod)
 
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	headerConf := &HeaderConfig{
-		Pattern: "^#",
-		MetadataOperators: []operator.Config{
-			{
-				Builder: regexConf,
-			},
-		},
-	}
-
-	cfg := helper.EncodingConfig{
-		Encoding: "utf-8",
-	}
-	enc, err := helper.LookupEncoding(cfg.Encoding)
+	enc, err := decode.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
-	h, err := headerConf.buildHeaderSettings(enc)
+	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
-	f.headerSettings = h
+	f.headerConfig = h
 
 	temp := openTemp(t, t.TempDir())
 
-	r, err := f.newReaderBuilder().withFile(temp).build()
+	fp, err := f.newFingerprint(temp)
+	require.NoError(t, err)
+
+	r, err := f.newReader(temp, fp)
 	require.NoError(t, err)
 
 	_, err = temp.Write(fileContent)
@@ -205,19 +223,21 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
 }
 
-func testReaderFactory(t *testing.T) (*readerFactory, chan *emitParams) {
+func testReaderFactory(t *testing.T, mCfg tokenize.MultilineConfig, maxLogSize int, flushPeriod time.Duration) (*readerFactory, chan *emitParams) {
 	emitChan := make(chan *emitParams, 100)
-	splitterConfig := helper.NewSplitterConfig()
+	enc, err := decode.LookupEncoding(defaultEncoding)
+	trimFunc := trim.Whitespace
+	require.NoError(t, err)
 	return &readerFactory{
 		SugaredLogger: testutil.Logger(t),
 		readerConfig: &readerConfig{
-			fingerprintSize: DefaultFingerprintSize,
-			maxLogSize:      defaultMaxLogSize,
+			fingerprintSize: fingerprint.DefaultSize,
+			maxLogSize:      maxLogSize,
 			emit:            testEmitFunc(emitChan),
 		},
 		fromBeginning:   true,
-		splitterFactory: newMultilineSplitterFactory(splitterConfig),
-		encodingConfig:  splitterConfig.EncodingConfig,
+		splitterFactory: splitter.NewMultilineFactory(mCfg, enc, maxLogSize, trimFunc, flushPeriod),
+		encoding:        enc,
 	}, emitChan
 }
 
@@ -229,25 +249,4 @@ func readToken(t *testing.T, c chan *emitParams) []byte {
 		require.FailNow(t, "Timed out waiting for token")
 	}
 	return nil
-}
-
-func TestMapCopy(t *testing.T) {
-	initMap := map[string]any{
-		"mapVal": map[string]any{
-			"nestedVal": "value1",
-		},
-		"intVal": 1,
-		"strVal": "OrigStr",
-	}
-
-	copyMap := mapCopy(initMap)
-	// Mutate values on the copied map
-	copyMap["mapVal"].(map[string]any)["nestedVal"] = "overwrittenValue"
-	copyMap["intVal"] = 2
-	copyMap["strVal"] = "CopyString"
-
-	// Assert that the original map should have the same values
-	assert.Equal(t, "value1", initMap["mapVal"].(map[string]any)["nestedVal"])
-	assert.Equal(t, 1, initMap["intVal"])
-	assert.Equal(t, "OrigStr", initMap["strVal"])
 }

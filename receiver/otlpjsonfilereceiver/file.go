@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver"
 
@@ -23,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -35,13 +24,13 @@ const (
 )
 
 // NewFactory creates a factory for file receiver
-func NewFactory() rcvr.Factory {
-	return rcvr.NewFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		rcvr.WithLogs(createLogsReceiver, metadata.LogsStability),
-		rcvr.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
 type Config struct {
@@ -55,13 +44,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type receiver struct {
+type otlpjsonfilereceiver struct {
 	input     *fileconsumer.Manager
 	id        component.ID
 	storageID *component.ID
 }
 
-func (f *receiver) Start(ctx context.Context, host component.Host) error {
+func (f *otlpjsonfilereceiver) Start(ctx context.Context, host component.Host) error {
 	storageClient, err := adapter.GetStorageClient(ctx, host, f.storageID, f.id)
 	if err != nil {
 		return err
@@ -69,11 +58,11 @@ func (f *receiver) Start(ctx context.Context, host component.Host) error {
 	return f.input.Start(storageClient)
 }
 
-func (f *receiver) Shutdown(ctx context.Context) error {
+func (f *otlpjsonfilereceiver) Shutdown(_ context.Context) error {
 	return f.input.Stop()
 }
 
-func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, logs consumer.Logs) (rcvr.Logs, error) {
+func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, logs consumer.Logs) (receiver.Logs, error) {
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -84,7 +73,7 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
@@ -96,15 +85,16 @@ func createLogsReceiver(_ context.Context, settings rcvr.CreateSettings, configu
 			}
 			obsrecv.EndLogsOp(ctx, metadata.Type, l.LogRecordCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, configuration component.Config, metrics consumer.Metrics) (rcvr.Metrics, error) {
+func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, metrics consumer.Metrics) (receiver.Metrics, error) {
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -115,7 +105,7 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
@@ -127,15 +117,16 @@ func createMetricsReceiver(_ context.Context, settings rcvr.CreateSettings, conf
 			}
 			obsrecv.EndMetricsOp(ctx, metadata.Type, m.MetricCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func createTracesReceiver(ctx context.Context, settings rcvr.CreateSettings, configuration component.Config, traces consumer.Traces) (rcvr.Traces, error) {
+func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, configuration component.Config, traces consumer.Traces) (receiver.Traces, error) {
 	tracesUnmarshaler := &ptrace.JSONUnmarshaler{}
 	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
 		ReceiverID:             settings.ID,
@@ -146,7 +137,7 @@ func createTracesReceiver(ctx context.Context, settings rcvr.CreateSettings, con
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, attrs *fileconsumer.FileAttributes, token []byte) {
+	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
@@ -158,10 +149,11 @@ func createTracesReceiver(ctx context.Context, settings rcvr.CreateSettings, con
 			}
 			obsrecv.EndTracesOp(ctx, metadata.Type, t.SpanCount(), err)
 		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &receiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }

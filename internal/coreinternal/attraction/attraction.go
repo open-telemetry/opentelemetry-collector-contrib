@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package attraction // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 
@@ -28,8 +17,9 @@ import (
 
 var enableSha256Gate = featuregate.GlobalRegistry().MustRegister(
 	"coreinternal.attraction.hash.sha256",
-	featuregate.StageAlpha,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, switches hashing algorithm from SHA-1 to SHA-2 256"),
+	featuregate.WithRegisterToVersion("0.85.0"),
 )
 
 // Settings specifies the processor settings.
@@ -183,7 +173,7 @@ type AttrProc struct {
 // and returns a AttrProc to be used to process attributes.
 // An error is returned if there are any invalid inputs.
 func NewAttrProc(settings *Settings) (*AttrProc, error) {
-	var attributeActions []attributeAction
+	attributeActions := make([]attributeAction, 0, len(settings.Actions))
 	for i, a := range settings.Actions {
 		// Convert `action` to lowercase for comparison.
 		a.Action = Action(strings.ToLower(string(a.Action)))

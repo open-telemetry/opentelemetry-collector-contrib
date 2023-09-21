@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
 // +build !windows
@@ -20,6 +9,7 @@
 package kubelet
 
 import (
+	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"io"
@@ -113,15 +103,29 @@ func TestDefaultTLSClient(t *testing.T) {
 }
 
 func TestSvcAcctClient(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Check if call is authenticated using token from test file
+		require.Equal(t, req.Header.Get("Authorization"), "Bearer s3cr3t")
+		_, err := rw.Write([]byte(`OK`))
+		require.NoError(t, err)
+	}))
+	cert, err := tls.LoadX509KeyPair("./testdata/testcert.crt", "./testdata/testkey.key")
+	require.NoError(t, err)
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	defer server.Close()
+
 	p := &saClientProvider{
-		endpoint:   "localhost:9876",
-		caCertPath: certPath,
+		endpoint:   server.Listener.Addr().String(),
+		caCertPath: "./testdata/testcert.crt",
 		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}
-	cl, err := p.BuildClient()
+	client, err := p.BuildClient()
 	require.NoError(t, err)
-	require.Equal(t, "s3cr3t", string(cl.(*clientImpl).tok))
+	resp, err := client.Get("/")
+	require.NoError(t, err)
+	require.Equal(t, []byte(`OK`), resp)
 }
 
 func TestNewKubeConfigClient(t *testing.T) {
@@ -279,7 +283,6 @@ func TestBuildReq(t *testing.T) {
 	req, err := cl.(*clientImpl).buildReq("/foo")
 	require.NoError(t, err)
 	require.NotNil(t, req)
-	require.Equal(t, req.Header["Authorization"][0], "bearer s3cr3t")
 }
 
 func TestBuildBadReq(t *testing.T) {

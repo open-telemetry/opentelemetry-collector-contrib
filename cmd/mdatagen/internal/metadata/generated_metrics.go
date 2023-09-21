@@ -205,12 +205,11 @@ func newMetricOptionalMetric(cfg MetricConfig) metricOptionalMetric {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                      pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                int                 // maximum observed number of metrics per resource.
-	resourceCapacity               int                 // maximum observed number of resource attributes.
-	metricsBuffer                  pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                      component.BuildInfo // contains version information
-	resourceAttributesConfig       ResourceAttributesConfig
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
 	metricDefaultMetric            metricDefaultMetric
 	metricDefaultMetricToBeRemoved metricDefaultMetricToBeRemoved
 	metricOptionalMetric           metricOptionalMetric
@@ -237,10 +236,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		settings.Logger.Warn("[WARNING] `optional.metric` should not be configured: This metric is deprecated and will be removed soon.")
 	}
 	mb := &MetricsBuilder{
+		config:                         mbc,
 		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                  pmetric.NewMetrics(),
 		buildInfo:                      settings.BuildInfo,
-		resourceAttributesConfig:       mbc.ResourceAttributes,
 		metricDefaultMetric:            newMetricDefaultMetric(mbc.Metrics.DefaultMetric),
 		metricDefaultMetricToBeRemoved: newMetricDefaultMetricToBeRemoved(mbc.Metrics.DefaultMetricToBeRemoved),
 		metricOptionalMetric:           newMetricOptionalMetric(mbc.Metrics.OptionalMetric),
@@ -251,73 +250,33 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	return mb
 }
 
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithMapResourceAttr sets provided value as "map.resource.attr" attribute for current resource.
-func WithMapResourceAttr(val map[string]any) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MapResourceAttr.Enabled {
-			rm.Resource().Attributes().PutEmptyMap("map.resource.attr").FromRaw(val)
-		}
-	}
-}
-
-// WithOptionalResourceAttr sets provided value as "optional.resource.attr" attribute for current resource.
-func WithOptionalResourceAttr(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.OptionalResourceAttr.Enabled {
-			rm.Resource().Attributes().PutStr("optional.resource.attr", val)
-		}
-	}
-}
-
-// WithSliceResourceAttr sets provided value as "slice.resource.attr" attribute for current resource.
-func WithSliceResourceAttr(val []any) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.SliceResourceAttr.Enabled {
-			rm.Resource().Attributes().PutEmptySlice("slice.resource.attr").FromRaw(val)
-		}
-	}
-}
-
-// WithStringEnumResourceAttrOne sets "string.enum.resource.attr=one" attribute for current resource.
-func WithStringEnumResourceAttrOne(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-	if rac.StringEnumResourceAttr.Enabled {
-		rm.Resource().Attributes().PutStr("string.enum.resource.attr", "one")
-	}
-}
-
-// WithStringEnumResourceAttrTwo sets "string.enum.resource.attr=two" attribute for current resource.
-func WithStringEnumResourceAttrTwo(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-	if rac.StringEnumResourceAttr.Enabled {
-		rm.Resource().Attributes().PutStr("string.enum.resource.attr", "two")
-	}
-}
-
-// WithStringResourceAttr sets provided value as "string.resource.attr" attribute for current resource.
-func WithStringResourceAttr(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.StringResourceAttr.Enabled {
-			rm.Resource().Attributes().PutStr("string.resource.attr", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -342,9 +301,8 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("otelcol/testreceiver")
+	ils.Scope().SetName("otelcol")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricDefaultMetric.emit(ils.Metrics())
@@ -352,7 +310,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricOptionalMetric.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

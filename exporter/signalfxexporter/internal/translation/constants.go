@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
@@ -32,7 +21,7 @@ translation_rules:
       k8s: true
       container: true
 
-- action: rename_metrics
+- action: copy_metrics
   mapping:
     # kubeletstats container cpu needed for calculation below
     container.cpu.time: sf_temp.container_cpu_utilization
@@ -405,6 +394,14 @@ translation_rules:
   mapping:
     major: vmpage_io.swap.out
     minor: vmpage_io.memory.out
+
+# convert from bytes to pages
+- action: divide_int
+  scale_factors_int:
+    vmpage_io.swap.in: 4096
+    vmpage_io.swap.out: 4096
+    vmpage_io.memory.in: 4096
+    vmpage_io.memory.out: 4096
 
 # process metric
 - action: copy_metrics

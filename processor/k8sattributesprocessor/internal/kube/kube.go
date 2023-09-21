@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
@@ -33,6 +22,7 @@ const (
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
 	tagHostName             = "k8s.pod.hostname"
+	tagClusterUID           = "k8s.cluster.uid"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -103,7 +93,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -194,7 +184,8 @@ type FieldFilter struct {
 // from pods and added to the spans as tags.
 type ExtractionRules struct {
 	CronJobName        bool
-	Deployment         bool
+	DeploymentName     bool
+	DeploymentUID      bool
 	DaemonSetUID       bool
 	DaemonSetName      bool
 	JobUID             bool
@@ -213,9 +204,33 @@ type ExtractionRules struct {
 	ContainerID        bool
 	ContainerImageName bool
 	ContainerImageTag  bool
+	ClusterUID         bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+}
+
+// IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
+func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
+	rulesNeedingOwnerMetadata := []bool{
+		rules.CronJobName,
+		rules.DeploymentName,
+		rules.DeploymentUID,
+		rules.DaemonSetUID,
+		rules.DaemonSetName,
+		rules.JobName,
+		rules.JobUID,
+		rules.ReplicaSetID,
+		rules.ReplicaSetName,
+		rules.StatefulSetUID,
+		rules.StatefulSetName,
+	}
+	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
+		if ruleEnabled {
+			return true
+		}
+	}
+	return false
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
@@ -308,4 +323,18 @@ type ExcludePods struct {
 type AssociationSource struct {
 	From string
 	Name string
+}
+
+// Deployment represents a kubernetes deployment.
+type Deployment struct {
+	Name string
+	UID  string
+}
+
+// ReplicaSet represents a kubernetes replicaset.
+type ReplicaSet struct {
+	Name       string
+	Namespace  string
+	UID        string
+	Deployment Deployment
 }

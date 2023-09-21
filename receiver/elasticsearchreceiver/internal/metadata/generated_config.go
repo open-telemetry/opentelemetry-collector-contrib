@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for elasticsearchreceiver metrics.
+// MetricsConfig provides config for elasticsearch metrics.
 type MetricsConfig struct {
 	ElasticsearchBreakerMemoryEstimated                       MetricConfig `mapstructure:"elasticsearch.breaker.memory.estimated"`
 	ElasticsearchBreakerMemoryLimit                           MetricConfig `mapstructure:"elasticsearch.breaker.memory.limit"`
@@ -401,7 +401,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for elasticsearchreceiver resource attributes.
+// ResourceAttributesConfig provides config for elasticsearch resource attributes.
 type ResourceAttributesConfig struct {
 	ElasticsearchClusterName ResourceAttributeConfig `mapstructure:"elasticsearch.cluster.name"`
 	ElasticsearchIndexName   ResourceAttributeConfig `mapstructure:"elasticsearch.index.name"`
@@ -426,7 +426,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for elasticsearchreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for elasticsearch metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

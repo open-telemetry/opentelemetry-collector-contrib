@@ -4,5 +4,7 @@ status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [core, contrib]
+  distributions: [core, contrib, observiq]
+  codeowners:
+    active: [MovieStoreGuy, astencel-sumo, crobert-1]
 

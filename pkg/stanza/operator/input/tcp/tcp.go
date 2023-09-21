@@ -1,25 +1,16 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package tcp // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/tcp"
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"strconv"
 	"sync"
@@ -30,8 +21,11 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenize"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 const (
@@ -50,7 +44,7 @@ func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 }
 
-// NewConfigWithID creates a new TCP input config with default values
+// NewConfig creates a new TCP input config with default values
 func NewConfig() *Config {
 	return NewConfigWithID(operatorType)
 }
@@ -60,8 +54,9 @@ func NewConfigWithID(operatorID string) *Config {
 	return &Config{
 		InputConfig: helper.NewInputConfig(operatorID, operatorType),
 		BaseConfig: BaseConfig{
-			Multiline: helper.NewMultilineConfig(),
-			Encoding:  helper.NewEncodingConfig(),
+			OneLogPerPacket: false,
+			Multiline:       tokenize.NewMultilineConfig(),
+			Encoding:        "utf-8",
 		},
 	}
 }
@@ -74,14 +69,26 @@ type Config struct {
 
 // BaseConfig is the detailed configuration of a tcp input operator.
 type BaseConfig struct {
-	MaxLogSize                  helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
-	ListenAddress               string                      `mapstructure:"listen_address,omitempty"`
-	TLS                         *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
-	AddAttributes               bool                        `mapstructure:"add_attributes,omitempty"`
-	Encoding                    helper.EncodingConfig       `mapstructure:",squash,omitempty"`
-	Multiline                   helper.MultilineConfig      `mapstructure:"multiline,omitempty"`
-	PreserveLeadingWhitespaces  bool                        `mapstructure:"preserve_leading_whitespaces,omitempty"`
-	PreserveTrailingWhitespaces bool                        `mapstructure:"preserve_trailing_whitespaces,omitempty"`
+	MaxLogSize       helper.ByteSize             `mapstructure:"max_log_size,omitempty"`
+	ListenAddress    string                      `mapstructure:"listen_address,omitempty"`
+	TLS              *configtls.TLSServerSetting `mapstructure:"tls,omitempty"`
+	AddAttributes    bool                        `mapstructure:"add_attributes,omitempty"`
+	OneLogPerPacket  bool                        `mapstructure:"one_log_per_packet,omitempty"`
+	Encoding         string                      `mapstructure:"encoding,omitempty"`
+	Multiline        tokenize.MultilineConfig    `mapstructure:"multiline,omitempty"`
+	TrimConfig       trim.Config                 `mapstructure:",squash"`
+	MultiLineBuilder MultiLineBuilderFunc
+}
+
+type MultiLineBuilderFunc func(enc encoding.Encoding) (bufio.SplitFunc, error)
+
+func (c Config) defaultMultilineBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
+	trimFunc := c.TrimConfig.Func()
+	splitFunc, err := c.Multiline.Build(enc, true, int(c.MaxLogSize), trimFunc)
+	if err != nil {
+		return nil, err
+	}
+	return splitFunc, nil
 }
 
 // Build will build a tcp input operator.
@@ -109,13 +116,17 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		return nil, fmt.Errorf("failed to resolve listen_address: %w", err)
 	}
 
-	enc, err := helper.LookupEncoding(c.Encoding.Encoding)
+	enc, err := decode.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, err
 	}
 
+	if c.MultiLineBuilder == nil {
+		c.MultiLineBuilder = c.defaultMultilineBuilder
+	}
+
 	// Build multiline
-	splitFunc, err := c.Multiline.Build(enc, true, c.PreserveLeadingWhitespaces, c.PreserveTrailingWhitespaces, nil, int(c.MaxLogSize))
+	splitFunc, err := c.MultiLineBuilder(enc)
 	if err != nil {
 		return nil, err
 	}
@@ -126,12 +137,13 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 	}
 
 	tcpInput := &Input{
-		InputOperator: inputOperator,
-		address:       c.ListenAddress,
-		MaxLogSize:    int(c.MaxLogSize),
-		addAttributes: c.AddAttributes,
-		encoding:      enc,
-		splitFunc:     splitFunc,
+		InputOperator:   inputOperator,
+		address:         c.ListenAddress,
+		MaxLogSize:      int(c.MaxLogSize),
+		addAttributes:   c.AddAttributes,
+		OneLogPerPacket: c.OneLogPerPacket,
+		encoding:        enc,
+		splitFunc:       splitFunc,
 		backoff: backoff.Backoff{
 			Max: 3 * time.Second,
 		},
@@ -151,9 +163,10 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 // Input is an operator that listens for log entries over tcp.
 type Input struct {
 	helper.InputOperator
-	address       string
-	MaxLogSize    int
-	addAttributes bool
+	address         string
+	MaxLogSize      int
+	addAttributes   bool
+	OneLogPerPacket bool
 
 	listener net.Listener
 	cancel   context.CancelFunc
@@ -251,48 +264,77 @@ func (t *Input) goHandleMessages(ctx context.Context, conn net.Conn, cancel cont
 		defer t.wg.Done()
 		defer cancel()
 
+		dec := decode.New(t.encoding)
+		if t.OneLogPerPacket {
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, conn)
+			if err != nil {
+				t.Errorw("IO copy net connection buffer error", zap.Error(err))
+			}
+			log := truncateMaxLog(buf.Bytes(), t.MaxLogSize)
+			t.handleMessage(ctx, conn, dec, log)
+			return
+		}
+
 		buf := make([]byte, 0, t.MaxLogSize)
+
 		scanner := bufio.NewScanner(conn)
 		scanner.Buffer(buf, t.MaxLogSize)
 		scanner.Split(t.splitFunc)
-		decoder := helper.NewEncoding(t.encoding)
 
 		for scanner.Scan() {
-			decoded, err := decoder.Decode(scanner.Bytes())
-			if err != nil {
-				t.Errorw("Failed to decode data", zap.Error(err))
-				continue
-			}
-
-			entry, err := t.NewEntry(string(decoded))
-			if err != nil {
-				t.Errorw("Failed to create entry", zap.Error(err))
-				continue
-			}
-
-			if t.addAttributes {
-				entry.AddAttribute("net.transport", "IP.TCP")
-				if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					entry.AddAttribute("net.peer.ip", ip)
-					entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
-					entry.AddAttribute("net.peer.name", t.resolver.GetHostFromIP(ip))
-				}
-
-				if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
-					ip := addr.IP.String()
-					entry.AddAttribute("net.host.ip", addr.IP.String())
-					entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
-					entry.AddAttribute("net.host.name", t.resolver.GetHostFromIP(ip))
-				}
-			}
-
-			t.Write(ctx, entry)
+			t.handleMessage(ctx, conn, dec, scanner.Bytes())
 		}
+
 		if err := scanner.Err(); err != nil {
 			t.Errorw("Scanner error", zap.Error(err))
 		}
 	}()
+}
+
+func (t *Input) handleMessage(ctx context.Context, conn net.Conn, dec *decode.Decoder, log []byte) {
+	decoded, err := dec.Decode(log)
+	if err != nil {
+		t.Errorw("Failed to decode data", zap.Error(err))
+		return
+	}
+
+	entry, err := t.NewEntry(string(decoded))
+	if err != nil {
+		t.Errorw("Failed to create entry", zap.Error(err))
+		return
+	}
+
+	if t.addAttributes {
+		entry.AddAttribute("net.transport", "IP.TCP")
+		if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.peer.ip", ip)
+			entry.AddAttribute("net.peer.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.peer.name", t.resolver.GetHostFromIP(ip))
+		}
+
+		if addr, ok := conn.LocalAddr().(*net.TCPAddr); ok {
+			ip := addr.IP.String()
+			entry.AddAttribute("net.host.ip", addr.IP.String())
+			entry.AddAttribute("net.host.port", strconv.FormatInt(int64(addr.Port), 10))
+			entry.AddAttribute("net.host.name", t.resolver.GetHostFromIP(ip))
+		}
+	}
+
+	t.Write(ctx, entry)
+}
+
+func truncateMaxLog(data []byte, maxLogSize int) (token []byte) {
+	if len(data) >= maxLogSize {
+		return data[:maxLogSize]
+	}
+
+	if len(data) == 0 {
+		return nil
+	}
+
+	return data
 }
 
 // Stop will stop listening for log entries over TCP.

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awss3exporter
 
@@ -19,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,4 +39,30 @@ func TestS3Key(t *testing.T) {
 	s3Key := getS3Key(tm, "keyprefix", "minute", "fileprefix", "logs", "json")
 	matched := re.MatchString(s3Key)
 	assert.Equal(t, true, matched)
+}
+
+func TestGetSessionConfigWithEndpoint(t *testing.T) {
+	const endpoint = "https://endpoint.com"
+	const region = "region"
+	config := &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:   region,
+			Endpoint: endpoint,
+		},
+	}
+	sessionConfig := getSessionConfig(config)
+	assert.Equal(t, sessionConfig.Endpoint, aws.String(endpoint))
+	assert.Equal(t, sessionConfig.Region, aws.String(region))
+}
+
+func TestGetSessionConfigNoEndpoint(t *testing.T) {
+	const region = "region"
+	config := &Config{
+		S3Uploader: S3UploaderConfig{
+			Region: region,
+		},
+	}
+	sessionConfig := getSessionConfig(config)
+	assert.Empty(t, sessionConfig.Endpoint)
+	assert.Equal(t, sessionConfig.Region, aws.String(region))
 }

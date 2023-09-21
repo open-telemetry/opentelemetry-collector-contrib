@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package snmpreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver"
 
@@ -19,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -73,7 +61,7 @@ var _ client = (*snmpClient)(nil)
 func newClient(cfg *Config, logger *zap.Logger) (client, error) {
 	// Create goSNMP client
 	goSNMP := newGoSNMPWrapper()
-	goSNMP.SetTimeout(5 * time.Second)
+	goSNMP.SetTimeout(cfg.Timeout)
 
 	// Set goSNMP version based on config
 	switch cfg.Version {
@@ -135,17 +123,17 @@ func setV3ClientConfigs(client goSNMPWrapper, cfg *Config) {
 		client.SetMsgFlags(gosnmp.AuthNoPriv)
 		protocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = protocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 	case "AUTH_PRIV":
 		client.SetMsgFlags(gosnmp.AuthPriv)
 
 		authProtocol := getAuthProtocol(cfg.AuthType)
 		securityParams.AuthenticationProtocol = authProtocol
-		securityParams.AuthenticationPassphrase = cfg.AuthPassword
+		securityParams.AuthenticationPassphrase = string(cfg.AuthPassword)
 
 		privProtocol := getPrivacyProtocol(cfg.PrivacyType)
 		securityParams.PrivacyProtocol = privProtocol
-		securityParams.PrivacyPassphrase = cfg.PrivacyPassword
+		securityParams.PrivacyPassphrase = string(cfg.PrivacyPassword)
 	default:
 		client.SetMsgFlags(gosnmp.NoAuthNoPriv)
 	}
@@ -336,9 +324,9 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	}
 
 	// Condense gosnmp data types to our client's simplified data types
-	switch pdu.Type {
+	switch pdu.Type { // nolint:exhaustive
 	// Integer types
-	case gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
+	case gosnmp.Counter64, gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)
 		if err != nil {
 			clientSNMPData.valueType = notSupportedVal
@@ -403,6 +391,8 @@ func (c snmpClient) toInt64(name string, value interface{}) (int64, error) {
 	case uint16:
 		return int64(value), nil
 	case uint32:
+		return int64(value), nil
+	case uint64:
 		return int64(value), nil
 	default:
 		return 0, fmt.Errorf("incompatible type while converting OID '%s' data to int64", name)

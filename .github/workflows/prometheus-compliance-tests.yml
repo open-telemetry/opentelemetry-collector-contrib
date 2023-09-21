@@ -14,23 +14,25 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 1 minute
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 5
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 jobs:
   prometheus-compliance-tests:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v4
         with:
-          go-version: ~1.19.8
+          go-version: ~1.20.8
+          cache: false
       - name: Cache Go
         id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v3
         with:
           path: |
@@ -41,13 +43,14 @@ jobs:
       - run: make otelcontribcol
         working-directory: opentelemetry-collector-contrib
       - name: Checkout compliance repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: prometheus/compliance
           path: compliance
-          ref: f0482884578bac67b053e3eaa1ca7f783d146557
       - name: Copy binary to compliance directory
-        run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_linux_amd64
+        # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
+        # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
+        run: mkdir compliance/remote_write_sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remote_write_sender/bin/otelcol_0.42.0_linux_amd64
       - name: Run compliance tests
         run: go test -v --tags=compliance -run "TestRemoteWrite/otel/.+" ./ |& tee ./test-report.txt
         working-directory: compliance/remote_write_sender

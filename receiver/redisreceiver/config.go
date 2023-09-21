@@ -1,21 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -30,9 +20,15 @@ type Config struct {
 
 	// TODO allow users to add additional resource key value pairs?
 
+	// Optional username. Use the specified Username to authenticate the current connection
+	// with one of the connections defined in the ACL list when connecting
+	// to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+	Username string `mapstructure:"username"`
+
 	// Optional password. Must match the password specified in the
-	// requirepass server configuration option.
-	Password string `mapstructure:"password"`
+	// requirepass server configuration option, or the user's password when connecting
+	// to a Redis 6.0 instance, or greater, that is using the Redis ACL system.
+	Password configopaque.String `mapstructure:"password"`
 
 	TLS configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
 

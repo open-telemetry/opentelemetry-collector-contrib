@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package cassandraexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/cassandraexporter"
 
@@ -39,6 +28,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 	session, err := cluster.CreateSession()
 	cluster.Keyspace = cfg.Keyspace
 	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
 
 	if err != nil {
 		return nil, err
@@ -51,6 +41,8 @@ func initializeLogKernel(cfg *Config) error {
 	ctx := context.Background()
 	cluster := gocql.NewCluster(cfg.DSN)
 	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+
 	session, err := cluster.CreateSession()
 	if err != nil {
 		return err
@@ -70,7 +62,7 @@ func initializeLogKernel(cfg *Config) error {
 	return nil
 }
 
-func (e *logsExporter) Start(ctx context.Context, host component.Host) error {
+func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
 	initializeErr := initializeLogKernel(e.cfg)
 	return initializeErr
 }
@@ -100,7 +92,10 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			for k := 0; k < rs.Len(); k++ {
 				r := rs.At(k)
 				logAttr := attributesToMap(r.Attributes().AsRaw())
-				bodyByte, _ := json.Marshal(r.Body().AsRaw())
+				bodyByte, err := json.Marshal(r.Body().AsRaw())
+				if err != nil {
+					return err
+				}
 
 				insertLogError := e.client.Query(fmt.Sprintf(insertLogTableSQL, e.cfg.Keyspace, e.cfg.LogsTable),
 					r.Timestamp().AsTime(),

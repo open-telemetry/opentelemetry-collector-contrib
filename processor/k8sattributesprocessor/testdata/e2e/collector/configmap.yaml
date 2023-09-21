@@ -29,6 +29,7 @@ data:
           - k8s.pod.uid
           - k8s.namespace.name
           - k8s.deployment.name
+          - k8s.deployment.uid
           - k8s.replicaset.name
           - k8s.replicaset.uid
           - k8s.statefulset.name
@@ -39,6 +40,7 @@ data:
           - k8s.job.name
           - k8s.job.uid
           - k8s.node.name
+          - k8s.cluster.uid
           - container.id
           - container.image.name
           - container.image.tag

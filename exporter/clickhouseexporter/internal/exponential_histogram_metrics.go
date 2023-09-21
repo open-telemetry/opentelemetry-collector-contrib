@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 
@@ -18,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -43,7 +31,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram (
     Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
 	StartTimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
 	TimeUnix DateTime64(9) CODEC(Delta, ZSTD(1)),
-    Count Int64 CODEC(Delta, ZSTD(1)),
+    Count UInt64 CODEC(Delta, ZSTD(1)),
     Sum Float64 CODEC(ZSTD(1)),
     Scale Int32 CODEC(ZSTD(1)),
     ZeroCount UInt64 CODEC(ZSTD(1)),
@@ -103,11 +91,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.TraceId,
 	Flags,
 	Min,
-	Max) VALUES `
-	expHistogramValueCounts = 29
+	Max) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
-
-var expHistogramPlaceholders = newPlaceholder(expHistogramValueCounts)
 
 type expHistogramModel struct {
 	metricName        string
@@ -128,54 +113,58 @@ func (e *expHistogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 		return nil
 	}
 
-	valueArgs := make([]any, e.count*expHistogramValueCounts)
-	var b strings.Builder
-
-	index := 0
-	for _, model := range e.expHistogramModels {
-		for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
-			dp := model.expHistogram.DataPoints().At(i)
-			b.WriteString(*expHistogramPlaceholders)
-
-			valueArgs[index] = model.metadata.ResAttr
-			valueArgs[index+1] = model.metadata.ResURL
-			valueArgs[index+2] = model.metadata.ScopeInstr.Name()
-			valueArgs[index+3] = model.metadata.ScopeInstr.Version()
-			valueArgs[index+4] = attributesToMap(model.metadata.ScopeInstr.Attributes())
-			valueArgs[index+5] = model.metadata.ScopeInstr.DroppedAttributesCount()
-			valueArgs[index+6] = model.metadata.ScopeURL
-			valueArgs[index+7] = model.metricName
-			valueArgs[index+8] = model.metricDescription
-			valueArgs[index+9] = model.metricUnit
-			valueArgs[index+10] = attributesToMap(dp.Attributes())
-			valueArgs[index+11] = dp.StartTimestamp().AsTime().UnixNano()
-			valueArgs[index+12] = dp.Timestamp().AsTime().UnixNano()
-			valueArgs[index+13] = dp.Count()
-			valueArgs[index+14] = dp.Sum()
-			valueArgs[index+15] = dp.Scale()
-			valueArgs[index+16] = dp.ZeroCount()
-			valueArgs[index+17] = dp.Positive().Offset()
-			valueArgs[index+18] = convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw())
-			valueArgs[index+19] = dp.Negative().Offset()
-			valueArgs[index+20] = convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw())
-
-			attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
-			valueArgs[index+21] = attrs
-			valueArgs[index+22] = times
-			valueArgs[index+23] = values
-			valueArgs[index+24] = traceIDs
-			valueArgs[index+25] = spanIDs
-			valueArgs[index+26] = uint32(dp.Flags())
-			valueArgs[index+27] = dp.Min()
-			valueArgs[index+28] = dp.Max()
-
-			index += expHistogramValueCounts
-		}
-	}
-
 	start := time.Now()
 	err := doWithTx(ctx, db, func(tx *sql.Tx) error {
-		_, err := tx.ExecContext(ctx, fmt.Sprintf("%s %s", e.insertSQL, strings.TrimSuffix(b.String(), ",")), valueArgs...)
+		statement, err := tx.PrepareContext(ctx, e.insertSQL)
+		if err != nil {
+			return err
+		}
+
+		defer func() {
+			_ = statement.Close()
+		}()
+
+		for _, model := range e.expHistogramModels {
+			for i := 0; i < model.expHistogram.DataPoints().Len(); i++ {
+				dp := model.expHistogram.DataPoints().At(i)
+
+				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
+				_, err = statement.ExecContext(ctx,
+					model.metadata.ResAttr,
+					model.metadata.ResURL,
+					model.metadata.ScopeInstr.Name(),
+					model.metadata.ScopeInstr.Version(),
+					attributesToMap(model.metadata.ScopeInstr.Attributes()),
+					model.metadata.ScopeInstr.DroppedAttributesCount(),
+					model.metadata.ScopeURL,
+					model.metricName,
+					model.metricDescription,
+					model.metricUnit,
+					attributesToMap(dp.Attributes()),
+					dp.StartTimestamp().AsTime(),
+					dp.Timestamp().AsTime(),
+					dp.Count(),
+					dp.Sum(),
+					dp.Scale(),
+					dp.ZeroCount(),
+					dp.Positive().Offset(),
+					convertSliceToArraySet(dp.Positive().BucketCounts().AsRaw()),
+					dp.Negative().Offset(),
+					convertSliceToArraySet(dp.Negative().BucketCounts().AsRaw()),
+					attrs,
+					times,
+					values,
+					traceIDs,
+					spanIDs,
+					uint32(dp.Flags()),
+					dp.Min(),
+					dp.Max(),
+				)
+				if err != nil {
+					return fmt.Errorf("ExecContext:%w", err)
+				}
+			}
+		}
 		return err
 	})
 	duration := time.Since(start)

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
@@ -113,7 +102,7 @@ type armClientMock struct {
 	pages   []armresources.ClientListResponse
 }
 
-func (acm *armClientMock) NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
+func (acm *armClientMock) NewListPager(_ *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armresources.ClientListResponse]{
 		More: func(page armresources.ClientListResponse) bool {
 			return acm.current < len(acm.pages)
@@ -131,7 +120,7 @@ type metricsDefinitionsClientMock struct {
 	pages   map[string][]armmonitor.MetricDefinitionsClientListResponse
 }
 
-func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
+func (mdcm *metricsDefinitionsClientMock) NewListPager(resourceURI string, _ *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse] {
 	return runtime.NewPager(runtime.PagingHandler[armmonitor.MetricDefinitionsClientListResponse]{
 		More: func(page armmonitor.MetricDefinitionsClientListResponse) bool {
 			return mdcm.current[resourceURI] < len(mdcm.pages[resourceURI])
@@ -148,7 +137,7 @@ type metricsValuesClientMock struct {
 	lists map[string]map[string]armmonitor.MetricsClientListResponse
 }
 
-func (mvcm metricsValuesClientMock) List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
+func (mvcm metricsValuesClientMock) List(_ context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (armmonitor.MetricsClientListResponse, error) {
 	return mvcm.lists[resourceURI][*options.Metricnames], nil
 }
 
@@ -231,7 +220,6 @@ func TestAzureScraperScrape(t *testing.T) {
 			expectedFile := filepath.Join("testdata", "expected_metrics", tt.name+".yaml")
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)
-
 			require.NoError(t, pmetrictest.CompareMetrics(
 				expectedMetrics,
 				metrics,
@@ -245,11 +233,14 @@ func TestAzureScraperScrape(t *testing.T) {
 }
 
 func getResourcesMockData(tags bool) []armresources.ClientListResponse {
-	id1, id2, id3, location1 := "resourceId1", "resourceId2", "resourceId3", "location1"
+	id1, id2, id3, location1, name1, type1 := "/resourceGroups/group1/resourceId1",
+		"/resourceGroups/group1/resourceId2", "/resourceGroups/group1/resourceId3", "location1", "name1", "type1"
 
 	resourceID1 := armresources.GenericResourceExpanded{
 		ID:       &id1,
 		Location: &location1,
+		Name:     &name1,
+		Type:     &type1,
 	}
 	if tags {
 		tagName1, tagValue1 := "tagName1", "tagValue1"
@@ -261,7 +252,10 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 				Value: []*armresources.GenericResourceExpanded{
 					&resourceID1,
 					{
-						ID: &id2,
+						ID:       &id2,
+						Location: &location1,
+						Name:     &name1,
+						Type:     &type1,
 					},
 				},
 			},
@@ -270,7 +264,10 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 			ResourceListResult: armresources.ResourceListResult{
 				Value: []*armresources.GenericResourceExpanded{
 					{
-						ID: &id3,
+						ID:       &id3,
+						Location: &location1,
+						Name:     &name1,
+						Type:     &type1,
 					},
 				},
 			},
@@ -279,17 +276,17 @@ func getResourcesMockData(tags bool) []armresources.ClientListResponse {
 }
 
 func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.MetricDefinitionsClientListResponse) {
-	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension := "metric1",
-		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension"
+	name1, name2, name3, name4, name5, name6, name7, timeGrain1, timeGrain2, dimension1, dimension2 := "metric1",
+		"metric2", "metric3", "metric4", "metric5", "metric6", "metric7", "PT1M", "PT1H", "dimension1", "dimension2"
 
 	counters := map[string]int{
-		"resourceId1": 0,
-		"resourceId2": 0,
-		"resourceId3": 0,
+		"/resourceGroups/group1/resourceId1": 0,
+		"/resourceGroups/group1/resourceId2": 0,
+		"/resourceGroups/group1/resourceId3": 0,
 	}
 
 	pages := map[string][]armmonitor.MetricDefinitionsClientListResponse{
-		"resourceId1": {
+		"/resourceGroups/group1/resourceId1": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -327,7 +324,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId2": {
+		"/resourceGroups/group1/resourceId2": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -352,7 +349,10 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 							Dimensions: []*armmonitor.LocalizableString{
 								{
-									Value: &dimension,
+									Value: &dimension1,
+								},
+								{
+									Value: &dimension2,
 								},
 							},
 						},
@@ -367,7 +367,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 							Dimensions: []*armmonitor.LocalizableString{
 								{
-									Value: &dimension,
+									Value: &dimension1,
 								},
 							},
 						},
@@ -375,7 +375,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 				},
 			},
 		},
-		"resourceId3": {
+		"/resourceGroups/group1/resourceId3": {
 			{
 				MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
 					Value: []*armmonitor.MetricDefinition{
@@ -390,7 +390,7 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 							},
 							Dimensions: []*armmonitor.LocalizableString{
 								{
-									Value: &dimension,
+									Value: &dimension1,
 								},
 							},
 						},
@@ -403,13 +403,13 @@ func getMetricsDefinitionsMockData() (map[string]int, map[string][]armmonitor.Me
 }
 
 func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientListResponse {
-	name1, name2, name3, name4, name5, name6, name7, dimension, dimensionValue := "metric1", "metric2",
-		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension", "dimension value"
+	name1, name2, name3, name4, name5, name6, name7, dimension1, dimension2, dimensionValue := "metric1", "metric2",
+		"metric3", "metric4", "metric5", "metric6", "metric7", "dimension1", "dimension2", "dimension value"
 	var unit1 armmonitor.MetricUnit = "unit1"
 	var value1 float64 = 1
 
 	return map[string]map[string]armmonitor.MetricsClientListResponse{
-		"resourceId1": {
+		"/resourceGroups/group1/resourceId1": {
 			strings.Join([]string{name1, name2}, ","): {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -480,7 +480,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"resourceId2": {
+		"/resourceGroups/group1/resourceId2": {
 			name4: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -506,7 +506,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 					},
 				},
 			},
-			strings.Join([]string{name5, name6}, ","): {
+			name5: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
 						{
@@ -528,7 +528,13 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									Metadatavalues: []*armmonitor.MetadataValue{
 										{
 											Name: &armmonitor.LocalizableString{
-												Value: &dimension,
+												Value: &dimension1,
+											},
+											Value: &dimensionValue,
+										},
+										{
+											Name: &armmonitor.LocalizableString{
+												Value: &dimension2,
 											},
 											Value: &dimensionValue,
 										},
@@ -536,6 +542,12 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 								},
 							},
 						},
+					},
+				},
+			},
+			name6: {
+				Response: armmonitor.Response{
+					Value: []*armmonitor.Metric{
 						{
 							Name: &armmonitor.LocalizableString{
 								Value: &name6,
@@ -555,7 +567,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									Metadatavalues: []*armmonitor.MetadataValue{
 										{
 											Name: &armmonitor.LocalizableString{
-												Value: &dimension,
+												Value: &dimension1,
 											},
 											Value: &dimensionValue,
 										},
@@ -567,7 +579,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-		"resourceId3": {
+		"/resourceGroups/group1/resourceId3": {
 			name7: {
 				Response: armmonitor.Response{
 					Value: []*armmonitor.Metric{
@@ -586,7 +598,7 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 									Metadatavalues: []*armmonitor.MetadataValue{
 										{
 											Name: &armmonitor.LocalizableString{
-												Value: &dimension,
+												Value: &dimension1,
 											},
 											Value: &dimensionValue,
 										},

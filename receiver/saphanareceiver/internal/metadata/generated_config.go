@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for saphanareceiver metrics.
+// MetricsConfig provides config for saphana metrics.
 type MetricsConfig struct {
 	SaphanaAlertCount                       MetricConfig `mapstructure:"saphana.alert.count"`
 	SaphanaBackupLatest                     MetricConfig `mapstructure:"saphana.backup.latest"`
@@ -217,7 +217,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for saphanareceiver resource attributes.
+// ResourceAttributesConfig provides config for saphana resource attributes.
 type ResourceAttributesConfig struct {
 	DbSystem    ResourceAttributeConfig `mapstructure:"db.system"`
 	SaphanaHost ResourceAttributeConfig `mapstructure:"saphana.host"`
@@ -234,7 +234,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for saphanareceiver metrics builder.
+// MetricsBuilderConfig is a configuration for saphana metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

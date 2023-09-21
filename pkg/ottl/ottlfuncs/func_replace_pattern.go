@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
@@ -23,9 +12,9 @@ import (
 )
 
 type ReplacePatternArguments[K any] struct {
-	Target       ottl.GetSetter[K] `ottlarg:"0"`
-	RegexPattern string            `ottlarg:"1"`
-	Replacement  string            `ottlarg:"2"`
+	Target       ottl.GetSetter[K]    `ottlarg:"0"`
+	RegexPattern string               `ottlarg:"1"`
+	Replacement  ottl.StringGetter[K] `ottlarg:"2"`
 }
 
 func NewReplacePatternFactory[K any]() ottl.Factory[K] {
@@ -42,7 +31,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement)
 }
 
-func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement string) (ottl.ExprFunc[K], error) {
+func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
@@ -52,12 +41,16 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 		if err != nil {
 			return nil, err
 		}
+		replacementVal, err := replacement.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
 		if originalVal == nil {
 			return nil, nil
 		}
 		if originalValStr, ok := originalVal.(string); ok {
 			if compiledPattern.MatchString(originalValStr) {
-				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacement)
+				updatedStr := compiledPattern.ReplaceAllString(originalValStr, replacementVal)
 				err = target.Set(ctx, tCtx, updatedStr)
 				if err != nil {
 					return nil, err

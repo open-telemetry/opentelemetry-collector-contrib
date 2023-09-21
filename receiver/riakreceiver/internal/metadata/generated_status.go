@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "riakreceiver"
+	Type             = "riak"
 	MetricsStability = component.StabilityLevelBeta
 )

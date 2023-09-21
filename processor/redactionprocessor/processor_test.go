@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package redactionprocessor
 
@@ -144,7 +133,7 @@ func TestRedactSummaryDebug(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, 0, len(redacted))
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
@@ -199,7 +188,7 @@ func TestRedactSummaryInfo(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, ignored, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, 0, len(redacted))
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)
@@ -310,7 +299,7 @@ func TestMultipleBlockValues(t *testing.T) {
 	outTraces := runTest(t, allowed, redacted, masked, nil, config)
 
 	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes()
-	var deleted []string
+	deleted := make([]string, 0, len(redacted))
 	for k := range redacted {
 		_, ok := attr.Get(k)
 		assert.False(t, ok)

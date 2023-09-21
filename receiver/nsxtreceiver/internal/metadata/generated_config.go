@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for nsxtreceiver metrics.
+// MetricsConfig provides config for nsxt metrics.
 type MetricsConfig struct {
 	NsxtNodeCPUUtilization        MetricConfig `mapstructure:"nsxt.node.cpu.utilization"`
 	NsxtNodeFilesystemUsage       MetricConfig `mapstructure:"nsxt.node.filesystem.usage"`
@@ -65,7 +65,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for nsxtreceiver resource attributes.
+// ResourceAttributesConfig provides config for nsxt resource attributes.
 type ResourceAttributesConfig struct {
 	DeviceID     ResourceAttributeConfig `mapstructure:"device.id"`
 	NsxtNodeID   ResourceAttributeConfig `mapstructure:"nsxt.node.id"`
@@ -90,7 +90,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for nsxtreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for nsxt metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

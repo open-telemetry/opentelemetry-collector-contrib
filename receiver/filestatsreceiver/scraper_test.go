@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package filestatsreceiver
 
@@ -23,17 +12,13 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
 func Test_Scrape(t *testing.T) {
 	tmpDir := t.TempDir()
 	cfg := newDefaultConfig().(*Config)
 	cfg.Include = filepath.Join(tmpDir, "*.log")
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopCreateSettings())
-	s := newScraper(metricsBuilder, cfg, zap.NewNop())
+	s := newScraper(cfg, receivertest.NewNopCreateSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())
@@ -68,8 +53,7 @@ func Test_Scrape_All(t *testing.T) {
 	cfg.Metrics.FileAtime.Enabled = true
 	cfg.Metrics.FileCtime.Enabled = true
 
-	metricsBuilder := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, receivertest.NewNopCreateSettings())
-	s := newScraper(metricsBuilder, cfg, zap.NewNop())
+	s := newScraper(cfg, receivertest.NewNopCreateSettings())
 	metrics, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, 0, metrics.ResourceMetrics().Len())

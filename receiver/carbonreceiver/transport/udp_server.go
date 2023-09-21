@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package transport // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
 
@@ -23,10 +12,9 @@ import (
 	"strings"
 	"sync"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/protocol"
 )
 
@@ -103,7 +91,9 @@ func (u *udpServer) handlePacket(
 ) {
 	ctx := u.reporter.OnDataReceived(context.Background())
 	var numReceivedMetricPoints int
-	var metrics []*metricspb.Metric
+	metrics := pmetric.NewMetrics()
+	sm := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+
 	buf := bytes.NewBuffer(data)
 	for {
 		bytes, err := buf.ReadBytes((byte)('\n'))
@@ -121,11 +111,11 @@ func (u *udpServer) handlePacket(
 				u.reporter.OnTranslationError(ctx, err)
 				continue
 			}
-
-			metrics = append(metrics, metric)
+			newMetric := sm.Metrics().AppendEmpty()
+			metric.MoveTo(newMetric)
 		}
 	}
 
-	err := nextConsumer.ConsumeMetrics(ctx, internaldata.OCToMetrics(nil, nil, metrics))
+	err := nextConsumer.ConsumeMetrics(ctx, metrics)
 	u.reporter.OnMetricsProcessed(ctx, numReceivedMetricPoints, err)
 }

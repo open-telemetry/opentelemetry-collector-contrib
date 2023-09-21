@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor
 
@@ -67,6 +56,21 @@ func TestWithPassthrough(t *testing.T) {
 	assert.True(t, p.passthroughMode)
 }
 
+func TestEnabledAttributes(t *testing.T) {
+	// This list needs to be updated when the defaults in metadata.yaml are updated.
+	expected := []string{
+		conventions.AttributeK8SNamespaceName,
+		conventions.AttributeK8SPodName,
+		conventions.AttributeK8SPodUID,
+		metadataPodStartTime,
+		conventions.AttributeK8SDeploymentName,
+		conventions.AttributeK8SNodeName,
+		conventions.AttributeContainerImageName,
+		conventions.AttributeContainerImageTag,
+	}
+	assert.ElementsMatch(t, expected, enabledAttributes())
+}
+
 func TestWithExtractAnnotations(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -79,19 +83,6 @@ func TestWithExtractAnnotations(t *testing.T) {
 			[]FieldExtractConfig{},
 			nil,
 			"",
-		},
-		{
-			"bad",
-			[]FieldExtractConfig{
-				{
-					TagName: "tag1",
-					Key:     "key1",
-					Regex:   "[",
-					From:    kube.MetadataFromPod,
-				},
-			},
-			[]kube.FieldExtractionRule{},
-			"error parsing regexp: missing closing ]: `[`",
 		},
 		{
 			"basic",
@@ -200,17 +191,6 @@ func TestWithExtractLabels(t *testing.T) {
 			"",
 		},
 		{
-			"bad",
-			[]FieldExtractConfig{{
-				TagName: "t1",
-				Key:     "k1",
-				Regex:   "[",
-				From:    kube.MetadataFromPod,
-			}},
-			[]kube.FieldExtractionRule{},
-			"error parsing regexp: missing closing ]: `[`",
-		},
-		{
 			"basic",
 			[]FieldExtractConfig{
 				{
@@ -309,13 +289,8 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.True(t, p.rules.StartTime)
-	assert.True(t, p.rules.Deployment)
+	assert.True(t, p.rules.DeploymentName)
 	assert.True(t, p.rules.Node)
-
-	p = &kubernetesprocessor{}
-	err := withExtractMetadata("randomfield")(p)
-	assert.Error(t, err)
-	assert.Equal(t, `"randomfield" is not a supported metadata field`, err.Error())
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
@@ -323,7 +298,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
 	assert.False(t, p.rules.StartTime)
-	assert.False(t, p.rules.Deployment)
+	assert.False(t, p.rules.DeploymentName)
 	assert.False(t, p.rules.Node)
 }
 
@@ -425,18 +400,6 @@ func TestWithFilterLabels(t *testing.T) {
 			},
 			"",
 		},
-		{
-			"unknown",
-			[]FieldFilterConfig{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    "unknown-op",
-				},
-			},
-			[]kube.FieldFilter{},
-			"'unknown-op' is not a valid label filter operation for key=k1, value=v1",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -521,50 +484,6 @@ func TestWithFilterFields(t *testing.T) {
 			},
 			"",
 		},
-		{
-			"exists",
-			[]FieldFilterConfig{
-				{
-					Key: "k1",
-					Op:  "exists",
-				},
-			},
-			[]kube.FieldFilter{
-				{
-					Key: "k1",
-					Op:  selection.Exists,
-				},
-			},
-			"'exists' is not a valid field filter operation for key=k1, value=",
-		},
-		{
-			"does-not-exist",
-			[]FieldFilterConfig{
-				{
-					Key: "k1",
-					Op:  "does-not-exist",
-				},
-			},
-			[]kube.FieldFilter{
-				{
-					Key: "k1",
-					Op:  selection.DoesNotExist,
-				},
-			},
-			"'does-not-exist' is not a valid field filter operation for key=k1, value=",
-		},
-		{
-			"unknown",
-			[]FieldFilterConfig{
-				{
-					Key:   "k1",
-					Value: "v1",
-					Op:    "unknown-op",
-				},
-			},
-			[]kube.FieldFilter{},
-			"'unknown-op' is not a valid field filter operation for key=k1, value=v1",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -625,18 +544,6 @@ func Test_extractFieldRules(t *testing.T) {
 					From: kube.MetadataFromPod,
 				},
 			},
-		},
-		{
-			name: "regex-without-match",
-			args: args{"field", []FieldExtractConfig{
-				{
-					TagName: "name",
-					Key:     "key",
-					Regex:   "^h$",
-					From:    kube.MetadataFromPod,
-				},
-			}},
-			wantErr: true,
 		},
 		{
 			name: "badregex",

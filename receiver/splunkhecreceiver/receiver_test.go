@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
@@ -355,6 +344,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			r.handleReq(w, tt.req)
 
 			resp := w.Result()
+			defer resp.Body.Close()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 
@@ -382,6 +372,7 @@ func Test_consumer_err(t *testing.T) {
 	r.handleReq(w, req)
 
 	resp := w.Result()
+	defer resp.Body.Close()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
@@ -409,6 +400,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	r.handleReq(w, req)
 
 	resp := w.Result()
+	defer resp.Body.Close()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
 
@@ -466,7 +458,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	url := fmt.Sprintf("https://%s", addr)
 
-	req, err := http.NewRequest("POST", url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.Background(), "POST", url, bytes.NewReader(body))
 	require.NoErrorf(t, err, "should have no errors with new request: %v", err)
 
 	tlscs := configtls.TLSClientSetting{
@@ -487,6 +479,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 
 	resp, err := client.Do(req)
 	require.NoErrorf(t, err, "should not have failed when sending to splunk HEC receiver %v", err)
+	defer resp.Body.Close()
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	t.Log("Splunk HEC Request Received")
 
@@ -611,6 +604,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.handleReq(w, req)
 				resp := w.Result()
+				defer resp.Body.Close()
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
@@ -623,6 +617,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				w := httptest.NewRecorder()
 				r.handleReq(w, req)
 				resp := w.Result()
+				defer resp.Body.Close()
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			}
@@ -717,6 +712,7 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
 			assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -810,6 +806,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			r.handleReq(w, req)
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
+			defer resp.Body.Close()
 			assert.NoError(t, err)
 			var bodyStr string
 			assert.NoError(t, json.Unmarshal(respBytes, &bodyStr))
@@ -827,7 +824,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 
 func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:  &time,
+		Time:  time,
 		Event: "metric",
 		Fields: map[string]interface{}{
 			"metric_name:foo": value,
@@ -842,7 +839,7 @@ func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splun
 
 func buildSplunkHecMsg(time float64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
-		Time:       &time,
+		Time:       time,
 		Event:      "foo",
 		Fields:     map[string]interface{}{},
 		Index:      "myindex",
@@ -859,7 +856,7 @@ type badReqBody struct{}
 
 var _ io.ReadCloser = (*badReqBody)(nil)
 
-func (b badReqBody) Read(p []byte) (n int, err error) {
+func (b badReqBody) Read(_ []byte) (n int, err error) {
 	return 0, errors.New("badReqBody: can't read it")
 }
 
@@ -886,6 +883,7 @@ func (aneh *assertNoErrorHost) ReportFatalError(err error) {
 }
 
 func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
+	t.Parallel()
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
@@ -1017,6 +1015,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 			resp := w.Result()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			var bodyStr string
 			if len(respBytes) > 0 {
@@ -1047,11 +1046,13 @@ func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	resp := w.Result()
 	respBytes, err := io.ReadAll(resp.Body)
 	assert.NoError(t, err)
+	defer resp.Body.Close()
 	assert.Equal(t, string(respBytes), responseHecHealthy)
 	assert.Equal(t, 200, resp.StatusCode)
 }
 
 func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		field   interface{}
@@ -1123,6 +1124,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 }
 
 func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
+	t.Parallel()
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 	config.RawPath = "/foo"
@@ -1231,8 +1233,9 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 
 			resp := w.Result()
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
-			assertResponse(t, resp.StatusCode, "OK")
+			assertResponse(t, resp.StatusCode, responseOK)
 			tt.assertResource(t, sink.AllLogs())
 		})
 	}
@@ -1265,11 +1268,13 @@ func BenchmarkHandleReq(b *testing.B) {
 
 		resp := w.Result()
 		_, err = io.ReadAll(resp.Body)
+		defer resp.Body.Close()
 		assert.NoError(b, err)
 	}
 }
 
 func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
+	t.Parallel()
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
 
@@ -1328,6 +1333,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.server.Handler.ServeHTTP(w, tt.req)
 			resp := w.Result()
+			defer resp.Body.Close()
 			respBytes, err := io.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			var bodyStr string

@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package signalfxexporter
 
@@ -200,7 +189,7 @@ func TestConsumeMetrics(t *testing.T) {
 			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
-			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 			require.NoError(t, err)
 			require.NotNil(t, c)
 			dpClient := &sfxDPClient{
@@ -740,6 +729,7 @@ func TestConsumeMetadata(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
+		false,
 	)
 	require.NoError(t, err)
 	type args struct {
@@ -1099,7 +1089,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 	serverURL, err := url.Parse(server.URL)
 	assert.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false)
 	require.NoError(b, err)
 	require.NotNil(b, c)
 	dpClient := &sfxDPClient{
@@ -1292,7 +1282,7 @@ func TestTLSIngestConnection(t *testing.T) {
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
 	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
 	require.NoError(t, err)
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false)
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1335,7 +1325,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		cfg.ExcludeMetrics,
 		cfg.IncludeMetrics,
 		cfg.NonAlphanumericDimensionChars,
-	)
+		false)
 	require.NoError(t, err)
 
 	metadata := []*metadata.MetadataUpdate{

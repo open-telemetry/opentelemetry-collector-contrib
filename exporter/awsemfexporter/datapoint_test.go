@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awsemfexporter
 
@@ -21,8 +10,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -180,14 +171,24 @@ func generateDeltaMetricMetadata(adjustToDelta bool, metricName string, retainIn
 	}
 }
 
-func setupDataPointCache() {
-	deltaMetricCalculator = aws.NewFloat64DeltaCalculator()
-	summaryMetricCalculator = aws.NewMetricCalculator(calculateSummaryDelta)
+func setupEmfCalculators() *emfCalculators {
+	return &emfCalculators{
+		summary: aws.NewMetricCalculator(calculateSummaryDelta),
+		delta:   aws.NewFloat64DeltaCalculator(),
+	}
+}
+
+func shutdownEmfCalculators(c *emfCalculators) error {
+	var errs error
+	errs = multierr.Append(errs, c.delta.Shutdown())
+	return multierr.Append(errs, c.summary.Shutdown())
+
 }
 
 func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
-		setupDataPointCache()
 
 		testCases := []struct {
 			name              string
@@ -291,7 +292,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				numberDatapointSlice := numberDataPointSlice{deltaMetricMetadata, numberDPS}
 
 				// When calculate the delta datapoints for number datapoint
-				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+				dps, retained := numberDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
 
 				assert.Equal(t, 1, numberDatapointSlice.Len())
 				assert.Equal(t, tc.expectedRetained, retained)
@@ -373,14 +374,16 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 		t.Run(tc.name, func(_ *testing.T) {
 			// Given the histogram datapoints
 			histogramDatapointSlice := histogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
-
+			emfCalcs := setupEmfCalculators()
+			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 			// When calculate the delta datapoints for histograms
-			dps, retained := histogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+			dps, retained := histogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
 
 			// Then receiving the following datapoint with an expected length
 			assert.True(t, retained)
 			assert.Equal(t, 1, histogramDatapointSlice.Len())
 			assert.Equal(t, tc.expectedDatapoint, dps[0])
+
 		})
 	}
 
@@ -473,9 +476,10 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 		t.Run(tc.name, func(_ *testing.T) {
 			// Given the histogram datapoints
 			exponentialHistogramDatapointSlice := exponentialHistogramDataPointSlice{deltaMetricMetadata, tc.histogramDPS}
-
+			emfCalcs := setupEmfCalculators()
+			defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 			// When calculate the delta datapoints for histograms
-			dps, retained := exponentialHistogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false)
+			dps, retained := exponentialHistogramDatapointSlice.CalculateDeltaDatapoints(0, instrLibName, false, emfCalcs)
 
 			// Then receiving the following datapoint with an expected length
 			assert.True(t, retained)
@@ -487,6 +491,8 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 }
 
 func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 	for _, retainInitialValueOfDeltaMetric := range []bool{true, false} {
 		deltaMetricMetadata := generateDeltaMetricMetadata(true, "foo", retainInitialValueOfDeltaMetric)
 
@@ -551,7 +557,7 @@ func TestCalculateDeltaDatapoints_SummaryDataPointSlice(t *testing.T) {
 				summaryDatapointSlice := summaryDataPointSlice{deltaMetricMetadata, summaryDPS}
 
 				// When calculate the delta datapoints for sum and count in summary
-				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true)
+				dps, retained := summaryDatapointSlice.CalculateDeltaDatapoints(0, "", true, emfCalcs)
 
 				// Then receiving the following datapoint with an expected length
 				assert.Equal(t, tc.expectedRetained, retained)
@@ -655,7 +661,6 @@ func TestGetDataPoints(t *testing.T) {
 		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type())
 
 		t.Run(tc.name, func(t *testing.T) {
-			setupDataPointCache()
 
 			if tc.isPrometheusMetrics {
 				metadata.receiver = prometheusReceiver
@@ -751,7 +756,8 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
 	rms := finalOtelMetrics.ResourceMetrics()
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
-
+	emfCalcs := setupEmfCalculators()
+	defer require.NoError(b, shutdownEmfCalculators(emfCalcs))
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < metrics.Len(); i++ {
@@ -759,7 +765,7 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
 
 			for i := 0; i < dps.Len(); i++ {
-				dps.CalculateDeltaDatapoints(i, "", false)
+				dps.CalculateDeltaDatapoints(i, "", false, emfCalcs)
 			}
 		}
 	}

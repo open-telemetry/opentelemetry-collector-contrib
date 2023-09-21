@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
@@ -22,6 +11,7 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/vim25/mo"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -31,13 +21,24 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
+const (
+	emitPerfMetricsWithObjectsFeatureGateID = "receiver.vcenter.emitPerfMetricsWithObjects"
+)
+
+var emitPerfMetricsWithObjects = featuregate.GlobalRegistry().MustRegister(
+	emitPerfMetricsWithObjectsFeatureGateID,
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the receiver emits vCenter performance metrics with object metric label dimension."),
+)
+
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
 
 type vcenterMetricScraper struct {
-	client *vcenterClient
-	config *Config
-	mb     *metadata.MetricsBuilder
-	logger *zap.Logger
+	client             *vcenterClient
+	config             *Config
+	mb                 *metadata.MetricsBuilder
+	logger             *zap.Logger
+	emitPerfWithObject bool
 }
 
 func newVmwareVcenterScraper(
@@ -47,10 +48,11 @@ func newVmwareVcenterScraper(
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	return &vcenterMetricScraper{
-		client: client,
-		config: config,
-		logger: logger,
-		mb:     metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		client:             client,
+		config:             config,
+		logger:             logger,
+		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		emitPerfWithObject: emitPerfMetricsWithObjects.IsEnabled(),
 	}
 }
 
@@ -133,9 +135,9 @@ func (v *vcenterMetricScraper) collectCluster(
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(c.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(c.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
@@ -170,10 +172,10 @@ func (v *vcenterMetricScraper) collectDatastore(
 	}
 
 	v.recordDatastoreProperties(now, moDS)
-	v.mb.EmitForResource(
-		metadata.WithVcenterClusterName(cluster.Name()),
-		metadata.WithVcenterDatastoreName(moDS.Name),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterClusterName(cluster.Name())
+	rb.SetVcenterDatastoreName(moDS.Name)
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectHosts(
@@ -214,10 +216,10 @@ func (v *vcenterMetricScraper) collectHost(
 	}
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
-	v.mb.EmitForResource(
-		metadata.WithVcenterHostName(host.Name()),
-		metadata.WithVcenterClusterName(cluster.Name()),
-	)
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterHostName(host.Name())
+	rb.SetVcenterClusterName(cluster.Name())
+	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
@@ -242,7 +244,10 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			continue
 		}
 		v.recordResourcePool(ts, moRP)
-		v.mb.EmitForResource(metadata.WithVcenterResourcePoolName(rp.Name()))
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterResourcePoolName(rp.Name())
+		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -305,12 +310,12 @@ func (v *vcenterMetricScraper) collectVMs(
 		vmUUID := moVM.Config.InstanceUuid
 
 		v.collectVM(ctx, colTime, moVM, hwSum, errs)
-		v.mb.EmitForResource(
-			metadata.WithVcenterVMName(vm.Name()),
-			metadata.WithVcenterVMID(vmUUID),
-			metadata.WithVcenterClusterName(cluster.Name()),
-			metadata.WithVcenterHostName(hostname),
-		)
+		rb := v.mb.NewResourceBuilder()
+		rb.SetVcenterVMName(vm.Name())
+		rb.SetVcenterVMID(vmUUID)
+		rb.SetVcenterClusterName(cluster.Name())
+		rb.SetVcenterHostName(hostname)
+		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return poweredOnVMs, poweredOffVMs
 }

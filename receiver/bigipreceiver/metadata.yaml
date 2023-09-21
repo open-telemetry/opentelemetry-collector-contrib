@@ -1,10 +1,12 @@
-type: bigipreceiver
+type: bigip
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, observiq, sumo]
+  codeowners:
+    active: [djaglowski, StefanKurek]
 
 resource_attributes:
   bigip.virtual_server.name:
@@ -72,7 +74,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -81,7 +83,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.virtual_server.request.count:
@@ -89,7 +91,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.virtual_server.packet.count:
@@ -97,7 +99,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -120,7 +122,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -129,7 +131,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool.request.count:
@@ -137,7 +139,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool.packet.count:
@@ -145,7 +147,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -154,7 +156,7 @@ metrics:
     unit: "{members}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [active.status]
     enabled: true
@@ -177,7 +179,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -186,7 +188,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.request.count:
@@ -194,7 +196,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.packet.count:
@@ -202,7 +204,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -211,7 +213,7 @@ metrics:
     unit: "{sessions}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.pool_member.availability:
@@ -233,7 +235,7 @@ metrics:
     unit: "By"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -242,7 +244,7 @@ metrics:
     unit: "{connections}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.request.count:
@@ -250,7 +252,7 @@ metrics:
     unit: "{requests}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.packet.count:
@@ -258,7 +260,7 @@ metrics:
     unit: "{packets}"
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     attributes: [direction]
     enabled: true
@@ -267,7 +269,7 @@ metrics:
     unit: "{sessions}"
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     enabled: true
   bigip.node.availability:

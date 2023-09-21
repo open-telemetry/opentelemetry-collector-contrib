@@ -1,20 +1,10 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      shttp://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package awss3exporter
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -22,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.uber.org/multierr"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,6 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
+				S3Bucket:    "foo",
 				S3Partition: "minute",
 			},
 			MarshalerName: "otlp_json",
@@ -68,8 +60,93 @@ func TestConfig(t *testing.T) {
 				S3Bucket:    "foo",
 				S3Prefix:    "bar",
 				S3Partition: "minute",
+				Endpoint:    "http://endpoint.com",
 			},
 			MarshalerName: "otlp_json",
+		},
+	)
+}
+
+func TestConfig_Validate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      *Config
+		errExpected error
+	}{
+		{
+			name: "valid",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = "foo"
+				c.S3Uploader.S3Bucket = "bar"
+				c.S3Uploader.Endpoint = "http://example.com"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			name: "missing all",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Region = ""
+				return c
+			}(),
+			errExpected: multierr.Append(errors.New("region is required"),
+				errors.New("bucket is required")),
+		},
+		{
+			name: "endpoint and region",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Endpoint = "http://example.com"
+				c.S3Uploader.Region = "foo"
+				return c
+			}(),
+			errExpected: errors.New("bucket is required"),
+		},
+		{
+			name: "endpoint and bucket",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Endpoint = "http://example.com"
+				c.S3Uploader.S3Bucket = "foo"
+				c.S3Uploader.Region = ""
+				return c
+			}(),
+			errExpected: errors.New("region is required"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			require.Equal(t, tt.errExpected, err)
+		})
+	}
+}
+
+func TestMarshallerName(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.Nil(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "marshaler.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.NewID("awss3")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "foo",
+				S3Partition: "minute",
+			},
+			MarshalerName: "sumo_ic",
 		},
 	)
 }

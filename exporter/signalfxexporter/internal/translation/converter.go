@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translation // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 
@@ -43,11 +32,12 @@ var (
 // MetricsConverter converts MetricsData to sfxpb DataPoints. It holds an optional
 // MetricTranslator to translate SFx metrics using translation rules.
 type MetricsConverter struct {
-	logger             *zap.Logger
-	metricTranslator   *MetricTranslator
-	filterSet          *dpfilters.FilterSet
-	datapointValidator *datapointValidator
-	translator         *signalfx.FromTranslator
+	logger               *zap.Logger
+	metricTranslator     *MetricTranslator
+	filterSet            *dpfilters.FilterSet
+	datapointValidator   *datapointValidator
+	translator           *signalfx.FromTranslator
+	dropHistogramBuckets bool
 }
 
 // NewMetricsConverter creates a MetricsConverter from the passed in logger and
@@ -58,17 +48,19 @@ func NewMetricsConverter(
 	t *MetricTranslator,
 	excludes []dpfilters.MetricFilter,
 	includes []dpfilters.MetricFilter,
-	nonAlphanumericDimChars string) (*MetricsConverter, error) {
+	nonAlphanumericDimChars string,
+	dropHistogramBuckets bool) (*MetricsConverter, error) {
 	fs, err := dpfilters.NewFilterSet(excludes, includes)
 	if err != nil {
 		return nil, err
 	}
 	return &MetricsConverter{
-		logger:             logger,
-		metricTranslator:   t,
-		filterSet:          fs,
-		datapointValidator: newDatapointValidator(logger, nonAlphanumericDimChars),
-		translator:         &signalfx.FromTranslator{},
+		logger:               logger,
+		metricTranslator:     t,
+		filterSet:            fs,
+		datapointValidator:   newDatapointValidator(logger, nonAlphanumericDimChars),
+		translator:           &signalfx.FromTranslator{},
+		dropHistogramBuckets: dropHistogramBuckets,
 	}, nil
 }
 
@@ -77,7 +69,6 @@ func NewMetricsConverter(
 // dropped because of errors or warnings.
 func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.DataPoint {
 	var sfxDataPoints []*sfxpb.DataPoint
-
 	rms := md.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		rm := rms.At(i)
@@ -86,9 +77,9 @@ func (c *MetricsConverter) MetricsToSignalFxV2(md pmetric.Metrics) []*sfxpb.Data
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			ilm := rm.ScopeMetrics().At(j)
 			var initialDps []*sfxpb.DataPoint
-
 			for k := 0; k < ilm.Metrics().Len(); k++ {
-				dps := c.translator.FromMetric(ilm.Metrics().At(k), extraDimensions)
+				currentMetric := ilm.Metrics().At(k)
+				dps := c.translator.FromMetric(currentMetric, extraDimensions, c.dropHistogramBuckets)
 				initialDps = append(initialDps, dps...)
 			}
 

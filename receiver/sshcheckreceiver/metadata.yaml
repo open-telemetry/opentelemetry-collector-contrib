@@ -1,11 +1,13 @@
-type: sshcheckreceiver
+type: sshcheck
 
 status:
   class: receiver
   stability:
-    development: [metrics]
-  distributions: [contrib]
-  
+    alpha: [metrics]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [nslaughter, codeboten]
+
 resource_attributes:
   ssh.endpoint:
     description: Full SSH endpoint
@@ -22,7 +24,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: 1
   sshcheck.duration:
@@ -36,7 +38,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [error.message]
@@ -45,7 +47,7 @@ metrics:
     enabled: false
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: 1
   sshcheck.sftp_duration:
@@ -59,7 +61,7 @@ metrics:
     enabled: false
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [error.message]

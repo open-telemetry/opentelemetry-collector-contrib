@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 
@@ -49,7 +38,7 @@ type AccessTokenPassthroughConfig struct {
 
 // Event represents a metric in Splunk HEC format
 type Event struct {
-	Time       *float64               `json:"time,omitempty"`       // optional epoch time - set to nil if the event timestamp is missing or unknown
+	Time       float64                `json:"time,omitempty"`       // optional epoch time - set to zero if the event timestamp is missing or unknown (will be added at indexing time)
 	Host       string                 `json:"host"`                 // hostname
 	Source     string                 `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
 	SourceType string                 `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
@@ -99,14 +88,14 @@ func (e *Event) UnmarshalJSON(b []byte) error {
 	}
 	switch t := rawEvent.Time.(type) {
 	case float64:
-		e.Time = &t
+		e.Time = t
 	case string:
 		{
 			time, err := strconv.ParseFloat(t, 64)
 			if err != nil {
 				return err
 			}
-			e.Time = &time
+			e.Time = time
 		}
 	}
 	return nil

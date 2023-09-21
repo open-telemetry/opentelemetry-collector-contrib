@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for mysqlreceiver metrics.
+// MetricsConfig provides config for mysql metrics.
 type MetricsConfig struct {
 	MysqlBufferPoolDataPages     MetricConfig `mapstructure:"mysql.buffer_pool.data_pages"`
 	MysqlBufferPoolLimit         MetricConfig `mapstructure:"mysql.buffer_pool.limit"`
@@ -40,7 +40,6 @@ type MetricsConfig struct {
 	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
 	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLockedConnects          MetricConfig `mapstructure:"mysql.locked_connects"`
 	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
 	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
@@ -68,6 +67,7 @@ type MetricsConfig struct {
 	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
 	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
+	MysqlUptime                  MetricConfig `mapstructure:"mysql.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -116,9 +116,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlJoins: MetricConfig{
 			Enabled: false,
-		},
-		MysqlLockedConnects: MetricConfig{
-			Enabled: true,
 		},
 		MysqlLocks: MetricConfig{
 			Enabled: true,
@@ -201,6 +198,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlTmpResources: MetricConfig{
 			Enabled: true,
 		},
+		MysqlUptime: MetricConfig{
+			Enabled: true,
+		},
 	}
 }
 
@@ -209,7 +209,7 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for mysqlreceiver resource attributes.
+// ResourceAttributesConfig provides config for mysql resource attributes.
 type ResourceAttributesConfig struct {
 	MysqlInstanceEndpoint ResourceAttributeConfig `mapstructure:"mysql.instance.endpoint"`
 }
@@ -222,7 +222,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for mysqlreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for mysql metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

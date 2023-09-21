@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package azuredataexplorerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter"
 
@@ -25,6 +14,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -163,26 +153,87 @@ func TestIngestedDataRecordCount(t *testing.T) {
 		ingestOptions: ingestOptions,
 		logger:        logger,
 	}
-	rand.Seed(time.Now().UTC().UnixNano())
-	recordstoingest := rand.Intn(20)
+	source := rand.NewSource(time.Now().UTC().UnixNano())
+	genRand := rand.New(source)
+	recordstoingest := genRand.Intn(20)
 	err := adxDataProducer.metricsDataPusher(context.Background(), createMetricsData(recordstoingest))
 	ingestedrecordsactual := ingestor.Records()
 	assert.Equal(t, recordstoingest, len(ingestedrecordsactual), "Number of metrics created should match number of records ingested")
 	assert.Nil(t, err)
 }
 
+func TestCreateKcsb(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name              string // name of the test
+		config            Config // config for the test
+		isMsi             bool   // is MSI enabled
+		applicationID     string // application id
+		managedIdentityID string // managed identity id
+	}{
+		{
+			name: "application id",
+			config: Config{
+				ClusterURI:     "https://CLUSTER.kusto.windows.net",
+				ApplicationID:  "an-application-id",
+				ApplicationKey: "an-application-key",
+				TenantID:       "tenant",
+				Database:       "tests",
+			},
+			isMsi:             false,
+			applicationID:     "an-application-id",
+			managedIdentityID: "",
+		},
+		{
+			name: "system managed id",
+			config: Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				Database:          "tests",
+				ManagedIdentityID: "system",
+			},
+			isMsi:             true,
+			managedIdentityID: "",
+			applicationID:     "",
+		},
+		{
+			name: "user managed id",
+			config: Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				Database:          "tests",
+				ManagedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
+			},
+			isMsi:             true,
+			managedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
+			applicationID:     "",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			wantAppID := tt.applicationID
+			gotKcsb := createKcsb(&tt.config, "1.0.0")
+			require.NotNil(t, gotKcsb)
+			assert.Equal(t, wantAppID, gotKcsb.ApplicationClientId)
+			wantIsMsi := tt.isMsi
+			assert.Equal(t, wantIsMsi, gotKcsb.MsiAuthentication)
+			wantManagedID := tt.managedIdentityID
+			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
+			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
+		})
+	}
+}
+
 type mockingestor struct {
 	records []string
 }
 
-func (m *mockingestor) FromReader(ctx context.Context, reader io.Reader, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromReader(_ context.Context, reader io.Reader, _ ...ingest.FileOption) (*ingest.Result, error) {
 	bufbytes, _ := io.ReadAll(reader)
 	metricjson := string(bufbytes)
 	m.SetRecords(strings.Split(metricjson, "\n"))
 	return &ingest.Result{}, nil
 }
 
-func (m *mockingestor) FromFile(ctx context.Context, fPath string, options ...ingest.FileOption) (*ingest.Result, error) {
+func (m *mockingestor) FromFile(_ context.Context, _ string, _ ...ingest.FileOption) (*ingest.Result, error) {
 	return &ingest.Result{}, nil
 }
 

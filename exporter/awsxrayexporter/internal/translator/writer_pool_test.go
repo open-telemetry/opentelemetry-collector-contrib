@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package translator
 
@@ -38,7 +27,7 @@ func TestWriterPoolBasic(t *testing.T) {
 	assert.Equal(t, size, w.buffer.Cap())
 	assert.Equal(t, 0, w.buffer.Len())
 	resource := pcommon.NewResource()
-	segment, _ := MakeSegment(span, resource, nil, false, nil)
+	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
 	require.NoError(t, w.Encode(*segment))
 	jsonStr := w.String()
 	assert.Equal(t, len(jsonStr), w.buffer.Len())
@@ -53,7 +42,7 @@ func BenchmarkWithoutPool(b *testing.B) {
 		b.StartTimer()
 		buffer := bytes.NewBuffer(make([]byte, 0, 2048))
 		encoder := json.NewEncoder(buffer)
-		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
 		err := encoder.Encode(*segment)
 		assert.NoError(b, err)
 		logger.Info(buffer.String())
@@ -68,7 +57,7 @@ func BenchmarkWithPool(b *testing.B) {
 		span := constructWriterPoolSpan()
 		b.StartTimer()
 		w := wp.borrow()
-		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil)
+		segment, _ := MakeSegment(span, pcommon.NewResource(), nil, false, nil, false)
 		err := w.Encode(*segment)
 		assert.Nil(b, err)
 		logger.Info(w.String())

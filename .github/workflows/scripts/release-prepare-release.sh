@@ -1,18 +1,20 @@
 #!/bin/bash -ex
 
 # Copyright The OpenTelemetry Authors
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# SPDX-License-Identifier: Apache-2.0
+
+PATTERN="^[0-9]+\.[0-9]+\.[0-9]+.*"
+if ! [[ ${CURRENT_BETA} =~ $PATTERN ]]
+then
+    echo "CURRENT_BETA should follow a semver format and not be led by a v"
+    exit 1
+fi
+
+if ! [[ ${CANDIDATE_BETA} =~ $PATTERN ]]
+then
+    echo "CANDIDATE_BETA should follow a semver format and not be led by a v"
+    exit 1
+fi
 
 make chlog-update VERSION="v${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
@@ -28,8 +30,11 @@ find . -name "*.bak" -type f -delete
 git add versions.yaml
 git commit -m "update version.yaml ${CANDIDATE_BETA}"
 
-sed -i.bak "s/${CURRENT_BETA}/${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
-sed -i.bak "s/${CURRENT_BETA}/${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_BETA}/v${CANDIDATE_BETA}/g" ./cmd/oteltestbedcol/builder-config.yaml
+sed -i.bak "s/v${CURRENT_BETA}/v${CANDIDATE_BETA}/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/${CURRENT_BETA}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/otelcontribcol/builder-config.yaml
+sed -i.bak "s/${CURRENT_BETA}-dev/${CANDIDATE_BETA}-dev/g" ./cmd/oteltestbedcol/builder-config.yaml
+
 find . -name "*.bak" -type f -delete
 make genotelcontribcol
 make genoteltestbedcol

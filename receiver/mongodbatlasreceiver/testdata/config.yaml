@@ -12,6 +12,11 @@ mongodbatlas:
     enabled: true
     projects:
     - name: Project 0
+      access_logs:
+        enabled: true
+        auth_result: true
+        poll_interval: 1m
+      collect_audit_logs: true
   events:
     projects:
       - name: Project 0

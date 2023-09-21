@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for memcachedreceiver metrics.
+// MetricsConfig provides config for memcached metrics.
 type MetricsConfig struct {
 	MemcachedBytes              MetricConfig `mapstructure:"memcached.bytes"`
 	MemcachedCommands           MetricConfig `mapstructure:"memcached.commands"`
@@ -76,7 +76,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for memcachedreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for memcached metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

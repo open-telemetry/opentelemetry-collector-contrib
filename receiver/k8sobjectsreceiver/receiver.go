@@ -1,21 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -29,6 +19,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 type k8sobjectsreceiver struct {
@@ -57,6 +49,13 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 		return nil, err
 	}
 
+	for _, object := range config.Objects {
+		object.exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range object.ExcludeWatchType {
+			object.exclude[item] = true
+		}
+	}
+
 	return &k8sobjectsreceiver{
 		client:   client,
 		setting:  params,
@@ -67,7 +66,7 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
 	kr.setting.Logger.Info("Object Receiver started")
 
 	for _, object := range kr.objects {
@@ -116,7 +115,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
-	ticker := NewTicker(config.Interval)
+	ticker := newTicker(config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
 		LabelSelector: config.LabelSelector,
@@ -138,7 +137,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err = kr.consumer.ConsumeLogs(obsCtx, logs)
-				kr.obsrecv.EndLogsOp(obsCtx, typeStr, logs.LogRecordCount(), err)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, logs.LogRecordCount(), err)
 			}
 		case <-stopperChan:
 			return
@@ -155,20 +154,24 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
 
+	resourceVersion, err := getResourceVersion(ctx, config, resource)
+	if err != nil {
+		kr.setting.Logger.Error("could not retrieve an initial resourceVersion", zap.String("resource", config.gvr.String()), zap.Error(err))
+		return
+	}
 	watchFunc := func(options metav1.ListOptions) (apiWatch.Interface, error) {
-		return resource.Watch(ctx, metav1.ListOptions{
-			FieldSelector: config.FieldSelector,
-			LabelSelector: config.LabelSelector,
-		})
+		options.FieldSelector = config.FieldSelector
+		options.LabelSelector = config.LabelSelector
+		return resource.Watch(ctx, options)
 	}
 
-	watch, err := watch.NewRetryWatcher(config.ResourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
+	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
 		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
 		return
 	}
 
-	res := watch.ResultChan()
+	res := watcher.ResultChan()
 	for {
 		select {
 		case data, ok := <-res:
@@ -176,22 +179,60 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
 				return
 			}
-			logs := watchObjectsToLogData(&data, time.Now(), config)
 
-			obsCtx := kr.obsrecv.StartLogsOp(ctx)
-			err := kr.consumer.ConsumeLogs(obsCtx, logs)
-			kr.obsrecv.EndLogsOp(obsCtx, typeStr, 1, err)
+			if config.exclude[data.Type] {
+				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				continue
+			}
+
+			logs, err := watchObjectsToLogData(&data, time.Now(), config)
+			if err != nil {
+				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+			} else {
+				obsCtx := kr.obsrecv.StartLogsOp(ctx)
+				err := kr.consumer.ConsumeLogs(obsCtx, logs)
+				kr.obsrecv.EndLogsOp(obsCtx, metadata.Type, 1, err)
+			}
 		case <-stopperChan:
-			watch.Stop()
+			watcher.Stop()
 			return
 		}
 	}
 
 }
 
+func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
+	resourceVersion := config.ResourceVersion
+	if resourceVersion == "" || resourceVersion == "0" {
+		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
+		// to get the initial state and a useable resourceVersion.
+		// See https://kubernetes.io/docs/reference/using-api/api-concepts/#efficient-detection-of-changes for details.
+		objects, err := resource.List(ctx, metav1.ListOptions{
+			FieldSelector: config.FieldSelector,
+			LabelSelector: config.LabelSelector,
+		})
+		if err != nil {
+			return "", fmt.Errorf("could not perform initial list for watch on %v, %w", config.gvr.String(), err)
+		}
+		if objects == nil {
+			return "", fmt.Errorf("nil objects returned, this is an error in the k8sobjectsreceiver")
+		}
+
+		resourceVersion = objects.GetResourceVersion()
+
+		// If we still don't have a resourceVersion we can try 1 as a last ditch effort.
+		// This also helps our unit tests since the fake client can't handle returning resource versions
+		// as part of a list of objects.
+		if resourceVersion == "" || resourceVersion == "0" {
+			resourceVersion = defaultResourceVersion
+		}
+	}
+	return resourceVersion, nil
+}
+
 // Start ticking immediately.
 // Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
-func NewTicker(repeat time.Duration) *time.Ticker {
+func newTicker(repeat time.Duration) *time.Ticker {
 	ticker := time.NewTicker(repeat)
 	oc := ticker.C
 	nc := make(chan time.Time, 1)

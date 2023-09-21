@@ -23,7 +23,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for haproxyreceiver metrics.
+// MetricsConfig provides config for haproxy metrics.
 type MetricsConfig struct {
 	HaproxyBytesInput           MetricConfig `mapstructure:"haproxy.bytes.input"`
 	HaproxyBytesOutput          MetricConfig `mapstructure:"haproxy.bytes.output"`
@@ -141,17 +141,17 @@ type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-// ResourceAttributesConfig provides config for haproxyreceiver resource attributes.
+// ResourceAttributesConfig provides config for haproxy resource attributes.
 type ResourceAttributesConfig struct {
-	HaproxyAddr ResourceAttributeConfig `mapstructure:"haproxy.addr"`
-	HaproxyAlgo ResourceAttributeConfig `mapstructure:"haproxy.algo"`
-	HaproxyIid  ResourceAttributeConfig `mapstructure:"haproxy.iid"`
-	HaproxyPid  ResourceAttributeConfig `mapstructure:"haproxy.pid"`
-	HaproxySid  ResourceAttributeConfig `mapstructure:"haproxy.sid"`
-	HaproxyType ResourceAttributeConfig `mapstructure:"haproxy.type"`
-	HaproxyURL  ResourceAttributeConfig `mapstructure:"haproxy.url"`
-	ProxyName   ResourceAttributeConfig `mapstructure:"proxy_name"`
-	ServiceName ResourceAttributeConfig `mapstructure:"service_name"`
+	HaproxyAddr        ResourceAttributeConfig `mapstructure:"haproxy.addr"`
+	HaproxyAlgo        ResourceAttributeConfig `mapstructure:"haproxy.algo"`
+	HaproxyIid         ResourceAttributeConfig `mapstructure:"haproxy.iid"`
+	HaproxyPid         ResourceAttributeConfig `mapstructure:"haproxy.pid"`
+	HaproxyProxyName   ResourceAttributeConfig `mapstructure:"haproxy.proxy_name"`
+	HaproxyServiceName ResourceAttributeConfig `mapstructure:"haproxy.service_name"`
+	HaproxySid         ResourceAttributeConfig `mapstructure:"haproxy.sid"`
+	HaproxyType        ResourceAttributeConfig `mapstructure:"haproxy.type"`
+	HaproxyURL         ResourceAttributeConfig `mapstructure:"haproxy.url"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -168,6 +168,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HaproxyPid: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		HaproxyProxyName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		HaproxyServiceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		HaproxySid: ResourceAttributeConfig{
 			Enabled: true,
 		},
@@ -177,16 +183,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HaproxyURL: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		ProxyName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		ServiceName: ResourceAttributeConfig{
-			Enabled: false,
-		},
 	}
 }
 
-// MetricsBuilderConfig is a configuration for haproxyreceiver metrics builder.
+// MetricsBuilderConfig is a configuration for haproxy metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics            MetricsConfig            `mapstructure:"metrics"`
 	ResourceAttributes ResourceAttributesConfig `mapstructure:"resource_attributes"`

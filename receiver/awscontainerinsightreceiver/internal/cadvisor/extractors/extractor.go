@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package extractors // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/extractors"
 
@@ -41,6 +30,7 @@ type CPUMemInfoProvider interface {
 type MetricExtractor interface {
 	HasValue(*cinfo.ContainerInfo) bool
 	GetValue(info *cinfo.ContainerInfo, mInfo CPUMemInfoProvider, containerType string) []*CAdvisorMetric
+	Shutdown() error
 }
 
 type CAdvisorMetric struct {
@@ -147,7 +137,7 @@ func assignRateValueToField(rateCalculator *awsmetrics.MetricCalculator, fields 
 
 // MergeMetrics merges an array of cadvisor metrics based on common metric keys
 func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
-	var result []*CAdvisorMetric
+	result := make([]*CAdvisorMetric, 0, len(metrics))
 	metricMap := make(map[string]*CAdvisorMetric)
 	for _, metric := range metrics {
 		if metricKey := getMetricKey(metric); metricKey != "" {
@@ -170,7 +160,7 @@ func MergeMetrics(metrics []*CAdvisorMetric) []*CAdvisorMetric {
 // return MetricKey for merge-able metrics
 func getMetricKey(metric *CAdvisorMetric) string {
 	metricType := metric.GetMetricType()
-	metricKey := ""
+	var metricKey string
 	switch metricType {
 	case ci.TypeInstance:
 		// merge cpu, memory, net metric for type Instance

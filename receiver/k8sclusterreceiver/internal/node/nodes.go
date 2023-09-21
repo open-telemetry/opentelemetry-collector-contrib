@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package node // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
 
@@ -18,19 +7,17 @@ import (
 	"fmt"
 	"time"
 
-	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
-	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"github.com/iancoleman/strcase"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
 )
 
 const (
@@ -38,86 +25,75 @@ const (
 	nodeCreationTime = "node.creation_timestamp"
 )
 
-var allocatableDesciption = map[string]string{
-	"cpu":               "How many CPU cores remaining that the node can allocate to pods",
-	"memory":            "How many bytes of RAM memory remaining that the node can allocate to pods",
-	"ephemeral-storage": "How many bytes of ephemeral storage remaining that the node can allocate to pods",
-	"storage":           "How many bytes of storage remaining that the node can allocate to pods",
+// Transform transforms the node to remove the fields that we don't use to reduce RAM utilization.
+// IMPORTANT: Make sure to update this function before using new node fields.
+func Transform(node *corev1.Node) *corev1.Node {
+	newNode := &corev1.Node{
+		ObjectMeta: metadata.TransformObjectMeta(node.ObjectMeta),
+		Status: corev1.NodeStatus{
+			Allocatable: node.Status.Allocatable,
+		},
+	}
+	for _, c := range node.Status.Conditions {
+		newNode.Status.Conditions = append(newNode.Status.Conditions, corev1.NodeCondition{
+			Type:   c.Type,
+			Status: c.Status,
+		})
+	}
+	return newNode
 }
 
-func GetMetrics(node *corev1.Node, nodeConditionTypesToReport, allocatableTypesToReport []string, logger *zap.Logger) []*agentmetricspb.ExportMetricsServiceRequest {
-	metrics := make([]*metricspb.Metric, 0, len(nodeConditionTypesToReport)+len(allocatableTypesToReport))
+func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
+	allocatableTypesToReport []string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
+	rm := pmetric.NewResourceMetrics()
+
+	sm := rm.ScopeMetrics().AppendEmpty()
 	// Adding 'node condition type' metrics
 	for _, nodeConditionTypeValue := range nodeConditionTypesToReport {
-		nodeConditionMetric := getNodeConditionMetric(nodeConditionTypeValue)
 		v1NodeConditionTypeValue := corev1.NodeConditionType(nodeConditionTypeValue)
-
-		metrics = append(metrics, &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name: nodeConditionMetric,
-				Description: fmt.Sprintf("Whether this node is %s (1), "+
-					"not %s (0) or in an unknown state (-1)", nodeConditionTypeValue, nodeConditionTypeValue),
-				Type: metricspb.MetricDescriptor_GAUGE_INT64,
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				utils.GetInt64TimeSeries(nodeConditionValue(node, v1NodeConditionTypeValue)),
-			},
-		})
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(getNodeConditionMetric(nodeConditionTypeValue))
+		m.SetDescription(fmt.Sprintf("%v condition status of the node (true=1, false=0, unknown=-1)", nodeConditionTypeValue))
+		m.SetUnit("1")
+		g := m.SetEmptyGauge()
+		dp := g.DataPoints().AppendEmpty()
+		dp.SetIntValue(nodeConditionValue(node, v1NodeConditionTypeValue))
+		dp.SetTimestamp(ts)
 	}
 
 	// Adding 'node allocatable type' metrics
 	for _, nodeAllocatableTypeValue := range allocatableTypesToReport {
-		nodeAllocatableMetric := getNodeAllocatableMetric(nodeAllocatableTypeValue)
 		v1NodeAllocatableTypeValue := corev1.ResourceName(nodeAllocatableTypeValue)
-		valType := metricspb.MetricDescriptor_GAUGE_INT64
 		quantity, ok := node.Status.Allocatable[v1NodeAllocatableTypeValue]
 		if !ok {
-			logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
+			set.Logger.Debug(fmt.Errorf("allocatable type %v not found in node %v", nodeAllocatableTypeValue,
 				node.GetName()).Error())
 			continue
 		}
-		val := utils.GetInt64TimeSeries(quantity.Value())
-		if v1NodeAllocatableTypeValue == corev1.ResourceCPU {
-			// cpu metrics must be of the double type to adhere to opentelemetry system.cpu metric specifications
-			val = utils.GetDoubleTimeSeries(float64(quantity.MilliValue()) / 1000.0)
-			valType = metricspb.MetricDescriptor_GAUGE_DOUBLE
-		}
-		metrics = append(metrics, &metricspb.Metric{
-			MetricDescriptor: &metricspb.MetricDescriptor{
-				Name:        nodeAllocatableMetric,
-				Description: allocatableDesciption[v1NodeAllocatableTypeValue.String()],
-				Type:        valType,
-			},
-			Timeseries: []*metricspb.TimeSeries{
-				val,
-			},
-		})
+		m := sm.Metrics().AppendEmpty()
+		m.SetName(getNodeAllocatableMetric(nodeAllocatableTypeValue))
+		m.SetDescription(fmt.Sprintf("Amount of %v allocatable on the node", nodeAllocatableTypeValue))
+		m.SetUnit(getNodeAllocatableUnit(v1NodeAllocatableTypeValue))
+		g := m.SetEmptyGauge()
+		dp := g.DataPoints().AppendEmpty()
+		setNodeAllocatableValue(dp, v1NodeAllocatableTypeValue, quantity)
+		dp.SetTimestamp(ts)
 	}
 
-	return []*agentmetricspb.ExportMetricsServiceRequest{
-		{
-			Resource: getResourceForNode(node),
-			Metrics:  metrics,
-		},
+	if sm.Metrics().Len() == 0 {
+		return pmetric.NewResourceMetrics()
 	}
-}
 
-func getNodeConditionMetric(nodeConditionTypeValue string) string {
-	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
-}
+	// TODO: Generate a schema URL for the node metrics in the metadata package and use them here.
+	rm.SetSchemaUrl(conventions.SchemaURL)
+	sm.Scope().SetName("otelcol/k8sclusterreceiver")
+	sm.Scope().SetVersion(set.BuildInfo.Version)
 
-func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
-	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
-}
-
-func getResourceForNode(node *corev1.Node) *resourcepb.Resource {
-	return &resourcepb.Resource{
-		Type: constants.K8sType,
-		Labels: map[string]string{
-			conventions.AttributeK8SNodeUID:  string(node.UID),
-			conventions.AttributeK8SNodeName: node.Name,
-		},
-	}
+	rb.SetK8sNodeUID(string(node.UID))
+	rb.SetK8sNodeName(node.Name)
+	rb.SetOpencensusResourcetype("k8s")
+	rb.Emit().MoveTo(rm.Resource())
+	return rm
 }
 
 var nodeConditionValues = map[corev1.ConditionStatus]int64{
@@ -146,9 +122,40 @@ func GetMetadata(node *corev1.Node) map[experimentalmetricmetadata.ResourceID]*m
 	nodeID := experimentalmetricmetadata.ResourceID(node.UID)
 	return map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		nodeID: {
+			EntityType:    "k8s.node",
 			ResourceIDKey: conventions.AttributeK8SNodeUID,
 			ResourceID:    nodeID,
 			Metadata:      meta,
 		},
 	}
+}
+
+func getNodeConditionMetric(nodeConditionTypeValue string) string {
+	return fmt.Sprintf("k8s.node.condition_%s", strcase.ToSnake(nodeConditionTypeValue))
+}
+
+func getNodeAllocatableUnit(res corev1.ResourceName) string {
+	switch res {
+	case corev1.ResourceCPU:
+		return "{cpu}"
+	case corev1.ResourceMemory, corev1.ResourceEphemeralStorage, corev1.ResourceStorage:
+		return "By"
+	case corev1.ResourcePods:
+		return "{pod}"
+	default:
+		return fmt.Sprintf("{%s}", string(res))
+	}
+}
+
+func setNodeAllocatableValue(dp pmetric.NumberDataPoint, res corev1.ResourceName, q resource.Quantity) {
+	switch res {
+	case corev1.ResourceCPU:
+		dp.SetDoubleValue(float64(q.MilliValue()) / 1000.0)
+	default:
+		dp.SetIntValue(q.Value())
+	}
+}
+
+func getNodeAllocatableMetric(nodeAllocatableTypeValue string) string {
+	return fmt.Sprintf("k8s.node.allocatable_%s", strcase.ToSnake(nodeAllocatableTypeValue))
 }

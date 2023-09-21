@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package stores // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 
@@ -86,6 +75,8 @@ type mapWithExpiry struct {
 }
 
 func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
 		return val.RawValue, ok
 	}
@@ -94,6 +85,8 @@ func (m *mapWithExpiry) Get(key string) (interface{}, bool) {
 }
 
 func (m *mapWithExpiry) Set(key string, content interface{}) {
+	m.MapWithExpiry.Lock()
+	defer m.MapWithExpiry.Unlock()
 	val := awsmetrics.MetricValue{
 		RawValue:  content,
 		Timestamp: time.Now(),
@@ -167,6 +160,19 @@ func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel 
 	}
 
 	return podStore, nil
+}
+
+func (p *PodStore) Shutdown() error {
+	var errs error
+	errs = p.cache.Shutdown()
+	p.prevMeasurements.Range(
+		func(key, prevMeasurement interface{}) bool {
+			if prevMeasErr := prevMeasurement.(*mapWithExpiry).Shutdown(); prevMeasErr != nil {
+				errs = errors.Join(errs, prevMeasErr)
+			}
+			return true
+		})
+	return errs
 }
 
 func (p *PodStore) getPrevMeasurement(metricType, metricKey string) (interface{}, bool) {
@@ -276,7 +282,9 @@ func (p *PodStore) refresh(ctx context.Context, now time.Time) {
 func (p *PodStore) cleanup(now time.Time) {
 	p.prevMeasurements.Range(
 		func(key, prevMeasurement interface{}) bool {
+			prevMeasurement.(*mapWithExpiry).Lock()
 			prevMeasurement.(*mapWithExpiry).CleanUp(now)
+			prevMeasurement.(*mapWithExpiry).Unlock()
 			return true
 		})
 	p.cache.CleanUp(now)

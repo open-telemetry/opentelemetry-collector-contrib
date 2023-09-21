@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type             = "saphanareceiver"
+	Type             = "saphana"
 	MetricsStability = component.StabilityLevelDevelopment
 )

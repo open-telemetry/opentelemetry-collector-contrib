@@ -1,10 +1,12 @@
-type: haproxyreceiver
+type: haproxy
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib]
+  distributions: [contrib, sumo]
+  codeowners:
+    active: [atoulme, MovieStoreGuy]
 
 resource_attributes:
   haproxy.url:
@@ -35,11 +37,13 @@ resource_attributes:
     description: load balancing algorithm
     enabled: true
     type: string
-  proxy_name:
+  haproxy.proxy_name:
     description: Proxy name
+    enabled: true
     type: string
-  service_name:
+  haproxy.service_name:
     description: Service name (FRONTEND for frontend, BACKEND for backend, any name for server/listener)
+    enabled: true
     type: string
 
 attributes:
@@ -74,7 +78,7 @@ metrics:
     description: Cumulative number of connections (frontend). Corresponds to HAProxy's `conn_tot` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -83,7 +87,7 @@ metrics:
     description: Number of times a server was selected, either for new sessions or when re-dispatching. Corresponds to HAProxy's `lbtot` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -92,7 +96,7 @@ metrics:
     description: Bytes in. Corresponds to HAProxy's `bin` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -101,7 +105,7 @@ metrics:
     description: Bytes out. Corresponds to HAProxy's `bout` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -110,7 +114,7 @@ metrics:
     description: Number of data transfers aborted by the client. Corresponds to HAProxy's `cli_abrt` metric
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -119,7 +123,7 @@ metrics:
     description: Number of bytes that bypassed the HTTP compressor (CPU/BW limit). Corresponds to HAProxy's `comp_byp` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -128,7 +132,7 @@ metrics:
     description: Number of HTTP response bytes fed to the compressor. Corresponds to HAProxy's `comp_in` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -137,7 +141,7 @@ metrics:
     description: Number of HTTP response bytes emitted by the compressor. Corresponds to HAProxy's `comp_out` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -146,7 +150,7 @@ metrics:
     description: Number of HTTP responses that were compressed. Corresponds to HAProxy's `comp_rsp` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -155,7 +159,7 @@ metrics:
     description: Requests denied because of security concerns. Corresponds to HAProxy's `dreq` metric
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -164,7 +168,7 @@ metrics:
     description: Responses denied because of security concerns. Corresponds to HAProxy's `dresp` metric
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -173,7 +177,7 @@ metrics:
     description:  Total downtime (in seconds). The value for the backend is the downtime for the whole backend, not the sum of the server downtime. Corresponds to HAProxy's `downtime` metric
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -182,7 +186,7 @@ metrics:
     description: Number of requests that encountered an error trying to connect to a backend server. The backend stat is the sum of the stat. Corresponds to HAProxy's `econ` metric
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -191,7 +195,7 @@ metrics:
     description: Cumulative number of request errors. Corresponds to HAProxy's `ereq` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -200,7 +204,7 @@ metrics:
     description: Cumulative number of response errors. Corresponds to HAProxy's `eresp` metric, `srv_abrt` will be counted here also.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{errors}"
@@ -208,7 +212,7 @@ metrics:
     description: Number of failed checks. (Only counts checks failed when the server is up). Corresponds to HAProxy's `chkfail` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -217,7 +221,7 @@ metrics:
     description: Number of times a request was redispatched to another server. Corresponds to HAProxy's `wredis` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -226,7 +230,7 @@ metrics:
     description: Total number of HTTP requests received. Corresponds to HAProxy's `req_tot`, `hrsp_1xx`, `hrsp_2xx`, `hrsp_3xx`, `hrsp_4xx`, `hrsp_5xx` and `hrsp_other` metrics.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -237,7 +241,7 @@ metrics:
     description: Number of times a connection to a server was retried. Corresponds to HAProxy's `wretr` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -246,7 +250,7 @@ metrics:
     description: Cumulative number of sessions. Corresponds to HAProxy's `stot` metric.
     enabled: false
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string
@@ -255,7 +259,7 @@ metrics:
     description: Current queued requests. For the backend this reports the number queued without a server assigned. Corresponds to HAProxy's `qcur` metric.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
       input_type: string

@@ -1,23 +1,11 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package jaegerreceiver
 
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -40,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName(typeStr, "customname"),
+			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -71,18 +61,10 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				RemoteSampling: &RemoteSamplingConfig{
-					HostEndpoint: "0.0.0.0:5778",
-					GRPCClientSettings: configgrpc.GRPCClientSettings{
-						Endpoint: "jaeger-collector:1234",
-					},
-					StrategyFile:               "/etc/strategies.json",
-					StrategyFileReloadInterval: time.Second * 10,
-				},
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "defaults"),
+			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -106,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "mixed"),
+			id: component.NewIDWithName(metadata.Type, "mixed"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -123,7 +105,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(typeStr, "tls"),
+			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
 				Protocols: Protocols{
 					GRPC: &configgrpc.GRPCServerSettings{
@@ -167,17 +149,17 @@ func TestFailedLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewIDWithName(typeStr, "typo_default_proto_config").String())
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "typo_default_proto_config").String())
 	require.NoError(t, err)
 	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	sub, err = cm.Sub(component.NewIDWithName(typeStr, "bad_proto_config").String())
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "bad_proto_config").String())
 	require.NoError(t, err)
 	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift_htttp")
 
-	sub, err = cm.Sub(component.NewIDWithName(typeStr, "empty").String())
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "empty").String())
 	require.NoError(t, err)
 	err = component.UnmarshalConfig(sub, cfg)
 	assert.EqualError(t, err, "empty config for Jaeger receiver")
@@ -217,15 +199,6 @@ func TestInvalidConfig(t *testing.T) {
 			err: "receiver creation with no port number for Thrift UDP - Binary must fail",
 		},
 		{
-			desc: "remote-sampling-http-no-port",
-			apply: func(cfg *Config) {
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint: "localhost:",
-				}
-			},
-			err: "receiver creation with no port number for the remote sampling HTTP endpoint must fail",
-		},
-		{
 			desc: "grpc-invalid-host",
 			apply: func(cfg *Config) {
 				cfg.GRPC = &configgrpc.GRPCServerSettings{
@@ -252,37 +225,6 @@ func TestInvalidConfig(t *testing.T) {
 				}
 			},
 			err: "receiver creation with too large port number must fail",
-		},
-		{
-			desc: "port-outside-of-range",
-			apply: func(cfg *Config) {
-				cfg.Protocols = Protocols{}
-				cfg.ThriftCompact = &ProtocolUDP{
-					Endpoint: defaultThriftCompactBindEndpoint,
-				}
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint: "localhost:5778",
-					StrategyFile: "strategies.json",
-				}
-			},
-			err: "receiver creation without gRPC and with remote sampling config",
-		},
-		{
-			desc: "reload-interval-outside-of-range",
-			apply: func(cfg *Config) {
-				cfg.Protocols.GRPC = &configgrpc.GRPCServerSettings{
-					NetAddr: confignet.NetAddr{
-						Endpoint:  "1234",
-						Transport: "tcp",
-					},
-				}
-				cfg.RemoteSampling = &RemoteSamplingConfig{
-					HostEndpoint:               "localhost:5778",
-					StrategyFile:               "strategies.json",
-					StrategyFileReloadInterval: -time.Second,
-				}
-			},
-			err: "strategy file reload interval should be great zero",
 		},
 	}
 	for _, tC := range testCases {

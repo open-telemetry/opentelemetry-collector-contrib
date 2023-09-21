@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusremotewriteexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 
@@ -27,10 +16,11 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 		return nil, errors.New("invalid tsMap: cannot be empty map")
 	}
 
-	var requests []*prompb.WriteRequest
-	var tsArray []prompb.TimeSeries
+	requests := make([]*prompb.WriteRequest, 0, len(tsMap))
+	tsArray := make([]prompb.TimeSeries, 0, len(tsMap))
 	sizeOfCurrentBatch := 0
 
+	i := 0
 	for _, v := range tsMap {
 		sizeOfSeries := v.Size()
 
@@ -38,12 +28,13 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int) 
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
-			tsArray = nil
+			tsArray = make([]prompb.TimeSeries, 0, len(tsMap)-i)
 			sizeOfCurrentBatch = 0
 		}
 
 		tsArray = append(tsArray, *v)
 		sizeOfCurrentBatch += sizeOfSeries
+		i++
 	}
 
 	if len(tsArray) != 0 {

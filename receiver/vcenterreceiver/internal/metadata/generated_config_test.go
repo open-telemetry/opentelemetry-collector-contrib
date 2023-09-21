@@ -61,17 +61,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMMemorySwapped:          MetricConfig{Enabled: true},
 					VcenterVMMemorySwappedSsd:       MetricConfig{Enabled: true},
 					VcenterVMMemoryUsage:            MetricConfig{Enabled: true},
+					VcenterVMMemoryUtilization:      MetricConfig{Enabled: true},
 					VcenterVMNetworkPacketCount:     MetricConfig{Enabled: true},
 					VcenterVMNetworkThroughput:      MetricConfig{Enabled: true},
 					VcenterVMNetworkUsage:           MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					VcenterClusterName:      ResourceAttributeConfig{Enabled: true},
-					VcenterDatastoreName:    ResourceAttributeConfig{Enabled: true},
-					VcenterHostName:         ResourceAttributeConfig{Enabled: true},
-					VcenterResourcePoolName: ResourceAttributeConfig{Enabled: true},
-					VcenterVMID:             ResourceAttributeConfig{Enabled: true},
-					VcenterVMName:           ResourceAttributeConfig{Enabled: true},
+					VcenterClusterName:               ResourceAttributeConfig{Enabled: true},
+					VcenterDatastoreName:             ResourceAttributeConfig{Enabled: true},
+					VcenterHostName:                  ResourceAttributeConfig{Enabled: true},
+					VcenterResourcePoolInventoryPath: ResourceAttributeConfig{Enabled: true},
+					VcenterResourcePoolName:          ResourceAttributeConfig{Enabled: true},
+					VcenterVMID:                      ResourceAttributeConfig{Enabled: true},
+					VcenterVMName:                    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -114,17 +116,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMMemorySwapped:          MetricConfig{Enabled: false},
 					VcenterVMMemorySwappedSsd:       MetricConfig{Enabled: false},
 					VcenterVMMemoryUsage:            MetricConfig{Enabled: false},
+					VcenterVMMemoryUtilization:      MetricConfig{Enabled: false},
 					VcenterVMNetworkPacketCount:     MetricConfig{Enabled: false},
 					VcenterVMNetworkThroughput:      MetricConfig{Enabled: false},
 					VcenterVMNetworkUsage:           MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					VcenterClusterName:      ResourceAttributeConfig{Enabled: false},
-					VcenterDatastoreName:    ResourceAttributeConfig{Enabled: false},
-					VcenterHostName:         ResourceAttributeConfig{Enabled: false},
-					VcenterResourcePoolName: ResourceAttributeConfig{Enabled: false},
-					VcenterVMID:             ResourceAttributeConfig{Enabled: false},
-					VcenterVMName:           ResourceAttributeConfig{Enabled: false},
+					VcenterClusterName:               ResourceAttributeConfig{Enabled: false},
+					VcenterDatastoreName:             ResourceAttributeConfig{Enabled: false},
+					VcenterHostName:                  ResourceAttributeConfig{Enabled: false},
+					VcenterResourcePoolInventoryPath: ResourceAttributeConfig{Enabled: false},
+					VcenterResourcePoolName:          ResourceAttributeConfig{Enabled: false},
+					VcenterVMID:                      ResourceAttributeConfig{Enabled: false},
+					VcenterVMName:                    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -145,6 +149,62 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				VcenterClusterName:               ResourceAttributeConfig{Enabled: true},
+				VcenterDatastoreName:             ResourceAttributeConfig{Enabled: true},
+				VcenterHostName:                  ResourceAttributeConfig{Enabled: true},
+				VcenterResourcePoolInventoryPath: ResourceAttributeConfig{Enabled: true},
+				VcenterResourcePoolName:          ResourceAttributeConfig{Enabled: true},
+				VcenterVMID:                      ResourceAttributeConfig{Enabled: true},
+				VcenterVMName:                    ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				VcenterClusterName:               ResourceAttributeConfig{Enabled: false},
+				VcenterDatastoreName:             ResourceAttributeConfig{Enabled: false},
+				VcenterHostName:                  ResourceAttributeConfig{Enabled: false},
+				VcenterResourcePoolInventoryPath: ResourceAttributeConfig{Enabled: false},
+				VcenterResourcePoolName:          ResourceAttributeConfig{Enabled: false},
+				VcenterVMID:                      ResourceAttributeConfig{Enabled: false},
+				VcenterVMName:                    ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

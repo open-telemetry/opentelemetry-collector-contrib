@@ -1,4 +1,12 @@
-type: kubeletstatsreceiver
+type: kubeletstats
+
+status:
+  class: receiver
+  stability:
+    beta: [metrics]
+  distributions: [contrib, observiq, splunk, sumo]
+  codeowners:
+    active: [dmitryax, TylerHelmuth]
 
 resource_attributes:
   k8s.node.name:
@@ -87,7 +95,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   k8s.node.memory.available:
     enabled: true
@@ -159,7 +167,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.node.network.errors:
     enabled: true
@@ -168,8 +176,17 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.uptime:
+    enabled: false
+    description: "The time since the node started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"
@@ -184,7 +201,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   k8s.pod.memory.available:
     enabled: true
@@ -256,7 +273,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.pod.network.errors:
     enabled: true
@@ -265,8 +282,17 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.pod.uptime:
+    enabled: false
+    description: "The time since the pod started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"
@@ -281,7 +307,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   container.memory.available:
     enabled: true
@@ -345,6 +371,15 @@ metrics:
     unit: By
     gauge:
       value_type: int
+    attributes: []
+  container.uptime:
+    enabled: false
+    description: "The time since the container started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
     attributes: []
   k8s.volume.available:
     enabled: true

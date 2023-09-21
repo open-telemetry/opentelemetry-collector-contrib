@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package metadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 
@@ -28,6 +17,8 @@ import (
 
 // KubernetesMetadata associates a resource to a set of properties.
 type KubernetesMetadata struct {
+	// The type of the entity, e.g. k8s.pod
+	EntityType string
 	// resourceIDKey is the label key of UID label for the resource.
 	ResourceIDKey string
 	// resourceID is the Kubernetes UID of the resource. In case of
@@ -35,6 +26,24 @@ type KubernetesMetadata struct {
 	ResourceID metadataPkg.ResourceID
 	// metadata is a set of key-value pairs that describe a resource.
 	Metadata map[string]string
+}
+
+func TransformObjectMeta(om v1.ObjectMeta) v1.ObjectMeta {
+	newOM := v1.ObjectMeta{
+		Name:              om.Name,
+		Namespace:         om.Namespace,
+		UID:               om.UID,
+		CreationTimestamp: om.CreationTimestamp,
+		Labels:            om.Labels,
+	}
+	for _, or := range om.OwnerReferences {
+		newOM.OwnerReferences = append(newOM.OwnerReferences, v1.OwnerReference{
+			Kind: or.Kind,
+			Name: or.Name,
+			UID:  or.UID,
+		})
+	}
+	return newOM
 }
 
 // GetGenericMetadata is responsible for collecting metadata from K8s resources that
@@ -55,6 +64,7 @@ func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	}
 
 	return &KubernetesMetadata{
+		EntityType:    getOTelEntityTypeFromKind(rType),
 		ResourceIDKey: GetOTelUIDFromKind(rType),
 		ResourceID:    metadataPkg.ResourceID(om.UID),
 		Metadata:      metadata,
@@ -67,6 +77,10 @@ func GetOTelUIDFromKind(kind string) string {
 
 func GetOTelNameFromKind(kind string) string {
 	return fmt.Sprintf("k8s.%s.name", kind)
+}
+
+func getOTelEntityTypeFromKind(kind string) string {
+	return fmt.Sprintf("k8s.%s", kind)
 }
 
 // mergeKubernetesMetadataMaps merges maps of string (resource id) to
@@ -84,13 +98,13 @@ func MergeKubernetesMetadataMaps(maps ...map[metadataPkg.ResourceID]*KubernetesM
 
 // GetMetadataUpdate processes metadata updates and returns
 // a map of a delta of metadata mapped to each resource.
-func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
+func GetMetadataUpdate(oldMetadata, newMetadata map[metadataPkg.ResourceID]*KubernetesMetadata) []*metadataPkg.MetadataUpdate {
 	var out []*metadataPkg.MetadataUpdate
 
-	for id, oldMetadata := range old {
+	for id, oldMetadata := range oldMetadata {
 		// if an object with the same id has a previous revision, take a delta
 		// of the metadata.
-		if newMetadata, ok := new[id]; ok {
+		if newMetadata, ok := newMetadata[id]; ok {
 			if metadataDelta := getMetadataDelta(oldMetadata.Metadata, newMetadata.Metadata); metadataDelta != nil {
 				out = append(out, &metadataPkg.MetadataUpdate{
 					ResourceIDKey: oldMetadata.ResourceIDKey,
@@ -103,9 +117,9 @@ func GetMetadataUpdate(old, new map[metadataPkg.ResourceID]*KubernetesMetadata) 
 
 	// In case there are resources in the current revision, that was not in the
 	// previous revision, collect metadata to be added
-	for id, km := range new {
+	for id, km := range newMetadata {
 		// if an id is seen for the first time, all metadata need to be added.
-		if _, ok := old[id]; !ok {
+		if _, ok := oldMetadata[id]; !ok {
 			out = append(out, &metadataPkg.MetadataUpdate{
 				ResourceIDKey: km.ResourceIDKey,
 				ResourceID:    id,

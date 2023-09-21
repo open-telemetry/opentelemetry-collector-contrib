@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [traces]
     development: [metrics, logs]
+  codeowners:
+    active: [mx-psi, codeboten]

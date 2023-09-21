@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//       http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package prometheusreceiver
 
@@ -24,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -61,6 +49,10 @@ func verifyPositiveTarget(t *testing.T, _ *testData, mds []pmetric.ResourceMetri
 	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
 	metrics := getMetrics(mds[0])
 	assertUp(t, 1, metrics)
+	// if we only have one ResourceMetrics, then we should have a non-default metric in there
+	if len(mds) == 1 {
+		require.Greater(t, len(metrics), countScrapeMetrics(metrics, false))
+	}
 }
 
 // Test open metrics positive test cases
@@ -68,7 +60,7 @@ func TestOpenMetricsPositive(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10148")
 	}
-	targetsMap := getOpenMetricsTestData(false)
+	targetsMap := getOpenMetricsPositiveTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
@@ -82,10 +74,10 @@ func TestOpenMetricsPositive(t *testing.T) {
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 }
 
-func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
+func verifyFailTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
 	// failing negative tests are skipped since prometheus scrape package is currently not fully
 	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
 	// see: https://github.com/prometheus/prometheus/issues/9699
@@ -99,9 +91,9 @@ func verifyNegativeTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetr
 }
 
 // Test open metrics negative test cases
-func TestOpenMetricsNegative(t *testing.T) {
+func TestOpenMetricsFail(t *testing.T) {
 
-	targetsMap := getOpenMetricsTestData(true)
+	targetsMap := getOpenMetricsFailTestData()
 	var targets []*testData
 	for k, v := range targetsMap {
 		testData := &testData{
@@ -109,17 +101,52 @@ func TestOpenMetricsNegative(t *testing.T) {
 			pages: []mockPrometheusResponse{
 				{code: 200, data: v, useOpenMetrics: true},
 			},
-			validateFunc:    verifyNegativeTarget,
+			validateFunc:    verifyFailTarget,
 			validateScrapes: true,
 		}
 		targets = append(targets, testData)
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
+}
+
+func verifyInvalidTarget(t *testing.T, td *testData, mds []pmetric.ResourceMetrics) {
+	// failing negative tests are skipped since prometheus scrape package is currently not fully
+	// compatible with OpenMetrics tests and successfully scrapes some invalid metrics
+	// see: https://github.com/prometheus/prometheus/issues/9699
+	if _, ok := skippedTests[td.name]; ok {
+		t.Skip("skipping failing negative OpenMetrics parser tests")
+	}
+
+	require.Greater(t, len(mds), 0, "At least one resource metric should be present")
+	metrics := getMetrics(mds[0])
+
+	// The Prometheus scrape parser accepted the sample, but the receiver dropped it due to incompatibility with the Otel schema.
+	// In this case, we get just the default metrics.
+	require.Equal(t, len(metrics), countScrapeMetrics(metrics, false))
+}
+
+func TestOpenMetricsInvalid(t *testing.T) {
+
+	targetsMap := getOpenMetricsInvalidTestData()
+	var targets []*testData
+	for k, v := range targetsMap {
+		testData := &testData{
+			name: k,
+			pages: []mockPrometheusResponse{
+				{code: 200, data: v, useOpenMetrics: true},
+			},
+			validateFunc:    verifyInvalidTarget,
+			validateScrapes: true,
+		}
+		targets = append(targets, testData)
+	}
+
+	testComponent(t, targets, false, false, "")
 }
 
 // reads test data from testdata/openmetrics directory
-func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
+func getOpenMetricsTestData(testNameFilterFunc func(testName string) bool) map[string]string {
 	testDir, err := os.Open(testDir)
 	if err != nil {
 		log.Fatalf("failed opening openmetrics test directory")
@@ -135,9 +162,7 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 		if strings.HasPrefix(testName, ".") {
 			continue
 		}
-		if negativeTestsOnly && !strings.Contains(testName, "bad") {
-			continue
-		} else if !negativeTestsOnly && strings.Contains(testName, "bad") {
+		if !testNameFilterFunc(testName) {
 			continue
 		}
 		if testData, err := readTestCase(testName); err == nil {
@@ -145,6 +170,24 @@ func getOpenMetricsTestData(negativeTestsOnly bool) map[string]string {
 		}
 	}
 	return targetsData
+}
+
+func getOpenMetricsPositiveTestData() map[string]string {
+	return getOpenMetricsTestData(func(testName string) bool {
+		return !strings.HasPrefix(testName, "bad") && !strings.HasPrefix(testName, "invalid")
+	})
+}
+
+func getOpenMetricsFailTestData() map[string]string {
+	return getOpenMetricsTestData(func(testName string) bool {
+		return strings.HasPrefix(testName, "bad")
+	})
+}
+
+func getOpenMetricsInvalidTestData() map[string]string {
+	return getOpenMetricsTestData(func(testName string) bool {
+		return strings.HasPrefix(testName, "invalid")
+	})
 }
 
 func readTestCase(testName string) (string, error) {
@@ -185,7 +228,7 @@ func TestInfoStatesetMetrics(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, false, false, "")
 
 }
 
@@ -203,6 +246,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 	e1 := []testExpectation{
 		assertMetricPresent("foo",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -221,6 +265,7 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 			}),
 		assertMetricPresent("bar",
 			compareMetricIsMonotonic(false),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{

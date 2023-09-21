@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oauth2clientauthextension
 
@@ -27,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/clientcredentials"
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
@@ -134,6 +124,98 @@ func TestOAuthClientSettings(t *testing.T) {
 			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
+
+			// test tls settings
+			transport := rc.client.Transport.(*http.Transport)
+			tlsClientConfig := transport.TLSClientConfig
+			tlsTestSettingConfig, err := test.settings.TLSSetting.LoadTLSConfig()
+			assert.Nil(t, err)
+			assert.Equal(t, tlsClientConfig.Certificates, tlsTestSettingConfig.Certificates)
+		})
+	}
+}
+
+func TestOAuthClientSettingsCredsConfig(t *testing.T) {
+	// test files for TLS testing
+	var (
+		testCredsFile        = "testdata/test-cred.txt"
+		testCredsEmptyFile   = "testdata/test-cred-empty.txt"
+		testCredsMissingFile = "testdata/test-cred-missing.txt"
+	)
+
+	tests := []struct {
+		name                 string
+		settings             *Config
+		expectedClientConfig *clientcredentials.Config
+		shouldError          bool
+		expectedError        error
+	}{
+		{
+			name: "client_id_file",
+			settings: &Config{
+				ClientIDFile: testCredsFile,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testcreds",
+				ClientSecret: "testsecret",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "client_secret_file",
+			settings: &Config{
+				ClientID:         "testclientid",
+				ClientSecretFile: testCredsFile,
+				TokenURL:         "https://example.com/v1/token",
+				Scopes:           []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testcreds",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "empty_client_creds_file",
+			settings: &Config{
+				ClientIDFile: testCredsEmptyFile,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError:   true,
+			expectedError: errNoClientIDProvided,
+		},
+		{
+			name: "missing_client_creds_file",
+			settings: &Config{
+				ClientID:         "testclientid",
+				ClientSecretFile: testCredsMissingFile,
+				TokenURL:         "https://example.com/v1/token",
+				Scopes:           []string{"resource.read"},
+			},
+			shouldError:   true,
+			expectedError: errNoClientSecretProvided,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			rc, _ := newClientAuthenticator(test.settings, zap.NewNop())
+			cfg, err := rc.clientCredentials.createConfig()
+			if test.shouldError {
+				assert.NotNil(t, err)
+				assert.ErrorAs(t, err, &test.expectedError)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, test.expectedClientConfig.ClientID, cfg.ClientID)
+			assert.Equal(t, test.expectedClientConfig.ClientSecret, cfg.ClientSecret)
 
 			// test tls settings
 			transport := rc.client.Transport.(*http.Transport)

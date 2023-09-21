@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
 
@@ -89,14 +78,14 @@ var (
 )
 
 func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
-	var output []*cloudwatchlogs.LogGroup
-	for _, lg := range logGroupFiles {
+	output := make([]*cloudwatchlogs.LogGroup, len(logGroupFiles))
+	for i, lg := range logGroupFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var logGroup cloudwatchlogs.LogGroup
 		err = json.Unmarshal(bytes, &logGroup)
 		require.NoError(t, err)
-		output = append(output, &logGroup)
+		output[i] = &logGroup
 	}
 
 	return &cloudwatchlogs.DescribeLogGroupsOutput{
@@ -106,14 +95,14 @@ func loadLogGroups(t *testing.T) *cloudwatchlogs.DescribeLogGroupsOutput {
 }
 
 func loadLogEvents(t *testing.T) *cloudwatchlogs.FilterLogEventsOutput {
-	var output []*cloudwatchlogs.FilteredLogEvent
-	for _, lg := range logEventsFiles {
+	output := make([]*cloudwatchlogs.FilteredLogEvent, len(logEventsFiles))
+	for i, lg := range logEventsFiles {
 		bytes, err := os.ReadFile(lg)
 		require.NoError(t, err)
 		var event cloudwatchlogs.FilteredLogEvent
 		err = json.Unmarshal(bytes, &event)
 		require.NoError(t, err)
-		output = append(output, &event)
+		output[i] = &event
 	}
 
 	return &cloudwatchlogs.FilterLogEventsOutput{

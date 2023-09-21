@@ -1,0 +1,9 @@
+type: journald
+
+status:
+  class: receiver
+  stability:
+    alpha: [logs]
+  distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [sumo-drosiek, djaglowski]

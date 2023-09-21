@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package dockerstatsreceiver
 
@@ -38,18 +27,19 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id:       component.NewIDWithName(typeStr, ""),
+			id:       component.NewIDWithName(metadata.Type, ""),
 			expected: createDefaultConfig(),
 		},
 		{
-			id: component.NewIDWithName(typeStr, "allsettings"),
+			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 2 * time.Second,
+					InitialDelay:       time.Second,
+					Timeout:            20 * time.Second,
 				},
 
 				Endpoint:         "http://example.com/",
-				Timeout:          20 * time.Second,
 				DockerAPIVersion: 1.24,
 
 				ExcludedImages: []string{
@@ -101,11 +91,8 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateErrors(t *testing.T) {
-	cfg := &Config{}
+	cfg := &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
 	assert.Equal(t, "endpoint must be specified", component.ValidateConfig(cfg).Error())
-
-	cfg = &Config{Endpoint: "someEndpoint"}
-	assert.Equal(t, "collection_interval must be a positive duration", component.ValidateConfig(cfg).Error())
 
 	cfg = &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{CollectionInterval: 1 * time.Second}, Endpoint: "someEndpoint", DockerAPIVersion: 1.21}
 	assert.Equal(t, "api_version must be at least 1.22", component.ValidateConfig(cfg).Error())

@@ -1,21 +1,13 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 
 import (
 	"fmt"
+	"regexp"
+
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
@@ -59,6 +51,66 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	for _, f := range append(cfg.Extract.Labels, cfg.Extract.Annotations...) {
+		if f.Key != "" && f.KeyRegex != "" {
+			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", f.Key, f.KeyRegex)
+		}
+
+		switch f.From {
+		case "", kube.MetadataFromPod, kube.MetadataFromNamespace:
+		default:
+			return fmt.Errorf("%s is not a valid choice for From. Must be one of: pod, namespace", f.From)
+		}
+
+		if f.Regex != "" {
+			r, err := regexp.Compile(f.Regex)
+			if err != nil {
+				return err
+			}
+			names := r.SubexpNames()
+			if len(names) != 2 || names[1] != "value" {
+				return fmt.Errorf("regex must contain exactly one named submatch (value)")
+			}
+		}
+
+		if f.KeyRegex != "" {
+			_, err := regexp.Compile("^(?:" + f.KeyRegex + ")$")
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for _, field := range cfg.Extract.Metadata {
+		switch field {
+		case conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID,
+			specPodHostName, metadataPodStartTime, conventions.AttributeK8SDeploymentName, conventions.AttributeK8SDeploymentUID,
+			conventions.AttributeK8SReplicaSetName, conventions.AttributeK8SReplicaSetUID, conventions.AttributeK8SDaemonSetName,
+			conventions.AttributeK8SDaemonSetUID, conventions.AttributeK8SStatefulSetName, conventions.AttributeK8SStatefulSetUID,
+			conventions.AttributeK8SContainerName, conventions.AttributeK8SJobName, conventions.AttributeK8SJobUID,
+			conventions.AttributeK8SCronJobName, conventions.AttributeK8SNodeName, conventions.AttributeContainerID,
+			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag, clusterUID:
+		default:
+			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
+		}
+	}
+
+	for _, f := range cfg.Filter.Labels {
+		switch f.Op {
+		case "", filterOPEquals, filterOPNotEquals, filterOPExists, filterOPDoesNotExist:
+		default:
+			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+		}
+	}
+
+	for _, f := range cfg.Filter.Fields {
+		switch f.Op {
+		case "", filterOPEquals, filterOPNotEquals:
+		default:
+			return fmt.Errorf("'%s' is not a valid label filter operation for key=%s, value=%s", f.Op, f.Key, f.Value)
+		}
+	}
+
 	return nil
 }
 
@@ -77,6 +129,7 @@ type ExtractConfig struct {
 	//   k8s.statefulset.name, k8s.statefulset.uid,
 	//   k8s.container.name, container.image.name,
 	//   container.image.tag, container.id
+	//   k8s.cluster.uid
 	//
 	// Specifying anything other than these values will result in an error.
 	// By default, the following fields are extracted and added to spans, metrics and logs as attributes:

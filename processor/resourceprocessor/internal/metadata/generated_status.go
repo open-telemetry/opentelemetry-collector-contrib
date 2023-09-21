@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	Type             = "resourceprocessor"
+	Type             = "resource"
 	TracesStability  = component.StabilityLevelBeta
 	MetricsStability = component.StabilityLevelBeta
 	LogsStability    = component.StabilityLevelBeta

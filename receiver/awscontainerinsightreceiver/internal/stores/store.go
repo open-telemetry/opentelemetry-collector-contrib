@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package stores // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
 
@@ -52,6 +41,8 @@ type K8sDecorator struct {
 	// object for canceling the request
 	ctx                         context.Context
 	addContainerNameMetricLabel bool
+	// the pod store needs to be saved here because the map it is stateful and needs to be shut down.
+	podStore *PodStore
 }
 
 func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, addContainerNameMetricLabel bool, includeEnhancedMetrics bool, logger *zap.Logger) (*K8sDecorator, error) {
@@ -69,6 +60,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	if err != nil {
 		return nil, err
 	}
+	k.podStore = podstore
 	k.stores = append(k.stores, podstore)
 
 	if tagService {
@@ -109,4 +101,8 @@ func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.C
 	AddKubernetesInfo(metric, kubernetesBlob, k.addContainerNameMetricLabel)
 	TagMetricSource(metric)
 	return metric
+}
+
+func (k *K8sDecorator) Shutdown() error {
+	return k.podStore.Shutdown()
 }

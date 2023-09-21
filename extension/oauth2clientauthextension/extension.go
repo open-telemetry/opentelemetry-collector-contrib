@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package oauth2clientauthextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 
@@ -30,7 +19,7 @@ import (
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
-	clientCredentials *clientcredentials.Config
+	clientCredentials *clientCredentialsConfig
 	logger            *zap.Logger
 	client            *http.Client
 }
@@ -47,10 +36,10 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 var errFailedToGetSecurityToken = fmt.Errorf("failed to get security token from token endpoint")
 
 func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
-	if cfg.ClientID == "" {
+	if cfg.ClientID == "" && cfg.ClientIDFile == "" {
 		return nil, errNoClientIDProvided
 	}
-	if cfg.ClientSecret == "" {
+	if cfg.ClientSecret == "" && cfg.ClientSecretFile == "" {
 		return nil, errNoClientSecretProvided
 	}
 	if cfg.TokenURL == "" {
@@ -66,12 +55,16 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticat
 	transport.TLSClientConfig = tlsCfg
 
 	return &clientAuthenticator{
-		clientCredentials: &clientcredentials.Config{
-			ClientID:       cfg.ClientID,
-			ClientSecret:   string(cfg.ClientSecret),
-			TokenURL:       cfg.TokenURL,
-			Scopes:         cfg.Scopes,
-			EndpointParams: cfg.EndpointParams,
+		clientCredentials: &clientCredentialsConfig{
+			Config: clientcredentials.Config{
+				ClientID:       cfg.ClientID,
+				ClientSecret:   string(cfg.ClientSecret),
+				TokenURL:       cfg.TokenURL,
+				Scopes:         cfg.Scopes,
+				EndpointParams: cfg.EndpointParams,
+			},
+			ClientIDFile:     cfg.ClientIDFile,
+			ClientSecretFile: cfg.ClientSecretFile,
 		},
 		logger: logger,
 		client: &http.Client{

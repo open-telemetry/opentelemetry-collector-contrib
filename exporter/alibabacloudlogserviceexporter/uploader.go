@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package alibabacloudlogserviceexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 
@@ -25,10 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// LogServiceClient log Service's client wrapper
-type LogServiceClient interface {
-	// SendLogs send message to LogService
-	SendLogs(logs []*sls.Log) error
+// logServiceClient log Service's client wrapper
+type logServiceClient interface {
+	// sendLogs send message to LogService
+	sendLogs(logs []*sls.Log) error
 }
 
 type logServiceClientImpl struct {
@@ -52,8 +41,8 @@ func getIPAddress() (ipAddress string, err error) {
 	return ipAddress, err
 }
 
-// NewLogServiceClient Create Log Service client
-func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, error) {
+// newLogServiceClient Create Log Service client
+func newLogServiceClient(config *Config, logger *zap.Logger) (logServiceClient, error) {
 	if config == nil || config.Endpoint == "" || config.Project == "" || config.Logstore == "" {
 		return nil, errors.New("missing logservice params: Endpoint, Project, Logstore")
 	}
@@ -82,8 +71,8 @@ func NewLogServiceClient(config *Config, logger *zap.Logger) (LogServiceClient, 
 	return c, nil
 }
 
-// SendLogs send message to LogService
-func (c *logServiceClientImpl) SendLogs(logs []*sls.Log) error {
+// sendLogs send message to LogService
+func (c *logServiceClientImpl) sendLogs(logs []*sls.Log) error {
 	return c.clientInstance.SendLogListWithCallBack(c.project, c.logstore, c.topic, c.source, logs, c)
 }
 

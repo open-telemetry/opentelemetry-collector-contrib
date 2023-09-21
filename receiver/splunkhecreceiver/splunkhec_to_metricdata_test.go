@@ -1,16 +1,5 @@
 // Copyright The OpenTelemetry Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// SPDX-License-Identifier: Apache-2.0
 
 package splunkhecreceiver
 
@@ -28,6 +17,7 @@ import (
 )
 
 func Test_splunkV2ToMetricsData(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -36,7 +26,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 
 	buildDefaultSplunkDataPt := func() *splunk.Event {
 		return &splunk.Event{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "localhost",
 			Source:     "source",
 			SourceType: "sourcetype",
@@ -243,7 +233,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 			name: "zero_timestamp",
 			splunkDataPoint: func() *splunk.Event {
 				pt := buildDefaultSplunkDataPt()
-				pt.Time = new(float64)
+				pt.Time = 0
 				return pt
 			}(),
 			wantMetricsData: func() pmetric.Metrics {
@@ -312,6 +302,7 @@ func Test_splunkV2ToMetricsData(t *testing.T) {
 }
 
 func TestGroupMetricsByResource(t *testing.T) {
+	t.Parallel()
 	// Timestamps for Splunk have a resolution to the millisecond, where the time is reported in seconds with a floating value to the millisecond.
 	now := time.Now()
 	msecInt64 := now.UnixNano() / 1e6
@@ -319,7 +310,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 	nanoseconds := int64(sec * 1e9)
 	events := []*splunk.Event{
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
@@ -330,7 +321,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
@@ -341,7 +332,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "1",
 			SourceType: "1",
@@ -352,7 +343,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "2",
 			SourceType: "2",
@@ -364,7 +355,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "1",
 			Source:     "2",
 			SourceType: "1",
@@ -375,7 +366,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 			},
 		},
 		{
-			Time:       &sec,
+			Time:       sec,
 			Host:       "2",
 			Source:     "1",
 			SourceType: "2",
