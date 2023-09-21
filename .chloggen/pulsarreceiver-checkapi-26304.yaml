@@ -7,7 +7,7 @@ change_type: breaking
 component: pulsarreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not export the function `WithLogsUnmarshalers`, `WithMetricsUnmarshalers`, `WithTracesUnmarshalers` and pass checkapi.
+note: Remove the unused functions `WithLogsUnmarshalers`, `WithMetricsUnmarshalers`, `WithTracesUnmarshalers` and pass checkapi.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [26304]
