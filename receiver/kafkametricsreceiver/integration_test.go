@@ -73,7 +73,6 @@ func TestIntegration(t *testing.T) {
 					"topics",
 				}
 				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchRate.Enabled = true
-				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchRate.enabledSetByUser = true
 			}),
 
 		//  scraperinttest.WriteExpected(), // TODO remove
