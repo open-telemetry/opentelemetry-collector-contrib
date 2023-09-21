@@ -25,8 +25,8 @@ var (
 	mDistMetricGroups     = stats.Int64("metric_groups", "Distribution of groups extracted for metrics", stats.UnitDimensionless)
 )
 
-// MetricViews return the metrics views according to given telemetry level.
-func MetricViews() []*view.View {
+// metricViews return the metrics views according to given telemetry level.
+func metricViews() []*view.View {
 	distributionGroups := view.Distribution(1, 2, 5, 10, 20, 50, 100, 500, 2000)
 
 	return []*view.View{
