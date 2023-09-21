@@ -25,7 +25,7 @@ func NewFactory() exporter.Factory {
 
 func CreateDefaultConfig() component.Config {
 	return &Config{
-		APIKey:  "",
+		APIKey:  "", // default to prod
 		APIURL:  "",
 		Presets: true,
 	}
@@ -44,8 +44,6 @@ func createLogsExporter(
 		ctx,
 		set,
 		cfg,
-		exporter.pushLogsData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
+		exporter.exportLogs,
 	)
 }
