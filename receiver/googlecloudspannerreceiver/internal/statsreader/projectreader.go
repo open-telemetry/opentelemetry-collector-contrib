@@ -38,6 +38,11 @@ func (projectReader *ProjectReader) Read(ctx context.Context) ([]*metadata.Metri
 	for _, databaseReader := range projectReader.databaseReaders {
 		dataPoints, err := databaseReader.Read(ctx)
 		if err != nil {
+			if strings.Contains(err.Error(), "spanner: code = \"NotFound\"") {
+				// Move on to next database if current database is not found.
+				projectReader.logger.Warn("Could not read stats", zap.String("database", databaseReader.Name()), zap.Error(err))
+				continue
+			}
 			return nil, err
 		}
 

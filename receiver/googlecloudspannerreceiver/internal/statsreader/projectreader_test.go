@@ -6,6 +6,7 @@ package statsreader
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,10 +63,12 @@ func TestProjectReader_Read(t *testing.T) {
 	ctx := context.Background()
 	logger := zaptest.NewLogger(t)
 	testCases := map[string]struct {
-		expectedError error
+		isErrorExpected bool
+		expectedError   error
 	}{
-		"Happy path":     {nil},
-		"Error occurred": {errors.New("read error")},
+		"Happy path":         {false, nil},
+		"Error occurred":     {true, errors.New("read error")},
+		"Database not found": {false, fmt.Errorf("query failed with error: %w", errors.New("spanner: code = \"NotFound\""))},
 	}
 
 	for name, testCase := range testCases {
@@ -84,7 +87,7 @@ func TestProjectReader_Read(t *testing.T) {
 
 			compositeReader.AssertExpectations(t)
 
-			if testCase.expectedError != nil {
+			if testCase.isErrorExpected {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
