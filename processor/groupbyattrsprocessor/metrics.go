@@ -6,6 +6,7 @@ package groupbyattrsprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
