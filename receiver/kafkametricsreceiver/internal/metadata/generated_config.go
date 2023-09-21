@@ -52,7 +52,7 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		KafkaBrokers: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		KafkaConsumerGroupLag: MetricConfig{
 			Enabled: true,
@@ -85,37 +85,37 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MessagingKafkaBrokerConsumerFetchCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerConsumerFetchRate: MetricConfig{
 			Enabled: true,
 		},
 		MessagingKafkaBrokerCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerIncomingByteRate: MetricConfig{
 			Enabled: true,
 		},
 		MessagingKafkaBrokerOutgoingByteRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerRequestLatency: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerRequestRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerRequestSize: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerRequestsInFlight: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerResponseRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MessagingKafkaBrokerResponseSize: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }
