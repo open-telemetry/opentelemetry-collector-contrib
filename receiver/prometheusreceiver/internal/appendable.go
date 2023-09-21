@@ -11,8 +11,8 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
@@ -25,7 +25,7 @@ type appendable struct {
 	externalLabels       labels.Labels
 
 	settings receiver.CreateSettings
-	obsrecv  *obsreport.Receiver
+	obsrecv  *receiverhelper.ObsReport
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
@@ -45,7 +45,7 @@ func NewAppendable(
 		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})
 	if err != nil {
 		return nil, err
 	}
