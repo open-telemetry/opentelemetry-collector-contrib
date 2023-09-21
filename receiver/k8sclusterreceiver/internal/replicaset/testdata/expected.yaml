@@ -21,13 +21,13 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
             name: k8s.replicaset.desired
-            unit: "1"
+            unit: "{pod}"
           - description: Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset
             gauge:
               dataPoints:
                 - asInt: "2"
             name: k8s.replicaset.available
-            unit: "1"
+            unit: "{pod}"
 
         scope:
           name: otelcol/k8sclusterreceiver
