@@ -17,11 +17,11 @@ import (
 	"cloud.google.com/go/pubsub/apiv1/pubsubpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
@@ -33,7 +33,7 @@ import (
 // https://cloud.google.com/pubsub/docs/reference/rpc/google.pubsub.v1#streamingpullrequest
 type pubsubReceiver struct {
 	logger             *zap.Logger
-	obsrecv            *obsreport.Receiver
+	obsrecv            *receiverhelper.ObsReport
 	tracesConsumer     consumer.Traces
 	metricsConsumer    consumer.Metrics
 	logsConsumer       consumer.Logs
