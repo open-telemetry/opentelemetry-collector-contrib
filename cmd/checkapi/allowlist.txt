@@ -1,6 +1,5 @@
 connector/servicegraphconnector
 exporter/awskinesisexporter
-exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/kafkaexporter
 exporter/kineticaexporter
