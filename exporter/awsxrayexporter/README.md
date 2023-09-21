@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces   |
 | Distributions | [contrib], [aws], [observiq] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawsxray%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawsxray) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawsxray%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawsxray) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@wangzlei](https://www.github.com/wangzlei), [@srprash](https://www.github.com/srprash) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -24,10 +26,10 @@ propagated by them using the `X-Amzn-Trace-Id` HTTP header. However, other gener
 supported by replacing fully-random Trace IDs with X-Ray formatted Trace IDs where necessary:
 
 > AWS X-Ray IDs are the same size as W3C Trace Context IDs but differ in that the first 32 bits of a Trace ID
-> is the Unix epoch time when the trace was started. Since X-Ray only allows submission of Trace IDs from the
-> past 30 days, received Trace IDs are checked and spans without a valid timestamp are dropped.
+> is the Unix epoch time when the trace was started. Note that X-Ray only allows submission of Trace IDs from
+> the past 30 days, otherwise the trace is dropped by X-Ray. The Exporter will not validate this timestamp.
 
-This means in order for spans to appear in X-Ray, the client SDK MUST use an X-Ray ID generator. For more
+This means that until X-Ray supports Trace Ids consisting of fully random bits, in order for spans to appear in X-Ray, the client SDK MUST use an X-Ray ID generator. For more
 information, see
 [configuring the X-Ray exporter](https://aws-otel.github.io/docs/getting-started/x-ray#configuring-the-aws-x-ray-exporter).
 

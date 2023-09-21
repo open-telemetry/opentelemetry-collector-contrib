@@ -11,12 +11,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func Test_scraper_readStats(t *testing.T) {
@@ -49,18 +48,15 @@ func Test_scraper_readStats(t *testing.T) {
 
 	haProxyCfg := newDefaultConfig().(*Config)
 	haProxyCfg.Endpoint = socketAddr
-	settings := receivertest.NewNopCreateSettings()
-	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsBuilderConfig, settings)
-
-	s := newScraper(metricsBuilder, haProxyCfg, zap.NewNop())
+	s := newScraper(haProxyCfg, receivertest.NewNopCreateSettings())
 	m, err := s.scrape(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, m)
-	require.Equal(t, 6, m.ResourceMetrics().Len())
-	require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
-	require.Equal(t, 10, m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
-	metric := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
-	assert.Equal(t, "haproxy.bytes.input", metric.Name())
-	assert.Equal(t, int64(1444), metric.Sum().DataPoints().At(0).IntValue())
 
+	expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(), pmetrictest.IgnoreResourceAttributeValue("haproxy.addr"),
+		pmetrictest.IgnoreResourceMetricsOrder()))
 }

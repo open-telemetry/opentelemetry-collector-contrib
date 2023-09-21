@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   postgresql.database.name:
@@ -44,11 +46,11 @@ attributes:
       - sync
       - write
     name_override: type
-  database:
-    description: The name of the database.
+  lock_type:
+    description: Type of the lockable object.
     type: string
-  table:
-    description: The schema name followed by the table name.
+  mode:
+    description: Name of the lock mode held or desired by the process.
     type: string
   source:
     description: The block read source type.
@@ -66,6 +68,9 @@ attributes:
     description: The database operation.
     type: string
     enum: [ins, upd, del, hot_upd]
+  relation:
+    description: OID of the relation targeted by the lock, or null if the target is not a relation or part of a relation.
+    type: string
   replication_client:
     description: The IP address of the client connected to this backend. If this field is "unix", it indicates either that the client is connected via a Unix socket.
     type: string
@@ -81,11 +86,10 @@ attributes:
 
 metrics:
   postgresql.bgwriter.buffers.allocated:
-    attributes: []
     description: Number of buffers allocated.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{buffers}"
@@ -95,7 +99,7 @@ metrics:
     description: Number of buffers written.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{buffers}"
@@ -105,7 +109,7 @@ metrics:
     description: The number of checkpoints performed.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{checkpoints}"
@@ -115,7 +119,7 @@ metrics:
     description: Total time spent writing and syncing files to disk by checkpoints.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: double
     unit: ms
@@ -123,7 +127,7 @@ metrics:
     description: Number of times the background writer stopped a cleaning scan because it had written too many buffers.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: 1
@@ -134,8 +138,8 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
-    attributes: [database, table, source]
+      aggregation_temporality: cumulative
+    attributes: [source]
   postgresql.commits:
     enabled: true
     description: The number of commits.
@@ -143,17 +147,22 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
-    attributes: [database]
+      aggregation_temporality: cumulative
   postgresql.database.count:
-    attributes: []
     description: Number of user databases.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{databases}"
+  postgresql.database.locks:
+    enabled: false
+    description: The number of database locks.
+    unit: "{lock}"
+    gauge:
+      value_type: int
+    attributes: [relation, mode, lock_type]
   postgresql.db_size:
     enabled: true
     description: The database disk usage.
@@ -161,8 +170,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
-    attributes: [database]
+      aggregation_temporality: cumulative
   postgresql.backends:
     enabled: true
     description: The number of backends.
@@ -170,8 +178,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
-    attributes: [database]
+      aggregation_temporality: cumulative
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
@@ -185,19 +192,17 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
-    attributes: [database, table, state]
+      aggregation_temporality: cumulative
+    attributes: [state]
   postgresql.index.scans:
-    attributes: []
     description: The number of index scans on a table.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
     unit: "{scans}"
   postgresql.index.size:
-    attributes: []
     description: The size of the index on disk.
     enabled: true
     gauge:
@@ -210,8 +215,8 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
-    attributes: [database, table, operation]
+      aggregation_temporality: cumulative
+    attributes: [operation]
   postgresql.replication.data_delay:
     attributes: [replication_client]
     description: The amount of data delayed in replication.
@@ -226,37 +231,56 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
-    attributes: [database]
+      aggregation_temporality: cumulative
+  postgresql.deadlocks:
+    enabled: false
+    description: The number of deadlocks.
+    unit: "{deadlock}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+  postgresql.sequential_scans:
+    enabled: false
+    description: The number of sequential scans.
+    unit: "{sequential_scan}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
   postgresql.table.count:
-    attributes: []
     description: Number of user tables in a database.
     enabled: true
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
     unit: "{table}"
   postgresql.table.size:
-    attributes: []
     description: Disk space used by a table.
     enabled: true
     unit: By
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
       value_type: int
   postgresql.table.vacuum.count:
-    attributes: []
     description: Number of times a table has manually been vacuumed.
     enabled: true
     unit: "{vacuums}"
     sum:
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
       value_type: int
+  postgresql.temp_files:
+    enabled: false
+    description: The number of temp files.
+    unit: "{temp_file}"
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative   
   postgresql.wal.age:
-    attributes: []
     description: Age of the oldest WAL file.
     extended_documentation: |
      This metric requires WAL to be enabled with at least one replica.

@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [alpha]: traces   |
 | Distributions | [contrib], [sumo] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fdatadog) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@boostchicken](https://www.github.com/boostchicken), [@gouthamve](https://www.github.com/gouthamve), [@jpkrohling](https://www.github.com/jpkrohling), [@MovieStoreGuy](https://www.github.com/MovieStoreGuy) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -41,4 +43,6 @@ All config params here are valid as well
 
 https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#server-configuration
 
+### Default Attributes
 
+- `dd.span.Resource`: The datadog resource name (as distinct from the span name)

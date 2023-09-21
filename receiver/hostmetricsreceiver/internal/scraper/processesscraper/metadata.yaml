@@ -17,7 +17,7 @@ metrics:
     unit: "{processes}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: true
 
   system.processes.count:
@@ -26,6 +26,6 @@ metrics:
     unit: "{processes}"
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     attributes: [status]

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -124,7 +125,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 	rm := m.ResourceMetrics().AppendEmpty()
 	rm.Resource().Attributes().PutStr("X-Tenant", "acme")
 
-	t.Run("non default route is properly used", func(t *testing.T) {
+	t.Run("grpc metadata: non default route is properly used", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "acme",
@@ -139,7 +140,7 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 		)
 	})
 
-	t.Run("default route is taken when no matching route can be found", func(t *testing.T) {
+	t.Run("grpc metadata: default route is taken when no matching route can be found", func(t *testing.T) {
 		assert.NoError(t, exp.ConsumeMetrics(
 			metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{
 				"X-Tenant": "some-custom-value1",
@@ -153,6 +154,39 @@ func TestMetrics_RoutingWorks_Context(t *testing.T) {
 			"metric should not be routed to non default exporter",
 		)
 	})
+
+	t.Run("client.Info metadata: non default route is properly used", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeMetrics(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"acme"},
+				})}),
+			m,
+		))
+		assert.Len(t, defaultExp.AllMetrics(), 1,
+			"metric should not be routed to default exporter",
+		)
+		assert.Len(t, mExp.AllMetrics(), 2,
+			"metric should be routed to non default exporter",
+		)
+	})
+
+	t.Run("client.Info metadata: default route is taken when no matching route can be found", func(t *testing.T) {
+		assert.NoError(t, exp.ConsumeMetrics(
+			client.NewContext(context.Background(),
+				client.Info{Metadata: client.NewMetadata(map[string][]string{
+					"X-Tenant": {"some-custom-value1"},
+				})}),
+			m,
+		))
+		assert.Len(t, defaultExp.AllMetrics(), 2,
+			"metric should be routed to default exporter",
+		)
+		assert.Len(t, mExp.AllMetrics(), 2,
+			"metric should not be routed to non default exporter",
+		)
+	})
+
 }
 
 func TestMetrics_RoutingWorks_ResourceAttribute(t *testing.T) {
@@ -436,4 +470,47 @@ func TestMetricsAreCorrectlySplitPerResourceAttributeRoutingWithOTTL(t *testing.
 		assert.True(t, ok, "routing attribute must exists")
 		assert.Equal(t, attr.Double(), float64(-1.0))
 	})
+}
+
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/26462
+func TestMetricsAttributeWithOTTLDoesNotCauseCrash(t *testing.T) {
+	// prepare
+	defaultExp := &mockMetricsExporter{}
+	firstExp := &mockMetricsExporter{}
+
+	host := newMockHost(map[component.DataType]map[component.ID]component.Component{
+		component.DataTypeMetrics: {
+			component.NewID("otlp"):              defaultExp,
+			component.NewIDWithName("otlp", "1"): firstExp,
+		},
+	})
+
+	exp, err := newMetricProcessor(noopTelemetrySettings, &Config{
+		DefaultExporters: []string{"otlp"},
+		Table: []RoutingTableItem{
+			{
+				Statement: `route() where attributes["value"] > 0`,
+				Exporters: []string{"otlp/1"},
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	m := pmetric.NewMetrics()
+
+	rm := m.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutInt("value", 1)
+	metric := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetEmptyGauge()
+	metric.SetName("cpu")
+
+	require.NoError(t, exp.Start(context.Background(), host))
+
+	// test
+	// before #26464, this would panic
+	require.NoError(t, exp.ConsumeMetrics(context.Background(), m))
+
+	// verify
+	assert.Len(t, defaultExp.AllMetrics(), 1)
+	assert.Len(t, firstExp.AllMetrics(), 0)
 }

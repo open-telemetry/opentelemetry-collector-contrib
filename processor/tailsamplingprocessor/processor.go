@@ -6,6 +6,7 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -52,6 +53,14 @@ type tailSamplingSpanProcessor struct {
 	numTracesOnMap  *atomic.Uint64
 }
 
+// spanAndScope a structure for holding information about span and its instrumentation scope.
+// required for preserving the instrumentation library information while sampling.
+// We use pointers there to fast find the span in the map.
+type spanAndScope struct {
+	span                 *ptrace.Span
+	instrumentationScope *pcommon.InstrumentationScope
+}
+
 const (
 	sourceFormat = "tail_sampling"
 )
@@ -63,13 +72,13 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		return nil, component.ErrNilNextConsumer
 	}
 
-	numDecisionBatches := uint64(cfg.DecisionWait.Seconds())
-	inBatcher, err := idbatcher.New(numDecisionBatches, cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+	numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
+	inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
 	if err != nil {
 		return nil, err
 	}
 
-	var policies []*policy
+	policies := make([]*policy, len(cfg.PolicyCfgs))
 	for i := range cfg.PolicyCfgs {
 		policyCfg := &cfg.PolicyCfgs[i]
 		policyCtx, err := tag.New(ctx, tag.Upsert(tagPolicyKey, policyCfg.Name), tag.Upsert(tagSourceFormat, sourceFormat))
@@ -85,7 +94,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 			evaluator: eval,
 			ctx:       policyCtx,
 		}
-		policies = append(policies, p)
+		policies[i] = p
 	}
 
 	tsp := &tailSamplingSpanProcessor{
@@ -117,6 +126,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 }
 
 func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedPolicyCfg) (sampling.PolicyEvaluator, error) {
+	settings.Logger = settings.Logger.With(zap.Any("policy", cfg.Type))
+
 	switch cfg.Type {
 	case AlwaysSample:
 		return sampling.NewAlwaysSample(settings), nil
@@ -125,7 +136,7 @@ func getSharedPolicyEvaluator(settings component.TelemetrySettings, cfg *sharedP
 		return sampling.NewLatency(settings, lfCfg.ThresholdMs), nil
 	case NumericAttribute:
 		nafCfg := cfg.NumericAttributeCfg
-		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue), nil
+		return sampling.NewNumericAttributeFilter(settings, nafCfg.Key, nafCfg.MinValue, nafCfg.MaxValue, nafCfg.InvertMatch), nil
 	case Probabilistic:
 		pCfg := cfg.ProbabilisticCfg
 		return sampling.NewProbabilisticSampler(settings, pCfg.HashSalt, pCfg.SamplingPercentage), nil
@@ -223,7 +234,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		stats.Record(
 			p.ctx,
 			statDecisionLatencyMicroSec.M(int64(time.Since(policyEvaluateStartTime)/time.Microsecond)))
-
 		if err != nil {
 			samplingDecision[sampling.Error] = true
 			trace.Decisions[i] = sampling.NotSampled
@@ -298,16 +308,21 @@ func (tsp *tailSamplingSpanProcessor) ConsumeTraces(_ context.Context, td ptrace
 	return nil
 }
 
-func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]*ptrace.Span {
-	idToSpans := make(map[pcommon.TraceID][]*ptrace.Span)
+func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.ResourceSpans) map[pcommon.TraceID][]spanAndScope {
+	idToSpans := make(map[pcommon.TraceID][]spanAndScope)
 	ilss := resourceSpans.ScopeSpans()
 	for j := 0; j < ilss.Len(); j++ {
-		spans := ilss.At(j).Spans()
+		scope := ilss.At(j)
+		spans := scope.Spans()
+		is := scope.Scope()
 		spansLen := spans.Len()
 		for k := 0; k < spansLen; k++ {
 			span := spans.At(k)
 			key := span.TraceID()
-			idToSpans[key] = append(idToSpans[key], &span)
+			idToSpans[key] = append(idToSpans[key], spanAndScope{
+				span:                 &span,
+				instrumentationScope: &is,
+			})
 		}
 	}
 	return idToSpans
@@ -315,9 +330,9 @@ func (tsp *tailSamplingSpanProcessor) groupSpansByTraceKey(resourceSpans ptrace.
 
 func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.ResourceSpans) {
 	// Group spans per their traceId to minimize contention on idToTrace
-	idToSpans := tsp.groupSpansByTraceKey(resourceSpans)
+	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
-	for id, spans := range idToSpans {
+	for id, spans := range idToSpansAndScope {
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -421,12 +436,23 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 	stats.Record(tsp.ctx, statTraceRemovalAgeSec.M(int64(deletionTime.Sub(trace.ArrivalTime)/time.Second)))
 }
 
-func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spans []*ptrace.Span) {
+func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {
 	rs := dest.ResourceSpans().AppendEmpty()
 	rss.Resource().CopyTo(rs.Resource())
-	ils := rs.ScopeSpans().AppendEmpty()
-	for _, span := range spans {
-		sp := ils.Spans().AppendEmpty()
-		span.CopyTo(sp)
+
+	scopePointerToNewScope := make(map[*pcommon.InstrumentationScope]*ptrace.ScopeSpans)
+	for _, spanAndScope := range spanAndScopes {
+		// If the scope of the spanAndScope is not in the map, add it to the map and the destination.
+		if scope, ok := scopePointerToNewScope[spanAndScope.instrumentationScope]; !ok {
+			is := rs.ScopeSpans().AppendEmpty()
+			spanAndScope.instrumentationScope.CopyTo(is.Scope())
+			scopePointerToNewScope[spanAndScope.instrumentationScope] = &is
+
+			sp := is.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		} else {
+			sp := scope.Spans().AppendEmpty()
+			spanAndScope.span.CopyTo(sp)
+		}
 	}
 }

@@ -8,11 +8,18 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 )
+
+var skipTimestampValidationFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.awsxray.skiptimestampvalidation",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("Remove XRay's timestamp validation on first 32 bits of trace ID"),
+	featuregate.WithRegisterFromVersion("v0.84.0"))
 
 // NewFactory creates a factory for AWS-Xray exporter.
 func NewFactory() exporter.Factory {
@@ -24,7 +31,8 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
+		AWSSessionSettings:      awsutil.CreateDefaultSessionConfig(),
+		skipTimestampValidation: skipTimestampValidationFeatureGate.IsEnabled(),
 	}
 }
 

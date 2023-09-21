@@ -16,9 +16,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 )
 
 var _ receiver.Metrics = (*statsdReceiver)(nil)
@@ -35,8 +36,8 @@ type statsdReceiver struct {
 	cancel       context.CancelFunc
 }
 
-// New creates the StatsD receiver with the given parameters.
-func New(
+// newReceiver creates the StatsD receiver with the given parameters.
+func newReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
@@ -108,10 +109,15 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
 					batchCtx := client.NewContext(ctx, batch.Info)
-					r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
+
+					if err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer); err != nil {
+						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
+					}
 				}
 			case metric := <-transferChan:
-				_ = r.parser.Aggregate(metric.Raw, metric.Addr)
+				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
+					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+				}
 			case <-ctx.Done():
 				ticker.Stop()
 				return

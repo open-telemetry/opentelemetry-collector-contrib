@@ -1,7 +1,0 @@
-type: jaeger_thrift
-
-status:
-  class: exporter
-  stability:
-    deprecated: [traces]
-  distributions: [contrib]

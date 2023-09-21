@@ -1,7 +1,0 @@
-type: jaeger
-
-status:
-  class: exporter
-  stability:
-    deprecated: [traces]
-  distributions: [core, contrib, redhat]

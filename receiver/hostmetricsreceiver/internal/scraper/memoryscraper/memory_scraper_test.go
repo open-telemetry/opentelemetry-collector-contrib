@@ -25,12 +25,12 @@ import (
 func TestScrape(t *testing.T) {
 	type testCase struct {
 		name                string
-		virtualMemoryFunc   func() (*mem.VirtualMemoryStat, error)
+		virtualMemoryFunc   func(context.Context) (*mem.VirtualMemoryStat, error)
 		expectedErr         string
 		initializationErr   string
 		config              *Config
 		expectedMetricCount int
-		bootTimeFunc        func() (uint64, error)
+		bootTimeFunc        func(context.Context) (uint64, error)
 	}
 
 	testCases := []testCase{
@@ -59,7 +59,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:              "Error",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
+			virtualMemoryFunc: func(context.Context) (*mem.VirtualMemoryStat, error) { return nil, errors.New("err1") },
 			expectedErr:       "err1",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 		},
 		{
 			name:              "Error",
-			bootTimeFunc:      func() (uint64, error) { return 100, errors.New("err1") },
+			bootTimeFunc:      func(context.Context) (uint64, error) { return 100, errors.New("err1") },
 			initializationErr: "err1",
 			config: &Config{
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -129,7 +129,7 @@ func TestScrape(t *testing.T) {
 func TestScrape_MemoryUtilization(t *testing.T) {
 	type testCase struct {
 		name              string
-		virtualMemoryFunc func() (*mem.VirtualMemoryStat, error)
+		virtualMemoryFunc func(context.Context) (*mem.VirtualMemoryStat, error)
 		expectedErr       error
 	}
 	testCases := []testCase{
@@ -138,7 +138,7 @@ func TestScrape_MemoryUtilization(t *testing.T) {
 		},
 		{
 			name:              "Invalid total memory",
-			virtualMemoryFunc: func() (*mem.VirtualMemoryStat, error) { return &mem.VirtualMemoryStat{Total: 0}, nil },
+			virtualMemoryFunc: func(context.Context) (*mem.VirtualMemoryStat, error) { return &mem.VirtualMemoryStat{Total: 0}, nil },
 			expectedErr:       ErrInvalidTotalMem,
 		},
 	}

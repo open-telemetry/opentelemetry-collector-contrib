@@ -5,6 +5,8 @@
 | ------------- |-----------|
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib], [aws], [observiq], [splunk] |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsignalfx%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsignalfx) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsignalfx%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsignalfx) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@crobert-1](https://www.github.com/crobert-1) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -138,7 +140,7 @@ will be replaced with a `_`.
   api_tls:
       ca_file: "/etc/opt/certs/ca.pem"
   ```
-
+- `drop_histogram_buckets`:  (default = `false`) if set to true, histogram buckets will not be translated into datapoints with `_bucket` suffix but will be dropped instead, only datapoints with `_sum`, `_count`, `_min` (optional) and `_max` (optional) suffixes will be sent.
 In addition, this exporter offers queued retry which is enabled by default.
 Information about queued retry configuration parameters can be found
 [here](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md).
