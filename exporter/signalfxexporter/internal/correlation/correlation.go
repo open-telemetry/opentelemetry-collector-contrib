@@ -108,7 +108,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 				hostDimension: hostID.ID,
 			},
 			false,
-			nil,
 			cor.cfg.SyncAttributes)
 
 		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
