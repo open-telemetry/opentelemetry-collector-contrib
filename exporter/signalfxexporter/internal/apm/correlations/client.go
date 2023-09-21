@@ -16,8 +16,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/signalfx/golib/v3/datapoint"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/requests"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/requests/requestcounter"
@@ -45,7 +43,6 @@ type CorrelationClient interface {
 	Correlate(*Correlation, CorrelateCB)
 	Delete(*Correlation, SuccessfulDeleteCB)
 	Get(dimName string, dimValue string, cb SuccessfulGetCB)
-	InternalMetrics() []*datapoint.Datapoint
 	Start()
 }
 
