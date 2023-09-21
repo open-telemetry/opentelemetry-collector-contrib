@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/iancoleman/strcase"
 )
 
 type PathExpressionParser[K any] func(*Path) (GetSetter[K], error)
@@ -21,16 +23,19 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 	if !ok {
 		return Expr[K]{}, fmt.Errorf("undefined function %q", ed.Function)
 	}
-	args := f.CreateDefaultArguments()
+	defaultArgs := f.CreateDefaultArguments()
+	var args Arguments
 
 	// A nil value indicates the function takes no arguments.
-	if args != nil {
+	if defaultArgs != nil {
 		// Pointer values are necessary to fulfill the Go reflection
 		// settability requirements. Non-pointer values are not
 		// modifiable through reflection.
-		if reflect.TypeOf(args).Kind() != reflect.Pointer {
+		if reflect.TypeOf(defaultArgs).Kind() != reflect.Pointer {
 			return Expr[K]{}, fmt.Errorf("factory for %q must return a pointer to an Arguments value in its CreateDefaultArguments method", ed.Function)
 		}
+
+		args = reflect.New(reflect.ValueOf(defaultArgs).Elem().Type()).Interface()
 
 		err := p.buildArgs(ed, reflect.ValueOf(args).Elem())
 		if err != nil {
@@ -47,24 +52,70 @@ func (p *Parser[K]) newFunctionCall(ed editor) (Expr[K], error) {
 }
 
 func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
-	if len(ed.Arguments) != argsVal.NumField() {
-		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
+	requiredArgs := 0
+	seenNamed := false
+
+	for i := 0; i < len(ed.Arguments); i++ {
+		if !seenNamed && ed.Arguments[i].Name != "" {
+			seenNamed = true
+		} else if seenNamed && ed.Arguments[i].Name == "" {
+			return errors.New("unnamed argument used after named argument")
+		}
 	}
 
 	for i := 0; i < argsVal.NumField(); i++ {
-		field := argsVal.Field(i)
-		fieldType := field.Type()
-		argVal := ed.Arguments[i]
+		if !strings.HasPrefix(argsVal.Field(i).Type().Name(), "Optional") {
+			requiredArgs++
+		}
+	}
+
+	if len(ed.Arguments) < requiredArgs || len(ed.Arguments) > argsVal.NumField() {
+		return fmt.Errorf("incorrect number of arguments. Expected: %d Received: %d", argsVal.NumField(), len(ed.Arguments))
+	}
+
+	for i, edArg := range ed.Arguments {
+		var field reflect.Value
+		var fieldType reflect.Type
+		var isOptional bool
+		var arg argument
+
+		if edArg.Name == "" {
+			field = argsVal.Field(i)
+			fieldType = field.Type()
+			isOptional = strings.HasPrefix(fieldType.Name(), "Optional")
+			arg = ed.Arguments[i]
+		} else {
+			field = argsVal.FieldByName(strcase.ToCamel(edArg.Name))
+			if !field.IsValid() {
+				return fmt.Errorf("no such parameter: %s", edArg.Name)
+			}
+			fieldType = field.Type()
+			isOptional = strings.HasPrefix(fieldType.Name(), "Optional")
+			arg = edArg
+		}
+
 		var val any
+		var manager optionalManager
 		var err error
+		var ok bool
+		if isOptional {
+			manager, ok = field.Interface().(optionalManager)
+
+			if !ok {
+				return errors.New("optional type is not manageable by the OTTL parser. This is an error in the OTTL")
+			}
+
+			fieldType = manager.get().Type()
+		}
+
 		switch {
 		case strings.HasPrefix(fieldType.Name(), "FunctionGetter"):
 			var name string
 			switch {
-			case argVal.Enum != nil:
-				name = string(*argVal.Enum)
-			case argVal.FunctionName != nil:
-				name = *argVal.FunctionName
+			case arg.Value.Enum != nil:
+				name = string(*arg.Value.Enum)
+			case arg.Value.FunctionName != nil:
+				name = *arg.Value.FunctionName
 			default:
 				return fmt.Errorf("invalid function name given")
 			}
@@ -74,14 +125,18 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			}
 			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
 		case fieldType.Kind() == reflect.Slice:
-			val, err = p.buildSliceArg(argVal, fieldType)
+			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
-			val, err = p.buildArg(argVal, fieldType)
+			val, err = p.buildArg(arg.Value, fieldType)
 		}
 		if err != nil {
 			return fmt.Errorf("invalid argument at position %v: %w", i, err)
 		}
-		field.Set(reflect.ValueOf(val))
+		if isOptional {
+			field.Set(manager.set(val))
+		} else {
+			field.Set(reflect.ValueOf(val))
+		}
 	}
 
 	return nil
@@ -280,7 +335,7 @@ func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 		}
 		return bool(*argVal.Bool), nil
 	default:
-		return nil, errors.New("unsupported argument type")
+		return nil, fmt.Errorf("unsupported argument type: %s", name)
 	}
 }
 
@@ -309,4 +364,57 @@ func buildSlice[T any](argVal value, argType reflect.Type, buildArg buildArgFunc
 	}
 
 	return vals, nil
+}
+
+// optionalManager provides a way for the parser to handle Optional[T] structs
+// without needing to know the concrete type of T, which is inaccessible through
+// the reflect package.
+// Would likely be resolved by https://github.com/golang/go/issues/54393.
+type optionalManager interface {
+	// set takes a non-reflection value and returns a reflect.Value of
+	// an Optional[T] struct with this value set.
+	set(val any) reflect.Value
+
+	// get returns a reflect.Value value of the value contained within
+	// an Optional[T]. This allows obtaining a reflect.Type for T.
+	get() reflect.Value
+}
+
+type Optional[T any] struct {
+	val      T
+	hasValue bool
+}
+
+// This is called only by reflection.
+// nolint:unused
+func (o Optional[T]) set(val any) reflect.Value {
+	return reflect.ValueOf(Optional[T]{
+		val:      val.(T),
+		hasValue: true,
+	})
+}
+
+func (o Optional[T]) IsEmpty() bool {
+	return !o.hasValue
+}
+
+func (o Optional[T]) Get() T {
+	return o.val
+}
+
+func (o Optional[T]) get() reflect.Value {
+	// `(reflect.Value).Call` will create a reflect.Value containing a zero-valued T.
+	// Trying to create a reflect.Value for T by calling reflect.TypeOf or
+	// reflect.ValueOf on an empty T value creates an invalid reflect.Value object,
+	// the `Call` method appears to do extra processing to capture the type.
+	return reflect.ValueOf(o).MethodByName("Get").Call(nil)[0]
+}
+
+// Allows creating an Optional with a value already populated for use in testing
+// OTTL functions.
+func NewTestingOptional[T any](val T) Optional[T] {
+	return Optional[T]{
+		val:      val,
+		hasValue: true,
+	}
 }
