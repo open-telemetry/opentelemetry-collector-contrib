@@ -95,7 +95,7 @@ func TestIntegration(t *testing.T) {
 				}
 			}),
 
-		scraperinttest.WriteExpected(), // TODO remove
+		//  scraperinttest.WriteExpected(), // TODO remove
 		scraperinttest.WithCompareOptions(
 			// pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),
