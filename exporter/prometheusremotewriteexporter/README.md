@@ -124,7 +124,7 @@ processor:
     metric_statements:
       - context: datapoint
         statements:
-        - set(attributes["k8s_namespace"], resource.attributes["k8s.namespace.name"])
+        - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
         - set(attributes["container"], resource.attributes["k8s.container.name"])
         - set(attributes["pod"], resource.attributes["k8s.pod.name"])
 ```
