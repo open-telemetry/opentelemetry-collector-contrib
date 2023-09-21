@@ -14,7 +14,6 @@ processor/servicegraphprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
-receiver/jaegerreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/podmanreceiver
