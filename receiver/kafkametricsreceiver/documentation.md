@@ -170,13 +170,27 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
-### messaging.kafka.broker.outgoing_byte_rate
+### messaging.kafka.broker.consumer_fetch_rate
 
-Average outgoing Byte Rate in bytes/second.
+Average consumer fetch Rate
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
+| {fetches}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| broker | The ID (integer) of a broker | Any Int |
+
+### messaging.kafka.broker.incoming_byte_rate
+
+Average incoming Byte Rate in bytes/second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
 
 #### Attributes
 
@@ -208,20 +222,6 @@ Count of consumer fetches
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
 
-### messaging.kafka.broker.consumer_fetch_rate
-
-Average consumer fetch Rate
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {fetches}/s | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| broker | The ID (integer) of a broker | Any Int |
-
 ### messaging.kafka.broker.count
 
 Number of brokers in the cluster.
@@ -230,13 +230,13 @@ Number of brokers in the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {broker} | Sum | Int | Cumulative | true |
 
-### messaging.kafka.broker.incoming_byte_rate
+### messaging.kafka.broker.outgoing_byte_rate
 
-Average incoming Byte Rate in bytes/second
+Average outgoing Byte Rate in bytes/second.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| 1 | Gauge | Double |
 
 #### Attributes
 

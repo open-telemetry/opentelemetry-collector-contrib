@@ -149,16 +149,17 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchCountDataPoint(ts, 1, 6)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchRateDataPoint(ts, 1, 6)
 
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerCountDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerIncomingByteRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerOutgoingByteRateDataPoint(ts, 1, 6)
 
