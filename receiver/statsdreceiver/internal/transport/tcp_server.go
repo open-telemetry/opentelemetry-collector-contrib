@@ -6,7 +6,6 @@ package transport // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
