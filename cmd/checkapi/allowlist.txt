@@ -10,12 +10,10 @@ exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
 processor/groupbytraceprocessor
-processor/probabilisticsamplerprocessor
 processor/servicegraphprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
 receiver/dockerstatsreceiver
-receiver/jaegerreceiver
 receiver/journaldreceiver
 receiver/kafkareceiver
 receiver/podmanreceiver
