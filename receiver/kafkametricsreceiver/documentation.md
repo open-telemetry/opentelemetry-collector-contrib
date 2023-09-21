@@ -12,6 +12,14 @@ metrics:
     enabled: false
 ```
 
+### kafka.brokers
+
+[DEPRACATED] Number of brokers in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {broker} | Sum | Int | Cumulative | false |
+
 ### kafka.consumer_group.lag
 
 Current approximate lag of consumer group at partition of topic
@@ -162,6 +170,16 @@ Number of partitions in topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
 ### messaging.kafka.broker.consumer_fetch_count
 
 Count of consumer fetches
@@ -309,21 +327,3 @@ Average response size in bytes
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | broker | The ID (integer) of a broker | Any Int |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### kafka.brokers
-
-[DEPRACATED] Number of brokers in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {broker} | Sum | Int | Cumulative | false |

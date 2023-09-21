@@ -49,6 +49,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.configSet == testSetDefault || test.configSet == testSetAll {
+				assert.Equal(t, "[WARNING] `kafka.brokers` should not be enabled: The metric is deprecated and will be removed. Use `messaging.kafka.broker.count`", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if test.configSet == testSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `messaging.kafka.broker.consumer_fetch_count`: This metric will be enabled by default in the next versions.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -98,6 +102,7 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
@@ -141,47 +146,36 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchCountDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerConsumerFetchRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerCountDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerIncomingByteRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerOutgoingByteRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerRequestLatencyDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerRequestRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerRequestSizeDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerRequestsInFlightDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerResponseRateDataPoint(ts, 1, 6)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMessagingKafkaBrokerResponseSizeDataPoint(ts, 1, 6)
 
