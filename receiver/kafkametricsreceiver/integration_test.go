@@ -72,10 +72,31 @@ func TestIntegration(t *testing.T) {
 					"consumers",
 					"topics",
 				}
+				rCfg.Metrics.KafkaBrokers.Enabled = true
+				rCfg.Metrics.KafkaConsumerGroupLag.Enabled = true
+				rCfg.Metrics.KafkaConsumerGroupLagSum.Enabled = true
+				rCfg.Metrics.KafkaConsumerGroupMembers.Enabled = true
+				rCfg.Metrics.KafkaConsumerGroupOffset.Enabled = true
+				rCfg.Metrics.KafkaConsumerGroupOffsetSum.Enabled = true
+				rCfg.Metrics.KafkaPartitionCurrentOffset.Enabled = true
+				rCfg.Metrics.KafkaPartitionOldestOffset.Enabled = true
+				rCfg.Metrics.KafkaPartitionReplicas.Enabled = true
+				rCfg.Metrics.KafkaPartitionReplicasInSync.Enabled = true
+				rCfg.Metrics.KafkaTopicPartitions.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchCount.Enabled = true
 				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerCount.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerIncomingByteRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerOutgoingByteRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerRequestLatency.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerRequestRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerRequestSize.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerRequestsInFlight.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerResponseRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerResponseSize.Enabled = true
 			}),
 
-		//  scraperinttest.WriteExpected(), // TODO remove
+		// scraperinttest.WriteExpected(), // TODO remove
 		scraperinttest.WithCompareOptions(
 			// pmetrictest.IgnoreMetricValues(),
 			pmetrictest.IgnoreStartTimestamp(),
