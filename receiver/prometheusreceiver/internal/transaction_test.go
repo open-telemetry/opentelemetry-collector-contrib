@@ -18,9 +18,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -352,8 +352,8 @@ func TestAppendExemplarWithEmptyLabelArray(t *testing.T) {
 	assert.Equal(t, errNoJobInstance, err)
 }
 
-func nopObsRecv(t *testing.T) *obsreport.Receiver {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+func nopObsRecv(t *testing.T) *receiverhelper.ObsReport {
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID("prometheus"),
 		Transport:              transport,
 		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),

@@ -106,6 +106,7 @@ func TestCreateTracesExporterE2E(t *testing.T) {
 		assert.Equal(t, "", recs[i].ParentID)
 		assert.Equal(t, spanName, recs[i].SpanName)
 		assert.Equal(t, "STATUS_CODE_UNSET", recs[i].SpanStatus)
+		assert.Equal(t, "STATUS_MESSAGE", recs[i].SpanStatusMessage)
 		assert.Equal(t, "SPAN_KIND_UNSPECIFIED", recs[i].SpanKind)
 		assert.Equal(t, epochTimeString, recs[i].StartTime)
 		assert.Equal(t, epochTimeString, recs[i].EndTime)
@@ -258,6 +259,7 @@ func createTraces() (ptrace.Traces, string, map[string]interface{}) {
 	td := ptrace.NewTraces()
 	span := td.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 	span.SetName(spanName)
+	span.Status().SetMessage("STATUS_MESSAGE")
 	attrs := map[string]interface{}{
 		"k0": "v0",
 		"k1": "v1",

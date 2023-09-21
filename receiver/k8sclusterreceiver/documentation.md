@@ -98,7 +98,7 @@ The number of actively running jobs for a cronjob
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {job} | Gauge | Int |
 
 ### k8s.daemonset.current_scheduled_nodes
 
@@ -106,7 +106,7 @@ Number of nodes that are running at least 1 daemon pod and are supposed to run t
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.desired_scheduled_nodes
 
@@ -114,7 +114,7 @@ Number of nodes that should be running the daemon pod (including nodes currently
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.misscheduled_nodes
 
@@ -122,7 +122,7 @@ Number of nodes that are running the daemon pod, but are not supposed to run the
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.daemonset.ready_nodes
 
@@ -130,7 +130,7 @@ Number of nodes that should be running the daemon pod and have one or more of th
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {node} | Gauge | Int |
 
 ### k8s.deployment.available
 
@@ -138,7 +138,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.deployment.desired
 
@@ -146,7 +146,7 @@ Number of desired pods in this deployment
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.current_replicas
 
@@ -154,7 +154,7 @@ Current number of pod replicas managed by this autoscaler.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.desired_replicas
 
@@ -162,7 +162,7 @@ Desired number of pod replicas managed by this autoscaler.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.max_replicas
 
@@ -170,7 +170,7 @@ Maximum number of replicas to which the autoscaler can scale up.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.hpa.min_replicas
 
@@ -178,7 +178,7 @@ Minimum number of replicas to which the autoscaler can scale up.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.active_pods
 
@@ -186,7 +186,7 @@ The number of actively running pods for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.desired_successful_pods
 
@@ -194,7 +194,7 @@ The desired number of successfully finished pods the job should be run with
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.failed_pods
 
@@ -202,7 +202,7 @@ The number of pods which reached phase Failed for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.max_parallel_pods
 
@@ -210,7 +210,7 @@ The max desired number of pods the job should run at any given time
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.job.successful_pods
 
@@ -218,7 +218,7 @@ The number of pods which reached phase Succeeded for a job
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.namespace.phase
 
@@ -242,7 +242,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replicaset.desired
 
@@ -250,7 +250,7 @@ Number of desired pods in this replicaset
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replication_controller.available
 
@@ -258,7 +258,7 @@ Total number of available pods (ready for at least minReadySeconds) targeted by 
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.replication_controller.desired
 
@@ -266,7 +266,7 @@ Number of desired pods in this replication_controller
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.resource_quota.hard_limit
 
@@ -302,7 +302,7 @@ The number of pods created by the StatefulSet controller from the StatefulSet ve
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.desired_pods
 
@@ -310,7 +310,7 @@ Number of desired pods in the stateful set (the `spec.replicas` field)
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.ready_pods
 
@@ -318,7 +318,7 @@ Number of pods created by the stateful set that have the `Ready` condition
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### k8s.statefulset.updated_pods
 
@@ -326,7 +326,7 @@ Number of pods created by the StatefulSet controller from the StatefulSet versio
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {pod} | Gauge | Int |
 
 ### openshift.appliedclusterquota.limit
 
@@ -422,6 +422,8 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.hpa.uid | The k8s hpa uid. | Any Str | true |
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
+| k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false |
+| k8s.kubeproxy.version | The version of Kube Proxy running on the node. | Any Str | false |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
 | k8s.node.name | The k8s node name. | Any Str | true |

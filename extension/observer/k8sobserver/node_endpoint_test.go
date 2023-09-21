@@ -29,6 +29,6 @@ func TestNodeObjectToK8sNodeEndpoint(t *testing.T) {
 		},
 	}
 
-	endpoint := convertNodeToEndpoint("namespace", NewNode("name", "hostname"))
+	endpoint := convertNodeToEndpoint("namespace", newNode("name", "hostname"))
 	require.Equal(t, expectedNode, endpoint)
 }
