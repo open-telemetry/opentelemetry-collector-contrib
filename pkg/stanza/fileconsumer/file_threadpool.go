@@ -5,7 +5,6 @@ package fileconsumer // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"io"
 	"os"
 	"sync"
 
@@ -239,30 +238,9 @@ func (m *Manager) checkTruncate(r *reader) bool {
 		Check if it's updated version of previously opened file.
 	*/
 
-	// store current offset
-	oldOffset := r.Offset
-	oldCursor, err := r.file.Seek(0, 1)
+	refreshedFp, err := fingerprint.New(r.file, r.fingerprintSize)
 	if err != nil {
-		m.Errorw("Failed to seek", err)
 		return false
 	}
-
-	r.file.Seek(0, 0)
-	new := make([]byte, r.fingerprintSize)
-	n, err := r.file.Read(new)
-	if err != nil && err != io.EOF {
-		m.Errorw("Failed to read", err)
-		return false
-	}
-
-	// restore the offset in case if it's not a truncate
-	r.Offset = oldOffset
-	_, err = r.file.Seek(oldCursor, 0)
-	if err != nil {
-		m.Errorw("Failed to seek", err)
-		return false
-	}
-
-	newFp := fingerprint.Fingerprint{FirstBytes: new[:n]}
-	return !newFp.StartsWith(r.Fingerprint)
+	return !refreshedFp.StartsWith(r.Fingerprint)
 }
