@@ -74,7 +74,7 @@ How many times the container has restarted in the recent past. This value is pul
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {restart} | Gauge | Int |
 
 ### k8s.container.storage_limit
 
