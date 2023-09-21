@@ -13,9 +13,9 @@ import (
 	"code.cloudfoundry.org/go-loggregator"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 const (
@@ -32,7 +32,7 @@ type cloudFoundryReceiver struct {
 	cancel            context.CancelFunc
 	config            Config
 	nextConsumer      consumer.Metrics
-	obsrecv           *obsreport.Receiver
+	obsrecv           *receiverhelper.ObsReport
 	goroutines        sync.WaitGroup
 	receiverStartTime time.Time
 }
@@ -47,7 +47,7 @@ func newCloudFoundryReceiver(
 		return nil, component.ErrNilNextConsumer
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
