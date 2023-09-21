@@ -4,11 +4,8 @@ exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/kafkaexporter
 exporter/pulsarexporter
-exporter/sentryexporter
-exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-processor/groupbytraceprocessor
 processor/servicegraphprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
