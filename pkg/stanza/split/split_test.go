@@ -4,19 +4,16 @@
 package split
 
 import (
-	"bufio"
-	"bytes"
-	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/text/encoding"
+	"golang.org/x/text/encoding/traditionalchinese"
 	"golang.org/x/text/encoding/unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split/splittest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestConfigFunc(t *testing.T) {
@@ -446,280 +443,241 @@ func TestLineEndSplitFunc_Detailed(t *testing.T) {
 }
 
 func TestNewlineSplitFunc(t *testing.T) {
-	testCases := []splittest.TestCase{
+	testCases := []struct {
+		name       string
+		encoding   encoding.Encoding
+		flushAtEOF bool
+		input      []byte
+		steps      []splittest.Step
+	}{
 		{
-			Name:  "OneLogSimple",
-			Input: []byte("my log\n"),
-			ExpectedTokens: []string{
-				`my log`,
+			name:  "EmptyFile",
+			input: []byte(""),
+		},
+		{
+			name:  "OneLogSimple",
+			input: []byte("my log\n"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("my log")+1, "my log"),
 			},
 		},
 		{
-			Name:  "OneLogCarriageReturn",
-			Input: []byte("my log\r\n"),
-			ExpectedTokens: []string{
-				`my log`,
+			name:  "OneLogCarriageReturn",
+			input: []byte("my log\r\n"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("my log")+2, "my log"),
 			},
 		},
 		{
-			Name:  "TwoLogsSimple",
-			Input: []byte("log1\nlog2\n"),
-			ExpectedTokens: []string{
-				`log1`,
-				`log2`,
+			name:  "TwoLogsSimple",
+			input: []byte("log1\nlog2\n"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1")+1, "log1"),
+				splittest.ExpectAdvanceToken(len("log2")+1, "log2"),
 			},
 		},
 		{
-			Name:  "TwoLogsCarriageReturn",
-			Input: []byte("log1\r\nlog2\r\n"),
-			ExpectedTokens: []string{
-				`log1`,
-				`log2`,
+			name:  "TwoLogsCarriageReturn",
+			input: []byte("log1\r\nlog2\r\n"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1")+2, "log1"),
+				splittest.ExpectAdvanceToken(len("log2")+2, "log2"),
 			},
 		},
 		{
-			Name:  "NoTailingNewline",
-			Input: []byte(`foo`),
+			name:  "NoTailingNewline",
+			input: []byte("foo"),
 		},
 		{
-			Name: "HugeLog100",
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(100)
-				newInput = append(newInput, '\n')
-				return newInput
-			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(100)),
-			},
-		},
-		{
-			Name: "HugeLog10000",
-			Input: func() []byte {
+			name: "HugeLog10000",
+			input: func() []byte {
 				newInput := splittest.GenerateBytes(10000)
 				newInput = append(newInput, '\n')
 				return newInput
 			}(),
-			ExpectedTokens: []string{
-				string(splittest.GenerateBytes(10000)),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(10000+1, string(splittest.GenerateBytes(10000))),
 			},
 		},
 		{
-			Name: "HugeLog1000000",
-			Input: func() []byte {
-				newInput := splittest.GenerateBytes(1000000)
-				newInput = append(newInput, '\n')
-				return newInput
-			}(),
-			ExpectedError: errors.New("bufio.Scanner: token too long"),
-		},
-		{
-			Name:  "LogsWithoutFlusher",
-			Input: []byte("LOGPART log1"),
-		},
-		{
-			Name:  "DefaultSplits",
-			Input: []byte("log1\nlog2\n"),
-			ExpectedTokens: []string{
-				"log1",
-				"log2",
+			name:  "EmptyLine",
+			input: []byte("LOGEND 333\n\nAnother one"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("LOGEND 333")+1, "LOGEND 333"),
+				splittest.ExpectAdvanceToken(1, ""),
 			},
 		},
 		{
-			Name:  "LogsWithLogStartingWithWhiteChars",
-			Input: []byte("\nLOGEND 333\nAnother one"),
-			ExpectedTokens: []string{
-				"",
-				"LOGEND 333",
+			name:  "EmptyLineFirst",
+			input: []byte("\nLOGEND 333\nAnother one"),
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(1, ""),
+				splittest.ExpectAdvanceToken(len("LOGEND 333")+1, "LOGEND 333"),
+			},
+		},
+		{
+			name:       "FlushAtEOF",
+			input:      []byte("log1\nlog2"),
+			flushAtEOF: true,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len("log1")+1, "log1"),
+				splittest.ExpectAdvanceToken(len("log2"), "log2"),
+			},
+		},
+		{
+			name:     "SimpleUTF16",
+			encoding: unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+			input:    []byte{0, 116, 0, 101, 0, 115, 0, 116, 0, 108, 0, 111, 0, 103, 0, 10}, // testlog\n
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 116, 0, 101, 0, 115, 0, 116, 0, 108, 0, 111, 0, 103, 0, 10}),
+					string([]byte{0, 116, 0, 101, 0, 115, 0, 116, 0, 108, 0, 111, 0, 103}),
+				),
+			},
+		},
+		{
+			name:     "MultiUTF16",
+			encoding: unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+			input:    []byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 10}, // log1\nlog2\n
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 49}), // log1
+				),
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 50, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 50}), // log2
+				),
+			},
+		},
+		{
+			name:     "MultiCarriageReturnUTF16",
+			encoding: unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+			input:    []byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}, // log1\r\nlog2\r\n
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 49}), // log1
+				),
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 50}), // log2
+				),
+			},
+		},
+		{
+			name:     "MultiCarriageReturnUTF16StartingWithWhiteChars",
+			encoding: unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
+			input:    []byte{0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}, // \r\nlog1\r\nlog2\r\n
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(len([]byte{0, 13, 0, 10}), ""),
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 49}), // log1
+				),
+				splittest.ExpectAdvanceToken(
+					len([]byte{0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}),
+					string([]byte{0, 108, 0, 111, 0, 103, 0, 50}), // log2
+				),
+			},
+		},
+		{
+			name:       "AlternateEncoding",
+			input:      []byte("折\n"),
+			encoding:   traditionalchinese.Big5,
+			flushAtEOF: true,
+			steps: []splittest.Step{
+				splittest.ExpectAdvanceToken(4, "折"), // advance 4 bytes, []byte{167, 233, 10} + "\n"
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc, err := NewlineSplitFunc(unicode.UTF8, false)
+		if tc.encoding == nil {
+			tc.encoding = unicode.UTF8
+		}
+		splitFunc, err := Config{}.Func(tc.encoding, tc.flushAtEOF, 0)
 		require.NoError(t, err)
-		t.Run(tc.Name, tc.Run(splitFunc))
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
-
-	t.Run("FlushAtEOF", func(t *testing.T) {
-		splitFunc, err := Config{}.Func(unicode.UTF8, true, 0)
-		require.NoError(t, err)
-		splittest.TestCase{
-			Name:           "FlushAtEOF",
-			Input:          []byte("log1\nlog2"),
-			ExpectedTokens: []string{"log1", "log2"},
-		}.Run(splitFunc)(t)
-	})
-
-	// // TODO move to internal/splitter?
-	t.Run("ApplyTrimFunc", func(t *testing.T) {
-		cfg := Config{}
-		input := []byte(" log1 \n log2 \n")
-		splitFunc, err := cfg.Func(unicode.UTF8, false, 0)
-		require.NoError(t, err)
-
-		splitTrimLeading := trim.WithFunc(splitFunc, trim.Leading)
-		t.Run("TrimLeading", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`log1 `,
-				`log2 `,
-			}}.Run(splitTrimLeading))
-
-		splitTrimTrailing := trim.WithFunc(splitFunc, trim.Trailing)
-		t.Run("TrimTrailing", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				` log1`,
-				` log2`,
-			}}.Run(splitTrimTrailing))
-
-		splitTrimBoth, err := cfg.Func(unicode.UTF8, false, 0)
-		require.NoError(t, err)
-		splitTrimBoth = trim.WithFunc(splitTrimBoth, trim.Whitespace)
-		t.Run("TrimBoth", splittest.TestCase{
-			Input: input,
-			ExpectedTokens: []string{
-				`log1`,
-				`log2`,
-			}}.Run(splitTrimBoth))
-	})
 }
 
 func TestNoSplitFunc(t *testing.T) {
 	const largeLogSize = 100
-	testCases := []splittest.TestCase{
+	testCases := []struct {
+		name  string
+		input []byte
+		steps []splittest.Step
+	}{
 		{
-			Name:           "OneLogSimple",
-			Input:          []byte("my log\n"),
-			ExpectedTokens: []string{"my log\n"},
+			name:  "EmptyFile",
+			input: []byte(""),
 		},
 		{
-			Name:           "TwoLogsSimple",
-			Input:          []byte("log1\nlog2\n"),
-			ExpectedTokens: []string{"log1\nlog2\n"},
-		},
-		{
-			Name:           "TwoLogsCarriageReturn",
-			Input:          []byte("log1\r\nlog2\r\n"),
-			ExpectedTokens: []string{"log1\r\nlog2\r\n"},
-		},
-		{
-			Name:           "NoTailingNewline",
-			Input:          []byte(`foo`),
-			ExpectedTokens: []string{"foo"},
-		},
-		{
-			Name: "HugeLog100",
-			Input: func() []byte {
-				return splittest.GenerateBytes(largeLogSize)
-			}(),
-			ExpectedTokens: []string{string(splittest.GenerateBytes(largeLogSize))},
-		},
-		{
-			Name: "HugeLog300",
-			Input: func() []byte {
-				return splittest.GenerateBytes(largeLogSize * 3)
-			}(),
-			ExpectedTokens: []string{
-				"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
-				"wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
-				"stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn",
+			name:  "OneLogSimple",
+			input: []byte("my log\n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("my log\n"),
 			},
 		},
 		{
-			Name: "EOFBeforeMaxLogSize",
-			Input: func() []byte {
+			name:  "TwoLogsSimple",
+			input: []byte("log1\nlog2\n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1\nlog2\n"),
+			},
+		},
+		{
+			name:  "TwoLogsCarriageReturn",
+			input: []byte("log1\r\nlog2\r\n"),
+			steps: []splittest.Step{
+				splittest.ExpectToken("log1\r\nlog2\r\n"),
+			},
+		},
+		{
+			name:  "NoTailingNewline",
+			input: []byte(`foo`),
+			steps: []splittest.Step{
+				splittest.ExpectToken("foo"),
+			},
+		},
+		{
+			name: "HugeLog100",
+			input: func() []byte {
+				return splittest.GenerateBytes(largeLogSize)
+			}(),
+			steps: []splittest.Step{
+				splittest.ExpectToken(string(splittest.GenerateBytes(largeLogSize))),
+			},
+		},
+		{
+			name: "HugeLog300",
+			input: func() []byte {
+				return splittest.GenerateBytes(largeLogSize * 3)
+			}(),
+			steps: []splittest.Step{
+				splittest.ExpectToken("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
+				splittest.ExpectToken("wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr"),
+				splittest.ExpectToken("stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn"),
+			},
+		},
+		{
+			name: "EOFBeforeMaxLogSize",
+			input: func() []byte {
 				return splittest.GenerateBytes(largeLogSize * 3.5)
 			}(),
-			ExpectedTokens: []string{
-				"abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv",
-				"wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr",
-				"stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn",
-				"opqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl",
+			steps: []splittest.Step{
+				splittest.ExpectToken("abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuv"),
+				splittest.ExpectToken("wxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqr"),
+				splittest.ExpectToken("stuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmn"),
+				splittest.ExpectToken("opqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijkl"),
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		splitFunc := NoSplitFunc(largeLogSize)
-		t.Run(tc.Name, tc.Run(splitFunc))
-	}
-}
-
-func TestNewlineSplitFunc_Encodings(t *testing.T) {
-	cases := []struct {
-		name     string
-		encoding encoding.Encoding
-		input    []byte
-		tokens   [][]byte
-	}{
-		{
-			"Simple",
-			unicode.UTF8,
-			[]byte("testlog\n"),
-			[][]byte{[]byte("testlog")},
-		},
-		{
-			"CarriageReturn",
-			unicode.UTF8,
-			[]byte("testlog\r\n"),
-			[][]byte{[]byte("testlog")},
-		},
-		{
-			"SimpleUTF16",
-			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
-			[]byte{0, 116, 0, 101, 0, 115, 0, 116, 0, 108, 0, 111, 0, 103, 0, 10}, // testlog\n
-			[][]byte{{0, 116, 0, 101, 0, 115, 0, 116, 0, 108, 0, 111, 0, 103}},
-		},
-		{
-			"MultiUTF16",
-			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
-			[]byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 10}, // log1\nlog2\n
-			[][]byte{
-				{0, 108, 0, 111, 0, 103, 0, 49}, // log1
-				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
-			},
-		},
-		{
-			"MultiCarriageReturnUTF16",
-			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
-			[]byte{0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}, // log1\r\nlog2\r\n
-			[][]byte{
-				{0, 108, 0, 111, 0, 103, 0, 49}, // log1
-				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
-			},
-		},
-		{
-			"MultiCarriageReturnUTF16StartingWithWhiteChars",
-			unicode.UTF16(unicode.BigEndian, unicode.IgnoreBOM),
-			[]byte{0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 49, 0, 13, 0, 10, 0, 108, 0, 111, 0, 103, 0, 50, 0, 13, 0, 10}, // \r\nlog1\r\nlog2\r\n
-			[][]byte{
-				{},
-				{0, 108, 0, 111, 0, 103, 0, 49}, // log1
-				{0, 108, 0, 111, 0, 103, 0, 50}, // log2
-			},
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			splitFunc, err := NewlineSplitFunc(tc.encoding, false)
-			require.NoError(t, err)
-			scanner := bufio.NewScanner(bytes.NewReader(tc.input))
-			scanner.Split(splitFunc)
-
-			var tokens [][]byte
-			for {
-				ok := scanner.Scan()
-				if !ok {
-					require.NoError(t, scanner.Err())
-					break
-				}
-
-				tokens = append(tokens, scanner.Bytes())
-			}
-
-			require.Equal(t, tc.tokens, tokens)
-		})
+		splitFunc, err := Config{}.Func(encoding.Nop, false, largeLogSize)
+		require.NoError(t, err)
+		t.Run(tc.name, splittest.New(splitFunc, tc.input, tc.steps...))
 	}
 }
