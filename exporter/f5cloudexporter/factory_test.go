@@ -42,7 +42,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 }
 
 func TestFactory_CreateMetricsExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -63,7 +63,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 }
 
 func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	creationParams := exportertest.NewNopCreateSettings()
@@ -73,7 +73,7 @@ func TestFactory_CreateMetricsExporterInvalidConfig(t *testing.T) {
 }
 
 func TestFactory_CreateTracesExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -94,7 +94,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 }
 
 func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	creationParams := exportertest.NewNopCreateSettings()
@@ -104,7 +104,7 @@ func Test_Factory_CreateTracesExporterInvalidConfig(t *testing.T) {
 }
 
 func TestFactory_CreateLogsExporter(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
@@ -125,7 +125,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 }
 
 func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	creationParams := exportertest.NewNopCreateSettings()
@@ -135,7 +135,7 @@ func TestFactory_CreateLogsExporterInvalidConfig(t *testing.T) {
 }
 
 func TestFactory_getTokenSourceFromConfig(t *testing.T) {
-	factory := NewFactoryWithTokenSourceGetter(mockTokenSourceGetter)
+	factory := newFactoryWithTokenSourceGetter(mockTokenSourceGetter)
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.HTTPClientSettings.Endpoint = "https://" + testutil.GetAvailableLocalAddress(t)
 	cfg.Source = "tests"
