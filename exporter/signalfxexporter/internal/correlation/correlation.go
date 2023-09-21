@@ -63,7 +63,7 @@ func newCorrelationClient(cfg *Config, accessToken configopaque.String, params e
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	client, err := correlations.NewCorrelationClient(newZapShim(params.Logger), ctx, httpClient, correlations.ClientConfig{
+	client, err := correlations.NewCorrelationClient(ctx, newZapShim(params.Logger), httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
 		AccessToken: string(accessToken),
 		URL:         corrURL,

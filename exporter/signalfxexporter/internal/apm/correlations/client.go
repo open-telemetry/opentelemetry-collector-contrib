@@ -103,7 +103,7 @@ type ClientConfig struct {
 }
 
 // NewCorrelationClient returns a new Client
-func NewCorrelationClient(log log.Logger, ctx context.Context, client *http.Client, conf ClientConfig) (CorrelationClient, error) {
+func NewCorrelationClient(ctx context.Context, log log.Logger, client *http.Client, conf ClientConfig) (CorrelationClient, error) {
 	sender := requests.NewReqSender(ctx, client, conf.MaxRequests, "correlation")
 	return &Client{
 		log:                  log,

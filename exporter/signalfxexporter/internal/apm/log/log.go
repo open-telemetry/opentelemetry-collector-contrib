@@ -10,26 +10,26 @@ type Fields map[string]interface{}
 type nilLogger struct {
 }
 
-func (n nilLogger) Debug(msg string) {
+func (n nilLogger) Debug(string) {
 }
 
-func (n nilLogger) Warn(msg string) {
+func (n nilLogger) Warn(string) {
 }
 
-func (n nilLogger) Error(msg string) {
+func (n nilLogger) Error(string) {
 }
 
-func (n nilLogger) Info(msg string) {
+func (n nilLogger) Info(string) {
 }
 
-func (n nilLogger) Panic(msg string) {
+func (n nilLogger) Panic(string) {
 }
 
-func (n nilLogger) WithFields(fields Fields) Logger {
+func (n nilLogger) WithFields(Fields) Logger {
 	return nilLogger{}
 }
 
-func (n nilLogger) WithError(err error) Logger {
+func (n nilLogger) WithError(error) Logger {
 	return nilLogger{}
 }
 

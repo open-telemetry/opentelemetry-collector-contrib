@@ -7,7 +7,7 @@ package requests // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"sync/atomic"
 )
@@ -81,7 +81,7 @@ func (rs *ReqSender) sendRequest(req *http.Request) error {
 	}
 
 	if err != nil {
-		err = fmt.Errorf("error making HTTP request to %s: %v", req.URL.String(), err)
+		err = fmt.Errorf("error making HTTP request to %s: %w", req.URL.String(), err)
 	} else {
 		err = fmt.Errorf("unexpected status code %d on response for request to %s: %s", statusCode, req.URL.String(), string(body))
 	}
@@ -124,6 +124,6 @@ func sendRequest(client *http.Client, req *http.Request) ([]byte, int, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	return body, resp.StatusCode, err
 }

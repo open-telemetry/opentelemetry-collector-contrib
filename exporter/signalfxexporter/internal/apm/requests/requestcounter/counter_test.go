@@ -21,7 +21,7 @@ func TestContextWithRequestCounter(t *testing.T) {
 	assert.Equal(t, uint32(1), GetRequestCount(parent), "parent context is incremented")
 
 	// ensure child contexts retains the counter
-	child, _ := context.WithCancel(parent)
+	child, _ := context.WithCancel(parent) //nolint:govet
 	assert.True(t, counterExists(parent), "child context contains counter")
 	assert.Equal(t, uint32(1), GetRequestCount(child), "child context carried over parent count")
 

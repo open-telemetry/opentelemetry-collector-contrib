@@ -8,7 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -83,7 +83,7 @@ func makeHandler(t *testing.T, corCh chan<- *request, forcedRespCode *atomic.Val
 				return
 			}
 
-			body, err := ioutil.ReadAll(r.Body)
+			body, err := io.ReadAll(r.Body)
 			if err != nil {
 				rw.WriteHeader(400)
 				return
@@ -170,7 +170,7 @@ func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atom
 		},
 	}
 
-	client, err := NewCorrelationClient(log.Nil, ctx, httpClient, conf)
+	client, err := NewCorrelationClient(ctx, log.Nil, httpClient, conf)
 	if err != nil {
 		panic("could not make correlation client: " + err.Error())
 	}
@@ -205,7 +205,7 @@ func TestCorrelationClient(t *testing.T) {
 		forcedRespCode.Store(200)
 		respPayload := map[string][]string{"sf_services": {"testService1"}}
 		respJSON, err := json.Marshal(&respPayload)
-		require.Nil(t, err, "json marshalling failed in test")
+		require.Nil(t, err, "json marshaling failed in test")
 		forcedRespPayload.Store(respJSON)
 
 		var wg sync.WaitGroup

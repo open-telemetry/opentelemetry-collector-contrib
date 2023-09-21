@@ -190,7 +190,7 @@ func (a *ActiveServiceTracker) AddSpans(ctx context.Context, spans []*trace.Span
 
 // AddSpansGeneric accepts a list of trace spans and uses them to update the
 // current list of active services.  This is thread-safe.
-func (a *ActiveServiceTracker) AddSpansGeneric(ctx context.Context, spans SpanList) {
+func (a *ActiveServiceTracker) AddSpansGeneric(_ context.Context, spans SpanList) {
 	// Take current time once since this is a system call.
 	now := a.timeNow()
 
@@ -281,6 +281,7 @@ func (a *ActiveServiceTracker) processEnvironment(span Span, now time.Time) {
 					if err == nil {
 						a.hostEnvironmentCache.UpdateOrCreate(&CacheKey{value: environment}, now)
 					}
+					// nolint:errorlint
 					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
 						a.hostEnvironmentCache.SetMaxSize(max.MaxEntries, now)
 					}
@@ -338,6 +339,7 @@ func (a *ActiveServiceTracker) processService(span Span, now time.Time) {
 					if err == nil {
 						a.hostServiceCache.UpdateOrCreate(&CacheKey{value: service}, now)
 					}
+					// nolint:errorlint
 					if max, ok := err.(*correlations.ErrMaxEntries); ok && max.MaxEntries > 0 {
 						a.hostServiceCache.SetMaxSize(max.MaxEntries, now)
 					}
