@@ -58,6 +58,7 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata, lineSplitFunc bu
 		readerConfig:   f.readerConfig,
 		readerMetadata: m,
 		file:           file,
+		fileName:       file.Name(),
 		SugaredLogger:  f.SugaredLogger.With("path", file.Name()),
 		decoder:        decode.New(f.encoding),
 		lineSplitFunc:  lineSplitFunc,
@@ -82,12 +83,12 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata, lineSplitFunc bu
 	}
 
 	// Resolve file name and path attributes
-	resolved := file.Name()
+	resolved := r.fileName
 
 	// Dirty solution, waiting for this permanent fix https://github.com/golang/go/issues/39786
 	// EvalSymlinks on windows is partially working depending on the way you use Symlinks and Junctions
 	if runtime.GOOS != "windows" {
-		resolved, err = filepath.EvalSymlinks(file.Name())
+		resolved, err = filepath.EvalSymlinks(r.fileName)
 		if err != nil {
 			f.Errorf("resolve symlinks: %w", err)
 		}
@@ -98,12 +99,12 @@ func (f *readerFactory) build(file *os.File, m *readerMetadata, lineSplitFunc bu
 	}
 
 	if f.readerConfig.includeFileName {
-		r.FileAttributes[logFileName] = filepath.Base(file.Name())
+		r.FileAttributes[logFileName] = filepath.Base(r.fileName)
 	} else if r.FileAttributes[logFileName] != nil {
 		delete(r.FileAttributes, logFileName)
 	}
 	if f.readerConfig.includeFilePath {
-		r.FileAttributes[logFilePath] = file.Name()
+		r.FileAttributes[logFilePath] = r.fileName
 	} else if r.FileAttributes[logFilePath] != nil {
 		delete(r.FileAttributes, logFilePath)
 	}
