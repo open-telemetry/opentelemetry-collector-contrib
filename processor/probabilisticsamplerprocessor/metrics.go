@@ -22,8 +22,8 @@ var (
 	statCountLogsSampled   = stats.Int64("count_logs_sampled", "Count of logs that were sampled or not", stats.UnitDimensionless)
 )
 
-// SamplingProcessorMetricViews return the metrics views according to given telemetry level.
-func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
+// samplingProcessorMetricViews return the metrics views according to given telemetry level.
+func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
 		return nil
 	}
