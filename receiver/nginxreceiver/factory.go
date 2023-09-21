@@ -21,12 +21,11 @@ const (
 	connectionsAsSum = "receiver.nginx.emitConnectionsCurrentAsSum"
 )
 
-var connectorsAsSumGate = featuregate.GlobalRegistry().MustRegister(
+var _ = featuregate.GlobalRegistry().MustRegister(
 	connectionsAsSum,
-	featuregate.StageBeta,
-	featuregate.WithRegisterDescription("When enabled, the receiver will emit the 'nginx.connections_current' metric as a nonmonotonic sum, rather than a gauge."),
+	featuregate.StageStable,
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/4326"),
-	featuregate.WithRegisterFromVersion("v0.78.0"),
+	featuregate.WithRegisterToVersion("v0.87.0"),
 )
 
 // NewFactory creates a factory for nginx receiver.
