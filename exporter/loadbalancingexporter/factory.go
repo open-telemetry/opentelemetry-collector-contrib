@@ -18,13 +18,14 @@ import (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(MetricViews()...)
+	_ = view.Register(metricViews()...)
 
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)
 }
 
@@ -45,4 +46,8 @@ func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg
 
 func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
 	return newLogsExporter(params, cfg)
+}
+
+func createMetricsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
+	return newMetricsExporter(params, cfg)
 }

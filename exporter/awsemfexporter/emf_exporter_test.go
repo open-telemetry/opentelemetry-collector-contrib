@@ -6,7 +6,6 @@ package awsemfexporter
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -15,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -23,11 +23,6 @@ import (
 )
 
 const defaultRetryCount = 1
-
-func init() {
-	os.Setenv("AWS_ACCESS_KEY_ID", "test")
-	os.Setenv("AWS_SECRET_ACCESS_KEY", "test")
-}
 
 type mockPusher struct {
 	mock.Mock
@@ -68,6 +63,46 @@ func TestConsumeMetrics(t *testing.T) {
 	})
 	require.Error(t, exp.pushMetricsData(ctx, md))
 	require.NoError(t, exp.shutdown(ctx))
+}
+
+func TestConsumeMetricsWithNaNValues(t *testing.T) {
+	tests := []struct {
+		testName     string
+		generateFunc func(string) pmetric.Metrics
+	}{
+		{
+			"histograme-with-nan",
+			generateTestHistogramMetricWithNaNs,
+		}, {
+			"gauge-with-nan",
+			generateTestGaugeMetricNaN,
+		}, {
+			"summary-with-nan",
+			generateTestSummaryMetricWithNaN,
+		}, {
+			"exponentialHistogram-with-nan",
+			generateTestExponentialHistogramMetricWithNaNs,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.testName, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			factory := NewFactory()
+			expCfg := factory.CreateDefaultConfig().(*Config)
+			expCfg.Region = "us-west-2"
+			expCfg.MaxRetries = 0
+			expCfg.OutputDestination = "stdout"
+			exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+			assert.Nil(t, err)
+			assert.NotNil(t, exp)
+			md := tc.generateFunc(tc.testName)
+			require.NoError(t, exp.pushMetricsData(ctx, md))
+			require.NoError(t, exp.shutdown(ctx))
+		})
+	}
+
 }
 
 func TestConsumeMetricsWithOutputDestination(t *testing.T) {
