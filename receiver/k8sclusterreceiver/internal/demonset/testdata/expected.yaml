@@ -21,25 +21,25 @@ resourceMetrics:
               dataPoints:
                 - asInt: "3"
             name: k8s.daemonset.current_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)
             gauge:
               dataPoints:
                 - asInt: "5"
             name: k8s.daemonset.desired_scheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod
             gauge:
               dataPoints:
                 - asInt: "1"
             name: k8s.daemonset.misscheduled_nodes
-            unit: "1"
+            unit: "{node}"
           - description: Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready
             gauge:
               dataPoints:
                 - asInt: "2"
             name: k8s.daemonset.ready_nodes
-            unit: "1"
+            unit: "{node}"
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest

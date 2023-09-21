@@ -413,7 +413,7 @@ func TestEventShutdown(t *testing.T) {
 
 func TestPeriodicMetrics(t *testing.T) {
 	// prepare
-	views := MetricViews()
+	views := metricViews()
 
 	// ensure that we are starting with a clean state
 	view.Unregister(views...)
