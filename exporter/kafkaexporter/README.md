@@ -89,7 +89,7 @@ The following settings can be optionally configured:
   - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
   - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
-  - `proxy_url` (default ='') the address of any TCP proxy to be used with sarama. The proxy should be registered using [proxy.RegisterDialerType](https://pkg.go.dev/golang.org/x/net/proxy#RegisterDialerType).
+  - `proxy_url` (default ='') the address of any TCP proxy to be used with sarama. The proxy should be registered using [proxy.RegisterDialerType](https://pkg.go.dev/golang.org/x/net/proxy#RegisterDialerType). An example use case would be where Squid is proxying all your network requests - you would then need to tunnel Kafka over a TCP proxy through Squid.
 
 Example configuration:
 

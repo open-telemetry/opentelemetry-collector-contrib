@@ -135,6 +135,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
 
 	if config.ProxyURL != "" {
+		// Should point to a registered tcp proxy URL.
 		httpProxyURI, err := url.Parse(config.ProxyURL)
 		if err != nil {
 			return nil, err

@@ -5,8 +5,7 @@ change_type: enhancement
 component: kafkaexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: A proxy needs to be explicitly set in sarama. This checks both HTTPS_PROXY and HTTP_PROXY env variables. 
-      If any is set - proxy.FromURL is used to create a Dialer which is passed to the sarama config Net.Proxy struct. 
+note: Allows pointing to a registerd TCP proxy's URL to proxy connections to Kafka bootstrap and brokers.
 
 
 # One or more tracking issues related to the change
