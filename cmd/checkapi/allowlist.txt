@@ -4,7 +4,6 @@ exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/kafkaexporter
 exporter/pulsarexporter
-exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
 processor/servicegraphprocessor
