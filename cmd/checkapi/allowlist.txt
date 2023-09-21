@@ -12,7 +12,6 @@ extension/observer/ecsobserver
 extension/observer
 processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
-processor/probabilisticsamplerprocessor
 processor/servicegraphprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
