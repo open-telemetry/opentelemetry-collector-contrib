@@ -72,30 +72,8 @@ func TestIntegration(t *testing.T) {
 					"consumers",
 					"topics",
 				}
-				rCfg.Metrics = []string{
-					"kafka.brokers",
-					"kafka.consumer_group.lag",
-					"kafka.consumer_group.lag_sum",
-					"kafka.consumer_group.members",
-					"kafka.consumer_group.offset",
-					"kafka.consumer_group.offset_sum",
-					"kafka.partition.current_offset",
-					"kafka.partition.oldest_offset",
-					"kafka.partition.replicas",
-					"kafka.partition.replicas_in_sync",
-					"kafka.topic.partitions",
-					"messaging.kafka.broker.consumer_fetch_count",
-					"messaging.kafka.broker.consumer_fetch_rate",
-					"messaging.kafka.broker.count",
-					"messaging.kafka.broker.incoming_byte_rate",
-					"messaging.kafka.broker.outgoing_byte_rate",
-					"messaging.kafka.broker.request_latency",
-					"messaging.kafka.broker.request_rate",
-					"messaging.kafka.broker.request_size",
-					"messaging.kafka.broker.requests_in_flight",
-					"messaging.kafka.broker.response_rate",
-					"messaging.kafka.broker.response_size",
-				}
+				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchRate.Enabled = true
+				rCfg.Metrics.MessagingKafkaBrokerConsumerFetchRate.enabledSetByUser = true
 			}),
 
 		//  scraperinttest.WriteExpected(), // TODO remove
