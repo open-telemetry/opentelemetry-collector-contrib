@@ -23,8 +23,8 @@ var (
 	mEventLatency       = stats.Int64("processor_groupbytrace_event_latency", "How long the queue events are taking to be processed", stats.UnitMilliseconds)
 )
 
-// MetricViews return the metrics views according to given telemetry level.
-func MetricViews() []*view.View {
+// metricViews return the metrics views according to given telemetry level.
+func metricViews() []*view.View {
 	return []*view.View{
 		{
 			Name:        obsreport.BuildProcessorCustomMetricName(string(metadata.Type), mNumTracesConf.Name()),
