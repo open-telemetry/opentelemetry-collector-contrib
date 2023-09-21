@@ -12,9 +12,9 @@ import (
 )
 
 type ReplacePatternArguments[K any] struct {
-	Target       ottl.GetSetter[K]    `ottlarg:"0"`
-	RegexPattern string               `ottlarg:"1"`
-	Replacement  ottl.StringGetter[K] `ottlarg:"2"`
+	Target       ottl.GetSetter[K]
+	RegexPattern string
+	Replacement  ottl.StringGetter[K]
 }
 
 func NewReplacePatternFactory[K any]() ottl.Factory[K] {

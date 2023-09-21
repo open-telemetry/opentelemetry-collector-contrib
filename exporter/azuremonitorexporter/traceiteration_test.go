@@ -26,7 +26,7 @@ func TestTraceDataIterationNoResourceSpans(t *testing.T) {
 
 	visitor := getMockVisitor(true)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
@@ -38,7 +38,7 @@ func TestTraceDataIterationResourceSpansIsEmpty(t *testing.T) {
 
 	visitor := getMockVisitor(true)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
@@ -51,7 +51,7 @@ func TestTraceDataIterationScopeSpansIsEmpty(t *testing.T) {
 
 	visitor := getMockVisitor(true)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
@@ -64,7 +64,7 @@ func TestTraceDataIterationNoSpans(t *testing.T) {
 
 	visitor := getMockVisitor(true)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 0)
 }
@@ -79,7 +79,7 @@ func TestTraceDataIterationNoShortCircuit(t *testing.T) {
 
 	visitor := getMockVisitor(true)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 2)
 }
@@ -94,7 +94,7 @@ func TestTraceDataIterationShortCircuit(t *testing.T) {
 
 	visitor := getMockVisitor(false)
 
-	Accept(traces, visitor)
+	accept(traces, visitor)
 
 	visitor.AssertNumberOfCalls(t, "visit", 1)
 }

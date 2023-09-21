@@ -177,14 +177,77 @@ func TestFindFiles(t *testing.T) {
 			for _, f := range tc.files {
 				require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
 
-				file, err := os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+				var file *os.File
+				file, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
 				require.NoError(t, err)
 
 				_, err = file.WriteString(filepath.Base(f))
 				require.NoError(t, err)
 				require.NoError(t, file.Close())
 			}
-			assert.Equal(t, tc.expected, FindFiles(tc.include, tc.exclude))
+			files, err := FindFiles(tc.include, tc.exclude)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, files)
+		})
+	}
+}
+
+func TestFindFilesWithIOErrors(t *testing.T) {
+	cwd, err := os.Getwd()
+	require.NoError(t, err)
+	require.NoError(t, os.Chdir(t.TempDir()))
+	defer func() {
+		require.NoError(t, os.Chdir(cwd))
+	}()
+
+	for _, f := range []string{
+		"1.log",
+		"2.log",
+		filepath.Join("no_permission", "1.log"),
+		filepath.Join("no_permission", "2.log"),
+		filepath.Join("dir1", "1.log"),
+		filepath.Join("dir1", "2.log"),
+	} {
+		require.NoError(t, os.MkdirAll(filepath.Dir(f), 0700))
+
+		_, err = os.OpenFile(f, os.O_CREATE|os.O_RDWR, 0600)
+		require.NoError(t, err)
+	}
+
+	require.NoError(t, os.Chmod("no_permission", 0000))
+	defer func() {
+		require.NoError(t, os.Chmod("no_permission", 0700))
+	}()
+
+	cases := []struct {
+		name      string
+		include   []string
+		expected  []string
+		failedMsg string
+	}{
+		{
+			name: "failed pattern should not affect others",
+			include: []string{
+				"*.log",
+				filepath.Join("no_permission", "*.log"),
+				filepath.Join("dir1", "*.log"),
+			},
+			expected:  []string{"1.log", "2.log", "dir1/1.log", "dir1/2.log"},
+			failedMsg: "no_permission/*.log",
+		},
+		{
+			name:      "partial failure of FindFiles",
+			include:   []string{"**/*.log"},
+			expected:  []string{"1.log", "2.log", "dir1/1.log", "dir1/2.log"},
+			failedMsg: "**/*.log",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			files, err := FindFiles(tc.include, []string{})
+			assert.ErrorContains(t, err, tc.failedMsg)
+			assert.Equal(t, tc.expected, files)
 		})
 	}
 }

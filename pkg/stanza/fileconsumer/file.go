@@ -115,7 +115,7 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Warnf("finding files: %v", err)
+		m.Infof("finding files: %v", err)
 	}
 
 	for len(matches) > m.maxBatchFiles {
@@ -199,14 +199,14 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	}
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.Debugf("Failed to open file", zap.Error(err))
+		m.Errorw("Failed to open file", zap.Error(err))
 		return nil, nil
 	}
 
 	fp, err := m.readerFactory.newFingerprint(file)
 	if err != nil {
 		if err = file.Close(); err != nil {
-			m.Errorf("problem closing file %s", file.Name())
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -214,7 +214,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if len(fp.FirstBytes) == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
-			m.Errorf("problem closing file %s", file.Name())
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -243,7 +243,7 @@ func (m *Manager) makeReader(path string) *reader {
 	// Exclude any empty fingerprints or duplicate fingerprints to avoid doubling up on copy-truncate files
 	if m.checkDuplicates(fp) {
 		if err := file.Close(); err != nil {
-			m.Errorf("problem closing file", "file", file.Name())
+			m.Debugw("problem closing file", zap.Error(err))
 		}
 		return nil
 	}

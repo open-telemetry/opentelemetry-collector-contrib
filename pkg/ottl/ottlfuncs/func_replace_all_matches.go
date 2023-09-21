@@ -14,9 +14,9 @@ import (
 )
 
 type ReplaceAllMatchesArguments[K any] struct {
-	Target      ottl.PMapGetter[K]   `ottlarg:"0"`
-	Pattern     string               `ottlarg:"1"`
-	Replacement ottl.StringGetter[K] `ottlarg:"2"`
+	Target      ottl.PMapGetter[K]
+	Pattern     string
+	Replacement ottl.StringGetter[K]
 }
 
 func NewReplaceAllMatchesFactory[K any]() ottl.Factory[K] {

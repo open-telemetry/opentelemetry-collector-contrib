@@ -20,9 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	appsv1 "k8s.io/api/apps/v1"
 	autoscalingv2 "k8s.io/api/autoscaling/v2"
-	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	batchv1 "k8s.io/api/batch/v1"
-	batchv1beta1 "k8s.io/api/batch/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -138,8 +136,8 @@ func (rw *resourceWatcher) prepareSharedInformerFactory() error {
 		"ReplicaSet":              {gvk.ReplicaSet},
 		"StatefulSet":             {gvk.StatefulSet},
 		"Job":                     {gvk.Job},
-		"CronJob":                 {gvk.CronJob, gvk.CronJobBeta},
-		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler, gvk.HorizontalPodAutoscalerBeta},
+		"CronJob":                 {gvk.CronJob},
+		"HorizontalPodAutoscaler": {gvk.HorizontalPodAutoscaler},
 	}
 
 	for kind, gvks := range supportedKinds {
@@ -214,12 +212,8 @@ func (rw *resourceWatcher) setupInformerForKind(kind schema.GroupVersionKind, fa
 		rw.setupInformer(kind, factory.Batch().V1().Jobs().Informer())
 	case gvk.CronJob:
 		rw.setupInformer(kind, factory.Batch().V1().CronJobs().Informer())
-	case gvk.CronJobBeta:
-		rw.setupInformer(kind, factory.Batch().V1beta1().CronJobs().Informer())
 	case gvk.HorizontalPodAutoscaler:
 		rw.setupInformer(kind, factory.Autoscaling().V2().HorizontalPodAutoscalers().Informer())
-	case gvk.HorizontalPodAutoscalerBeta:
-		rw.setupInformer(kind, factory.Autoscaling().V2beta2().HorizontalPodAutoscalers().Informer())
 	default:
 		rw.logger.Error("Could not setup an informer for provided group version kind",
 			zap.String("group version kind", kind.String()))
@@ -308,12 +302,8 @@ func (rw *resourceWatcher) objMetadata(obj interface{}) map[experimentalmetricme
 		return jobs.GetMetadata(o)
 	case *batchv1.CronJob:
 		return cronjob.GetMetadata(o)
-	case *batchv1beta1.CronJob:
-		return cronjob.GetMetadataBeta(o)
 	case *autoscalingv2.HorizontalPodAutoscaler:
 		return hpa.GetMetadata(o)
-	case *autoscalingv2beta2.HorizontalPodAutoscaler:
-		return hpa.GetMetadataBeta(o)
 	}
 	return nil
 }
