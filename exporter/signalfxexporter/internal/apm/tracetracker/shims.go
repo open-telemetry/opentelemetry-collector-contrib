@@ -4,13 +4,9 @@
 
 package tracetracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/tracetracker"
 
-import (
-	"github.com/signalfx/golib/v3/trace"
-)
-
 var (
-	_ SpanList = (*spanListWrap)(nil)
-	_ Span     = (*spanWrap)(nil)
+	_ SpanList = (*fakeSpanList)(nil)
+	_ Span     = (*fakeSpan)(nil)
 )
 
 // Span is a generic interface for accessing span metadata.
@@ -27,39 +23,35 @@ type SpanList interface {
 	At(i int) Span
 }
 
-type spanWrap struct {
-	*trace.Span
+type fakeSpan struct {
+	serviceName string
+	tags        map[string]string
 }
 
-func (s spanWrap) Environment() (string, bool) {
-	env, ok := s.Tags["environment"]
+func (s fakeSpan) Environment() (string, bool) {
+	env, ok := s.tags["environment"]
 	return env, ok
 }
 
-func (s spanWrap) ServiceName() (string, bool) {
-	if s.LocalEndpoint == nil || s.LocalEndpoint.ServiceName == nil || *s.LocalEndpoint.ServiceName == "" {
-		return "", false
-	}
-	return *s.LocalEndpoint.ServiceName, true
+func (s fakeSpan) ServiceName() (string, bool) {
+	return s.serviceName, s.serviceName != ""
 }
 
-func (s spanWrap) Tag(tag string) (string, bool) {
-	t, ok := s.Tags[tag]
+func (s fakeSpan) Tag(tag string) (string, bool) {
+	t, ok := s.tags[tag]
 	return t, ok
 }
 
-func (s spanWrap) NumTags() int {
-	return len(s.Tags)
+func (s fakeSpan) NumTags() int {
+	return len(s.tags)
 }
 
-type spanListWrap struct {
-	spans []*trace.Span
+type fakeSpanList []fakeSpan
+
+func (s fakeSpanList) Len() int {
+	return len(s)
 }
 
-func (s spanListWrap) Len() int {
-	return len(s.spans)
-}
-
-func (s spanListWrap) At(i int) Span {
-	return spanWrap{Span: s.spans[i]}
+func (s fakeSpanList) At(i int) Span {
+	return s[i]
 }

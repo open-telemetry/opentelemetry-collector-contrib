@@ -3,14 +3,12 @@ exporter/awskinesisexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
 exporter/kafkaexporter
-exporter/kineticaexporter
 exporter/lokiexporter
 exporter/pulsarexporter
 exporter/sentryexporter
 exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-processor/groupbyattrsprocessor
 processor/groupbytraceprocessor
 processor/probabilisticsamplerprocessor
 processor/servicegraphprocessor
