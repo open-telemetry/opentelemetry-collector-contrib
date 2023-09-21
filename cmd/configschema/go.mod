@@ -169,7 +169,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.85.0 // indirect
 	github.com/samber/lo v1.37.0 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/signalfx/signalfx-agent/pkg/apm v0.0.0-20230214151822-6a6813cf5bf1 // indirect
 	go.opentelemetry.io/collector/exporter v0.85.1-0.20230919160920-512b9c3c8fec // indirect
 	go.opentelemetry.io/collector/receiver v0.85.1-0.20230919160920-512b9c3c8fec // indirect
 )
