@@ -5,6 +5,7 @@ package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -58,6 +59,27 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 			if namespace := e.GetNamespace(); namespace != "" {
 				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
 			}
+
+			kind, ok, _ := unstructured.NestedString(e.Object, "object", "kind")
+			if ok && kind == "Event" {
+				namespace, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "namespace")
+				if ok {
+					resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
+				}
+				regardingKind, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "kind")
+				if ok {
+					regardingKind = strings.ToLower(regardingKind)
+					regardingName, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "name")
+					if ok {
+						resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.name", regardingKind), regardingName)
+					}
+					regardingUID, ok, _ := unstructured.NestedString(e.Object, "object", "regarding", "uid")
+					if ok {
+						resourceAttrs.PutStr(fmt.Sprintf("k8s.%v.uid", regardingKind), regardingUID)
+					}
+				}
+			}
+
 			sl := rl.ScopeLogs().AppendEmpty()
 			logSlice = sl.LogRecords()
 			namespaceResourceMap[e.GetNamespace()] = logSlice

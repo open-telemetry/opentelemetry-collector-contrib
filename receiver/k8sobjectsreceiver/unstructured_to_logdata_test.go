@@ -169,4 +169,44 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		assert.Equal(t, logRecords.At(0).ObservedTimestamp().AsTime().Unix(), observedAt.Unix())
 	})
 
+	t.Run("Test object with regarding", func(t *testing.T) {
+		objects := unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{},
+		}
+		object := unstructured.Unstructured{}
+		object.Object = map[string]any{
+			"object": map[string]any{
+				"kind": "Event",
+				"regarding": map[string]any{
+					"kind":      "Pod",
+					"name":      "my-pod-name",
+					"uid":       "12345",
+					"namespace": "my-namespace",
+				},
+			},
+		}
+		objects.Items = append(objects.Items, object)
+		config := &K8sObjectsConfig{
+			gvr: &schema.GroupVersionResource{
+				Group:    "",
+				Version:  "events.k8s.io",
+				Resource: "events",
+			},
+		}
+		logs := pullObjectsToLogData(&objects, time.Now(), config)
+
+		assert.Equal(t, logs.LogRecordCount(), 1)
+
+		resourceLogs := logs.ResourceLogs()
+		assert.Equal(t, resourceLogs.Len(), 1)
+
+		rl := resourceLogs.At(0)
+		resourceAttributes := rl.Resource().Attributes()
+		podName, _ := resourceAttributes.Get(semconv.AttributeK8SPodName)
+		assert.Equal(t, "my-pod-name", podName.AsString())
+		podUID, _ := resourceAttributes.Get(semconv.AttributeK8SPodUID)
+		assert.Equal(t, "12345", podUID.AsString())
+		podNamespace, _ := resourceAttributes.Get(semconv.AttributeK8SNamespaceName)
+		assert.Equal(t, "my-namespace", podNamespace.AsString())
+	})
 }
