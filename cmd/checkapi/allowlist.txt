@@ -7,7 +7,6 @@ exporter/pulsarexporter
 exporter/sumologicexporter
 extension/observer/ecsobserver
 extension/observer
-processor/groupbytraceprocessor
 processor/servicegraphprocessor
 receiver/carbonreceiver
 receiver/collectdreceiver
