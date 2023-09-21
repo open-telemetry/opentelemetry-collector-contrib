@@ -150,7 +150,7 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 			Enable bool
 			Dialer proxy.Dialer
 		}{
-			Enable: config.ProxyEnabled,
+			Enable: true,
 			Dialer: httpDialer,
 		}
 
