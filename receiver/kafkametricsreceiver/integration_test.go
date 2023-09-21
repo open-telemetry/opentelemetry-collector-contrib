@@ -14,7 +14,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -28,9 +27,6 @@ const (
 )
 
 func TestIntegration(t *testing.T) {
-
-	sink := new(consumertest.MetricsSink)
-
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithNetworkRequest(
@@ -98,8 +94,6 @@ func TestIntegration(t *testing.T) {
 				rCfg.Metrics.MessagingKafkaBrokerRequestsInFlight.Enabled = true
 				rCfg.Metrics.MessagingKafkaBrokerResponseRate.Enabled = true
 				rCfg.Metrics.MessagingKafkaBrokerResponseSize.Enabled = true
-
-				rCfg.MetricsSink = sink
 			}),
 
 		// scraperinttest.WriteExpected(), // TODO remove
@@ -108,10 +102,6 @@ func TestIntegration(t *testing.T) {
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
 		),
+		scraperinttest.WriteExpected(),
 	).Run(t)
-
-	collectedMetrics := sink.AllMetrics()
-
-	err := scraperinttest.WriteExpected(collectedMetrics, "./testdata/integration/expected.yaml")
-	require.noError(t, err)
 }
