@@ -610,6 +610,7 @@ The returned type is `time.Time`.
 Examples:
 
 - `UnixSeconds(Now())`
+- `set(start_time, Now())`
 
 ### ParseJSON
 
