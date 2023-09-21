@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap/zaptest"
 
@@ -23,7 +23,9 @@ import (
 )
 
 func TestHeaderExtractionTraces(t *testing.T) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
@@ -83,7 +85,9 @@ func TestHeaderExtractionTraces(t *testing.T) {
 }
 
 func TestHeaderExtractionLogs(t *testing.T) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
 	unmarshaler := newTextLogsUnmarshaler()
@@ -140,7 +144,9 @@ func TestHeaderExtractionLogs(t *testing.T) {
 }
 
 func TestHeaderExtractionMetrics(t *testing.T) {
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
