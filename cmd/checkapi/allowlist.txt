@@ -2,7 +2,6 @@ connector/servicegraphconnector
 exporter/awskinesisexporter
 exporter/coralogixexporter
 exporter/dynatraceexporter
-exporter/f5cloudexporter
 exporter/kafkaexporter
 exporter/kineticaexporter
 exporter/lokiexporter
