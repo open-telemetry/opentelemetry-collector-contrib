@@ -21,7 +21,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultCfg := CreateDefaultConfig()
+	defaultCfg := createDefaultConfig()
 
 	tests := []struct {
 		id       component.ID
@@ -50,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func withDefaultConfig(fns ...func(*Config)) *Config {
-	cfg := CreateDefaultConfig().(*Config)
+	cfg := createDefaultConfig().(*Config)
 	for _, fn := range fns {
 		fn(cfg)
 	}

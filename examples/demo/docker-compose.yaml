@@ -59,7 +59,6 @@ services:
       - otel-collector
 
   prometheus:
-    container_name: prometheus
     image: prom/prometheus:latest
     restart: always
     volumes:

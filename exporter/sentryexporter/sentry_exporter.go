@@ -479,8 +479,8 @@ func generateEventID() sentry.EventID {
 	return sentry.EventID(uuid())
 }
 
-// CreateSentryExporter returns a new Sentry Exporter.
-func CreateSentryExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+// createSentryExporter returns a new Sentry Exporter.
+func createSentryExporter(config *Config, set exporter.CreateSettings) (exporter.Traces, error) {
 	transport := newSentryTransport()
 
 	clientOptions := sentry.ClientOptions{

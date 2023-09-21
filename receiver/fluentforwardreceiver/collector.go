@@ -8,8 +8,8 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
@@ -23,10 +23,10 @@ type Collector struct {
 	nextConsumer consumer.Logs
 	eventCh      <-chan Event
 	logger       *zap.Logger
-	obsrecv      *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
 }
 
-func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *obsreport.Receiver) *Collector {
+func newCollector(eventCh <-chan Event, next consumer.Logs, logger *zap.Logger, obsrecv *receiverhelper.ObsReport) *Collector {
 	return &Collector{
 		nextConsumer: next,
 		eventCh:      eventCh,
