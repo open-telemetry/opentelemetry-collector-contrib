@@ -117,7 +117,7 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 			Enable bool
 			Dialer proxy.Dialer
 		}{
-			Enable: config.ProxyEnabled,
+			Enable: true,
 			Dialer: httpDialer,
 		}
 	}
@@ -231,7 +231,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 			Enable bool
 			Dialer proxy.Dialer
 		}{
-			Enable: config.ProxyEnabled,
+			Enable: true,
 			Dialer: httpDialer,
 		}
 
@@ -346,7 +346,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 			Enable bool
 			Dialer proxy.Dialer
 		}{
-			Enable: config.ProxyEnabled,
+			Enable: true,
 			Dialer: httpDialer,
 		}
 
