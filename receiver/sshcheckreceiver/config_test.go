@@ -4,10 +4,14 @@
 package sshcheckreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver"
 
 import (
+	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -32,7 +36,7 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc: "missing password and keyfile",
+			desc: "missing password and key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Username: "otelu",
@@ -82,7 +86,7 @@ func TestValidate(t *testing.T) {
 			expectedErr: error(nil),
 		},
 		{
-			desc: "no error with keyfile",
+			desc: "no error with key_file",
 			cfg: &Config{
 				SSHClientSettings: configssh.SSHClientSettings{
 					Endpoint: "localhost:2222",
@@ -104,4 +108,28 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	expected := factory.CreateDefaultConfig().(*Config)
+	expected.Endpoint = "notdefault:1313"
+	expected.Username = "noteault_username"
+	expected.Password = "notdefault_password"
+	expected.KeyFile = "notdefault/path/keyfile"
+	expected.CollectionInterval = 10 * time.Second
+	expected.KnownHosts = "path/to/colletor_known_hosts"
+	expected.IgnoreHostKey = false
+
+	require.Equal(t, expected, cfg)
 }
