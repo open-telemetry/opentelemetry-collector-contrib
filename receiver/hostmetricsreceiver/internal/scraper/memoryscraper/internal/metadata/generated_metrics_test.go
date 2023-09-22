@@ -56,6 +56,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordSystemMemoryUsageDataPoint(ts, 1, AttributeStateBuffered)
 
 			allMetricsCount++
@@ -83,6 +87,20 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
+				case "system.memory.limit":
+					assert.False(t, validatedMetrics["system.memory.limit"], "Found a duplicate in the metrics slice: system.memory.limit")
+					validatedMetrics["system.memory.limit"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total bytes of memory available.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.memory.usage":
 					assert.False(t, validatedMetrics["system.memory.usage"], "Found a duplicate in the metrics slice: system.memory.usage")
 					validatedMetrics["system.memory.usage"] = true

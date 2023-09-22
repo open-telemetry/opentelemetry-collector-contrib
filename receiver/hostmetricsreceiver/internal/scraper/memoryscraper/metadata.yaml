@@ -11,6 +11,15 @@ attributes:
     enum: [buffered, cached, inactive, free, slab_reclaimable, slab_unreclaimable, used]
 
 metrics:
+  system.memory.limit:
+    enabled: true
+    description: Total bytes of memory available.
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
   system.memory.usage:
     enabled: true
     description: Bytes of memory in use.

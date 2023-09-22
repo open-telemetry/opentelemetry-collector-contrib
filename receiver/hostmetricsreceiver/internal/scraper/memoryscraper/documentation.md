@@ -14,6 +14,14 @@ metrics:
     enabled: false
 ```
 
+### system.memory.limit
+
+Total bytes of memory available.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### system.memory.usage
 
 Bytes of memory in use.
