@@ -16,7 +16,6 @@ data:
     receivers:
       kubeletstats:
         auth_type: "serviceAccount"
-        insecure_skip_verify: true
         endpoint: "https://${env:K8S_NODE_NAME}:10250"
         metric_groups:
         - node
