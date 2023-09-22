@@ -19,9 +19,9 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -79,7 +79,7 @@ type splunkReceiver struct {
 	metricsConsumer consumer.Metrics
 	server          *http.Server
 	shutdownWG      sync.WaitGroup
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 	gzipReaderPool  *sync.Pool
 }
 
@@ -104,7 +104,7 @@ func newMetricsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,
@@ -148,7 +148,7 @@ func newLogsReceiver(
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: settings,

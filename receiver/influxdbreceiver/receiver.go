@@ -18,8 +18,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -34,7 +34,7 @@ type metricsReceiver struct {
 
 	logger common.Logger
 
-	obsrecv *obsreport.Receiver
+	obsrecv *receiverhelper.ObsReport
 
 	settings component.TelemetrySettings
 }
@@ -45,7 +45,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 	if err != nil {
 		return nil, err
 	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "http",
 		ReceiverCreateSettings: settings,
