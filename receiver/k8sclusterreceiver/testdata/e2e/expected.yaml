@@ -781,7 +781,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -844,7 +844,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -921,7 +921,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -977,7 +977,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1033,7 +1033,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1089,7 +1089,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1138,7 +1138,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1208,7 +1208,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1285,7 +1285,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:
@@ -1334,7 +1334,7 @@ resourceMetrics:
                 - asInt: "0"
                   timeUnixNano: "1686772769034865545"
             name: k8s.container.restarts
-            unit: "1"
+            unit: "{restart}"
           - description: Whether a container has passed its readiness probe (0 for no, 1 for yes)
             gauge:
               dataPoints:

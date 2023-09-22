@@ -291,6 +291,7 @@ Available Converters:
 - [Milliseconds](#milliseconds)
 - [Minutes](#minutes)
 - [Nanoseconds](#nanoseconds)
+- [Now](#now)
 - [ParseJSON](#parsejson)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
@@ -597,6 +598,19 @@ The returned type is `int64`.
 Examples:
 
 - `Nanoseconds(Duration("1h"))`
+
+### Now
+
+`Now()`
+
+The `Now` function returns the current time as represented by `time.Now()` in Go.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `UnixSeconds(Now())`
+- `set(start_time, Now())`
 
 ### ParseJSON
 
