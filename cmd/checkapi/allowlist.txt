@@ -1,7 +1,5 @@
 connector/servicegraphconnector
-exporter/awskinesisexporter
 exporter/coralogixexporter
-exporter/dynatraceexporter
 exporter/kafkaexporter
 exporter/pulsarexporter
 extension/observer/ecsobserver

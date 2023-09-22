@@ -159,7 +159,7 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 	}
 
 	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
+		e := &metricsExporter{
 			settings: test.fields.settings,
 			cfg:      test.fields.cfg,
 			client:   test.fields.client,
@@ -305,7 +305,7 @@ func Test_SumMetrics(t *testing.T) {
 			prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
 
 			// set up the exporter
-			exp := &exporter{
+			exp := &metricsExporter{
 				settings: componenttest.NewNopTelemetrySettings(),
 				cfg: &config.Config{
 					APIToken:           "token",
@@ -368,7 +368,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	noneMetric := metrics.AppendEmpty()
 	noneMetric.SetName("none")
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -405,7 +405,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	intGaugeDataPoint.SetIntValue(10)
 	intGaugeDataPoint.SetTimestamp(testTimestamp)
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -431,7 +431,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -456,7 +456,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -481,7 +481,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -506,7 +506,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			APIToken:           "token",
@@ -534,7 +534,7 @@ func Test_exporter_send_TooManyRequests(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			APIToken:           "token",
@@ -557,7 +557,7 @@ func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			APIToken:           "token",
@@ -588,7 +588,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	e := &exporter{
+	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
 			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
@@ -672,7 +672,7 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	}
 
 	t.Run(test.name, func(t *testing.T) {
-		e := &exporter{
+		e := &metricsExporter{
 			settings: componenttest.NewNopTelemetrySettings(),
 			cfg:      test.fields.cfg,
 			client:   test.fields.client,
