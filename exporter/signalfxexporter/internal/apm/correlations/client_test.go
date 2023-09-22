@@ -180,6 +180,7 @@ func setup(t *testing.T) (CorrelationClient, chan *request, *atomic.Value, *atom
 }
 
 func TestCorrelationClient(t *testing.T) {
+	t.Skip("See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27059")
 	client, serverCh, forcedRespCode, forcedRespPayload, cancel := setup(t)
 	defer close(serverCh)
 	defer cancel()
