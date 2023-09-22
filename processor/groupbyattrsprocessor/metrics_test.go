@@ -19,7 +19,7 @@ func TestProcessorMetrics(t *testing.T) {
 		"processor/groupbyattrs/log_groups",
 	}
 
-	views := MetricViews()
+	views := metricViews()
 	for i, viewName := range expectedViewNames {
 		assert.Equal(t, viewName, views[i].Name)
 	}
