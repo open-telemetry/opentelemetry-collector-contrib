@@ -6,21 +6,15 @@ package splittest // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bufio"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type Step struct {
-	sleep    time.Duration
 	validate validate
 }
 
 type validate func(t *testing.T, advance int, token []byte, err error)
-
-func Sleep(d time.Duration) Step {
-	return Step{sleep: d}
-}
 
 func ExpectToken(expectToken string) Step {
 	return ExpectAdvanceToken(len(expectToken), expectToken)
@@ -36,6 +30,16 @@ func ExpectAdvanceToken(expectAdvance int, expectToken string) Step {
 	}
 }
 
+func ExpectAdvanceNil(expectAdvance int) Step {
+	return Step{
+		validate: func(t *testing.T, advance int, token []byte, err error) {
+			assert.Equal(t, expectAdvance, advance)
+			assert.Equal(t, []byte(nil), token)
+			assert.NoError(t, err)
+		},
+	}
+}
+
 func ExpectError(expectErr string) Step {
 	return Step{
 		validate: func(t *testing.T, advance int, token []byte, err error) {
@@ -44,26 +48,11 @@ func ExpectError(expectErr string) Step {
 	}
 }
 
-func Expect(expectAdvance int, expectToken string, expectErr string) Step {
-	return Step{
-		validate: func(t *testing.T, advance int, token []byte, err error) {
-			assert.Equal(t, expectAdvance, advance)
-			assert.Nil(t, expectToken, token)
-			assert.EqualError(t, err, expectErr)
-		},
-	}
-}
-
-func Test(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T) {
+func New(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T) {
 	return func(t *testing.T) {
 		var offset int
 		var atEOF bool
-		for _, step := range append(steps, expectMoreDataRequest()) {
-			if step.sleep > 0 {
-				time.Sleep(step.sleep)
-				continue
-			}
-
+		for _, step := range append(steps, expectMoreRequestAtEOF()) {
 			// Split funcs do not have control over the size of the
 			// buffer so must be able to ask for more data as needed.
 			// Start with a tiny buffer and grow it slowly to ensure
@@ -77,24 +66,21 @@ func Test(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.
 				// exercising the split func's ability to ask for more data.
 				bufferSize = 1 + bufferSize + bufferSize/8
 				data := make([]byte, 0, bufferSize)
-				switch {
-				case offset >= len(input):
-					atEOF = true
-				case offset+bufferSize >= len(input):
+				if offset+bufferSize >= len(input) {
 					atEOF = true
 					data = append(data, input[offset:]...)
-				default:
+				} else {
 					data = append(data, input[offset:offset+bufferSize]...)
 				}
 				advance, token, err = splitFunc(data, atEOF)
 			}
-			step.validate(t, advance, token, err)
 			offset += advance
+			step.validate(t, advance, token, err)
 		}
 	}
 }
 
-func expectMoreDataRequest() Step {
+func expectMoreRequestAtEOF() Step {
 	return Step{
 		validate: func(t *testing.T, advance int, token []byte, err error) {
 			assert.True(t, needMoreData(advance, token, err))
