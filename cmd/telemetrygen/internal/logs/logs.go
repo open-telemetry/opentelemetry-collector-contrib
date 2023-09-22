@@ -40,7 +40,10 @@ func (e *gRPCClientExporter) export(logs plog.Logs) error {
 
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
-	logger := common.GetLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	if err != nil {
+		return err
+	}
 
 	if cfg.UseHTTP {
 		return fmt.Errorf("http is not supported by 'telemetrygen logs'")

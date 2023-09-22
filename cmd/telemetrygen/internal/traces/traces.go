@@ -27,7 +27,10 @@ import (
 )
 
 func Start(cfg *Config) error {
-	logger := common.GetLogger()
+	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
+	if err != nil {
+		return err
+	}
 
 	grpcExpOpt := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
@@ -52,7 +55,6 @@ func Start(cfg *Config) error {
 	}
 
 	var exp *otlptrace.Exporter
-	var err error
 	if cfg.UseHTTP {
 		logger.Info("starting HTTP exporter")
 		exp, err = otlptracehttp.New(context.Background(), httpExpOpt...)
