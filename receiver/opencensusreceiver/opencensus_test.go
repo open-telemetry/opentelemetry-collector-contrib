@@ -36,6 +36,7 @@ import (
 	"go.opentelemetry.io/collector/obsreport/obsreporttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -413,7 +414,7 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{TracesSink: new(consumertest.TracesSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
@@ -564,7 +565,7 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				sink := &errOrSinkConsumer{MetricsSink: new(consumertest.MetricsSink)}
 
 				var opts []ocOption
-				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, testTel.ToReceiverCreateSettings(), opts...)
+				ocr, err := newOpenCensusReceiver("tcp", addr, nil, nil, receiver.CreateSettings{ID: exporter.receiverID, TelemetrySettings: testTel.TelemetrySettings, BuildInfo: component.NewDefaultBuildInfo()}, opts...)
 				require.Nil(t, err)
 				require.NotNil(t, ocr)
 
