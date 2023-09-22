@@ -1,5 +1,4 @@
 connector/servicegraphconnector
-exporter/coralogixexporter
 exporter/kafkaexporter
 exporter/pulsarexporter
 extension/observer
