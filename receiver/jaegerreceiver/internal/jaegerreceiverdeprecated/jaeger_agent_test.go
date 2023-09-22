@@ -40,7 +40,7 @@ func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	testJaegerAgent(t, addr, &configuration{
 		AgentCompactThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	})
 }
@@ -49,7 +49,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentCompactThrift: ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -66,7 +66,7 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	testJaegerAgent(t, addr, &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	})
 }
@@ -78,7 +78,7 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	config := &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -100,7 +100,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()

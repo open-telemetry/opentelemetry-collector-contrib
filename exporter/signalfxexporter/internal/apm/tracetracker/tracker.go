@@ -11,15 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/signalfx/golib/v3/datapoint"
-	"github.com/signalfx/golib/v3/sfxclient"
-	"github.com/signalfx/golib/v3/trace"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/correlations"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/apm/log"
 )
-
-const spanCorrelationMetricName = "sf.int.service.heartbeat"
 
 // DefaultDimsToSyncSource are the default dimensions to sync correlated environment and services onto.
 var DefaultDimsToSyncSource = map[string]string{
@@ -61,10 +55,7 @@ type ActiveServiceTracker struct {
 	// cache of service names to generate datapoints for
 	dpCache map[string]struct{}
 
-	// A callback that gets called with the correlation datapoint when a
-	// service is first seen
-	newServiceCallback func(dp *datapoint.Datapoint)
-	timeNow            func() time.Time
+	timeNow func() time.Time
 
 	// correlationClient is the client used for updating infrastructure correlation properties
 	correlationClient correlations.CorrelationClient
@@ -77,24 +68,12 @@ type ActiveServiceTracker struct {
 	dimsToSyncSource map[string]string
 }
 
-// dpForService actually makes the datapoint that is put into the dp cache
-func dpForService(service string) *datapoint.Datapoint {
-	return sfxclient.Gauge(spanCorrelationMetricName, map[string]string{
-		"sf_hasService": service,
-		// Host dimensions get added in the writer just like datapoints
-	}, 0)
-}
-
 // addServiceToDPCache creates a datapoint for the given service in the dpCache.
 func (a *ActiveServiceTracker) addServiceToDPCache(service string) {
 	a.dpCacheLock.Lock()
 	defer a.dpCacheLock.Unlock()
 
 	a.dpCache[service] = struct{}{}
-
-	if a.newServiceCallback != nil {
-		a.newServiceCallback(dpForService(service))
-	}
 }
 
 // removeServiceFromDPCache removes the datapoint for the given service from the dpCache
@@ -102,19 +81,6 @@ func (a *ActiveServiceTracker) removeServiceFromDPCache(service string) {
 	a.dpCacheLock.Lock()
 	delete(a.dpCache, service)
 	a.dpCacheLock.Unlock()
-}
-
-// CorrelationDatapoints returns a list of host correlation datapoints based on
-// the spans sent through ProcessSpans
-func (a *ActiveServiceTracker) CorrelationDatapoints() []*datapoint.Datapoint {
-	a.dpCacheLock.Lock()
-	defer a.dpCacheLock.Unlock()
-
-	out := make([]*datapoint.Datapoint, 0, len(a.dpCache))
-	for service := range a.dpCache {
-		out = append(out, dpForService(service))
-	}
-	return out
 }
 
 // LoadHostIDDimCorrelations asynchronously retrieves all known correlations from the backend
@@ -160,7 +126,6 @@ func New(
 	correlationClient correlations.CorrelationClient,
 	hostIDDims map[string]string,
 	sendTraceHostCorrelationMetrics bool,
-	newServiceCallback func(dp *datapoint.Datapoint),
 	dimsToSyncSource map[string]string,
 ) *ActiveServiceTracker {
 	a := &ActiveServiceTracker{
@@ -172,7 +137,6 @@ func New(
 		tenantEnvironmentCache:          NewTimeoutCache(timeout),
 		tenantEmptyEnvironmentCache:     NewTimeoutCache(timeout),
 		dpCache:                         make(map[string]struct{}),
-		newServiceCallback:              newServiceCallback,
 		correlationClient:               correlationClient,
 		sendTraceHostCorrelationMetrics: sendTraceHostCorrelationMetrics,
 		timeNow:                         time.Now,
@@ -181,11 +145,6 @@ func New(
 	a.LoadHostIDDimCorrelations()
 
 	return a
-}
-
-// AddSpans wraps given SignalFx spans for use by AddSpansGeneric.
-func (a *ActiveServiceTracker) AddSpans(ctx context.Context, spans []*trace.Span) {
-	a.AddSpansGeneric(ctx, spanListWrap{spans: spans})
 }
 
 // AddSpansGeneric accepts a list of trace spans and uses them to update the
@@ -427,15 +386,4 @@ func (a *ActiveServiceTracker) Purge() {
 	a.tenantServiceCache.PurgeOld(now, func(_ *CacheKey) {})
 	a.tenantEnvironmentCache.PurgeOld(now, func(_ *CacheKey) {})
 	a.tenantEmptyEnvironmentCache.PurgeOld(now, func(_ *CacheKey) {})
-}
-
-// InternalMetrics returns datapoint describing the status of the tracker
-func (a *ActiveServiceTracker) InternalMetrics() []*datapoint.Datapoint {
-	return []*datapoint.Datapoint{
-		sfxclient.Gauge("sfxagent.tracing_active_services", nil, a.hostServiceCache.GetActiveCount()),
-		sfxclient.Cumulative("sfxagent.tracing_purged_services", nil, a.hostServiceCache.GetPurgedCount()),
-		sfxclient.Gauge("sfxagent.tracing_active_environments", nil, a.hostEnvironmentCache.GetActiveCount()),
-		sfxclient.Cumulative("sfxagent.tracing_purged_environments", nil, a.hostEnvironmentCache.GetPurgedCount()),
-		sfxclient.CumulativeP("sfxagent.tracing_spans_processed", nil, &a.spansProcessed),
-	}
 }
