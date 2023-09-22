@@ -25,6 +25,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230908201109-ab3d6c5b6470
 	go.opentelemetry.io/collector/receiver v0.84.1-0.20230908201109-ab3d6c5b6470
 	go.uber.org/zap v1.25.0
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.1
 	k8s.io/apimachinery v0.28.1
@@ -203,7 +204,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
-	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect

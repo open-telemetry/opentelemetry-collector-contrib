@@ -518,10 +518,9 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 			for _, containerStatus := range pod.Status.ContainerStatuses {
 				if containerStatus.Name == containerName {
 					possibleStatuses := map[string]int{
-						ci.StatusRunning:              0,
-						ci.StatusWaiting:              0,
-						ci.StatusWaitingReasonCrashed: 0,
-						ci.StatusTerminated:           0,
+						ci.StatusRunning:    0,
+						ci.StatusWaiting:    0,
+						ci.StatusTerminated: 0,
 					}
 					switch {
 					case containerStatus.State.Running != nil:
@@ -530,10 +529,11 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 					case containerStatus.State.Waiting != nil:
 						metric.AddTag(ci.ContainerStatus, "Waiting")
 						possibleStatuses[ci.StatusWaiting] = 1
-						if containerStatus.State.Waiting.Reason != "" {
-							metric.AddTag(ci.ContainerStatusReason, containerStatus.State.Waiting.Reason)
-							if strings.Contains(containerStatus.State.Waiting.Reason, "Crash") {
-								possibleStatuses[ci.StatusWaitingReasonCrashed] = 1
+						reason := containerStatus.State.Waiting.Reason
+						if reason != "" {
+							metric.AddTag(ci.ContainerStatusReason, reason)
+							if val, ok := ci.WaitingReasonLookup[reason]; ok {
+								possibleStatuses[val] = 1
 							}
 						}
 					case containerStatus.State.Terminated != nil:
@@ -546,6 +546,9 @@ func (p *PodStore) addStatus(metric CIMetric, pod *corev1.Pod) {
 
 					if containerStatus.LastTerminationState.Terminated != nil && containerStatus.LastTerminationState.Terminated.Reason != "" {
 						metric.AddTag(ci.ContainerLastTerminationReason, containerStatus.LastTerminationState.Terminated.Reason)
+						if strings.Contains(containerStatus.LastTerminationState.Terminated.Reason, "OOMKilled") {
+							possibleStatuses[ci.StatusTerminatedReasonOOMKilled] = 1
+						}
 					}
 					containerKey := createContainerKeyFromMetric(metric)
 					if containerKey != "" {

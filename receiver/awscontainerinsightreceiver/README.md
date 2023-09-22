@@ -372,14 +372,23 @@ kubectl apply -f config.yaml
 ### Cluster ControlPlane
 | Metric                                                    | Unit    |
 |-----------------------------------------------------------|---------|
-| apiserver_admission_controller_admission_duration_seconds | Seconds |
+| apiserver_admission_controller_admission_duration_seconds | Seconds | 
+| apiserver_admission_step_admission_duration_seconds       | Seconds |
+| apiserver_admission_webhook_admission_duration_seconds    | Seconds |
+| apiserver_current_inflight_requests                       | Count   |
+| apiserver_current_inqueue_requests                        | Count   |
 | apiserver_flowcontrol_rejected_requests_total             | Count   |
 | apiserver_flowcontrol_request_concurrency_limit           | Count   |
+| apiserver_longrunning_requests                            | Count   |
 | apiserver_request_duration_seconds                        | Seconds |
 | apiserver_request_total                                   | Count   |
+| apiserver_request_total_5xx                               | Count   |
+| apiserver_requested_deprecated_apis                       | Count   |
 | apiserver_storage_list_duration_seconds                   | Seconds |
 | apiserver_storage_objects                                 | Count   |
-| etcd_db_total_size_in_bytes                               | Count   |
+| apiserver_storage_db_total_size_in_bytes                  | Bytes   |
+| apiserver_storage_size_bytes                              | Bytes   |
+| etcd_db_total_size_in_bytes                               | Bytes   |
 | etcd_request_duration_seconds                             | Seconds |
 | rest_client_request_duration_seconds                      | Seconds |
 | rest_client_requests_total                                | Count   |
@@ -780,37 +789,42 @@ kubectl apply -f config.yaml
 
 
 ### Container
-| Metric                                            | Unit         |
-|---------------------------------------------------|--------------|
-| container_cpu_limit                               | Millicore    |
-| container_cpu_request                             | Millicore    |
-| container_cpu_usage_system                        | Millicore    |
-| container_cpu_usage_total                         | Millicore    |
-| container_cpu_usage_user                          | Millicore    |
-| container_cpu_utilization                         | Percent      |
-| container_cpu_utilization_over_container_limit    | Percent      |
-| container_memory_cache                            | Bytes        |
-| container_memory_failcnt                          | Count        |
-| container_memory_hierarchical_pgfault             | Count/Second |
-| container_memory_hierarchical_pgmajfault          | Count/Second |
-| container_memory_limit                            | Bytes        |
-| container_memory_mapped_file                      | Bytes        |
-| container_memory_max_usage                        | Bytes        |
-| container_memory_pgfault                          | Count/Second |
-| container_memory_pgmajfault                       | Count/Second |
-| container_memory_failures_total                   | Count/Second |
-| container_memory_request                          | Bytes        |
-| container_memory_rss                              | Bytes        |
-| container_memory_swap                             | Bytes        |
-| container_memory_usage                            | Bytes        |
-| container_memory_utilization                      | Percent      |
-| container_memory_utilization_over_container_limit | Percent      |
-| container_memory_working_set                      | Bytes        |
-| number_of_container_restarts                      | Count        |
-| container_status_running                          | Count        |
-| container_status_terminated                       | Count        |
-| container_status_waiting                          | Count        |
-| container_status_waiting_reason_crashed           | Count        |
+| Metric                                                        | Unit         |
+|---------------------------------------------------------------|--------------|
+| container_cpu_limit                                           | Millicore    |
+| container_cpu_request                                         | Millicore    |
+| container_cpu_usage_system                                    | Millicore    |
+| container_cpu_usage_total                                     | Millicore    |
+| container_cpu_usage_user                                      | Millicore    |
+| container_cpu_utilization                                     | Percent      |
+| container_cpu_utilization_over_container_limit                | Percent      |
+| container_memory_cache                                        | Bytes        |
+| container_memory_failcnt                                      | Count        |
+| container_memory_hierarchical_pgfault                         | Count/Second |
+| container_memory_hierarchical_pgmajfault                      | Count/Second |
+| container_memory_limit                                        | Bytes        |
+| container_memory_mapped_file                                  | Bytes        |
+| container_memory_max_usage                                    | Bytes        |
+| container_memory_pgfault                                      | Count/Second |
+| container_memory_pgmajfault                                   | Count/Second |
+| container_memory_failures_total                               | Count/Second |
+| container_memory_request                                      | Bytes        |
+| container_memory_rss                                          | Bytes        |
+| container_memory_swap                                         | Bytes        |
+| container_memory_usage                                        | Bytes        |
+| container_memory_utilization                                  | Percent      |
+| container_memory_utilization_over_container_limit             | Percent      |
+| container_memory_working_set                                  | Bytes        |
+| number_of_container_restarts                                  | Count        |
+| container_status_running                                      | Count        |
+| container_status_terminated                                   | Count        |
+| container_status_waiting                                      | Count        |
+| container_status_waiting_reason_crash_loop_back_off           | Count        |
+| container_status_waiting_reason_image_pull_error              | Count        |
+| container_status_waiting_reason_start_error                   | Count        |
+| container_status_waiting_reason_create_container_error        | Count        |
+| container_status_waiting_reason_create_container_config_error | Count        |
+| container_status_terminated_reason_oom_killed                 | Count        |
 
 <br/><br/> 
 
