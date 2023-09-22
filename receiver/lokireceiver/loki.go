@@ -15,8 +15,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
@@ -40,8 +40,8 @@ type lokiReceiver struct {
 	serverGRPC   *grpc.Server
 	shutdownWG   sync.WaitGroup
 
-	obsrepGRPC *obsreport.Receiver
-	obsrepHTTP *obsreport.Receiver
+	obsrepGRPC *receiverhelper.ObsReport
+	obsrepHTTP *receiverhelper.ObsReport
 }
 
 func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.CreateSettings) (*lokiReceiver, error) {
@@ -52,7 +52,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 	}
 
 	var err error
-	r.obsrepGRPC, err = obsreport.NewReceiver(obsreport.ReceiverSettings{
+	r.obsrepGRPC, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "grpc",
 		ReceiverCreateSettings: settings,
@@ -60,7 +60,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 	if err != nil {
 		return nil, err
 	}
-	r.obsrepHTTP, err = obsreport.NewReceiver(obsreport.ReceiverSettings{
+	r.obsrepHTTP, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              "http",
 		ReceiverCreateSettings: settings,

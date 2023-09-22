@@ -17,7 +17,7 @@ import (
 	"github.com/dynatrace-oss/dynatrace-metric-utils-go/metric/dimensions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -31,8 +31,8 @@ const (
 	cMaxAgeSeconds        = 900
 )
 
-// NewExporter exports to a Dynatrace Metrics v2 API
-func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter {
+// newMetricsExporter exports to a Dynatrace Metrics v2 API
+func newMetricsExporter(params exporter.CreateSettings, cfg *config.Config) *metricsExporter {
 	var confDefaultDims []dimensions.Dimension
 	for key, value := range cfg.DefaultDimensions {
 		confDefaultDims = append(confDefaultDims, dimensions.NewDimension(key, value))
@@ -48,7 +48,7 @@ func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter
 	prevPts := ttlmap.New(cSweepIntervalSeconds, cMaxAgeSeconds)
 	prevPts.Start()
 
-	return &exporter{
+	return &metricsExporter{
 		settings:          params.TelemetrySettings,
 		cfg:               cfg,
 		defaultDimensions: defaultDimensions,
@@ -57,8 +57,8 @@ func newMetricsExporter(params exp.CreateSettings, cfg *config.Config) *exporter
 	}
 }
 
-// exporter forwards metrics to a Dynatrace agent
-type exporter struct {
+// metricsExporter forwards metrics to a Dynatrace agent
+type metricsExporter struct {
 	settings   component.TelemetrySettings
 	cfg        *config.Config
 	client     *http.Client
@@ -82,7 +82,7 @@ func dimensionsFromTags(tags []string) dimensions.NormalizedDimensionList {
 	return dimensions.NewNormalizedDimensionList(dims...)
 }
 
-func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
+func (e *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) error {
 	if e.isDisabled {
 		return nil
 	}
@@ -109,7 +109,7 @@ func (e *exporter) PushMetricsData(ctx context.Context, md pmetric.Metrics) erro
 	return nil
 }
 
-func (e *exporter) serializeMetrics(md pmetric.Metrics) []string {
+func (e *metricsExporter) serializeMetrics(md pmetric.Metrics) []string {
 	var lines []string
 
 	resourceMetrics := md.ResourceMetrics()
@@ -154,7 +154,7 @@ var lastLog int64
 
 // send sends a serialized metric batch to Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
-func (e *exporter) send(ctx context.Context, lines []string) error {
+func (e *metricsExporter) send(ctx context.Context, lines []string) error {
 	e.settings.Logger.Debug("Exporting", zap.Int("lines", len(lines)))
 
 	if now := time.Now().Unix(); len(lines) > apiconstants.GetPayloadLinesLimit() && now-lastLog > 60 {
@@ -185,7 +185,7 @@ func (e *exporter) send(ctx context.Context, lines []string) error {
 
 // send sends a serialized metric batch to Dynatrace.
 // An error indicates all lines were dropped regardless of the returned number.
-func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
+func (e *metricsExporter) sendBatch(ctx context.Context, lines []string) error {
 	message := strings.Join(lines, "\n")
 	e.settings.Logger.Debug(
 		"sending a batch of metric lines",
@@ -278,7 +278,7 @@ func (e *exporter) sendBatch(ctx context.Context, lines []string) error {
 }
 
 // start starts the exporter
-func (e *exporter) start(_ context.Context, host component.Host) (err error) {
+func (e *metricsExporter) start(_ context.Context, host component.Host) (err error) {
 	client, err := e.cfg.HTTPClientSettings.ToClient(host, e.settings)
 	if err != nil {
 		e.settings.Logger.Error("Failed to construct HTTP client", zap.Error(err))
@@ -290,7 +290,7 @@ func (e *exporter) start(_ context.Context, host component.Host) (err error) {
 	return nil
 }
 
-func (e *exporter) unmarshalResponseBody(resp *http.Response) (metricsResponse, error) {
+func (e *metricsExporter) unmarshalResponseBody(resp *http.Response) (metricsResponse, error) {
 	bodyBytes, err := io.ReadAll(resp.Body)
 	responseBody := metricsResponse{}
 	if err != nil {

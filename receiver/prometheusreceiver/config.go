@@ -53,6 +53,10 @@ type Config struct {
 	// that requires that all keys present in the config actually exist on the
 	// structure, ie.: it will error if an unknown key is present.
 	ConfigPlaceholder interface{} `mapstructure:"config"`
+
+	// EnableProtobufNegotiation allows the collector to set the scraper option for
+	// protobuf negotiation when conferring with a prometheus client.
+	EnableProtobufNegotiation bool `mapstructure:"enable_protobuf_negotiation"`
 }
 
 type targetAllocator struct {

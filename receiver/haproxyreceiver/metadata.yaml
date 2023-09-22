@@ -9,32 +9,8 @@ status:
     active: [atoulme, MovieStoreGuy]
 
 resource_attributes:
-  haproxy.url:
-    description: The path to the HAProxy socket or HTTP URL.
-    enabled: true
-    type: string
-  haproxy.pid:
-    description: process id (0 for first instance, 1 for second, ...)
-    enabled: true
-    type: string
-  haproxy.sid:
-    description: server id (unique inside a proxy)
-    enabled: true
-    type: string
-  haproxy.iid:
-    description: unique proxy id
-    enabled: true
-    type: string
-  haproxy.type:
-    description: (0=frontend, 1=backend, 2=server, 3=socket/listener)
-    enabled: true
-    type: string
   haproxy.addr:
     description: address:port or "unix". IPv6 has brackets around the address.
-    enabled: true
-    type: string
-  haproxy.algo:
-    description: load balancing algorithm
     enabled: true
     type: string
   haproxy.proxy_name:
