@@ -1589,7 +1589,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	cancel()
 
 	// Stop the worker threads
-	// Following section is a no-op if feature gate is disabled, so no need to check explicitly
+	// Following section is a no-op if threadpool feature gate is disabled, so no need to check explicitly
 	operator.cancel()
 	if operator.readerChan != nil {
 		close(operator.readerChan)
@@ -1678,7 +1678,9 @@ func TestHeaderPersistanceInHeader(t *testing.T) {
 	op1.poll(context.Background())
 
 	// for threadpool, as the poll is asynchronous, allow it to complete one poll cycle
-	time.Sleep(500 * time.Millisecond)
+	if useThreadPool.IsEnabled() {
+		time.Sleep(500 * time.Millisecond)
+	}
 
 	require.NoError(t, op1.Stop())
 

@@ -73,7 +73,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.Warnf("finding files: %v", err)
 	}
 
-	// If useThreadPool is enabled, kick off the worker threads
+	// If useThreadPool is enabled, start the worker threads
 	if useThreadPool.IsEnabled() {
 		m.once.Do(func() {
 			m.startConsumers(ctx)
