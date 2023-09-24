@@ -1,0 +1,136 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "0.0.0.0:4318"
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+  filelog:
+    start_at: beginning
+    include_file_name: true
+    include: 
+      - $LOGFILE
+
+    operators:
+      - type: move
+        from: attributes["log.file.name"]
+        to: resource["log.file.name"]
+
+      - type: add
+        field: attributes.app
+        value: dev
+
+processors:
+
+  # - change resource attribute log.file.name to source.log
+  # - add resource attribute cluster: dev
+  # - filter out any logs that contain the word password
+  # - add an attribute to each log: language: golang
+  starlarktransform/logs:
+    code: |
+      def transform(event):
+        event = json.decode(event)
+        # edit resource attributes
+        for data in event['resourceLogs']:
+          for attr in data['resource']['attributes']:
+            attr['value']['stringValue'] = 'source.log'
+
+        # filter/delete logs
+        for data in event['resourceLogs']:
+          for slog in  data['scopeLogs']:
+            slog['logRecords'] = [ lr for lr in slog['logRecords'] if 'internal' not in lr['body']['stringValue']]
+            
+            # add an attribute to each log
+            for lr in slog['logRecords']:
+              lr['attributes'].append({
+                'key': 'language',
+                'value': {
+                  'stringValue': 'golang'
+                }})
+                
+        return event
+
+  # - print event received to otel runtime log
+  # - if there are no resources, add a resource attribute source starlarktransform
+  # - prefix each metric name with starlarktransform
+  starlarktransform/metrics:
+    code: |
+      def transform(event):
+	  	print("received event", event)
+        event = json.decode(event)
+        for md in event['resourceMetrics']:
+          # if resources are empty
+          if not md['resource']:
+            md['resource'] = {
+              'attributes': [
+                {
+                  "key": "source",
+                  "value": {
+                    "stringValue": "starlarktransform"
+                  }
+                }
+              ]
+            }
+
+          # prefix each metric name with starlarktransform
+          for sm in md['scopeMetrics']:
+            for m in sm['metrics']:
+              m['name'] = 'starlarktransform.' + m['name']
+
+        return event
+
+  # - add resource attribute source starlarktransform
+  # - filter out any spans with http.target /roll attribute
+  starlarktransform/traces:
+    code: |
+      def transform(event):
+        event = json.decode(event)
+        for td in event['resourceSpans']:
+          # add resource attribute
+          td['resource']['attributes'].append({
+            'key': 'source',
+            'value': {
+              'stringValue': 'starlarktransform'
+            }
+          })
+
+          # filter spans with http.target /roll attribute
+          has_roll = lambda attrs: [a for a in attrs if a['key'] == 'http.target' and a['value']['stringValue'] == '/cats']
+          for sd in td['scopeSpans']:
+            sd['spans'] = [
+              s for s in sd['spans']
+              if not has_roll(s['attributes'])
+            ]
+        return event
+
+exporters:
+  logging:
+    verbosity: detailed
+
+service:
+  pipelines:
+    logs:
+      receivers:
+      - filelog
+      processors:
+      - starlarktransform/logs
+      exporters:
+      - logging
+
+    metrics:
+      receivers:
+      - otlp
+      processors:
+      - starlarktransform/metrics
+      exporters:
+      - logging
+
+    traces:
+      receivers:
+      - otlp
+      processors:
+      - starlarktransform/traces
+      exporters:
+      - logging
+      
