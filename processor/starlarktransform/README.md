@@ -470,25 +470,3 @@ service:
 
 The starlarktransform processor allows you to modify all aspects of your telemetry data. This can result in invalid or bad data being propogated if you are not careful. It is your responsibility to inspect the data and ensure it is valid.
 
-
-```yaml
-
-```yaml
-processors:
-  starlarktransform:
-    code: |
-      def transform(event):
-        e = json.decode(event)
-        for r in e["resourceLogs"]:
-          for sl in r["scopeLogs"]:
-            for lr in sl["logRecords"]:
-              if lr["body"]["stringValue"] == "operationA":
-                lr["attributes"].append({
-                  "key": "test",
-                  "value": {"stringValue": "pass"}
-                })
-        return e
-
-```
-
-```
