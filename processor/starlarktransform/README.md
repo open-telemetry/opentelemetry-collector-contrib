@@ -26,15 +26,20 @@ To configure starlarktransform, you add your code using the `code` option in the
 processors:
   starlarktransform:
     code: |
-	  def transform(event):
+      def transform(event):
         event = json.decode(event)
-		
         <your starlark code>
-
-		return event
+        return event
 ```
 
 You must define a function called `transform` that accepts a single argument, `event`. This function is called by the processor and is passed the telemetry event. The function **must return** the modified, json decoded event.
+
+## Why?
+
+While there are a number of transform processors, most notably, the main OTTL [transform processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor), this processor aims to grant users more flexibility by allowing them to manipulate telemetry data using a familiar syntax.
+
+Python is a popular, well known language, even among non-developers. By allowing Starlark code to be used as an option to transform telemetry data, users can leverage their existing knowledge of Python.
+
 
 ## How it works
 
@@ -382,7 +387,7 @@ processors:
   starlarktransform/metrics:
     code: |
       def transform(event):
-	  	print("received event", event)
+        print("received event", event)
         event = json.decode(event)
         for md in event['resourceMetrics']:
           # if resources are empty
@@ -464,3 +469,26 @@ service:
 ### Warnings
 
 The starlarktransform processor allows you to modify all aspects of your telemetry data. This can result in invalid or bad data being propogated if you are not careful. It is your responsibility to inspect the data and ensure it is valid.
+
+
+```yaml
+
+```yaml
+processors:
+  starlarktransform:
+    code: |
+      def transform(event):
+        e = json.decode(event)
+        for r in e["resourceLogs"]:
+          for sl in r["scopeLogs"]:
+            for lr in sl["logRecords"]:
+              if lr["body"]["stringValue"] == "operationA":
+                lr["attributes"].append({
+                  "key": "test",
+                  "value": {"stringValue": "pass"}
+                })
+        return e
+
+```
+
+```
