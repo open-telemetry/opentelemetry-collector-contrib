@@ -40,8 +40,8 @@ github.com/aws/aws-sdk-go-v2/service/appconfig v1.4.2/go.mod h1:FZ3HkCe+b10uFZZk
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.3.2/go.mod h1:72HRZDLMtmVQiLG2tLfQcaWLCssELvGl+Zf2WVxMmR8=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35 h1:CdzPW9kKitgIiLV1+MHobfR5Xg25iYnyzWZhyQuSlDI=
 github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.35/go.mod h1:QGF2Rs33W5MaN9gYdEQOBBFPLwTZkEhRwI33f7KIG0o=
-github.com/aws/aws-sdk-go-v2/service/kinesis v1.18.5 h1:naSZmQiFjoTLxNjfDy/KgEnWdG3odkR6gIEgTx21YOM=
-github.com/aws/aws-sdk-go-v2/service/kinesis v1.18.5/go.mod h1:0h3hOcyFXyjvI3wGt8C8vk2+II9XxHwFM7zH2KvLHmA=
+github.com/aws/aws-sdk-go-v2/service/kinesis v1.19.0 h1:ZGmF+BiI9xbCAdkWwnwzEHxajd7bKqKN7KpVCem+UcE=
+github.com/aws/aws-sdk-go-v2/service/kinesis v1.19.0/go.mod h1:0h3hOcyFXyjvI3wGt8C8vk2+II9XxHwFM7zH2KvLHmA=
 github.com/aws/aws-sdk-go-v2/service/sso v1.4.2/go.mod h1:NBvT9R1MEF+Ud6ApJKM0G+IkPchKS7p7c2YPKwHmBOk=
 github.com/aws/aws-sdk-go-v2/service/sso v1.14.0 h1:AR/hlTsCyk1CwlyKnPFvIMvnONydRjDDRT9OGb0i+/g=
 github.com/aws/aws-sdk-go-v2/service/sso v1.14.0/go.mod h1:fIAwKQKBFu90pBxx07BFOMJLpRUGu8VOzLJakeY+0K4=
