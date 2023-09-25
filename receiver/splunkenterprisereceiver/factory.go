@@ -23,17 +23,17 @@ const (
 )
 
 func createDefaultConfig() component.Config {
-    defaultHeaders := map[string]configopaque.String {
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
+	defaultHeaders := map[string]configopaque.String{
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
 	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
 	scfg.CollectionInterval = defaultInterval
-    scfg.Timeout = defaultMaxSearchWaitTime
+	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-        HTTPClientSettings: confighttp.HTTPClientSettings{
-            Headers: defaultHeaders,
-        },
+		HTTPClientSettings: confighttp.HTTPClientSettings{
+			Headers: defaultHeaders,
+		},
 		ScraperControllerSettings: scfg,
 		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
 	}

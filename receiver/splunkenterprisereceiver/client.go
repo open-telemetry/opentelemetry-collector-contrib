@@ -14,21 +14,21 @@ import (
 )
 
 type splunkEntClient struct {
-	client    *http.Client
-    endpoint  *url.URL
+	client   *http.Client
+	endpoint *url.URL
 }
 
 func newSplunkEntClient(cfg *Config, h component.Host, s component.TelemetrySettings) (*splunkEntClient, error) {
 	client, err := cfg.HTTPClientSettings.ToClient(h, s)
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
 	endpoint, _ := url.Parse(cfg.Endpoint)
 
 	return &splunkEntClient{
-		client:    client,
-        endpoint:  endpoint,
+		client:   client,
+		endpoint: endpoint,
 	}, nil
 }
 

@@ -18,7 +18,7 @@ import (
 var (
 	errBadOrMissingEndpoint = errors.New("missing a valid endpoint")
 	errBadScheme            = errors.New("endpoint scheme must be either http or https")
-    errMissingAuthExtension = errors.New("auth extension missing from config")
+	errMissingAuthExtension = errors.New("auth extension missing from config")
 )
 
 type Config struct {
@@ -46,9 +46,9 @@ func (cfg *Config) Validate() (errors error) {
 		}
 	}
 
-    if cfg.HTTPClientSettings.Auth.AuthenticatorID.Name() == "" {
-        errors = multierr.Append(errors, errMissingAuthExtension)
-    }
+	if cfg.HTTPClientSettings.Auth.AuthenticatorID.Name() == "" {
+		errors = multierr.Append(errors, errMissingAuthExtension)
+	}
 
 	return errors
 }
