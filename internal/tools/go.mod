@@ -9,7 +9,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.4.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	go.opentelemetry.io/build-tools/checkfile v0.11.0
+	go.opentelemetry.io/build-tools/checkfile v0.12.0
 	go.opentelemetry.io/build-tools/chloggen v0.11.0
 	go.opentelemetry.io/build-tools/crosslink v0.11.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.11.0
