@@ -439,6 +439,61 @@ processors:
     override: false
 ```
 
+### K8S Node Metadata
+
+Queries the K8S api server to retrieve the following node resource attributes:
+
+    * k8s.node.uid
+
+The following permissions are required:
+```yaml
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+```
+
+| Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
+| ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
+| node_from_env_var | string | Yes      | `K8S_NODE_NAME` | The environment variable name that holds the name of the node to retrieve metadata from. Default value is `K8S_NODE_NAME`. You can set the env dynamically on the workload definition using the downward API; see example              |
+
+#### Example using the default `node_from_env_var` option:
+
+```yaml
+processors:
+  resourcedetection/k8snode:
+    detectors: [k8snode]
+```
+and add this to your workload:
+```yaml
+        env:
+          - name: K8S_NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+```
+
+#### Example using a custom variable `node_from_env_var` option:
+```yaml
+processors:
+  resourcedetection/k8snode:
+    detectors: [k8snode]
+    k8snode:
+      node_from_env_var: "my_custom_var"
+```
+and add this to your workload:
+```yaml
+        env:
+          - name: my_custom_var
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+```
+
 ### Openshift
 
 Queries the OpenShift and Kubernetes API to retrieve the following resource attributes:
