@@ -54,6 +54,7 @@ body:
       - exporter/googlecloud
       - exporter/googlecloudpubsub
       - exporter/googlemanagedprometheus
+      - exporter/honeycombexporter
       - exporter/influxdb
       - exporter/instana
       - exporter/kafka

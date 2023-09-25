@@ -25,9 +25,11 @@ func NewFactory() exporter.Factory {
 
 func CreateDefaultConfig() component.Config {
 	return &Config{
-		APIKey:  "", // default to prod
-		APIURL:  "",
-		Presets: true,
+		APIKey: "",
+		APIURL: "",
+		Presets: presets{
+			K8sEvents: true,
+		},
 	}
 }
 

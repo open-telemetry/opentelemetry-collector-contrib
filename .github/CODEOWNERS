@@ -61,6 +61,7 @@ exporter/fileexporter/                                                  @open-te
 exporter/googlecloudexporter/                                           @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
 exporter/googlecloudpubsubexporter/                                     @open-telemetry/collector-contrib-approvers @alexvanboxel
 exporter/googlemanagedprometheusexporter/                               @open-telemetry/collector-contrib-approvers @aabmass @dashpole @jsuereth @punya @damemi @psx95
+exporter/honeycombexporter/                                             @open-telemetry/collector-contrib-approvers @fchikwekwe @TylerHelmuth
 exporter/influxdbexporter/                                              @open-telemetry/collector-contrib-approvers @jacobmarble
 exporter/instanaexporter/                                               @open-telemetry/collector-contrib-approvers @jpkrohling @hickeyma
 exporter/kafkaexporter/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
