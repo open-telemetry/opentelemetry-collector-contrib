@@ -388,14 +388,6 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 	}
 }
 
-func intp(i int64) *int64 {
-	return &i
-}
-
-func floatp(f float64) *float64 {
-	return &f
-}
-
 // Test happy paths for volume type metadata.
 func TestCpuAndMemoryGetters(t *testing.T) {
 
@@ -404,14 +396,14 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 		metadata                   Metadata
 		podUID                     string
 		containerName              string
-		wantPodCPULimit            *float64
-		wantPodCPURequest          *float64
-		wantContainerCPULimit      *float64
-		wantContainerCPURequest    *float64
-		wantPodMemoryLimit         *int64
-		wantPodMemoryRequest       *int64
-		wantContainerMemoryLimit   *int64
-		wantContainerMemoryRequest *int64
+		wantPodCPULimit            float64
+		wantPodCPURequest          float64
+		wantContainerCPULimit      float64
+		wantContainerCPURequest    float64
+		wantPodMemoryLimit         int64
+		wantPodMemoryRequest       int64
+		wantContainerMemoryLimit   int64
+		wantContainerMemoryRequest int64
 	}{
 		{
 			name:     "no metadata",
@@ -460,14 +452,14 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-2",
-			wantPodCPULimit:            floatp(2.1),
-			wantPodCPURequest:          floatp(2.1),
-			wantContainerCPULimit:      floatp(2),
-			wantContainerCPURequest:    floatp(2),
-			wantPodMemoryLimit:         intp(4000000000),
-			wantPodMemoryRequest:       intp(4000000000),
-			wantContainerMemoryLimit:   intp(3000000000),
-			wantContainerMemoryRequest: intp(3000000000),
+			wantPodCPULimit:            2.1,
+			wantPodCPURequest:          2.1,
+			wantContainerCPULimit:      2,
+			wantContainerCPURequest:    2,
+			wantPodMemoryLimit:         4000000000,
+			wantPodMemoryRequest:       4000000000,
+			wantContainerMemoryLimit:   3000000000,
+			wantContainerMemoryRequest: 3000000000,
 		},
 		{
 			name: "unknown pod",
@@ -555,10 +547,10 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, nil),
 			podUID:               "uid-1234",
 			containerName:        "container-3",
-			wantPodCPULimit:      floatp(0.7),
-			wantPodCPURequest:    floatp(0.7),
-			wantPodMemoryLimit:   intp(4000000000),
-			wantPodMemoryRequest: intp(4000000000),
+			wantPodCPULimit:      0.7,
+			wantPodCPURequest:    0.7,
+			wantPodMemoryLimit:   4000000000,
+			wantPodMemoryRequest: 4000000000,
 		},
 		{
 			name: "container limit not set",
@@ -595,10 +587,10 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-2",
-			wantPodCPURequest:          floatp(2),
-			wantContainerCPURequest:    floatp(1),
-			wantPodMemoryRequest:       intp(2000000000),
-			wantContainerMemoryRequest: intp(1000000000),
+			wantPodCPURequest:          2,
+			wantContainerCPURequest:    1,
+			wantPodMemoryRequest:       2000000000,
+			wantContainerMemoryRequest: 1000000000,
 		},
 		{
 			name: "container request not set",
@@ -635,10 +627,10 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, nil),
 			podUID:                   "uid-1234",
 			containerName:            "container-2",
-			wantPodCPULimit:          floatp(2),
-			wantContainerCPULimit:    floatp(1),
-			wantPodMemoryLimit:       intp(2000000000),
-			wantContainerMemoryLimit: intp(1000000000),
+			wantPodCPULimit:          2,
+			wantContainerCPULimit:    1,
+			wantPodMemoryLimit:       2000000000,
+			wantContainerMemoryLimit: 1000000000,
 		},
 		{
 			name: "container limit not set but other is",
@@ -673,10 +665,10 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 			}, nil),
 			podUID:                     "uid-1234",
 			containerName:              "container-1",
-			wantContainerCPULimit:      floatp(1),
-			wantContainerCPURequest:    floatp(1),
-			wantContainerMemoryLimit:   intp(1000000000),
-			wantContainerMemoryRequest: intp(1000000000),
+			wantContainerCPULimit:      1,
+			wantContainerCPURequest:    1,
+			wantContainerMemoryLimit:   1000000000,
+			wantContainerMemoryRequest: 1000000000,
 		},
 	}
 	for _, tt := range tests {

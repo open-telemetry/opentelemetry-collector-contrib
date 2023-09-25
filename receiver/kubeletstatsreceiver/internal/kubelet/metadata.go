@@ -224,90 +224,66 @@ func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, er
 	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
 }
 
-func (m *Metadata) getPodCPULimit(uid string) *float64 {
+func (m *Metadata) getPodCPULimit(uid string) float64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
-		return nil
+		return 0
 	}
-	if podResource.cpuLimit > 0 {
-		return &podResource.cpuLimit
-	}
-	return nil
+	return podResource.cpuLimit
 }
 
-func (m *Metadata) getContainerCPULimit(podUID string, containerName string) *float64 {
+func (m *Metadata) getContainerCPULimit(podUID string, containerName string) float64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
-		return nil
+		return 0
 	}
-	if containerResource.cpuLimit > 0 {
-		return &containerResource.cpuLimit
-	}
-	return nil
+	return containerResource.cpuLimit
 }
 
-func (m *Metadata) getPodCPURequest(uid string) *float64 {
+func (m *Metadata) getPodCPURequest(uid string) float64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
-		return nil
+		return 0
 	}
-	if podResource.cpuRequest > 0 {
-		return &podResource.cpuRequest
-	}
-	return nil
+	return podResource.cpuRequest
 }
 
-func (m *Metadata) getContainerCPURequest(podUID string, containerName string) *float64 {
+func (m *Metadata) getContainerCPURequest(podUID string, containerName string) float64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
-		return nil
+		return 0
 	}
-	if containerResource.cpuRequest > 0 {
-		return &containerResource.cpuRequest
-	}
-	return nil
+	return containerResource.cpuRequest
 }
 
-func (m *Metadata) getPodMemoryLimit(uid string) *int64 {
+func (m *Metadata) getPodMemoryLimit(uid string) int64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
-		return nil
+		return 0
 	}
-	if podResource.memoryLimit > 0 {
-		return &podResource.memoryLimit
-	}
-	return nil
+	return podResource.memoryLimit
 }
 
-func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) *int64 {
+func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) int64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
-		return nil
+		return 0
 	}
-	if containerResource.memoryLimit > 0 {
-		return &containerResource.memoryLimit
-	}
-	return nil
+	return containerResource.memoryLimit
 }
 
-func (m *Metadata) getPodMemoryRequest(uid string) *int64 {
+func (m *Metadata) getPodMemoryRequest(uid string) int64 {
 	podResource, ok := m.PodResources[uid]
 	if !ok {
-		return nil
+		return 0
 	}
-	if podResource.memoryRequest > 0 {
-		return &podResource.memoryRequest
-	}
-	return nil
+	return podResource.memoryRequest
 }
 
-func (m *Metadata) getContainerMemoryRequest(podUID string, containerName string) *int64 {
+func (m *Metadata) getContainerMemoryRequest(podUID string, containerName string) int64 {
 	containerResource, ok := m.ContainerResources[podUID+containerName]
 	if !ok {
-		return nil
+		return 0
 	}
-	if containerResource.memoryRequest > 0 {
-		return &containerResource.memoryRequest
-	}
-	return nil
+	return containerResource.memoryRequest
 }
