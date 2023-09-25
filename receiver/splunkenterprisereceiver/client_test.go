@@ -17,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
+// mockHost allows us to create a test host with a no op extension that can be used to satisfy the SDK without having to parse from an
+// actual config.yaml. 
 type mockHost struct {
 	component.Host
 	extensions map[component.ID]component.Component
@@ -24,16 +26,6 @@ type mockHost struct {
 
 func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
-}
-
-func (m *mockHost) ReportFatalError(_ error) {}
-
-func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
-	return nil
-}
-
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return nil
 }
 
 func TestClientCreation(t *testing.T) {
