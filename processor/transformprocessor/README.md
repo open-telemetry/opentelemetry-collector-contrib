@@ -421,9 +421,9 @@ transform:
   log_statements:
     - context: log
       statements:
-        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\sINFO\s")
-        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\sWARN\s")
-        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\sERROR\s")
+        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
+        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
+        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
 ```
 
 ## Contributing
