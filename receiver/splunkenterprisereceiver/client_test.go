@@ -4,12 +4,7 @@
 package splunkenterprisereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver"
 
 import (
-	//	"context"
-	//	"encoding/base64"
-	//	"fmt"
-	//	"net/http"
 	"net/url"
-	//  "strings"
 	"testing"
 	"time"
 
