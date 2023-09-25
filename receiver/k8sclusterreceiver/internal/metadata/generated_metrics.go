@@ -365,7 +365,7 @@ type metricK8sContainerRestarts struct {
 func (m *metricK8sContainerRestarts) init() {
 	m.data.SetName("k8s.container.restarts")
 	m.data.SetDescription("How many times the container has restarted in the recent past. This value is pulled directly from the K8s API and the value can go indefinitely high and be reset to 0 at any time depending on how your kubelet is configured to prune dead containers. It is best to not depend too much on the exact value but rather look at it as either == 0, in which case you can conclude there were no restarts in the recent past, or > 0, in which case you can conclude there were restarts in the recent past, and not try and analyze the value beyond that.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{restart}")
 	m.data.SetEmptyGauge()
 }
 
@@ -512,7 +512,7 @@ type metricK8sCronjobActiveJobs struct {
 func (m *metricK8sCronjobActiveJobs) init() {
 	m.data.SetName("k8s.cronjob.active_jobs")
 	m.data.SetDescription("The number of actively running jobs for a cronjob")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{job}")
 	m.data.SetEmptyGauge()
 }
 
@@ -561,7 +561,7 @@ type metricK8sDaemonsetCurrentScheduledNodes struct {
 func (m *metricK8sDaemonsetCurrentScheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.current_scheduled_nodes")
 	m.data.SetDescription("Number of nodes that are running at least 1 daemon pod and are supposed to run the daemon pod")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -610,7 +610,7 @@ type metricK8sDaemonsetDesiredScheduledNodes struct {
 func (m *metricK8sDaemonsetDesiredScheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.desired_scheduled_nodes")
 	m.data.SetDescription("Number of nodes that should be running the daemon pod (including nodes currently running the daemon pod)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -659,7 +659,7 @@ type metricK8sDaemonsetMisscheduledNodes struct {
 func (m *metricK8sDaemonsetMisscheduledNodes) init() {
 	m.data.SetName("k8s.daemonset.misscheduled_nodes")
 	m.data.SetDescription("Number of nodes that are running the daemon pod, but are not supposed to run the daemon pod")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -708,7 +708,7 @@ type metricK8sDaemonsetReadyNodes struct {
 func (m *metricK8sDaemonsetReadyNodes) init() {
 	m.data.SetName("k8s.daemonset.ready_nodes")
 	m.data.SetDescription("Number of nodes that should be running the daemon pod and have one or more of the daemon pod running and ready")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{node}")
 	m.data.SetEmptyGauge()
 }
 
@@ -855,7 +855,7 @@ type metricK8sHpaCurrentReplicas struct {
 func (m *metricK8sHpaCurrentReplicas) init() {
 	m.data.SetName("k8s.hpa.current_replicas")
 	m.data.SetDescription("Current number of pod replicas managed by this autoscaler.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -904,7 +904,7 @@ type metricK8sHpaDesiredReplicas struct {
 func (m *metricK8sHpaDesiredReplicas) init() {
 	m.data.SetName("k8s.hpa.desired_replicas")
 	m.data.SetDescription("Desired number of pod replicas managed by this autoscaler.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -953,7 +953,7 @@ type metricK8sHpaMaxReplicas struct {
 func (m *metricK8sHpaMaxReplicas) init() {
 	m.data.SetName("k8s.hpa.max_replicas")
 	m.data.SetDescription("Maximum number of replicas to which the autoscaler can scale up.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1002,7 +1002,7 @@ type metricK8sHpaMinReplicas struct {
 func (m *metricK8sHpaMinReplicas) init() {
 	m.data.SetName("k8s.hpa.min_replicas")
 	m.data.SetDescription("Minimum number of replicas to which the autoscaler can scale up.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1051,7 +1051,7 @@ type metricK8sJobActivePods struct {
 func (m *metricK8sJobActivePods) init() {
 	m.data.SetName("k8s.job.active_pods")
 	m.data.SetDescription("The number of actively running pods for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1100,7 +1100,7 @@ type metricK8sJobDesiredSuccessfulPods struct {
 func (m *metricK8sJobDesiredSuccessfulPods) init() {
 	m.data.SetName("k8s.job.desired_successful_pods")
 	m.data.SetDescription("The desired number of successfully finished pods the job should be run with")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1149,7 +1149,7 @@ type metricK8sJobFailedPods struct {
 func (m *metricK8sJobFailedPods) init() {
 	m.data.SetName("k8s.job.failed_pods")
 	m.data.SetDescription("The number of pods which reached phase Failed for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1198,7 +1198,7 @@ type metricK8sJobMaxParallelPods struct {
 func (m *metricK8sJobMaxParallelPods) init() {
 	m.data.SetName("k8s.job.max_parallel_pods")
 	m.data.SetDescription("The max desired number of pods the job should run at any given time")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1247,7 +1247,7 @@ type metricK8sJobSuccessfulPods struct {
 func (m *metricK8sJobSuccessfulPods) init() {
 	m.data.SetName("k8s.job.successful_pods")
 	m.data.SetDescription("The number of pods which reached phase Succeeded for a job")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1443,7 +1443,7 @@ type metricK8sReplicasetAvailable struct {
 func (m *metricK8sReplicasetAvailable) init() {
 	m.data.SetName("k8s.replicaset.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1492,7 +1492,7 @@ type metricK8sReplicasetDesired struct {
 func (m *metricK8sReplicasetDesired) init() {
 	m.data.SetName("k8s.replicaset.desired")
 	m.data.SetDescription("Number of desired pods in this replicaset")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1541,7 +1541,7 @@ type metricK8sReplicationControllerAvailable struct {
 func (m *metricK8sReplicationControllerAvailable) init() {
 	m.data.SetName("k8s.replication_controller.available")
 	m.data.SetDescription("Total number of available pods (ready for at least minReadySeconds) targeted by this replication_controller")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1590,7 +1590,7 @@ type metricK8sReplicationControllerDesired struct {
 func (m *metricK8sReplicationControllerDesired) init() {
 	m.data.SetName("k8s.replication_controller.desired")
 	m.data.SetDescription("Number of desired pods in this replication_controller")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1741,7 +1741,7 @@ type metricK8sStatefulsetCurrentPods struct {
 func (m *metricK8sStatefulsetCurrentPods) init() {
 	m.data.SetName("k8s.statefulset.current_pods")
 	m.data.SetDescription("The number of pods created by the StatefulSet controller from the StatefulSet version")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1790,7 +1790,7 @@ type metricK8sStatefulsetDesiredPods struct {
 func (m *metricK8sStatefulsetDesiredPods) init() {
 	m.data.SetName("k8s.statefulset.desired_pods")
 	m.data.SetDescription("Number of desired pods in the stateful set (the `spec.replicas` field)")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1839,7 +1839,7 @@ type metricK8sStatefulsetReadyPods struct {
 func (m *metricK8sStatefulsetReadyPods) init() {
 	m.data.SetName("k8s.statefulset.ready_pods")
 	m.data.SetDescription("Number of pods created by the stateful set that have the `Ready` condition")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
@@ -1888,7 +1888,7 @@ type metricK8sStatefulsetUpdatedPods struct {
 func (m *metricK8sStatefulsetUpdatedPods) init() {
 	m.data.SetName("k8s.statefulset.updated_pods")
 	m.data.SetDescription("Number of pods created by the StatefulSet controller from the StatefulSet version")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{pod}")
 	m.data.SetEmptyGauge()
 }
 
