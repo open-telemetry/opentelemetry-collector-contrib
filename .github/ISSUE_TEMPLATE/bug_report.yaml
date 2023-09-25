@@ -116,6 +116,7 @@ body:
       - internal/tools
       - pkg/batchperresourceattr
       - pkg/batchpersignal
+      - pkg/codec
       - pkg/experimentalmetricmetadata
       - pkg/ottl
       - pkg/pdatatest

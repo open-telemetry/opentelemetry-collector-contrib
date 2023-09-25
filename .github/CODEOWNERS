@@ -126,6 +126,7 @@ internal/tools/                                                         @open-te
 
 pkg/batchperresourceattr/                                               @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                     @open-telemetry/collector-contrib-approvers @jpkrohling
+pkg/codec/                                                              @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 pkg/experimentalmetricmetadata/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 pkg/ottl/                                                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                          @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
