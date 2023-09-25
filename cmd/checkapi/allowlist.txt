@@ -1,8 +1,6 @@
 connector/servicegraphconnector
-exporter/coralogixexporter
 exporter/kafkaexporter
 exporter/pulsarexporter
-extension/observer/ecsobserver
 extension/observer
 processor/servicegraphprocessor
 receiver/carbonreceiver

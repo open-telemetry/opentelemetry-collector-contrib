@@ -16,8 +16,8 @@ func CreateLogger() (*zap.Logger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to obtain logger: %w", err)
 	}
-	grpcZap.ReplaceGrpcLoggerV2(logger.WithOptions(
+	grpcZap.ReplaceGrpcLoggerV2WithVerbosity(logger.WithOptions(
 		zap.AddCallerSkip(3),
-	))
+	), 1) // set to warn verbosity to avoid copious logging from grpc framework
 	return logger, err
 }

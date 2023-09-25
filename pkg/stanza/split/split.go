@@ -20,33 +20,38 @@ type Config struct {
 }
 
 // Func will return a bufio.SplitFunc based on the config
-func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (splitFunc bufio.SplitFunc, err error) {
-	switch {
-	case c.LineEndPattern != "" && c.LineStartPattern != "":
-		return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
-	case enc == encoding.Nop && (c.LineEndPattern != "" || c.LineStartPattern != ""):
-		return nil, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding")
-	case enc == encoding.Nop:
-		return NoSplitFunc(maxLogSize), nil
-	case c.LineEndPattern == "" && c.LineStartPattern == "":
-		splitFunc, err = NewlineSplitFunc(enc, flushAtEOF)
-		if err != nil {
-			return nil, err
+func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
+	if enc == encoding.Nop {
+		if c.LineEndPattern != "" {
+			return nil, fmt.Errorf("line_end_pattern should not be set when using nop encoding")
 		}
-	case c.LineEndPattern != "":
+		if c.LineStartPattern != "" {
+			return nil, fmt.Errorf("line_start_pattern should not be set when using nop encoding")
+		}
+		return NoSplitFunc(maxLogSize), nil
+	}
+
+	if c.LineEndPattern == "" && c.LineStartPattern == "" {
+		return NewlineSplitFunc(enc, flushAtEOF)
+	}
+
+	if c.LineEndPattern != "" && c.LineStartPattern == "" {
 		re, err := regexp.Compile("(?m)" + c.LineEndPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line end regex: %w", err)
 		}
-		splitFunc = LineEndSplitFunc(re, c.OmitPattern, flushAtEOF)
-	case c.LineStartPattern != "":
+		return LineEndSplitFunc(re, c.OmitPattern, flushAtEOF), nil
+	}
+
+	if c.LineEndPattern == "" && c.LineStartPattern != "" {
 		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
 		if err != nil {
 			return nil, fmt.Errorf("compile line start regex: %w", err)
 		}
-		splitFunc = LineStartSplitFunc(re, c.OmitPattern, flushAtEOF)
+		return LineStartSplitFunc(re, c.OmitPattern, flushAtEOF), nil
 	}
-	return splitFunc, nil
+
+	return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
 }
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into
@@ -61,8 +66,7 @@ func LineStartSplitFunc(re *regexp.Regexp, omitPattern bool, flushAtEOF bool) bu
 			}
 			return 0, nil, nil // read more data and try again.
 		}
-		firstMatchStart := firstLoc[0]
-		firstMatchEnd := firstLoc[1]
+		firstMatchStart, firstMatchEnd := firstLoc[0], firstLoc[1]
 
 		if firstMatchStart != 0 {
 			// the beginning of the file does not match the start pattern, so return a token up to the first match so we don't lose data

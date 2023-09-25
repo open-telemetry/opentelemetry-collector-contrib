@@ -72,25 +72,25 @@ type processHandles interface {
 }
 
 type processHandle interface {
-	Name() (string, error)
-	Exe() (string, error)
-	Username() (string, error)
-	Cmdline() (string, error)
-	CmdlineSlice() ([]string, error)
-	Times() (*cpu.TimesStat, error)
-	Percent(time.Duration) (float64, error)
-	MemoryInfo() (*process.MemoryInfoStat, error)
-	MemoryPercent() (float32, error)
-	IOCounters() (*process.IOCountersStat, error)
-	NumThreads() (int32, error)
-	CreateTime() (int64, error)
-	Parent() (*process.Process, error)
-	Ppid() (int32, error)
-	PageFaults() (*process.PageFaultsStat, error)
-	NumCtxSwitches() (*process.NumCtxSwitchesStat, error)
-	NumFDs() (int32, error)
+	NameWithContext(context.Context) (string, error)
+	ExeWithContext(context.Context) (string, error)
+	UsernameWithContext(context.Context) (string, error)
+	CmdlineWithContext(context.Context) (string, error)
+	CmdlineSliceWithContext(context.Context) ([]string, error)
+	TimesWithContext(context.Context) (*cpu.TimesStat, error)
+	PercentWithContext(context.Context, time.Duration) (float64, error)
+	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
+	MemoryPercentWithContext(context.Context) (float32, error)
+	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
+	NumThreadsWithContext(context.Context) (int32, error)
+	CreateTimeWithContext(context.Context) (int64, error)
+	ParentWithContext(context.Context) (*process.Process, error)
+	PpidWithContext(context.Context) (int32, error)
+	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
+	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
+	NumFDsWithContext(context.Context) (int32, error)
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
-	RlimitUsage(gatherUsed bool) ([]process.RlimitStat, error)
+	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 }
 
 type gopsProcessHandles struct {
@@ -118,11 +118,11 @@ func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
 	return &gopsProcessHandles{handles: processes}, nil
 }
 
-func parentPid(handle processHandle, pid int32) (int32, error) {
+func parentPid(ctx context.Context, handle processHandle, pid int32) (int32, error) {
 	// special case for pid 0 and pid 1 in darwin
 	if pid == 0 || (pid == 1 && runtime.GOOS == "darwin") {
 		return 0, nil
 	}
 
-	return handle.Ppid()
+	return handle.PpidWithContext(ctx)
 }
