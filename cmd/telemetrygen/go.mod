@@ -53,7 +53,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.10.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.85.0 // indirect
+	go.opentelemetry.io/collector v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configcompression v0.85.1-0.20230922175119-921b6125f017 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.85.1-0.20230922175119-921b6125f017 // indirect
