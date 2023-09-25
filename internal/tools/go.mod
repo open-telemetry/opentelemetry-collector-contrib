@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.11.0
 	go.opentelemetry.io/build-tools/chloggen v0.11.0
 	go.opentelemetry.io/build-tools/crosslink v0.11.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.11.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.12.0
 	go.opentelemetry.io/build-tools/multimod v0.11.0
 	go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230922175119-921b6125f017
 	golang.org/x/tools v0.13.0
