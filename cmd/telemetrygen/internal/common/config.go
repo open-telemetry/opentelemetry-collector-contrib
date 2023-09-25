@@ -44,10 +44,11 @@ func (v *KeyValue) Type() string {
 }
 
 type Config struct {
-	WorkerCount       int
-	Rate              int64
-	TotalDuration     time.Duration
-	ReportingInterval time.Duration
+	WorkerCount           int
+	Rate                  int64
+	TotalDuration         time.Duration
+	ReportingInterval     time.Duration
+	SkipSettingGRPCLogger bool
 
 	// OTLP config
 	Endpoint           string
