@@ -94,23 +94,16 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 	} else {
 		return nil, err
 	}
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
 
 	if config.ProxyURL != "" {
-		httpProxyURI, err := url.Parse(config.ProxyURL)
-		if err != nil {
-			return nil, err
+		httpProxyURI, parseErr := url.Parse(config.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
-		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
-		if err != nil {
-			return nil, err
+		httpDialer, fromErr := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if fromErr != nil {
+			return nil, fromErr
 		}
 
 		c.Net.Proxy = struct {
@@ -120,6 +113,14 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshalers 
 			Enable: true,
 			Dialer: httpDialer,
 		}
+	}
+
+	if config.ProtocolVersion != "" {
+		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+		if err != nil {
+			return nil, err
+		}
+		c.Version = version
 	}
 
 	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
@@ -208,23 +209,16 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 	} else {
 		return nil, err
 	}
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
 
 	if config.ProxyURL != "" {
-		httpProxyURI, err := url.Parse(config.ProxyURL)
-		if err != nil {
-			return nil, err
+		httpProxyURI, parseErr := url.Parse(config.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
-		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
-		if err != nil {
-			return nil, err
+		httpDialer, fromErr := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if fromErr != nil {
+			return nil, fromErr
 		}
 
 		c.Net.Proxy = struct {
@@ -235,6 +229,14 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshalers
 			Dialer: httpDialer,
 		}
 
+	}
+
+	if config.ProtocolVersion != "" {
+		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
+		if err != nil {
+			return nil, err
+		}
+		c.Version = version
 	}
 
 	if err := kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {
@@ -322,24 +324,16 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 	if err != nil {
 		return nil, err
 	}
-	if config.ProtocolVersion != "" {
-		var version sarama.KafkaVersion
-		version, err = sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
 
 	if config.ProxyURL != "" {
-		httpProxyURI, err := url.Parse(config.ProxyURL)
-		if err != nil {
-			return nil, err
+		httpProxyURI, parseErr := url.Parse(config.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
-		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
-		if err != nil {
-			return nil, err
+		httpDialer, fromErr := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if fromErr != nil {
+			return nil, fromErr
 		}
 
 		c.Net.Proxy = struct {
@@ -350,6 +344,15 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshalers ma
 			Dialer: httpDialer,
 		}
 
+	}
+
+	if config.ProtocolVersion != "" {
+		var version sarama.KafkaVersion
+		version, err = sarama.ParseKafkaVersion(config.ProtocolVersion)
+		if err != nil {
+			return nil, err
+		}
+		c.Version = version
 	}
 
 	if err = kafkaexporter.ConfigureAuthentication(config.Authentication, c); err != nil {

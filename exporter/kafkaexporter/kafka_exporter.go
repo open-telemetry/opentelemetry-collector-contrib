@@ -136,14 +136,14 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 
 	if config.ProxyURL != "" {
 		// Should point to a registered tcp proxy URL.
-		httpProxyURI, err := url.Parse(config.ProxyURL)
-		if err != nil {
-			return nil, err
+		httpProxyURI, parseErr := url.Parse(config.ProxyURL)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
-		httpDialer, err := proxy.FromURL(httpProxyURI, proxy.Direct)
-		if err != nil {
-			return nil, err
+		httpDialer, fromErr := proxy.FromURL(httpProxyURI, proxy.Direct)
+		if fromErr != nil {
+			return nil, fromErr
 		}
 
 		c.Net.Proxy = struct {
