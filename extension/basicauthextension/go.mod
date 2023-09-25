@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/extension v0.85.1-0.20230922175119-921b6125f017
 	go.opentelemetry.io/collector/extension/auth v0.85.1-0.20230922175119-921b6125f017
-	google.golang.org/grpc v1.58.1
+	google.golang.org/grpc v1.58.2
 )
 
 require (
