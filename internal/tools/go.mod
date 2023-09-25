@@ -11,7 +11,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkfile v0.11.0
 	go.opentelemetry.io/build-tools/chloggen v0.11.0
-	go.opentelemetry.io/build-tools/crosslink v0.11.0
+	go.opentelemetry.io/build-tools/crosslink v0.12.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.11.0
 	go.opentelemetry.io/build-tools/multimod v0.11.0
 	go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230922175119-921b6125f017
@@ -197,7 +197,7 @@ require (
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.3 // indirect
 	gitlab.com/bosi/decorder v0.4.0 // indirect
-	go.opentelemetry.io/build-tools v0.11.0 // indirect
+	go.opentelemetry.io/build-tools v0.12.0 // indirect
 	go.tmz.dev/musttag v0.7.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
