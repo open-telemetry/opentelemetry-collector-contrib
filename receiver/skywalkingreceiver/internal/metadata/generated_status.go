@@ -7,6 +7,7 @@ import (
 )
 
 const (
-	Type            = "skywalking"
-	TracesStability = component.StabilityLevelBeta
+	Type             = "skywalking"
+	TracesStability  = component.StabilityLevelBeta
+	MetricsStability = component.StabilityLevelDevelopment
 )

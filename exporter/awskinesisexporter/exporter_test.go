@@ -13,13 +13,6 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func MustTestGeneric[T any](t T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 func applyConfigChanges(fn func(conf *Config)) *Config {
 	conf := createDefaultConfig().(*Config)
 	fn(conf)
