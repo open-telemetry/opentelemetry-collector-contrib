@@ -38,6 +38,7 @@ const (
 const (
 	awsLocalService  = "aws.local.service"
 	awsRemoteService = "aws.remote.service"
+	awsSpanKind      = "aws.span.kind"
 )
 
 var (
@@ -60,16 +61,131 @@ const (
 	identifierOffset = 11 // offset of identifier within traceID
 )
 
+const (
+	localRoot = "LOCAL_ROOT"
+)
+
 var (
 	writers = newWriterPool(2048)
 )
 
-// MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
-func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
-	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
-	if err != nil {
-		return "", err
+// MakeSegmentDocumentStrings converts one span into one or more JSON documents
+func MakeSegmentDocumentStrings(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) ([]string, error) {
+	var isLocalRoot = false
+
+	if myAwsSpanKind, ok := span.Attributes().Get(awsSpanKind); ok {
+		if localRoot == myAwsSpanKind.Str() {
+			isLocalRoot = true
+		}
 	}
+
+	if !isLocalRoot {
+		if segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation); err != nil {
+			return nil, err
+		} else {
+			document, documentError := MakeSegmentJsonFromSegment(segment)
+			return []string{document}, documentError
+		}
+	} else {
+		var isDependency = (span.Kind() != ptrace.SpanKindServer) && (span.Kind() != ptrace.SpanKindInternal)
+		var documents []string
+
+		var serviceSegmentId = newSegmentID()
+
+		// If it is a dependency, then we need to create a subsegment
+		if isDependency {
+			var dependencySpan ptrace.Span
+			span.CopyTo(dependencySpan)
+
+			dependencySpan.SetParentSpanID(serviceSegmentId)
+
+			if dependencySubsegment, err := MakeSegment(dependencySpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation); err != nil {
+				return nil, err
+			} else {
+				// Set the name
+				if myAwsRemoteService, ok := span.Attributes().Get(awsRemoteService); ok {
+					dependencySubsegment.Name = awsxray.String(myAwsRemoteService.Str())
+				}
+
+				// Make this a subsegment
+				dependencySubsegment.Type = awsxray.String("subsegment")
+
+				// Remove span links from consumer spans
+				if span.Kind() == ptrace.SpanKindConsumer {
+					dependencySubsegment.Links = nil
+				}
+
+				// TODO: namespace will be aws or remote - but this is handled in a separate SIM
+
+				if document, documentError := MakeSegmentJsonFromSegment(dependencySubsegment); documentError != nil {
+					return nil, documentError
+				} else {
+					documents = append(documents, document)
+				}
+			}
+		}
+
+		// We always create a segment for the service
+		var serviceSpan ptrace.Span
+		span.CopyTo(serviceSpan)
+
+		// Set the span id to the one internally generated
+		span.SetSpanID(serviceSegmentId)
+
+		serviceSegment, err := MakeSegment(serviceSpan, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
+
+		// Set the name
+		if myAwsLocalService, ok := span.Attributes().Get(awsLocalService); ok {
+			serviceSegment.Name = awsxray.String(myAwsLocalService.Str())
+		}
+
+		// Remove the HTTP field
+		serviceSegment.HTTP = nil
+
+		// Remove AWS subsegment fields
+		serviceSegment.AWS.Operation = nil
+		serviceSegment.AWS.AccountID = nil
+		serviceSegment.AWS.RemoteRegion = nil
+		serviceSegment.AWS.RequestID = nil
+		serviceSegment.AWS.QueueURL = nil
+		serviceSegment.AWS.TableName = nil
+		serviceSegment.AWS.TableNames = nil
+
+		// Remove remote annotations
+		removeAnnotations := []string{
+			"aws_remote_service",
+			"aws_remote_operation",
+			"remote_target",
+			"K8s_RemoteNamespace",
+		}
+
+		for _, v := range removeAnnotations {
+			delete(serviceSegment.Annotations, v)
+		}
+
+		// Delete all metadata that does not start with 'otel.resource.'
+		for key, _ := range serviceSegment.Metadata {
+			if !strings.HasPrefix(key, "otel.resource.") {
+				delete(serviceSegment.Metadata, key)
+			}
+		}
+
+		// Make it a segment
+		serviceSegment.Type = nil
+
+		// Remove span links from non-consumer spans
+		if span.Kind() != ptrace.SpanKindConsumer {
+			serviceSegment.Links = nil
+		}
+
+		document, err := MakeSegmentJsonFromSegment(serviceSegment)
+		documents = append(documents, document)
+		return documents, err
+	}
+}
+
+// MakeSegmentJsonFromSegment converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
+func MakeSegmentJsonFromSegment(segment *awsxray.Segment) (string, error) {
 	w := writers.borrow()
 	if err := w.Encode(*segment); err != nil {
 		return "", err
@@ -77,6 +193,17 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 	jsonStr := w.String()
 	writers.release(w)
 	return jsonStr, nil
+}
+
+// MakeSegmentDocumentString converts an OpenTelemetry Span to an X-Ray Segment and then serialzies to JSON
+func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (string, error) {
+	segment, err := MakeSegment(span, resource, indexedAttrs, indexAllAttrs, logGroupNames, skipTimestampValidation)
+
+	if err != nil {
+		return "", err
+	}
+
+	return MakeSegmentJsonFromSegment(segment)
 }
 
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
