@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/influxdata/influxdb-observability/common v0.5.7
-	github.com/influxdata/influxdb-observability/otel2influx v0.5.7
+	github.com/influxdata/influxdb-observability/otel2influx v0.5.8
 	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.85.1-0.20230922175119-921b6125f017
