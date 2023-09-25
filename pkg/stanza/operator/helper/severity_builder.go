@@ -111,9 +111,10 @@ func NewSeverityConfig() SeverityConfig {
 
 // SeverityConfig allows users to specify how to parse a severity from a field.
 type SeverityConfig struct {
-	ParseFrom *entry.Field           `mapstructure:"parse_from,omitempty"`
-	Preset    string                 `mapstructure:"preset,omitempty"`
-	Mapping   map[string]interface{} `mapstructure:"mapping,omitempty"`
+	ParseFrom     *entry.Field           `mapstructure:"parse_from,omitempty"`
+	Preset        string                 `mapstructure:"preset,omitempty"`
+	Mapping       map[string]interface{} `mapstructure:"mapping,omitempty"`
+	OverwriteText bool                   `mapstructure:"overwrite_text,omitempty"`
 }
 
 // Build builds a SeverityParser from a SeverityConfig
@@ -149,8 +150,9 @@ func (c *SeverityConfig) Build(_ *zap.SugaredLogger) (SeverityParser, error) {
 	}
 
 	p := SeverityParser{
-		ParseFrom: *c.ParseFrom,
-		Mapping:   operatorMapping,
+		ParseFrom:     *c.ParseFrom,
+		Mapping:       operatorMapping,
+		overwriteText: c.OverwriteText,
 	}
 
 	return p, nil

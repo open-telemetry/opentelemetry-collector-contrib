@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -59,7 +59,7 @@ func (m mockListenerHandleWrapper) Err() error {
 type mockDataConsumer struct {
 	logsUnmarshaler  eventLogsUnmarshaler
 	nextLogsConsumer consumer.Logs
-	obsrecv          *obsreport.Receiver
+	obsrecv          *receiverhelper.ObsReport
 }
 
 func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
@@ -108,7 +108,7 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	sink := new(consumertest.LogsSink)
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             component.NewID(metadata.Type),
 		Transport:              "",
 		LongLivedCtx:           false,

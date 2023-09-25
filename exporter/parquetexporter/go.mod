@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/parque
 go 1.20
 
 require (
-	go.opentelemetry.io/collector/component v0.85.0
-	go.opentelemetry.io/collector/exporter v0.85.0
-	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014
+	go.opentelemetry.io/collector/component v0.85.1-0.20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/exporter v0.85.1-0.20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/pdata v1.0.0-rcv0014.0.20230921012510-68dd7d763b59
 )
 
 require (
@@ -23,14 +23,14 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.85.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.85.0 // indirect
-	go.opentelemetry.io/collector/confmap v0.85.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.85.0 // indirect
-	go.opentelemetry.io/collector/extension v0.85.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014 // indirect
-	go.opentelemetry.io/collector/processor v0.85.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.85.0 // indirect
+	go.opentelemetry.io/collector v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/confmap v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/consumer v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/extension v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0014.0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/processor v0.85.1-0.20230921012510-68dd7d763b59 // indirect
+	go.opentelemetry.io/collector/receiver v0.85.1-0.20230921012510-68dd7d763b59 // indirect
 	go.opentelemetry.io/otel v1.18.0 // indirect
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.18.0 // indirect

@@ -17,8 +17,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
@@ -41,7 +41,7 @@ type eventReceiver struct {
 	logConsumer consumer.Logs
 	server      *http.Server
 	shutdownWG  sync.WaitGroup
-	obsrecv     *obsreport.Receiver
+	obsrecv     *receiverhelper.ObsReport
 	gzipPool    *sync.Pool
 }
 
@@ -59,7 +59,7 @@ func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consum
 		transport = "https"
 	}
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: params,

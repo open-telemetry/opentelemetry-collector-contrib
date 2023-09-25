@@ -405,6 +405,27 @@ transform:
         - set(attributes["nested.attr3"], cache["nested"]["attr3"])
 ```
 
+### Get Severity of an Unstructured Log Body
+
+Given the following unstructured log body
+
+```txt
+[2023-09-22 07:38:22,570] INFO [Something]: some interesting log
+```
+
+You can find the severity using IsMatch:
+
+```yaml
+transform:
+  error_mode: ignore
+  log_statements:
+    - context: log
+      statements:
+        - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
+        - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
+        - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/transformprocessor/CONTRIBUTING.md).
