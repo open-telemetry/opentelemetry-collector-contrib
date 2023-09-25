@@ -73,7 +73,7 @@ func (p *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 func (p *Transformer) Transform(e *entry.Entry) error {
 	val, exist := p.From.Delete(e)
 	if !exist {
-		return fmt.Errorf("move: field does not exist")
+		return fmt.Errorf("move: field does not exist: %s", p.From.String())
 	}
 	return p.To.Set(e, val)
 }
