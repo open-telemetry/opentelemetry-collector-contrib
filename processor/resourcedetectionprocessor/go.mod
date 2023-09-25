@@ -126,6 +126,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/e
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders => ../../internal/metadataproviders
 
+replace go.opentelemetry.io/collector/config/confighttp => ../../config/confighttp
+
 retract (
 	v0.76.2
 	v0.76.1
