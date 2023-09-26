@@ -125,6 +125,9 @@ func enabledAttributes() (attributes []string) {
 // If no fields explicitly provided, the defaults are pulled from metadata.yaml.
 func withExtractMetadata(fields ...string) option {
 	return func(p *kubernetesprocessor) error {
+		if fields == nil {
+			return nil
+		}
 		if len(fields) == 0 {
 			fields = enabledAttributes()
 		}
