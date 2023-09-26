@@ -55,6 +55,13 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	s.mb.RecordKafkaBrokersDataPoint(pcommon.NewTimestampFromTime(time.Now()), int64(len(brokers)))
 
+	// add resource attributes
+	rb := s.mb.NewResourceBuilder()
+	rb.SetRuntimeMetricsKafka("true")
+	s.mb.EmitForResource(
+		metadata.WithResource(rb.Emit()),
+	)
+
 	return s.mb.Emit(), nil
 }
 

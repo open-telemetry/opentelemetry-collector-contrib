@@ -103,6 +103,13 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			}
 		}
 	}
+
+	// add resource attributes
+	rb := s.mb.NewResourceBuilder()
+	rb.SetRuntimeMetricsKafka("true")
+	s.mb.EmitForResource(
+		metadata.WithResource(rb.Emit()),
+	)
 	return s.mb.Emit(), scrapeErrors.Combine()
 }
 
