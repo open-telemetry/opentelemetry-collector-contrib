@@ -5,11 +5,11 @@ go 1.20
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.1
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/consumer v0.86.0
-	go.opentelemetry.io/collector/otelcol v0.0.0-20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/otelcol v0.86.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
 	go.opentelemetry.io/collector/receiver v0.86.0
 	go.uber.org/zap v1.26.0

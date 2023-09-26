@@ -6,13 +6,13 @@ go 1.20
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/google/uuid v1.3.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.86.0
 	github.com/stretchr/testify v1.8.4
 	github.com/wavefronthq/wavefront-sdk-go v0.14.0
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/config/confighttp v0.86.0
 	go.opentelemetry.io/collector/exporter v0.86.0
-	go.opentelemetry.io/collector/otelcol v0.0.0-20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/otelcol v0.86.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
 	go.opentelemetry.io/collector/semconv v0.86.0
 	go.uber.org/multierr v1.11.0

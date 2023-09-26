@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/collector/exporter v0.86.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.86.0
 	go.opentelemetry.io/collector/featuregate v1.0.0-rcv0015
-	go.opentelemetry.io/collector/otelcol v0.0.0-20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/otelcol v0.86.0
 	go.opentelemetry.io/collector/pdata v1.0.0-rcv0015
 	go.opentelemetry.io/collector/processor v0.86.0
 	go.opentelemetry.io/collector/semconv v0.86.0
