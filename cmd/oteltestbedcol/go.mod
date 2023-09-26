@@ -40,7 +40,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.86.0
 	go.opentelemetry.io/collector/extension/ballastextension v0.86.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.86.0
-	go.opentelemetry.io/collector/otelcol v0.0.0-20230921012510-68dd7d763b59
+	go.opentelemetry.io/collector/otelcol v0.86.0
 	go.opentelemetry.io/collector/processor v0.86.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.86.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.86.0
