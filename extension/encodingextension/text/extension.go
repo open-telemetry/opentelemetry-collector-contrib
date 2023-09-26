@@ -9,10 +9,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension"
 )
 
-var _ codec.Extension = &textExtension{}
+var _ encodingextension.Extension = &textExtension{}
 
 // Extension defines an extension registered marshalers and unmarshalers that can be used
 // throughout the collector.
@@ -21,15 +21,15 @@ type textExtension struct {
 	c      *textLogCodec
 }
 
-func (e *textExtension) GetLogCodec() (codec.Log, error) {
+func (e *textExtension) GetLogCodec() (encodingextension.Log, error) {
 	return e.c, nil
 }
 
-func (e *textExtension) GetMetricCodec() (codec.Metric, error) {
+func (e *textExtension) GetMetricCodec() (encodingextension.Metric, error) {
 	return nil, errors.New("unimplemented")
 }
 
-func (e *textExtension) GetTraceCodec() (codec.Trace, error) {
+func (e *textExtension) GetTraceCodec() (encodingextension.Trace, error) {
 	return nil, errors.New("unimplemented")
 }
 

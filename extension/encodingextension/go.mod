@@ -4,7 +4,6 @@ go 1.20
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec v0.85.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/extension v0.86.0
