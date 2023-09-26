@@ -4,5 +4,5 @@
 package text // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/text"
 
 type Config struct {
-	encoding string `mapstructure:"encoding"`
+	Encoding string `mapstructure:"encoding"`
 }

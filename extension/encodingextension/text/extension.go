@@ -14,8 +14,6 @@ import (
 
 var _ encodingextension.Extension = &textExtension{}
 
-// Extension defines an extension registered marshalers and unmarshalers that can be used
-// throughout the collector.
 type textExtension struct {
 	config *Config
 	c      *textLogCodec

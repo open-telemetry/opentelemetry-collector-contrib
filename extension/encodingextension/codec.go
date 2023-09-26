@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -32,6 +33,7 @@ type Trace interface {
 
 // Extension is the interface that encoding extensions must implement.
 type Extension interface {
+	extension.Extension
 	// GetLogCodec returns a log codec for use by the specified component.
 	GetLogCodec() (Log, error)
 
