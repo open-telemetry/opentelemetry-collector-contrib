@@ -41,6 +41,16 @@ func TestConfigFunc(t *testing.T) {
 		assert.Equal(t, raw[:maxLogSize], token)
 	})
 
+	t.Run("NopEncodingError", func(t *testing.T) {
+		endCfg := Config{LineEndPattern: "\n"}
+		_, err := endCfg.Func(encoding.Nop, false, 0)
+		require.Equal(t, err, fmt.Errorf("line_end_pattern should not be set when using nop encoding"))
+
+		startCfg := Config{LineStartPattern: "\n"}
+		_, err = startCfg.Func(encoding.Nop, false, 0)
+		require.Equal(t, err, fmt.Errorf("line_start_pattern should not be set when using nop encoding"))
+	})
+
 	t.Run("Newline", func(t *testing.T) {
 		cfg := Config{}
 		f, err := cfg.Func(unicode.UTF8, false, maxLogSize)
@@ -776,16 +786,6 @@ func TestNoSplitFunc(t *testing.T) {
 		splitFunc := NoSplitFunc(largeLogSize)
 		t.Run(tc.Name, tc.Run(splitFunc))
 	}
-}
-
-func TestNoopEncodingError(t *testing.T) {
-	endCfg := Config{LineEndPattern: "\n"}
-	_, err := endCfg.Func(encoding.Nop, false, 0)
-	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
-
-	startCfg := Config{LineStartPattern: "\n"}
-	_, err = startCfg.Func(encoding.Nop, false, 0)
-	require.Equal(t, err, fmt.Errorf("line_start_pattern or line_end_pattern should not be set when using nop encoding"))
 }
 
 func TestNewlineSplitFunc_Encodings(t *testing.T) {
