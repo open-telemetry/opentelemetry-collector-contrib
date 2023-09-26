@@ -22,6 +22,10 @@ import (
 // ExceptionEventName the name of the exception event.
 // TODO: Remove this when collector defines this semantic convention.
 const ExceptionEventName = "exception"
+const AwsIndividualHTTPEventName = "HTTP request failure"
+const AwsIndividualHTTPErrorEventType = "aws.http.error.event"
+const AwsIndividualHTTPErrorCodeAttr = "http.response.status_code"
+const AwsIndividualHTTPErrorMsgAttr = "aws.http.error_message"
 
 func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource pcommon.Resource) (isError, isFault, isThrottle bool,
 	filtered map[string]pcommon.Value, cause *awsxray.CauseData) {
@@ -34,17 +38,23 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		errorKind string
 	)
 
+	isAwsSdkSpan := isAwsSdkSpan(span)
 	hasExceptions := false
+	hasAwsIndividualHTTPError := false
 	for i := 0; i < span.Events().Len(); i++ {
 		event := span.Events().At(i)
 		if event.Name() == ExceptionEventName {
 			hasExceptions = true
 			break
 		}
+		if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
+			hasAwsIndividualHTTPError = true
+			break
+		}
 	}
 
 	switch {
-	case hasExceptions:
+	case hasExceptions || hasAwsIndividualHTTPError:
 		language := ""
 		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
 			language = val.Str()
@@ -76,6 +86,22 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 
 				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
+			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
+				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
+				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
+				if ok1 && ok2 {
+					timestamp := event.Timestamp().String()
+					strs := []string{errorCode.AsString(), timestamp, errorMessage.Str()}
+					message = strings.Join(strs, "@")
+					segmentID := newSegmentID()
+					exception := awsxray.Exception{
+						ID:      aws.String(hex.EncodeToString(segmentID[:])),
+						Type:    aws.String(AwsIndividualHTTPErrorEventType),
+						Remote:  aws.Bool(true),
+						Message: aws.String(message),
+					}
+					exceptions = append(exceptions, exception)
+				}
 			}
 		}
 		cause = &awsxray.CauseData{

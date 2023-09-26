@@ -79,6 +79,14 @@ func MakeSegmentDocumentString(span ptrace.Span, resource pcommon.Resource, inde
 	return jsonStr, nil
 }
 
+func isAwsSdkSpan(span ptrace.Span) bool {
+	attributes := span.Attributes()
+	if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
+		return rpcSystem.Str() == "aws-api"
+	}
+	return false
+}
+
 // MakeSegment converts an OpenTelemetry Span to an X-Ray Segment
 func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool) (*awsxray.Segment, error) {
 	var segmentType string
@@ -130,6 +138,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	if span.Kind() == ptrace.SpanKindClient || span.Kind() == ptrace.SpanKindProducer {
 		if remoteServiceName, ok := attributes.Get(awsRemoteService); ok {
 			name = remoteServiceName.Str()
+			// only strip the prefix for AWS spans
+			if isAwsSdkSpan(span) && strings.HasPrefix(name, "AWS.SDK.") {
+				name = strings.TrimPrefix(name, "AWS.SDK.")
+			}
 		}
 	}
 
@@ -142,10 +154,8 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 	}
 
 	if namespace == "" {
-		if rpcSystem, ok := attributes.Get(conventions.AttributeRPCSystem); ok {
-			if rpcSystem.Str() == "aws-api" {
-				namespace = conventions.AttributeCloudProviderAWS
-			}
+		if isAwsSdkSpan(span) {
+			namespace = conventions.AttributeCloudProviderAWS
 		}
 	}
 
