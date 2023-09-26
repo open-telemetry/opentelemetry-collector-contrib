@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "encodingjaeger"
+	Type               = "textencoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

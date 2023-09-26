@@ -7,6 +7,6 @@ import (
 )
 
 const (
-	Type               = "encoding"
+	Type               = "jaegerencoding"
 	ExtensionStability = component.StabilityLevelDevelopment
 )

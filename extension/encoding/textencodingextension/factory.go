@@ -1,14 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/jaeger"
+package textencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/text"
 import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/jaeger/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/text/internal/metadata"
 )
 
 func NewFactory() extension.Factory {
@@ -21,11 +21,11 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, _ extension.CreateSettings, config component.Config) (extension.Extension, error) {
-	return &jaegerExtension{
+	return &textExtension{
 		config: config.(*Config),
 	}, nil
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{Protocol: "utf8"}
+	return &Config{Encoding: "utf8"}
 }
