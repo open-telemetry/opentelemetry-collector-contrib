@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -14,7 +15,11 @@ import (
 
 func TestTextUnmarshaler(t *testing.T) {
 	t.Parallel()
-	codec, err := newLogCodec("utf8")
+	encCfg := textutils.NewEncodingConfig()
+	encCfg.Encoding = "utf8"
+	enc, err := encCfg.Build()
+	require.NoError(t, err)
+	codec := &textLogCodec{enc: &enc}
 	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\nbar\n"))
 	require.NoError(t, err)

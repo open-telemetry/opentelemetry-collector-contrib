@@ -5,38 +5,29 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-var _ encodingextension.Extension = &jaegerExtension{}
+var _ ptrace.Unmarshaler = &jaegerExtension{}
 
 type jaegerExtension struct {
-	config *Config
-	c      encodingextension.Trace
+	config      *Config
+	unmarshaler ptrace.Unmarshaler
 }
 
-func (e *jaegerExtension) GetLogCodec() (encodingextension.Log, error) {
-	return nil, errors.New("unimplemented")
-}
-
-func (e *jaegerExtension) GetMetricCodec() (encodingextension.Metric, error) {
-	return nil, errors.New("unimplemented")
-}
-
-func (e *jaegerExtension) GetTraceCodec() (encodingextension.Trace, error) {
-	return nil, errors.New("unimplemented")
+func (e *jaegerExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+	return e.unmarshaler.UnmarshalTraces(buf)
 }
 
 func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	switch e.config.Protocol {
 	case "protobuf":
-		e.c = jaegerProtobufTrace{}
-	case "thrift":
-
+		e.unmarshaler = jaegerProtobufTrace{}
+	default:
+		return fmt.Errorf("unsupported protocol: %s", e.config.Protocol)
 	}
 	return nil
 }

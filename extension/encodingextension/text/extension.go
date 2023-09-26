@@ -5,35 +5,39 @@ package text // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"errors"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"go.opentelemetry.io/collector/component"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var _ encodingextension.Extension = &textExtension{}
+var _ plog.Marshaler = &textExtension{}
+var _ plog.Unmarshaler = &textExtension{}
 
 type textExtension struct {
-	config *Config
-	c      *textLogCodec
+	config      *Config
+	textEncoder *textLogCodec
 }
 
-func (e *textExtension) GetLogCodec() (encodingextension.Log, error) {
-	return e.c, nil
+func (e *textExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	return e.textEncoder.UnmarshalLogs(buf)
 }
 
-func (e *textExtension) GetMetricCodec() (encodingextension.Metric, error) {
-	return nil, errors.New("unimplemented")
-}
-
-func (e *textExtension) GetTraceCodec() (encodingextension.Trace, error) {
-	return nil, errors.New("unimplemented")
+func (e *textExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	return e.textEncoder.MarshalLogs(ld)
 }
 
 func (e *textExtension) Start(_ context.Context, _ component.Host) error {
-	var err error
-	e.c, err = newLogCodec(e.config.encoding)
+	encCfg := textutils.NewEncodingConfig()
+	encCfg.Encoding = e.config.Encoding
+	enc, err := encCfg.Build()
+	if err != nil {
+		return err
+	}
+	e.textEncoder = &textLogCodec{
+		enc: &enc,
+	}
+
 	return err
 }
 

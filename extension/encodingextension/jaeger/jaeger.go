@@ -2,28 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/jaeger"
-import (
-	"fmt"
 
+import (
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type jaegerProtobufTrace struct {
-}
-
-func (j jaegerProtobufTrace) MarshalTraces(td ptrace.Traces) ([]byte, error) {
-	batches, err := jaeger.ProtoFromTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	if len(batches) != 1 {
-		// TODO handle serialization without multiple batches.
-		return nil, fmt.Errorf("cannot marshal multiple batches")
-	}
-
-	return batches[0].Marshal()
 }
 
 func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {

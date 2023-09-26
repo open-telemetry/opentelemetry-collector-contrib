@@ -16,15 +16,6 @@ type textLogCodec struct {
 	enc *textutils.Encoding
 }
 
-func newLogCodec(textEncoding string) (*textLogCodec, error) {
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = textEncoding
-	enc, err := encCfg.Build()
-	return &textLogCodec{
-		enc: &enc,
-	}, err
-}
-
 func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 	decoded, err := r.enc.Decode(buf)
