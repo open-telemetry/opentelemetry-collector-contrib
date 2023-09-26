@@ -191,6 +191,7 @@ require (
 	go.opentelemetry.io/collector/connector/forwardconnector v0.86.0
 	go.opentelemetry.io/collector/consumer v0.86.0
 	go.opentelemetry.io/collector/exporter v0.86.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.86.0
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.86.0
