@@ -8,6 +8,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNew(t *testing.T) {
@@ -111,6 +112,17 @@ func TestNew(t *testing.T) {
 				ExpectError("hello error!"),
 			},
 		},
+		{
+			name:      "ScanLinesStrictWithFlush",
+			splitFunc: scanLinesStrictWithFlush(100 * time.Millisecond),
+			input:     []byte("foo bar.\nhello world!\nincomplete line"),
+			steps: []Step{
+				ExpectAdvanceToken(len("foo bar.\n"), "foo bar."),
+				ExpectAdvanceToken(len("hello world!\n"), "hello world!"),
+				ExpectReadMore(),
+				Eventually(ExpectToken("incomplete line"), 150*time.Millisecond, 10*time.Millisecond),
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -129,7 +141,22 @@ func scanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err er
 func scanLinesError(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	advance, token, err = bufio.ScanLines(data, atEOF)
 	if strings.Contains(string(token), "error") {
-		return 0, nil, errors.New(string(token))
+		return advance, token, errors.New(string(token))
 	}
 	return
+}
+
+func scanLinesStrictWithFlush(flushPeriod time.Duration) bufio.SplitFunc {
+	now := time.Now()
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		advance, token, err = scanLinesStrict(data, atEOF)
+		if advance > 0 || token != nil || err != nil {
+			return
+		}
+		if time.Since(now) > flushPeriod {
+			now = time.Now()
+			return len(data), data, nil
+		}
+		return 0, nil, nil
+	}
 }
