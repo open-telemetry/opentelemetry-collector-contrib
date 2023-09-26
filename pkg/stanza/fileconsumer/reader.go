@@ -42,6 +42,7 @@ type reader struct {
 	*readerConfig
 	*readerMetadata
 	file          *os.File
+	fileName      string
 	lineSplitFunc bufio.SplitFunc
 	splitFunc     bufio.SplitFunc
 	decoder       *decode.Decoder
@@ -129,10 +130,9 @@ func (r *reader) Delete() {
 	if r.file == nil {
 		return
 	}
-	f := r.file
 	r.Close()
-	if err := os.Remove(f.Name()); err != nil {
-		r.Errorf("could not delete %s", f.Name())
+	if err := os.Remove(r.fileName); err != nil {
+		r.Errorf("could not delete %s", r.fileName)
 	}
 }
 
