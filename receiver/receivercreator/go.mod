@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receiv
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.15.2
+	github.com/antonmedv/expr v1.15.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.86.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.86.0
@@ -94,7 +94,7 @@ require (
 	gonum.org/v1/gonum v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/grpc v1.58.1 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

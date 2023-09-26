@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza
 go 1.20
 
 require (
-	github.com/antonmedv/expr v1.15.2
+	github.com/antonmedv/expr v1.15.3
 	github.com/bmatcuk/doublestar/v4 v4.6.0
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20210608084020-ac565dc76ba6
@@ -58,7 +58,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
-	google.golang.org/grpc v1.58.1 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
