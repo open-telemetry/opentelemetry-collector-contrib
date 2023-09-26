@@ -10,23 +10,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec"
 )
 
 type textLogCodec struct {
 	enc *textutils.Encoding
 }
 
-func NewLogCodec(textEncoding string) codec.Log {
+func newLogCodec(textEncoding string) (*textLogCodec, error) {
 	encCfg := textutils.NewEncodingConfig()
 	encCfg.Encoding = textEncoding
 	enc, err := encCfg.Build()
-	if err != nil {
-		panic(err)
-	}
 	return &textLogCodec{
 		enc: &enc,
-	}
+	}, err
 }
 
 func (r *textLogCodec) UnmarshalLogs(buf []byte) (plog.Logs, error) {

@@ -78,6 +78,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/text
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder

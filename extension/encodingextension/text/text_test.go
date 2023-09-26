@@ -14,7 +14,8 @@ import (
 
 func TestTextUnmarshaler(t *testing.T) {
 	t.Parallel()
-	codec := NewLogCodec("utf8")
+	codec, err := newLogCodec("utf8")
+	require.NoError(t, err)
 	ld, err := codec.UnmarshalLogs([]byte("foo\nbar\n"))
 	require.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
