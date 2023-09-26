@@ -6,9 +6,10 @@ package text // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
 var _ plog.Marshaler = &textExtension{}

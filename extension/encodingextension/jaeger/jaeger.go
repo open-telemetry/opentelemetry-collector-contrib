@@ -5,8 +5,9 @@ package jaeger // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	jaegerproto "github.com/jaegertracing/jaeger/model"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
 type jaegerProtobufTrace struct {
