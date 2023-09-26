@@ -35,9 +35,9 @@ type mongodbClient struct {
 	*mongo.Client
 }
 
-// NewClient creates a new client to connect and query mongo for the
+// newClient creates a new client to connect and query mongo for the
 // mongodbreceiver
-func NewClient(ctx context.Context, config *Config, logger *zap.Logger) (client, error) {
+func newClient(ctx context.Context, config *Config, logger *zap.Logger) (client, error) {
 	driver, err := mongo.Connect(ctx, config.ClientOptions())
 	if err != nil {
 		return nil, err

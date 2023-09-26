@@ -19,17 +19,17 @@ import (
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
-		CreateDefaultConfig,
+		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, component.StabilityLevelDevelopment),
 		exporter.WithTraces(createTracesExporter, component.StabilityLevelDevelopment),
 		exporter.WithMetrics(createMetricsExporter, component.StabilityLevelDevelopment),
 	)
 }
 
-// CreateDefaultConfig - function to create a default configuration
+// createDefaultConfig - function to create a default configuration
 //
 //	@return component.Config
-func CreateDefaultConfig() component.Config {
+func createDefaultConfig() component.Config {
 	return &Config{
 		Host:               "http://localhost:9191/",
 		Schema:             "",

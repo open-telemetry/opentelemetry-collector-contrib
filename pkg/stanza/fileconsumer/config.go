@@ -180,7 +180,7 @@ func (c Config) buildManager(logger *zap.SugaredLogger, emit emit.Callback, fact
 			headerConfig:    hCfg,
 		},
 		fileMatcher:     fileMatcher,
-		roller:          newRoller(),
+		roller:          newRoller(int(c.FingerprintSize)),
 		pollInterval:    c.PollInterval,
 		maxBatchFiles:   c.MaxConcurrentFiles / 2,
 		maxBatches:      c.MaxBatches,
