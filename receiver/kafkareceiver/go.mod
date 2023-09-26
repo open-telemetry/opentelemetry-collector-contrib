@@ -26,7 +26,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.45.16 // indirect
+	github.com/aws/aws-sdk-go v1.45.17 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/eapache/go-resiliency v1.4.0 // indirect
