@@ -673,14 +673,14 @@ func TestCpuAndMemoryGetters(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.wantPodCPULimit, tt.metadata.getPodCPULimit(tt.podUID))
-			require.Equal(t, tt.wantPodCPURequest, tt.metadata.getPodCPURequest(tt.podUID))
-			require.Equal(t, tt.wantContainerCPULimit, tt.metadata.getContainerCPULimit(tt.podUID, tt.containerName))
-			require.Equal(t, tt.wantContainerCPURequest, tt.metadata.getContainerCPURequest(tt.podUID, tt.containerName))
-			require.Equal(t, tt.wantPodMemoryLimit, tt.metadata.getPodMemoryLimit(tt.podUID))
-			require.Equal(t, tt.wantPodMemoryRequest, tt.metadata.getPodMemoryRequest(tt.podUID))
-			require.Equal(t, tt.wantContainerMemoryLimit, tt.metadata.getContainerMemoryLimit(tt.podUID, tt.containerName))
-			require.Equal(t, tt.wantContainerMemoryRequest, tt.metadata.getContainerMemoryRequest(tt.podUID, tt.containerName))
+			require.Equal(t, tt.wantPodCPULimit, tt.metadata.podResources[tt.podUID].cpuLimit)
+			require.Equal(t, tt.wantPodCPURequest, tt.metadata.podResources[tt.podUID].cpuRequest)
+			require.Equal(t, tt.wantContainerCPULimit, tt.metadata.containerResources[tt.podUID+tt.containerName].cpuLimit)
+			require.Equal(t, tt.wantContainerCPURequest, tt.metadata.containerResources[tt.podUID+tt.containerName].cpuRequest)
+			require.Equal(t, tt.wantPodMemoryLimit, tt.metadata.podResources[tt.podUID].memoryLimit)
+			require.Equal(t, tt.wantPodMemoryRequest, tt.metadata.podResources[tt.podUID].memoryRequest)
+			require.Equal(t, tt.wantContainerMemoryLimit, tt.metadata.containerResources[tt.podUID+tt.containerName].memoryLimit)
+			require.Equal(t, tt.wantContainerMemoryRequest, tt.metadata.containerResources[tt.podUID+tt.containerName].memoryRequest)
 		})
 	}
 }

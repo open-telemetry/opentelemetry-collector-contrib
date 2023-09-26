@@ -50,8 +50,8 @@ type Metadata struct {
 	Labels                    map[MetadataLabel]bool
 	PodsMetadata              *v1.PodList
 	DetailedPVCResourceSetter func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error
-	PodResources              map[string]resources
-	ContainerResources        map[string]resources
+	podResources              map[string]resources
+	containerResources        map[string]resources
 }
 
 type resources struct {
@@ -80,8 +80,8 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 		Labels:                    getLabelsMap(labels),
 		PodsMetadata:              podsMetadata,
 		DetailedPVCResourceSetter: detailedPVCResourceSetter,
-		PodResources:              make(map[string]resources, 0),
-		ContainerResources:        make(map[string]resources, 0),
+		podResources:              make(map[string]resources, 0),
+		containerResources:        make(map[string]resources, 0),
 	}
 
 	if podsMetadata != nil {
@@ -124,9 +124,9 @@ func NewMetadata(labels []MetadataLabel, podsMetadata *v1.PodList,
 					podResource.memoryRequest += containerResource.memoryRequest
 				}
 
-				m.ContainerResources[string(pod.UID)+container.Name] = containerResource
+				m.containerResources[string(pod.UID)+container.Name] = containerResource
 			}
-			m.PodResources[string(pod.UID)] = podResource
+			m.podResources[string(pod.UID)] = podResource
 		}
 	}
 
@@ -222,68 +222,4 @@ func (m *Metadata) getPodVolume(podUID string, volumeName string) (v1.Volume, er
 	}
 
 	return v1.Volume{}, fmt.Errorf("pod %q with volume %q not found in the fetched metadata", podUID, volumeName)
-}
-
-func (m *Metadata) getPodCPULimit(uid string) float64 {
-	podResource, ok := m.PodResources[uid]
-	if !ok {
-		return 0
-	}
-	return podResource.cpuLimit
-}
-
-func (m *Metadata) getContainerCPULimit(podUID string, containerName string) float64 {
-	containerResource, ok := m.ContainerResources[podUID+containerName]
-	if !ok {
-		return 0
-	}
-	return containerResource.cpuLimit
-}
-
-func (m *Metadata) getPodCPURequest(uid string) float64 {
-	podResource, ok := m.PodResources[uid]
-	if !ok {
-		return 0
-	}
-	return podResource.cpuRequest
-}
-
-func (m *Metadata) getContainerCPURequest(podUID string, containerName string) float64 {
-	containerResource, ok := m.ContainerResources[podUID+containerName]
-	if !ok {
-		return 0
-	}
-	return containerResource.cpuRequest
-}
-
-func (m *Metadata) getPodMemoryLimit(uid string) int64 {
-	podResource, ok := m.PodResources[uid]
-	if !ok {
-		return 0
-	}
-	return podResource.memoryLimit
-}
-
-func (m *Metadata) getContainerMemoryLimit(podUID string, containerName string) int64 {
-	containerResource, ok := m.ContainerResources[podUID+containerName]
-	if !ok {
-		return 0
-	}
-	return containerResource.memoryLimit
-}
-
-func (m *Metadata) getPodMemoryRequest(uid string) int64 {
-	podResource, ok := m.PodResources[uid]
-	if !ok {
-		return 0
-	}
-	return podResource.memoryRequest
-}
-
-func (m *Metadata) getContainerMemoryRequest(podUID string, containerName string) int64 {
-	containerResource, ok := m.ContainerResources[podUID+containerName]
-	if !ok {
-		return 0
-	}
-	return containerResource.memoryRequest
 }
