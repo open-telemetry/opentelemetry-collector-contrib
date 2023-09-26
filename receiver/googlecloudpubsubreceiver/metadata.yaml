@@ -5,4 +5,5 @@ status:
   stability:
     beta: [traces, logs, metrics]
   distributions: [observiq, sumo]
-
+  codeowners:
+    active: [alexvanboxel]

@@ -5246,12 +5246,11 @@ func newMetricJvmThreadsCount(cfg MetricConfig) metricJvmThreadsCount {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                                       pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                                 int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                                int                 // maximum observed number of resource attributes.
-	metricsBuffer                                                   pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                                       component.BuildInfo // contains version information
-	resourceAttributesConfig                                        ResourceAttributesConfig
+	config                                                          MetricsBuilderConfig // config of the metrics builder.
+	startTime                                                       pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                                 int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                                   pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                                       component.BuildInfo  // contains version information.
 	metricElasticsearchBreakerMemoryEstimated                       metricElasticsearchBreakerMemoryEstimated
 	metricElasticsearchBreakerMemoryLimit                           metricElasticsearchBreakerMemoryLimit
 	metricElasticsearchBreakerTripped                               metricElasticsearchBreakerTripped
@@ -5357,10 +5356,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		startTime:                pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:            pmetric.NewMetrics(),
-		buildInfo:                settings.BuildInfo,
-		resourceAttributesConfig: mbc.ResourceAttributes,
+		config:        mbc,
+		startTime:     pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer: pmetric.NewMetrics(),
+		buildInfo:     settings.BuildInfo,
 		metricElasticsearchBreakerMemoryEstimated:                       newMetricElasticsearchBreakerMemoryEstimated(mbc.Metrics.ElasticsearchBreakerMemoryEstimated),
 		metricElasticsearchBreakerMemoryLimit:                           newMetricElasticsearchBreakerMemoryLimit(mbc.Metrics.ElasticsearchBreakerMemoryLimit),
 		metricElasticsearchBreakerTripped:                               newMetricElasticsearchBreakerTripped(mbc.Metrics.ElasticsearchBreakerTripped),
@@ -5459,59 +5458,33 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	return mb
 }
 
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
+}
+
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
 func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithElasticsearchClusterName sets provided value as "elasticsearch.cluster.name" attribute for current resource.
-func WithElasticsearchClusterName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ElasticsearchClusterName.Enabled {
-			rm.Resource().Attributes().PutStr("elasticsearch.cluster.name", val)
-		}
-	}
-}
-
-// WithElasticsearchIndexName sets provided value as "elasticsearch.index.name" attribute for current resource.
-func WithElasticsearchIndexName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ElasticsearchIndexName.Enabled {
-			rm.Resource().Attributes().PutStr("elasticsearch.index.name", val)
-		}
-	}
-}
-
-// WithElasticsearchNodeName sets provided value as "elasticsearch.node.name" attribute for current resource.
-func WithElasticsearchNodeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ElasticsearchNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("elasticsearch.node.name", val)
-		}
-	}
-}
-
-// WithElasticsearchNodeVersion sets provided value as "elasticsearch.node.version" attribute for current resource.
-func WithElasticsearchNodeVersion(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ElasticsearchNodeVersion.Enabled {
-			rm.Resource().Attributes().PutStr("elasticsearch.node.version", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -5535,7 +5508,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/elasticsearchreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -5633,7 +5605,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricJvmThreadsCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)

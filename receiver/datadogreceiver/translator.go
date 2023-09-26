@@ -10,10 +10,11 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
@@ -22,6 +23,18 @@ import (
 
 const (
 	datadogSpanKindKey = "span.kind"
+	// The datadog trace id
+	//
+	// Type: string
+	// Requirement Level: Optional
+	// Examples: '6249785623524942554'
+	attributeDatadogTraceID = "datadog.trace.id"
+	// The datadog span id
+	//
+	// Type: string
+	// Requirement Level: Optional
+	// Examples: '228114450199004348'
+	attributeDatadogSpanID = "datadog.span.id"
 )
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
@@ -84,11 +97,13 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
+			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			}
-
+			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
+			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
 				if k = translateDataDogKeyToOtel(k); len(k) > 0 {
 					newSpan.Attributes().PutStr(k, v)

@@ -4,10 +4,15 @@ status:
   class: processor
   stability:
     beta: [logs, metrics, traces]
-  distributions: [contrib, splunk, observiq, sumo, redhat]
-
+  distributions: [contrib, splunk, observiq, sumo, redhat, aws]
+  codeowners:
+    active: [dmitryax, rmfitzpatrick, fatsheep9146, TylerHelmuth]
 # resource attributes are exposed through a different configuration interface (extract::metadata).
 resource_attributes:
+  k8s.cluster.uid:
+    description: Gives cluster uid identified with kube-system namespace
+    type: string
+    enabled: false
   k8s.namespace.name:
     description: The name of the namespace that the pod is running in.
     type: string

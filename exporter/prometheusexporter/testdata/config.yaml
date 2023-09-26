@@ -11,3 +11,4 @@ prometheus/2:
     "another label": spaced value
   send_timestamps: true
   metric_expiration: 60m
+  add_metric_suffixes: false

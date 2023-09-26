@@ -45,7 +45,7 @@ func TestBufferedWrites(t *testing.T) {
 }
 
 var (
-	benchmarkErr error
+	errBenchmark error
 )
 
 func BenchmarkWriter(b *testing.B) {
@@ -83,7 +83,7 @@ func BenchmarkWriter(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					_, err = w.Write(payload)
 				}
-				benchmarkErr = multierr.Combine(err, w.Close())
+				errBenchmark = multierr.Combine(err, w.Close())
 			})
 		}
 	}

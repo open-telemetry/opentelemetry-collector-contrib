@@ -21,7 +21,7 @@ func TestValidStream(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedHTTPClientSettings,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
@@ -57,7 +57,7 @@ func TestInvalidStream(t *testing.T) {
 		zap.NewNop(),
 		cfg.UAA.LimitedHTTPClientSettings,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)

@@ -5,7 +5,8 @@
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
 | Distributions | [contrib], [sumo] |
-| Issues        | ![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhttpcheck%20&label=open&color=orange&logo=opentelemetry) ![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhttpcheck%20&label=closed&color=blue&logo=opentelemetry) |
+| Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fhttpcheck%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fhttpcheck) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fhttpcheck%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fhttpcheck) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@codeboten](https://www.github.com/codeboten) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector#development
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -26,15 +27,16 @@ httpcheck.status{http.status_class:5xx, http.status_code:200,...} = 0
 
 ## Configuration
 
-The following configuration settings are required:
+The following configuration settings are available:
 
-- `endpoint`: The URL of the endpoint to be monitored.
+- `targets` (required): The list of targets to be monitored.
+- `collection_interval` (optional, default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `initial_delay` (optional, default = `1s`): defines how long this receiver waits before starting.
 
-The following configuration settings are optional:
+Each target has the following properties:
 
-- `method` (default: `GET`): The method used to call the endpoint.
-- `collection_interval` (default = `60s`): This receiver collects metrics on an interval. Valid time units are `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
-- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `endpoint` (required): the URL to be monitored
+- `method` (optional, default: `GET`): The HTTP method used to call the endpoint
 
 ### Example Configuration
 

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestNewLoadBalancerNoResolver(t *testing.T) {
@@ -61,6 +62,24 @@ func TestNewLoadBalancerInvalidDNSResolver(t *testing.T) {
 	// verify
 	require.Nil(t, p)
 	require.Equal(t, errNoHostname, err)
+}
+
+func TestNewLoadBalancerInvalidK8sResolver(t *testing.T) {
+	// prepare
+	cfg := &Config{
+		Resolver: ResolverSettings{
+			K8sSvc: &K8sSvcResolver{
+				Service: "",
+			},
+		},
+	}
+
+	// test
+	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, nil)
+
+	// verify
+	assert.Nil(t, p)
+	assert.True(t, clientcmd.IsConfigurationInvalid(err) || errors.Is(err, errNoSvc))
 }
 
 func TestLoadBalancerStart(t *testing.T) {

@@ -5,6 +5,8 @@ status:
   stability:
     beta: [metrics, logs]
   distributions: [contrib, splunk, observiq, sumo]
+  codeowners:
+    active: [djaglowski, schmikei]
 
 resource_attributes:
   mongodb_atlas.org_name:
@@ -256,7 +258,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.connections:
     enabled: true
     description: Number of current connections
@@ -265,7 +267,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.cpu.usage.max:
     enabled: true
     description: CPU Usage (%)
@@ -422,7 +424,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.oplog.time:
     enabled: true
     description: Execution time by operation
@@ -455,7 +457,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.page_faults:
     enabled: true
     description: Page faults
@@ -694,7 +696,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.system.fts.disk.used:
     enabled: true
     description: Full text search disk usage

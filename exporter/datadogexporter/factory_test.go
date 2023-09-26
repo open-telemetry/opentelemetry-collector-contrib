@@ -7,8 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"sync"
 	"testing"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -18,11 +21,48 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
+
+var _ inframetadata.Pusher = (*testPusher)(nil)
+
+type testPusher struct {
+	mu       sync.Mutex
+	payloads []payload.HostMetadata
+	stopped  bool
+	logger   *zap.Logger
+	t        *testing.T
+}
+
+func newTestPusher(t *testing.T) *testPusher {
+	return &testPusher{
+		logger: zaptest.NewLogger(t),
+		t:      t,
+	}
+}
+
+func (p *testPusher) Push(_ context.Context, hm payload.HostMetadata) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.stopped {
+		p.logger.Error("Trying to push payload after stopping", zap.Any("payload", hm))
+		p.t.Fail()
+	}
+	p.logger.Info("Storing host metadata payload", zap.Any("payload", hm))
+	p.payloads = append(p.payloads, hm)
+	return nil
+}
+
+func (p *testPusher) Payloads() []payload.HostMetadata {
+	p.mu.Lock()
+	p.stopped = true
+	defer p.mu.Unlock()
+	return p.payloads
+}
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
@@ -48,7 +88,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
 			},
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,
@@ -109,7 +150,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -158,7 +200,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -211,7 +254,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -617,7 +661,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

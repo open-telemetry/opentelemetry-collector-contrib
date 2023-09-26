@@ -13,51 +13,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 )
 
-func getTestSummaryMetric() pmetric.Metric {
-	metricInput := pmetric.NewMetric()
-	metricInput.SetEmptySummary()
-	metricInput.SetName("summary_metric")
-	input := metricInput.Summary().DataPoints().AppendEmpty()
-	input.SetCount(100)
-	input.SetSum(12.34)
-
-	qVal1 := input.QuantileValues().AppendEmpty()
-	qVal1.SetValue(1)
-	qVal1.SetQuantile(.99)
-
-	qVal2 := input.QuantileValues().AppendEmpty()
-	qVal2.SetValue(2)
-	qVal2.SetQuantile(.95)
-
-	qVal3 := input.QuantileValues().AppendEmpty()
-	qVal3.SetValue(3)
-	qVal3.SetQuantile(.50)
-
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
-	return metricInput
-}
-
-func getTestGaugeMetric() pmetric.Metric {
-	metricInput := pmetric.NewMetric()
-	metricInput.SetEmptyGauge()
-	metricInput.SetName("gauge_metric")
-	input := metricInput.Gauge().DataPoints().AppendEmpty()
-	input.SetIntValue(12)
-
-	attrs := getTestAttributes()
-	attrs.CopyTo(input.Attributes())
-	return metricInput
-}
-
-func getTestAttributes() pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("test", "hello world")
-	attrs.PutInt("test2", 3)
-	attrs.PutBool("test3", true)
-	return attrs
-}
-
 type summaryTestCase struct {
 	name         string
 	input        pmetric.Metric

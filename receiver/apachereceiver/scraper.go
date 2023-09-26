@@ -127,7 +127,10 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	return r.mb.Emit(metadata.WithApacheServerName(r.serverName), metadata.WithApacheServerPort(r.port)), errs.Combine()
+	rb := r.mb.NewResourceBuilder()
+	rb.SetApacheServerName(r.serverName)
+	rb.SetApacheServerPort(r.port)
+	return r.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }
 
 func addPartialIfError(errs *scrapererror.ScrapeErrors, err error) {

@@ -219,7 +219,7 @@ func (k *K8sAPIServer) init() error {
 	}
 
 	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsLeasesResourceLock,
+		resourcelock.LeasesResourceLock,
 		lockNamespace, lockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),
@@ -238,10 +238,11 @@ func (k *K8sAPIServer) init() error {
 }
 
 // Shutdown stops the k8sApiServer
-func (k *K8sAPIServer) Shutdown() {
+func (k *K8sAPIServer) Shutdown() error {
 	if k.cancel != nil {
 		k.cancel()
 	}
+	return nil
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {

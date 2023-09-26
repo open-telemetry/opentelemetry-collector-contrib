@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type RLPGatewayConfig struct {
@@ -30,8 +31,8 @@ type LimitedHTTPClientSettings struct {
 
 type UAAConfig struct {
 	LimitedHTTPClientSettings `mapstructure:",squash"`
-	Username                  string `mapstructure:"username"`
-	Password                  string `mapstructure:"password"`
+	Username                  string              `mapstructure:"username"`
+	Password                  configopaque.String `mapstructure:"password"`
 }
 
 // Config defines configuration for Collectd receiver.

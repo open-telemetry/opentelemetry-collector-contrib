@@ -23,6 +23,7 @@ func sortMetrics(ms pmetric.Metrics) {
 			metricsList := ilms.At(j).Metrics()
 			for k := 0; k < metricsList.Len(); k++ {
 				metric := metricsList.At(k)
+				//exhaustive:enforce
 				switch metricsList.At(k).Type() {
 				case pmetric.MetricTypeGauge:
 					ds := metric.Gauge().DataPoints()
@@ -98,6 +99,7 @@ func sortMetricDataPointSlices(ms pmetric.Metrics) {
 		for j := 0; j < ms.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
 			for k := 0; k < ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); k++ {
 				m := ms.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(k)
+				//exhaustive:enforce
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					sortNumberDataPointSlice(m.Gauge().DataPoints())

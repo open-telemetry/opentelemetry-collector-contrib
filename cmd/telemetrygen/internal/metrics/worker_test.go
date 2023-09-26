@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
@@ -26,8 +25,8 @@ func (m *mockExporter) Temporality(_ sdkmetric.InstrumentKind) metricdata.Tempor
 	return metricdata.DeltaTemporality
 }
 
-func (m *mockExporter) Aggregation(_ sdkmetric.InstrumentKind) aggregation.Aggregation {
-	return aggregation.Default{}
+func (m *mockExporter) Aggregation(_ sdkmetric.InstrumentKind) sdkmetric.Aggregation {
+	return sdkmetric.AggregationDefault{}
 }
 
 func (m *mockExporter) Export(_ context.Context, metrics *metricdata.ResourceMetrics) error {
@@ -49,6 +48,7 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 			WorkerCount: 1,
 		},
 		NumMetrics: 5,
+		MetricType: metricTypeSum,
 	}
 
 	exp := &mockExporter{}
@@ -70,6 +70,7 @@ func TestRateOfMetrics(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
+		MetricType: metricTypeSum,
 	}
 	exp := &mockExporter{}
 
@@ -89,6 +90,7 @@ func TestUnthrottled(t *testing.T) {
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
+		MetricType: metricTypeSum,
 	}
 	exp := &mockExporter{}
 

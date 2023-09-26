@@ -8,9 +8,11 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/configssh"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver/internal/metadata"
 )
 
 // check that OTel Collector patterns are implemented
@@ -36,6 +38,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Endpoint: "goodhost:2222",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(errMissingPasswordAndKeyFile),
 		},
@@ -46,6 +49,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "goodhost:2222",
 					KeyFile:  "/home/.ssh/id_rsa",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -59,6 +63,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: multierr.Combine(
 				errInvalidEndpoint,
@@ -72,6 +77,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					Password: "otelp",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: error(nil),
 		},
@@ -83,6 +89,7 @@ func TestValidate(t *testing.T) {
 					Username: "otelu",
 					KeyFile:  "/possibly/a_path",
 				},
+				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
 			},
 			expectedErr: error(nil),
 		},

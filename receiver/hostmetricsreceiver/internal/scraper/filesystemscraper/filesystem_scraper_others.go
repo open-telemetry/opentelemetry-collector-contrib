@@ -35,5 +35,5 @@ func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsage
 
 const systemSpecificMetricsLen = 0
 
-func (s *scraper) recordSystemSpecificMetrics(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
+func (s *scraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ []*deviceUsage) {
 }

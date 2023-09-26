@@ -5,3 +5,5 @@ status:
   stability:
     deprecated: [traces]
   distributions: [contrib, observiq, splunk, sumo]
+  codeowners:
+    active: [albertteoh]

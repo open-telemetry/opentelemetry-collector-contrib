@@ -70,8 +70,8 @@ func dropFn[K any]() (ottl.ExprFunc[K], error) {
 }
 
 type hasAttributeOnDatapointArguments struct {
-	Key         string `ottlarg:"0"`
-	ExpectedVal string `ottlarg:"1"`
+	Key         string
+	ExpectedVal string
 }
 
 func newHasAttributeOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -95,7 +95,7 @@ func hasAttributeOnDatapoint(key string, expectedVal string) (ottl.ExprFunc[ottl
 }
 
 type hasAttributeKeyOnDatapointArguments struct {
-	Key string `ottlarg:"0"`
+	Key string
 }
 
 func newHasAttributeKeyOnDatapointFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -120,6 +120,7 @@ func hasAttributeKeyOnDatapoint(key string) (ottl.ExprFunc[ottlmetric.TransformC
 
 func checkDataPoints(tCtx ottlmetric.TransformContext, key string, expectedVal *string) (interface{}, error) {
 	metric := tCtx.GetMetric()
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
 		return checkNumberDataPointSlice(metric.Sum().DataPoints(), key, expectedVal), nil

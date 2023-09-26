@@ -6,3 +6,5 @@ status:
     beta: [metrics]
     alpha: [logs, traces]
   distributions: [contrib, splunk, sumo]
+  codeowners:
+    active: [rmfitzpatrick]

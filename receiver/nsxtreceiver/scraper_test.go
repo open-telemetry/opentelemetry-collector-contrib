@@ -25,7 +25,7 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 
 	mockClient.On("ClusterNodes", mock.Anything).Return(loadTestClusterNodes())
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())
@@ -68,7 +68,7 @@ func TestScrape(t *testing.T) {
 }
 
 func TestScrapeTransportNodeErrors(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 	mockClient.On("TransportNodes", mock.Anything).Return(nil, errUnauthorized)
 	scraper := newScraper(
 		&Config{
@@ -84,7 +84,7 @@ func TestScrapeTransportNodeErrors(t *testing.T) {
 }
 
 func TestScrapeClusterNodeErrors(t *testing.T) {
-	mockClient := NewMockClient(t)
+	mockClient := newMockClient(t)
 
 	mockClient.On("ClusterNodes", mock.Anything).Return(nil, errUnauthorized)
 	mockClient.On("TransportNodes", mock.Anything).Return(loadTestTransportNodes())

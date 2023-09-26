@@ -61,65 +61,55 @@ func TestBuildBody(t *testing.T) {
 	err = bytes.FromRaw([]byte{byte(65), byte(66), byte(67)})
 	assert.NoError(t, err)
 	tests := []struct {
-		body    pcommon.Value
-		key     string
-		value   interface{}
-		message string
+		body      pcommon.Value
+		valueType string
+		message   string
 	}{
 		{
-			body:    pcommon.NewValueEmpty(),
-			key:     "body.empty",
-			value:   "",
-			message: "",
+			body:      pcommon.NewValueEmpty(),
+			valueType: "empty",
+			message:   "",
 		},
 		{
-			body:    pcommon.NewValueStr("foo"),
-			key:     "body.str",
-			value:   "foo",
-			message: "foo",
+			body:      pcommon.NewValueStr("foo"),
+			valueType: "string",
+			message:   "foo",
 		},
 		{
-			body:    pcommon.NewValueBool(true),
-			key:     "body.bool",
-			value:   true,
-			message: "true",
+			body:      pcommon.NewValueBool(true),
+			valueType: "bool",
+			message:   "true",
 		},
 		{
-			body:    pcommon.NewValueDouble(42.5),
-			key:     "body.double",
-			value:   float64(42.5),
-			message: "42.5",
+			body:      pcommon.NewValueDouble(42.5),
+			valueType: "double",
+			message:   "42.5",
 		},
 		{
-			body:    pcommon.NewValueInt(42),
-			key:     "body.int",
-			value:   int64(42),
-			message: "42",
+			body:      pcommon.NewValueInt(42),
+			valueType: "int",
+			message:   "42",
 		},
 		{
-			body:    bytes,
-			key:     "body.bytes",
-			value:   "QUJD",
-			message: "QUJD",
+			body:      bytes,
+			valueType: "bytes",
+			message:   "QUJD",
 		},
 		{
-			body:    slice,
-			key:     "body.slice",
-			value:   []interface{}{int64(1), int64(2), int64(3)},
-			message: "[1,2,3]",
+			body:      slice,
+			valueType: "simpleMap",
+			message:   "[1,2,3]",
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.key, func(*testing.T) {
-			attrs := make(map[string]interface{})
-			msg := buildBody(attrs, tt.body)
-			expectedAttrs := make(map[string]interface{})
-			expectedAttrs["body.type"] = tt.body.Type().String()
-			expectedAttrs[tt.key] = tt.value
+	settings := newDefaultLogsSettings()
 
-			assert.Equal(t, tt.message, msg, tt.key)
-			assert.Equal(t, expectedAttrs, attrs, tt.key)
+	for _, tt := range tests {
+		t.Run(tt.valueType, func(*testing.T) {
+			attrs := make(map[string]interface{})
+			msg := buildBody(settings, attrs, tt.body)
+
+			assert.Equal(t, tt.message, msg, tt.valueType)
 		})
 	}
 }
@@ -135,10 +125,12 @@ func TestBuildBodyMap(t *testing.T) {
 		"array": []any{1, 2, 3},
 	})
 	if assert.NoError(t, err) {
+		settings := newDefaultLogsSettings()
+		settings.DecomposeComplexMessageField = true
 		attrs := make(map[string]interface{})
-		msg := buildBody(attrs, m)
+
+		msg := buildBody(settings, attrs, m)
 		expectedAttrs := make(map[string]interface{})
-		expectedAttrs["body.type"] = pcommon.ValueTypeMap.String()
 		expectedAttrs["body.map.scalar"] = "scalar-value"
 		expectedAttrs["body.map.map.m1"] = "v1"
 		expectedAttrs["body.map.map.m2"] = "v2"
@@ -153,19 +145,46 @@ func TestBuildBodyMap(t *testing.T) {
 	}
 }
 
+var testLThread = &add_events.Thread{
+	Id:   "TL",
+	Name: "logs",
+}
+
+var testLLog = &add_events.Log{
+	Id:    "LL",
+	Attrs: map[string]interface{}{},
+}
+
+var testServerHost = "foo"
+
 var testLEventRaw = &add_events.Event{
-	Thread: "TL",
-	Log:    "LL",
-	Sev:    3,
-	Ts:     "1581452773000000789",
+	Thread:     testLThread.Id,
+	Log:        testLLog.Id,
+	Sev:        3,
+	Ts:         "1581452773000000789",
+	ServerHost: testServerHost,
 	Attrs: map[string]interface{}{
-		"attributes.app":           "server",
-		"attributes.instance_num":  int64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
+		"app":                      "server",
+		"instance_num":             int64(1),
 		"dropped_attributes_count": uint32(1),
 		"message":                  "This is a log message",
-		"scope.name":               "",
+		"span_id":                  "0102040800000000",
+		"trace_id":                 "08040201000000000000000000000000",
+	},
+}
+
+var testLEventRawWithScopeInfo = &add_events.Event{
+	Thread:     testLThread.Id,
+	Log:        testLLog.Id,
+	Sev:        3,
+	Ts:         "1581452773000000789",
+	ServerHost: testServerHost,
+	Attrs: map[string]interface{}{
+		"app":                      "server",
+		"instance_num":             int64(1),
+		"dropped_attributes_count": uint32(1),
+		"scope.name":               "test-scope",
+		"message":                  "This is a log message",
 		"span_id":                  "0102040800000000",
 		"trace_id":                 "08040201000000000000000000000000",
 	},
@@ -177,27 +196,15 @@ var testLEventReq = &add_events.Event{
 	Sev:    testLEventRaw.Sev,
 	Ts:     testLEventRaw.Ts,
 	Attrs: map[string]interface{}{
-		"attributes.app":           "server",
-		"attributes.instance_num":  float64(1),
-		"body.str":                 "This is a log message",
-		"body.type":                "Str",
-		"dropped_attributes_count": float64(1),
-		"message":                  "This is a log message",
-		"scope.name":               "",
-		"span_id":                  "0102040800000000",
-		"trace_id":                 "08040201000000000000000000000000",
-		"bundle_key":               "d41d8cd98f00b204e9800998ecf8427e",
+		add_events.AttrOrigServerHost: testServerHost,
+		"app":                         "server",
+		"instance_num":                float64(1),
+		"dropped_attributes_count":    float64(1),
+		"message":                     "This is a log message",
+		"span_id":                     "0102040800000000",
+		"trace_id":                    "08040201000000000000000000000000",
+		"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
 	},
-}
-
-var testLThread = &add_events.Thread{
-	Id:   "TL",
-	Name: "logs",
-}
-
-var testLLog = &add_events.Log{
-	Id:    "LL",
-	Attrs: map[string]interface{}{},
 }
 
 func TestBuildEventFromLog(t *testing.T) {
@@ -213,6 +220,7 @@ func TestBuildEventFromLog(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
 	)
 
@@ -228,11 +236,12 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 
 	expected := &add_events.EventBundle{
 		Event: &add_events.Event{
-			Thread: testLEventRaw.Thread,
-			Log:    testLEventRaw.Log,
-			Sev:    testLEventRaw.Sev,
-			Ts:     testLEventRaw.Ts,
-			Attrs:  defaultAttrs,
+			Thread:     testLEventRaw.Thread,
+			Log:        testLEventRaw.Log,
+			Sev:        testLEventRaw.Sev,
+			Ts:         testLEventRaw.Ts,
+			Attrs:      defaultAttrs,
+			ServerHost: testLEventRaw.ServerHost,
 		},
 		Thread: testLThread,
 		Log:    testLLog,
@@ -241,14 +250,49 @@ func TestBuildEventFromLogExportResources(t *testing.T) {
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		LogsSettings{
 			ExportResourceInfo: true,
+			ExportScopeInfo:    true,
 		},
 	)
 
 	assert.Equal(t, expected, was)
 }
 
+func TestBuildEventFromLogExportScopeInfo(t *testing.T) {
+	lr := testdata.GenerateLogsOneLogRecord()
+	ld := lr.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+	scope.SetDroppedAttributesCount(11)
+
+	expected := &add_events.EventBundle{
+		Event: &add_events.Event{
+			Thread:     testLEventRawWithScopeInfo.Thread,
+			Log:        testLEventRawWithScopeInfo.Log,
+			Sev:        testLEventRawWithScopeInfo.Sev,
+			Ts:         testLEventRawWithScopeInfo.Ts,
+			Attrs:      testLEventRawWithScopeInfo.Attrs,
+			ServerHost: testLEventRaw.ServerHost,
+		},
+		Thread: testLThread,
+		Log:    testLLog,
+	}
+	was := buildEventFromLog(
+		ld,
+		lr.ResourceLogs().At(0).Resource(),
+		scope,
+		testServerHost,
+		LogsSettings{
+			ExportResourceInfo: false,
+			ExportScopeInfo:    true,
+		},
+	)
+
+	assert.Equal(t, expected, was)
+}
 func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedTimestamp(t *testing.T) {
 	// When LogRecord doesn't have timestamp set, but it has ObservedTimestamp set,
 	// ObservedTimestamp should be used
@@ -259,7 +303,8 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 	ld.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Unix(1686235113, 0)))
 
 	testLEventRaw.Ts = "1686235113000000000"
-	testLEventRaw.Attrs["observed.timestamp"] = "2023-06-08 14:38:33 +0000 UTC"
+	// 2023-06-08 14:38:33 +0000 UTC
+	testLEventRaw.Attrs["sca:observedTime"] = "1686235113000000000"
 	delete(testLEventRaw.Attrs, "timestamp")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
@@ -272,6 +317,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithObservedTimestampUseObservedT
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
 	)
 
@@ -296,7 +342,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 
 	testLEventRaw.Ts = strconv.FormatInt(currentTime.UnixNano(), 10)
 	delete(testLEventRaw.Attrs, "timestamp")
-	delete(testLEventRaw.Attrs, "observed.timestamp")
+	delete(testLEventRaw.Attrs, "sca:observedTime")
 	delete(testLEventRaw.Attrs, "resource.attributes.resource-attr")
 
 	expected := &add_events.EventBundle{
@@ -308,6 +354,7 @@ func TestBuildEventFromLogEventWithoutTimestampWithOutObservedTimestampUseCurren
 		ld,
 		lr.ResourceLogs().At(0).Resource(),
 		lr.ResourceLogs().At(0).ScopeLogs().At(0).Scope(),
+		testServerHost,
 		newDefaultLogsSettings(),
 	)
 
@@ -357,18 +404,45 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		DatasetURL: server.URL,
 		APIKey:     "key-lib",
 		BufferSettings: BufferSettings{
-			MaxLifetime:          time.Millisecond,
+			MaxLifetime:          500 * time.Millisecond,
 			GroupBy:              []string{"attributes.container_id"},
 			RetryInitialInterval: time.Second,
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
+			RetryShutdownTimeout: time.Minute,
+		},
+		LogsSettings:   newDefaultLogsSettings(),
+		TracesSettings: newDefaultTracesSettings(),
+		ServerHostSettings: ServerHostSettings{
+			ServerHost: testServerHost,
 		},
 		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
 
-	lr := testdata.GenerateLogsOneLogRecord()
+	lr1 := testdata.GenerateLogsOneLogRecord()
+	lr2 := testdata.GenerateLogsOneLogRecord()
+	// set attribute for the hostname, it should beat value from resource
+	lr2.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr(add_events.AttrServerHost, "serverHostFromAttribute")
+	lr2.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResource")
+	// set attribute serverHost and host.name attributes in the resource, serverHost will win
+	lr3 := testdata.GenerateLogsOneLogRecord()
+	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr(add_events.AttrServerHost, "serverHostFromResourceServer")
+	lr3.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
+	// set attribute host.name in the resource attribute
+	lr4 := testdata.GenerateLogsOneLogRecord()
+	lr4.ResourceLogs().At(0).Resource().Attributes().PutStr("host.name", "serverHostFromResourceHost")
+
+	ld := plog.NewLogs()
+	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
+	ld.ResourceLogs().AppendEmpty()
+	lr1.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(0))
+	lr2.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(1))
+	lr3.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(2))
+	lr4.ResourceLogs().At(0).CopyTo(ld.ResourceLogs().At(3))
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)
 	if assert.NoError(t, err) {
@@ -376,7 +450,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotNil(t, logs)
-		err = logs.ConsumeLogs(context.Background(), lr)
+		err = logs.ConsumeLogs(context.Background(), ld)
 		assert.Nil(t, err)
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
@@ -390,8 +464,59 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 				Token: "key-lib",
 			},
 			AddEventsRequestParams: add_events.AddEventsRequestParams{
-				Session: addRequest.Session,
-				Events:  []*add_events.Event{testLEventReq},
+				Session:     addRequest.Session,
+				SessionInfo: addRequest.SessionInfo,
+				Events: []*add_events.Event{
+					testLEventReq,
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromAttribute",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromResourceServer",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+					{
+						Thread: testLEventReq.Thread,
+						Log:    testLEventReq.Log,
+						Sev:    testLEventReq.Sev,
+						Ts:     testLEventReq.Ts,
+						Attrs: map[string]interface{}{
+							add_events.AttrOrigServerHost: "serverHostFromResourceHost",
+							"app":                         "server",
+							"instance_num":                float64(1),
+							"dropped_attributes_count":    float64(1),
+							"message":                     "This is a log message",
+							"span_id":                     "0102040800000000",
+							"trace_id":                    "08040201000000000000000000000000",
+							"bundle_key":                  "d41d8cd98f00b204e9800998ecf8427e",
+						},
+					},
+				},
 				Threads: []*add_events.Thread{testLThread},
 				Logs:    []*add_events.Log{testLLog},
 			},

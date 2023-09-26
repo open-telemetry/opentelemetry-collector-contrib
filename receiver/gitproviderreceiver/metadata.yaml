@@ -1,0 +1,11 @@
+type: gitprovider
+
+sem_conv_version: 1.9.0
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [liatrio]
+  codeowners:
+    active: [adrielp, astencel-sumo]

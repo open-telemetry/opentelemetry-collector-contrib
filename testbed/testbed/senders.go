@@ -9,6 +9,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -77,6 +78,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
+	compression configcompression.CompressionType
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
@@ -88,6 +90,7 @@ func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphtt
 	cfg.TLSSetting = configtls.TLSClientSetting{
 		Insecure: true,
 	}
+	cfg.Compression = ods.compression
 	return cfg
 }
 
@@ -111,13 +114,14 @@ type otlpHTTPTraceDataSender struct {
 }
 
 // NewOTLPHTTPTraceDataSender creates a new TraceDataSender for OTLP/HTTP traces exporter.
-func NewOTLPHTTPTraceDataSender(host string, port int) TraceDataSender {
+func NewOTLPHTTPTraceDataSender(host string, port int, compression configcompression.CompressionType) TraceDataSender {
 	return &otlpHTTPTraceDataSender{
 		otlpHTTPDataSender: otlpHTTPDataSender{
 			DataSenderBase: DataSenderBase{
 				Port: port,
 				Host: host,
 			},
+			compression: compression,
 		},
 	}
 }

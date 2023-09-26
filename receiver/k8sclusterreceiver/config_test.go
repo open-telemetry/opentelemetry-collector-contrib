@@ -43,6 +43,8 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: k8sconfig.AuthTypeServiceAccount,
 				},
+				MetadataCollectionInterval: 30 * time.Minute,
+				MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 		{
@@ -54,6 +56,8 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: k8sconfig.AuthTypeServiceAccount,
 				},
+				MetadataCollectionInterval: 5 * time.Minute,
+				MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
 	}

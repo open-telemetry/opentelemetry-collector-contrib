@@ -11,6 +11,7 @@ import (
 // deleteLabelValueOp deletes a label value and all data associated with it
 func deleteLabelValueOp(metric pmetric.Metric, mtpOp internalOperation) {
 	op := mtpOp.configOperation
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		metric.Gauge().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {

@@ -45,7 +45,7 @@ func TestScrape(t *testing.T) {
 			name:   "Validate Start Time",
 			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 100, nil }
+				s.bootTime = func(context.Context) (uint64, error) { return 100, nil }
 			},
 			expectedStartTime: 100 * 1e9,
 		},
@@ -53,7 +53,7 @@ func TestScrape(t *testing.T) {
 			name:   "Boot Time Error",
 			config: Config{MetricsBuilderConfig: config},
 			mutateScraper: func(s *scraper) {
-				s.bootTime = func() (uint64, error) { return 0, errors.New("err1") }
+				s.bootTime = func(context.Context) (uint64, error) { return 0, errors.New("err1") }
 			},
 			initializationErr: "err1",
 		},

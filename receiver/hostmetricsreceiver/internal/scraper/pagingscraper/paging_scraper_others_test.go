@@ -23,7 +23,7 @@ func TestScrape_Errors(t *testing.T) {
 	type testCase struct {
 		name              string
 		virtualMemoryFunc func() ([]*pageFileStats, error)
-		swapMemoryFunc    func() (*mem.SwapMemoryStat, error)
+		swapMemoryFunc    func(context.Context) (*mem.SwapMemoryStat, error)
 		expectedError     string
 		expectedErrCount  int
 	}
@@ -37,14 +37,14 @@ func TestScrape_Errors(t *testing.T) {
 		},
 		{
 			name:             "swapMemoryError",
-			swapMemoryFunc:   func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:   func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:    "failed to read swap info: err2",
 			expectedErrCount: pagingMetricsLen,
 		},
 		{
 			name:              "multipleErrors",
 			virtualMemoryFunc: func() ([]*pageFileStats, error) { return nil, errors.New("err1") },
-			swapMemoryFunc:    func() (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
+			swapMemoryFunc:    func(context.Context) (*mem.SwapMemoryStat, error) { return nil, errors.New("err2") },
 			expectedError:     "failed to read page file stats: err1; failed to read swap info: err2",
 			expectedErrCount:  pagingUsageMetricsLen + pagingMetricsLen,
 		},

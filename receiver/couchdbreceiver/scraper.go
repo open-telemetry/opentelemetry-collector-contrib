@@ -71,5 +71,7 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errs)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
 
-	return c.mb.Emit(metadata.WithCouchdbNodeName(c.config.Endpoint)), errs.Combine()
+	rb := c.mb.NewResourceBuilder()
+	rb.SetCouchdbNodeName(c.config.Endpoint)
+	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

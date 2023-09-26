@@ -5,6 +5,7 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -17,8 +18,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
+)
+
+const (
+	noStreamName = "THIS IS INVALID STREAM"
 )
 
 type logsReceiver struct {
@@ -178,7 +182,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 	endTime := time.Now()
 	for _, r := range l.groupRequests {
 		if err := l.pollForLogs(ctx, r, startTime, endTime); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = errors.Join(errs, err)
 		}
 	}
 	l.nextStartTime = endTime
@@ -222,6 +226,9 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 
 func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string, output *cloudwatchlogs.FilterLogEventsOutput) plog.Logs {
 	logs := plog.NewLogs()
+
+	resourceMap := map[string](map[string]*plog.ResourceLogs){}
+
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -238,15 +245,35 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			continue
 		}
 
-		rl := logs.ResourceLogs().AppendEmpty()
-		resourceAttributes := rl.Resource().Attributes()
-		resourceAttributes.PutStr("aws.region", l.region)
-		resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
-		if e.LogStreamName != nil {
-			resourceAttributes.PutStr("cloudwatch.log.stream", *e.LogStreamName)
+		group, ok := resourceMap[logGroupName]
+		if !ok {
+			group = map[string]*plog.ResourceLogs{}
+			resourceMap[logGroupName] = group
 		}
 
-		logRecord := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+		logStreamName := noStreamName
+		if e.LogStreamName != nil {
+			logStreamName = *e.LogStreamName
+		}
+
+		resourceLogs, ok := group[logStreamName]
+		if !ok {
+			rl := logs.ResourceLogs().AppendEmpty()
+			resourceLogs = &rl
+			resourceAttributes := resourceLogs.Resource().Attributes()
+			resourceAttributes.PutStr("aws.region", l.region)
+			resourceAttributes.PutStr("cloudwatch.log.group.name", logGroupName)
+			resourceAttributes.PutStr("cloudwatch.log.stream", logStreamName)
+			group[logStreamName] = resourceLogs
+
+			// Ensure one scopeLogs is initialized so we can handle in standardized way going forward.
+			_ = resourceLogs.ScopeLogs().AppendEmpty()
+		}
+
+		// Now we know resourceLogs is initialized and has one scopeLogs so we don't have to handle any special cases.
+
+		logRecord := resourceLogs.ScopeLogs().At(0).LogRecords().AppendEmpty()
+
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))

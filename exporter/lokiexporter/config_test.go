@@ -65,6 +65,12 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
+				DefaultLabelsEnabled: map[string]bool{
+					"exporter": false,
+					"job":      true,
+					"instance": true,
+					"level":    false,
+				},
 			},
 		},
 	}

@@ -72,7 +72,7 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 		func() bool {
 			return consumer.LogRecordCount() > 0
 		},
-		3*time.Second,
+		1*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
@@ -107,7 +107,7 @@ func TestPostgresIntegrationLogsTrackingWithoutStorage(t *testing.T) {
 		func() bool {
 			return consumer.LogRecordCount() > 0
 		},
-		3*time.Second,
+		1*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
@@ -161,7 +161,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 		func() bool {
 			return consumer.LogRecordCount() > 0
 		},
-		3*time.Second,
+		1*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)
@@ -195,7 +195,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	// Wait for some logs to come in.
-	time.Sleep(3 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	// stop the SQL Query receiver
 	err = receiver.Shutdown(context.Background())
@@ -233,7 +233,7 @@ func TestPostgresIntegrationLogsTrackingWithStorage(t *testing.T) {
 		func() bool {
 			return consumer.LogRecordCount() > 0
 		},
-		3*time.Second,
+		1*time.Minute,
 		1*time.Second,
 		"failed to receive more than 0 logs",
 	)

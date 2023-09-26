@@ -74,9 +74,9 @@ func (w *WriterOperator) GetOutputIDs() []string {
 
 // SetOutputs will set the outputs of the operator.
 func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
-	var outputOperators []operator.Operator
+	outputOperators := make([]operator.Operator, len(w.OutputIDs))
 
-	for _, operatorID := range w.OutputIDs {
+	for i, operatorID := range w.OutputIDs {
 		operator, ok := w.findOperator(operators, operatorID)
 		if !ok {
 			return fmt.Errorf("operator '%s' does not exist", operatorID)
@@ -86,7 +86,7 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 			return fmt.Errorf("operator '%s' can not process entries", operatorID)
 		}
 
-		outputOperators = append(outputOperators, operator)
+		outputOperators[i] = operator
 	}
 
 	w.OutputOperators = outputOperators

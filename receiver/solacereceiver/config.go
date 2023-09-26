@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -68,8 +69,8 @@ type Authentication struct {
 
 // SaslPlainTextConfig defines SASL PLAIN authentication.
 type SaslPlainTextConfig struct {
-	Username string `mapstructure:"username"`
-	Password string `mapstructure:"password"`
+	Username string              `mapstructure:"username"`
+	Password configopaque.String `mapstructure:"password"`
 }
 
 // SaslXAuth2Config defines the configuration for the SASL XAUTH2 authentication.

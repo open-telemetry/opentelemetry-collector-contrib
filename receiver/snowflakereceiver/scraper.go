@@ -66,7 +66,9 @@ func (s *snowflakeMetricsScraper) scrape(ctx context.Context) (pmetric.Metrics, 
 	s.scrapeSnowpipeMetrics(ctx, now, *errs)
 	s.scrapeStorageMetrics(ctx, now, *errs)
 
-	return s.mb.Emit(metadata.WithSnowflakeAccountName(s.conf.Account)), errs.Combine()
+	rb := s.mb.NewResourceBuilder()
+	rb.SetSnowflakeAccountName(s.conf.Account)
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }
 
 func (s *snowflakeMetricsScraper) scrapeBillingMetrics(ctx context.Context, t pcommon.Timestamp, errs scrapererror.ScrapeErrors) {

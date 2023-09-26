@@ -79,3 +79,20 @@ func TestUnthrottled(t *testing.T) {
 
 	assert.True(t, len(exp.logs) > 100, "there should have been more than 100 logs, had %d", len(exp.logs))
 }
+
+func TestCustomBody(t *testing.T) {
+	cfg := &Config{
+		Body:    "custom body",
+		NumLogs: 1,
+		Config: common.Config{
+			WorkerCount: 1,
+		},
+	}
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	assert.Equal(t, "custom body", exp.logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString())
+}

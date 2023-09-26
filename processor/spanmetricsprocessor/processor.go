@@ -171,7 +171,7 @@ func (p *processorImp) Start(ctx context.Context, host component.Host) error {
 	p.logger.Info("Starting spanmetricsprocessor")
 	exporters := host.GetExporters() //nolint:staticcheck
 
-	var availableMetricsExporters []string
+	availableMetricsExporters := make([]string, 0, len(exporters[component.DataTypeMetrics]))
 
 	// The available list of exporters come from any configured metrics pipelines' exporters.
 	for k, exp := range exporters[component.DataTypeMetrics] {

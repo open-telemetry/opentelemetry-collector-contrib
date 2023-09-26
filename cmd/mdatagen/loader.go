@@ -94,26 +94,6 @@ func (mvt ValueType) Primitive() string {
 	}
 }
 
-func (mvt ValueType) TestValue() string {
-	switch mvt.ValueType {
-	case pcommon.ValueTypeEmpty, pcommon.ValueTypeStr:
-		return `"attr-val"`
-	case pcommon.ValueTypeInt:
-		return "1"
-	case pcommon.ValueTypeDouble:
-		return "1.1"
-	case pcommon.ValueTypeBool:
-		return "true"
-	case pcommon.ValueTypeMap:
-		return `map[string]any{"onek": "onev", "twok": "twov"}`
-	case pcommon.ValueTypeSlice:
-		return `[]any{"one", "two"}`
-	case pcommon.ValueTypeBytes:
-		return ""
-	}
-	return ""
-}
-
 type metric struct {
 	// Enabled defines whether the metric is enabled by default.
 	Enabled bool `mapstructure:"enabled"`
@@ -180,6 +160,41 @@ type attribute struct {
 	Enum []string `mapstructure:"enum"`
 	// Type is an attribute type.
 	Type ValueType `mapstructure:"type"`
+	// FullName is the attribute name populated from the map key.
+	FullName attributeName `mapstructure:"-"`
+}
+
+// Name returns actual name of the attribute that is set on the metric after applying NameOverride.
+func (a attribute) Name() attributeName {
+	if a.NameOverride != "" {
+		return attributeName(a.NameOverride)
+	}
+	return a.FullName
+}
+
+func (a attribute) TestValue() string {
+	if a.Enum != nil {
+		return fmt.Sprintf(`"%s"`, a.Enum[0])
+	}
+	switch a.Type.ValueType {
+	case pcommon.ValueTypeEmpty:
+		return ""
+	case pcommon.ValueTypeStr:
+		return fmt.Sprintf(`"%s-val"`, a.FullName)
+	case pcommon.ValueTypeInt:
+		return fmt.Sprintf("%d", len(a.FullName))
+	case pcommon.ValueTypeDouble:
+		return fmt.Sprintf("%f", 0.1+float64(len(a.FullName)))
+	case pcommon.ValueTypeBool:
+		return fmt.Sprintf("%t", len(a.FullName)%2 == 0)
+	case pcommon.ValueTypeMap:
+		return fmt.Sprintf(`map[string]any{"key1": "%s-val1", "key2": "%s-val2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeSlice:
+		return fmt.Sprintf(`[]any{"%s-item1", "%s-item2"}`, a.FullName, a.FullName)
+	case pcommon.ValueTypeBytes:
+		return fmt.Sprintf(`bytes("%s-val")`, a.FullName)
+	}
+	return ""
 }
 
 type metadata struct {
@@ -201,6 +216,13 @@ type metadata struct {
 	ScopeName string `mapstructure:"-"`
 	// ShortFolderName is the shortened folder name of the component, removing class if present
 	ShortFolderName string `mapstructure:"-"`
+}
+
+func setAttributesFullName(attrs map[attributeName]attribute) {
+	for k, v := range attrs {
+		v.FullName = k
+		attrs[k] = v
+	}
 }
 
 type templateContext struct {
@@ -228,6 +250,9 @@ func loadMetadata(filePath string) (metadata, error) {
 	if err := md.Validate(); err != nil {
 		return md, err
 	}
+
+	setAttributesFullName(md.Attributes)
+	setAttributesFullName(md.ResourceAttributes)
 
 	return md, nil
 }

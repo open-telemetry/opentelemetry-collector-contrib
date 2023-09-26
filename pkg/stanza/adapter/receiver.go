@@ -11,8 +11,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -29,7 +29,7 @@ type receiver struct {
 	consumer  consumer.Logs
 	converter *Converter
 	logger    *zap.Logger
-	obsrecv   *obsreport.Receiver
+	obsrecv   *receiverhelper.ObsReport
 
 	storageID     *component.ID
 	storageClient storage.Client

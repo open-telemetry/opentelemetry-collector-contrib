@@ -2,9 +2,11 @@
 
 package {{ .Package }}
 
+{{- if .Status.Stability }}
 import (
     "go.opentelemetry.io/collector/component"
 )
+{{- end }}
 
 const (
 	Type = "{{ .Type }}"

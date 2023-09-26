@@ -33,8 +33,8 @@ func NewBooleanAttributeFilter(settings component.TelemetrySettings, key string,
 // Evaluate looks at the trace data and returns a corresponding SamplingDecision.
 func (baf *booleanAttributeFilter) Evaluate(_ context.Context, _ pcommon.TraceID, trace *TraceData) (Decision, error) {
 	trace.Lock()
+	defer trace.Unlock()
 	batches := trace.ReceivedBatches
-	trace.Unlock()
 
 	return hasResourceOrSpanWithCondition(
 		batches,

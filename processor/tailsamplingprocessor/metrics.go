@@ -8,7 +8,7 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/obsreport"
+	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
@@ -34,8 +34,8 @@ var (
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
 )
 
-// SamplingProcessorMetricViews return the metrics views according to given telemetry level.
-func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
+// samplingProcessorMetricViews return the metrics views according to given telemetry level.
+func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	if level == configtelemetry.LevelNone {
 		return nil
 	}
@@ -46,34 +46,34 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	ageDistributionAggregation := view.Distribution(1, 2, 5, 10, 20, 30, 40, 50, 60, 90, 120, 180, 300, 600, 1800, 3600, 7200)
 
 	decisionLatencyView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statDecisionLatencyMicroSec.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statDecisionLatencyMicroSec.Name()),
 		Measure:     statDecisionLatencyMicroSec,
 		Description: statDecisionLatencyMicroSec.Description(),
 		TagKeys:     policyTagKeys,
 		Aggregation: latencyDistributionAggregation,
 	}
 	overallDecisionLatencyView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statOverallDecisionLatencyUs.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statOverallDecisionLatencyUs.Name()),
 		Measure:     statOverallDecisionLatencyUs,
 		Description: statOverallDecisionLatencyUs.Description(),
 		Aggregation: latencyDistributionAggregation,
 	}
 
 	traceRemovalAgeView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statTraceRemovalAgeSec.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statTraceRemovalAgeSec.Name()),
 		Measure:     statTraceRemovalAgeSec,
 		Description: statTraceRemovalAgeSec.Description(),
 		Aggregation: ageDistributionAggregation,
 	}
 	lateSpanArrivalView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statLateSpanArrivalAfterDecision.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statLateSpanArrivalAfterDecision.Name()),
 		Measure:     statLateSpanArrivalAfterDecision,
 		Description: statLateSpanArrivalAfterDecision.Description(),
 		Aggregation: ageDistributionAggregation,
 	}
 
 	countPolicyEvaluationErrorView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statPolicyEvaluationErrorCount.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statPolicyEvaluationErrorCount.Name()),
 		Measure:     statPolicyEvaluationErrorCount,
 		Description: statPolicyEvaluationErrorCount.Description(),
 		Aggregation: view.Sum(),
@@ -81,7 +81,7 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 
 	sampledTagKeys := []tag.Key{tagPolicyKey, tagSampledKey}
 	countTracesSampledView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statCountTracesSampled.Name()),
 		Measure:     statCountTracesSampled,
 		Description: statCountTracesSampled.Description(),
 		TagKeys:     sampledTagKeys,
@@ -89,19 +89,19 @@ func SamplingProcessorMetricViews(level configtelemetry.Level) []*view.View {
 	}
 
 	countTraceDroppedTooEarlyView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statDroppedTooEarlyCount.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statDroppedTooEarlyCount.Name()),
 		Measure:     statDroppedTooEarlyCount,
 		Description: statDroppedTooEarlyCount.Description(),
 		Aggregation: view.Sum(),
 	}
 	countTraceIDArrivalView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statNewTraceIDReceivedCount.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statNewTraceIDReceivedCount.Name()),
 		Measure:     statNewTraceIDReceivedCount,
 		Description: statNewTraceIDReceivedCount.Description(),
 		Aggregation: view.Sum(),
 	}
 	trackTracesOnMemorylView := &view.View{
-		Name:        obsreport.BuildProcessorCustomMetricName(metadata.Type, statTracesOnMemoryGauge.Name()),
+		Name:        processorhelper.BuildCustomMetricName(metadata.Type, statTracesOnMemoryGauge.Name()),
 		Measure:     statTracesOnMemoryGauge,
 		Description: statTracesOnMemoryGauge.Description(),
 		Aggregation: view.LastValue(),

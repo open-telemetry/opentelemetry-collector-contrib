@@ -9,22 +9,21 @@ import (
 	"github.com/DataDog/gohai/memory"
 	"github.com/DataDog/gohai/network"
 	"github.com/DataDog/gohai/platform"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/gohai"
 	"go.uber.org/zap"
 )
 
 // NewPayload builds a payload of every metadata collected with gohai except processes metadata.
 // Parts of this are based on datadog-agent code
 // https://github.com/DataDog/datadog-agent/blob/94a28d9cee3f1c886b3866e8208be5b2a8c2c217/pkg/metadata/internal/gohai/gohai.go#L27-L32
-func NewPayload(logger *zap.Logger) Payload {
-	return Payload{
-		Gohai: gohaiMarshaler{
-			gohai: newGohai(logger),
-		},
-	}
+func NewPayload(logger *zap.Logger) gohai.Payload {
+	payload := gohai.NewEmpty()
+	payload.Gohai.Gohai = newGohai(logger)
+	return payload
 }
 
-func newGohai(logger *zap.Logger) *gohai {
-	res := new(gohai)
+func newGohai(logger *zap.Logger) *gohai.Gohai {
+	res := new(gohai.Gohai)
 
 	if p, err := new(cpu.Cpu).Collect(); err != nil {
 		logger.Info("Failed to retrieve cpu metadata", zap.Error(err))

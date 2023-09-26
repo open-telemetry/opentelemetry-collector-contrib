@@ -28,8 +28,8 @@ const (
 var _ internal.Detector = (*Detector)(nil)
 
 type Detector struct {
-	fs                 fileSystem
-	resourceAttributes metadata.ResourceAttributesConfig
+	fs fileSystem
+	rb *metadata.ResourceBuilder
 }
 
 type EbMetaData struct {
@@ -40,11 +40,10 @@ type EbMetaData struct {
 
 func NewDetector(_ processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	return &Detector{fs: &ebFileSystem{}, resourceAttributes: cfg.ResourceAttributes}, nil
+	return &Detector{fs: &ebFileSystem{}, rb: metadata.NewResourceBuilder(cfg.ResourceAttributes)}, nil
 }
 
 func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL string, err error) {
-	res := pcommon.NewResource()
 	var conf io.ReadCloser
 
 	if d.fs.IsWindows() {
@@ -56,7 +55,7 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 	// Do not want to return error so it fails silently on non-EB instances
 	if err != nil {
 		// TODO: Log a more specific message with zap
-		return res, "", nil
+		return pcommon.NewResource(), "", nil
 	}
 
 	ebmd := &EbMetaData{}
@@ -65,24 +64,14 @@ func (d Detector) Detect(context.Context) (resource pcommon.Resource, schemaURL 
 
 	if err != nil {
 		// TODO: Log a more specific error with zap
-		return res, "", err
+		return pcommon.NewResource(), "", err
 	}
 
-	attr := res.Attributes()
-	if d.resourceAttributes.CloudProvider.Enabled {
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	}
-	if d.resourceAttributes.CloudPlatform.Enabled {
-		attr.PutStr(conventions.AttributeCloudPlatform, conventions.AttributeCloudPlatformAWSElasticBeanstalk)
-	}
-	if d.resourceAttributes.ServiceInstanceID.Enabled {
-		attr.PutStr(conventions.AttributeServiceInstanceID, strconv.Itoa(ebmd.DeploymentID))
-	}
-	if d.resourceAttributes.DeploymentEnvironment.Enabled {
-		attr.PutStr(conventions.AttributeDeploymentEnvironment, ebmd.EnvironmentName)
-	}
-	if d.resourceAttributes.ServiceVersion.Enabled {
-		attr.PutStr(conventions.AttributeServiceVersion, ebmd.VersionLabel)
-	}
-	return res, conventions.SchemaURL, nil
+	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
+	d.rb.SetCloudPlatform(conventions.AttributeCloudPlatformAWSElasticBeanstalk)
+	d.rb.SetServiceInstanceID(strconv.Itoa(ebmd.DeploymentID))
+	d.rb.SetDeploymentEnvironment(ebmd.EnvironmentName)
+	d.rb.SetServiceVersion(ebmd.VersionLabel)
+
+	return d.rb.Emit(), conventions.SchemaURL, nil
 }

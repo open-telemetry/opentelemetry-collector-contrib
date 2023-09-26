@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -70,7 +71,9 @@ func TestWatchingTimeouts(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		Timeout:  50 * time.Millisecond,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			Timeout: 50 * time.Millisecond,
+		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)
@@ -86,7 +89,10 @@ func TestWatchingTimeouts(t *testing.T) {
 	err = cli.loadContainerList(context.Background())
 	require.Error(t, err)
 
-	container, err := cli.fetchContainerStats(context.Background(), container{})
+	ctx, fetchCancel := context.WithTimeout(context.Background(), config.Timeout)
+	defer fetchCancel()
+
+	container, err := cli.fetchContainerStats(ctx, container{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expectedError)
 	assert.Empty(t, container)
@@ -118,7 +124,9 @@ func TestEventLoopHandlesError(t *testing.T) {
 	observed, logs := observer.New(zapcore.WarnLevel)
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		Timeout:  50 * time.Millisecond,
+		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			Timeout: 50 * time.Millisecond,
+		},
 	}
 
 	client, err := newLibpodClient(zap.NewNop(), config)

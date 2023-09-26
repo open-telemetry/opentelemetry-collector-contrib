@@ -6,9 +6,11 @@ package deployment
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,13 +19,17 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/testutils"
 )
 
 func TestDeploymentMetrics(t *testing.T) {
 	dep := testutils.NewDeployment("1")
 
-	m := GetMetrics(receivertest.NewNopCreateSettings(), dep)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, dep, ts)
+	m := mb.Emit()
 
 	require.Equal(t, 1, m.ResourceMetrics().Len())
 	require.Equal(t, 2, m.MetricCount())
@@ -50,7 +56,10 @@ func TestDeploymentMetrics(t *testing.T) {
 
 func TestGoldenFile(t *testing.T) {
 	dep := testutils.NewDeployment("1")
-	m := GetMetrics(receivertest.NewNopCreateSettings(), dep)
+	ts := pcommon.Timestamp(time.Now().UnixNano())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	RecordMetrics(mb, dep, ts)
+	m := mb.Emit()
 	expectedFile := filepath.Join("testdata", "expected.yaml")
 	expected, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)

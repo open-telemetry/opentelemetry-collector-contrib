@@ -5,3 +5,5 @@ status:
   stability:
     alpha: [extension]
   distributions: [contrib, sumo]
+  codeowners:
+    active: [dmitryax, atoulme]

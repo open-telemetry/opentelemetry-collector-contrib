@@ -123,7 +123,7 @@ func TestDefaultTranslationRules(t *testing.T) {
 	require.NoError(t, err)
 	data := testMetricsData()
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false)
 	require.NoError(t, err)
 	translated := c.MetricsToSignalFxV2(data)
 	require.NotNil(t, translated)
@@ -493,7 +493,7 @@ func TestHostmetricsCPUTranslations(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
 	require.NoError(t, err)
 
 	md1, err := golden.ReadMetrics(filepath.Join("testdata", "hostmetrics_system_cpu_time_1.yaml"))
@@ -534,7 +534,7 @@ func TestDefaultExcludesTranslated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), testGetTranslator(t), cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -557,7 +557,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.NoError(t, setDefaultExcludes(cfg))
 
-	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "")
+	converter, err := translation.NewMetricsConverter(zap.NewNop(), nil, cfg.ExcludeMetrics, cfg.IncludeMetrics, "", false)
 	require.NoError(t, err)
 
 	var metrics []map[string]string
@@ -577,7 +577,7 @@ func BenchmarkMetricConversion(b *testing.B) {
 	tr, err := translation.NewMetricTranslator(rules, 1)
 	require.NoError(b, err)
 
-	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "")
+	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false)
 	require.NoError(b, err)
 
 	bytes, err := os.ReadFile("testdata/json/hostmetrics.json")

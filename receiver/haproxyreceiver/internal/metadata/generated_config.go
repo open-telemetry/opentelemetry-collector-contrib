@@ -143,15 +143,9 @@ type ResourceAttributeConfig struct {
 
 // ResourceAttributesConfig provides config for haproxy resource attributes.
 type ResourceAttributesConfig struct {
-	HaproxyAddr ResourceAttributeConfig `mapstructure:"haproxy.addr"`
-	HaproxyAlgo ResourceAttributeConfig `mapstructure:"haproxy.algo"`
-	HaproxyIid  ResourceAttributeConfig `mapstructure:"haproxy.iid"`
-	HaproxyPid  ResourceAttributeConfig `mapstructure:"haproxy.pid"`
-	HaproxySid  ResourceAttributeConfig `mapstructure:"haproxy.sid"`
-	HaproxyType ResourceAttributeConfig `mapstructure:"haproxy.type"`
-	HaproxyURL  ResourceAttributeConfig `mapstructure:"haproxy.url"`
-	ProxyName   ResourceAttributeConfig `mapstructure:"proxy_name"`
-	ServiceName ResourceAttributeConfig `mapstructure:"service_name"`
+	HaproxyAddr        ResourceAttributeConfig `mapstructure:"haproxy.addr"`
+	HaproxyProxyName   ResourceAttributeConfig `mapstructure:"haproxy.proxy_name"`
+	HaproxyServiceName ResourceAttributeConfig `mapstructure:"haproxy.service_name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -159,29 +153,11 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		HaproxyAddr: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyAlgo: ResourceAttributeConfig{
+		HaproxyProxyName: ResourceAttributeConfig{
 			Enabled: true,
 		},
-		HaproxyIid: ResourceAttributeConfig{
+		HaproxyServiceName: ResourceAttributeConfig{
 			Enabled: true,
-		},
-		HaproxyPid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxySid: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyType: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		HaproxyURL: ResourceAttributeConfig{
-			Enabled: true,
-		},
-		ProxyName: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		ServiceName: ResourceAttributeConfig{
-			Enabled: false,
 		},
 	}
 }

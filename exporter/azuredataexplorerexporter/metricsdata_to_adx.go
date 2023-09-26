@@ -81,6 +81,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			ResourceAttributes: resourceAttrs,
 		}
 	}
+	//exhaustive:enforce
 	switch md.Type() {
 	case pmetric.MetricTypeGauge:
 		dataPoints := md.Gauge().DataPoints()
@@ -230,7 +231,7 @@ func mapToAdxMetric(res pcommon.Resource, md pmetric.Metric, scopeattrs map[stri
 			}
 		}
 		return adxMetrics
-	case pmetric.MetricTypeEmpty:
+	case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeEmpty:
 		fallthrough
 	default:
 		logger.Warn(

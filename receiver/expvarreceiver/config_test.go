@@ -43,6 +43,7 @@ func TestLoadConfig(t *testing.T) {
 				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
+					Timeout:            time.Second * 5,
 				},
 				HTTPClientSettings: confighttp.HTTPClientSettings{
 					Endpoint: "http://localhost:8000/custom/path",

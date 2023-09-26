@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
@@ -28,7 +28,7 @@ type k8seventsReceiver struct {
 	startTime       time.Time
 	ctx             context.Context
 	cancel          context.CancelFunc
-	obsrecv         *obsreport.Receiver
+	obsrecv         *receiverhelper.ObsReport
 }
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
@@ -40,7 +40,7 @@ func newReceiver(
 ) (receiver.Logs, error) {
 	transport := "http"
 
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              transport,
 		ReceiverCreateSettings: set,
