@@ -105,7 +105,7 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				documentsForSpan, localErr := translator.MakeSegmentDocumentStrings(
+				documentsForSpan, localErr := translator.MakeSegmentDocuments(
 					spans.At(k), resource,
 					config.(*Config).IndexedAttributes,
 					config.(*Config).IndexAllAttributes,
