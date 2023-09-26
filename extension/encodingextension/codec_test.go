@@ -43,11 +43,11 @@ func (m MyCodecExtension) GetTraceCodec() (Trace, error) {
 	return nil, errors.New("unsupported")
 }
 
-func (m MyCodecExtension) Start(ctx context.Context, host component.Host) error {
+func (m MyCodecExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (m MyCodecExtension) Shutdown(ctx context.Context) error {
+func (m MyCodecExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -55,10 +55,10 @@ type mockHost struct {
 	extensions map[component.ID]component.Component
 }
 
-func (m *mockHost) ReportFatalError(err error) {
+func (m *mockHost) ReportFatalError(_ error) {
 }
 
-func (m *mockHost) GetFactory(kind component.Kind, componentType component.Type) component.Factory {
+func (m *mockHost) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	panic("implement me")
 }
 
