@@ -8,6 +8,12 @@ status:
   codeowners:
     active: [dmitryax]
 
+resource_attributes:
+  runtime.metrics.kafka:
+    type: string
+    description: Flag for kafka metrics
+    enabled: true
+
 attributes:
   topic:
     description: The ID (integer) of a topic

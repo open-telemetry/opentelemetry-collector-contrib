@@ -23,6 +23,9 @@ all_set:
       enabled: true
     kafka.topic.partitions:
       enabled: true
+  resource_attributes:
+    runtime.metrics.kafka:
+      enabled: true
 none_set:
   metrics:
     kafka.brokers:
@@ -46,4 +49,7 @@ none_set:
     kafka.partition.replicas_in_sync:
       enabled: false
     kafka.topic.partitions:
+      enabled: false
+  resource_attributes:
+    runtime.metrics.kafka:
       enabled: false
