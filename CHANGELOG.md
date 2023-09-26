@@ -51,6 +51,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 - `cloudflarereceiver`: Make TLS config optional for cloudflarereceiver (#26562)
 - `receiver/awscontainerinsightsreceiver`: Remove the need to set an env var in the receiver to get CPU and memory info (#24777)
 - `awsxrayexporter`: Change `exporter.awsxray.skiptimestampvalidation` feature gate from Alpha to Beta (#26553)
+- `processor/k8sattributes`: allow metadata extractions to be set to empty list (#14452)
 
 ### 🧰 Bug fixes 🧰
 
