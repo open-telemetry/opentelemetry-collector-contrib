@@ -53,10 +53,6 @@ func (s *scraper) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (s *scraper) recordMemoryLimitMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
-	s.mb.RecordSystemMemoryLimitDataPoint(now, int64(memInfo.Total))
-}
-
 func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	ctx = context.WithValue(ctx, common.EnvKey, s.envMap)
 
@@ -73,7 +69,6 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				memInfo.Total), metricsLen)
 		}
 		s.recordMemoryUtilizationMetric(now, memInfo)
-		s.recordMemoryLimitMetric(now, memInfo)
 	}
 
 	return s.mb.Emit(), nil

@@ -17,6 +17,7 @@ type AttributeState int
 
 const (
 	_ AttributeState = iota
+	AttributeStateTotal
 	AttributeStateBuffered
 	AttributeStateCached
 	AttributeStateInactive
@@ -29,6 +30,8 @@ const (
 // String returns the string representation of the AttributeState.
 func (av AttributeState) String() string {
 	switch av {
+	case AttributeStateTotal:
+		return "total"
 	case AttributeStateBuffered:
 		return "buffered"
 	case AttributeStateCached:
@@ -49,6 +52,7 @@ func (av AttributeState) String() string {
 
 // MapAttributeState is a helper map of string to AttributeState attribute value.
 var MapAttributeState = map[string]AttributeState{
+	"total":              AttributeStateTotal,
 	"buffered":           AttributeStateBuffered,
 	"cached":             AttributeStateCached,
 	"inactive":           AttributeStateInactive,
@@ -56,57 +60,6 @@ var MapAttributeState = map[string]AttributeState{
 	"slab_reclaimable":   AttributeStateSlabReclaimable,
 	"slab_unreclaimable": AttributeStateSlabUnreclaimable,
 	"used":               AttributeStateUsed,
-}
-
-type metricSystemMemoryLimit struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills system.memory.limit metric with initial data.
-func (m *metricSystemMemoryLimit) init() {
-	m.data.SetName("system.memory.limit")
-	m.data.SetDescription("Total bytes of memory available.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricSystemMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemMemoryLimit) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemMemoryLimit) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
-	m := metricSystemMemoryLimit{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
 }
 
 type metricSystemMemoryUsage struct {
@@ -221,7 +174,6 @@ type MetricsBuilder struct {
 	metricsCapacity               int                  // maximum observed number of metrics per resource.
 	metricsBuffer                 pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                     component.BuildInfo  // contains version information.
-	metricSystemMemoryLimit       metricSystemMemoryLimit
 	metricSystemMemoryUsage       metricSystemMemoryUsage
 	metricSystemMemoryUtilization metricSystemMemoryUtilization
 }
@@ -242,7 +194,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		startTime:                     pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                 pmetric.NewMetrics(),
 		buildInfo:                     settings.BuildInfo,
-		metricSystemMemoryLimit:       newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
 		metricSystemMemoryUsage:       newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
 		metricSystemMemoryUtilization: newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
@@ -302,7 +253,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetName("otelcol/hostmetricsreceiver/memory")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
-	mb.metricSystemMemoryLimit.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryUtilization.emit(ils.Metrics())
 
@@ -323,11 +273,6 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	metrics := mb.metricsBuffer
 	mb.metricsBuffer = pmetric.NewMetrics()
 	return metrics
-}
-
-// RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.
-func (mb *MetricsBuilder) RecordSystemMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemMemoryLimit.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.

@@ -14,14 +14,6 @@ metrics:
     enabled: false
 ```
 
-### system.memory.limit
-
-Total bytes of memory available.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### system.memory.usage
 
 Bytes of memory in use.
@@ -34,7 +26,7 @@ Bytes of memory in use.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| state | Breakdown of memory usage by type. | Str: ``total``, ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
 
 ## Optional Metrics
 
@@ -58,4 +50,4 @@ Percentage of memory bytes in use.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| state | Breakdown of memory usage by type. | Str: ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |
+| state | Breakdown of memory usage by type. | Str: ``total``, ``buffered``, ``cached``, ``inactive``, ``free``, ``slab_reclaimable``, ``slab_unreclaimable``, ``used`` |

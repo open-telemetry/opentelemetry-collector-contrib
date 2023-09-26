@@ -14,6 +14,7 @@ import (
 )
 
 func (s *scraper) recordMemoryUsageMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Total), metadata.AttributeStateTotal)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Used), metadata.AttributeStateUsed)
 	s.mb.RecordSystemMemoryUsageDataPoint(now, int64(memInfo.Free), metadata.AttributeStateFree)
 }
