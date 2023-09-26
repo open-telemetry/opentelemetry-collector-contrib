@@ -51,16 +51,19 @@ func TestFixedNumberOfMetrics(t *testing.T) {
 		MetricType: metricTypeSum,
 	}
 
-	exp := &mockExporter{}
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
 	time.Sleep(1 * time.Second)
 
 	// verify
-	require.Len(t, exp.rms, 5)
+	require.Len(t, m.rms, 5)
 }
 
 func TestRateOfMetrics(t *testing.T) {
@@ -72,16 +75,20 @@ func TestRateOfMetrics(t *testing.T) {
 		},
 		MetricType: metricTypeSum,
 	}
-	exp := &mockExporter{}
+
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+		return m, nil
+	}
 
 	// test
-	require.NoError(t, Run(cfg, exp, zap.NewNop()))
+	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
 
 	// verify
 	// the minimum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(exp.rms) >= 6, "there should have been more than 6 metrics, had %d", len(exp.rms))
-	// the maximum acceptable number of metrics for the rate of 10/sec for half a second
-	assert.True(t, len(exp.rms) <= 20, "there should have been less than 20 metrics, had %d", len(exp.rms))
+	assert.True(t, len(m.rms) >= 6, "there should have been more than 6 metrics, had %d", len(m.rms))
+	// // the maximum acceptable number of metrics for the rate of 10/sec for half a second
+	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
 func TestUnthrottled(t *testing.T) {
@@ -92,11 +99,16 @@ func TestUnthrottled(t *testing.T) {
 		},
 		MetricType: metricTypeSum,
 	}
-	exp := &mockExporter{}
+
+	m := &mockExporter{}
+	expFunc := func() (sdkmetric.Exporter, error) {
+
+		return m, nil
+	}
 
 	// test
 	logger, _ := zap.NewDevelopment()
-	require.NoError(t, Run(cfg, exp, logger))
+	require.NoError(t, Run(cfg, expFunc, logger))
 
-	assert.True(t, len(exp.rms) > 100, "there should have been more than 100 metrics, had %d", len(exp.rms))
+	assert.True(t, len(m.rms) > 100, "there should have been more than 100 metrics, had %d", len(m.rms))
 }
