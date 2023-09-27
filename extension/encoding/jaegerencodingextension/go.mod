@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/jaeger
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
 
 go 1.20
 
