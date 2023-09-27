@@ -28,3 +28,12 @@ metrics:
     gauge:
       value_type: double
     attributes: [state]
+
+  system.linux.memory.available:
+    enabled: false
+    description: Linux-specific more accurate alternative to system.memory.usage with state=free
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
