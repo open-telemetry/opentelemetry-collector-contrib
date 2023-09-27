@@ -132,6 +132,7 @@ receivers:
   kubeletstats:
     collection_interval: 20s
     auth_type: "kubeConfig"
+    context: "my-context"
     insecure_skip_verify: true
     endpoint: "${env:K8S_NODE_NAME}"
 exporters:
@@ -145,6 +146,7 @@ service:
 ```
 Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
 `insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
+If no `context` is specified, the current context or the default context is used.
 
 ### Extra metadata labels
 
