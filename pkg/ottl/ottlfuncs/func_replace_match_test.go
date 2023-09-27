@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -31,6 +32,7 @@ func Test_replaceMatch(t *testing.T) {
 		target      ottl.GetSetter[pcommon.Value]
 		pattern     string
 		replacement ottl.StringGetter[pcommon.Value]
+		function    ottl.Optional[ottl.FunctionGetter[pcommon.Value]]
 		want        func(pcommon.Value)
 	}{
 		{
@@ -42,8 +44,17 @@ func Test_replaceMatch(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
+				Val: ottl.StandardFunctionGetter[pcommon.Value]{
+					FCtx: ottl.FunctionContext{
+						Set: componenttest.NewNopTelemetrySettings(),
+					},
+					Fact: StandardConverters[pcommon.Value]()["SHA256"],
+				},
+				HasValue: true,
+			},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("hello {universe}")
+				expectedValue.SetStr("4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
 			},
 		},
 		{
@@ -55,6 +66,9 @@ func Test_replaceMatch(t *testing.T) {
 					return "goodbye {universe}", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
+				HasValue: false,
+			},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello world")
 			},
@@ -64,7 +78,7 @@ func Test_replaceMatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			scenarioValue := pcommon.NewValueStr(input.Str())
 
-			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement)
+			exprFunc, err := replaceMatch(tt.target, tt.pattern, tt.replacement, tt.function)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, scenarioValue)
 			assert.NoError(t, err)
@@ -94,8 +108,11 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 			return "{replacement}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
-	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, input)
@@ -120,8 +137,11 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
-	exprFunc, err := replaceMatch[interface{}](target, "*", replacement)
+	exprFunc, err := replaceMatch[interface{}](target, "*", replacement, function)
 	assert.NoError(t, err)
 
 	result, err := exprFunc(nil, nil)

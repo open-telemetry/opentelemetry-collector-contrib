@@ -38,6 +38,8 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 
 func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	var replacementVal string
+	var replacementExpr ottl.Expr[K]
+	var replacementValRaw interface{}
 	compiledPattern, err := regexp.Compile(regexPattern)
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_pattern is not a valid pattern: %w", err)
@@ -54,11 +56,11 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 			}
 		} else {
 			fnVal := fn.Get()
-			replacementExpr, err := fnVal.Get(&FuncArgs[K]{Input: replacement})
+			replacementExpr, err = fnVal.Get(&FuncArgs[K]{Input: replacement})
 			if err != nil {
 				return nil, err
 			}
-			replacementValRaw, err := replacementExpr.Eval(ctx, tCtx)
+			replacementValRaw, err = replacementExpr.Eval(ctx, tCtx)
 			if err != nil {
 				return nil, err
 			}
