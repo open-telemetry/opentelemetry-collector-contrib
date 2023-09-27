@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package jaegerencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension/jaeger"
+package jaegerencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension"
 import (
 	"context"
 
