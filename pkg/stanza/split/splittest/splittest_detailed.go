@@ -109,3 +109,12 @@ func New(splitFunc bufio.SplitFunc, input []byte, steps ...Step) func(*testing.T
 func needMoreData(advance int, token []byte, err error) bool {
 	return advance == 0 && token == nil && err == nil
 }
+
+// ScanLinesStrict behaves like bufio.ScanLines except EOF is not considered a line ending.
+func ScanLinesStrict(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	advance, token, err = bufio.ScanLines(data, atEOF)
+	if advance == len(token) {
+		return 0, nil, nil
+	}
+	return
+}
