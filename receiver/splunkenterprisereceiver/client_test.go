@@ -86,7 +86,7 @@ func TestClientCreateRequest(t *testing.T) {
 	// create a client from an example config
 	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
 
-    require.NoError(t, err)
+	require.NoError(t, err)
 
 	testJobID := "123"
 
@@ -168,13 +168,13 @@ func TestAPIRequestCreate(t *testing.T) {
 	// create a client from an example config
 	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
 
-    require.NoError(t, err)
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	req, err := client.createAPIRequest(ctx, "/test/endpoint")
 	require.NoError(t, err)
 
-    // build the expected request
+	// build the expected request
 	expectedURL := client.endpoint.String() + "/test/endpoint"
 	expected, _ := http.NewRequest(http.MethodGet, expectedURL, nil)
 
