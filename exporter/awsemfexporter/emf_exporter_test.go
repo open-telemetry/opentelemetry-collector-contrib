@@ -354,7 +354,7 @@ func TestIsEnhancedContainerInsights(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.EnhancedContainerInsights = true
 	cfg.DisableMetricExtraction = false
-	assert.True(t, isEnhancedContainerInsights(cfg))
+	assert.False(t, isEnhancedContainerInsights(cfg))
 	cfg.EnhancedContainerInsights = false
 	assert.False(t, isEnhancedContainerInsights(cfg))
 	cfg.EnhancedContainerInsights = true
