@@ -18,7 +18,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	switch c.Protocol {
-	case protobuf:
+	case JaegerProtocolProtobuf:
 	default:
 		return fmt.Errorf("invalid protocol %q", c.Protocol)
 	}

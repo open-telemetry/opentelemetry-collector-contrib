@@ -12,6 +12,6 @@ import (
 func TestValidate(t *testing.T) {
 	c := &Config{}
 	assert.Error(t, c.Validate(), "ex")
-	c.Protocol = protobuf
+	c.Protocol = JaegerProtocolProtobuf
 	assert.NoError(t, c.Validate())
 }

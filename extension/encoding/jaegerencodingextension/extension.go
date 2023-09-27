@@ -24,7 +24,7 @@ func (e *jaegerExtension) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 func (e *jaegerExtension) Start(_ context.Context, _ component.Host) error {
 	switch e.config.Protocol {
-	case protobuf:
+	case JaegerProtocolProtobuf:
 		e.unmarshaler = jaegerProtobufTrace{}
 	default:
 		return fmt.Errorf("unsupported protocol: %s", e.config.Protocol)
