@@ -79,7 +79,6 @@ receivers:
 processors:
 
 exporters:
-  logging:
   loadbalancing:
     routing_key: "service"
     protocol:
@@ -122,7 +121,6 @@ receivers:
 processors:
 
 exporters:
-  logging:
   loadbalancing:
     routing_key: "service"
     protocol:
@@ -181,7 +179,7 @@ receivers:
 processors:
 
 exporters:
-  logging:
+  debug:
   loadbalancing:
     protocol:
       otlp:
@@ -210,28 +208,28 @@ service:
         - otlp/backend-1
       processors: []
       exporters:
-        - logging
+        - debug
 
     traces/backend-2:
       receivers:
         - otlp/backend-2
       processors: []
       exporters:
-        - logging
+        - debug
 
     traces/backend-3:
       receivers:
         - otlp/backend-3
       processors: []
       exporters:
-        - logging
+        - debug
 
     traces/backend-4:
       receivers:
         - otlp/backend-4
       processors: []
       exporters:
-        - logging
+        - debug
 
     logs/loadbalancer:
       receivers:
@@ -244,25 +242,25 @@ service:
         - otlp/backend-1
       processors: []
       exporters:
-        - logging
+        - debug
     logs/backend-2:
       receivers:
         - otlp/backend-2
       processors: []
       exporters:
-        - logging
+        - debug
     logs/backend-3:
       receivers:
         - otlp/backend-3
       processors: []
       exporters:
-        - logging
+        - debug
     logs/backend-4:
       receivers:
         - otlp/backend-4
       processors: []
       exporters:
-        - logging
+        - debug
 ```
 
 ## Metrics
