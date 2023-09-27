@@ -372,7 +372,7 @@ type metricRedisCmdLatency struct {
 func (m *metricRedisCmdLatency) init() {
 	m.data.SetName("redis.cmd.latency")
 	m.data.SetDescription("Command execution latency")
-	m.data.SetUnit("us")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }

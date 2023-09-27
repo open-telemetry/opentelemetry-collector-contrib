@@ -47,18 +47,20 @@ func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.
 		id:       params.ID,
 	}
 
-	tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	s := &http.Server{
-		TLSConfig:         tlsConfig,
+	recv.server = &http.Server{
 		Handler:           http.HandlerFunc(recv.handleRequest),
 		ReadHeaderTimeout: 20 * time.Second,
 	}
 
-	recv.server = s
+	if recv.cfg.TLS != nil {
+		tlsConfig, err := recv.cfg.TLS.LoadTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+
+		recv.server.TLSConfig = tlsConfig
+	}
+
 	return recv, nil
 }
 
@@ -93,18 +95,34 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 	go func() {
 		defer l.wg.Done()
 
-		l.logger.Debug("Starting ServeTLS",
-			zap.String("address", l.cfg.Endpoint),
-			zap.String("certfile", l.cfg.TLS.CertFile),
-			zap.String("keyfile", l.cfg.TLS.KeyFile))
+		if l.cfg.TLS != nil {
+			l.logger.Debug("Starting ServeTLS",
+				zap.String("address", l.cfg.Endpoint),
+				zap.String("certfile", l.cfg.TLS.CertFile),
+				zap.String("keyfile", l.cfg.TLS.KeyFile))
 
-		err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
+			err := l.server.ServeTLS(listener, l.cfg.TLS.CertFile, l.cfg.TLS.KeyFile)
 
-		l.logger.Debug("Serve TLS done")
+			l.logger.Debug("ServeTLS done")
 
-		if err != http.ErrServerClosed {
-			l.logger.Error("ServeTLS failed", zap.Error(err))
-			host.ReportFatalError(err)
+			if err != http.ErrServerClosed {
+				l.logger.Error("ServeTLS failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
+		} else {
+			l.logger.Debug("Starting Serve",
+				zap.String("address", l.cfg.Endpoint))
+
+			err := l.server.Serve(listener)
+
+			l.logger.Debug("Serve done")
+
+			if err != http.ErrServerClosed {
+				l.logger.Error("Serve failed", zap.Error(err))
+				host.ReportFatalError(err)
+			}
+
 		}
 	}()
 	return nil

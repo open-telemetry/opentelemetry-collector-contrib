@@ -122,12 +122,11 @@ This is not a common pattern, and we recommend copying the most common resource 
 processor:
   transform:
     metric_statements:
-      - context: metric
+      - context: datapoint
         statements:
-        - set(attributes["namespace"], resource.attributes["k8s_namespace_name"])
+        - set(attributes["namespace"], resource.attributes["k8s.namespace.name"])
         - set(attributes["container"], resource.attributes["k8s.container.name"])
         - set(attributes["pod"], resource.attributes["k8s.pod.name"])
-        - set(attributes["cluster"], resource.attributes["k8s.cluster.name"])
 ```
 
 After this, grouping or selecting becomes as simple as:
