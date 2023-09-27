@@ -10,6 +10,10 @@ on:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
+
+  # Do not merge, just for manual runs of this workflow
+  workflow_dispatch:
+
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # Make sure to exit early if cache segment download times out after 2 minutes.
