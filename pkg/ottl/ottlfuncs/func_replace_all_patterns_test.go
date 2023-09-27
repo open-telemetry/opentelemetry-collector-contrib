@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -35,6 +36,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 		mode        string
 		pattern     string
 		replacement ottl.StringGetter[pcommon.Map]
+		function    ottl.Optional[ottl.FunctionGetter[pcommon.Map]]
 		want        func(pcommon.Map)
 	}{
 		{
@@ -47,9 +49,18 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				Val: ottl.StandardFunctionGetter[pcommon.Map]{
+					FCtx: ottl.FunctionContext{
+						Set: componenttest.NewNopTelemetrySettings(),
+					},
+					Fact: StandardConverters[pcommon.Map]()["SHA256"],
+				},
+				HasValue: true,
+			},
 			want: func(expectedMap pcommon.Map) {
-				expectedMap.PutStr("test", "hello {universe} world")
-				expectedMap.PutStr("test2", "hello {universe}")
+				expectedMap.PutStr("test", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad world")
+				expectedMap.PutStr("test2", "4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
 				expectedMap.PutStr("test3", "goodbye world1 and world2")
 				expectedMap.PutInt("test4", 1234)
 				expectedMap.PutDouble("test5", 1234)
@@ -65,6 +76,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
 					return "nothing {matches}", nil
 				},
+			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
 			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
@@ -85,6 +99,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "**** ", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello **** ")
 				expectedMap.PutStr("test2", "hello")
@@ -103,6 +120,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
 					return "foo", nil
 				},
+			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
 			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
@@ -124,6 +144,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "nothing {matches}", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -144,6 +167,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "test.", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test.", "hello world")
@@ -163,6 +189,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 				Getter: func(context.Context, pcommon.Map) (interface{}, error) {
 					return "world-$1", nil
 				},
+			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
 			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
@@ -203,6 +232,9 @@ func Test_replaceAllPatterns(t *testing.T) {
 					return "$$world-$1", nil
 				},
 			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Map]]{
+				HasValue: false,
+			},
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.Clear()
 				expectedMap.PutStr("test", "hello world")
@@ -219,7 +251,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := replaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement)
+			exprFunc, err := replaceAllPatterns[pcommon.Map](tt.target, tt.mode, tt.pattern, tt.replacement, tt.function)
 			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
@@ -246,8 +278,11 @@ func Test_replaceAllPatterns_bad_input(t *testing.T) {
 			return "{replacement}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexpattern", replacement)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexpattern", replacement, function)
 	assert.Nil(t, err)
 
 	_, err = exprFunc(nil, input)
@@ -265,8 +300,11 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, "regexp", replacement, function)
 	assert.NoError(t, err)
 
 	_, err = exprFunc(nil, nil)
@@ -285,9 +323,12 @@ func Test_replaceAllPatterns_invalid_pattern(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
 	invalidRegexPattern := "*"
-	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, invalidRegexPattern, replacement)
+	exprFunc, err := replaceAllPatterns[interface{}](target, modeValue, invalidRegexPattern, replacement, function)
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "error parsing regexp:")
 	assert.Nil(t, exprFunc)
@@ -305,9 +346,12 @@ func Test_replaceAllPatterns_invalid_model(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
+		HasValue: false,
+	}
 
 	invalidMode := "invalid"
-	exprFunc, err := replaceAllPatterns[interface{}](target, invalidMode, "regex", replacement)
+	exprFunc, err := replaceAllPatterns[interface{}](target, invalidMode, "regex", replacement, function)
 	assert.Nil(t, exprFunc)
 	assert.Contains(t, err.Error(), "invalid mode")
 }

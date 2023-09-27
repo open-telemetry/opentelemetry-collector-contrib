@@ -68,12 +68,6 @@ func Test_replacePattern(t *testing.T) {
 				},
 			},
 			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				Val: ottl.StandardFunctionGetter[pcommon.Value]{
-					FCtx: ottl.FunctionContext{
-						Set: componenttest.NewNopTelemetrySettings(),
-					},
-					Fact: StandardConverters[pcommon.Value]()["SHA256"],
-				},
 				HasValue: false,
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -90,12 +84,6 @@ func Test_replacePattern(t *testing.T) {
 				},
 			},
 			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				Val: ottl.StandardFunctionGetter[pcommon.Value]{
-					FCtx: ottl.FunctionContext{
-						Set: componenttest.NewNopTelemetrySettings(),
-					},
-					Fact: StandardConverters[pcommon.Value]()["SHA256"],
-				},
 				HasValue: false,
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -112,12 +100,6 @@ func Test_replacePattern(t *testing.T) {
 				},
 			},
 			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				Val: ottl.StandardFunctionGetter[pcommon.Value]{
-					FCtx: ottl.FunctionContext{
-						Set: componenttest.NewNopTelemetrySettings(),
-					},
-					Fact: StandardConverters[pcommon.Value]()["SHA256"],
-				},
 				HasValue: false,
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -134,12 +116,6 @@ func Test_replacePattern(t *testing.T) {
 				},
 			},
 			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				Val: ottl.StandardFunctionGetter[pcommon.Value]{
-					FCtx: ottl.FunctionContext{
-						Set: componenttest.NewNopTelemetrySettings(),
-					},
-					Fact: StandardConverters[pcommon.Value]()["SHA256"],
-				},
 				HasValue: false,
 			},
 			want: func(expectedValue pcommon.Value) {
@@ -182,12 +158,6 @@ func Test_replacePattern_bad_input(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
-		Val: ottl.StandardFunctionGetter[interface{}]{
-			FCtx: ottl.FunctionContext{
-				Set: componenttest.NewNopTelemetrySettings(),
-			},
-			Fact: StandardConverters[interface{}]()["SHA256"],
-		},
 		HasValue: false,
 	}
 
@@ -216,12 +186,6 @@ func Test_replacePattern_get_nil(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
-		Val: ottl.StandardFunctionGetter[interface{}]{
-			FCtx: ottl.FunctionContext{
-				Set: componenttest.NewNopTelemetrySettings(),
-			},
-			Fact: StandardConverters[interface{}]()["SHA256"],
-		},
 		HasValue: false,
 	}
 
@@ -250,12 +214,6 @@ func Test_replacePatterns_invalid_pattern(t *testing.T) {
 		},
 	}
 	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
-		Val: ottl.StandardFunctionGetter[interface{}]{
-			FCtx: ottl.FunctionContext{
-				Set: componenttest.NewNopTelemetrySettings(),
-			},
-			Fact: StandardConverters[interface{}]()["SHA256"],
-		},
 		HasValue: false,
 	}
 

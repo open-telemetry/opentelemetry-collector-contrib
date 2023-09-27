@@ -23,6 +23,7 @@ type ReplaceAllPatternsArguments[K any] struct {
 	Mode         string
 	RegexPattern string
 	Replacement  ottl.StringGetter[K]
+	Function     ottl.Optional[ottl.FunctionGetter[K]]
 }
 
 func NewReplaceAllPatternsFactory[K any]() ottl.Factory[K] {
@@ -36,11 +37,14 @@ func createReplaceAllPatternsFunction[K any](_ ottl.FunctionContext, oArgs ottl.
 		return nil, fmt.Errorf("ReplaceAllPatternsFactory args must be of type *ReplaceAllPatternsArguments[K]")
 	}
 
-	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement)
+	return replaceAllPatterns(args.Target, args.Mode, args.RegexPattern, args.Replacement, args.Function)
 }
 
-func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]]) (ottl.ExprFunc[K], error) {
 	compiledPattern, err := regexp.Compile(regexPattern)
+	var replacementVal string
+	var replacementExpr ottl.Expr[K]
+	var replacementValRaw interface{}
 	if err != nil {
 		return nil, fmt.Errorf("the regex pattern supplied to replace_all_patterns is not a valid pattern: %w", err)
 	}
@@ -53,9 +57,22 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 		if err != nil {
 			return nil, err
 		}
-		replacementVal, err := replacement.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
+		if fn.IsEmpty() {
+			replacementVal, err = replacement.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			fnVal := fn.Get()
+			replacementExpr, err = fnVal.Get(&FuncArgs[K]{Input: replacement})
+			if err != nil {
+				return nil, err
+			}
+			replacementValRaw, err = replacementExpr.Eval(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			replacementVal = replacementValRaw.(string)
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(val.Len())

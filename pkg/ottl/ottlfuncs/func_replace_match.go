@@ -46,7 +46,6 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement o
 		if err != nil {
 			return nil, err
 		}
-		//replacementVal, err := replacement.Get(ctx, tCtx)
 		if fn.IsEmpty() {
 			replacementVal, err = replacement.Get(ctx, tCtx)
 			if err != nil {
