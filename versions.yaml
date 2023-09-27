@@ -69,7 +69,8 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
-      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder
@@ -108,7 +109,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/codec
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
