@@ -65,7 +65,7 @@ BUILD_TYPE?=release
 
 # The "sed" transformation below is needed since, on Windows, "go list -f '{{ .Dir }}'" returns Windows paths,
 # and such paths are incompatible with other *nix tools, like "find", used by the Makefile shell. 
-ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sed -e 's/^/\//' -e 's/\\/\//g' -e 's/://' | sort)
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sed -e 's/^/\//' -e 's/\\/\//g' -e 's/:\//' | sort)
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
