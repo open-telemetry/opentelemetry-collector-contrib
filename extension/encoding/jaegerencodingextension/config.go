@@ -9,7 +9,7 @@ import (
 type JaegerProtocol string
 
 const (
-	protobuf = JaegerProtocol("protobuf")
+	JaegerProtocolProtobuf JaegerProtocol = "protobuf"
 )
 
 type Config struct {
