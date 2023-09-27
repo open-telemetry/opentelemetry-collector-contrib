@@ -27,5 +27,5 @@ func createExtension(_ context.Context, _ extension.CreateSettings, config compo
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{Protocol: "utf8"}
+	return &Config{Protocol: protobuf}
 }
