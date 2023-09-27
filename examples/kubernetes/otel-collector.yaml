@@ -113,14 +113,14 @@ data:
           - from: connection
 
     exporters:
-      logging:
-        loglevel: debug
+      debug:
+        verbosity: detailed
     service:
       pipelines:
         logs:
           receivers: [filelog]
           processors: [k8sattributes]
-          exporters: [logging]
+          exporters: [debug]
 
 ---
 apiVersion: apps/v1

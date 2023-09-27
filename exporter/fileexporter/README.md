@@ -125,7 +125,7 @@ spec:
     processors:
 
     exporters:
-      logging:
+      debug:
       file:
         path: /data/metrics.json
 
@@ -134,7 +134,7 @@ spec:
         metrics:
           receivers: [otlp]
           processors: []
-          exporters: [logging,file]
+          exporters: [debug,file]
   volumes:
     - name: file
       emptyDir: {}
