@@ -381,25 +381,25 @@ type optionalManager interface {
 }
 
 type Optional[T any] struct {
-	Val      T
-	HasValue bool
+	val      T
+	hasValue bool
 }
 
 // This is called only by reflection.
 // nolint:unused
 func (o Optional[T]) set(val any) reflect.Value {
 	return reflect.ValueOf(Optional[T]{
-		Val:      val.(T),
-		HasValue: true,
+		val:      val.(T),
+		hasValue: true,
 	})
 }
 
 func (o Optional[T]) IsEmpty() bool {
-	return !o.HasValue
+	return !o.hasValue
 }
 
 func (o Optional[T]) Get() T {
-	return o.Val
+	return o.val
 }
 
 func (o Optional[T]) get() reflect.Value {
@@ -414,7 +414,7 @@ func (o Optional[T]) get() reflect.Value {
 // OTTL functions.
 func NewTestingOptional[T any](val T) Optional[T] {
 	return Optional[T]{
-		Val:      val,
-		HasValue: true,
+		val:      val,
+		hasValue: true,
 	}
 }

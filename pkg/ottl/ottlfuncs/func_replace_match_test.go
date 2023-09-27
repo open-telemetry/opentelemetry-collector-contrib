@@ -16,7 +16,13 @@ import (
 
 func Test_replaceMatch(t *testing.T) {
 	input := pcommon.NewValueStr("hello world")
-
+	ottlValue := ottl.StandardFunctionGetter[pcommon.Value]{
+		FCtx: ottl.FunctionContext{
+			Set: componenttest.NewNopTelemetrySettings(),
+		},
+		Fact: StandardConverters[pcommon.Value]()["SHA256"],
+	}
+	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Value]](ottlValue)
 	target := &ottl.StandardGetSetter[pcommon.Value]{
 		Getter: func(ctx context.Context, tCtx pcommon.Value) (interface{}, error) {
 			return tCtx.Str(), nil
@@ -36,6 +42,20 @@ func Test_replaceMatch(t *testing.T) {
 		want        func(pcommon.Value)
 	}{
 		{
+			name:    "replace match (with hash function)",
+			target:  target,
+			pattern: "hello*",
+			replacement: ottl.StandardStringGetter[pcommon.Value]{
+				Getter: func(context.Context, pcommon.Value) (interface{}, error) {
+					return "hello {universe}", nil
+				},
+			},
+			function: optionalArg,
+			want: func(expectedValue pcommon.Value) {
+				expectedValue.SetStr("4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
+			},
+		},
+		{
 			name:    "replace match",
 			target:  target,
 			pattern: "hello*",
@@ -44,17 +64,9 @@ func Test_replaceMatch(t *testing.T) {
 					return "hello {universe}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				Val: ottl.StandardFunctionGetter[pcommon.Value]{
-					FCtx: ottl.FunctionContext{
-						Set: componenttest.NewNopTelemetrySettings(),
-					},
-					Fact: StandardConverters[pcommon.Value]()["SHA256"],
-				},
-				HasValue: true,
-			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
-				expectedValue.SetStr("4804d6b7f03268e33f78c484977f3d81771220df07cc6aac4ad4868102141fad")
+				expectedValue.SetStr("hello {universe}")
 			},
 		},
 		{
@@ -66,9 +78,7 @@ func Test_replaceMatch(t *testing.T) {
 					return "goodbye {universe}", nil
 				},
 			},
-			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{
-				HasValue: false,
-			},
+			function: ottl.Optional[ottl.FunctionGetter[pcommon.Value]]{},
 			want: func(expectedValue pcommon.Value) {
 				expectedValue.SetStr("hello world")
 			},
@@ -108,9 +118,7 @@ func Test_replaceMatch_bad_input(t *testing.T) {
 			return "{replacement}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
-		HasValue: false,
-	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
 	exprFunc, err := replaceMatch[interface{}](target, "*", replacement, function)
 	assert.NoError(t, err)
@@ -137,9 +145,7 @@ func Test_replaceMatch_get_nil(t *testing.T) {
 			return "{anything}", nil
 		},
 	}
-	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{
-		HasValue: false,
-	}
+	function := ottl.Optional[ottl.FunctionGetter[interface{}]]{}
 
 	exprFunc, err := replaceMatch[interface{}](target, "*", replacement, function)
 	assert.NoError(t, err)
