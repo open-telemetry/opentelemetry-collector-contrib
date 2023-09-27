@@ -4,8 +4,6 @@
 package kubelet // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 
 import (
-	"math"
-
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
 
@@ -26,12 +24,10 @@ func addMemoryMetrics(mb *metadata.MetricsBuilder, memoryMetrics metadata.Memory
 
 	if s.UsageBytes != nil {
 		if r.memoryLimit > 0 {
-			value := math.Min(float64(*s.UsageBytes)/float64(r.memoryLimit), 1)
-			memoryMetrics.LimitUtilization(mb, currentTime, value)
+			memoryMetrics.LimitUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryLimit))
 		}
 		if r.memoryRequest > 0 {
-			value := float64(*s.UsageBytes) / float64(r.memoryRequest)
-			memoryMetrics.RequestUtilization(mb, currentTime, value)
+			memoryMetrics.RequestUtilization(mb, currentTime, float64(*s.UsageBytes)/float64(r.memoryRequest))
 		}
 	}
 }
