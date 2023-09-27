@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kineti
 go 1.20
 
 require (
-	bitbucket.org/gisfederal/gpudb-api-go v0.0.9
+	github.com/kineticadb/kinetica-api-go v0.0.2
 	github.com/google/uuid v1.3.1
 	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.4
