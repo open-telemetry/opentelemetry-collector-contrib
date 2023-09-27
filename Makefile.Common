@@ -64,8 +64,9 @@ GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 BUILD_TYPE?=release
 
 # The "sed" transformation below is needed since, on Windows, "go list -f '{{ .Dir }}'" returns Windows paths,
-# and such paths are incompatible with other *nix tools, like "find", used by the Makefile shell. 
-ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sed -e 's/^/\//' -e 's/\\/\//g' -e 's/://' | sort)
+# and such paths are incompatible with other *nix tools, like "find", used by the Makefile shell.
+# The backslash needs to be doubled so its passed correctly to the shell. 
+ALL_PKG_DIRS := $(shell $(GOCMD) list -f '{{ .Dir }}' ./... | sed -e 's/^/\\//' -e 's/://' -e 's/\\\\/\\//g' | sort)
 
 ALL_SRC := $(shell find $(ALL_PKG_DIRS) -name '*.go' \
                                 -not -path '*/third_party/*' \
