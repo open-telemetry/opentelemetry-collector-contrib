@@ -83,7 +83,7 @@ var Writer *KiWriter
 // init
 func init() {
 	ctx := context.TODO()
-	cfg := CreateDefaultConfig()
+	cfg := createDefaultConfig()
 	config := cfg.(*Config)
 	options := kinetica.KineticaOptions{Username: config.Username, Password: string(config.Password), ByPassSslCertCheck: config.BypassSslCertCheck}
 	gpudbInst := kinetica.NewWithOptions(ctx, config.Host, &options)

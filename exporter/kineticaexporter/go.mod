@@ -4,7 +4,8 @@ go 1.20
 
 require (
 	bitbucket.org/gisfederal/gpudb-api-go v0.0.9
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
+	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.4
 	github.com/wk8/go-ordered-map v1.0.0
 	go.opentelemetry.io/collector/component v0.85.1-0.20230921012510-68dd7d763b59
@@ -38,7 +39,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/samber/lo v1.38.1 // indirect
 	github.com/ztrue/tracerr v0.3.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.85.1-0.20230921012510-68dd7d763b59 // indirect
@@ -53,7 +53,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.18.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v0.41.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
 	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
