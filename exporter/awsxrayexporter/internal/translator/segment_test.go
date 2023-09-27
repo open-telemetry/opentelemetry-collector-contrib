@@ -1094,7 +1094,7 @@ func TestLocalRootConsumer(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1178,7 +1178,7 @@ func TestLocalRootConsumerAWSNamespace(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructConsumerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1212,7 +1212,7 @@ func TestLocalRootClient(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructClientSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1293,7 +1293,7 @@ func TestLocalRootProducer(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructProducerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructProducerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1374,7 +1374,7 @@ func TestLocalRootServer(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructServerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructServerSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1425,7 +1425,7 @@ func TestLocalRootInternal(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructInternalSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructInternalSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1475,7 +1475,7 @@ func TestNotLocalRootInternal(t *testing.T) {
 	resource.Attributes().PutStr(conventions.AttributeTelemetrySDKVersion, "1.20.0")
 	resource.Attributes().PutStr(conventions.AttributeTelemetryAutoVersion, "1.2.3")
 
-	span := constructInternalSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructInternalSpan(parentSpanID, spanName, 200, "OK", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())
@@ -1505,7 +1505,7 @@ func TestNotLocalRootConsumer(t *testing.T) {
 	attributes["aws.local.service"] = "myLocalService"
 	attributes["myAnnotationKey"] = "myAnnotationValue"
 
-	span := constructConsumerSpan(parentSpanID, spanName, 0, "OK", attributes)
+	span := constructConsumerSpan(parentSpanID, spanName, 503, "java.lang.NullPointerException", attributes)
 
 	spanLink := span.Links().AppendEmpty()
 	spanLink.SetTraceID(newTraceID())

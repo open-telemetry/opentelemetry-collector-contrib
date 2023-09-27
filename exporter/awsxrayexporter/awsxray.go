@@ -117,8 +117,8 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 					continue
 				}
 
-				for _, v := range documentsForSpan {
-					documents = append(documents, &v)
+				for l := range documentsForSpan {
+					documents = append(documents, &documentsForSpan[l])
 				}
 			}
 		}
