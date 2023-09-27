@@ -38,6 +38,14 @@ metrics:
     enabled: true
 ```
 
+### system.linux.memory.available
+
+Linux-specific more accurate alternative to system.memory.usage with state=free
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### system.memory.utilization
 
 Percentage of memory bytes in use.
