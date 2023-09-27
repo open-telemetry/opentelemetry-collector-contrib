@@ -749,8 +749,8 @@ go.opentelemetry.io/build-tools/issuegenerator v0.11.0 h1:dIpw76zpecHyS4KZVMd3Dz
 go.opentelemetry.io/build-tools/issuegenerator v0.11.0/go.mod h1:TIySUNvgnJxiqMOLaYRHx2vNqbXmjYtOU9RYFT6mHco=
 go.opentelemetry.io/build-tools/multimod v0.11.0 h1:QMo2Y4BlsTsWUR0LXV4gmiv5yEiX2iPLn2qAdAcCE6k=
 go.opentelemetry.io/build-tools/multimod v0.11.0/go.mod h1:EID7sjEGyk1FWzRdsV6rlWp43IIn8iHXGE5pM4TytyQ=
-go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230919160920-512b9c3c8fec h1:VHS1Q67fSkd8qdL5UOxqK8m6o6tHl6Nt/bf7ewSRCwA=
-go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230919160920-512b9c3c8fec/go.mod h1:FkfKpr2bdVcgfaS/gBz/yxTHGDUbJDePHVvz40cE+3E=
+go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230921012510-68dd7d763b59 h1:t+A3mbiq5+iCNS80Jb0F0cIUxBwf0ECk+NH28+vF/ik=
+go.opentelemetry.io/collector/cmd/builder v0.85.1-0.20230921012510-68dd7d763b59/go.mod h1:FkfKpr2bdVcgfaS/gBz/yxTHGDUbJDePHVvz40cE+3E=
 go.tmz.dev/musttag v0.7.1 h1:9lFmeSFnFfPuMq4IksHGomItE6NgKMNW2Nt2FPOhCfU=
 go.tmz.dev/musttag v0.7.1/go.mod h1:oJLkpR56EsIryktZJk/B0IroSMi37YWver47fibGh5U=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=

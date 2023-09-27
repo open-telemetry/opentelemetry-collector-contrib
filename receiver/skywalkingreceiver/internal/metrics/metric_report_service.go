@@ -6,8 +6,8 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 )
@@ -20,14 +20,14 @@ const (
 
 type Receiver struct {
 	nextConsumer consumer.Metrics
-	grpcObsrecv  *obsreport.Receiver
-	httpObsrecv  *obsreport.Receiver
+	grpcObsrecv  *receiverhelper.ObsReport
+	httpObsrecv  *receiverhelper.ObsReport
 	agent.UnimplementedJVMMetricReportServiceServer
 }
 
 // NewReceiver creates a new Receiver reference.
 func NewReceiver(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
-	grpcObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	grpcObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              grpcTransport,
 		ReceiverCreateSettings: set,
@@ -35,7 +35,7 @@ func NewReceiver(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*R
 	if err != nil {
 		return nil, err
 	}
-	httpObsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	httpObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              collectorHTTPTransport,
 		ReceiverCreateSettings: set,

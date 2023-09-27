@@ -72,6 +72,8 @@ func buildTransportServer(config Config) (transport.Server, error) {
 	switch strings.ToLower(config.NetAddr.Transport) {
 	case "", "udp":
 		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	case "tcp":
+		return transport.NewTCPServer(config.NetAddr.Endpoint)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)

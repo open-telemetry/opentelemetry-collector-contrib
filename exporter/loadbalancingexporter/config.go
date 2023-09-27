@@ -14,6 +14,8 @@ type routingKey int
 const (
 	traceIDRouting routingKey = iota
 	svcRouting
+	metricNameRouting
+	resourceRouting
 )
 
 // Config defines configuration for the exporter.

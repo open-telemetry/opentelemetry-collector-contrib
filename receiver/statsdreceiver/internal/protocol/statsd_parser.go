@@ -400,6 +400,12 @@ func parseMessageToMetric(line string, enableMetricType bool) (statsDMetric, err
 		case strings.HasPrefix(part, "#"):
 			tagsStr := strings.TrimPrefix(part, "#")
 
+			// handle an empty tag set
+			// where the tags part was still sent (some clients do this)
+			if len(tagsStr) == 0 {
+				continue
+			}
+
 			tagSets := strings.Split(tagsStr, ",")
 
 			for _, tagSet := range tagSets {
