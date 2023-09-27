@@ -1492,7 +1492,7 @@ func TestNotLocalRootInternal(t *testing.T) {
 	assert.Equal(t, "MyInternalService", *segments[0].Name)
 }
 
-func TestNotLocalRoot(t *testing.T) {
+func TestNotLocalRootConsumer(t *testing.T) {
 	spanName := "destination receive"
 	resource := constructDefaultResource()
 	parentSpanID := newSegmentID()
@@ -1517,6 +1517,7 @@ func TestNotLocalRoot(t *testing.T) {
 	assert.Equal(t, 1, len(segments))
 	assert.Nil(t, err)
 
+	// Validate subsegment
 	assert.Equal(t, "subsegment", *segments[0].Type)
 	assert.Equal(t, "myLocalService", *segments[0].Name)
 	assert.Equal(t, parentSpanID.String(), *segments[0].ParentID)
