@@ -30,3 +30,11 @@ func (s *scraper) recordMemoryUtilizationMetric(now pcommon.Timestamp, memInfo *
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Sreclaimable)/float64(memInfo.Total), metadata.AttributeStateSlabReclaimable)
 	s.mb.RecordSystemMemoryUtilizationDataPoint(now, float64(memInfo.Sunreclaim)/float64(memInfo.Total), metadata.AttributeStateSlabUnreclaimable)
 }
+
+func (s *scraper) recordLinuxMemoryAvailableMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.mb.RecordSystemLinuxMemoryAvailableDataPoint(now, int64(memInfo.Available))
+}
+
+func (s *scraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+	s.recordLinuxMemoryAvailableMetric(now, memInfo)
+}
