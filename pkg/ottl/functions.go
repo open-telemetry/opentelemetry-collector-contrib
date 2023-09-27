@@ -123,7 +123,7 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 			if !ok {
 				return fmt.Errorf("undefined function %s", name)
 			}
-			val = StandardFunctionGetter[K]{fCtx: FunctionContext{Set: p.telemetrySettings}, fact: f}
+			val = StandardFunctionGetter[K]{FCtx: FunctionContext{Set: p.telemetrySettings}, Fact: f}
 		case fieldType.Kind() == reflect.Slice:
 			val, err = p.buildSliceArg(arg.Value, fieldType)
 		default:
@@ -381,25 +381,25 @@ type optionalManager interface {
 }
 
 type Optional[T any] struct {
-	val      T
-	hasValue bool
+	Val      T
+	HasValue bool
 }
 
 // This is called only by reflection.
 // nolint:unused
 func (o Optional[T]) set(val any) reflect.Value {
 	return reflect.ValueOf(Optional[T]{
-		val:      val.(T),
-		hasValue: true,
+		Val:      val.(T),
+		HasValue: true,
 	})
 }
 
 func (o Optional[T]) IsEmpty() bool {
-	return !o.hasValue
+	return !o.HasValue
 }
 
 func (o Optional[T]) Get() T {
-	return o.val
+	return o.Val
 }
 
 func (o Optional[T]) get() reflect.Value {
@@ -414,7 +414,7 @@ func (o Optional[T]) get() reflect.Value {
 // OTTL functions.
 func NewTestingOptional[T any](val T) Optional[T] {
 	return Optional[T]{
-		val:      val,
-		hasValue: true,
+		Val:      val,
+		HasValue: true,
 	}
 }

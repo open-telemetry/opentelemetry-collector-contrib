@@ -64,7 +64,6 @@ func replacePattern[K any](target ottl.GetSetter[K], regexPattern string, replac
 			}
 			replacementVal = replacementValRaw.(string)
 		}
-		// replacementVal, err := replacement.Get(ctx, tCtx)
 		if originalVal == nil {
 			return nil, nil
 		}
