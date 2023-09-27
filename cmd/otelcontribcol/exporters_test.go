@@ -11,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -105,8 +104,10 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter:      "logging",
-			skipLifecycle: runtime.GOOS == "darwin", // TODO: investigate why this fails on darwin.
+			exporter: "debug",
+		},
+		{
+			exporter: "logging",
 		},
 		{
 			exporter: "opencensus",

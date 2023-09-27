@@ -284,7 +284,7 @@ func TestWithExtractLabels(t *testing.T) {
 
 func TestWithExtractMetadata(t *testing.T) {
 	p := &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata()(p))
+	assert.NoError(t, withExtractMetadata(enabledAttributes()...)(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)

@@ -3,8 +3,8 @@ receivers:
     directory: /var/log/journal/a04e3a44cdd740f88d6a7ae3bb8c70cf
 
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
   loki:
     endpoint: http://localhost:3100/loki/api/v1/push
     tls:
@@ -46,4 +46,4 @@ service:
     logs:
       receivers: [journald]
       processors: [resource, attributes]
-      exporters: [logging, loki]
+      exporters: [debug, loki]
