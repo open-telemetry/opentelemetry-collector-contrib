@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.48.0-beta.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.8.0
 	github.com/DataDog/sketches-go v1.4.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.86.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
 	go.opentelemetry.io/collector/consumer v0.86.0
@@ -86,7 +86,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
-	google.golang.org/grpc v1.58.1 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

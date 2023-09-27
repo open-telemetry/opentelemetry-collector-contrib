@@ -5,12 +5,12 @@ go 1.20
 require (
 	cloud.google.com/go/compute/metadata v0.2.3
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.19.1
-	github.com/aws/aws-sdk-go v1.45.12
+	github.com/aws/aws-sdk-go v1.45.17
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/consul/api v1.24.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.85.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.85.0
+	github.com/hashicorp/consul/api v1.25.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.86.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.86.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.86.0
 	github.com/shirou/gopsutil/v3 v3.23.8
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/collector/component v0.86.0
@@ -79,7 +79,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.85.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
@@ -118,7 +118,7 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
-	google.golang.org/grpc v1.58.1 // indirect
+	google.golang.org/grpc v1.58.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

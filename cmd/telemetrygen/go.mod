@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.85.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.86.0
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.4
@@ -25,7 +25,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.18.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/time v0.3.0
-	google.golang.org/grpc v1.58.1
+	google.golang.org/grpc v1.58.2
 )
 
 require (

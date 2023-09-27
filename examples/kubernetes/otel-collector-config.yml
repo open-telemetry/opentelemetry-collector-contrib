@@ -74,10 +74,10 @@ receivers:
         from: attributes.uid
         to: resource["k8s.pod.uid"]
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 service:
   pipelines:
     logs:
       receivers: [filelog]
-      exporters: [logging]
+      exporters: [debug]
