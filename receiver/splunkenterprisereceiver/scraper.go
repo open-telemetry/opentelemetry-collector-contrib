@@ -43,7 +43,7 @@ func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunk
 }
 
 // Create a client instance and add to the splunkScraper
-func (s *splunkScraper) start(c context.Context, h component.Host) (err error) {
+func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
 	client, err := newSplunkEntClient(s.conf, h, s.settings)
 	if err != nil {
 		return err
